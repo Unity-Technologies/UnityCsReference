@@ -175,6 +175,9 @@ namespace UnityEditor
             }
             else
             {
+                if (!includeChildren)
+                    return EditorGUI.DefaultPropertyField(position, property, label);
+
                 if (UseReorderabelListControl(property))
                 {
                     ReorderableListWrapper reorderableList;
@@ -191,9 +194,6 @@ namespace UnityEditor
                     reorderableList.Draw(label, position, visibleArea, tooltip, includeChildren);
                     return !includeChildren && property.isExpanded;
                 }
-
-                if (!includeChildren)
-                    return EditorGUI.DefaultPropertyField(position, property, label);
 
                 // Remember state
                 Vector2 oldIconSize = EditorGUIUtility.GetIconSize();
@@ -263,7 +263,16 @@ namespace UnityEditor
                 foreach (DecoratorDrawer drawer in m_DecoratorDrawers)
                     height += drawer.GetHeight();
 
-            if (UseReorderabelListControl(property))
+
+            if (propertyDrawer != null)
+            {
+                height += propertyDrawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
+            }
+            else if (!includeChildren)
+            {
+                height += EditorGUI.GetSinglePropertyHeight(property, label);
+            }
+            else if (UseReorderabelListControl(property))
             {
                 ReorderableListWrapper reorderableList;
                 string key = ReorderableListWrapper.GetPropertyIdentifier(property);
@@ -276,17 +285,8 @@ namespace UnityEditor
                 }
 
                 reorderableList.Property = property;
-                height += s_reorderableLists[key].GetHeight(includeChildren);
+                height += s_reorderableLists[key].GetHeight();
                 return height;
-            }
-
-            if (propertyDrawer != null)
-            {
-                height += propertyDrawer.GetPropertyHeightSafe(property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip));
-            }
-            else if (!includeChildren)
-            {
-                height += EditorGUI.GetSinglePropertyHeight(property, label);
             }
             else
             {

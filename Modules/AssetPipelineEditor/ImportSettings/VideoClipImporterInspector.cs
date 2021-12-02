@@ -652,7 +652,7 @@ namespace UnityEditor
             float previewWidth = m_Texture.width;
             float previewHeight = m_Texture.height;
             var activeSettings =
-                importer.GetTargetSettings(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget).ToString());
+                importer.Internal_GetTargetSettings(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
             if (activeSettings == null)
                 activeSettings = importer.defaultTargetSettings;
             if (activeSettings.enableTranscoding)
