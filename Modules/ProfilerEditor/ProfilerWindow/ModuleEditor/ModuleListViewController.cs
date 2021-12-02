@@ -57,6 +57,11 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ListView.SetSelection(index);
         }
 
+        public void ClearSelection()
+        {
+            m_ListView.ClearSelection();
+        }
+
         public void Refresh()
         {
             m_ListView.Refresh();
@@ -104,7 +109,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         void OnListViewSelectionChange(IEnumerable<object> selectedItems)
         {
             var selectedIndex = m_ListView.selectedIndex;
-            var selectedModule = m_Modules[selectedIndex];
+            var selectedModule = (selectedIndex != -1) ? m_Modules[selectedIndex] : null;
             onModuleAtIndexSelected.Invoke(selectedModule, selectedIndex);
         }
 
