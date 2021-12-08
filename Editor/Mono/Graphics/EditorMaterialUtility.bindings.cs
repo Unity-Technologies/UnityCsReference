@@ -28,5 +28,8 @@ namespace UnityEditor
 
         [FreeFunction("EditorMaterialUtilityBindings::SetShaderNonModifiableDefaults")]
         extern public static void SetShaderNonModifiableDefaults([NotNull] Shader shader, string[] name, Texture[] textures);
+
+        [FreeFunction("EditorMaterialUtilityBindings::GetMaterialParentFromFile")]
+        extern internal static GUID GetMaterialParentFromFile(string assetPath);
     }
 }

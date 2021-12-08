@@ -76,6 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
+            m_PageManager.onVisualStateChange += OnVisualStateChange;
             detailAuthorLink.clickable.clicked += AuthorClick;
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
         }
@@ -119,19 +120,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(hiddenAssetInfoBoxContainer, showHiddenInfoBox);
         }
 
-        private void RefreshFeatureSetElements()
+        private void RefreshFeatureSetElements(VisualState visualState = null)
         {
             var featureSets = m_PackageDatabase.GetFeatureDependents(m_Package.versions.installed);
             RefreshUsedInFeatureSetMessage(featureSets);
             RefreshFeatureSetDependentVersionDifferentInfoBox(featureSets);
-            RefreshLockIcons(featureSets);
+            RefreshLockIcons(featureSets, visualState);
         }
 
-        private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets)
+        private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets, VisualState visualState = null)
         {
             if (featureSets?.Any() == true)
             {
-                var visualState = m_PageManager.GetVisualState(m_Package);
+                visualState = visualState ?? m_PageManager.GetVisualState(m_Package);
                 if (visualState?.isLocked == true)
                 {
                     lockedIcon.RemoveFromClassList("unlocked");
@@ -148,6 +149,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
                 UIUtils.SetElementDisplay(lockedIcon, false);
+        }
+
+        private void OnVisualStateChange(IEnumerable<VisualState> visualStates)
+        {
+            var visualState = visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package.uniqueId);
+            if (visualState != null)
+                RefreshFeatureSetElements(visualState);
         }
 
         private static Button CreateLink(IPackageVersion version)
@@ -199,11 +207,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     usedInFeatureSetMessageContainer.Add(and);
                     usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.LastOrDefault()));
-                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" Features.")));
+                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" features.")));
                 }
                 else
                 {
-                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" Feature.")));
+                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" feature.")));
                 }
             }
         }
@@ -212,13 +220,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var featureSetsCount = featureSets?.Count() ?? 0;
 
-            // if the installed version is the Feature Set version and the user is viewing a different version
+            // if the installed version is the feature set version and the user is viewing a different version
             if (featureSetsCount > 0 && m_Package?.versions.installed != null && m_Package.versions.installed.version == m_Package.versions.lifecycleVersion?.version
                 && m_Version != m_Package.versions.installed)
             {
                 featureSetDependentVersionDifferentInfoBox.text = featureSetsCount > 1 ?
-                    string.Format(L10n.Tr("This Package is part of the {0} Features, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the Features' performance."), string.Join(", ", featureSets.Select(f => f.displayName)), m_Package.versions.installed.versionString)
-                    : string.Format(L10n.Tr("This Package is part of the {0} Feature, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the Feature's performance."), featureSets.FirstOrDefault().displayName, m_Package.versions.installed.versionString);
+                    string.Format(L10n.Tr("This package is part of the {0} features, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the features' performance."), string.Join(", ", featureSets.Select(f => f.displayName)), m_Package.versions.installed.versionString)
+                    : string.Format(L10n.Tr("This package is part of the {0} feature, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the feature's performance."), featureSets.FirstOrDefault().displayName, m_Package.versions.installed.versionString);
                 UIUtils.SetElementDisplay(featureSetDependentVersionDifferentInfoBox, true);
             }
             else

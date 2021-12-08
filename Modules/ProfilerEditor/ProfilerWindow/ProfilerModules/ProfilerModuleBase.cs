@@ -16,8 +16,6 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal abstract class ProfilerModuleBase : ProfilerModule
     {
-        const string k_NoCategory = "NoCategory";
-
         protected List<ProfilerCounterData> m_LegacyChartCounters;
         protected List<ProfilerCounterData> m_LegacyDetailCounters;
         [SerializeField] protected Vector2 m_PaneScroll;
@@ -83,9 +81,8 @@ namespace UnityEditorInternal.Profiling
 
             if (active)
             {
-                // Decrement existing areas prior to updating counters.
-                var previousAreas = GetProfilerAreas();
-                ProfilerWindow.SetAreasInUse(previousAreas, false);
+                // Release existing categories prior to updating counters.
+                ProfilerWindow.SetCategoriesInUse(GetAutoEnabledCategoryNames, false);
             }
 
             // Capture each chart counter's enabled state prior to assignment.
@@ -127,9 +124,8 @@ namespace UnityEditorInternal.Profiling
 
             if (active)
             {
-                // Increment new areas after updating counters.
-                var areas = GetProfilerAreas();
-                ProfilerWindow.SetAreasInUse(areas, true);
+                // Retain new categories after updating counters.
+                ProfilerWindow.SetCategoriesInUse(GetAutoEnabledCategoryNames, true);
             }
         }
 
@@ -150,12 +146,14 @@ namespace UnityEditorInternal.Profiling
             var chartCounters = new List<ProfilerCounterData>();
             if (!usesCounters)
             {
+                // Legacy modules can define ProfilerArea-based stats instead of counters. In that case, convert the area to a category name.
                 var legacyStats = ProfilerDriver.GetGraphStatisticsPropertiesForArea(area);
+                var categoryName = LegacyProfilerAreaUtility.ProfilerAreaToCategoryName(area);
                 foreach (var legacyStatName in legacyStats)
                 {
                     var counter = new ProfilerCounterData()
                     {
-                        m_Category = k_NoCategory,
+                        m_Category = categoryName,
                         m_Name = legacyStatName,
                     };
                     chartCounters.Add(counter);

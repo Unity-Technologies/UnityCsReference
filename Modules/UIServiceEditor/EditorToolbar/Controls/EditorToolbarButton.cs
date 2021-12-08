@@ -14,13 +14,30 @@ namespace UnityEditor.Toolbars
         internal const string textClassName = EditorToolbar.elementLabelClassName;
         internal const string iconClassName = EditorToolbar.elementIconClassName;
 
-        readonly TextElement m_TextElement;
         readonly Image m_IconElement;
+        TextElement m_TextElement;
 
         public new string text
         {
-            get => m_TextElement.text;
-            set => m_TextElement.text = value;
+            get => m_TextElement?.text;
+
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    m_TextElement?.RemoveFromHierarchy();
+                    m_TextElement = null;
+                    return;
+                }
+
+                if (m_TextElement == null)
+                {
+                    Insert(IndexOf(m_IconElement)+1, m_TextElement = new TextElement());
+                    m_TextElement.AddToClassList(textClassName);
+                }
+
+                m_TextElement.text = value;
+            }
         }
 
         public Texture2D icon
@@ -44,11 +61,7 @@ namespace UnityEditor.Toolbars
             m_IconElement.AddToClassList(iconClassName);
             this.icon = icon;
             Add(m_IconElement);
-
-            m_TextElement = new TextElement();
-            m_TextElement.AddToClassList(textClassName);
-            m_TextElement.text = text;
-            Add(m_TextElement);
+            this.text = text;
         }
     }
 }

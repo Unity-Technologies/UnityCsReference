@@ -363,6 +363,9 @@ namespace UnityEditor
         extern internal static bool CheckIfAddingPrefabWouldResultInCyclicNesting(Object prefabAssetThatIsAddedTo, Object prefabAssetThatWillBeAdded);
 
         [FreeFunction]
+        extern internal static bool WasCreatedAsPrefabInstancePlaceholderObject(Object componentOrGameObject);
+
+        [FreeFunction]
         extern internal static void ShowCyclicNestingWarningDialog();
     }
 }

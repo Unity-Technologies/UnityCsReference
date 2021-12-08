@@ -242,6 +242,14 @@ namespace UnityEditor
         High = 2
     }
 
+    // Keep in synch with HDRCubemapEncodingQuality enum from GfxDeviceTypes.h
+    internal enum HDRCubemapEncodingQuality
+    {
+        Low = 0,
+        Normal = 1,
+        High = 2
+    }
+
     // Must be in sync with ShaderPrecisionModel enum in EditorOnlyPlayerSettings.h
     public enum ShaderPrecisionModel
     {
@@ -716,6 +724,12 @@ namespace UnityEditor
 
         [NativeMethod("SetLightmapEncodingQuality")]
         internal static extern void SetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup, LightmapEncodingQuality encodingQuality);
+
+        [NativeMethod("GetHDRCubemapEncodingQuality")]
+        internal static extern HDRCubemapEncodingQuality GetHDRCubemapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup);
+
+        [NativeMethod("SetHDRCubemapEncodingQuality")]
+        internal static extern void SetHDRCubemapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup, HDRCubemapEncodingQuality encodingQuality);
 
         [FreeFunction("GetTargetPlatformGraphicsAPIAvailability")]
         internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetSupportedGraphicsAPIs(BuildTarget platform);

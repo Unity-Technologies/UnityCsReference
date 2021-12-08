@@ -36,6 +36,7 @@ namespace UnityEngine.VFX
         extern public static float fixedTimeStep { get; set; }
         extern public static float maxDeltaTime { get; set; }
 
+        extern internal static float maxScrubTime { get; set; }
         extern internal static string renderPipeSettingsPath { get; }
 
         extern internal static void ResyncMaterials([NotNull("NullExceptionObject")] VisualEffectAsset asset);

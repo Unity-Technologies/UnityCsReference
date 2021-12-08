@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using System;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -26,20 +27,6 @@ namespace UnityEditor
             }
         }
 
-        // Do currently edited materials have different render queue values?
-        private bool HasMultipleMixedQueueValues()
-        {
-            int queue = (targets[0] as Material).rawRenderQueue;
-            for (int i = 1; i < targets.Length; ++i)
-            {
-                if (queue != (targets[i] as Material).rawRenderQueue)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // Field for editing render queue value, with an automatically calculated rect
         public void RenderQueueField()
         {
@@ -50,8 +37,7 @@ namespace UnityEditor
         // Field for editing render queue value, with an explicit rect
         public void RenderQueueField(Rect r)
         {
-            var mixedValue = HasMultipleMixedQueueValues();
-            EditorGUI.showMixedValue = mixedValue;
+            BeginProperty(r, MaterialSerializedProperty.CustomRenderQueue, targets);
 
             var mat = targets[0] as Material;
             int curRawQueue = mat.rawRenderQueue;
@@ -130,7 +116,8 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
             EditorGUIUtility.fieldWidth = oldFieldWidth;
-            EditorGUI.showMixedValue = false;
+
+            EndProperty();
         }
 
         public bool EnableInstancingField()
@@ -144,19 +131,24 @@ namespace UnityEditor
 
         public void EnableInstancingField(Rect r)
         {
+            BeginProperty(r, MaterialSerializedProperty.EnableInstancingVariants, targets);
+
             using (var scope = new EditorGUI.ChangeCheckScope())
             {
-                var newBoolValue = EditorGUI.Toggle(r, Styles.enableInstancingLabel, m_EnableInstancing.boolValue);
+                bool enableInstancing = EditorGUI.Toggle(r, Styles.enableInstancingLabel, (targets[0] as Material).enableInstancing);
                 if (scope.changed)
-                    m_EnableInstancing.boolValue = newBoolValue;
+                {
+                    foreach (Material material in targets)
+                        material.enableInstancing = enableInstancing;
+                }
             }
 
-            serializedObject.ApplyModifiedProperties();
+            EndProperty();
         }
 
         public bool IsInstancingEnabled()
         {
-            return ShaderUtil.HasInstancing(m_Shader) && m_EnableInstancing.boolValue;
+            return ShaderUtil.HasInstancing(m_Shader) && (targets[0] as Material).enableInstancing;
         }
 
         public bool DoubleSidedGIField()
@@ -166,13 +158,17 @@ namespace UnityEditor
             Rect r = GetControlRectForSingleLine();
             if (isPrefabAsset || !isEnlightenLightMapper)
             {
-                using (var scope = new EditorGUI.ChangeCheckScope())
+                BeginProperty(r, MaterialSerializedProperty.DoubleSidedGI, targets);
+
+                EditorGUI.BeginChangeCheck();
+                bool doubleSidedGI = EditorGUI.Toggle(r, Styles.doubleSidedGILabel, (targets[0] as Material).doubleSidedGI);
+                if (EditorGUI.EndChangeCheck())
                 {
-                    var newBoolValue = EditorGUI.Toggle(r, Styles.doubleSidedGILabel, m_DoubleSidedGI.boolValue);
-                    if (scope.changed)
-                        m_DoubleSidedGI.boolValue = newBoolValue;
+                    foreach (Material material in targets)
+                        material.doubleSidedGI = doubleSidedGI;
                 }
-                serializedObject.ApplyModifiedProperties();
+
+                EndProperty();
                 return true;
             }
 
@@ -214,10 +210,16 @@ namespace UnityEditor
         public Rect TexturePropertySingleLine(GUIContent label, MaterialProperty textureProp, MaterialProperty extraProperty1, MaterialProperty extraProperty2)
         {
             Rect r = GetControlRectForSingleLine();
+
+            bool hasExtraProp = !(extraProperty1 == null && extraProperty2 == null);
+            if (hasExtraProp) BeginProperty(r, textureProp);
+            if (extraProperty1 != null) BeginProperty(r, extraProperty1);
+            if (extraProperty2 != null) BeginProperty(r, extraProperty2);
+
             TexturePropertyMiniThumbnail(r, textureProp, label.text, label.tooltip);
 
             // No extra properties: early out
-            if (extraProperty1 == null && extraProperty2 == null)
+            if (!hasExtraProp)
                 return r;
 
             // Temporarily reset the indent level as it was already used earlier to compute the positions of the layout items. See issue 946082.
@@ -246,6 +248,10 @@ namespace UnityEditor
             }
             // Restore the indent level
             EditorGUI.indentLevel = oldIndentLevel;
+
+            if (extraProperty2 != null) EndProperty();
+            if (extraProperty1 != null) EndProperty();
+            if (hasExtraProp) EndProperty();
             return r;
         }
 
@@ -260,9 +266,17 @@ namespace UnityEditor
         public Rect TexturePropertyWithHDRColor(GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, bool showAlpha)
         {
             Rect r = GetControlRectForSingleLine();
+
+            bool isColorProperty = colorProperty.type == MaterialProperty.PropType.Color;
+            if (isColorProperty)
+            {
+                BeginProperty(r, textureProp);
+                BeginProperty(r, colorProperty);
+            }
+
             TexturePropertyMiniThumbnail(r, textureProp, label.text, label.tooltip);
 
-            if (colorProperty.type != MaterialProperty.PropType.Color)
+            if (!isColorProperty)
             {
                 Debug.LogError("Assuming MaterialProperty.PropType.Color (was " + colorProperty.type + ")");
                 return r;
@@ -286,6 +300,12 @@ namespace UnityEditor
             // Restore the indent level
             EditorGUI.indentLevel = oldIndentLevel;
 
+            if (isColorProperty)
+            {
+                EndProperty();
+                EndProperty();
+            }
+
             return r;
         }
 
@@ -299,6 +319,10 @@ namespace UnityEditor
             }
 
             Rect r = GetControlRectForSingleLine();
+
+            BeginProperty(r, textureProp);
+            BeginProperty(r, extraProperty1);
+
             TexturePropertyMiniThumbnail(r, textureProp, label.text, label.tooltip);
 
             // Temporarily reset the indent level. See issue 946082.
@@ -310,6 +334,9 @@ namespace UnityEditor
             if (extraProperty1.type == MaterialProperty.PropType.Color)
                 r1 = GetLeftAlignedFieldRect(r);
             ExtraPropertyAfterTexture(r1, extraProperty1);
+
+            EndProperty();
+            EndProperty();
 
             // New line for extraProperty2
             Rect r2 = GetControlRectForSingleLine();

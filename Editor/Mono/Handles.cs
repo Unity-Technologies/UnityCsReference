@@ -336,7 +336,7 @@ namespace UnityEditor
         static float ThicknessToPixels(float thickness)
         {
             var halfThicknessPixels = thickness * EditorGUIUtility.pixelsPerPoint * 0.5f;
-            if (halfThicknessPixels < 0.5f)
+            if (halfThicknessPixels < 0.9f)
                 halfThicknessPixels = 0;
             return halfThicknessPixels;
         }

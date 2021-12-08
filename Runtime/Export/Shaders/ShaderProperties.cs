@@ -140,6 +140,14 @@ namespace UnityEngine
             return new Vector2(defValues[1], defValues[2]);
         }
 
+        public int GetPropertyDefaultIntValue(int propertyIndex)
+        {
+            CheckPropertyIndex(this, propertyIndex);
+            if (GetPropertyType(propertyIndex) != ShaderPropertyType.Int)
+                throw new ArgumentException("Property type is not Int.");
+            return GetPropertyDefaultIntValue(this, propertyIndex);
+        }
+
         public TextureDimension GetPropertyTextureDimension(int propertyIndex)
         {
             CheckPropertyIndex(this, propertyIndex);

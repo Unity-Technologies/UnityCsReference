@@ -684,10 +684,10 @@ namespace UnityEditor
         public static extern bool development { get; set; }
 
         [Obsolete("Use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead.", true)]
-        public static Build.Il2CppCodeGeneration il2CppCodeGeneratione
+        public static Build.Il2CppCodeGeneration il2CppCodeGeneration
         {
             get { return Build.Il2CppCodeGeneration.OptimizeSpeed; }
-            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneratione is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead." ); }
+            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneration is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead." ); }
         }
 
         [Obsolete("Building with pre-built Engine option is no longer supported.", true)]

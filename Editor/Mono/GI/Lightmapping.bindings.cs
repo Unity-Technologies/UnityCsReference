@@ -457,6 +457,11 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern void OnUpdateLightmapEncoding(BuildTargetGroup target);
 
+        // Called when the user changes the HDR Cubemap Encoding option,
+        // will reimport HDR cubemaps with the new encoding.
+        [FreeFunction]
+        internal static extern void OnUpdateHDRCubemapEncoding(BuildTargetGroup target);
+
         // Called when the user changes the Lightmap streaming settings:
         [FreeFunction]
         internal static extern void OnUpdateLightmapStreaming(BuildTargetGroup target);

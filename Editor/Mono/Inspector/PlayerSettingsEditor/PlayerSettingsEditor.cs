@@ -49,8 +49,9 @@ namespace UnityEditor
 
         class SettingsContent
         {
-            public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
-            public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2 only. Uncheck 'Automatic Graphics API' if it's set and remove the WebGL 1 API.");
+            public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it is set and remove the WebGL 1 API.");
+            public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2. Navigate to 'WebGL Player Settings', uncheck 'Automatic Graphics API' if it is set and remove the WebGL 1 API.");
+            public static readonly GUIContent hdrCubemapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality HDR cubemap encoding requires WebGL 2. Navigate to 'WebGL Player Settings', uncheck 'Automatic Graphics API' if it is set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, remove OpenGL ES 2 API from the list. Blit Type for non-SRP projects must be Always Blit or Auto.");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
@@ -217,9 +218,12 @@ namespace UnityEditor
             public static readonly GUIContent[] normalMapEncodingNames = { EditorGUIUtility.TrTextContent("XYZ"), EditorGUIUtility.TrTextContent("DXT5nm-style") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
+            public static readonly GUIContent hdrCubemapEncodingLabel = EditorGUIUtility.TrTextContent("HDR Cubemap Encoding", "Determines which encoding scheme Unity uses to encode HDR cubemaps.");
+            public static readonly GUIContent[] hdrCubemapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
-            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Please remove the OpenGL ES 2 API.");
+            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The Lightmap Encoding scheme you have selected requires OpenGL ES 3.0 or Vulkan. Navigate to 'Android Player Settings' > 'Rendering' and disable the OpenGL ES 2 API.");
+            public static readonly GUIContent hdrCubemapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The HDR Cubemap Encoding scheme you have selected requires OpenGL ES 3.0 or Vulkan. Navigate to 'Android Player Settings' > 'Rendering' and disable the OpenGL ES 2 API.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Virtual Texturing*", "Enable support for Virtual Texturing. Changing this value requires an Editor restart.");
             public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
@@ -403,6 +407,7 @@ namespace UnityEditor
         SerializedProperty m_RequireES32;
 
         SerializedProperty m_LightmapEncodingQuality;
+        SerializedProperty m_HDRCubemapEncodingQuality;
         SerializedProperty m_LightmapStreamingEnabled;
         SerializedProperty m_LightmapStreamingPriority;
 
@@ -1821,12 +1826,12 @@ namespace UnityEditor
 
             bool hdrDisplaySupported = false;
             bool gfxJobModesSupported = false;
-            bool customLightmapEncodingSupported = (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WebGL);
+            bool hdrEncodingSupportedByPlatform = (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WebGL);
             if (settingsExtension != null)
             {
                 hdrDisplaySupported = settingsExtension.SupportsHighDynamicRangeDisplays();
                 gfxJobModesSupported = settingsExtension.SupportsGfxJobModes();
-                customLightmapEncodingSupported = customLightmapEncodingSupported || settingsExtension.SupportsCustomLightmapEncoding();
+                hdrEncodingSupportedByPlatform = hdrEncodingSupportedByPlatform || settingsExtension.SupportsCustomLightmapEncoding();
             }
             else
             {
@@ -1967,46 +1972,72 @@ namespace UnityEditor
                 }
             }
 
-            // Show Lightmap Encoding quality option
-            if (customLightmapEncodingSupported && !isPreset)
+            // Show Lightmap Encoding and HDR Cubemap Encoding quality options
+            if (hdrEncodingSupportedByPlatform && !isPreset)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
-                    EditorGUI.BeginChangeCheck();
-                    LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
-                    LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
-                    LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
-                    if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
-                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), newEncodingQuality);
-
-                        Lightmapping.OnUpdateLightmapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
-
-                        serializedObject.ApplyModifiedProperties();
-
-                        GUIUtility.ExitGUI();
-                    }
-
-                    if (encodingQuality == LightmapEncodingQuality.High)
-                    {
-                        if (platform.namedBuildTarget == NamedBuildTarget.WebGL)
+                        EditorGUI.BeginChangeCheck();
+                        LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+                        LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
+                        LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
+                        if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
-                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
-                            if (apis.Contains(GraphicsDeviceType.OpenGLES2))
-                            {
-                                EditorGUILayout.HelpBox(SettingsContent.lightmapEncodingWebGLWarning.text, MessageType.Warning);
-                            }
-                        }
-                    }
+                            PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), newEncodingQuality);
 
-                    if (encodingQuality != LightmapEncodingQuality.Low)
-                    {
-                        if (platform.namedBuildTarget == NamedBuildTarget.Android)
+                            Lightmapping.OnUpdateLightmapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
+
+                            serializedObject.ApplyModifiedProperties();
+
+                            GUIUtility.ExitGUI();
+                        }
+
+                        if (encodingQuality == LightmapEncodingQuality.High &&
+                            platform.namedBuildTarget == NamedBuildTarget.WebGL &&
+                            PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL).Contains(GraphicsDeviceType.OpenGLES2))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.lightmapEncodingWebGLWarning.text, MessageType.Warning);
+                        }
+
+                        if (encodingQuality != LightmapEncodingQuality.Low && platform.namedBuildTarget == NamedBuildTarget.Android)
                         {
                             var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                             var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                             if (!hasMinAPI)
                                 EditorGUILayout.HelpBox(SettingsContent.lightmapQualityAndroidWarning.text, MessageType.Warning);
+                        }
+                    }
+
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        HDRCubemapEncodingQuality encodingQuality = PlayerSettings.GetHDRCubemapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+                        HDRCubemapEncodingQuality[] hdrCubemapProbeEncodingValues = { HDRCubemapEncodingQuality.Low, HDRCubemapEncodingQuality.Normal, HDRCubemapEncodingQuality.High };
+                        HDRCubemapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.hdrCubemapEncodingLabel, encodingQuality, hdrCubemapProbeEncodingValues, SettingsContent.hdrCubemapEncodingNames);
+                        if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
+                        {
+                            PlayerSettings.SetHDRCubemapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), newEncodingQuality);
+
+                            Lightmapping.OnUpdateHDRCubemapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
+
+                            serializedObject.ApplyModifiedProperties();
+
+                            GUIUtility.ExitGUI();
+                        }
+
+                        if (encodingQuality == HDRCubemapEncodingQuality.High &&
+                            platform.namedBuildTarget == NamedBuildTarget.WebGL &&
+                            PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL).Contains(GraphicsDeviceType.OpenGLES2))
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.hdrCubemapEncodingWebGLWarning.text, MessageType.Warning);
+                        }
+
+                        if (encodingQuality != HDRCubemapEncodingQuality.Low && platform.namedBuildTarget == NamedBuildTarget.Android)
+                        {
+                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+                            var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                            if (!hasMinAPI)
+                                EditorGUILayout.HelpBox(SettingsContent.hdrCubemapQualityAndroidWarning.text, MessageType.Warning);
                         }
                     }
                 }

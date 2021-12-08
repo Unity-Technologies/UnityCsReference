@@ -240,6 +240,7 @@ namespace UnityEditor.Toolbars
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
             sceneView.sceneViewState.fxEnableChanged += OnSceneFxChanged;
+            OnSceneFxChanged(sceneView.sceneViewState.fxEnabled);
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)

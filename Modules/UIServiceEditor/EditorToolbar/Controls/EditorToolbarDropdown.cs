@@ -33,8 +33,6 @@ namespace UnityEditor.Toolbars
             var arrow = new VisualElement();
             arrow.AddToClassList(arrowClassName);
             Add(arrow);
-
-            this.Q(className: textClassName).style.flexGrow = 1;
         }
     }
 }

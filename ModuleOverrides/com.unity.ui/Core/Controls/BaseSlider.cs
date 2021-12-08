@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This is a base class for the Slider fields.
     /// </summary>
-    public abstract class BaseSlider<TValueType> : BaseField<TValueType>
+    public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
         internal VisualElement dragContainer { get; private set; }
@@ -172,6 +172,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Called when the user is dragging the label to update the value contained in the field.
+        /// </summary>
+        /// <param name="delta">Delta on the move.</param>
+        /// <param name="speed">Speed of the move.</param>
+        /// <param name="startValue">Starting value.</param>
+        public virtual void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, TValueType startValue) {}
+
+        /// <summary>
+        /// Method called by the application when the label of the field is started to be dragged to change the value of it.
+        /// </summary>
+        void IValueField<TValueType>.StartDragging() {}
+
+        /// <summary>
+        /// Method called by the application when the label of the field is stopped to be dragged to change the value of it.
+        /// </summary>
+        void IValueField<TValueType>.StopDragging() {}
+
         public override void SetValueWithoutNotify(TValueType newValue)
         {
             // Clamp the value around the real lowest and highest range values.
@@ -309,6 +327,10 @@ namespace UnityEngine.UIElements
             RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             UpdateTextFieldVisibility();
+
+            var mouseDragger = new FieldMouseDragger<TValueType>(this);
+            mouseDragger.SetDragZone(labelElement);
+            labelElement.AddToClassList(labelDraggerVariantUssClassName);
         }
 
         /// <undoc/>

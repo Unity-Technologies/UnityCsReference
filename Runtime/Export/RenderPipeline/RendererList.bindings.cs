@@ -68,9 +68,13 @@ namespace UnityEngine.Rendering.RendererUtils
         /// </summary>
         public bool excludeObjectMotionVectors;
         /// <summary>
-        /// Rendering layer mask used for filtering this renderer list.
+        /// The layer mask to use for filtering this RendererList.
         /// </summary>
         public int layerMask;
+        /// <summary>
+        /// The rendering layer mask to use for filtering this RendererList.
+        /// </summary>
+        public uint renderingLayerMask;
         /// <summary>
         /// Pass index for the override material.
         /// </summary>
@@ -96,6 +100,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.cullingResult = cullingResult;
             this.camera = camera;
             this.layerMask = -1;
+            this.renderingLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
         }
 
@@ -113,6 +118,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.cullingResult = cullingResult;
             this.camera = camera;
             this.layerMask = -1;
+            this.renderingLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
         }
 
@@ -202,7 +208,7 @@ namespace UnityEngine.Rendering.RendererUtils
                 drawSettings.overrideMaterialPassIndex = desc.overrideMaterialPassIndex;
             }
 
-            var filterSettings = new FilteringSettings(desc.renderQueueRange, desc.layerMask)
+            var filterSettings = new FilteringSettings(desc.renderQueueRange, desc.layerMask, desc.renderingLayerMask)
             {
                 excludeMotionVectorObjects = desc.excludeObjectMotionVectors
             };

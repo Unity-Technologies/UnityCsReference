@@ -108,6 +108,17 @@ namespace UnityEngine.UIElements
             set { base.pageSize = Mathf.RoundToInt(value); }
         }
 
+        /// <inheritdoc />
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
+        {
+            double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
+            float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+            long v = value;
+
+            v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+            value = (int)v;
+        }
+
         internal override int SliderLerpUnclamped(int a, int b, float interpolant)
         {
             return Mathf.RoundToInt(Mathf.LerpUnclamped((float)a, (float)b, interpolant));

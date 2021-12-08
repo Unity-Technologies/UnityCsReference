@@ -28,7 +28,8 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the Lightmap Encoding value you have selected and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent invalidHDRCubemapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player, go to 'Player Settings...' to resolve the incompatibility between the HDR Cubemap Encoding value you have selected and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent invalidVirtualTexturingSettingMessage = EditorGUIUtility.TrTextContent("Cannot build player because Virtual Texturing is enabled, but the target platform or graphics API does not support Virtual Texturing. Go to Player Settings to resolve the incompatibility.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIContent compilingMessage = EditorGUIUtility.TrTextContent("Cannot build player while editor is importing assets or compiling scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIStyle title = EditorStyles.boldLabel;
@@ -587,34 +588,42 @@ namespace UnityEditor
             }
         }
 
+        static bool IsHDRCubemapEncodingValid(BuildPlatform platform)
+        {
+            var encoding = PlayerSettings.GetHDRCubemapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+            return IsGITextureEncodingValid(platform, encoding == HDRCubemapEncodingQuality.Low);
+        }
+
         static bool IsLightmapEncodingValid(BuildPlatform platform)
         {
-            if (PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup()) != LightmapEncodingQuality.Low)
-            {
-                var hasMinGraphicsAPI = true;
+            var encoding = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+            return IsGITextureEncodingValid(platform, encoding == LightmapEncodingQuality.Low);
+        }
 
-                if (platform.namedBuildTarget == NamedBuildTarget.iOS)
-                {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
-                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                }
-                else if (platform.namedBuildTarget == NamedBuildTarget.tvOS)
-                {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
-                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                }
-                else if (platform.namedBuildTarget == NamedBuildTarget.Android)
-                {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                }
-
-                return hasMinGraphicsAPI;
-            }
-            else
-            {
+        static bool IsGITextureEncodingValid(BuildPlatform platform, bool isLowQuality)
+        {
+            if (isLowQuality)
                 return true;
+
+            var hasMinGraphicsAPI = true;
+
+            if (platform.namedBuildTarget == NamedBuildTarget.iOS)
+            {
+                var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
+                hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
             }
+            else if (platform.namedBuildTarget == NamedBuildTarget.tvOS)
+            {
+                var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
+                hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+            }
+            else if (platform.namedBuildTarget == NamedBuildTarget.Android)
+            {
+                var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+                hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+            }
+
+            return hasMinGraphicsAPI;
         }
 
         static bool IsVirtualTexturingSettingsValid(BuildPlatform platform)
@@ -1068,23 +1077,32 @@ namespace UnityEditor
                 buildWindowExtension.ShowPlatformBuildWarnings();
 
             // Disable the 'Build' and 'Build And Run' buttons when the project setup doesn't satisfy the platform requirements
-            if (!IsColorSpaceValid(platform) && enableBuildButton && enableBuildAndRunButton)
+            if (enableBuildButton && enableBuildAndRunButton)
             {
-                enableBuildAndRunButton = false;
-                enableBuildButton = false;
-                EditorGUILayout.HelpBox(styles.invalidColorSpaceMessage);
-            }
-            else if (!IsLightmapEncodingValid(platform) && enableBuildButton && enableBuildAndRunButton)
-            {
-                enableBuildAndRunButton = false;
-                enableBuildButton = false;
-                EditorGUILayout.HelpBox(styles.invalidLightmapEncodingMessage);
-            }
-            else if (!IsVirtualTexturingSettingsValid(platform) && enableBuildButton && enableBuildAndRunButton)
-            {
-                enableBuildAndRunButton = false;
-                enableBuildButton = false;
-                EditorGUILayout.HelpBox(styles.invalidVirtualTexturingSettingMessage);
+                if (!IsColorSpaceValid(platform))
+                {
+                    enableBuildAndRunButton = false;
+                    enableBuildButton = false;
+                    EditorGUILayout.HelpBox(styles.invalidColorSpaceMessage);
+                }
+                else if (!IsLightmapEncodingValid(platform))
+                {
+                    enableBuildAndRunButton = false;
+                    enableBuildButton = false;
+                    EditorGUILayout.HelpBox(styles.invalidLightmapEncodingMessage);
+                }
+                else if (!IsHDRCubemapEncodingValid(platform))
+                {
+                    enableBuildAndRunButton = false;
+                    enableBuildButton = false;
+                    EditorGUILayout.HelpBox(styles.invalidHDRCubemapEncodingMessage);
+                }
+                else if (!IsVirtualTexturingSettingsValid(platform))
+                {
+                    enableBuildAndRunButton = false;
+                    enableBuildButton = false;
+                    EditorGUILayout.HelpBox(styles.invalidVirtualTexturingSettingMessage);
+                }
             }
 
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)

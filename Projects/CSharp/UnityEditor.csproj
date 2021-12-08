@@ -2614,6 +2614,9 @@
     <Compile Include="..\..\Editor\Mono\ObjectTreeForSelector.cs">
       <Link>Editor\Mono\ObjectTreeForSelector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\OrderedCallbackCollection.cs">
+      <Link>Editor\Mono\OrderedCallbackCollection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\ICreateToolbar.cs">
       <Link>Editor\Mono\Overlays\ICreateToolbar.cs</Link>
     </Compile>
@@ -3459,6 +3462,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ShaderUtil.cs">
       <Link>Editor\Mono\ShaderUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\MaterialHierarchyPopup.cs">
+      <Link>Editor\Mono\Shaders\MaterialHierarchyPopup.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SpeedTreeMaterialFixer.cs">
       <Link>Editor\Mono\SpeedTreeMaterialFixer.cs</Link>
@@ -6310,6 +6316,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\IProfilerWindowController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\IProfilerWindowController.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\LegacyProfilerAreaUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\LegacyProfilerAreaUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\CounterCollector.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Data\CounterCollector.cs</Link>
     </Compile>
@@ -6331,8 +6340,8 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Views\DragIndicator.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ModuleEditor\Views\DragIndicator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerAreaReferenceCounter.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerAreaReferenceCounter.cs</Link>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerCategoryActivator.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerCategoryActivator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerChart.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerChart.cs</Link>
@@ -8041,7 +8050,7 @@
     <Reference Include="../../External/Unity.Compiler.Client/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
-    <Reference Include="../../artifacts/Stevedore/bee_bcfb/BeeAsALibrary/Bee.BeeDriver.dll" />
+    <Reference Include="../../External/Bee/BeeAsALibrary/Bee.BeeDriver.dll" />
     <Reference Include="../../External/NetStandardExtensions/System.CodeDom.dll" />
     <ProjectReference Include="UnityEngine.csproj" />
     <ProjectReference Include="../../Tools/Unity.CecilTools/Unity.CecilTools.gen.csproj" />

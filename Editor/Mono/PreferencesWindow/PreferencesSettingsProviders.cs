@@ -121,7 +121,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
-            public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
+            public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
             public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
@@ -137,6 +137,7 @@ namespace UnityEditor
         class DeveloperModeProperties
         {
             public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
+            public static readonly GUIContent generateOnPostprocessAllAssets = EditorGUIUtility.TrTextContent("Generate OnPostprocessAllAssets Dependency Diagram", "Generates a graphviz diagram to show OnPostprocessAllAssets dependencies.");
             public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
             public static readonly GUIContent redirectionServer = EditorGUIUtility.TrTextContent("Documentation Server", "Select the documentation redirection server.");
         }
@@ -775,7 +776,7 @@ namespace UnityEditor
             AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
-            Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);
+            Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 1, 5);
 
             GUILayout.Label("Search", EditorStyles.boldLabel);
             SceneView.s_PreferenceEnableFilteringWhileSearching.value = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileSearching, SceneView.s_PreferenceEnableFilteringWhileSearching);
@@ -982,6 +983,11 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     Help.docRedirectionServer = docServer;
+                }
+
+                if (GUILayout.Button(DeveloperModeProperties.generateOnPostprocessAllAssets))
+                {
+                    AssetPostprocessingInternal.s_OnPostprocessAllAssetsCallbacks.GenerateDependencyDiagram("OnPostprocessAllAssets.dot");
                 }
             }
 

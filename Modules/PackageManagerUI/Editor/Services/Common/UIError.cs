@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UIError : Error
     {
-        private static readonly string k_EntitlementErrorMessage = L10n.Tr("This package is not available to use because there is no license registered for your user. Please sign in with a licensed account. If the problem persists, please contact your administrator.");
+        private static readonly string k_EntitlementErrorMessage = L10n.Tr("This package is not available to use because there is no license registered for your user. If you believe you have permission to use this package, refresh your license in the license management window of Unity Hub. Otherwise, contact your administrator.");
         internal static readonly string k_InvalidSignatureWarningMessage = L10n.Tr("This package version doesn't have a valid signature. For your security, install a different version or report a bug to Unity.");
         internal static readonly string k_UnsignedUnityPackageWarningMessage = L10n.Tr("This package version has no signature. For your security, install a different version or review your scoped registry and load the package from the Unity registry.");
         internal static readonly string k_readMoreDocsUrl = "https://docs.unity3d.com/Manual/upm-errors.html";

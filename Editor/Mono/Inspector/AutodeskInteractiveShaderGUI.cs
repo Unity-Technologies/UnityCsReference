@@ -188,7 +188,7 @@ namespace UnityEditor
 
         void BlendModePopup()
         {
-            EditorGUI.showMixedValue = blendMode.hasMixedValue;
+            MaterialEditor.BeginProperty(blendMode);
             var mode = (BlendMode)blendMode.floatValue;
 
             EditorGUI.BeginChangeCheck();
@@ -199,7 +199,7 @@ namespace UnityEditor
                 blendMode.floatValue = (float)mode;
             }
 
-            EditorGUI.showMixedValue = false;
+            MaterialEditor.EndProperty();
         }
 
         void DoAlbedoArea(Material material)

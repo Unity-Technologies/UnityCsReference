@@ -44,6 +44,10 @@ namespace UnityEditor.SceneTemplate
         private DependencyListView m_DependencyListView;
         internal VisualElement Root { get; set; }
 
+        bool m_TitleTextFieldReady;
+        bool m_DescriptionTextFieldReady;
+        internal bool ViewReady => m_TitleTextFieldReady && m_DescriptionTextFieldReady && (m_DependencyListView?.viewReady ?? false);
+
         private class SnapshotTargetInfo
         {
             public string Name { get; set; }
@@ -104,6 +108,19 @@ namespace UnityEditor.SceneTemplate
             var titlePropertyField = new PropertyField(templateTitleProperty, L10n.Tr("Title"));
             titlePropertyField.tooltip = L10n.Tr("Scene template display name. Shown in New Scene Dialog.");
             titlePropertyField.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
+            titlePropertyField.RegisterCallback<SerializedPropertyBindEvent>(e =>
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    if (!titlePropertyField.Children().Any())
+                        return;
+                    if (titlePropertyField.Children().First() is TextField titlePropertyFieldTextField)
+                    {
+                        titlePropertyFieldTextField.maxLength = 1024;
+                        m_TitleTextFieldReady = true;
+                    }
+                };
+            });
             detailElement.Add(titlePropertyField);
 
             // Scene description
@@ -123,6 +140,7 @@ namespace UnityEditor.SceneTemplate
                         descriptionTextField.AddToClassList(Styles.classWrappingText);
                         descriptionTextField.multiline = true;
                         descriptionTextField.maxLength = 1024;
+                        m_DescriptionTextFieldReady = true;
                     }
                 };
             });

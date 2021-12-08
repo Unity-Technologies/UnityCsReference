@@ -18,14 +18,28 @@ namespace UnityEditor.Toolbars
         Texture2D m_OnIcon;
         Texture2D m_OffIcon;
 
-        readonly TextElement m_TextElement;
+        TextElement m_TextElement;
         readonly Image m_IconElement;
 
         public new string text
         {
-            get => m_TextElement.text;
+            get => m_TextElement?.text;
+
             set
             {
+                if (string.IsNullOrEmpty(value))
+                {
+                    m_TextElement?.RemoveFromHierarchy();
+                    m_TextElement = null;
+                    return;
+                }
+
+                if (m_TextElement == null)
+                {
+                    Insert(IndexOf(m_IconElement)+1, m_TextElement = new TextElement());
+                    m_TextElement.AddToClassList(textClassName);
+                }
+
                 m_TextElement.text = value;
                 UpdateIconState();
             }
@@ -75,10 +89,6 @@ namespace UnityEditor.Toolbars
             m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit};
             m_IconElement.AddToClassList(iconClassName);
             input.Add(m_IconElement);
-
-            m_TextElement = new TextElement();
-            m_TextElement.AddToClassList(textClassName);
-            input.Add(m_TextElement);
 
             this.text = text;
             m_OnIcon = onIcon;

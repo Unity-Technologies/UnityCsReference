@@ -168,6 +168,10 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern bool IsAreaEnabled(ProfilerArea area);
 
+        [NativeMethod("SetCategoryEnabled")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static internal extern void SetCategoryEnabled(string categoryName, bool enabled);
+
         static public bool enabled
         {
             get

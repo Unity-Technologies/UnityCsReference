@@ -820,6 +820,16 @@ namespace UnityEngine
         AnyEmissive = RealtimeEmissive | BakedEmissive
     }
 
+    // Match MaterialSerializedProperty on C++ side
+    internal enum MaterialSerializedProperty
+    {
+        None = 0,
+        LightmapFlags = 1 << 1,
+        EnableInstancingVariants = 1 << 2,
+        DoubleSidedGI = 1 << 3,
+        CustomRenderQueue = 1 << 4,
+    }
+
     // Match the enums from LightProbeProxyVolume class on C++ side
     public partial class LightProbeProxyVolume
     {
@@ -1822,7 +1832,7 @@ namespace UnityEngine.Rendering
     {
         UNITY_NO_DXT5nm,
         UNITY_NO_RGBM,
-        UNITY_USE_NATIVE_HDR,
+        [Obsolete("Shaders unconditionally support HDR decoding.")] UNITY_USE_NATIVE_HDR,
         UNITY_ENABLE_REFLECTION_BUFFERS,
         UNITY_FRAMEBUFFER_FETCH_AVAILABLE,
         UNITY_ENABLE_NATIVE_SHADOW_LOOKUPS,

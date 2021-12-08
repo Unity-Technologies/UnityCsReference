@@ -159,8 +159,43 @@ namespace UnityEditor
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern bool CanReloadAssemblies();
 
+        private static extern bool ExecuteMenuItemInternal(string menuItemPath, bool logErrorOnUnfoundItem);
+
         // Invokes the menu item in the specified path.
-        public static extern  bool ExecuteMenuItem(string menuItemPath);
+        public static bool ExecuteMenuItem(string menuItemPath)
+        {
+            var isDefaultMode = ModeService.currentId == ModeService.k_DefaultModeId;
+            var result = ExecuteMenuItemInternal(menuItemPath, isDefaultMode);
+            if (result)
+                return result;
+
+            if (!isDefaultMode)
+            {
+                var menuItems = TypeCache.GetMethodsWithAttribute<MenuItem>();
+                foreach (var item in menuItems)
+                {
+                    MenuItem itemData = (MenuItem)item.GetCustomAttributes(typeof(MenuItem), false)[0];
+                    if (!itemData.validate && itemData.menuItem == menuItemPath)
+                    {
+                        if (item.GetParameters().Length == 0)
+                        {
+                            item.Invoke(null, new object[0]);
+                            return true;
+                        }
+                        else if (item.GetParameters()[0].ParameterType == typeof(MenuCommand))
+                        {
+                            item.Invoke(null, new[] { new MenuCommand(null) });
+                            return true;
+                        }
+                        break;
+                    }
+                }
+
+                Debug.LogError($"ExecuteMenuItem failed because there is no menu named '{menuItemPath}'");
+            }
+
+            return false;
+        }
 
         // Validates the menu item in the specific path
         internal static extern bool ValidateMenuItem(string menuItemPath);

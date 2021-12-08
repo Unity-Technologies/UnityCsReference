@@ -2335,6 +2335,12 @@
     <Compile Include="..\..\Runtime\Export\Bootstrap\BootConfig.bindings.cs">
       <Link>Runtime\Export\Bootstrap\BootConfig.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\BurstLike\BurstLike.bindings.cs">
+      <Link>Runtime\Export\BurstLike\BurstLike.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Burst\BurstAuthorizedExternalMethodAttribute.cs">
+      <Link>Runtime\Export\Burst\BurstAuthorizedExternalMethodAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Burst\BurstCompilerService.bindings.cs">
       <Link>Runtime\Export\Burst\BurstCompilerService.bindings.cs</Link>
     </Compile>

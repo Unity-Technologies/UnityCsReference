@@ -56,25 +56,31 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
 
     readonly bool m_HasMonoPlayers;
     readonly bool m_HasIl2CppPlayers;
+    readonly bool m_HasServerMonoPlayers;
+    readonly bool m_HasServerIl2CppPlayers;
 
-    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers)
+    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasServerMonoPlayers, bool hasServerIl2CppPlayers)
     {
         m_HasMonoPlayers = hasMonoPlayers;
         m_HasIl2CppPlayers = hasIl2CppPlayers;
+        m_HasServerMonoPlayers = hasServerMonoPlayers;
+        m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
     }
 
     public override string PrepareForBuild(BuildOptions options, BuildTarget target)
     {
-        if (!m_HasMonoPlayers)
+        var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+        var isServer = buildTargetGroup == BuildTargetGroup.Standalone &&
+                       (StandaloneBuildSubtarget)EditorUserBuildSettings.GetActiveSubtargetFor(target) == StandaloneBuildSubtarget.Server;
+
+        if ((!isServer && !m_HasMonoPlayers) || (isServer && !m_HasServerMonoPlayers))
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
             if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (Mono) is not installed.";
         }
 
-        if (!m_HasIl2CppPlayers)
+        if ((!isServer && !m_HasIl2CppPlayers) || (isServer && !m_HasServerIl2CppPlayers))
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
             if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (IL2CPP) is not installed.";
         }

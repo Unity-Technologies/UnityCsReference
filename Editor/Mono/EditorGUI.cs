@@ -113,7 +113,7 @@ namespace UnityEditor
         internal static string kDoubleFieldFormatString = UINumericFieldsUtils.k_DoubleFieldFormatString;
         internal static string kIntFieldFormatString = UINumericFieldsUtils.k_IntFieldFormatString;
         internal static int ms_IndentLevel = 0;
-        private const float kIndentPerLevel = 15;
+        internal const float kIndentPerLevel = 15;
         internal const int kControlVerticalSpacingLegacy = 2;
         internal const int kDefaultSpacing = 6;
         internal static readonly SVC<float> kControlVerticalSpacing = new SVC<float>("--theme-control-vertical-spacing", 2.0f);
@@ -247,6 +247,7 @@ namespace UnityEditor
             s_EnabledStack.Clear();
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
+            MaterialProperty.ClearStack();
             ScriptAttributeUtility.s_DrawerStack.Clear();
             s_FoldoutHeaderGroupActive = 0;
         }
@@ -6596,7 +6597,7 @@ namespace UnityEditor
                         if (
                             (DrivenPropertyManagerInternal.IsDriving(driver, target, propertyPath))
                             ||
-                            ((target is Transform || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
+                            ((target is Transform || target is ParticleSystem || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
                         {
                             GUI.enabled = false;
                             if (isCollectingTooltips)

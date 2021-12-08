@@ -269,5 +269,57 @@ namespace UnityEngine
         [NativeName("GetTextureScaleAndOffsetFromScript")] extern private Vector4 GetTextureScaleAndOffsetImpl(int name);
         [NativeName("SetTextureOffsetFromScript")] extern private void SetTextureOffsetImpl(int name, Vector2 offset);
         [NativeName("SetTextureScaleFromScript")]  extern private void SetTextureScaleImpl(int name, Vector2 scale);
+
+        extern public Material parent { get; set; }
+        extern public bool isVariant { [NativeName("IsVariant")] get; }
+
+        extern internal int overrideCount { get; }
+        extern internal int lockCount { get; }
+
+        [NativeName("IsChildOf")]          extern public bool IsChildOf([NotNull] Material ancestor);
+        [NativeName("RevertAllOverrides")] extern public void RevertAllPropertyOverrides();
+
+        public bool IsPropertyOverriden(int nameID)
+        {
+            GetPropertyState(nameID, out bool isOverriden, out _, out _);
+            return isOverriden;
+        }
+        public bool IsPropertyLocked(int nameID)
+        {
+            GetPropertyState(nameID, out _, out bool isLockedInChildren, out _);
+            return isLockedInChildren;
+        }
+        public bool IsPropertyLockedByAncestor(int nameID)
+        {
+            GetPropertyState(nameID, out _, out _, out bool isLockedByAncestor);
+            return isLockedByAncestor;
+        }
+
+        public bool IsPropertyOverriden(string name)        => IsPropertyOverriden(Shader.PropertyToID(name));
+        public bool IsPropertyLocked(string name)           => IsPropertyLocked(Shader.PropertyToID(name));
+        public bool IsPropertyLockedByAncestor(string name) => IsPropertyLockedByAncestor(Shader.PropertyToID(name));
+
+        // For MaterialProperty
+        [NativeName("SetPropertyLock")]  extern public void SetPropertyLock(int nameID, bool value);
+        [NativeName("ApplyOverride")]    extern public void ApplyPropertyOverride([NotNull] Material destination, int nameID, bool recordUndo = true);
+        [NativeName("RevertOverride")]   extern public void RevertPropertyOverride(int nameID);
+        [NativeName("GetPropertyState")] extern internal void GetPropertyState(int nameID, out bool isOverriden, out bool isLockedInChildren, out bool isLockedByAncestor);
+
+        public void SetPropertyLock(string name, bool value)                                         => SetPropertyLock(Shader.PropertyToID(name), value);
+        public void ApplyPropertyOverride(Material destination, string name, bool recordUndo = true) => ApplyPropertyOverride(destination, Shader.PropertyToID(name), recordUndo);
+        public void RevertPropertyOverride(string name)                                              => RevertPropertyOverride(Shader.PropertyToID(name));
+
+        // For MaterialSerializedProperty - bindings don't support overloads, so rename and use intermediate functions
+        [NativeName("SetPropertyLock")]  extern private void SetPropertyLock_Serialized(MaterialSerializedProperty property, bool value);
+        [NativeName("ApplyOverride")]    extern private void ApplyPropertyOverride_Serialized([NotNull] Material destination, MaterialSerializedProperty property, bool recordUndo = true);
+        [NativeName("RevertOverride")]   extern private void RevertPropertyOverride_Serialized(MaterialSerializedProperty property);
+        [NativeName("GetPropertyState")] extern private void GetPropertyState_Serialized(MaterialSerializedProperty property, out bool isOverriden, out bool isLockedInChildren, out bool isLockedByAncestor);
+
+        internal void SetPropertyLock(MaterialSerializedProperty property, bool value) => SetPropertyLock_Serialized(property, value);
+        internal void ApplyPropertyOverride(Material destination, MaterialSerializedProperty property, bool recordUndo = true) => ApplyPropertyOverride_Serialized(destination, property, recordUndo);
+        internal void RevertPropertyOverride(MaterialSerializedProperty property) => RevertPropertyOverride_Serialized(property);
+        internal void GetPropertyState(MaterialSerializedProperty propertyName, out bool isOverriden, out bool isLockedInChildren, out bool isLockedByAncestor)
+            => GetPropertyState_Serialized(propertyName, out isOverriden, out isLockedInChildren, out isLockedByAncestor);
+
     }
 }

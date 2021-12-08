@@ -1567,14 +1567,17 @@ namespace UnityEditor
                 return;
             }
 
-            var childCount = 0;
+            var childCount = 1024;
             var parentIndex = 0;
             var childIndex = 0;
             parentRendererIDs = new int[renderers.Length];
 
             foreach (var renderer in renderers)
             {
-                childCount += renderer.transform.hierarchyCount;
+                // Transform.hierarchyCapacity is used as a starting point as there is no reliable way to pre-calculate
+                // the real count without traversing the hierarchy and cross-checking parents/children which is too slow (case 1372127)
+                if (renderer.transform.hierarchyCapacity > childCount)
+                    childCount = renderer.transform.hierarchyCapacity;
                 parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
             }
 
@@ -1585,7 +1588,7 @@ namespace UnityEditor
                 for (int i = 1; i < children.Length; i++)
                 {
                     var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id))
+                    if (!HasMatchingInstanceID(parentRendererIDs, id, childIndex) && !HasMatchingInstanceID(childRendererIDs, id, childIndex))
                         childRendererIDs[childIndex++] = id;
                 }
             }
@@ -1601,14 +1604,17 @@ namespace UnityEditor
                 return;
             }
 
-            var childCount = 0;
+            var childCount = 1024;
             var parentIndex = 0;
             var childIndex = 0;
             parentRendererIDs = new int[gameObjects.Length];
 
             foreach (var go in gameObjects)
             {
-                childCount += go.transform.hierarchyCount;
+                // Transform.hierarchyCapacity is used as a starting point as there is no reliable way to pre-calculate
+                // the real count without traversing the hierarchy and cross-checking parents/children which is too slow (case 1372127)
+                if (go.transform.hierarchyCapacity > childCount)
+                    childCount = go.transform.hierarchyCapacity;
                 if (go.TryGetComponent(out Renderer renderer))
                     parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
             }
@@ -1620,18 +1626,20 @@ namespace UnityEditor
                 for (int i = 1; i < children.Length; i++)
                 {
                     var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id))
+                    if (!HasMatchingInstanceID(parentRendererIDs, id, parentRendererIDs.Length) && !HasMatchingInstanceID(childRendererIDs, id, childIndex))
                         childRendererIDs[childIndex++] = id;
                 }
             }
         }
 
-        static bool HasMatchingInstanceID(int[] ids, int id)
+        static bool HasMatchingInstanceID(int[] ids, int id, int cutoff)
         {
             for (int i = 0; i < ids.Length; i++)
             {
                 if (ids[i] == id)
                     return true;
+                if (i > cutoff)
+                    return false;
             }
             return false;
         }

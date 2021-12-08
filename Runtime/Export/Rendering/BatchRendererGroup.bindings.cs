@@ -172,8 +172,7 @@ namespace UnityEngine.Rendering
         Unknown = 0,
         Camera = 1,
         Light = 2,
-        ShadowMap = 3,
-        Picking = 4,
+        Picking = 3,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -234,7 +233,8 @@ namespace UnityEngine.Rendering
         public BatchID batchID;
         public BatchMaterialID materialID;
         public BatchMeshID meshID;
-        public uint submeshIndex;
+        public ushort submeshIndex;
+        public ushort splitVisibilityMask;
         public BatchDrawCommandFlags flags; // includes flipWinding and other dynamic flags
         public int sortingPosition; // If HasSortingPosition is set, this points to a float3 in instanceSortingPositions. If not, it will be directly casted into float and used as the distance.
     }
@@ -322,36 +322,62 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
     [UsedByNativeCode]
+    unsafe public struct CullingSplit
+    {
+        public Vector3 sphereCenter;
+        public float sphereRadius;
+        public int cullingPlaneOffset;
+        public int cullingPlaneCount;
+        public float cascadeBlendCullingFactor;
+        public float nearPlane;
+        public Matrix4x4 cullingMatrix;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
+    [UsedByNativeCode]
     unsafe public struct BatchCullingContext
     {
         internal BatchCullingContext(
             NativeArray<Plane> inCullingPlanes,
+            NativeArray<CullingSplit> inCullingSplits,
             LODParameters inLodParameters,
             Matrix4x4 inCullingMatrix,
-            float inNearPlane,
+            Matrix4x4 inLocalToWorldMatrix,
             BatchCullingViewType inViewType,
             ulong inViewID,
             uint inCullingLayerMask,
-            ulong inSceneCullingMask)
+            ulong inSceneCullingMask,
+            byte inIsOrthographic,
+            int inReceiverPlaneOffset,
+            int inReceiverPlaneCount)
         {
             cullingPlanes = inCullingPlanes;
+            cullingSplits = inCullingSplits;
             lodParameters = inLodParameters;
             cullingMatrix = inCullingMatrix;
-            nearPlane = inNearPlane;
+            localToWorldMatrix = inLocalToWorldMatrix;
             viewType = inViewType;
             viewID = new BatchPackedCullingViewID { handle = inViewID };
             cullingLayerMask = inCullingLayerMask;
             sceneCullingMask = inSceneCullingMask;
+            isOrthographic = inIsOrthographic;
+            receiverPlaneOffset = inReceiverPlaneOffset;
+            receiverPlaneCount = inReceiverPlaneCount;
         }
 
         readonly public NativeArray<Plane> cullingPlanes;
+        readonly public NativeArray<CullingSplit> cullingSplits;
         readonly public LODParameters lodParameters;
         readonly public Matrix4x4 cullingMatrix;
-        readonly public float nearPlane;
+        readonly public Matrix4x4 localToWorldMatrix;
         readonly public BatchCullingViewType viewType;
         readonly public BatchPackedCullingViewID viewID;
         readonly public uint cullingLayerMask;
         readonly public ulong sceneCullingMask;
+        readonly public byte isOrthographic;
+        readonly public int receiverPlaneOffset;
+        readonly public int receiverPlaneCount;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -361,7 +387,6 @@ namespace UnityEngine.Rendering
         public NativeArray<BatchCullingOutputDrawCommands> drawCommands;
     }
 
-
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Camera/BatchRendererGroup.h")]
     [UsedByNativeCode]
@@ -369,13 +394,18 @@ namespace UnityEngine.Rendering
     {
         public JobHandle cullingJobsFence;
         public Matrix4x4 cullingMatrix;
+        public Matrix4x4 localToWorldMatrix;
         public Plane* cullingPlanes;
-        public int cullingPlanesCount;
-        public float nearPlane;
+        public int cullingPlaneCount;
+        public int receiverPlaneOffset;
+        public int receiverPlaneCount;
+        public CullingSplit* cullingSplits;
+        public int cullingSplitCount;
         public BatchCullingViewType viewType;
         public ulong viewID;
         public uint  cullingLayerMask;
         public ulong sceneCullingMask;
+        public byte isOrthographic;
         public BatchCullingOutputDrawCommands* drawCommands;
     }
 
@@ -388,6 +418,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("BatchRendererGroup::AddDrawCommandBatch_Threaded", IsThreadSafe = true)]
         private extern static BatchID AddDrawCommandBatch(IntPtr brg, IntPtr values, int count, GraphicsBufferHandle buffer);
 
+        [FreeFunction("BatchRendererGroup::SetDrawCommandBatchBuffer_Threaded", IsThreadSafe = true)]
+        private extern static void SetDrawCommandBatchBuffer(IntPtr brg, BatchID batchID, GraphicsBufferHandle buffer);
+
         [FreeFunction("BatchRendererGroup::RemoveDrawCommandBatch_Threaded", IsThreadSafe = true)]
         private extern static void RemoveDrawCommandBatch(IntPtr brg, BatchID batchID);
 
@@ -395,6 +428,11 @@ namespace UnityEngine.Rendering
         unsafe public BatchID AddBatch(NativeArray<MetadataValue> batchMetadata, GraphicsBufferHandle buffer)
         {
             return AddDrawCommandBatch(batchRendererGroup, (IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer);
+        }
+
+        public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer)
+        {
+            SetDrawCommandBatchBuffer(batchRendererGroup, batchID, buffer);
         }
 
         public void RemoveBatch(BatchID batchID)
@@ -440,6 +478,9 @@ namespace UnityEngine.Rendering
         private extern void RemoveDrawCommandBatch(BatchID batchID);
         public void RemoveBatch(BatchID batchID) { RemoveDrawCommandBatch(batchID); }
 
+        private extern void SetDrawCommandBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer);
+        public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer) { SetDrawCommandBatchBuffer(batchID, buffer); }
+
         public extern BatchMaterialID RegisterMaterial(Material material);
         public extern void UnregisterMaterial(BatchMaterialID material);
         public extern Material GetRegisteredMaterial(BatchMaterialID material);
@@ -458,11 +499,13 @@ namespace UnityEngine.Rendering
         [RequiredByNativeCode]
         unsafe static void InvokeOnPerformCulling(BatchRendererGroup group, ref BatchRendererCullingOutput context, ref LODParameters lodParameters, IntPtr userContext)
         {
-            NativeArray<Plane> cullingPlanes = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Plane>(context.cullingPlanes, context.cullingPlanesCount, Allocator.Invalid);
+            NativeArray<Plane> cullingPlanes = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Plane>(context.cullingPlanes, context.cullingPlaneCount, Allocator.Invalid);
+            NativeArray<CullingSplit> cullingSplits = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<CullingSplit>(context.cullingSplits, context.cullingSplitCount, Allocator.Invalid);
             NativeArray<BatchCullingOutputDrawCommands> drawCommands = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BatchCullingOutputDrawCommands>(
                 context.drawCommands, 1, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref cullingPlanes, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref cullingSplits, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref drawCommands, AtomicSafetyHandle.Create());
 
             try
@@ -474,13 +517,17 @@ namespace UnityEngine.Rendering
                 context.cullingJobsFence = group.m_PerformCulling(
                     group, new BatchCullingContext(
                         cullingPlanes,
+                        cullingSplits,
                         lodParameters,
                         context.cullingMatrix,
-                        context.nearPlane,
+                        context.localToWorldMatrix,
                         context.viewType,
                         context.viewID,
                         context.cullingLayerMask,
-                        context.sceneCullingMask
+                        context.sceneCullingMask,
+                        context.isOrthographic,
+                        context.receiverPlaneOffset,
+                        context.receiverPlaneCount
                     ),
                     cullingOutput,
                     userContext
@@ -492,6 +539,7 @@ namespace UnityEngine.Rendering
 
                 //@TODO: Check that the no jobs using the buffers have been scheduled that are not returned here...
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingPlanes));
+                AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingSplits));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(drawCommands));
             }
         }

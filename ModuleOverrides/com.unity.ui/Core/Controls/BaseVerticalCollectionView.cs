@@ -1004,8 +1004,11 @@ namespace UnityEngine.UIElements
                     ClearSelection();
                     return true;
                 case KeyboardNavigationOperation.Submit:
-                    onItemsChosen?.Invoke(m_SelectedItems);
-                    ScrollToItem(selectedIndex);
+                    if (m_SelectionType != SelectionType.None)
+                    {
+                        onItemsChosen?.Invoke(m_SelectedItems);
+                        ScrollToItem(selectedIndex);
+                    }
                     return true;
                 case KeyboardNavigationOperation.Previous:
                     if (selectedIndex > 0)

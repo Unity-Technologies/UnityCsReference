@@ -133,6 +133,9 @@ namespace UnityEditor.SceneTemplate
         public ListView listView { get; }
         public VisualElement header { get; }
 
+        bool m_SearchFieldReady;
+        internal bool viewReady => m_SearchFieldReady;
+
         Toggle m_CloneHeaderToggle;
 
         SerializedObject m_SerializedObject;
@@ -166,11 +169,19 @@ namespace UnityEditor.SceneTemplate
             listView.onItemsChosen += OnDoubleClick;
 
             var searchField = new ToolbarSearchField();
+            searchField.name = "dependency-listview-toolbar-searchfield";
             searchField.RegisterValueChangedCallback(evt =>
             {
                 m_CurrentSearchString = evt.newValue;
                 FilterItems(evt.newValue);
             });
+            var textField = searchField.Q<TextField>();
+            if (textField != null)
+            {
+                textField.maxLength = 1024;
+                m_SearchFieldReady = true;
+            }
+
             searchField.AddToClassList(k_SearchFieldItem);
             Add(searchField);
 

@@ -2814,6 +2814,8 @@ namespace UnityEditor
 
         public void FrameObject(int instanceID, bool ping)
         {
+            m_LockTracker.StopPingIcon();
+
             bool canFrame = CanFrameAsset(instanceID);
             if (!canFrame)
             {
@@ -2833,7 +2835,19 @@ namespace UnityEditor
                 }
             }
 
-            bool frame = !m_LockTracker.isLocked && (ping || canFrame);
+            bool frame = ping || canFrame;
+            if (frame && m_LockTracker.isLocked)
+            {
+                frame = false;
+
+                // If the item is visible then we can ping it however if it requires revealing then we can not and should indicate why(locked project view).
+                if ((m_ViewMode == ViewMode.TwoColumns && !m_ListArea.IsShowing(instanceID)) || (m_ViewMode == ViewMode.OneColumn && m_AssetTree.data.GetRow(instanceID) == -1))
+                {
+                    Repaint();
+                    m_LockTracker.PingIcon();
+                }
+            }
+
             FrameObjectPrivate(instanceID, frame, ping);
             if (s_LastInteractedProjectBrowser == this)
             {
@@ -3038,7 +3052,8 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            m_LockTracker.ShowButton(r, s_Styles.lockButton);
+            if (m_LockTracker.ShowButton(r, s_Styles.lockButton))
+                Repaint();
         }
 
         internal bool SelectionIsFavorite()

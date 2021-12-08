@@ -36,7 +36,6 @@ namespace UnityEditor.UIElements.StyleSheets
         protected readonly StyleValidator m_Validator;
         protected string m_AssetPath;
         protected int m_CurrentLine;
-        protected string m_CurrentPropertyName;
 
         public StyleValueImporter(UnityEditor.AssetImporters.AssetImportContext context)
         {
@@ -481,7 +480,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
                     if (!disableValidation)
                     {
-                        var propertyName = new StylePropertyName(m_CurrentPropertyName);
+                        var propertyName = new StylePropertyName(m_Builder.currentProperty.name);
 
                         // Unknown properties (not custom) should beforehand
                         if (propertyName.id == StylePropertyId.Unknown)
@@ -1022,7 +1021,6 @@ namespace UnityEditor.UIElements.StyleSheets
                 foreach (Property property in rule.Declarations)
                 {
                     m_CurrentLine = property.Line;
-                    m_CurrentPropertyName = property.Name;
 
                     ValidateProperty(property);
 

@@ -21,9 +21,9 @@ namespace UnityEditor.Toolbars
         internal static readonly string toggleNoDropdownClassName = toggleClassName + "-no-dropdown";
 
         readonly Image m_IconElement;
-        readonly TextElement m_TextElement;
         readonly Button m_Toggle;
         readonly Button m_DropdownButton;
+        TextElement m_TextElement;
 
         public event Action dropdownClicked
         {
@@ -45,9 +45,22 @@ namespace UnityEditor.Toolbars
 
         public string text
         {
-            get => m_TextElement.text;
+            get => m_TextElement?.text;
+
             set
             {
+                if (string.IsNullOrEmpty(value))
+                {
+                    m_TextElement?.RemoveFromHierarchy();
+                    m_TextElement = null;
+                    return;
+                }
+
+                if (m_TextElement == null)
+                    m_Toggle.Add(m_TextElement = new TextElement());
+
+                m_TextElement.AddToClassList(toggleTextClassName);
+                m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
                 m_TextElement.text = value;
                 UpdateIconState();
             }
@@ -75,11 +88,6 @@ namespace UnityEditor.Toolbars
             m_IconElement.pickingMode = PickingMode.Ignore;
             m_Toggle.Add(m_IconElement);
 
-            m_TextElement = new TextElement {text = text};
-            m_TextElement.AddToClassList(toggleTextClassName);
-            m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
-            m_Toggle.Add(m_TextElement);
-
             m_DropdownButton = new Button(dropdownClickEvent);
             m_DropdownButton.AddToClassList(dropdownClassName);
 
@@ -90,16 +98,15 @@ namespace UnityEditor.Toolbars
 
             Add(m_Toggle);
             Add(m_DropdownButton);
+
+            this.text = text;
         }
 
         void UpdateIconState()
         {
-            if (icon == null && (text != null && text != string.Empty))
-            {
-                if (!m_IconElement.ClassListContains(toggleNoIconClassName))
-                    m_IconElement.AddToClassList(toggleNoIconClassName);
-            }
-            else if (icon && m_IconElement.ClassListContains(toggleNoIconClassName))
+            if (icon == null && !string.IsNullOrEmpty(text))
+                m_IconElement.AddToClassList(toggleNoIconClassName);
+            else if (icon)
                 m_IconElement.RemoveFromClassList(toggleNoIconClassName);
         }
 

@@ -71,9 +71,17 @@ namespace UnityEditor
 
             public const string undoAssignMaterial = "Assign Material";
             public const string undoAssignSkyboxMaterial = "Assign Skybox Material";
+
+            public static readonly GUIContent parentContent = EditorGUIUtility.TrTextContent("Parent", "Specify the parent of this material.");
+            public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow");
+
+            public const int kPadding = 3;
+            public const int kHierarchyIconWidth = 44;
+            public const float kSpaceForFoldoutArrow = 10f;
         }
 
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);
+        private int m_VariantCountCache = -1, m_HasMixedParentCache = -1;
         private bool m_CheckSetup;
 
         private static int s_ControlHash = "EditorTextField".GetHashCode();
@@ -81,6 +89,15 @@ namespace UnityEditor
         const float kMiniWarningMessageHeight = 27f;
 
         private MaterialPropertyBlock m_PropertyBlock;
+
+        internal override string targetTitle
+        {
+            get
+            {
+                var typeName = AllTargetsAreVariants() ? "Material Variant" : "Material";
+                return (!m_AllowMultiObjectAccess || targets.Length == 1) ? target.name + " (" + typeName + ")" : targets.Length + " " + typeName + "s";
+            }
+        }
 
         private enum PreviewType
         {
@@ -111,8 +128,6 @@ namespace UnityEditor
         public bool isVisible { get { return firstInspectedEditor || InternalEditorUtility.GetIsInspectorExpanded(target); } }
 
         private Shader m_Shader;
-        private SerializedProperty m_EnableInstancing;
-        private SerializedProperty m_DoubleSidedGI;
 
         private string                      m_InfoMessage;
         private Vector2                     m_PreviewDir = new Vector2(0, -20);
@@ -338,6 +353,162 @@ namespace UnityEditor
 
             EditorGUI.showMixedValue = false;
             GUI.enabled = wasEnabled;
+        }
+
+        bool HasMixedParent()
+        {
+            if (m_HasMixedParentCache != -1)
+                return m_HasMixedParentCache == 1;
+
+            m_HasMixedParentCache = 0;
+            if (targets.Length != 0)
+            {
+                var parent = ((Material)targets[0]).parent;
+                bool isVariant = ((Material)targets[0]).isVariant;
+                for (int i = 1; i < targets.Length; i++)
+                {
+                    if (((Material)targets[i]).parent != parent || ((Material)targets[i]).isVariant != isVariant)
+                    {
+                        m_HasMixedParentCache = 1;
+                        break;
+                    }
+                }
+            }
+            return m_HasMixedParentCache == 1;
+        }
+
+        int GetVariantCount()
+        {
+            if (m_VariantCountCache == -1)
+                m_VariantCountCache = GetVariantCount(targets);
+
+            return m_VariantCountCache;
+        }
+
+        bool AllTargetsAreVariants()
+        {
+            return GetVariantCount() == targets.Length;
+        }
+
+        // returns true if mat is a child of any element of the targets array
+        private static bool IsChildOfAnyTarget(Material mat, Object[] targets)
+        {
+            foreach (var target in targets)
+            {
+                if (mat == target || mat.IsChildOf(target as Material))
+                    return true;
+            }
+            return false;
+        }
+
+        private static Material HandleParentDragAndDrop(Rect rect, int controlID, EventType eventType, Object[] targets)
+        {
+            Material parent = (targets[0] as Material).parent;
+
+            // We handle drag and drop ourselves because we accept assets containing a material artifact
+            if (eventType == EventType.DragUpdated || eventType == EventType.DragPerform)
+            {
+                if (rect.Contains(Event.current.mousePosition) && GUI.enabled)
+                {
+                    Object[] references = DragAndDrop.objectReferences;
+                    Material validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, typeof(Material), null, EditorGUI.ObjectFieldValidatorOptions.None) as Material;
+                    if (validatedObject == null)
+                    {
+                        foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(validatedObject)))
+                        {
+                            validatedObject = asset as Material;
+                            if (validatedObject)
+                                break;
+                        }
+                    }
+                    if (validatedObject != null && !IsChildOfAnyTarget(validatedObject, targets))
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                        if (eventType == EventType.DragPerform)
+                        {
+                            GUI.changed = true;
+                            DragAndDrop.AcceptDrag();
+                            DragAndDrop.activeControlID = 0;
+                            parent = validatedObject;
+                        }
+                        else
+                            DragAndDrop.activeControlID = controlID;
+                    }
+                    Event.current.Use();
+                }
+            }
+            return parent;
+        }
+
+        private static bool HasMissingParent(Material material)
+        {
+            return material.isVariant && material.parent == null;
+        }
+
+        private static Material DoParentObjectField(Rect rect, Object[] targets)
+        {
+            // This is an augmented object field, preventing cyclic dependencies in the material hierarchy, handling missing parent, and with custom drap and drop rejection
+
+            int controlID = GUIUtility.GetControlID(FocusType.Keyboard, rect);
+            var eventType = Event.current.type;
+
+            Material parent = HandleParentDragAndDrop(rect, controlID, eventType, targets);
+
+            if (eventType == EventType.Repaint && HasMissingParent(targets[0] as Material))
+            {
+                GUIContent content = EditorGUIUtility.TempContent("Missing (Material)");
+
+                var mousePos = Event.current.mousePosition;
+                Rect buttonRect = EditorStyles.objectFieldButton.margin.Remove(new Rect(rect.xMax - 19, rect.y, 19, rect.height));
+
+                EditorGUI.BeginHandleMixedValueContentColor();
+                EditorStyles.objectField.Draw(rect, content, controlID, DragAndDrop.activeControlID == controlID, rect.Contains(mousePos));
+                EditorStyles.objectFieldButton.Draw(buttonRect, GUIContent.none, controlID, DragAndDrop.activeControlID == controlID, buttonRect.Contains(mousePos));
+                EditorGUI.EndHandleMixedValueContentColor();
+                return parent;
+            }
+
+            return EditorGUI.DoObjectField(rect, rect, controlID, parent, null, typeof(Material), null, true) as Material;
+        }
+
+        internal static void ParentField(Rect rect, Object[] targets)
+        {
+            rect = EditorGUI.PrefixLabel(rect, Styles.parentContent);
+
+            EditorGUI.BeginChangeCheck();
+            var parent = DoParentObjectField(rect, targets);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObjects(targets, "Assign parent");
+                foreach (Material target in targets)
+                    target.parent = parent;
+            }
+        }
+
+        private void ParentFieldAndPopup()
+        {
+            Rect rect = EditorGUILayout.GetControlRect();
+
+            bool hasMixedParent = HasMixedParent();
+            EditorGUI.showMixedValue = hasMixedParent;
+            Rect fieldRect = new Rect(rect) { width = rect.width - (Styles.kHierarchyIconWidth + Styles.kPadding - 1) };
+            ParentField(fieldRect, targets);
+            EditorGUI.showMixedValue = false;
+
+            bool enabled = GUI.enabled;
+            GUI.enabled = !hasMixedParent;
+            {
+                rect.x = fieldRect.xMax + Styles.kPadding;
+                rect.width = Styles.kHierarchyIconWidth;
+                if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive))
+                {
+                    PopupWindow.Show(rect, new MaterialHierarchyPopup(targets));
+                    GUIUtility.ExitGUI();
+                }
+                rect.x += 6;
+                EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+            }
+            GUI.enabled = enabled;
         }
 
         private class ShaderSelectionDropdown : AdvancedDropdown
@@ -782,8 +953,7 @@ namespace UnityEditor
             if (ShouldEditorBeHidden())
                 return;
 
-            const float spaceForFoldoutArrow = 10f;
-            Rect titleRect = DrawHeaderGUI(this, targetTitle, firstInspectedEditor ? 0 : spaceForFoldoutArrow);
+            Rect titleRect = DrawHeaderGUI(this, targetTitle, firstInspectedEditor ? 0 : Styles.kSpaceForFoldoutArrow);
             int id = GUIUtility.GetControlID(45678, FocusType.Passive);
 
             if (!firstInspectedEditor)
@@ -801,6 +971,10 @@ namespace UnityEditor
 
         internal override void OnHeaderControlsGUI()
         {
+            // Clear cache in case material is modified externally
+            m_VariantCountCache = -1;
+            m_HasMixedParentCache = -1;
+
             if (ShouldEditorBeHidden())
                 return;
 
@@ -813,7 +987,8 @@ namespace UnityEditor
                 EditorGUIUtility.labelWidth = 50;
 
                 // Shader selection dropdown
-                ShaderPopup("MiniPulldown");
+                using (new EditorGUI.DisabledScope(GetVariantCount() != 0))
+                    ShaderPopup("MiniPulldown");
 
                 // Edit button for custom shaders
                 if (m_Shader != null && !HasMultipleMixedShaderValues() && (m_Shader.hideFlags & HideFlags.DontSave) == 0)
@@ -821,9 +996,33 @@ namespace UnityEditor
                     if (GUILayout.Button("Edit...", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                         AssetDatabase.OpenAsset(m_Shader);
                 }
-            }
 
-            EditorGUIUtility.labelWidth = oldLabelWidth;
+                if (AllTargetsAreVariants())
+                {
+                    // Start a new line for parent
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                    if (!firstInspectedEditor)
+                        GUILayout.Space(Styles.kSpaceForFoldoutArrow);
+                    ParentFieldAndPopup();
+                }
+                else if (targets.Length == 1)
+                {
+                    bool enabled = GUI.enabled;
+                    GUI.enabled = true;
+                    if (EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, GUILayout.MaxWidth(Styles.kHierarchyIconWidth)))
+                    {
+                        PopupWindow.Show(GUILayoutUtility.topLevel.GetLast(), new MaterialHierarchyPopup(targets));
+                        GUIUtility.ExitGUI();
+                    }
+                    GUI.enabled = enabled;
+                    var rect = new Rect(GUILayoutUtility.topLevel.GetLast());
+                    rect.x += 6;
+                    EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+                }
+
+                EditorGUIUtility.labelWidth = oldLabelWidth;
+            }
         }
 
         // -------- obsolete helper functions to get/set material values
@@ -958,6 +1157,69 @@ namespace UnityEditor
             }
         }
 
+        // -------- helper functions to handle material variant overrides
+
+        internal static int GetVariantCount(Object[] targets)
+        {
+            int count = 0;
+            foreach (Material target in targets)
+                count += target.isVariant ? 1 : 0;
+            return count;
+        }
+
+        static bool AllTargetsAreVariants(Object[] targets)
+        {
+            return GetVariantCount(targets) == targets.Length;
+        }
+
+        static MaterialSerializedProperty GetMaterialSerializedProperty(SerializedProperty property)
+        {
+            if (property.propertyPath == "m_LightmapFlags")
+                return MaterialSerializedProperty.LightmapFlags;
+            if (property.propertyPath == "m_EnableInstancingVariants")
+                return MaterialSerializedProperty.EnableInstancingVariants;
+            if (property.propertyPath == "m_DoubleSidedGI")
+                return MaterialSerializedProperty.DoubleSidedGI;
+            if (property.propertyPath == "m_CustomRenderQueue")
+                return MaterialSerializedProperty.CustomRenderQueue;
+            throw new ArgumentException(string.Format("The SerializedProperty '{0}' is not supported by BeginProperty.", property.propertyPath));
+        }
+
+        internal static void BeginProperty(MaterialSerializedProperty property, Object[] targets)
+        {
+            MaterialProperty.BeginProperty(property, targets);
+        }
+
+        internal static void BeginProperty(Rect rect, MaterialSerializedProperty property, Object[] targets)
+        {
+            MaterialProperty.BeginProperty(rect, null, property, targets);
+        }
+
+        public static void BeginProperty(SerializedProperty property)
+        {
+            MaterialProperty.BeginProperty(GetMaterialSerializedProperty(property), property.serializedObject.targetObjects);
+        }
+
+        public static void BeginProperty(Rect rect, SerializedProperty property)
+        {
+            MaterialProperty.BeginProperty(rect, null, GetMaterialSerializedProperty(property), property.serializedObject.targetObjects);
+        }
+
+        public static void BeginProperty(MaterialProperty property)
+        {
+            MaterialProperty.BeginProperty(property, property.targets);
+        }
+
+        public static void BeginProperty(Rect rect, MaterialProperty property)
+        {
+            MaterialProperty.BeginProperty(rect, property, 0, property.targets);
+        }
+
+        public static void EndProperty()
+        {
+            MaterialProperty.EndProperty();
+        }
+
         // -------- helper functions to display common material controls
 
         // The 'Property' methods that accept GUIContent are internal with different name to avoid
@@ -987,8 +1249,9 @@ namespace UnityEditor
 
         internal static float DoPowerRangeProperty(Rect position, MaterialProperty prop, GUIContent label, float power)
         {
+            BeginProperty(position, prop);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
 
             // For range properties we want to show the slider so we adjust label width to use default width (setting it to 0)
             // See SetDefaultGUIWidths where we set: EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 17;
@@ -1001,20 +1264,22 @@ namespace UnityEditor
             float value = Mathf.Clamp(prop.floatValue, invert ? prop.rangeLimits.y : prop.rangeLimits.x, invert ? prop.rangeLimits.x : prop.rangeLimits.y);
 
             float newValue = EditorGUI.PowerSlider(position, label, value, prop.rangeLimits.x, prop.rangeLimits.y, power);
-            EditorGUI.showMixedValue = false;
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
 
             if (EditorGUI.EndChangeCheck())
                 prop.floatValue = newValue;
 
+            EndProperty();
+
             return prop.floatValue;
         }
 
         internal static int DoIntRangeProperty(Rect position, MaterialProperty prop, GUIContent label)
         {
+            BeginProperty(position, prop);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
 
             // For range properties we want to show the slider so we adjust label width to use default width (setting it to 0)
             // See SetDefaultGUIWidths where we set: EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 17;
@@ -1022,12 +1287,13 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 0f;
 
             int newValue = EditorGUI.IntSlider(position, label, (int)prop.floatValue, (int)prop.rangeLimits.x, (int)prop.rangeLimits.y);
-            EditorGUI.showMixedValue = false;
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
 
             if (EditorGUI.EndChangeCheck())
                 prop.floatValue = (float)newValue;
+
+            EndProperty();
 
             return (int)prop.floatValue;
         }
@@ -1050,12 +1316,14 @@ namespace UnityEditor
 
         internal int IntegerPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
+            BeginProperty(position, prop);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
             int newValue = EditorGUI.IntField(position, label, prop.intValue);
-            EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 prop.intValue = newValue;
+
+            EndProperty();
 
             return prop.intValue;
         }
@@ -1078,12 +1346,14 @@ namespace UnityEditor
 
         internal static float FloatPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
+            BeginProperty(position, prop);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
             float newValue = EditorGUI.FloatField(position, label, prop.floatValue);
-            EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 prop.floatValue = newValue;
+
+            EndProperty();
 
             return prop.floatValue;
         }
@@ -1106,14 +1376,16 @@ namespace UnityEditor
 
         internal static Color ColorPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
+            BeginProperty(position, prop);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
             bool isHDR = ((prop.flags & MaterialProperty.PropFlags.HDR) != 0);
             bool showAlpha = true;
             Color newValue = EditorGUI.ColorField(position, label, prop.colorValue, true, showAlpha, isHDR);
-            EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 prop.colorValue = newValue;
+
+            EndProperty();
 
             return prop.colorValue;
         }
@@ -1131,8 +1403,9 @@ namespace UnityEditor
 
         internal static Vector4 VectorPropertyInternal(in Rect position, in MaterialProperty prop, in string label)
         {
+            BeginProperty(position, prop);
+
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = prop.hasMixedValue;
 
             // We want to make room for the field in case it's drawn on the same line as the label
             // Set label width to default width (zero) temporarily
@@ -1143,9 +1416,10 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
 
-            EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 prop.vectorValue = newValue;
+
+            EndProperty();
 
             return prop.vectorValue;
         }
@@ -1168,6 +1442,8 @@ namespace UnityEditor
         {
             BeginAnimatedCheck(position, property);
 
+            BeginProperty(position, property);
+
             EditorGUI.BeginChangeCheck();
             // Mixed value mask is 4 bits for the uv offset & scale (First bit is for the texture itself)
             int mixedValuemask = property.mixedValueMask >> 1;
@@ -1175,6 +1451,8 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck())
                 property.textureScaleAndOffset = scaleAndOffset;
+
+            EndProperty();
 
             EndAnimatedCheck();
             return 2 * kLineHeight;
@@ -1257,6 +1535,8 @@ namespace UnityEditor
 
         public Texture TexturePropertyMiniThumbnail(Rect position, MaterialProperty prop, string label, string tooltip)
         {
+            BeginProperty(position, prop);
+
             BeginAnimatedCheck(position, prop);
             Rect thumbRect, labelRect;
             EditorGUI.GetRectsForMiniThumbnailField(position, out thumbRect, out labelRect);
@@ -1270,6 +1550,8 @@ namespace UnityEditor
             warningPosition.height = kMiniWarningMessageHeight;
 
             TextureCompatibilityWarning(prop);
+
+            EndProperty();
 
             return retValue;
         }
@@ -1299,6 +1581,9 @@ namespace UnityEditor
 
         public Texture TextureProperty(Rect position, MaterialProperty prop, string label, string tooltip, bool scaleOffset)
         {
+            Rect scopeRect = new Rect(position.x, position.y, position.width, EditorGUI.lineHeight);
+            BeginProperty(scopeRect, prop);
+
             // Label
             EditorGUI.PrefixLabel(position, new GUIContent(label, tooltip));
 
@@ -1307,6 +1592,8 @@ namespace UnityEditor
             Rect texPos = position;
             texPos.xMin = texPos.xMax - EditorGUIUtility.fieldWidth;
             Texture value = TexturePropertyBody(texPos, prop);
+
+            EndProperty();
 
             // UV scale and offset
             if (scaleOffset)
@@ -1568,6 +1855,7 @@ namespace UnityEditor
                     isMixed = true;
             }
 
+            BeginProperty(position, MaterialSerializedProperty.LightmapFlags, targets);
             EditorGUI.BeginChangeCheck();
 
             bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
@@ -1591,6 +1879,7 @@ namespace UnityEditor
                 }
             }
 
+            EndProperty();
             EditorGUI.indentLevel -= labelIndent;
         }
 
@@ -1615,6 +1904,8 @@ namespace UnityEditor
                 }
             }
 
+            BeginProperty(MaterialSerializedProperty.LightmapFlags, targets);
+
             // initial checkbox for enabling/disabling emission
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = isMixed;
@@ -1626,8 +1917,11 @@ namespace UnityEditor
                 {
                     mat.globalIlluminationFlags = enabled ? defaultEnabled : MaterialGlobalIlluminationFlags.EmissiveIsBlack;
                 }
+                EndProperty();
                 return enabled;
             }
+
+            EndProperty();
             return !isMixed && enabled;
         }
 
@@ -1666,6 +1960,7 @@ namespace UnityEditor
                 isMixed = isMixed || (materials[i].globalIlluminationFlags & any_em) != giFlags;
             }
 
+            BeginProperty(MaterialSerializedProperty.LightmapFlags, targets);
             EditorGUI.BeginChangeCheck();
 
             bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
@@ -1687,6 +1982,8 @@ namespace UnityEditor
                     FixupEmissiveFlag(mat);
                 }
             }
+
+            EndProperty();
         }
 
         void ShaderPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
@@ -1938,6 +2235,16 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 25;
         }
 
+        internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
+        {
+            // Shift UI to the right to leave space for locks
+            // Done here because it's the only place between the creation of the vertical group and the call ot OnInspectorGUI
+            // And because OnInspectorGUI might be overriden by a user editor
+            var style = GUILayoutUtility.topLevel.style = new GUIStyle(GUILayoutUtility.topLevel.style);
+            style.padding.left += (int)EditorGUI.kIndentPerLevel;
+            return base.GetOptimizedGUIBlock(isDirty, isVisible, out height);
+        }
+
         private bool IsMaterialEditor(string customEditorName)
         {
             string unityEditorFullName = "UnityEditor." + customEditorName; // for convenience: adding UnityEditor namespace is not needed in the shader
@@ -1975,17 +2282,6 @@ namespace UnityEditor
 
         public bool PropertiesGUI()
         {
-            // OnInspectorGUI is wrapped inside a BeginVertical/EndVertical block that adds padding,
-            // which we don't want here so we could have the VC bar span the entire Material Editor width
-            // we stop the vertical block, draw the VC bar, and then start a new vertical block with the same style.
-            var style = GUILayoutUtility.topLevel.style;
-            EditorGUILayout.EndVertical();
-
-            // setting the GUI to enabled where the VC status bar is drawn because it gets disabled by the parent inspector
-            // for non-checked out materials, and we need the version control status bar to be always active
-            bool wasGUIEnabled = GUI.enabled;
-            GUI.enabled = true;
-
             // Material Editor is the first inspected editor when accessed through the Project panel
             // and this is the scenario where we do not want to redraw the VC status bar
             // since InspectorWindow already takes care of that. Otherwise, the Material Editor
@@ -1993,11 +2289,22 @@ namespace UnityEditor
             // thus we draw the VC status bar
             if (!firstInspectedEditor)
             {
-                PropertyEditor.VersionControlBar(this);
-            }
+                // OnInspectorGUI is wrapped inside a BeginVertical/EndVertical block that adds padding,
+                // which we don't want here so we could have the VC bar span the entire Material Editor width
+                // we stop the vertical block, draw the VC bar, and then start a new vertical block with the same style.
+                var style = GUILayoutUtility.topLevel.style;
+                EditorGUILayout.EndVertical();
 
-            GUI.enabled = wasGUIEnabled;
-            EditorGUILayout.BeginVertical(style);
+                // setting the GUI to enabled where the VC status bar is drawn because it gets disabled by the parent inspector
+                // for non-checked out materials, and we need the version control status bar to be always active
+                bool wasGUIEnabled = GUI.enabled;
+                GUI.enabled = true;
+
+                PropertyEditor.VersionControlBar(this);
+
+                GUI.enabled = wasGUIEnabled;
+                EditorGUILayout.BeginVertical(style);
+            }
 
             var eventType = Event.current.type;
             bool isRunningCommand = eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand;
@@ -2497,9 +2804,6 @@ namespace UnityEditor
             m_CustomEditorClassName = "";
             CreateCustomShaderEditorIfNeeded(m_Shader);
 
-            m_EnableInstancing = serializedObject.FindProperty("m_EnableInstancingVariants");
-            m_DoubleSidedGI =  serializedObject.FindProperty("m_DoubleSidedGI");
-
             s_MaterialEditors.Add(this);
             Undo.undoRedoPerformed += UndoRedoPerformed;
             PropertiesChanged();
@@ -2687,6 +2991,22 @@ namespace UnityEditor
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
             OnPreviewGUI(iconRect, Styles.inspectorBigInner);
+        }
+
+        [MenuItem("CONTEXT/Material/Flatten Material Variant", true)]
+        static bool FlattenMaterialValidate(MenuCommand command)
+        {
+            Material mat = command.context as Material;
+            return mat.isVariant;
+        }
+
+        [MenuItem("CONTEXT/Material/Flatten Material Variant", false, 502)]
+        static void FlattenMaterial(MenuCommand command)
+        {
+            Material mat = command.context as Material;
+
+            Undo.RecordObject(mat, "Flatten Material Variant");
+            mat.parent = null;
         }
     }
 } // namespace UnityEditor
