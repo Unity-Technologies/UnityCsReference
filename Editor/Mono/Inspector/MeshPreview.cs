@@ -684,6 +684,7 @@ namespace UnityEditor
 
             m_Settings.activeMaterial.SetFloat("_Mode", (float)mode);
             m_Settings.activeMaterial.SetFloat("_UVChannel", 0.0f);
+            m_Settings.activeMaterial.SetFloat("_Cull", flatUVs ? (float)CullMode.Off : (float)CullMode.Back);
         }
 
         void MeshPreviewZoom(Rect rect, Event evt)

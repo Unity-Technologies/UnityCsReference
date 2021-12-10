@@ -36,11 +36,13 @@ namespace UnityEditorInternal.Media
 
         public bool GetNextFrame(Texture2D tex, out MediaTime time)
         {
+            ThrowIfDisposed();
             return Internal_MediaDecoder_GetNextFrame(m_Ptr, tex, out time);
         }
 
         public int GetNextSamples(ushort trackIndex, NativeArray<float> interleavedSamples)
         {
+            ThrowIfDisposed();
             unsafe
             {
                 return Internal_MediaDecoder_GetNextSamples(
@@ -50,11 +52,13 @@ namespace UnityEditorInternal.Media
 
         public bool SetPosition(MediaTime time)
         {
+            ThrowIfDisposed();
             return Internal_MediaDecoder_SetPosition(m_Ptr, time);
         }
 
         public string[] GetCustomDependencies()
         {
+            ThrowIfDisposed();
             return Internal_MediaDecoder_GetCustomDependencies(m_Ptr);
         }
 
@@ -84,6 +88,12 @@ namespace UnityEditorInternal.Media
                 throw new InvalidOperationException(
                     "MediaDecoder: Could not open clip " + clip.name);
             return ptr;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (m_Ptr == IntPtr.Zero)
+                throw new ObjectDisposedException("MediaDecoder");
         }
 
         [NativeHeader("Editor/Mono/Media/Bindings/MediaDecoder.bindings.h")]

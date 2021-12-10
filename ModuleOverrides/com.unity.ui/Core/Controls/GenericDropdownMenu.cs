@@ -67,6 +67,9 @@ namespace UnityEngine.UIElements
         Rect m_DesiredRect;
         KeyboardNavigationManipulator m_NavigationManipulator;
 
+        // Used for tests
+        internal VisualElement menuContainer => m_MenuContainer;
+
         /// <summary>
         /// Returns the content container for the <see cref="GenericDropdownMenu"/>. Allows users to create their own
         /// dropdown menu if they don't want to use the default implementation.
