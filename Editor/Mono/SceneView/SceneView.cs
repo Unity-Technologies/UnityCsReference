@@ -3839,7 +3839,7 @@ namespace UnityEditor
             m_2DMode = view.m_2DMode;
             pivot = view.pivot;
             rotation = view.rotation;
-            m_Size = view.m_Size;
+            size = view.size;
             m_Ortho.value = view.orthographic;
             if (m_Grid == null)
                 m_Grid = new SceneViewGrid();

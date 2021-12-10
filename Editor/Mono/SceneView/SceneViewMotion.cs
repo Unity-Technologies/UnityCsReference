@@ -530,7 +530,7 @@ namespace UnityEditor
 
                 GUIContent cameraSpeedContent = EditorGUIUtility.TempContent(string.Format("{0}{1}",
                     cameraSpeedDisplayValue,
-                    s_CurrentSceneView.cameraSettings.accelerationEnabled ? "x" : ""));
+                    view.cameraSettings.accelerationEnabled ? "x" : ""));
 
                 view.ShowNotification(cameraSpeedContent, .5f);
             }

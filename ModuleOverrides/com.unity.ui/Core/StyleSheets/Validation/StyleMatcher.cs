@@ -743,7 +743,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         protected override bool MatchUrl()
         {
-            return current.handle.valueType == StyleValueType.AssetReference;
+            return current.handle.valueType is StyleValueType.AssetReference or StyleValueType.ScalableImage;
         }
 
         protected override bool MatchTime()

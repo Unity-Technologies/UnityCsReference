@@ -31,6 +31,8 @@ namespace UnityEngine.Rendering
 
         public LocalKeyword(Shader shader, string name)
         {
+            if (shader == null)
+                Debug.LogError("Cannot initialize a LocalKeyword with a null Shader.");
             m_SpaceInfo = shader.keywordSpace;
             m_Name = name;
             m_Index = GetShaderKeywordIndex(shader, name);
@@ -40,6 +42,8 @@ namespace UnityEngine.Rendering
 
         public LocalKeyword(ComputeShader shader, string name)
         {
+            if (shader == null)
+                Debug.LogError("Cannot initialize a LocalKeyword with a null ComputeShader.");
             m_SpaceInfo = shader.keywordSpace;
             m_Name = name;
             m_Index = GetComputeShaderKeywordIndex(shader, name);

@@ -580,7 +580,13 @@ namespace UnityEditor.EditorTools
         // case you can use `GetComponentTools(x => x.inspector == editor)`.
         public static void GetComponentToolsForSharedTracker(List<EditorTool> list)
         {
-            GetComponentTools(x => x.typeAssociation.targetContext == null, list, false);
+            GetComponentTools(x =>
+            {
+                var targetCtx = x.typeAssociation.targetContext;
+                var activeCtx = activeToolContext.GetType();
+                var type = EditorToolUtility.GetEnumWithEditorTool(x.editor as EditorTool);
+                return (targetCtx == null || targetCtx == activeCtx) && type == Tool.Custom;
+            }, list, false);
         }
 
         // Used by tests.

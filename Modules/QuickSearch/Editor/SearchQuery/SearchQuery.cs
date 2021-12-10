@@ -24,7 +24,6 @@ namespace UnityEditor.Search
         long creationTime { get; }
         long lastUsedTime { get; }
         int itemCount { get; }
-        bool isSearchTemplate { get; }
 
         SearchViewState GetResultViewState();
         IEnumerable<string> GetProviderIds();
@@ -61,7 +60,6 @@ namespace UnityEditor.Search
         private static List<SearchQuery> s_SearchQueries;
         [SerializeField] private string m_GUID;
         [SerializeField] Texture2D m_Thumbnail;
-        [SerializeField] bool m_IsSearchTemplate;
         private long m_CreationTime;
         private long m_LastUsedTime;
         private int m_ItemCount = -1;
@@ -74,18 +72,6 @@ namespace UnityEditor.Search
         public string filePath { get; set; }
 
         public string guid => m_GUID;
-
-        public bool isSearchTemplate
-        {
-            get
-            {
-                return m_IsSearchTemplate;
-            }
-            set
-            {
-                m_IsSearchTemplate = value;
-            }
-        }
 
         public string displayName
         {

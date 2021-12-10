@@ -71,7 +71,7 @@ namespace UnityEditor.UIElements
                 // Window is non-null when set by deserialization; it's usually null when OnCreate is called.
                 if (editorWindowModel.window != null)
                 {
-                    RegisterWindow();
+                    RegisterWindow(true);
                 }
             }
             catch (Exception e)
@@ -109,7 +109,7 @@ namespace UnityEditor.UIElements
         }
 
         private bool m_WindowRegistered;
-        void RegisterWindow()
+        void RegisterWindow(bool duringOnCreate = false)
         {
             if (m_WindowRegistered)
                 return;
@@ -141,7 +141,7 @@ namespace UnityEditor.UIElements
             UpdateStyleMargins();
             m_WindowRegistered = true;
 
-            SendInitializeIfNecessary();
+            SendInitializeIfNecessary(duringOnCreate);
         }
 
         void UnregisterWindow()
@@ -326,29 +326,28 @@ namespace UnityEditor.UIElements
         }
 
         private static readonly string k_InitializedWindowPropertyName = "Initialized";
-        void SendInitializeIfNecessary()
+        void SendInitializeIfNecessary(bool duringOnCreate = false)
         {
             if (editorWindowModel == null)
                 return;
 
             var window = editorWindowModel.window;
 
-
             if (window != null)
             {
                 var rootElement = window.rootVisualElement;
 
-                //we make sure styles have been applied
-                UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
+                if (EditorApplication.isUpdating || duringOnCreate)
+                {
+                    rootElement.schedule.Execute(() => { SendInitializeIfNecessary(false); });
+                    return;
+                }
 
                 if (rootElement.GetProperty(k_InitializedWindowPropertyName) != null)
                     return;
 
-                if (EditorApplication.isUpdating)
-                {
-                    EditorApplication.delayCall += SendInitializeIfNecessary;
-                    return;
-                }
+                //we make sure styles have been applied
+                UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
 
                 rootElement.SetProperty(k_InitializedWindowPropertyName, true);
 

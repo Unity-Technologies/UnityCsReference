@@ -10,7 +10,7 @@
     <AssemblyName>UnityEditor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Editor\Mono\2D\Common\ScriptBindings\SpriteEditorExtension.bindings.cs">
@@ -2556,6 +2556,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ObjectTreeForSelector.cs">
       <Link>Editor\Mono\ObjectTreeForSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\OrderedCallbackCollection.cs">
+      <Link>Editor\Mono\OrderedCallbackCollection.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Overlays\ICreateToolbar.cs">
       <Link>Editor\Mono\Overlays\ICreateToolbar.cs</Link>

@@ -487,6 +487,17 @@ namespace UnityEngine.Tilemaps
         private int m_GameObject;
         private TileFlags m_Flags;
         private Tile.ColliderType m_ColliderType;
+
+        internal static readonly TileData Default = CreateDefault();
+        private static TileData CreateDefault()
+        {
+            TileData tileData = default;
+            tileData.color = Color.white;
+            tileData.transform = Matrix4x4.identity;
+            tileData.flags = default;
+            tileData.colliderType = default;
+            return tileData;
+        }
     }
 
     [RequiredByNativeCode]

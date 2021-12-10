@@ -108,19 +108,6 @@ namespace UnityEditor.Search
 
         public Texture2D icon;
 
-        [SerializeField] private bool m_IsSearchTemplate;
-
-        public bool isSearchTemplate
-        {
-            get
-            {
-                return m_IsSearchTemplate;
-            }
-            set
-            {
-                m_IsSearchTemplate = value;
-            }
-        }
 
         public string tooltip
         {

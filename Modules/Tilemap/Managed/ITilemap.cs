@@ -165,7 +165,7 @@ namespace UnityEngine.Tilemaps
 
             for (int i = 0; i < count; ++i)
             {
-                TileData tileData = default;
+                TileData tileData = TileData.Default;
                 var tileId = tiles[i];
                 if (tileId != 0)
                 {

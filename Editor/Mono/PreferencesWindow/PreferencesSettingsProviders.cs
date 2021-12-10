@@ -139,6 +139,7 @@ namespace UnityEditor
         class DeveloperModeProperties
         {
             public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
+            public static readonly GUIContent generateOnPostprocessAllAssets = EditorGUIUtility.TrTextContent("Generate OnPostprocessAllAssets Dependency Diagram", "Generates a graphviz diagram to show OnPostprocessAllAssets dependencies.");
             public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
             public static readonly GUIContent redirectionServer = EditorGUIUtility.TrTextContent("Documentation Server", "Select the documentation redirection server.");
         }
@@ -992,6 +993,11 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     Help.docRedirectionServer = docServer;
+                }
+
+                if (GUILayout.Button(DeveloperModeProperties.generateOnPostprocessAllAssets))
+                {
+                    AssetPostprocessingInternal.s_OnPostprocessAllAssetsCallbacks.GenerateDependencyDiagram("OnPostprocessAllAssets.dot");
                 }
             }
 
