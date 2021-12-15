@@ -196,6 +196,11 @@ namespace UnityEngine
         {
             return EditorSystemInfo.GetGraphicsFormat(format);
         }
+
+        public virtual int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
+        {
+            return EditorSystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
+        }
     }
 }
 

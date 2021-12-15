@@ -286,7 +286,7 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshCategories();
 
-                var versionString = displayVersion.version?.ToString() ?? displayVersion.versionString;
+                var versionString = displayVersion?.version == null || displayVersion?.version?.ToString() == "0.0.0" ? displayVersion.versionString : displayVersion.version.ToString();
                 var releaseDateString = displayVersion.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
                 if (string.IsNullOrEmpty(releaseDateString))
                     detailVersion.text = string.Format(L10n.Tr("Version {0}"), versionString);

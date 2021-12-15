@@ -204,8 +204,14 @@ namespace UnityEngine.U2D
             SetDeformableBuffer(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
+        internal unsafe static bool IsUsingDeformableBuffer(this SpriteRenderer spriteRenderer, IntPtr buffer)
+        {
+            return IsUsingDeformableBuffer(spriteRenderer, (void*)buffer);
+        }
+
         extern public static void DeactivateDeformableBuffer([NotNull] this SpriteRenderer renderer);
         extern internal static void SetLocalAABB([NotNull] this SpriteRenderer renderer, Bounds aabb);
         extern private unsafe static void SetDeformableBuffer([NotNull] SpriteRenderer spriteRenderer, void* src, int count);
+        extern private unsafe static bool IsUsingDeformableBuffer([NotNull] SpriteRenderer spriteRenderer, void* buffer);
     }
 }
