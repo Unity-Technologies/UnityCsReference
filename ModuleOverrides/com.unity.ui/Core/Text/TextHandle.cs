@@ -200,9 +200,10 @@ namespace UnityEngine.UIElements
 
         public float GetLineHeight(int characterIndex, MeshGenerationContextUtils.TextParams textParams, float textScaling, float pixelPerPoint)
         {
-            var character = m_TextInfoMesh.textElementInfo[m_TextInfoMesh.characterCount - 1];
-            var line = m_TextInfoMesh.lineInfo[character.lineNumber];
-            return line.lineHeight;
+            if (m_TextInfoMesh == null || m_TextInfoMesh.characterCount == 0)
+                Update(textParams, pixelPerPoint);
+
+            return m_TextInfoMesh.lineInfo[0].lineHeight;
         }
 
         public int VerticesCount(MeshGenerationContextUtils.TextParams parms, float pixelPerPoint)

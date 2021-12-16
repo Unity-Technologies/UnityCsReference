@@ -693,7 +693,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable | EventPropagation.IgnoreCompositeRoots;
         }
 
         /// <summary>
@@ -721,7 +721,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable | EventPropagation.IgnoreCompositeRoots;
         }
 
         /// <summary>

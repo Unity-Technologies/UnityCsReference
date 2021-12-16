@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Author = this.isUnityPackage ? k_UnityAuthor : m_PackageInfo.author?.name ?? string.Empty;
 
             if (HasTag(PackageTag.BuiltIn))
-                m_Description = UpmPackageDocs.SplitBuiltinDescription(this)[0];
+                m_Description = UpmPackageDocs.FetchBuiltinDescription(this);
 
             if (m_IsFullyFetched)
             {

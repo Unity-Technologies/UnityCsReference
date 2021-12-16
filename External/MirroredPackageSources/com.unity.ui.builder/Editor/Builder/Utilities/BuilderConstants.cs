@@ -99,6 +99,7 @@ namespace Unity.UI.Builder
         public static readonly string ElementLinkedDocumentVisualElementVEPropertyName = "__unity-ui-builder-linked-document-visual-element";
         public static readonly string ElementLinkedVariableHandlerVEPropertyName = "__unity-ui-builder-linked-variable-handler";
         public static readonly string ElementLinkedVariableTooltipVEPropertyName = "__unity-ui-builder-linked-variable-tooltip";
+        public static readonly string ElementLinkedActiveThemeStyleSheetVEPropertyName = "__unity-ui-builder-linked-active-theme-stylesheet";
 
         //
         // Inspector

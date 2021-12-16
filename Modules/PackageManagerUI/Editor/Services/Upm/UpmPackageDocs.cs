@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -15,12 +16,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the link in the description text.
         internal const string k_BuiltinPackageDocsUrlKey = "Scripting API: ";
 
-        public static string[] SplitBuiltinDescription(UpmPackageVersion version)
+        public static string[] FetchUrlsFromDescription(UpmPackageVersion version)
         {
-            if (string.IsNullOrEmpty(version?.packageInfo?.description))
-                return new string[] { string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), version.displayName) };
-            else
-                return version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            List<string> urls = new List<string>();
+
+            var descriptionSlitWithUrl = version.packageInfo.description.Split(new[] { $"{k_BuiltinPackageDocsUrlKey}https://docs.unity3d.com/" }, StringSplitOptions.None);
+            if (descriptionSlitWithUrl.Length > 1)
+                urls.Add($"https://docs.unity3d.com/{applicationProxy.shortUnityVersion}/Documentation/" + descriptionSlitWithUrl[1]);
+
+            var descriptionSlitWithoutUrl = version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            if (descriptionSlitWithoutUrl.Length > 1)
+                urls.Add(descriptionSlitWithoutUrl[1]);
+
+            return urls.ToArray();
+        }
+
+        public static string FetchBuiltinDescription(UpmPackageVersion version)
+        {
+            return string.IsNullOrEmpty(version?.packageInfo?.description) ?
+                string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), version.displayName) :
+                version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None)[0];
         }
 
         public static string GetOfflineDocumentation(IOProxy IOProxy, IPackageVersion version)
@@ -46,22 +62,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static string GetDocumentationUrl(IPackageVersion version)
+        public static string[] GetDocumentationUrl(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
-                return string.Empty;
+                return new string[] { };
 
             if (!string.IsNullOrEmpty(upmVersion.documentationUrl))
-                return upmVersion.documentationUrl;
+                return new string[] { upmVersion.documentationUrl };
 
             if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
-            {
-                var split = SplitBuiltinDescription(upmVersion);
-                if (split.Length > 1)
-                    return split[1];
-            }
-            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
+                return FetchUrlsFromDescription(upmVersion);
+
+            return new string[] { $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html" };
         }
 
         public static string GetChangelogUrl(IPackageVersion version)

@@ -50,7 +50,7 @@ namespace UnityEngine.UIElements
             return copyPaths;
         }
 
-        public static PropagationPaths Build(VisualElement elem, Type pathTypesRequested)
+        public static PropagationPaths Build(VisualElement elem, EventBase evt, Type pathTypesRequested)
         {
             if (elem == null || pathTypesRequested == Type.None)
                 return null;
@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
             while (elem.hierarchy.parent != null)
             {
                 elem = elem.hierarchy.parent;
-                if (elem.isCompositeRoot)
+                if (elem.isCompositeRoot && !evt.ignoreCompositeRoots)
                 {
                     // Callback for elem must be called at the Target phase.
                     paths.targetElements.Add(elem);

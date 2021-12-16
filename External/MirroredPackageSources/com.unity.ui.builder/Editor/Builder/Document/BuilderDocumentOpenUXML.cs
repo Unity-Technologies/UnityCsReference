@@ -889,6 +889,7 @@ namespace Unity.UI.Builder
         internal void ResetCanvasDocumentRootElementStyleSheets(VisualElement documentRootElement)
         {
             documentRootElement.styleSheets.Clear();
+
             // Load stylesheets specific to the document element.
             var documentSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocument.uss");
             var documentThemeSheet = EditorGUIUtility.isProSkin
@@ -897,6 +898,17 @@ namespace Unity.UI.Builder
 
             documentRootElement.styleSheets.Add(documentSheet);
             documentRootElement.styleSheets.Add(documentThemeSheet);
+
+            // Restore the active theme stylesheet
+            if (documentRootElement.HasProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName))
+            {
+                var activeThemeStyleSheet = documentRootElement.GetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName) as StyleSheet;
+
+                if (activeThemeStyleSheet != null)
+                {
+                    documentRootElement.styleSheets.Add(activeThemeStyleSheet);
+                }
+            }
         }
 
         void ReloadDocumentToCanvas(VisualElement documentRootElement)

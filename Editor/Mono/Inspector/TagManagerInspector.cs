@@ -255,6 +255,7 @@ namespace UnityEditor
 
         public void ReorderSortLayerList(ReorderableList list)
         {
+            serializedObject.ApplyModifiedProperties();
             InternalEditorUtility.UpdateSortingLayersOrder();
         }
 
