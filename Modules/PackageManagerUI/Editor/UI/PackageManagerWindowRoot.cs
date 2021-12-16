@@ -56,7 +56,7 @@ namespace UnityEditor.PackageManager.UI
         {
             ResolveDependencies(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
 
-            styleSheets.Add(m_ResourceLoader.GetMainWindowStyleSheet());
+            styleSheets.Add(m_ResourceLoader.packageManagerWindowStyleSheet);
 
             var root = m_ResourceLoader.GetTemplate("PackageManagerWindow.uxml");
             Add(root);

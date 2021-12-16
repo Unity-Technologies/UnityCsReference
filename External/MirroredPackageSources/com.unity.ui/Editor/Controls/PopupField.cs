@@ -27,14 +27,14 @@ namespace UnityEditor.UIElements
         {
             if (m_FormatSelectedValueCallback != null)
                 return m_FormatSelectedValueCallback(value);
-            return value.ToString();
+            return (value != null) ? value.ToString() : string.Empty;
         }
 
         internal override string GetListItemToDisplay(T value)
         {
             if (m_FormatListItemCallback != null)
                 return m_FormatListItemCallback(value);
-            return value.ToString();
+            return (value != null && m_Choices.Contains(value)) ? value.ToString() : string.Empty;
         }
 
         public override T value
@@ -42,30 +42,19 @@ namespace UnityEditor.UIElements
             get { return base.value; }
             set
             {
-                int newIndex = m_Choices.IndexOf(value);
-                if (newIndex < 0)
-                {
-                    throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", value));
-                }
-                m_Index = newIndex;
-
+                m_Index = m_Choices.IndexOf(value);
                 base.value = value;
             }
         }
 
         public override void SetValueWithoutNotify(T newValue)
         {
-            int newIndex = m_Choices.IndexOf(newValue);
-            if (newIndex < 0)
-            {
-                throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", newValue));
-            }
-            m_Index = newIndex;
-
+            m_Index = m_Choices.IndexOf(newValue);
             base.SetValueWithoutNotify(newValue);
         }
 
-        private int m_Index = -1;
+        internal const int kPopupFieldDefaultIndex = -1;
+        private int m_Index = kPopupFieldDefaultIndex;
         public int index
         {
             get { return m_Index; }
@@ -73,10 +62,11 @@ namespace UnityEditor.UIElements
             {
                 if (value != m_Index)
                 {
-                    if (value >= m_Choices.Count || value < 0)
-                        throw new ArgumentException(string.Format("Index {0} is beyond the scope of possible values", value));
                     m_Index = value;
-                    this.value = m_Choices[m_Index];
+                    if (m_Index >= 0 && m_Index < m_Choices.Count)
+                        this.value = m_Choices[m_Index];
+                    else
+                        this.value = default(T);
                 }
             }
         }
@@ -126,8 +116,6 @@ namespace UnityEditor.UIElements
         {
             this.choices = choices;
 
-            if (defaultIndex >= m_Choices.Count || defaultIndex < 0)
-                throw new ArgumentException(string.Format("Default Index {0} is beyond the scope of possible value", value));
             index = defaultIndex;
 
             this.formatListItemCallback = formatListItemCallback;

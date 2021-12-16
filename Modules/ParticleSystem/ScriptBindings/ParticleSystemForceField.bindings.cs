@@ -13,7 +13,7 @@ namespace UnityEngine
     [NativeHeader("Modules/ParticleSystem/ParticleSystemForceFieldManager.h")]
     [NativeHeader("Modules/ParticleSystem/ScriptBindings/ParticleSystemScriptBindings.h")]
     [RequireComponent(typeof(Transform))]
-    public partial class ParticleSystemForceField : Component
+    public partial class ParticleSystemForceField : Behaviour
     {
         [NativeName("ForceShape")]
         extern public ParticleSystemForceFieldShape shape { get; set; }

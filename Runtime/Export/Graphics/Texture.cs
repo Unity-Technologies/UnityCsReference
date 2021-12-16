@@ -461,8 +461,6 @@ namespace UnityEngine
             // If we are able to decompress, the data is decoded into a raw format. Otherwise, validation fails.
             else if (GraphicsFormatUtility.IsCompressedTextureFormat(format) && GraphicsFormatUtility.CanDecompressFormat(GraphicsFormatUtility.GetGraphicsFormat(format, false)))
             {
-                // Don't warn in Editor, it is normal that texture compression formats that are typically used on mobile platforms are not natively supported on Editor platforms.
-                Debug.LogWarning(String.Format("'{0}' is not supported on this platform. Decompressing texture. Use 'SystemInfo.SupportsTextureFormat' C# API to check format support.", format.ToString()), this);
                 return true;
             }
             else

@@ -1152,12 +1152,11 @@ namespace UnityEditor.PackageManager.UI
                 EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), messageOnNotFound, L10n.Tr("Ok"));
         }
 
-        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        private void OpenWebUrl(string onlineUrl, Action errorCallback)
         {
-            if (m_Application.isInternetReachable)
+            var request = UnityWebRequest.Head(onlineUrl);
+            try
             {
-                var onlineUrl = getUrl(m_IOProxy, version, false);
-                var request = UnityWebRequest.Head(onlineUrl);
                 var operation = request.SendWebRequest();
                 operation.completed += (op) =>
                 {
@@ -1166,15 +1165,53 @@ namespace UnityEditor.PackageManager.UI
                         m_Application.OpenURL(onlineUrl);
                     }
                     else
-                    {
-                        ViewOfflineDocs(version, getUrl, messageOnNotFound);
-                    }
+                        errorCallback?.Invoke();
                 };
+            }
+            catch (InvalidOperationException e)
+            {
+                if (e.Message != "Insecure connection not allowed")
+                    throw e;
+            }
+        }
+
+        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
+        {
+            var onlineUrls = getUrl(m_IOProxy, version, false);
+            string EmptyUrl(IOProxy IOProxy, IPackageVersion version, bool offline) => string.Empty;
+
+            if (m_Application.isInternetReachable)
+            {
+                if (onlineUrls.Length == 0)
+                {
+                    ViewOfflineDocs(version, EmptyUrl, messageOnNotFound);
+                    return;
+                }
+
+                OpenWebUrl(onlineUrls[0], () =>
+                {
+                    string[] GetUrls(IOProxy IOProxy, IPackageVersion version, bool offline) => new List<string>(onlineUrls).Skip(1).ToArray();
+                    ViewUrl(version, GetUrls, messageOnNotFound);
+                });
             }
             else
             {
-                ViewOfflineDocs(version, getUrl, messageOnNotFound);
+                ViewOfflineDocs(version, EmptyUrl, messageOnNotFound);
             }
+        }
+
+        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        {
+            var onlineUrl = getUrl(m_IOProxy, version, false);
+            if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
+            {
+                OpenWebUrl(onlineUrl, () =>
+                {
+                    ViewOfflineDocs(version, getUrl, messageOnNotFound);
+                });
+                return;
+            }
+            ViewOfflineDocs(version, getUrl, messageOnNotFound);
         }
 
         private void ViewDocClick()

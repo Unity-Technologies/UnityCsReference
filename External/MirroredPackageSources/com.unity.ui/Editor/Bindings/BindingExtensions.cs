@@ -1748,6 +1748,8 @@ namespace UnityEditor.UIElements.Bindings
         public static ObjectPool<SerializedDefaultEnumBinding> s_Pool =
             new ObjectPool<SerializedDefaultEnumBinding>(32);
 
+        private const int kDefaultValueIndex = -1;
+
         //we need to keep a copy of the last value since some fields will allocate when getting the value
         private int lastFieldValueIndex;
 
@@ -1773,6 +1775,19 @@ namespace UnityEditor.UIElements.Bindings
             this.originalChoices = field.choices;
             this.originalIndex = field.index;
             this.field.choices = property.enumLocalizedDisplayNames.ToList();
+
+            Type enumType;
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+            if (enumType != null)
+            {
+                var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
+                this.field.choices = enumData.displayNames.ToList();
+            }
+            else
+            {
+                this.field.choices = property.enumLocalizedDisplayNames.ToList();
+            }
+
             var originalValue = this.lastFieldValueIndex = c.index;
 
             BindingsStyleHelpers.RegisterRightClickMenu(c, property);
@@ -1806,8 +1821,14 @@ namespace UnityEditor.UIElements.Bindings
             int propValueIndex = p.enumValueIndex;
             if (propValueIndex != lastFieldValueIndex)
             {
-                lastFieldValueIndex = propValueIndex;
-                c.index = propValueIndex;
+                if (propValueIndex >= 0 && propValueIndex < field.choices.Count)
+                {
+                    c.index = lastFieldValueIndex = propValueIndex;
+                }
+                else
+                {
+                    c.index = lastFieldValueIndex = kDefaultValueIndex;
+                }
             }
         }
 
@@ -1825,7 +1846,8 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (lastFieldValueIndex != boundProperty.enumValueIndex)
+            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < originalChoices.Count
+                && lastFieldValueIndex != boundProperty.enumValueIndex)
             {
                 boundProperty.enumValueIndex = lastFieldValueIndex;
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
@@ -1863,7 +1885,7 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext = null;
             boundProperty = null;
             field = null;
-            lastFieldValueIndex = -1;
+            lastFieldValueIndex = kDefaultValueIndex;
             isReleased = true;
 
             ResetCachedValues();

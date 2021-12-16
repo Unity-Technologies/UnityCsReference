@@ -13,120 +13,138 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class ResourceLoader
     {
+        internal static class StyleSheetPath
+        {
+            internal static string defaultCommon => EditorGUIUtility.isProSkin ?
+            UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath) :
+            UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath);
+
+            internal static string packageManagerVariables => EditorGUIUtility.isProSkin ?
+            "StyleSheets/PackageManager/Dark.uss" :
+            "StyleSheets/PackageManager/Light.uss";
+
+            internal static string extensionVariables => EditorGUIUtility.isProSkin ?
+            "StyleSheets/Extensions/base/dark.uss" :
+            "StyleSheets/Extensions/base/light.uss";
+
+            internal static readonly string packageManagerCommon = "StyleSheets/PackageManager/Common.uss";
+            internal static readonly string[] packageManagerComponents = new string[]
+            {
+                "StyleSheets/PackageManager/PackageDependencies.uss",
+                "StyleSheets/PackageManager/PackageDetails.uss",
+                "StyleSheets/PackageManager/PackageItem.uss",
+                "StyleSheets/PackageManager/PackageList.uss",
+                "StyleSheets/PackageManager/PackageLoadBar.uss",
+                "StyleSheets/PackageManager/PackageSampleList.uss",
+                "StyleSheets/PackageManager/PackageStatusBar.uss",
+                "StyleSheets/PackageManager/PackageToolbar.uss",
+                "StyleSheets/PackageManager/ProgressBar.uss"
+            };
+
+            internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";
+            internal static readonly string inputDropdown = "StyleSheets/PackageManager/InputDropdown.uss";
+        }
+
+        private enum StyleSheetId : int
+        {
+            PackageManagerCommon = 0,
+            PackageManagerWindow,
+            InputDropdown,
+            FiltersDropdown,
+
+            Count
+        }
+
         private const string k_TemplateRoot = "UXML/PackageManager/";
 
-        private const string k_PackageManagerFiltersStyleSheetPath = "StyleSheets/PackageManager/Filters.uss";
-        private const string k_PackageManagerCommonStyleSheetPath = "StyleSheets/PackageManager/Common.uss";
-        private const string k_PackageManagerDarkVariablesSheetPath = "StyleSheets/PackageManager/Dark.uss";
-        private const string k_PackageManagerLightVariablesSheetPath = "StyleSheets/PackageManager/Light.uss";
-        private const string k_ExtensionDarkVariablesSheetPath = "StyleSheets/Extensions/base/dark.uss";
-        private const string k_ExtensionLightVariablesSheetPath = "StyleSheets/Extensions/base/light.uss";
-        private const string s_PublicNorthStarCommonVariableStyleSheetPath = "UIPackageResources/StyleSheets/Default/Variables/Public/common.uss";
-        private const string k_PublicNorthStarDarkVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/dark.uss";
-        private const string k_PublicNorthStarLightVariablesSheetPath = "UIPackageResources/StyleSheets/Default/Northstar/Palette/light.uss";
-
-        private static readonly string[] k_PackageManagerStyleSheetPaths =
-        {
-            "StyleSheets/PackageManager/PackageDependencies.uss",
-            "StyleSheets/PackageManager/PackageDetails.uss",
-            "StyleSheets/PackageManager/PackageItem.uss",
-            "StyleSheets/PackageManager/PackageList.uss",
-            "StyleSheets/PackageManager/PackageLoadBar.uss",
-            "StyleSheets/PackageManager/PackageSampleList.uss",
-            "StyleSheets/PackageManager/PackageStatusBar.uss",
-            "StyleSheets/PackageManager/PackageToolbar.uss",
-            "StyleSheets/PackageManager/ProgressBar.uss"
-        };
+        private static string lightOrDarkTheme => EditorGUIUtility.isProSkin ? "Dark" : "Light";
 
         [SerializeField]
-        private StyleSheet m_DarkStyleSheet;
-        private StyleSheet darkStyleSheet
+        private StyleSheet[] m_ResolvedDarkStyleSheets = new StyleSheet[(int)StyleSheetId.Count];
+
+        [SerializeField]
+        private StyleSheet[] m_ResolvedLightStyleSheets = new StyleSheet[(int)StyleSheetId.Count];
+
+        private StyleSheet[] resolvedStyleSheets => EditorGUIUtility.isProSkin ? m_ResolvedDarkStyleSheets : m_ResolvedLightStyleSheets;
+
+        public StyleSheet packageManagerCommonStyleSheet
         {
             get
             {
-                if (m_DarkStyleSheet == null)
-                    m_DarkStyleSheet = LoadAndResolveStyleSheet(true);
-                return m_DarkStyleSheet;
+                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.PackageManagerCommon];
+                if (styleSheet == null)
+                {
+                    styleSheet = ResolveStyleSheets(StyleSheetPath.defaultCommon,
+                        StyleSheetPath.extensionVariables,
+                        StyleSheetPath.packageManagerVariables,
+                        StyleSheetPath.packageManagerCommon);
+                    styleSheet.name = "PackageManagerCommon" + lightOrDarkTheme;
+                    resolvedStyleSheets[(int)StyleSheetId.PackageManagerCommon] = styleSheet;
+                }
+                return styleSheet;
             }
         }
 
-        [SerializeField]
-        private StyleSheet m_LightStyleSheet;
-        private StyleSheet lightStyleSheet
+        public StyleSheet packageManagerWindowStyleSheet
         {
             get
             {
-                if (m_LightStyleSheet == null)
-                    m_LightStyleSheet = LoadAndResolveStyleSheet(false);
-                return m_LightStyleSheet;
+                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.PackageManagerWindow];
+                if (styleSheet == null)
+                {
+                    var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p => EditorGUIUtility.Load(p) as StyleSheet)
+                        .Concat(new[] { packageManagerCommonStyleSheet }).ToArray();
+                    styleSheet = ResolveStyleSheets(styleSheetsToResolve);
+                    styleSheet.name = "PackageManagerWindow" + lightOrDarkTheme;
+                    resolvedStyleSheets[(int)StyleSheetId.PackageManagerWindow] = styleSheet;
+                }
+                return styleSheet;
             }
         }
 
-        [SerializeField]
-        private StyleSheet m_DarkFilterStyleSheet;
-        private StyleSheet darkFilterStyleSheet
+        public StyleSheet filtersDropdownStyleSheet
         {
             get
             {
-                if (m_DarkFilterStyleSheet == null)
-                    m_DarkFilterStyleSheet = LoadAndResolveFilterStyleSheet();
-                return m_DarkFilterStyleSheet;
+                var stylesheet = resolvedStyleSheets[(int)StyleSheetId.FiltersDropdown];
+                if (stylesheet == null)
+                {
+                    stylesheet = ResolveStyleSheets(StyleSheetPath.packageManagerVariables, StyleSheetPath.filtersDropdown);
+                    stylesheet.name = "FiltersDropdown" + lightOrDarkTheme;
+                    resolvedStyleSheets[(int)StyleSheetId.FiltersDropdown] = stylesheet;
+                }
+                return stylesheet;
             }
         }
 
-        [SerializeField]
-        private StyleSheet m_LightFilterStyleSheet;
-        private StyleSheet lightFilterStyleSheet
+        public StyleSheet inputDropdownStyleSheet
         {
             get
             {
-                if (m_LightFilterStyleSheet == null)
-                    m_LightFilterStyleSheet = LoadAndResolveFilterStyleSheet();
-                return m_LightFilterStyleSheet;
+                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.InputDropdown];
+                if (styleSheet == null)
+                {
+                    styleSheet = ResolveStyleSheets(StyleSheetPath.defaultCommon, StyleSheetPath.packageManagerVariables, StyleSheetPath.inputDropdown);
+                    styleSheet.name = "InputDropdown" + lightOrDarkTheme;
+                    resolvedStyleSheets[(int)StyleSheetId.InputDropdown] = styleSheet;
+                }
+                return styleSheet;
             }
         }
 
-        private static StyleSheet LoadAndResolveStyleSheet(bool isDarkTheme)
+        private static StyleSheet ResolveStyleSheets(params string[] styleSheetPaths)
+        {
+            return ResolveStyleSheets(styleSheetPaths.Select(p => EditorGUIUtility.Load(p) as StyleSheet).ToArray());
+        }
+
+        private static StyleSheet ResolveStyleSheets(params StyleSheet[] styleSheets)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
             styleSheet.isUnityStyleSheet = true;
 
-            var packageManagerThemeVariablesSheetPath = isDarkTheme ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
-            var variablesThemeStyleSheetPath = isDarkTheme ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath;
-            var extensionThemeStyleSheetPath = isDarkTheme ? k_ExtensionDarkVariablesSheetPath : k_ExtensionLightVariablesSheetPath;
-            var NorthStarThemeStyleSheetPath = isDarkTheme ? k_PublicNorthStarDarkVariablesSheetPath : k_PublicNorthStarLightVariablesSheetPath;
-
-            var packageManagerCommon = EditorGUIUtility.Load(k_PackageManagerCommonStyleSheetPath) as StyleSheet;
-            var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
-
-            var packageManagerStyles = k_PackageManagerStyleSheetPaths.Select(p => EditorGUIUtility.Load(p) as StyleSheet).ToArray();
-
-            var variableThemeSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(variablesThemeStyleSheetPath)) as StyleSheet;
-            var extensionThemeStyleSheet = EditorGUIUtility.Load(extensionThemeStyleSheetPath) as StyleSheet;
-            var NorthStarCommonVariablesStyleSheet = EditorGUIUtility.Load(s_PublicNorthStarCommonVariableStyleSheetPath) as StyleSheet;
-            var NorthStarVariablesStyleSheet = EditorGUIUtility.Load(NorthStarThemeStyleSheetPath) as StyleSheet;
-
             var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(variableThemeSheet, extensionThemeStyleSheet, NorthStarCommonVariablesStyleSheet, NorthStarVariablesStyleSheet, packageManagerCommon, packageManagerTheme);
-            resolver.AddStyleSheets(packageManagerStyles);
-            resolver.ResolveTo(styleSheet);
-
-            return styleSheet;
-        }
-
-        private static StyleSheet LoadAndResolveFilterStyleSheet()
-        {
-            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
-            styleSheet.hideFlags = HideFlags.HideAndDontSave;
-            styleSheet.isUnityStyleSheet = true;
-
-            var packageManagerThemeVariablesSheetPath = EditorGUIUtility.isProSkin ? k_PackageManagerDarkVariablesSheetPath : k_PackageManagerLightVariablesSheetPath;
-            var packageManagerTheme = EditorGUIUtility.Load(packageManagerThemeVariablesSheetPath) as StyleSheet;
-            var packageManagerFilterCommon = EditorGUIUtility.Load(k_PackageManagerFiltersStyleSheetPath) as StyleSheet;
-
-            var resolver = new StyleSheets.StyleSheetResolver();
-            resolver.AddStyleSheets(packageManagerFilterCommon, packageManagerTheme);
+            resolver.AddStyleSheets(styleSheets);
             resolver.ResolveTo(styleSheet);
 
             return styleSheet;
@@ -159,16 +177,6 @@ namespace UnityEditor.PackageManager.UI
                 if (!string.IsNullOrEmpty(textElement?.text))
                     textElement.text = l10nFunc(textElement.text);
             });
-        }
-
-        public virtual StyleSheet GetMainWindowStyleSheet()
-        {
-            return EditorGUIUtility.isProSkin ? darkStyleSheet : lightStyleSheet;
-        }
-
-        public virtual StyleSheet GetFiltersWindowStyleSheet()
-        {
-            return EditorGUIUtility.isProSkin ? darkFilterStyleSheet : lightFilterStyleSheet;
         }
     }
 }

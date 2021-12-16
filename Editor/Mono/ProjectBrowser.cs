@@ -1246,9 +1246,14 @@ namespace UnityEditor
 
         internal void SetFolderSelection(int[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected)
         {
+            SetFolderSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected, true);
+        }
+
+        private void SetFolderSelection(int[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected, bool folderWasSelected)
+        {
             m_FolderTree.SetSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected);
             SetFoldersInSearchFilter(selectedInstanceIDs);
-            FolderTreeSelectionChanged(true);
+            FolderTreeSelectionChanged(folderWasSelected);
         }
 
         void AssetTreeItemDoubleClickedCallback(int instanceID)
@@ -2330,15 +2335,16 @@ namespace UnityEditor
                 else if (m_ViewMode == ViewMode.TwoColumns)
                 {
                     // Revert to last selected folders
-                    if (GUIUtility.keyboardControl == 0 && m_LastFolders != null && m_LastFolders.Length > 0)
+                    if (GUIUtility.keyboardControl == 0 || SelectionIsFavorite())
                     {
-                        m_SearchFilter.folders = m_LastFolders;
-                        SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true);
+                        RevertToLastSelectedFolder(false);
                     }
                 }
             }
             else
             {
+                if (m_ViewMode == ViewMode.TwoColumns && SelectionIsFavorite())
+                    RevertToLastSelectedFolder(false);
                 InitSearchMenu();
             }
 
@@ -2884,6 +2890,26 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             m_LockTracker.ShowButton(r, s_Styles.lockButton);
+        }
+
+        internal bool SelectionIsFavorite()
+        {
+            if (m_FolderTree.GetSelection().Length != 1)
+                return false;
+
+            int selectionID = m_FolderTree.GetSelection()[0];
+            ItemType type = GetItemType(selectionID);
+            return type == ItemType.SavedFilter;
+        }
+
+        private void RevertToLastSelectedFolder(bool folderWasSelected)
+        {
+            if (m_LastFolders != null && m_LastFolders.Length > 0)
+            {
+                m_SearchFilter.folders = m_LastFolders;
+                if (m_FolderTree != null)
+                    SetFolderSelection(GetFolderInstanceIDs(m_LastFolders), true, folderWasSelected);
+            }
         }
 
         internal class SavedFiltersContextMenu
