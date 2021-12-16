@@ -164,6 +164,7 @@ namespace UnityEngine
             public LightMode    mode;
             // light
             public Vector3      position;
+            public Quaternion   orientation;
             public LinearColor  color;
             public LinearColor  indirectColor;
             public float        range;
@@ -330,7 +331,7 @@ namespace UnityEngine
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
-                orientation    = Quaternion.identity;
+                orientation    = light.orientation;
                 position       = light.position;
                 range          = light.range;
                 coneAngle      = 0.0f;
@@ -521,6 +522,7 @@ namespace UnityEngine
                 point.mode          = Extract(l.lightmapBakeType);
                 point.shadow        = l.shadows != LightShadows.None;
                 point.position      = l.transform.position;
+                point.orientation   = l.transform.rotation;
 
                 Color cct = ExtractColorTemperature(l);
                 LinearColor directColor = LinearColor.Convert(l.color, l.intensity);

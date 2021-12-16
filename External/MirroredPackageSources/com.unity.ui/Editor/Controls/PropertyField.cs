@@ -418,19 +418,31 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Enum:
                 {
-                    Type enumType;
-                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var enumType);
+
                     if (enumType != null && enumType.IsDefined(typeof(FlagsAttribute), false))
                     {
-                        var field = new EnumFlagsField();
-                        field.choices = property.enumDisplayNames.ToList();
-                        field.value = (Enum)Enum.ToObject(enumType, property.intValue);
+                        var enumData = EnumDataUtility.GetCachedEnumData(enumType);
+                        var field = new EnumFlagsField
+                        {
+                            choices = enumData.displayNames.ToList(),
+                            value = (Enum) Enum.ToObject(enumType, property.intValue)
+                        };
                         return ConfigureField<EnumFlagsField, Enum>(field, property);
                     }
                     else
                     {
-                        var field = new PopupField<string>(property.enumDisplayNames.ToList(), property.enumValueIndex);
-                        field.index = property.enumValueIndex;
+                        var propertyFieldIndex = (property.enumValueIndex < 0 ||
+                                                  property.enumValueIndex >= property.enumDisplayNames.Length
+                            ? PopupField<string>.kPopupFieldDefaultIndex
+                            : property.enumValueIndex);
+                        var popupEntries = enumType != null
+                            ? EnumDataUtility.GetCachedEnumData(enumType).displayNames.ToList()
+                            : property.enumDisplayNames.ToList();
+                        var field = new PopupField<string>(popupEntries, propertyFieldIndex)
+                        {
+                            index = propertyFieldIndex
+                        };
                         return ConfigureField<PopupField<string>, string>(field, property);
                     }
                 }

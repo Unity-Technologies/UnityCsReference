@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -21,11 +19,13 @@ namespace UnityEditor.PackageManager.UI
             "Preview packages are in the early stage of development and not yet ready for production.\n" +
             "We recommend using these only for testing purpose and to give us direct feedback.";
 
+        private ResourceLoader m_ResourceLoader;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private ApplicationProxy m_ApplicationProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_ApplicationProxy = container.Resolve<ApplicationProxy>();
         }
@@ -34,9 +34,6 @@ namespace UnityEditor.PackageManager.UI
         {
             internal static readonly string scopedRegistriesSettings = "StyleSheets/PackageManager/ScopedRegistriesSettings.uss";
             internal static readonly string projectSettings = "StyleSheets/PackageManager/PackageManagerProjectSettings.uss";
-            internal static readonly string projectSettingsDark = "StyleSheets/PackageManager/Dark.uss";
-            internal static readonly string projectSettingsLight = "StyleSheets/PackageManager/Light.uss";
-            internal static readonly string packageManagerCommon = "StyleSheets/PackageManager/Common.uss";
             internal static readonly string stylesheetCommon = "StyleSheets/Extensions/base/common.uss";
             internal static readonly string stylesheetDark = "StyleSheets/Extensions/base/dark.uss";
             internal static readonly string stylesheetLight = "StyleSheets/Extensions/base/light.uss";
@@ -47,15 +44,16 @@ namespace UnityEditor.PackageManager.UI
         {
             activateHandler = (s, element) =>
             {
+                ResolveDependencies();
+
                 // Create a child to make sure all the style sheets are not added to the root.
                 rootVisualElement = new ScrollView();
                 rootVisualElement.StretchToParentSize();
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
-                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.projectSettingsDark : StylesheetPath.projectSettingsLight);
-                rootVisualElement.AddStyleSheetPath(StylesheetPath.packageManagerCommon);
                 rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
+                rootVisualElement.styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
 
                 element.Add(rootVisualElement);
 
@@ -66,8 +64,6 @@ namespace UnityEditor.PackageManager.UI
                 rootVisualElement.Add(newVisualElement);
 
                 cache = new VisualElementCache(rootVisualElement);
-
-                ResolveDependencies();
 
                 advancedSettingsFoldout.SetValueWithoutNotify(m_SettingsProxy.advancedSettingsExpanded);
                 m_SettingsProxy.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;

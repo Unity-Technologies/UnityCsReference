@@ -102,6 +102,7 @@ namespace UnityEditor
         internal static extern bool SetOverrideLightingSettingsInternal(int sceneHandle);
 
 
+        [NativeThrows]
         public static extern void RestoreOverrideLightingSettings();
 
         [FreeFunction("GetRenderSettings().SetUseFogNoDirty")]
