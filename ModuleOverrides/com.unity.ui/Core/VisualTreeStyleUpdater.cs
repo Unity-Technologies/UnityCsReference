@@ -140,7 +140,7 @@ namespace UnityEngine.UIElements
             foreach (var ve in m_TransitionPropertyUpdateList)
             {
                 // Allow for transitions to be cancelled if matching transition property was removed.
-                if (ve.hasRunningAnimations)
+                if (ve.hasRunningAnimations || ve.hasCompletedAnimations)
                 {
                     ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
                     m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(ve, ref ve.computedStyle);

@@ -147,7 +147,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Packages = UnityBeeDriver.GetPackageInfos(NPath.CurrentDirectory.ToString()),
                 UnityVersion = Application.unityVersion,
                 UnitySourceCodePath = Unsupported.IsSourceBuild() ? Unsupported.GetBaseUnityDeveloperFolder() : null,
-                AdvancedLicense = PlayerSettings.advancedLicense
+                AdvancedLicense = PlayerSettings.advancedLicense,
+                EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
             });
             return result;
         }

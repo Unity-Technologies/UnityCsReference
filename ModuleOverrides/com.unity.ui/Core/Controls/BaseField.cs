@@ -79,9 +79,28 @@ namespace UnityEngine.UIElements
         /// USS class name of elements that show mixed values
         /// </summary>
         public static readonly string mixedValueLabelUssClassName = labelUssClassName + "--mixed-value";
+        /// <summary>
+        /// USS class name of elements that are aligned in a inspector element
+        /// </summary>
+        public static readonly string alignedFieldUssClassName = ussClassName + "__aligned";
+
+        private static readonly string inspectorFieldUssClassName = ussClassName + "__inspector-field";
+
+        /// <summary>
+        /// Same as EditorGUI.kIndentPerLevel but in runtime world.
+        /// </summary>
+        private const int kIndentPerLevel = 15;
 
         protected static readonly string mixedValueString = "\u2014";
         protected internal static readonly PropertyName serializedPropertyCopyName = "SerializedPropertyCopyName";
+
+        static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
+        static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
+        static CustomStyleProperty<float> s_LabelBaseMinWidthProperty = new CustomStyleProperty<float>("--unity-property-field-label-base-min-width");
+
+        private float m_LabelWidthRatio;
+        private float m_LabelExtraPadding;
+        private float m_LabelBaseMinWidth;
 
         private VisualElement m_VisualInput;
 
@@ -232,6 +251,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private VisualElement m_CachedInspectorElement;
+        private int m_CachedListAndFoldoutDepth;
+
         internal BaseField(string label)
         {
             isCompositeRoot = true;
@@ -253,6 +275,8 @@ namespace UnityEngine.UIElements
                 AddToClassList(noLabelVariantUssClassName);
             }
 
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+
             m_VisualInput = null;
         }
 
@@ -260,6 +284,96 @@ namespace UnityEngine.UIElements
             : this(label)
         {
             this.visualInput = visualInput;
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent e)
+        {
+            var currentElement = parent;
+            while (currentElement != null)
+            {
+                if (currentElement.ClassListContains("unity-inspector-element"))
+                {
+                    // These default values are based of IMGUI
+                    m_LabelWidthRatio = 0.45f;
+                    m_LabelExtraPadding = 2.0f;
+                    m_LabelBaseMinWidth = 120.0f;
+
+                    RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+                    AddToClassList(inspectorFieldUssClassName);
+                    m_CachedInspectorElement = currentElement;
+                    m_CachedListAndFoldoutDepth = this.GetListAndFoldoutDepth();
+                    RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
+                    break;
+                }
+
+                currentElement = currentElement.parent;
+            }
+        }
+
+        private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
+        {
+            if (evt.customStyle.TryGetValue(s_LabelWidthRatioProperty, out var labelWidthRatio))
+            {
+                m_LabelWidthRatio = labelWidthRatio;
+            }
+
+            if (evt.customStyle.TryGetValue(s_LabelExtraPaddingProperty, out var labelExtraPadding))
+            {
+                m_LabelExtraPadding = labelExtraPadding;
+            }
+
+            if (evt.customStyle.TryGetValue(s_LabelBaseMinWidthProperty, out var labelBaseMinWidth))
+            {
+                m_LabelBaseMinWidth = labelBaseMinWidth;
+            }
+        }
+
+        private void OnInspectorFieldGeometryChanged(GeometryChangedEvent e)
+        {
+            AlignLabel();
+        }
+
+        private void AlignLabel()
+        {
+            if (!ClassListContains(alignedFieldUssClassName))
+            {
+                return;
+            }
+
+            var listAndFoldoutMargin = kIndentPerLevel * m_CachedListAndFoldoutDepth;
+
+            // Calculate all extra padding from the containing element's contents
+            var totalPadding = resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
+                resolvedStyle.marginLeft + resolvedStyle.marginRight;
+
+            // Get inspector element padding next
+            totalPadding += m_CachedInspectorElement.resolvedStyle.paddingLeft +
+                m_CachedInspectorElement.resolvedStyle.paddingRight +
+                m_CachedInspectorElement.resolvedStyle.marginLeft +
+                m_CachedInspectorElement.resolvedStyle.marginRight;
+
+            // Then get label padding
+            totalPadding += labelElement.resolvedStyle.paddingLeft + labelElement.resolvedStyle.paddingRight +
+                labelElement.resolvedStyle.marginLeft + labelElement.resolvedStyle.marginRight;
+
+            // Then get base field padding
+            totalPadding += resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
+                resolvedStyle.marginLeft + resolvedStyle.marginRight;
+
+            // Not all visual input controls have the same padding so we can't base our total padding on
+            // that information.  Instead we add a flat value to totalPadding to best match the hard coded
+            // calculation in IMGUI
+            totalPadding += m_LabelExtraPadding;
+            totalPadding += listAndFoldoutMargin;
+
+            labelElement.style.minWidth = Mathf.Max(m_LabelBaseMinWidth - listAndFoldoutMargin, 0);
+
+            // Formula to follow IMGUI label width settings
+            var newWidth = m_CachedInspectorElement.resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+            if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
+            {
+                labelElement.style.width = Mathf.Max(0f, newWidth);
+            }
         }
 
         /// <summary>

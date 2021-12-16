@@ -1122,7 +1122,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown;
+            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreCompositeRoots;
         }
 
         /// <summary>
@@ -1150,7 +1150,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown;
+            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreCompositeRoots;
         }
 
         /// <summary>

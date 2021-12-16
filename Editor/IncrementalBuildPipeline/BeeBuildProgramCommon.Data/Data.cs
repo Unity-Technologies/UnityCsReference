@@ -22,5 +22,6 @@ namespace BeeBuildProgramCommon.Data
         public string UnityVersion;
         public string UnitySourceCodePath;
         public bool AdvancedLicense;
+        public bool EmitDataForBeeWhy;
     }
 }

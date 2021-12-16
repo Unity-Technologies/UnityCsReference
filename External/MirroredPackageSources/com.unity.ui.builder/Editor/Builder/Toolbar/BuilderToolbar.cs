@@ -650,6 +650,8 @@ namespace Unity.UI.Builder
 
             if (themeStyleSheet != null)
                 element.styleSheets.Add(themeStyleSheet);
+
+            element.SetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName, themeStyleSheet);
         }
 
         void ApplyCanvasBackground(VisualElement element, BuilderDocument.CanvasTheme theme, ThemeStyleSheet themeStyleSheet)

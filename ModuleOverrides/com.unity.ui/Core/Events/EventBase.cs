@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
             TricklesDown = 2,
             Cancellable = 4,
             SkipDisabledElements = 8,
+            IgnoreCompositeRoots = 16,
         }
 
         [Flags]
@@ -80,7 +81,7 @@ namespace UnityEngine.UIElements
                 {
                     PropagationPaths.Type pathTypesRequested = (tricklesDown ? PropagationPaths.Type.TrickleDown : PropagationPaths.Type.None);
                     pathTypesRequested |= (bubbles ? PropagationPaths.Type.BubbleUp : PropagationPaths.Type.None);
-                    m_Path = PropagationPaths.Build(leafTarget as VisualElement, pathTypesRequested);
+                    m_Path = PropagationPaths.Build(leafTarget as VisualElement, this, pathTypesRequested);
                     EventDebugger.LogPropagationPaths(this, m_Path);
                 }
 
@@ -176,6 +177,22 @@ namespace UnityEngine.UIElements
                 else
                 {
                     propagation &= ~EventPropagation.SkipDisabledElements;
+                }
+            }
+        }
+
+        internal bool ignoreCompositeRoots
+        {
+            get { return (propagation & EventPropagation.IgnoreCompositeRoots) != 0; }
+            set
+            {
+                if (value)
+                {
+                    propagation |= EventPropagation.IgnoreCompositeRoots;
+                }
+                else
+                {
+                    propagation &= ~EventPropagation.IgnoreCompositeRoots;
                 }
             }
         }
