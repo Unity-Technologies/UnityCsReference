@@ -21,7 +21,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.Download(versions.Select(v => v.package));
+            var canDownload = m_PackageDatabase.Download(versions.Select(v => v.package));
+            if (canDownload)
+                PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", packageIds: versions.Select(v => v.packageUniqueId));
             return true;
         }
 

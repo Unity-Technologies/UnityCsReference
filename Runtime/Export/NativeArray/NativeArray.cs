@@ -680,7 +680,7 @@ namespace Unity.Collections
         public NativeArray<T> GetSubArray(int start, int length)
         {
             CheckGetSubArrayArguments(start, length);
-            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.Invalid);
+            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
             result.m_DisposeSentinel = null;

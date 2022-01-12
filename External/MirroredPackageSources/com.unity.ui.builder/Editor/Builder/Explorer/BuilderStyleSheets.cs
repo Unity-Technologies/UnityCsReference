@@ -116,8 +116,6 @@ namespace Unity.UI.Builder
                     m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
                 });
                 
-                evt.PreventDefault();
-                evt.StopImmediatePropagation();
             }, TrickleDown.TrickleDown);
 
             m_NewSelectorTextInputField.RegisterCallback<BlurEvent>((evt) =>

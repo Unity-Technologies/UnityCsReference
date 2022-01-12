@@ -5845,6 +5845,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveCustomButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveCustomButton.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageResetButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageResetButton.cs</Link>
     </Compile>

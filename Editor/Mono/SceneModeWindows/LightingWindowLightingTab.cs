@@ -16,7 +16,7 @@ using System.Globalization;
 
 namespace UnityEditor
 {
-    internal class LightingWindowLightingTab
+    internal class LightingWindowLightingTab : LightingWindow.WindowTab
     {
         class Styles
         {
@@ -120,6 +120,10 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             lightmapSettings.ApplyModifiedProperties();
+        }
+
+        public void OnSelectionChange()
+        {
         }
 
         void WorkflowSettingsGUI()

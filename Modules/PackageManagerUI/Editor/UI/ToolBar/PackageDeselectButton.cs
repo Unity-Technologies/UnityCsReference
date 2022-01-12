@@ -9,15 +9,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDeselectButton : PackageToolBarRegularButton
     {
+        private string m_AnalyticsEventName;
+
         private PageManager m_PageManager;
-        public PackageDeselectButton(PageManager pageManager)
+        public PackageDeselectButton(PageManager pageManager, string analyticsEventName = null)
         {
             m_PageManager = pageManager;
+            m_AnalyticsEventName = analyticsEventName;
         }
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_PageManager.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.packageUniqueId, v.uniqueId)));
+            if (!string.IsNullOrEmpty(m_AnalyticsEventName))
+                PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: versions.Select(v => v.packageUniqueId));
             return true;
         }
 

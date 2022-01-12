@@ -18,7 +18,7 @@ namespace UnityEditor.Connect
     {
         //Resources
         const string k_ServiceName = "Analytics";
-        const string k_ProjectSettingsPath = "Project/Services/Analytics";
+        const string k_ProjectSettingsPath = "Project/Services/Legacy Analytics";
 
         const string k_AnalyticsServicesTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettings.uxml";
 

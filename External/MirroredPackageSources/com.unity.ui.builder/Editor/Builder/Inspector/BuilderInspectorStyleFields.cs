@@ -228,8 +228,6 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
                 imageStyleField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
-                if (BuilderExternalPackages.isVectorGraphicsInstalled)
-                    imageStyleField.TryEnableVectorGraphicTypeSupport();
             }
             else if (IsComputedStyleCursor(val) && fieldElement is ObjectField)
             {

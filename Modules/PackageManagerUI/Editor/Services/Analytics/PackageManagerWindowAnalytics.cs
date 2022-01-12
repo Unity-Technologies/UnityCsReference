@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -13,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public string action;
         public string package_id;
+        public string[] package_ids;
         public string search_text;
         public string filter_name;
         public bool window_docked;
@@ -30,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorAnalytics.RegisterEventWithLimit("packageManagerWindowUserAction", maxEventsPerHour, maxNumberOfElementInStruct, vendorKey);
         }
 
-        public static void SendEvent(string action, string packageId = null)
+        public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null)
         {
             // remove sensitive part of the id: file path or url is not tracked
             if (!string.IsNullOrEmpty(packageId))
@@ -51,6 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 action = action,
                 package_id = packageId ?? string.Empty,
+                package_ids = packageIds?.ToArray() ?? new string[0],
                 search_text = packageFiltering.currentSearchText,
                 filter_name = filterName,
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,

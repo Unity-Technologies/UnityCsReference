@@ -41,6 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageUpdateButton m_UpdateButton;
         private PackageGitUpdateButton m_GitUpdateButton;
         private PackageRemoveButton m_RemoveButton;
+        private PackageRemoveCustomButton m_RemoveCustomButton;
         private PackageResetButton m_ResetButton;
 
         private PackagePauseDownloadButton m_PauseButton;
@@ -126,6 +127,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RemoveButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_RemoveButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_RemoveButton.element);
+
+            m_RemoveCustomButton = new PackageRemoveCustomButton(m_Application, m_PackageDatabase, m_PageManager);
+            m_RemoveCustomButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
+            m_RemoveCustomButton.onAction += RefreshBuiltInButtons;
+            m_BuiltInActions.Add(m_RemoveCustomButton.element);
 
             m_ResetButton = new PackageResetButton(m_Application, m_PackageDatabase, m_PageManager);
             m_ResetButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
@@ -260,6 +266,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AddButton.Refresh(m_Version);
             m_UpdateButton.Refresh(m_Version);
             m_RemoveButton.Refresh(m_Version);
+            m_RemoveCustomButton.Refresh(m_Version);
             m_ResetButton.Refresh(m_Version);
 
             m_ImportButton.Refresh(m_Version);

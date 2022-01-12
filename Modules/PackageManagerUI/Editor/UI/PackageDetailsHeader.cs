@@ -38,8 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static readonly string[] k_InfoBoxReadMoreUrl =
         {
-            "/Documentation/Manual/pack-prerelease.html",
-            "/Documentation/Manual/pack-experimental.html",
+            "/Documentation/Manual/pack-preview.html",
+            "/Documentation/Manual/pack-exp.html",
             "/Documentation/Manual/pack-releasecandidate.html",
             "/Documentation/Manual/upm-scoped.html"
         };
@@ -261,7 +261,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var tag in k_VisibleTags)
             {
                 if (tag == PackageTag.Release && m_Version.HasTag(PackageTag.Feature) &&
-                    m_Version.dependencies.Any(dependency => !m_PackageDatabase.GetPackageInFeatureVersion(dependency.name).HasTag(PackageTag.Release)))
+                    (m_Version.dependencies == null || m_Version.dependencies.Any(dependency => m_PackageDatabase.GetPackageInFeatureVersion(dependency.name)?.HasTag(PackageTag.Release) != true)))
                     UIUtils.SetElementDisplay(GetTagLabel(PackageTag.Release.ToString()), false);
                 else
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), m_Version.HasTag(tag));

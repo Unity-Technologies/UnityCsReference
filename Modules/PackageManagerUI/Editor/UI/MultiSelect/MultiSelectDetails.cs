@@ -200,6 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnDeselectLockedSelectionsClicked()
         {
             m_PageManager.RemoveSelection(m_UnlockFoldout.versions.Select(s => new PackageAndVersionIdPair(s.packageUniqueId, s.uniqueId)));
+            PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: m_UnlockFoldout.versions.Select(v => v.packageUniqueId));
         }
 
         private VisualElementCache cache { get; set; }

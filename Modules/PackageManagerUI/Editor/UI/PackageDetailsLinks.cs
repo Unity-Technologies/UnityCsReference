@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -108,36 +109,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             parent.Add(item);
         }
 
-        private void ViewUrl(string onlineUrl, string offlineDocPath, string docType, string analyticsEvent)
-        {
-            if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
-            {
-                var request = UnityWebRequest.Head(onlineUrl);
-                try
-                {
-                    var operation = request.SendWebRequest();
-                    operation.completed += (op) =>
-                    {
-                        if (request.responseCode >= 200 && request.responseCode < 300)
-                        {
-                            m_Application.OpenURL(onlineUrl);
-
-                            PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}ValidUrl", m_Version?.uniqueId);
-                        }
-                        else
-                            HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
-                    };
-                }
-                catch (InvalidOperationException e)
-                {
-                    if (e.Message != "Insecure connection not allowed")
-                        throw e;
-                }
-                return;
-            }
-            HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
-        }
-
         private void HandleInvalidOrUnreachableOnlineUrl(string onlineUrl, string offlineDocPath, string docType, string analyticsEvent)
         {
             if (!string.IsNullOrEmpty(offlineDocPath))
@@ -165,6 +136,65 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}NotFound", m_Version?.uniqueId);
 
             Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}."), docType, m_Package.GetDescriptor()));
+        }
+
+        private void OpenWebUrl(string onlineUrl, string analyticsEvent, Action errorCallback)
+        {
+            var request = UnityWebRequest.Head(onlineUrl);
+            try
+            {
+                var operation = request.SendWebRequest();
+                operation.completed += (op) =>
+                {
+                    if (request.responseCode >= 200 && request.responseCode < 300)
+                    {
+                        m_Application.OpenURL(onlineUrl);
+                        PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}ValidUrl", m_Version?.uniqueId);
+                    }
+                    else
+                        errorCallback?.Invoke();
+                };
+            }
+            catch (InvalidOperationException e)
+            {
+                if (e.Message != "Insecure connection not allowed")
+                    throw e;
+            }
+        }
+
+        private void ViewUrl(string[] onlineUrls, string offlineDocPath, string docType, string analyticsEvent)
+        {
+            if (m_Application.isInternetReachable)
+            {
+                if (onlineUrls.Length == 0)
+                {
+                    HandleInvalidOrUnreachableOnlineUrl(string.Empty, offlineDocPath, docType, analyticsEvent);
+                    return;
+                }
+
+                OpenWebUrl(onlineUrls[0], analyticsEvent, () =>
+                {
+                    var urls = new List<string>(onlineUrls).Skip(1).ToArray();
+                    ViewUrl(urls, offlineDocPath, docType, analyticsEvent);
+                });
+            }
+            else
+            {
+                HandleInvalidOrUnreachableOnlineUrl(string.Empty, offlineDocPath, docType, analyticsEvent);
+            }
+        }
+
+        private void ViewUrl(string onlineUrl, string offlineDocPath, string docType, string analyticsEvent)
+        {
+            if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
+            {
+                OpenWebUrl(onlineUrl, analyticsEvent, () =>
+                {
+                    HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
+                });
+                return;
+            }
+            HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
         }
 
         private void ViewDocClick()

@@ -29,19 +29,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var title = string.Format(L10n.Tr("Removing {0} items"), versions.Count);
 
-            if (versions.Any(v => v.HasTag(PackageTag.Custom)))
-            {
-                var message = L10n.Tr("At least one item is a package in development. You will lose all your changes(if any) if you delete a package in development. Are you sure you want to remove these items?");
-
-                if (!m_Application.DisplayDialog(title, message, L10n.Tr("Yes"), L10n.Tr("No")))
-                    return false;
-
-                m_PackageDatabase.Uninstall(versions.Select(v => v.package));
-                // After a bulk removal, we want to deselect them to avoid installing them back by accident.
-                DeselectVersions(versions);
-                return true;
-            }
-
             var result = 0;
             if (!m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation)
             {
@@ -58,6 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation = true;
 
             m_PackageDatabase.Uninstall(versions.Select(v => v.package));
+            PackageManagerWindowAnalytics.SendEvent("uninstall", packageIds: versions.Select(v => v.uniqueId));
             // After a bulk removal, we want to deselect them to avoid installing them back by accident.
             DeselectVersions(versions);
             return true;
@@ -65,16 +53,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            if (version.HasTag(PackageTag.Custom))
-            {
-                if (!m_Application.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
-                    return false;
-
-                m_PackageDatabase.RemoveEmbedded(version.package);
-                PackageManagerWindowAnalytics.SendEvent("removeEmbedded", version.uniqueId);
-                return true;
-            }
-
             var result = 0;
             if (version.HasTag(PackageTag.BuiltIn))
             {
@@ -133,8 +111,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool IsVisible(IPackageVersion version)
         {
             var installed = version?.package.versions.installed;
-            return version?.HasTag(PackageTag.Removable) == true
-                && installed != null
+            return installed != null
+                && version.HasTag(PackageTag.Removable)
+                && !version.HasTag(PackageTag.Custom)
                 && (installed == version || version.IsRequestedButOverriddenVersion);
         }
 

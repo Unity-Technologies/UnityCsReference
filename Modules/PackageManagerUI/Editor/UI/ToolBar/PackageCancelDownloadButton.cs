@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_PackageDatabase.AbortDownload(versions.Select(v => v.package));
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", packageIds: versions.Select(v => v.packageUniqueId));
             return true;
         }
 

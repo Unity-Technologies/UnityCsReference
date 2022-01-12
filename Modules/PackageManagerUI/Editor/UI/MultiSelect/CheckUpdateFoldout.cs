@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreCallQueue m_AssetStoreCallQueue;
 
         public CheckUpdateFoldout(PageManager pageManager, AssetStoreCache assetStoreCache, AssetStoreCallQueue assetStoreCallQueue)
-            : base(new PackageDeselectButton(pageManager))
+            : base(new PackageDeselectButton(pageManager, "deselectCheckUpdate"))
         {
             m_AssetStoreCache = assetStoreCache;
             m_AssetStoreCallQueue = assetStoreCallQueue;

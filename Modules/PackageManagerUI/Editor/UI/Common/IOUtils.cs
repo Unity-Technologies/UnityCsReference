@@ -17,5 +17,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 name = name.Replace(c, '_');
             return name.Trim();
         }
+
+        public static string EscapeBackslashes(this string path)
+        {
+            return path.Replace(@"\", @"\\");
+        }
     }
 }

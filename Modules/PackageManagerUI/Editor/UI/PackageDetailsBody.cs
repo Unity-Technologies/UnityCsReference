@@ -281,7 +281,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(detailSourcePathContainer, !string.IsNullOrEmpty(sourcePath));
 
             if (!string.IsNullOrEmpty(sourcePath))
-                detailSourcePath.SetValueWithoutNotify(sourcePath);
+                detailSourcePath.SetValueWithoutNotify(sourcePath.EscapeBackslashes());
         }
 
         private VisualElementCache cache { get; set; }

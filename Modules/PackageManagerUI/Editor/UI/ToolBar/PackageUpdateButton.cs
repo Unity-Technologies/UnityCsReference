@@ -38,6 +38,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_PackageDatabase.Install(versions.Select(v => GetTargetVersion(v)));
+            // The current multi-select UI does not allow users to install non-recommended versions
+            // Should this change in the future, we'll need to update the analytics event accordingly.
+            PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", packageIds: versions.Select(v => v.uniqueId));
             return true;
         }
 
