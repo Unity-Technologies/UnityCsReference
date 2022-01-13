@@ -17,7 +17,7 @@ namespace UnityEditor
         public virtual void OnInspectorGUI() {}
     }
 
-    internal class LightingWindowEnvironmentTab
+    internal class LightingWindowEnvironmentTab : LightingWindow.WindowTab
     {
         class Styles
         {
@@ -62,8 +62,7 @@ namespace UnityEditor
         SavedBool       m_ShowOtherSettings;
         Object          m_RenderSettings = null;
         Vector2         m_ScrollPosition = Vector2.zero;
-
-        Type m_SRP      = GraphicsSettings.currentRenderPipeline?.GetType();
+        Type            m_SRP;
 
         Object renderSettings
         {
@@ -130,6 +129,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            m_SRP = GraphicsSettings.currentRenderPipeline?.GetType();
             m_ShowOtherSettings = new SavedBool($"LightingWindow.ShowOtherSettings", true);
         }
 
@@ -170,6 +170,10 @@ namespace UnityEditor
 
             EditorGUILayout.EndScrollView();
             EditorGUILayout.Space();
+        }
+
+        public void OnSelectionChange()
+        {
         }
 
         void OtherSettingsGUI()

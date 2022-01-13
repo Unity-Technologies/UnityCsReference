@@ -64,8 +64,8 @@ namespace UnityEngine.UIElements
     ///
     ///         listView.selectionType = SelectionType.Multiple;
     ///
-    ///         listView.onItemChosen += obj => Debug.Log(obj);
-    ///         listView.onSelectionChanged += objects => Debug.Log(objects);
+    ///         listView.onItemsChosen += objects => Debug.Log(objects);
+    ///         listView.onSelectionChange += objects => Debug.Log(objects);
     ///
     ///         listView.style.flexGrow = 1.0f;
     ///
@@ -339,6 +339,10 @@ namespace UnityEngine.UIElements
         // items source.
         private readonly List<int> m_SelectedIndices = new List<int>();
         private readonly List<object> m_SelectedItems = new List<object>();
+
+        // Used to store the focused element to enable scrolling without losing it.
+        private int m_LastFocusedElementIndex = -1;
+        private List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
 
         private int m_RangeSelectionOrigin = -1;
         private ListViewDragger m_Dragger;
@@ -1074,7 +1078,16 @@ namespace UnityEngine.UIElements
             // Some controls may capture the mouse, but the ListView is a composite root (isCompositeRoot),
             // and will always receive ExecuteDefaultAction despite what the actual event target is.
             if (evt.eventTypeId == PointerUpEvent.TypeId())
+            {
                 m_Dragger?.OnPointerUp();
+            }
+            // We need to store the focused item in order to be able to scroll out and back to it, without
+            // seeing the focus affected. To do so, we store the path to the tree element that is focused,
+            // and set it back in Setup().
+            else if (evt.eventTypeId == FocusEvent.TypeId())
+            {
+                OnFocus(evt.leafTarget as VisualElement);
+            }
         }
 
         private void OnScroll(float offset)
@@ -1272,6 +1285,7 @@ namespace UnityEngine.UIElements
 
         private void Setup(RecycledItem recycledItem, int newIndex)
         {
+            var previousIndex = recycledItem.index;
             var newId = GetIdFromIndex(newIndex);
             recycledItem.element.style.display = DisplayStyle.Flex;
             if (recycledItem.index == newIndex) return;
@@ -1299,6 +1313,49 @@ namespace UnityEngine.UIElements
 
             bindItem(recycledItem.element, recycledItem.index);
             recycledItem.SetSelected(m_SelectedIds.Contains(newId));
+
+            // Handle focus cycling
+            HandleFocus(recycledItem, previousIndex);
+        }
+
+        void OnFocus(VisualElement leafTarget)
+        {
+            if (leafTarget == m_ScrollView.contentContainer)
+                return;
+
+            m_LastFocusedElementTreeChildIndexes.Clear();
+
+            if (m_ScrollView.contentContainer.FindElementInTree(leafTarget, m_LastFocusedElementTreeChildIndexes))
+            {
+                var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
+                foreach (var recycledItem in m_Pool)
+                {
+                    if (recycledItem.element == recycledElement)
+                    {
+                        m_LastFocusedElementIndex = recycledItem.index;
+                        break;
+                    }
+                }
+
+                m_LastFocusedElementTreeChildIndexes.RemoveAt(0);
+            }
+            else
+            {
+                m_LastFocusedElementIndex = -1;
+            }
+        }
+
+        void HandleFocus(RecycledItem recycledItem, int previousIndex)
+        {
+            if (m_LastFocusedElementIndex == -1)
+                return;
+
+            if (m_LastFocusedElementIndex == recycledItem.index)
+                recycledItem.element.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Focus();
+            else if (m_LastFocusedElementIndex != previousIndex)
+                recycledItem.element.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Blur();
+            else
+                m_ScrollView.contentContainer.Focus();
         }
 
         private void UpdateBackground()

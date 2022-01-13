@@ -129,6 +129,8 @@ namespace UnityEditor
         private static readonly float[] s_Vector4Floats = {0, 0, 0, 0};
         private static readonly GUIContent[] s_XYZWLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z"), EditorGUIUtility.TextContent("W")};
 
+        private const float kQuaternionFloatPrecision = 1e-6f;
+
         private static readonly GUIContent[] s_WHLabels = {EditorGUIUtility.TextContent("W"), EditorGUIUtility.TextContent("H")};
 
         private static readonly GUIContent s_CenterLabel = EditorGUIUtility.TrTextContent("Center");
@@ -4034,6 +4036,24 @@ namespace UnityEditor
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
+        // Make an X, Y and Z field for Quaternions - not public (use PropertyField instead)
+        private static void QuaternionEulerField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            position.height = kSingleLineHeight;
+            Vector3 eulerValue = property.quaternionValue.eulerAngles;
+            s_Vector3Floats[0] = Mathf.Floor(eulerValue.x / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            s_Vector3Floats[1] = Mathf.Floor(eulerValue.y / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            s_Vector3Floats[2] = Mathf.Floor(eulerValue.z / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            BeginChangeCheck();
+            MultiFloatFieldInternal(position, s_XYZLabels, s_Vector3Floats);
+            if (EndChangeCheck())
+            {
+                property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+            }
+        }
+
         // Make an X, Y, Z and W field - not public (use PropertyField instead)
         static void Vector4Field(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -6789,6 +6809,10 @@ namespace UnityEditor
                         break;
                     }
                 }
+            }
+            else if (type == SerializedPropertyType.Quaternion)
+            {
+                QuaternionEulerField(position, property, label);
             }
             // Handle Foldout
             else

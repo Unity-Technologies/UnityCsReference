@@ -1216,9 +1216,23 @@ namespace UnityEditor
                 if (!String.IsNullOrEmpty(win.titleContent.tooltip) && win.titleContent.tooltip != title)
                     title = win.titleContent.tooltip;
                 title = title.Replace("/", "\\");
-                Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => win.Focus(), null);
+                var instanceId = win.GetInstanceID();
+                Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => FocusWindow(instanceId), null);
             }
             EditorUtility.Internal_UpdateAllMenus();
+        }
+
+        private static void FocusWindow(int instanceId)
+        {
+            var editorWindows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            foreach (var win in editorWindows)
+            {
+                if (win.GetInstanceID() == instanceId)
+                {
+                    win.Focus();
+                    return;
+                }
+            }
         }
 
         private static VisualElement CreateRoot()

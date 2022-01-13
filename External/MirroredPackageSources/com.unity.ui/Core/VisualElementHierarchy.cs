@@ -213,6 +213,56 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Retrieves a specific child element by following a path of element indexes down through the visual tree.
+        /// Use this method along with <see cref="FindElementInTree"/>.
+        /// </summary>
+        /// <param name="childIndexes">An array of indexes that represents the path of elements that this method follows through the visual tree.</param>
+        /// <returns>The child element, or null if the child is not found.</returns>
+        internal VisualElement ElementAtTreePath(List<int> childIndexes)
+        {
+            VisualElement child = this;
+            foreach (var index in childIndexes)
+            {
+                if (index >= 0 && index < child.hierarchy.childCount)
+                {
+                    child = child.hierarchy[index];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return child;
+        }
+
+        /// <summary>
+        /// Fills an array with indexes representing the path to the specified element, down the tree.
+        /// Use this method along with <see cref="ElementAtTreePath"/>.
+        /// </summary>
+        /// <param name="element">The element to look for.</param>
+        /// <param name="outChildIndexes">An empty list that this method fills with the indexes of child elements.</param>
+        internal bool FindElementInTree(VisualElement element, List<int> outChildIndexes)
+        {
+            var child = element;
+            var hierarchyParent = child.hierarchy.parent;
+            while (hierarchyParent != null)
+            {
+                outChildIndexes.Insert(0, hierarchyParent.hierarchy.IndexOf(child));
+                if (hierarchyParent == this)
+                {
+                    return true;
+                }
+
+                child = hierarchyParent;
+                hierarchyParent = hierarchyParent.hierarchy.parent;
+            }
+
+            outChildIndexes.Clear();
+            return false;
+        }
+
+        /// <summary>
         /// Returns the elements from its contentContainer
         /// </summary>
         public IEnumerable<VisualElement> Children()

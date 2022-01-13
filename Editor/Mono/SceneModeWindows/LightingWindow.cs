@@ -44,6 +44,14 @@ namespace UnityEditor
             public static readonly float ButtonWidth = 90;
         }
 
+        public interface WindowTab
+        {
+            void OnEnable();
+            void OnDisable();
+            void OnGUI();
+            void OnSelectionChange();
+        }
+
         enum BakeMode
         {
             BakeReflectionProbes = 0,
@@ -64,10 +72,7 @@ namespace UnityEditor
         List<Mode> m_Modes = null;
         GUIContent[] m_ModeStrings;
 
-        LightingWindowLightingTab           m_LightingSettingsTab;
-        LightingWindowEnvironmentTab        m_EnvironmentSettingsTab;
-        LightingWindowLightmapPreviewTab    m_RealtimeLightmapsTab;
-        LightingWindowLightmapPreviewTab    m_BakedLightmapsTab;
+        Dictionary<Mode, WindowTab> m_Tabs = new Dictionary<Mode, WindowTab>();
 
         SerializedObject m_LightingSettings;
         SerializedProperty m_WorkflowMode;
@@ -106,17 +111,20 @@ namespace UnityEditor
             m_SelectedModeIndex = index;
         }
 
+        LightingWindow()
+        {
+            m_Tabs.Add(Mode.LightingSettings, new LightingWindowLightingTab());
+            m_Tabs.Add(Mode.EnvironmentSettings, new LightingWindowEnvironmentTab());
+            m_Tabs.Add(Mode.RealtimeLightmaps, new LightingWindowLightmapPreviewTab(LightmapType.DynamicLightmap));
+            m_Tabs.Add(Mode.BakedLightmaps, new LightingWindowLightmapPreviewTab(LightmapType.StaticLightmap));
+        }
+
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
 
-            m_LightingSettingsTab = new LightingWindowLightingTab();
-            m_LightingSettingsTab.OnEnable();
-            m_EnvironmentSettingsTab = new LightingWindowEnvironmentTab();
-            m_EnvironmentSettingsTab.OnEnable();
-
-            m_RealtimeLightmapsTab = new LightingWindowLightmapPreviewTab(LightmapType.DynamicLightmap);
-            m_BakedLightmapsTab = new LightingWindowLightmapPreviewTab(LightmapType.StaticLightmap);
+            foreach (var pair in m_Tabs)
+                pair.Value.OnEnable();
 
             Undo.undoRedoPerformed += Repaint;
             Lightmapping.lightingDataUpdated += Repaint;
@@ -126,7 +134,9 @@ namespace UnityEditor
 
         void OnDisable()
         {
-            m_LightingSettingsTab.OnDisable();
+            foreach (var pair in m_Tabs)
+                pair.Value.OnDisable();
+
             Undo.undoRedoPerformed -= Repaint;
             Lightmapping.lightingDataUpdated -= Repaint;
         }
@@ -143,14 +153,14 @@ namespace UnityEditor
 
         void OnSelectionChange()
         {
-            if (m_RealtimeLightmapsTab == null || m_BakedLightmapsTab == null || m_Modes == null)
+            if (m_Modes == null)
                 return;
 
-            if (m_Modes.Contains(Mode.RealtimeLightmaps))
-                m_RealtimeLightmapsTab.UpdateActiveGameObjectSelection();
-
-            if (m_Modes.Contains(Mode.BakedLightmaps))
-                m_BakedLightmapsTab.UpdateActiveGameObjectSelection();
+            foreach (var pair in m_Tabs)
+            {
+                if (m_Modes.Contains(pair.Key))
+                    pair.Value.OnSelectionChange();
+            }
 
             Repaint();
         }
@@ -178,24 +188,8 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            switch (selectedMode)
-            {
-                case Mode.LightingSettings:
-                    m_LightingSettingsTab.OnGUI();
-                    break;
-
-                case Mode.EnvironmentSettings:
-                    m_EnvironmentSettingsTab.OnGUI();
-                    break;
-
-                case Mode.RealtimeLightmaps:
-                    m_RealtimeLightmapsTab.OnGUI(position);
-                    break;
-
-                case Mode.BakedLightmaps:
-                    m_BakedLightmapsTab.OnGUI(position);
-                    break;
-            }
+            if (m_Tabs.ContainsKey(selectedMode))
+                m_Tabs[selectedMode].OnGUI();
 
             Buttons(selectedMode == Mode.LightingSettings);
             Summary();

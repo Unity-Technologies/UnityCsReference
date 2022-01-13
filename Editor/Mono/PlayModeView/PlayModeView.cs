@@ -404,6 +404,7 @@ namespace UnityEditor
                 InternalEditorUtility.OnGameViewFocus(true);
                 m_Parent.SetAsLastPlayModeView();
                 m_Parent.SetMainPlayModeViewSize(targetSize);
+                Display.activeEditorGameViewTarget  = m_TargetDisplay;
                 s_LastFocused = this;
                 Repaint();
             }

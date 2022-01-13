@@ -201,8 +201,7 @@ namespace UnityEditor.PackageManager.UI
             m_Application.onFinishCompiling += RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
-            m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => OnPackagesUpdated(postUpdate);
-            m_PackageDatabase.onPackagesChanged += (added, removed, preUpdate, postUpdate) => RefreshDependencies();
+            m_PackageDatabase.onPackagesChanged += OnPackagesUpdated;
 
             m_PackageDatabase.onPackageProgressUpdate += OnPackageProgressUpdate;
 
@@ -214,7 +213,7 @@ namespace UnityEditor.PackageManager.UI
 
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
-            m_SettingsProxy.onEnablePackageDependenciesChanged += (value) => RefreshDependencies();
+            m_SettingsProxy.onEnablePackageDependenciesChanged += OnEnablePackageDependenciesChanged;
 
             // manually call the callback function once on initialization to refresh the UI
             OnSelectionChanged(m_PageManager.GetSelectedVersion());
@@ -238,6 +237,8 @@ namespace UnityEditor.PackageManager.UI
             m_Application.onFinishCompiling -= RefreshPackageActionButtons;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
+            m_PackageDatabase.onPackagesChanged -= OnPackagesUpdated;
+
             m_PackageDatabase.onPackageProgressUpdate -= OnPackageProgressUpdate;
 
             m_PackageDatabase.onTermOfServiceAgreementStatusChange -= OnTermOfServiceAgreementStatusChange;
@@ -247,6 +248,8 @@ namespace UnityEditor.PackageManager.UI
             m_AssetStoreDownloadManager.onDownloadPaused -= PauseDownloadProgressBar;
 
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
+
+            m_SettingsProxy.onEnablePackageDependenciesChanged -= OnEnablePackageDependenciesChanged;
 
             ClearSupportingImages();
         }
@@ -316,6 +319,11 @@ namespace UnityEditor.PackageManager.UI
                 SetPackage(m_PackageDatabase.GetPackage(version), version);
             else
                 SetPackage(null);
+        }
+
+        private void OnEnablePackageDependenciesChanged(bool _)
+        {
+            RefreshDependencies();
         }
 
         private void RefreshDependencies()
@@ -718,6 +726,12 @@ namespace UnityEditor.PackageManager.UI
                 if (updatedVersion?.isFullyFetched ?? false)
                     SetEnabled(true);
             }
+        }
+
+        private void OnPackagesUpdated(IEnumerable<IPackage> added, IEnumerable<IPackage> removed, IEnumerable<IPackage> preUpdated, IEnumerable<IPackage> postUpdated)
+        {
+            OnPackagesUpdated(postUpdated);
+            RefreshDependencies();
         }
 
         private void RefreshErrorDisplay()

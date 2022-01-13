@@ -26,6 +26,8 @@ namespace UnityEditor.PackageManager.UI
             var innerElement = new VisualElement();
             innerElement.AddToClassList("image");
             Add(innerElement);
+
+            RegisterCallback<DetachFromPanelEvent>(OnDetachPanel);
         }
 
         private void UpdateProgress()
@@ -64,6 +66,15 @@ namespace UnityEditor.PackageManager.UI
 
             started = false;
             UIUtils.SetElementDisplay(this, false);
+        }
+
+        private void OnDetachPanel(DetachFromPanelEvent evt)
+        {
+            if (!started)
+                return;
+
+            EditorApplication.update -= UpdateProgress;
+            started = false;
         }
     }
 }

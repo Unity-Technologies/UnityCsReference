@@ -51,6 +51,7 @@ namespace UnityEngine.UIElements
 
         protected override void Dispose()
         {
+            target = null;
             Pool.Release(this);
         }
 
