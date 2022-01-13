@@ -90,6 +90,11 @@ namespace UnityEditor
         MaterialEditor m_MaterialEditor;
         WorkflowMode m_WorkflowMode = WorkflowMode.Specular;
 
+        static int _SpecGlossMap = Shader.PropertyToID("_SpecGlossMap");
+        static int _SpecColor = Shader.PropertyToID("_SpecColor");
+        static int _MetallicGlossMap = Shader.PropertyToID("_MetallicGlossMap");
+        static int _Metallic = Shader.PropertyToID("_Metallic");
+
         public void FindProperties(MaterialProperty[] props)
         {
             blendMode = FindProperty("_Mode", props);
@@ -191,11 +196,22 @@ namespace UnityEditor
             m_MaterialEditor.DoubleSidedGIField();
         }
 
+        bool ShaderHasProperty(Shader shader, int nameId)
+        {
+            for (int i = 0, count = shader.GetPropertyCount(); i < count; i++)
+            {
+                if (shader.GetPropertyNameId(i) == nameId)
+                    return true;
+            }
+            return false;
+        }
+
         internal void DetermineWorkflow(Material material)
         {
-            if (material.HasProperty("_SpecGlossMap") && material.HasProperty("_SpecColor"))
+            var shader = material.shader;
+            if (ShaderHasProperty(shader, _SpecGlossMap) && ShaderHasProperty(shader, _SpecColor))
                 m_WorkflowMode = WorkflowMode.Specular;
-            if (material.HasProperty("_MetallicGlossMap") && material.HasProperty("_Metallic"))
+            else if (ShaderHasProperty(shader, _MetallicGlossMap) && ShaderHasProperty(shader, _Metallic))
                 m_WorkflowMode = WorkflowMode.Metallic;
             else
                 m_WorkflowMode = WorkflowMode.Dielectric;

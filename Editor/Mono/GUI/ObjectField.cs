@@ -358,8 +358,8 @@ namespace UnityEditor
                                     var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
                                     bool isReorderableList = PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty));
 
-                                    // If it's an element of an non-orderable array, remove that element from the array
-                                    if (!isReorderableList)
+                                    // If it's an element of an non-orderable array and it is displayed inside a list, remove that element from the array (cases 1379541 & 1335322)
+                                    if (!isReorderableList && GUI.isInsideList && GetInsideListDepth() == parentArrayProperty.depth)
                                         TargetChoiceHandler.DeleteArrayElement(property);
                                     else
                                         property.objectReferenceValue = null;

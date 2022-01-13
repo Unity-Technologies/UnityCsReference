@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using JetBrains.Annotations;
 using UnityEngine.UIElements;
 using UnityEditor;
@@ -75,8 +76,8 @@ namespace Unity.UI.Builder
         public static readonly string s_ScaleXFieldName = "x-field";
         public static readonly string s_ScaleYFieldName = "y-field";
 
-        FloatField m_ScaleXField;
-        FloatField m_ScaleYField;
+        DimensionStyleField m_ScaleXField;
+        DimensionStyleField m_ScaleYField;
 
         public ScaleStyleField() : this(null) { }
 
@@ -91,8 +92,8 @@ namespace Unity.UI.Builder
 
             visualInput = this.Q(s_VisualInputName);
 
-            m_ScaleXField = this.Q<FloatField>(s_ScaleXFieldName);
-            m_ScaleYField = this.Q<FloatField>(s_ScaleYFieldName);
+            m_ScaleXField = this.Q<DimensionStyleField>(s_ScaleXFieldName);
+            m_ScaleYField = this.Q<DimensionStyleField>(s_ScaleYFieldName);
 
             m_ScaleXField.RegisterValueChangedCallback(e =>
             {
@@ -119,8 +120,8 @@ namespace Unity.UI.Builder
 
         void RefreshSubFields()
         {
-            m_ScaleXField.SetValueWithoutNotify(value.value.x);
-            m_ScaleYField.SetValueWithoutNotify(value.value.y);
+            m_ScaleXField.SetValueWithoutNotify(value.value.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            m_ScaleYField.SetValueWithoutNotify(value.value.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void UpdateScaleField()
@@ -128,7 +129,7 @@ namespace Unity.UI.Builder
             // Rebuild value from sub fields
             value = new BuilderScale()
             {
-                value = new Vector3(m_ScaleXField.value, m_ScaleYField.value, 1)
+                value = new Vector3(m_ScaleXField.length, m_ScaleYField.length, 1)
             };
         }
 
@@ -139,7 +140,7 @@ namespace Unity.UI.Builder
 
             if (!isNewValue && (
                 stylePropertyValueCount < 2 ||
-                styleProperty.values[0].valueType != StyleValueType.Dimension || 
+                styleProperty.values[0].valueType != StyleValueType.Dimension ||
                 styleProperty.values[1].valueType != StyleValueType.Dimension))
             {
                 Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);

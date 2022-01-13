@@ -136,11 +136,6 @@ namespace UnityEditor
             m_ShowInfo.valueChanged.RemoveListener(Repaint);
         }
 
-        private void QuaternionAsEulerAnglesPropertyField(GUIContent tag, SerializedProperty quaternionProperty, Quaternion rotation)
-        {
-            quaternionProperty.quaternionValue = Quaternion.Euler(EditorGUILayout.Vector3Field(tag, rotation.eulerAngles));
-        }
-
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -156,7 +151,6 @@ namespace UnityEditor
 
             EditorGUILayout.Space(5);
             EditorGUILayout.PropertyField(m_Mass, Styles.mass);
-            CollisionDetectionMode collisionDetectionMode = (CollisionDetectionMode)m_CollisionDetectionMode.intValue;
 
             EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
             if (body.isRoot)
@@ -168,8 +162,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 }
 
-                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
-                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
+                EditorGUILayout.PropertyField(m_CollisionDetectionMode, Styles.collisionDetectionMode);
 
                 EditorGUILayout.HelpBox("This is the root body of the articulation.", MessageType.Info);
             }
@@ -179,9 +172,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
 
-                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
-                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
-
+                EditorGUILayout.PropertyField(m_CollisionDetectionMode, Styles.collisionDetectionMode);
                 EditorGUILayout.PropertyField(m_MatchAnchors, Styles.matchAnchors);
 
                 // Show anchor edit fields and set to joint if changed
@@ -189,7 +180,7 @@ namespace UnityEditor
                 // If we were to do that, simulation would drift caused by anchors reset relative to current poses
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_AnchorPosition, Styles.anchorPosition);
-                QuaternionAsEulerAnglesPropertyField(Styles.anchorRotation, m_AnchorRotation, body.anchorRotation);
+                EditorGUILayout.PropertyField(m_AnchorRotation, Styles.anchorRotation);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(target, "Changing Articulation body anchor position/rotation");
@@ -210,7 +201,7 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_ParentAnchorPosition, Styles.parentAnchorPosition);
-                    QuaternionAsEulerAnglesPropertyField(Styles.parentAnchorRotation, m_ParentAnchorRotation, body.parentAnchorRotation);
+                    EditorGUILayout.PropertyField(m_ParentAnchorRotation, Styles.parentAnchorRotation);
 
                     if (EditorGUI.EndChangeCheck())
                     {

@@ -239,8 +239,11 @@ namespace UnityEditor
                     mainContainerWindow.SetMinMaxSizes(mainWindowMinSize, mainWindowMaxSize);
                 }
 
-                mainContainerWindow.windowID = $"MainView_{ModeService.currentId}";
-                mainContainerWindow.LoadGeometry(true);
+                var mainViewID = $"MainView_{ModeService.currentId}";
+                var hasMainViewGeometrySettings = EditorPrefs.HasKey($"{mainViewID}h");
+                mainContainerWindow.windowID = mainViewID;
+                if (hasMainViewGeometrySettings)
+                    mainContainerWindow.LoadGeometry(true);
 
                 var width = mainContainerWindow.position.width;
                 var height = mainContainerWindow.position.height;

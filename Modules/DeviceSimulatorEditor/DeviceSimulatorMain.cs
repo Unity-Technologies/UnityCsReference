@@ -35,7 +35,7 @@ namespace UnityEditor.DeviceSimulation
         public DeviceInfoAsset[] devices => m_Devices;
         public DeviceInfoAsset currentDevice => m_Devices[m_DeviceIndex];
         public Vector2 mousePositionInUICoordinates =>
-            m_TouchInput.isPointerInsideDeviceScreen ? new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.Height - m_TouchInput.pointerPosition.y) : Vector2.negativeInfinity;
+            m_TouchInput.isPointerInsideDeviceScreen ? new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.height - m_TouchInput.pointerPosition.y) : Vector2.negativeInfinity;
 
         private int m_DeviceIndex;
         public int deviceIndex
@@ -167,7 +167,7 @@ namespace UnityEditor.DeviceSimulation
 
             // If this is not set IMGUI doesn't know when you drag cursor from one element to another.
             // For example you could press the mouse on a button then drag the cursor onto a TextField, release the mouse and the button would still get pressed.
-            Event.current.mousePosition = new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.Height - m_TouchInput.pointerPosition.y);
+            Event.current.mousePosition = new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.height - m_TouchInput.pointerPosition.y);
 
             // This sends keyboard events to input systems and UI
             EditorGUIUtility.QueueGameViewInputEvent(Event.current);

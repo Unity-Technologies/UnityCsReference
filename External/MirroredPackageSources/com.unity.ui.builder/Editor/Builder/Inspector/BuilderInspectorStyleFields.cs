@@ -228,8 +228,6 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
                 imageStyleField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
-                if (BuilderExternalPackages.isVectorGraphicsInstalled)
-                    imageStyleField.TryEnableVectorGraphicTypeSupport();
             }
             else if (IsComputedStyleCursor(val) && fieldElement is ObjectField)
             {
@@ -1948,7 +1946,7 @@ namespace Unity.UI.Builder
 
             PostStyleFieldSteps(field, styleName, isNewValue);
         }
-        
+
         void OnFieldValueChangeScale(ChangeEvent<BuilderScale> e, string styleName)
         {
             var field = e.target as ScaleStyleField;
@@ -2085,7 +2083,7 @@ namespace Unity.UI.Builder
         {
             return val is StyleRotate || val is Rotate || val is BuilderRotate;
         }
-        
+
         static public bool IsComputedStyleScale(object val)
         {
             return val is StyleScale || val is Scale || val is BuilderScale;
@@ -2167,7 +2165,7 @@ namespace Unity.UI.Builder
             var style = (StyleRotate)val;
             return new BuilderRotate(style);
         }
-        
+
         static public BuilderScale GetComputedStyleScaleValue(object val)
         {
             if (val is BuilderScale)
@@ -2178,7 +2176,7 @@ namespace Unity.UI.Builder
 
             var style = (StyleScale)val;
             return new BuilderScale(style);
-        }     
+        }
 
         static public int GetComputedStyleIntValue(object val)
         {
