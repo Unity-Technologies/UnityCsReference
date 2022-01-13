@@ -104,7 +104,7 @@ namespace UnityEditor.Scripting.Compilers
 
             foreach (string path in assembly.CompilerOptions.RoslynAnalyzerDllPaths)
             {
-                arguments.Add($"/analyzer:\"{PrepareFileName(path)}\"");
+                arguments.Add($"/analyzer:{PrepareFileName(path)}");
             }
 
             if (!String.IsNullOrEmpty(assembly.CompilerOptions.RoslynAnalyzerRulesetPath))

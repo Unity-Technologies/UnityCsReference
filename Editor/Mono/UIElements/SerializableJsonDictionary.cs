@@ -20,11 +20,15 @@ namespace UnityEditor.UIElements
         private List<string> m_Values = new List<string>();
 
         [NonSerialized]
-        private Dictionary<string, object> m_Dict = new Dictionary<string, object>();
+        private Dictionary<string, WeakReference> m_ObjectCache = new Dictionary<string, WeakReference>();
+
+        [NonSerialized]
+        private Dictionary<string, string> m_JsonCache = new Dictionary<string, string>();
 
         public void Set<T>(string key, T value) where T : class
         {
-            m_Dict[key] = value;
+            m_ObjectCache[key] = new WeakReference(value);
+            m_JsonCache[key] = EditorJsonUtility.ToJson(value);
         }
 
         public T Get<T>(string key) where T : class
@@ -32,14 +36,20 @@ namespace UnityEditor.UIElements
             if (!ContainsKey(key))
                 return null;
 
-            if (m_Dict[key] is string)
+            string json = null;
+            if (!m_ObjectCache.ContainsKey(key) && m_JsonCache.ContainsKey(key))
             {
-                T obj = Activator.CreateInstance<T>();
-                EditorJsonUtility.FromJsonOverwrite((string)m_Dict[key], obj);
-                m_Dict[key] = obj;
+                json = m_JsonCache[key];
             }
 
-            return m_Dict[key] as T;
+            if (!string.IsNullOrEmpty(json))
+            {
+                T obj = Activator.CreateInstance<T>();
+                EditorJsonUtility.FromJsonOverwrite(json, obj);
+                m_ObjectCache[key] = new WeakReference(obj);
+            }
+
+            return m_ObjectCache[key].Target as T;
         }
 
         public T GetScriptable<T>(string key) where T : ScriptableObject
@@ -47,14 +57,20 @@ namespace UnityEditor.UIElements
             if (!ContainsKey(key))
                 return null;
 
-            if (m_Dict[key] is string)
+            string json = null;
+            if (!m_ObjectCache.ContainsKey(key) && m_JsonCache.ContainsKey(key))
             {
-                var newObject = ScriptableObject.CreateInstance<T>();
-                EditorJsonUtility.FromJsonOverwrite((string)m_Dict[key], newObject);
-                m_Dict[key] = newObject;
+                json = m_JsonCache[key];
             }
 
-            return m_Dict[key] as T;
+            if (!string.IsNullOrEmpty(json))
+            {
+                var newObject = ScriptableObject.CreateInstance<T>();
+                EditorJsonUtility.FromJsonOverwrite(json, newObject);
+                m_ObjectCache[key] = new WeakReference(newObject);
+            }
+
+            return m_ObjectCache[key].Target as T;
         }
 
         public void Overwrite(object obj, string key)
@@ -62,27 +78,22 @@ namespace UnityEditor.UIElements
             if (!ContainsKey(key))
                 return;
 
-            if (m_Dict[key] is string)
+            string json = null;
+            if (!m_ObjectCache.ContainsKey(key) && m_JsonCache.ContainsKey(key))
             {
-                EditorJsonUtility.FromJsonOverwrite((string)m_Dict[key], obj);
-                m_Dict[key] = obj;
+                json = m_JsonCache[key];
             }
-            else if (m_Dict[key] != obj)
+
+            if (!string.IsNullOrEmpty(json))
             {
-                // If the dict. value has already been expanded but it's not
-                // the same instance as the obj being passed in, we need to
-                // copy the serialized data from the object in the dict to the
-                // obj passed in and then fix the dict reference to point
-                // to the obj.
-                string json = EditorJsonUtility.ToJson(m_Dict[key]);
                 EditorJsonUtility.FromJsonOverwrite(json, obj);
-                m_Dict[key] = obj;
+                m_ObjectCache[key] = new WeakReference(obj);
             }
         }
 
         public bool ContainsKey(string key)
         {
-            return m_Dict.ContainsKey(key);
+            return m_ObjectCache.ContainsKey(key) || m_JsonCache.ContainsKey(key);
         }
 
         public void OnBeforeSerialize()
@@ -90,12 +101,20 @@ namespace UnityEditor.UIElements
             m_Keys.Clear();
             m_Values.Clear();
 
-            foreach (var data in m_Dict)
+            foreach (var data in m_ObjectCache)
             {
-                if (data.Key != null && data.Value != null)
+                if (data.Key == null)
+                    continue;
+
+                if (data.Value.Target != null)
                 {
                     m_Keys.Add(data.Key);
-                    m_Values.Add(EditorJsonUtility.ToJson(data.Value));
+                    m_Values.Add(EditorJsonUtility.ToJson(data.Value.Target));
+                }
+                else if (m_JsonCache.ContainsKey(data.Key))
+                {
+                    m_Keys.Add(data.Key);
+                    m_Values.Add(m_JsonCache[data.Key]);
                 }
             }
         }
@@ -104,7 +123,7 @@ namespace UnityEditor.UIElements
         {
             if (m_Keys.Count == m_Values.Count)
             {
-                m_Dict = Enumerable.Range(0, m_Keys.Count).ToDictionary(i => m_Keys[i], i => m_Values[i] as object);
+                m_JsonCache = Enumerable.Range(0, m_Keys.Count).ToDictionary(i => m_Keys[i], i => m_Values[i]);
             }
 
             m_Keys.Clear();
