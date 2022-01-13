@@ -221,8 +221,8 @@ namespace UnityEngine
 {
     public sealed partial class Screen
     {
-        public static int width => ShimManager.screenShim.width;
-        public static int height => ShimManager.screenShim.height;
+        public static int width => EditorScreen.width;
+        public static int height => EditorScreen.height;
         public static float dpi => ShimManager.screenShim.dpi;
         public static Resolution currentResolution => ShimManager.screenShim.currentResolution;
         public static Resolution[] resolutions => ShimManager.screenShim.resolutions;

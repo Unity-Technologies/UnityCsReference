@@ -141,6 +141,8 @@ namespace UnityEditor
         private static readonly float[] s_Vector4Floats = {0, 0, 0, 0};
         private static readonly GUIContent[] s_XYZWLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z"), EditorGUIUtility.TextContent("W")};
 
+        private const float kQuaternionFloatPrecision = 1e-6f;
+
         private static readonly GUIContent[] s_WHLabels = {EditorGUIUtility.TextContent("W"), EditorGUIUtility.TextContent("H")};
 
         private static readonly GUIContent s_CenterLabel = EditorGUIUtility.TrTextContent("Center");
@@ -244,6 +246,8 @@ namespace UnityEditor
         {
             s_PropertyCount = 0;
             s_EnabledStack.Clear();
+            s_IsInsideListStack.Clear();
+            GUI.isInsideList = false;
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
             ScriptAttributeUtility.s_DrawerStack.Clear();
@@ -257,6 +261,7 @@ namespace UnityEditor
         private static readonly Stack<PropertyGUIData> s_PropertyStack = new Stack<PropertyGUIData>();
 
         private static readonly Stack<bool> s_EnabledStack = new Stack<bool>();
+        private static readonly Stack<(bool insideList, int depth)> s_IsInsideListStack = new Stack<(bool insideList, int depth)>();
 
         // @TODO: API soon to be deprecated but still in a grace period; documentation states that users
         //        are encouraged to use EditorGUI.DisabledScope instead. Uncomment next line when appropriate.
@@ -362,6 +367,28 @@ namespace UnityEditor
             // Stack might have been cleared with ClearStack(), check before pop.
             if (s_EnabledStack.Count > 0)
                 GUI.enabled = s_EnabledStack.Pop();
+        }
+
+        internal static void BeginIsInsideList(int depth)
+        {
+            s_IsInsideListStack.Push((GUI.isInsideList, depth));
+            GUI.isInsideList = true;
+        }
+
+        internal static int GetInsideListDepth()
+        {
+            if (s_IsInsideListStack.Count > 0)
+                return s_IsInsideListStack.Peek().depth;
+            return -1;
+        }
+
+        internal static void EndIsInsideList()
+        {
+            // Stack might have been cleared with ClearStack(), check before pop.
+            if (s_IsInsideListStack.Count > 0)
+                GUI.isInsideList = s_IsInsideListStack.Pop().insideList;
+            else
+                GUI.isInsideList = false;
         }
 
         private static readonly Stack<bool> s_ChangedStack = new Stack<bool>();
@@ -4491,6 +4518,24 @@ namespace UnityEditor
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
+        // Make an X, Y and Z field for Quaternions - not public (use PropertyField instead)
+        private static void QuaternionEulerField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            position.height = kSingleLineHeight;
+            Vector3 eulerValue = property.quaternionValue.eulerAngles;
+            s_Vector3Floats[0] = Mathf.Floor(eulerValue.x / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            s_Vector3Floats[1] = Mathf.Floor(eulerValue.y / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            s_Vector3Floats[2] = Mathf.Floor(eulerValue.z / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            BeginChangeCheck();
+            MultiFloatFieldInternal(position, s_XYZLabels, s_Vector3Floats);
+            if (EndChangeCheck())
+            {
+                property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+            }
+        }
+
         // Make an X, Y, Z and W field - not public (use PropertyField instead)
         static void Vector4Field(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -7380,6 +7425,10 @@ namespace UnityEditor
                         break;
                     }
                 }
+            }
+            else if (type == SerializedPropertyType.Quaternion)
+            {
+                QuaternionEulerField(position, property, label);
             }
             // Handle Foldout
             else

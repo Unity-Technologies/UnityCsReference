@@ -15,7 +15,7 @@ using System.Globalization;
 
 namespace UnityEditor
 {
-    internal class LightingWindowLightmapPreviewTab
+    internal class LightingWindowLightmapPreviewTab : LightingWindow.WindowTab
     {
         LightmapType m_LightmapType         = LightmapType.NoLightmap;
         Vector2 m_ScrollPosition            = Vector2.zero;
@@ -41,8 +41,6 @@ namespace UnityEditor
         public LightingWindowLightmapPreviewTab(LightmapType type)
         {
             m_LightmapType = type;
-
-            InitSettings();
         }
 
         private bool isRealtimeLightmap
@@ -61,7 +59,7 @@ namespace UnityEditor
             }
         }
 
-        public void UpdateActiveGameObjectSelection()
+        public void OnSelectionChange()
         {
             MeshRenderer renderer;
             Terrain terrain = null;
@@ -92,7 +90,16 @@ namespace UnityEditor
             m_ShouldScrollToLightmapIndex = true;
         }
 
-        public void OnGUI(Rect position)
+        public void OnEnable()
+        {
+            InitSettings();
+        }
+
+        public void OnDisable()
+        {
+        }
+
+        public void OnGUI()
         {
             InitSettings();
 

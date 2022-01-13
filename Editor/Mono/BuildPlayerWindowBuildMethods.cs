@@ -435,7 +435,15 @@ namespace UnityEditor
                 var tempPath = NormalizePath(basePath + "/Temp");
                 var libraryPath = NormalizePath(basePath + "/Library");
                 var userSettingsPath = NormalizePath(basePath + "/UserSettings");
-                if (basePath.Contains(cleanedPath) || cleanedPath == assetsPath || cleanedPath == settingsPath || cleanedPath == tempPath || cleanedPath == libraryPath || cleanedPath == userSettingsPath)
+                var userDesktopPath = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+
+                if (basePath.Contains(cleanedPath) ||
+                    cleanedPath == assetsPath ||
+                    cleanedPath == settingsPath ||
+                    cleanedPath == tempPath ||
+                    cleanedPath == libraryPath ||
+                    cleanedPath == userSettingsPath ||
+                    cleanedPath == userDesktopPath)
                 {
                     Debug.LogError("Invalid build path: " + cleanedPath);
                     return false;

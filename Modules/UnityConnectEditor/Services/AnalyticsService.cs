@@ -40,7 +40,7 @@ namespace UnityEditor.Connect
 
         AnalyticsService()
         {
-            const string serviceName = "Analytics";
+            const string serviceName = "Legacy Analytics";
             name = serviceName;
             title = L10n.Tr(serviceName);
             description = L10n.Tr("Discover player insights");

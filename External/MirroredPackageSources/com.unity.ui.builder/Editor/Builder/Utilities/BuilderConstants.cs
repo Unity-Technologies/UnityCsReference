@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
         public const string SettingsUIPath = UIBuilderPackagePath + "/Settings";
         public const string LibraryUssPathNoExt = UIBuilderPackagePath + "/Library/BuilderLibrary";
         public const string InspectorUssPathNoExt = UIBuilderPackagePath + "/Inspector/BuilderInspector";
-        
+
         public const string UIBuilderTestsTestFilesPath = UIBuilderTestsRootPath + "/TestFiles";
         const string BuilderDocumentDiskJsonFileName = "UIBuilderDocument.json";
         const string BuilderDocumentDiskJsonFolderPath = "Library/UIBuilder";

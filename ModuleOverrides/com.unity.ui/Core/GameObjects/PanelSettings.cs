@@ -499,7 +499,15 @@ namespace UnityEngine.UIElements
         {
             if (themeUss == null)
             {
-                Debug.LogWarning("No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly", this);
+                // In the Editor, we only want this to run when in play mode, because otherwise users may get a false
+                // alarm when the project is loading and the theme asset is not yet loaded. By keeping it here, we can
+                // still inform them of a potential problem (it's also in the PanelSettings inspector).
+                // On a built player, this will always show, so if they're UI is missing they can have a clue of why.
+                if (UIDocument.IsEditorPlayingOrWillChangePlaymode())
+                {
+                    Debug.LogWarning(
+                        "No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly", this);
+                }
             }
 
             InitializeShaders();

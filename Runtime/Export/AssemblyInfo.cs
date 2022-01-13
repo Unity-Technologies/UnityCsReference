@@ -91,6 +91,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.ucg.QoS")] // TODO(andrews): Remove this when we fix transport
 [assembly: InternalsVisibleTo("Unity.Entities")]
 [assembly: InternalsVisibleTo("Unity.Collections")]
+[assembly: InternalsVisibleTo("Unity.Logging")]
 [assembly: InternalsVisibleTo("Unity.Core")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]

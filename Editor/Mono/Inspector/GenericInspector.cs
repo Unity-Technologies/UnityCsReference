@@ -123,6 +123,12 @@ namespace UnityEditor
             {
                 while (property.NextVisible(childrenAreExpanded))
                 {
+                    if (GUI.isInsideList && property.depth <= EditorGUI.GetInsideListDepth())
+                        EditorGUI.EndIsInsideList();
+
+                    if (property.isArray)
+                        EditorGUI.BeginIsInsideList(property.depth);
+
                     var handler = ScriptAttributeUtility.GetHandler(property);
                     var hasPropertyDrawer = handler.propertyDrawer != null;
                     childrenAreExpanded = !hasPropertyDrawer && property.isExpanded && EditorGUI.HasVisibleChildFields(property);

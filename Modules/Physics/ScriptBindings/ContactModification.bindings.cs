@@ -18,17 +18,20 @@ namespace UnityEngine
     public partial class Physics
     {
         public static event Action<PhysicsScene, NativeArray<ModifiableContactPair>> ContactModifyEvent;
+        public static event Action<PhysicsScene, NativeArray<ModifiableContactPair>> ContactModifyEventCCD;
 
         [RequiredByNativeCode]
-        private static unsafe void OnSceneContactModify(PhysicsScene scene, IntPtr buffer, int count)
+        private static unsafe void OnSceneContactModify(PhysicsScene scene, IntPtr buffer, int count, bool isCCD)
         {
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ModifiableContactPair>(buffer.ToPointer(), count, Allocator.None);
 
             var safety = AtomicSafetyHandle.Create();
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, safety);
 
-            if (ContactModifyEvent != null)
-                ContactModifyEvent(scene, array);
+            if (!isCCD)
+                ContactModifyEvent?.Invoke(scene, array);
+            else
+                ContactModifyEventCCD?.Invoke(scene, array);
 
             AtomicSafetyHandle.Release(safety);
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -18,7 +19,7 @@ namespace Unity.UI.Builder
             {
                 innerValue = value;
                 option = s_NoOptionString;
-                SetValueWithoutNotify(innerValue.ToString());
+                SetValueWithoutNotify(innerValue.ToString(CultureInfo.InvariantCulture.NumberFormat));
             }
         }
 
@@ -41,7 +42,7 @@ namespace Unity.UI.Builder
 
             var num = new string(val.Where((c) => Char.IsDigit(c) || c == '.' || c == '-').ToArray());
             float number;
-            var result = float.TryParse(num, out number);
+            var result = float.TryParse(num, NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out number);
             if (!result)
                 return false;
 
@@ -59,6 +60,14 @@ namespace Unity.UI.Builder
 
             option = s_NoOptionString;
             return true;
+        }
+
+        protected override string GetTextFromValue()
+        {
+            if (styleKeywords.Contains(option))
+                return option;
+
+            return innerValue.ToString(CultureInfo.InvariantCulture.NumberFormat);
         }
     }
 }

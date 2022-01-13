@@ -80,6 +80,7 @@ namespace Unity.UI.Builder
             };
 
             AddType(typeof(Sprite), "Sprite");
+            AddType(typeof(VectorImage), "Vector");
         }
 
         private void OnEnterEditButton(PointerEnterEvent evt)
@@ -137,10 +138,5 @@ namespace Unity.UI.Builder
             return addRequest.Result != null;
         }
 
-
-        public void TryEnableVectorGraphicTypeSupport()
-        {
-            AddType(typeof(VectorImage), "Vector");
-        }
     }
 }

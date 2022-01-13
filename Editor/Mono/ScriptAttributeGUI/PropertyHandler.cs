@@ -203,8 +203,15 @@ namespace UnityEditor
                     // Calculate visibility rect specifically for reorderable list as when applied for the whole serialized object,
                     // it causes collapsed out of sight array elements appear thus messing up scroll-bar experience
                     var screenPos = GUIUtility.GUIToScreenPoint(position.position);
-                    screenPos.y = Mathf.Clamp(screenPos.y, 0, Screen.height);
-                    Rect listVisibility = new Rect(screenPos.x, screenPos.y, Screen.width, Screen.height);
+
+                    screenPos.y = Mathf.Clamp(screenPos.y,
+                        GUIView.current?.screenPosition.yMin ?? 0,
+                        GUIView.current?.screenPosition.yMax ?? Screen.height);
+
+                    Rect listVisibility = new Rect(screenPos.x, screenPos.y,
+                        GUIView.current?.screenPosition.width ?? Screen.width,
+                        GUIView.current?.screenPosition.height ?? Screen.height);
+
                     listVisibility = GUIUtility.ScreenToGUIRect(listVisibility);
 
                     reorderableList.Property = property;
@@ -228,12 +235,21 @@ namespace UnityEditor
                 bool childrenAreExpanded = EditorGUI.DefaultPropertyField(position, prop, label) && EditorGUI.HasVisibleChildFields(prop);
                 position.y += position.height + EditorGUI.kControlVerticalSpacing;
 
+                if (property.isArray)
+                    EditorGUI.BeginIsInsideList(prop.depth);
+
                 // Loop through all child properties
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = prop.GetEndProperty();
                     while (prop.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(prop, endProperty))
                     {
+                        if (GUI.isInsideList && prop.depth <= EditorGUI.GetInsideListDepth())
+                            EditorGUI.EndIsInsideList();
+
+                        if (prop.isArray)
+                            EditorGUI.BeginIsInsideList(prop.depth);
+
                         var handler = ScriptAttributeUtility.GetHandler(prop);
                         EditorGUI.indentLevel = prop.depth + relIndent;
                         position.height = handler.GetHeight(prop, null, UseReorderabelListControl(prop) && includeChildren);
@@ -253,6 +269,8 @@ namespace UnityEditor
                 }
 
                 // Restore state
+                if (GUI.isInsideList && property.depth <= EditorGUI.GetInsideListDepth())
+                    EditorGUI.EndIsInsideList();
                 GUI.enabled = wasEnabled;
                 EditorGUIUtility.SetIconSize(oldIconSize);
                 EditorGUI.indentLevel = origIndent;

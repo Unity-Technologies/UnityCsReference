@@ -38,8 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static readonly string[] k_InfoBoxReadMoreUrl =
         {
-            "/Documentation/Manual/pack-prerelease.html",
-            "/Documentation/Manual/pack-experimental.html",
+            "/Documentation/Manual/pack-preview.html",
+            "/Documentation/Manual/pack-exp.html",
             "/Documentation/Manual/pack-releasecandidate.html",
             "/Documentation/Manual/upm-scoped.html"
         };
