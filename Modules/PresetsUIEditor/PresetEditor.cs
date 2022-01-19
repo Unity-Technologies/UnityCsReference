@@ -21,7 +21,6 @@ namespace UnityEditor.Presets
         static class Style
         {
             public static GUIContent presetType = EditorGUIUtility.TrTextContent("Preset Type", "The Object type this Preset can be applied to.");
-            public static GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
             public static GUIStyle centerStyle = new GUIStyle() { alignment = TextAnchor.MiddleCenter };
 
             public static GUIContent addToDefault = EditorGUIUtility.TrTextContent("Add to {0} default", "The Preset will be added first in the default list with an empty filter.");
@@ -33,17 +32,13 @@ namespace UnityEditor.Presets
             public static readonly string excludedBarName = "unity-binding-preset-ignore-bar";
             public static readonly string excludedBarContainerName = "unity-preset-override-bars-container";
             public static readonly string excludedBarUssClassName = "unity-binding__preset-ignore-bar";
-
-            static Style()
-            {
-                inspectorBig.padding.bottom -= 1;
-            }
         }
 
         class ReferenceCount
         {
             public int count;
             public UnityObject reference;
+            public Hash128 presetHash;
         }
         static Dictionary<int, ReferenceCount> s_References = new Dictionary<int, ReferenceCount>();
         List<int> m_PresetsInstanceIds = new List<int>();
@@ -57,6 +52,32 @@ namespace UnityEditor.Presets
 
         string m_NotSupportedEditorName = null;
         Texture2D m_UnsupportedIcon = null;
+
+        internal override void OnForceReloadInspector()
+        {
+            base.OnForceReloadInspector();
+            UpdateInvalidReferences();
+        }
+
+        void UpdateInvalidReferences()
+        {
+            foreach (var o in targets)
+            {
+                var instanceID = o.GetInstanceID();
+                if (s_References.ContainsKey(instanceID))
+                {
+                    var presetHash = s_References[instanceID].presetHash;
+                    var currentHash = AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetOrScenePath(o));
+
+                    // The asset changed on disk. Update the reference.
+                    if (presetHash != currentHash)
+                    {
+                        s_References[instanceID].presetHash = currentHash;
+                        s_References[instanceID].reference = (o as Preset)?.GetReferenceObject();
+                    }
+                }
+            }
+        }
 
         public override VisualElement CreateInspectorGUI()
         {
@@ -88,11 +109,6 @@ namespace UnityEditor.Presets
             //BindingExtensions.TrackPropertyValue(root, serializedObject.FindProperty("m_ExcludedProperties"), so => UpdateVisualBindings()); // throwing error because it only works on leaf properties.
 
             var innerRoot = new VisualElement();
-            // TODO: we should ideally be able to get those values from the InspectorElement,
-            // but I'm not sure if that's possible at this point.
-            innerRoot.style.marginLeft = -15;
-            innerRoot.style.marginRight = -6;
-            innerRoot.style.marginTop = 4;
             root.Add(innerRoot);
 
             if (m_InternalEditor != null)
@@ -110,25 +126,11 @@ namespace UnityEditor.Presets
 
                 if (m_InternalEditor.target is Component)
                 {
-                    innerRoot.Add(new IMGUIContainer(() =>
-                    {
-                        bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
-                        bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, m_InternalEditor);
-                        if (isVisible != wasVisible)
-                        {
-                            internalInspector.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
-                            InternalEditorUtility.SetIsInspectorExpanded(m_InternalEditor.target, isVisible);
-                        }
-                    }));
+                    innerRoot.Add(new IMGUIContainer(() => DrawComponentTitleBar(internalInspector)));
                 }
                 else
                 {
-                    innerRoot.Add(new IMGUIContainer(() =>
-                    {
-                        EditorGUILayout.BeginVertical();
-                        m_InternalEditor.DrawHeader();
-                        EditorGUILayout.EndVertical();
-                    }));
+                    innerRoot.Add(new IMGUIContainer(DrawInternalEditorHeader));
                 }
 
                 innerRoot.Add(internalInspector);
@@ -141,6 +143,54 @@ namespace UnityEditor.Presets
             }
 
             return root;
+        }
+
+        void DrawComponentTitleBar(VisualElement internalInspector)
+        {
+            PresetSelector.InspectedObjects = targets;
+            try
+            {
+                bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
+                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, m_InternalEditor);
+                if (isVisible != wasVisible)
+                {
+                    internalInspector.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
+                    InternalEditorUtility.SetIsInspectorExpanded(m_InternalEditor.target, isVisible);
+                }
+            }
+            finally
+            {
+                PresetSelector.InspectedObjects = null;
+            }
+        }
+
+        void DrawInternalEditorHeader()
+        {
+            var prevHierarchyMode = EditorGUIUtility.hierarchyMode;
+            PresetSelector.InspectedObjects = targets;
+            try
+            {
+                // This value is used in Editor.DrawHeader() to Begin/End vertical layout groups and to
+                // override some style properties. It is inconsistent between calls (there's a public
+                // callback there that users/packages can subscribe to) and therefore sometimes breaks
+                // the layout and buttons. Forcing its value here (to any value) prevents this from happening.
+                EditorGUIUtility.hierarchyMode = true;
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    m_InternalEditor.DrawHeader();
+                }
+            }
+            finally
+            {
+                EditorGUIUtility.hierarchyMode = prevHierarchyMode;
+                PresetSelector.InspectedObjects = null;
+            }
+        }
+
+        public override bool UseDefaultMargins()
+        {
+            // Makes inspector be full width
+            return false;
         }
 
         void UpdateVisualBindings()
@@ -232,41 +282,23 @@ namespace UnityEditor.Presets
                 for (var index = 0; index < targets.Length; index++)
                 {
                     var p = (Preset)targets[index];
+                    if (p.GetReferenceObject() == null)
+                    {
+                        // fast exit on NULL targets as we do not support their inspector in Preset.
+                        SetupUnsupportedInspector(p);
+                        return;
+                    }
+
                     ReferenceCount reference = null;
                     var referenceRegistered = s_References.TryGetValue(p.GetInstanceID(), out reference);
                     if (!referenceRegistered || reference.reference == null)
                     {
-                        if (reference == null)
+                        reference = new ReferenceCount()
                         {
-                            reference = new ReferenceCount()
-                            {
-                                count = 0,
-                                reference = p.GetReferenceObject()
-                            };
-                        }
-                        else
-                        {
-                            reference.reference = p.GetReferenceObject();
-                        }
-                        if (reference.reference == null)
-                        {
-                            // fast exit on NULL targets as we do not support their inspector in Preset.
-                            m_NotSupportedEditorName = p.GetTargetTypeName();
-                            m_UnsupportedIcon = EditorGUIUtility.LoadIcon(m_NotSupportedEditorName.Replace('.', '/') + " Icon");
-                            if (m_UnsupportedIcon == null)
-                            {
-                                m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnailFromType((serializedObject.FindProperty("m_TargetType.m_ManagedTypePPtr").objectReferenceValue as MonoScript)?.GetClass());
-                                if (m_UnsupportedIcon == null)
-                                {
-                                    m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnailFromClassID(serializedObject.FindProperty("m_TargetType.m_NativeTypeID").intValue);
-                                    if (m_UnsupportedIcon == null)
-                                    {
-                                        m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject));
-                                    }
-                                }
-                            }
-                            return;
-                        }
+                            count = 0,
+                            reference = p.GetReferenceObject(),
+                            presetHash = AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetOrScenePath(p))
+                        };
 
                         reference.reference.name = p.name;
                         if (referenceRegistered)
@@ -277,8 +309,9 @@ namespace UnityEditor.Presets
                         {
                             s_References.Add(p.GetInstanceID(), reference);
                         }
-                        m_PresetsInstanceIds.Add(p.GetInstanceID());
                     }
+
+                    m_PresetsInstanceIds.Add(p.GetInstanceID());
                     reference.count++;
                     objs[index] = reference.reference;
                 }
@@ -296,7 +329,8 @@ namespace UnityEditor.Presets
                         reference = new ReferenceCount()
                         {
                             count = 0,
-                            reference = m_InternalEditor.targets[index]
+                            reference = m_InternalEditor.targets[index],
+                            presetHash = AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetOrScenePath(targets[index]))
                         };
                         s_References.Add(instanceID, reference);
                     }
@@ -656,9 +690,27 @@ namespace UnityEditor.Presets
             }
         }
 
+        void SetupUnsupportedInspector(Preset p)
+        {
+            m_NotSupportedEditorName = p.GetTargetTypeName();
+            m_UnsupportedIcon = EditorGUIUtility.LoadIcon(m_NotSupportedEditorName.Replace('.', '/') + " Icon");
+            if (m_UnsupportedIcon == null)
+            {
+                m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnailFromType((serializedObject.FindProperty("m_TargetType.m_ManagedTypePPtr").objectReferenceValue as MonoScript)?.GetClass());
+                if (m_UnsupportedIcon == null)
+                {
+                    m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnailFromClassID(serializedObject.FindProperty("m_TargetType.m_NativeTypeID").intValue);
+                    if (m_UnsupportedIcon == null)
+                    {
+                        m_UnsupportedIcon = AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject));
+                    }
+                }
+            }
+        }
+
         void DrawUnsupportedInspector()
         {
-            GUILayout.BeginHorizontal(Style.inspectorBig);
+            GUILayout.BeginHorizontal(EditorStyles.inspectorBig);
             GUILayout.Space(38);
             GUILayout.BeginVertical();
             GUILayout.Space(k_HeaderHeight);

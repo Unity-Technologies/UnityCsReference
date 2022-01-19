@@ -22,10 +22,14 @@ namespace UnityEditor.Presets
 
         void RevertValues()
         {
-            Undo.RecordObjects(m_Targets, "Cancel Preset");
-            for (int i = 0; i < m_Targets.Length; i++)
+            var targets = m_Targets.Where(t => t != null).ToArray();
+            if (targets.Length == 0)
+                return;
+
+            Undo.RecordObjects(targets, "Cancel Preset");
+            for (int i = 0; i < targets.Length; i++)
             {
-                m_Presets[i].ApplyTo(m_Targets[i]);
+                m_Presets[i].ApplyTo(targets[i]);
             }
         }
 
@@ -37,14 +41,23 @@ namespace UnityEditor.Presets
             }
             else
             {
-                Undo.RecordObjects(m_Targets, "Apply Preset " + selection.name);
-                foreach (var target in m_Targets)
-                {
-                    selection.ApplyTo(target);
-                }
+                ApplyValues(selection);
             }
             InspectorWindow.RepaintAllInspectors();
             SettingsService.RepaintAllSettingsWindow();
+        }
+
+        void ApplyValues(Preset selection)
+        {
+            var targets = m_Targets.Where(t => t != null).ToArray();
+            if (targets.Length == 0)
+                return;
+
+            Undo.RecordObjects(targets, "Apply Preset " + selection.name);
+            foreach (var target in targets)
+            {
+                selection.ApplyTo(target);
+            }
         }
 
         public override void OnSelectionClosed(Preset selection)

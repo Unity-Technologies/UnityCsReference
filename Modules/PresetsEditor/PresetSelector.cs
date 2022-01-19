@@ -58,82 +58,12 @@ namespace UnityEditor.Presets
 
     class PresetListArea : ObjectListArea
     {
-        public const int saveCurrentToInstanceID = int.MinValue;
-        bool m_CanCreateNew;
-        readonly LocalGroup.ExtraItem m_SaveCurrentToItem;
-
-        public PresetListArea(ObjectListAreaState state, PresetSelector owner, bool canCreateNew)
+        public PresetListArea(ObjectListAreaState state, PresetSelector owner)
             : base(state, owner, true)
         {
-            m_CanCreateNew = canCreateNew;
-
             if (noneItem != null)
             {
-                noneItem.m_Name = "Current";
                 noneItem.m_Icon = EditorGUIUtility.LoadIcon("Preset.Current");
-            }
-
-            if (canCreateNew)
-            {
-                m_SaveCurrentToItem = new LocalGroup.ExtraItem()
-                {
-                    m_InstanceID = saveCurrentToInstanceID,
-                    m_Name = "Save current to...",
-                    m_Icon = EditorGUIUtility.LoadIcon("CreateAddNew")
-                };
-            }
-
-            this.keyboardCallback += KeyboardCallback;
-        }
-
-        void KeyboardCallback()
-        {
-            if (m_CanCreateNew && Event.current.type == EventType.KeyDown)
-            {
-                m_LocalAssets.AssetReferenceAtIndex(numItemsDisplayed - 1, out InternalEditorUtility.AssetReference lastItem);
-                switch (Event.current.keyCode)
-                {
-                    case KeyCode.DownArrow:
-                        if (IsSelected(lastItem.instanceID))
-                        {
-                            SetSelection(new[] { saveCurrentToInstanceID }, false);
-                            Event.current.Use();
-                        }
-                        else if (IsSelected(saveCurrentToInstanceID))
-                        {
-                            Event.current.Use();
-                        }
-                        break;
-                    case KeyCode.UpArrow:
-                        if (IsSelected(saveCurrentToInstanceID))
-                        {
-                            SetSelection(new[] { lastItem.instanceID }, false);
-                            Event.current.Use();
-                        }
-                        break;
-                }
-            }
-        }
-
-        public override void OnGUI(Rect pos, int keyboardControlID)
-        {
-            if (m_CanCreateNew)
-            {
-                // The 'Save current to...' item will be "pinned" at the bottom of the area containing the list.
-                // Reducing list area height by the height of one item.
-                var itemHeight = m_LocalAssets.m_Grid.CalcRect(0, 0).height;
-
-                var listPos = new Rect(pos);
-                listPos.height = Math.Max(0, listPos.height - itemHeight);
-                base.OnGUI(listPos, keyboardControlID);
-
-                // Adjusting position of 'Save current to...' item
-                var saveCurrentToItemRect = new Rect(pos.x, pos.y + listPos.height + 2, pos.width, itemHeight);
-                m_LocalAssets.DrawItem(saveCurrentToItemRect, m_SaveCurrentToItem);
-            }
-            else
-            {
-                base.OnGUI(pos, keyboardControlID);
             }
         }
 
@@ -149,6 +79,8 @@ namespace UnityEditor.Presets
             public static GUIContent presetIcon = EditorGUIUtility.IconContent("Preset.Context");
             public static GUIStyle selectedPathLabel = "Label";
         }
+
+        internal static Object[] InspectedObjects { get; set; }
 
         // Filter
         string m_SearchField;
@@ -177,7 +109,7 @@ namespace UnityEditor.Presets
         string m_SelectedPath;
         GUIContent m_SelectedPathContent = new GUIContent();
 
-        bool canCreateNewPreset => m_CanCreateNew && m_ListArea != null && m_ListArea.IsSelected(PresetListArea.saveCurrentToInstanceID);
+        bool canCreateNewPreset => m_CanCreateNew;
 
         internal static PresetSelector get
         {
@@ -285,9 +217,14 @@ namespace UnityEditor.Presets
 
         static IEnumerable<Preset> FindAllPresetsOfType(PresetType presetType)
         {
+            // If a preset is currently inspected, it doesn't make sense for it to be applied on itself so we filter it from the list.
+            Preset inspectedPreset = null;
+            if (InspectedObjects != null && InspectedObjects.Length == 1 && InspectedObjects[0] is Preset preset)
+                inspectedPreset = preset;
+
             return AssetDatabase.FindAssets("t:Preset")
                 .Select(a => AssetDatabase.LoadAssetAtPath<Preset>(AssetDatabase.GUIDToAssetPath(a)))
-                .Where(preset => preset.GetPresetType() == presetType);
+                .Where(preset => preset.GetPresetType() == presetType && preset != inspectedPreset);
         }
 
         void InitListArea()
@@ -297,7 +234,7 @@ namespace UnityEditor.Presets
 
             if (m_ListArea == null)
             {
-                m_ListArea = new PresetListArea(m_ListAreaState, this, m_CanCreateNew);
+                m_ListArea = new PresetListArea(m_ListAreaState, this);
                 m_ListArea.allowDeselection = false;
                 m_ListArea.allowDragging = false;
                 m_ListArea.allowFocusRendering = false;
@@ -324,8 +261,6 @@ namespace UnityEditor.Presets
         {
             if (doubleClicked)
             {
-                if (canCreateNewPreset)
-                    CreatePreset(m_MainTarget);
                 Close();
                 GUIUtility.ExitGUI();
             }
@@ -373,21 +308,29 @@ namespace UnityEditor.Presets
 
         void DrawBottomBar()
         {
-            using (new EditorGUILayout.HorizontalScope(Style.bottomBarBg, GUILayout.MinHeight(24f)))
+            using (new EditorGUILayout.VerticalScope(Style.bottomBarBg, GUILayout.MinHeight(k_BottomBarHeight)))
             {
-                Rect rect = new Rect(0, position.height - k_BottomBarHeight, position.width, k_BottomBarHeight);
+                if (canCreateNewPreset)
+                {
+                    using (new EditorGUILayout.HorizontalScope(GUIStyle.none))
+                    {
+                        if (GUILayout.Button("Create new Preset..."))
+                        {
+                            // Since a selection change instantly applies a preset, we clear it so the previous values gets
+                            // used to create the new preset.
+                            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+                            m_ListArea.InitSelection(Array.Empty<int>());
+                            CreatePreset(m_MainTarget);
+                        }
+                    }
+                }
 
-                // File path
-                EditorGUIUtility.SetIconSize(new Vector2(16, 16)); // If not set we see icons scaling down if text is being cropped
-                const float k_Margin = 2;
-                rect.width -= k_Margin * 2;
-                rect.x += k_Margin;
-                rect.height = k_BottomBarHeight;
-
-                GUI.Label(rect, m_SelectedPathContent, Style.selectedPathLabel);
-                EditorGUIUtility.SetIconSize(new Vector2(0, 0));
-
-                GUILayout.FlexibleSpace();
+                using (new EditorGUILayout.HorizontalScope(GUIStyle.none, GUILayout.MinHeight(18)))
+                {
+                    EditorGUIUtility.SetIconSize(new Vector2(16, 16)); // If not set we see icons scaling down if text is being cropped
+                    GUILayout.Label(m_SelectedPathContent, Style.selectedPathLabel);
+                    EditorGUIUtility.SetIconSize(new Vector2(0, 0));
+                }
             }
         }
 
@@ -421,8 +364,6 @@ namespace UnityEditor.Presets
                         break;
                     case KeyCode.KeypadEnter:
                     case KeyCode.Return:
-                        if (canCreateNewPreset)
-                            CreatePreset(m_MainTarget);
                         Close();
                         Event.current.Use();
                         GUIUtility.ExitGUI();
@@ -530,10 +471,14 @@ namespace UnityEditor.Presets
 
                     AssetDatabase.SaveAssetIfDirty(oldPreset);
 
-                    // If the preset is opened in any inspectors, rebuild them since the preset has been overwritten
-                    var inspectors = InspectorWindow.GetInspectors().Where(iw => iw.GetInspectedObjects().Any(o => o == oldPreset));
-                    foreach (InspectorWindow inspector in inspectors)
-                        inspector.tracker.ForceRebuild();
+                    // If the preset is opened in any inspectors/property windows, rebuild them since the preset has been overwritten
+                    var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>().Where(pe =>
+                    {
+                        var editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(pe.tracker.activeEditors);
+                        return editor != null && editor.targets.Any(o => o == oldPreset);
+                    });
+                    foreach (var pe in propertyEditors)
+                        pe.tracker.ForceRebuild();
                 }
                 else
                 {

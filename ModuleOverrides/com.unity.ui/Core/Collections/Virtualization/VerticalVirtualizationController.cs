@@ -19,6 +19,9 @@ namespace UnityEngine.UIElements
 
         public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems as IEnumerable<ReusableCollectionItem>;
 
+        int m_LastFocusedElementIndex = -1;
+        List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
+
         protected int m_FirstVisibleIndex;
 
         Func<T, bool> m_VisibleItemPredicateDelegate;
@@ -121,12 +124,14 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
             recycledItem.rootElement.style.display = DisplayStyle.Flex;
             if (recycledItem.index == newIndex) return;
 
             var useAlternateUss = m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;
             recycledItem.rootElement.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
+
+            var previousIndex = recycledItem.index;
+            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
 
             if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                 m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
@@ -151,7 +156,47 @@ namespace UnityEngine.UIElements
             m_CollectionView.viewController.InvokeBindItem(recycledItem, newIndex);
 
             // Handle focus cycling
-            m_CollectionView.HandleFocus(recycledItem);
+            HandleFocus(recycledItem, previousIndex);
+        }
+
+        public override void OnFocus(VisualElement leafTarget)
+        {
+            if (leafTarget == m_ScrollView.contentContainer)
+                return;
+
+            m_LastFocusedElementTreeChildIndexes.Clear();
+
+            if (m_ScrollView.contentContainer.FindElementInTree(leafTarget, m_LastFocusedElementTreeChildIndexes))
+            {
+                var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
+                foreach (var recycledItem in activeItems)
+                {
+                    if (recycledItem.rootElement == recycledElement)
+                    {
+                        m_LastFocusedElementIndex = recycledItem.index;
+                        break;
+                    }
+                }
+
+                m_LastFocusedElementTreeChildIndexes.RemoveAt(0);
+            }
+            else
+            {
+                m_LastFocusedElementIndex = -1;
+            }
+        }
+
+        void HandleFocus(ReusableCollectionItem recycledItem, int previousIndex)
+        {
+            if (m_LastFocusedElementIndex == -1)
+                return;
+
+            if (m_LastFocusedElementIndex == recycledItem.index)
+                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Focus();
+            else if (m_LastFocusedElementIndex != previousIndex)
+                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Blur();
+            else
+                m_ScrollView.contentContainer.Focus();
         }
 
         public override void UpdateBackground()

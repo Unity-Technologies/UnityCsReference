@@ -486,8 +486,10 @@ namespace UnityEngine
             private static Color ExtractColorTemperature(Light l)
             {
                 Color cct = new Color(1.0f, 1.0f, 1.0f);
+
                 if (l.useColorTemperature && GraphicsSettings.lightsUseLinearIntensity)
                     cct = Mathf.CorrelatedColorTemperatureToRGB(l.colorTemperature);
+
                 return cct;
             }
 

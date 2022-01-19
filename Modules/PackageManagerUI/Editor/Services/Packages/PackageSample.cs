@@ -135,11 +135,16 @@ namespace UnityEditor.PackageManager.UI
                         string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
                     );
                     return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                }) ?? Enumerable.Empty<Sample>();
+                }).ToArray() ?? Enumerable.Empty<Sample>();
             }
             catch (IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot find samples for package {package.displayName}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot find samples for package {package.displayName}: {e}");
+                return Enumerable.Empty<Sample>();
+            }
+            catch (InvalidCastException e)
+            {
+                Debug.Log($"[Package Manager Window] Invalid sample data for package {package.displayName}: {e}");
                 return Enumerable.Empty<Sample>();
             }
             catch (Exception)

@@ -341,7 +341,7 @@ namespace UnityEditor
         public float m_RightMargin = 10f;
         public float m_LeftMargin = 10f;
 
-        public virtual void OnGUI(Rect position, int keyboardControlID)
+        public void OnGUI(Rect position, int keyboardControlID)
         {
             s_VCEnabled = VersionControlUtils.isVersionControlConnected;
 
@@ -643,7 +643,7 @@ namespace UnityEditor
             SetSelection(instanceIDs.ToArray(), false);
         }
 
-        protected void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
+        void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
         {
             InitSelection(selectedInstanceIDs);
 

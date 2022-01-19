@@ -203,8 +203,15 @@ namespace UnityEditor
                     // Calculate visibility rect specifically for reorderable list as when applied for the whole serialized object,
                     // it causes collapsed out of sight array elements appear thus messing up scroll-bar experience
                     var screenPos = GUIUtility.GUIToScreenPoint(position.position);
-                    screenPos.y = Mathf.Clamp(screenPos.y, 0, Screen.height);
-                    Rect listVisibility = new Rect(screenPos.x, screenPos.y, Screen.width, Screen.height);
+
+                    screenPos.y = Mathf.Clamp(screenPos.y,
+                        GUIView.current?.screenPosition.yMin ?? 0,
+                        GUIView.current?.screenPosition.yMax ?? Screen.height);
+
+                    Rect listVisibility = new Rect(screenPos.x, screenPos.y,
+                        GUIView.current?.screenPosition.width ?? Screen.width,
+                        GUIView.current?.screenPosition.height ?? Screen.height);
+
                     listVisibility = GUIUtility.ScreenToGUIRect(listVisibility);
 
                     reorderableList.Property = property;
