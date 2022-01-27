@@ -225,7 +225,7 @@ namespace UnityEditor.DeviceSimulation
 
             m_SelectedDeviceName.text = m_Main.currentDevice.deviceInfo.friendlyName;
 
-            m_ScreenSimulation.OnOrientationChanged += autoRotate => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
+            m_ScreenSimulation.OnOrientationChanged += () => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
             m_ScreenSimulation.OnInsetsChanged += insets => m_DeviceView.ScreenInsets = insets;
             m_ScreenSimulation.OnScreenSpaceSafeAreaChanged += safeArea => m_DeviceView.SafeArea = safeArea;
 

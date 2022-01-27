@@ -5299,6 +5299,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\External\ServicesTab\ServicesTabConfiguration.cs">
       <Link>Modules\PackageManagerUI\Editor\External\ServicesTab\ServicesTabConfiguration.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageCacheManagementAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageCacheManagementAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
     </Compile>

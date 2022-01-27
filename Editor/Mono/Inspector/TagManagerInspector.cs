@@ -244,6 +244,7 @@ namespace UnityEditor
 
         public void ReorderSortLayerList(ReorderableList list)
         {
+            serializedObject.ApplyModifiedProperties();
             tagManager.UpdateSortingLayersOrder();
         }
 

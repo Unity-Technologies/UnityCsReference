@@ -383,20 +383,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDownloadFinalized(IOperation operation)
         {
+            // We want to call RefreshLocal() before calling GetPackage(operation.packageUniqueId),
+            // because if we call GetPackage first, we might get an old instance of the package.
+            // This is due to RefreshLocal potentially replacing the instance in the database with a new one.
+            var downloadOperation = operation as AssetStoreDownloadOperation;
+            if (downloadOperation?.state == DownloadState.Completed)
+                m_AssetStoreClient.RefreshLocal();
+
             var package = GetPackage(operation.packageUniqueId);
             if (package == null)
                 return;
 
-            var downloadOperation = operation as AssetStoreDownloadOperation;
-            if (downloadOperation != null)
-            {
-                if (downloadOperation.state == DownloadState.Error)
-                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
-                else if (downloadOperation.state == DownloadState.Aborted)
-                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
-                else if (downloadOperation.state == DownloadState.Completed)
-                    m_AssetStoreClient.RefreshLocal();
-            }
+            if (downloadOperation?.state == DownloadState.Error)
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
+            else if (downloadOperation?.state == DownloadState.Aborted)
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
 
             SetPackageProgress(package, PackageProgress.None);
         }

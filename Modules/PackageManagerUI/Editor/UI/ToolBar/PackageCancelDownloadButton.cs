@@ -43,8 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
-            var resumeRequsted = operation?.state == DownloadState.ResumeRequested;
-            yield return new ButtonDisableCondition(resumeRequsted,
+            var resumeRequested = operation?.state == DownloadState.ResumeRequested;
+            yield return new ButtonDisableCondition(resumeRequested,
                 L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed."));
         }
 

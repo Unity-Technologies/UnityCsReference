@@ -235,12 +235,21 @@ namespace UnityEditor
                 bool childrenAreExpanded = EditorGUI.DefaultPropertyField(position, prop, label) && EditorGUI.HasVisibleChildFields(prop);
                 position.y += position.height + EditorGUI.kControlVerticalSpacing;
 
+                if (property.isArray)
+                    EditorGUI.BeginIsInsideList(prop.depth);
+
                 // Loop through all child properties
                 if (childrenAreExpanded)
                 {
                     SerializedProperty endProperty = prop.GetEndProperty();
                     while (prop.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(prop, endProperty))
                     {
+                        if (GUI.isInsideList && prop.depth <= EditorGUI.GetInsideListDepth())
+                            EditorGUI.EndIsInsideList();
+
+                        if (prop.isArray)
+                            EditorGUI.BeginIsInsideList(prop.depth);
+
                         var handler = ScriptAttributeUtility.GetHandler(prop);
                         EditorGUI.indentLevel = prop.depth + relIndent;
                         position.height = handler.GetHeight(prop, null, UseReorderabelListControl(prop) && includeChildren);
@@ -260,6 +269,8 @@ namespace UnityEditor
                 }
 
                 // Restore state
+                if (GUI.isInsideList && property.depth <= EditorGUI.GetInsideListDepth())
+                    EditorGUI.EndIsInsideList();
                 GUI.enabled = wasEnabled;
                 EditorGUIUtility.SetIconSize(oldIconSize);
                 EditorGUI.indentLevel = origIndent;

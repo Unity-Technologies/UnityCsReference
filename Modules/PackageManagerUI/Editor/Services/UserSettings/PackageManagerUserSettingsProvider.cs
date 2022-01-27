@@ -86,7 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_UpmCacheRootClient.onSetCacheRootOperationError -= OnPackagesSetCacheRootOperationError;
                     m_UpmCacheRootClient.onSetCacheRootOperationResult -= OnPackagesSetCacheRootOperationResult;
                     m_UpmCacheRootClient.onClearCacheRootOperationError -= OnPackagesClearCacheRootOperationError;
-                    m_UpmCacheRootClient.onClearCacheRootOperationResult -= OnPackagesSetCacheRootOperationResult;
+                    m_UpmCacheRootClient.onClearCacheRootOperationResult -= OnPackagesClearCacheRootOperationResult;
                 }
 
                 if (m_AssetStoreCachePathProxy != null)
@@ -132,7 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCacheRootClient.onSetCacheRootOperationError += OnPackagesSetCacheRootOperationError;
             m_UpmCacheRootClient.onSetCacheRootOperationResult += OnPackagesSetCacheRootOperationResult;
             m_UpmCacheRootClient.onClearCacheRootOperationError += OnPackagesClearCacheRootOperationError;
-            m_UpmCacheRootClient.onClearCacheRootOperationResult += OnPackagesSetCacheRootOperationResult;
+            m_UpmCacheRootClient.onClearCacheRootOperationResult += OnPackagesClearCacheRootOperationResult;
 
             if (!m_ApplicationProxy.isBatchMode && m_ApplicationProxy.isUpmRunning)
             {
@@ -178,7 +178,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (!CancelDownloadInProgress())
                         return;
 
+                    var oldStatus = m_CurrentAssetStoreConfig?.status.ToString() ?? string.Empty;
+                    var oldSource = m_CurrentAssetStoreConfig?.source.ToString() ?? string.Empty;
                     var status = m_AssetStoreCachePathProxy.SetConfig(path);
+
+                    // Send analytics
+                    PackageCacheManagementAnalytics.SendAssetStoreEvent("changePath",
+                        new []{ oldSource, oldStatus },
+                        new []{ m_CurrentAssetStoreConfig.source.ToString(), m_CurrentAssetStoreConfig.status.ToString() });
+
                     if (status == AssetStoreCachePathManager.ConfigStatus.Failed)
                         DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr($"Cannot set the Assets Cache location, \"{path}\" is invalid or inaccessible."));
                 }
@@ -188,7 +196,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!CancelDownloadInProgress())
                     return;
 
+                var oldStatus = m_CurrentAssetStoreConfig?.status.ToString() ?? string.Empty;
+                var oldSource = m_CurrentAssetStoreConfig?.source.ToString() ?? string.Empty;
                 var status = m_AssetStoreCachePathProxy.ResetConfig();
+
+                // Send analytics
+                PackageCacheManagementAnalytics.SendAssetStoreEvent("resetPath",
+                    new []{ oldSource, oldStatus },
+                    new []{ m_CurrentAssetStoreConfig.source.ToString(), m_CurrentAssetStoreConfig.status.ToString()});
+
                 if (status == AssetStoreCachePathManager.ConfigStatus.Failed)
                     DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("Cannot reset the Assets Cache location to default."));
             }, action => m_CurrentAssetStoreConfig.source == ConfigSource.User ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled, "resetLocation");
@@ -262,6 +278,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesSetCacheRootOperationResult(CacheRootConfig config)
         {
+            // Send analytics
+            PackageCacheManagementAnalytics.SendUpmEvent("changePath",
+                new []{ m_CurrentPackagesConfig.source.ToString() },
+                new []{ config.source.ToString()});
+
+            RefreshCurrentPackagesConfig(config);
+            m_ClientProxy.Resolve();
+        }
+
+        private void OnPackagesClearCacheRootOperationResult(CacheRootConfig config)
+        {
+            // Send analytics
+            PackageCacheManagementAnalytics.SendUpmEvent("resetPath",
+                new []{ m_CurrentPackagesConfig.source.ToString() },
+                new []{ config.source.ToString()});
+
             RefreshCurrentPackagesConfig(config);
             m_ClientProxy.Resolve();
         }

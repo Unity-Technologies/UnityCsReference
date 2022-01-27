@@ -57,7 +57,7 @@ namespace UnityEditor.DeviceSimulation
             return orientation;
         }
 
-        public static bool IsLandscape(ScreenOrientation orientation)
+        public static bool IsLandscape(this ScreenOrientation orientation)
         {
             if (orientation == ScreenOrientation.LandscapeLeft || orientation == ScreenOrientation.LandscapeRight)
                 return true;

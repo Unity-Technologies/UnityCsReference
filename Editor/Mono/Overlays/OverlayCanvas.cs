@@ -594,6 +594,12 @@ namespace UnityEditor.Overlays
             overlay.RebuildContent();
         }
 
+        internal void Rebuild()
+        {
+            OnBeforeSerialize();
+            RestoreOverlays();
+        }
+
         public void Add(Overlay overlay, bool show = true)
         {
             if(m_Overlays.Contains(overlay))

@@ -376,7 +376,7 @@ namespace Unity.UI.Builder
         // UXML
         public static readonly string UxmlOpenTagSymbol = "<";
         public static readonly string UxmlCloseTagSymbol = ">";
-        public static readonly string UxmlEndTagSymbol = "/" + UxmlCloseTagSymbol;
+        public static readonly string UxmlEndTagSymbol = " /" + UxmlCloseTagSymbol;
         public static readonly string UxmlTemplateClassTag = "Template";
         public static readonly string UxmlNameAttr = "name";
         public static readonly string UxmlHeader = "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\"";

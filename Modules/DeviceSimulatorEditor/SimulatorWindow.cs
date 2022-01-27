@@ -102,6 +102,7 @@ namespace UnityEditor.DeviceSimulation
             var type = Event.current.type;
             if (type == EventType.Repaint)
             {
+                m_Main.ScreenSimulation.ApplyChanges();
                 targetSize = m_Main.targetSize;
                 m_Main.displayTexture = RenderView(m_Main.mousePositionInUICoordinates, false);
             }

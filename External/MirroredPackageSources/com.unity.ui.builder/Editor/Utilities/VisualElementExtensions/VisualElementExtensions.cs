@@ -26,12 +26,18 @@ namespace Unity.UI.Builder
 
             foreach (IUxmlFactory f in factoryList)
             {
-                foreach (var a in f.uxmlAttributesDescription)
+                // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
+                if (f.uxmlAttributesDescription != null)
                 {
-                    if (s_SkippedAttributeNames.Contains(a.name))
-                        continue;
+                    foreach (var a in f.uxmlAttributesDescription)
+                    {
+                        // For user created types, they may `yield return null` which would create an array with a null, so we need
+                        // to check in order not to crash.
+                        if (a == null || s_SkippedAttributeNames.Contains(a.name))
+                            continue;
 
-                    attributeList.Add(a);
+                        attributeList.Add(a);
+                    }
                 }
             }
 
