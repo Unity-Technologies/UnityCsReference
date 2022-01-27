@@ -37,7 +37,7 @@ namespace UnityEditor.Toolbars
 
         static void OpenCloudWindow()
         {
-            Connect.ServicesEditorWindow.ShowServicesWindow();
+            Connect.ServicesEditorWindow.ShowServicesWindow("cloud_icon");
         }
     }
 }

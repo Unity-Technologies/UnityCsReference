@@ -77,21 +77,24 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
-
             EditorApplication.modifierKeysChanged += Repaint;
-
             get = this;
+            m_EventInterests.wantsLessLayoutEvents = true;
+            CreateContents();
+        }
 
+        void CreateContents()
+        {
             m_MainToolbarVisual = (MainToolbarVisual)Activator.CreateInstance(EditorUIService.instance.GetDefaultToolbarType());
-
+            m_Root?.RemoveFromHierarchy();
             m_Root = CreateRoot();
-            if (windowBackend.visualTree is VisualElement visualTree)
+
+            if (windowBackend?.visualTree is VisualElement visualTree)
             {
                 visualTree.Add(m_Root);
                 m_Root.Add(m_MainToolbarVisual.root);
             }
 
-            m_EventInterests.wantsLessLayoutEvents = true;
             RepaintToolbar();
         }
 
@@ -129,6 +132,11 @@ namespace UnityEditor
             EditorUIService.instance.AddDefaultEditorStyleSheets(root);
             root.style.overflow = Overflow.Hidden;
             return root;
+        }
+
+        protected override void OnBackingScaleFactorChanged()
+        {
+            CreateContents();
         }
 
         internal static void RepaintToolbar()

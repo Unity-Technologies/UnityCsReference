@@ -22,6 +22,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 UnsafeErrorProcessor.PostProcess(ref messages[i], editorCompilation);
                 ModuleReferenceErrorProcessor.PostProcess(ref messages[i]);
                 DeterministicAssemblyVersionErrorProcessor.PostProcess(ref messages[i]);
+                CyclicAssemblyReferencesErrorProcessor.PostProcess(ref messages[i]);
             }
         }
 
@@ -96,5 +97,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     .FirstOrDefault(c => file.IsChildOf(new NPath(c.PathPrefix).MakeAbsolute()));
             }
         }
+        internal static class CyclicAssemblyReferencesErrorProcessor
+        {
+            public static void PostProcess(ref CompilerMessage message)
+            {
+                int cyclickDependencyMessageStart = message.message.IndexOf("One or more cyclic dependencies detected between assemblies");
+                if (cyclickDependencyMessageStart >= 0)
+                {
+                    int cyclickDependencyMessageEnd = message.message.IndexOf(System.Environment.NewLine, cyclickDependencyMessageStart);
+                    if (cyclickDependencyMessageEnd >= 0)
+                        message.message = message.message.Substring(cyclickDependencyMessageStart, cyclickDependencyMessageEnd - cyclickDependencyMessageStart);
+                    else
+                        message.message = message.message.Substring(cyclickDependencyMessageStart);
+                }
+            }
+        }
+
+
     }
 }

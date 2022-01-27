@@ -488,6 +488,12 @@ namespace UnityEditor.Overlays
             RestoreOverlays();
         }
 
+        internal void Rebuild()
+        {
+            OnBeforeSerialize();
+            RestoreOverlays();
+        }
+
         // AddOverlay just registers the Overlay with Canvas. It does not init save data or add to a valid container.
         void AddOverlay(Overlay overlay)
         {

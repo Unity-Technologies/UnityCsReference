@@ -49,21 +49,27 @@ namespace UnityEditor
 
         private bool Init(Object obj, EditorFeatures requirements)
         {
-            MethodInfo onSceneDragMi;
-
             editor = Editor.CreateEditor(obj);
             if (editor == null)
                 return false;
 
-            if ((int)(requirements & EditorFeatures.PreviewGUI) > 0  && !editor.HasPreviewGUI())
+            if (requirements.HasFlag(EditorFeatures.PreviewGUI) && !editor.HasPreviewGUI())
                 return false;
 
-            System.Type t = editor.GetType();
+            var onSceneDragMi = editor.GetType().GetMethod("OnSceneDrag", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            onSceneDragMi = t.GetMethod("OnSceneDrag", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var objs = new[] { obj };
+            var rootEditorType = RootEditorUtils.FindRootEditor(objs);
+            if (rootEditorType != null && onSceneDragMi == null)
+            {
+                // Create normal editor:
+                editor = RootEditorUtils.CreateNonRootEditor(objs);
+                onSceneDragMi = editor.GetType().GetMethod("OnSceneDrag", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            }
+
             if (onSceneDragMi != null)
                 OnSceneDrag = (VoidDelegate)System.Delegate.CreateDelegate(typeof(VoidDelegate), editor, onSceneDragMi);
-            else if ((int)(requirements & EditorFeatures.OnSceneDrag) > 0)
+            else if (requirements.HasFlag(EditorFeatures.OnSceneDrag))
                 return false;
             else
                 OnSceneDrag = DefaultOnSceneDrag;

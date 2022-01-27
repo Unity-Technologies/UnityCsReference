@@ -213,10 +213,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                foreach (var attr in m_Traits.uxmlAttributesDescription)
-                {
-                    yield return attr;
-                }
+                return m_Traits.uxmlAttributesDescription;
             }
         }
 
@@ -227,10 +224,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                foreach (var child in m_Traits.uxmlChildElementsDescription)
-                {
-                    yield return child;
-                }
+                return m_Traits.uxmlChildElementsDescription;
             }
         }
 

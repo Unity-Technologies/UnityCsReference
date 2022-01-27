@@ -1317,7 +1317,6 @@ namespace UnityEditor
             }
         }
 
-
         [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.BackQuote)]
         static void ToggleAllOverlays(ShortcutArguments args)
         {
@@ -1355,6 +1354,15 @@ namespace UnityEditor
             match = null;
             return false;
         }
+
+        internal void OnBackingScaleFactorChangedInternal()
+        {
+            if(overlayCanvas != null)
+                overlayCanvas.Rebuild();
+            OnBackingScaleFactorChanged();
+        }
+
+        protected virtual void OnBackingScaleFactorChanged() { }
     }
 
     [AttributeUsage(AttributeTargets.Class)]

@@ -210,7 +210,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (namedBuildTarget == NamedBuildTarget.Server)
         {
             if(!m_HasServerPlayers)
-                return $"Dedicated Server support for {GetHostPlatformName()} is not installed";
+                return $"Dedicated Server support for {GetHostPlatformName()} is not installed.";
 
             if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
