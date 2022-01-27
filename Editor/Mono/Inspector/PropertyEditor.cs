@@ -1675,11 +1675,10 @@ namespace UnityEditor
             if (m_RemovedComponents == null)
                 ExtractPrefabComponents(); // needed after assembly reload (due to HashSet not being serializable)
 
-            bool checkForRemovedComponents = m_ComponentsInPrefabSource != null;
             int prefabComponentIndex = -1;
             int targetGameObjectIndex = -1;
             GameObject targetGameObject = null;
-            if (checkForRemovedComponents)
+            if (m_ComponentsInPrefabSource != null)
             {
                 targetGameObjectIndex = editors[0] is PrefabImporterEditor ? 1 : 0;
                 targetGameObject = (GameObject)editors[targetGameObjectIndex].target;
@@ -1689,7 +1688,7 @@ namespace UnityEditor
             {
                 editors[editorIndex].propertyViewer = this;
                 VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
-                if (checkForRemovedComponents && editorIndex > targetGameObjectIndex)
+                if (m_ComponentsInPrefabSource != null && editorIndex > targetGameObjectIndex)
                 {
                     if (prefabComponentIndex == -1)
                         prefabComponentIndex = 0;
@@ -1768,10 +1767,10 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
-            if (checkForRemovedComponents)
+            if (m_ComponentsInPrefabSource != null)
             {
                 VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
-                while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
+                while (prefabComponentIndex > -1 && prefabComponentIndex < m_ComponentsInPrefabSource.Length)
                 {
                     Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
                     AddRemovedPrefabComponentElement(targetGameObject, nextInSource, prefabsComponentElement);

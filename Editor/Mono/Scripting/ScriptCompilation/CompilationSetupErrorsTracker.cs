@@ -40,10 +40,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (assemblyDefinitionException != null && assemblyDefinitionException.filePaths.Length > 0)
             {
-                tracker.LogCompilationSetupErrors(
-                    assemblyDefinitionException.errorType == AssemblyDefinitionErrorType.LoadError ?
-                    CompilationSetupErrors.LoadError : CompilationSetupErrors.CyclicReferences,
-                    assemblyDefinitionException.filePaths, assemblyDefinitionException.Message);
+                tracker.LogCompilationSetupErrors(CompilationSetupErrors.LoadError, assemblyDefinitionException.filePaths, assemblyDefinitionException.Message);
                 return true;
             }
             else if (precompiledAssemblyException != null)

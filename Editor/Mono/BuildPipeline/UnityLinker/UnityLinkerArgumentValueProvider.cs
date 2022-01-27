@@ -20,7 +20,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                var backend = PlayerSettings.GetScriptingBackend(m_RunInformation.buildTargetGroup);
+                var backend = PlayerSettings.GetScriptingBackend(m_RunInformation.namedBuildTarget);
                 switch (backend)
                 {
                     case ScriptingImplementation.IL2CPP:

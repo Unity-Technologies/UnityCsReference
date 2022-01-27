@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -25,11 +26,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
     }
 
     protected bool GetServer(BuildPostProcessArgs args) =>
-        (args.target == BuildTarget.StandaloneWindows ||
-            args.target == BuildTarget.StandaloneWindows64 ||
-            args.target == BuildTarget.StandaloneOSX ||
-            args.target == BuildTarget.StandaloneLinux64) &&
-        (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server;
+        GetNamedBuildTarget(args) == NamedBuildTarget.Server;
 
     protected string GetVariationFolder(BuildPostProcessArgs args) =>
         $"{args.playerPackage}/Variations/{GetVariationName(args)}";
@@ -41,7 +38,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.AddKey("single-instance");
         if (!PlayerSettings.useFlipModelSwapchain)
             config.AddKey("force-d3d11-bitblt-mode");
-        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
+        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(NamedBuildTarget.FromActiveSettings(target)))
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableCodeCoverage) != 0)
             config.Set("enableCodeCoverage", "1");
@@ -56,26 +53,31 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
 
     readonly bool m_HasMonoPlayers;
     readonly bool m_HasIl2CppPlayers;
+    readonly bool m_HasServerMonoPlayers;
+    readonly bool m_HasServerIl2CppPlayers;
 
-    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers)
+    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasServerMonoPlayers, bool hasServerIl2CppPlayers)
     {
         m_HasMonoPlayers = hasMonoPlayers;
         m_HasIl2CppPlayers = hasIl2CppPlayers;
+        m_HasServerMonoPlayers = hasServerMonoPlayers;
+        m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
     }
 
     public override string PrepareForBuild(BuildOptions options, BuildTarget target)
     {
-        if (!m_HasMonoPlayers)
+        var namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
+        var isServer = namedBuildTarget == NamedBuildTarget.Server;
+
+        if ((!isServer && !m_HasMonoPlayers) || (isServer && !m_HasServerMonoPlayers))
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.IL2CPP)
+            if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (Mono) is not installed.";
         }
 
-        if (!m_HasIl2CppPlayers)
+        if ((!isServer && !m_HasIl2CppPlayers) || (isServer && !m_HasServerIl2CppPlayers))
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
+            if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (IL2CPP) is not installed.";
         }
 

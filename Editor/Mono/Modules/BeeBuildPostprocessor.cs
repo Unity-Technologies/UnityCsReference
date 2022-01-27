@@ -211,6 +211,8 @@ namespace UnityEditor.Modules
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
+            var allowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
+
             return new Il2CppConfig
             {
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
@@ -218,6 +220,7 @@ namespace UnityEditor.Modules
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
                 Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                Defines = string.Join(";", IL2CPPUtils.GetBuilderDefinedDefines(args.target, apiCompatibilityLevel, allowDebugging)),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
@@ -231,7 +234,7 @@ namespace UnityEditor.Modules
                     .Select(imp => imp.assetPath)
                     .ToArray(),
                 AdditionalArgs = additionalArgs.ToArray(),
-                AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
+                AllowDebugging = allowDebugging,
             };
         }
 
@@ -523,6 +526,19 @@ namespace UnityEditor.Modules
             return !string.Equals(cpu, "None", StringComparison.OrdinalIgnoreCase);
         }
 
+        protected NamedBuildTarget GetNamedBuildTarget(BuildPostProcessArgs args)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                return (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server
+                    ? NamedBuildTarget.Server : NamedBuildTarget.Standalone;
+            }
+
+            return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+        }
+
         protected bool GetDevelopment(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.Development);
 
@@ -533,6 +549,6 @@ namespace UnityEditor.Modules
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);
 
         protected virtual bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
-            PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(args.target)) == ScriptingImplementation.IL2CPP;
+            PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.IL2CPP;
     }
 }

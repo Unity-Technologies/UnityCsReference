@@ -114,6 +114,18 @@ namespace UnityEditor.Build
             throw new ArgumentException($"There is no a valid NamedBuildTarget for BuildTargetGroup '{buildTargetGroup}'");
         }
 
+        internal static NamedBuildTarget FromActiveSettings(BuildTarget target)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone && (StandaloneBuildSubtarget)EditorUserBuildSettings.GetActiveSubtargetFor(target) == StandaloneBuildSubtarget.Server)
+            {
+                return NamedBuildTarget.Server;
+            }
+
+            return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+        }
+
         public static bool operator==(NamedBuildTarget lhs, NamedBuildTarget rhs)
         {
             return lhs.Equals(rhs);

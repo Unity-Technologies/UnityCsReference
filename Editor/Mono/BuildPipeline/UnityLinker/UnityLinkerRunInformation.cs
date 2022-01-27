@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.UnityLinker;
 
@@ -16,6 +17,7 @@ namespace UnityEditorInternal
         public readonly string managedAssemblyFolderPath;
         public readonly BuildTarget target;
         public readonly BuildTargetGroup buildTargetGroup;
+        public readonly NamedBuildTarget namedBuildTarget;
         public readonly BaseUnityLinkerPlatformProvider platformProvider;
         public readonly RuntimeClassRegistry rcr;
         public readonly ManagedStrippingLevel managedStrippingLevel;
@@ -40,8 +42,9 @@ namespace UnityEditorInternal
             pipelineData = new UnityLinkerBuildPipelineData(target, managedAssemblyFolderPath);
 
             buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
             argumentProvider = new UnityLinkerArgumentValueProvider(this);
-            isMonoBackend = PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.Mono2x;
+            isMonoBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.Mono2x;
             engineStrippingSupported = (platformProvider?.supportsEngineStripping ?? false) && !isMonoBackend;
             performEngineStripping = rcr != null && PlayerSettings.stripEngineCode && engineStrippingSupported;
         }

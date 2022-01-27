@@ -9,6 +9,7 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -364,6 +365,8 @@ namespace UnityEngine
                 throw new ArgumentException("RenderTextureDesc volumeDepth must be greater than zero.", "desc.volumeDepth");
             if (desc.msaaSamples != 1 && desc.msaaSamples != 2 && desc.msaaSamples != 4 && desc.msaaSamples != 8)
                 throw new ArgumentException("RenderTextureDesc msaaSamples must be 1, 2, 4, or 8.", "desc.msaaSamples");
+            if (desc.dimension == TextureDimension.CubeArray && desc.volumeDepth % 6 != 0)
+                throw new ArgumentException("RenderTextureDesc volumeDepth must be a multiple of 6 when dimension is CubeArray", "desc.volumeDepth");
 
 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
 #pragma warning disable 618

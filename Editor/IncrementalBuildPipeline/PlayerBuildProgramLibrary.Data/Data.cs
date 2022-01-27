@@ -63,6 +63,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool EnableDeepProfilingSupport;
         public bool EnableFullGenericSharing;
         public string Profile;
+        public string Defines;
 
         public string ConfigurationName;
         public bool GcWBarrierValidation;

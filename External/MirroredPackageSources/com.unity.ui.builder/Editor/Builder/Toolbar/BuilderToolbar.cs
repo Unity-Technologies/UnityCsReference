@@ -572,6 +572,7 @@ namespace Unity.UI.Builder
 
         public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet themeStyleSheet = null)
         {
+            ApplyCanvasTheme(m_Viewport.sharedStylesAndDocumentElement, theme, themeStyleSheet);
             ApplyCanvasTheme(m_Viewport.documentRootElement, theme, themeStyleSheet);
             ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme, themeStyleSheet);
             ApplyCanvasTheme(m_TooltipPreview, theme, themeStyleSheet);

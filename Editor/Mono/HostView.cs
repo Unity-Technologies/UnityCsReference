@@ -307,6 +307,12 @@ namespace UnityEditor
             Repaint();
         }
 
+        protected override void OnBackingScaleFactorChanged()
+        {
+            if (m_ActualView != null)
+                m_ActualView.OnBackingScaleFactorChangedInternal();
+        }
+
         protected override void OnDestroy()
         {
             if (m_ActualView)

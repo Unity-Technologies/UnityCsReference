@@ -386,105 +386,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return removed;
         }
 
-        string[] CustomTargetAssembliesToFilePaths(IEnumerable<TargetAssembly> targetAssemblies)
-        {
-            var customAssemblies = targetAssemblies.Select(FindCustomTargetAssemblyFromTargetAssembly);
-            var filePaths = customAssemblies.Select(a => a.FilePath).ToArray();
-            return filePaths;
-        }
-
-        string CustomTargetAssemblyToFilePath(TargetAssembly targetAssembly)
-        {
-            return FindCustomTargetAssemblyFromTargetAssembly(targetAssembly).FilePath;
-        }
-
-        public struct CheckCyclicAssemblyReferencesFunctions
-        {
-            public Func<TargetAssembly, string> ToFilePathFunc;
-            public Func<IEnumerable<TargetAssembly>, string[]> ToFilePathsFunc;
-        }
-
-        static void CheckCyclicAssemblyReferencesDFS(TargetAssembly visitAssembly,
-            HashSet<TargetAssembly> visited,
-            HashSet<TargetAssembly> recursion,
-            CheckCyclicAssemblyReferencesFunctions functions)
-        {
-            visited.Add(visitAssembly);
-            recursion.Add(visitAssembly);
-
-            foreach (var reference in visitAssembly.References)
-            {
-                if (reference.Filename == visitAssembly.Filename)
-                {
-                    throw new AssemblyDefinitionException("Assembly contains a references to itself",
-                        AssemblyDefinitionErrorType.CyclicReferences, functions.ToFilePathFunc(visitAssembly));
-                }
-
-                if (recursion.Contains(reference))
-                {
-                    throw new AssemblyDefinitionException("Assembly with cyclic references detected",
-                        AssemblyDefinitionErrorType.CyclicReferences, functions.ToFilePathsFunc(recursion));
-                }
-
-                if (!visited.Contains(reference))
-                {
-                    CheckCyclicAssemblyReferencesDFS(reference,
-                        visited,
-                        recursion,
-                        functions);
-                }
-            }
-
-            recursion.Remove(visitAssembly);
-        }
-
-        public static void CheckCyclicAssemblyReferences(IDictionary<string, TargetAssembly> customTargetAssemblies,
-            CheckCyclicAssemblyReferencesFunctions functions)
-        {
-            if (customTargetAssemblies == null || customTargetAssemblies.Count < 1)
-            {
-                return;
-            }
-
-            var visited = new HashSet<TargetAssembly>();
-
-            foreach (var entry in customTargetAssemblies)
-            {
-                var assembly = entry.Value;
-                if (visited.Contains(assembly))
-                {
-                    continue;
-                }
-
-                var recursion = new HashSet<TargetAssembly>();
-                CheckCyclicAssemblyReferencesDFS(assembly,
-                    visited,
-                    recursion,
-                    functions);
-            }
-        }
-
-        void CheckCyclicAssemblyReferences()
-        {
-            try
-            {
-                CheckCyclicAssemblyReferencesFunctions functions;
-
-                functions.ToFilePathFunc = CustomTargetAssemblyToFilePath;
-                functions.ToFilePathsFunc = CustomTargetAssembliesToFilePaths;
-
-                CheckCyclicAssemblyReferences(customTargetAssemblies, functions);
-            }
-            catch (AssemblyDefinitionException e)
-            {
-                if (e.errorType == AssemblyDefinitionErrorType.CyclicReferences)
-                {
-                    CompilationSetupErrorsTracker.SetCompilationSetupErrors(CompilationSetupErrors.CyclicReferences);
-                }
-                throw;
-            }
-        }
-
         public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
             List<CustomScriptAssemblyReference> customScriptAssemblyReferences,
             AssetPathMetaData[] assetPathsMetaData,
@@ -591,14 +492,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(loadingAssemblyDefinition.CustomScriptAssemblies);
-
-            CompilationSetupErrorsTracker.ClearCompilationSetupErrors(CompilationSetupErrors.CyclicReferences);
-
             return exceptions;
         }
 
         public void SkipCustomScriptAssemblyGraphValidation(bool skipChecks)
         {
+            // If we have successfully compiled and reloaded all assemblies, then we can skip asmdef compilation graph checks
+            // for setup errors like cyclic references, self-references, duplicate assembly names, etc.
+            // If there is compilation errors in a Safe Mode domain or a partially loaded domain (when SafeMode is forcefully exited),
+            // then we need to keep the graph validation checks to rediscover potential setup errors in subsequent compilations.
             skipCustomScriptAssemblyGraphValidation = skipChecks;
         }
 
@@ -611,7 +513,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             RefreshLoadingAssemblyDefinition();
             loadingAssemblyDefinition.SetAllCustomScriptAssemblyReferenceJsonsContents(paths, contents);
-            return GetLoadingExceptions();
+            var updateExceptions = UpdateCustomTargetAssemblies();
+            return loadingAssemblyDefinition.Exceptions.Concat(updateExceptions).ToArray();
         }
 
         public Exception[] SetAllCustomScriptAssemblyJsons(string[] paths, string[] guids)
@@ -623,12 +526,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             RefreshLoadingAssemblyDefinition();
             loadingAssemblyDefinition.SetAllCustomScriptAssemblyJsonContents(paths, contents, guids);
-            return GetLoadingExceptions();
-        }
-
-        Exception[] GetLoadingExceptions()
-        {
-            return loadingAssemblyDefinition.Exceptions.Concat(UpdateCustomTargetAssemblies()).ToArray();
+            var updateExceptions = UpdateCustomTargetAssemblies();
+            return loadingAssemblyDefinition.Exceptions.Concat(updateExceptions).ToArray();
         }
 
         void RefreshLoadingAssemblyDefinition()
@@ -909,16 +808,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 PlayerSettings.EnableRoslynAnalyzers &&
                 (scriptAssemblySettings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0;
 
-            // If we have successfully compiled and reloaded all assemblies, then we can
-            // skip checks on the asmdef compilation graph to ensure there no
-            // setup errors like cyclic references, duplicate assembly names, etc.
-            // If there is compilation errors n Safe Mode domain or a partial domain (if SafeMode is forcefully exited),
-            // Then we need to keep the validation checks to rediscover potential setup errors in subsequent compilations.
-            if (!skipCustomScriptAssemblyGraphValidation)
-            {
-                CheckCyclicAssemblyReferences();
-            }
-
             ScriptAssembly[] scriptAssemblies;
             try
             {
@@ -1061,18 +950,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             return CreateScriptAssemblySettings(EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, options);
         }
-
-        static CompilerMessage AsCompilerMessage(BeeDriverResult.Message message)
-        {
-            return new CompilerMessage
-            {
-                message = message.Text,
-                type = message.Kind == BeeDriverResult.MessageKind.Error
-                    ? CompilerMessageType.Error
-                    : CompilerMessageType.Warning,
-            };
-        }
-
         //only used in for tests to peek in.
         public CompilerMessage[] GetCompileMessages() => _currentEditorCompilationCompilerMessages;
 
@@ -1172,14 +1049,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return CompileStatus.Compiling;
             }
 
-            var messagesForNodeResults = ProcessCompilationResult(activeBeeBuild.assemblies, result, activeBeeBuild);
+            var compilerMessages = ProcessCompilationResult(activeBeeBuild.assemblies, result, activeBeeBuild).SelectMany(m => m).ToArray();
 
             int logIdentifier = activeBeeBuild.settings.BuildingForEditor
                 //these numbers are "randomly picked". they are used to so that when you log a message with a certain identifier, later all messages with that identifier can be cleared.
                 //one means "compilation error for compiling-assemblies-for-editor"  the other means "compilation error for building a player".
                 ? kLogIdentifierFor_EditorMessages
                 : kLogIdentifierFor_PlayerMessages;
-            var compilerMessages = result.BeeDriverMessages.Select(AsCompilerMessage).Concat(messagesForNodeResults.SelectMany(m => m)).ToArray();
 
             if (activeBeeBuild.settings.BuildingForEditor)
             {
@@ -1208,10 +1084,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CompilerMessage[][] ProcessCompilationResult(ScriptAssembly[] assemblies, BeeDriverResult result, object context)
         {
-            var compilerMessagesForNodeResults = BeeScriptCompilation.ParseAllNodeResultsIntoCompilerMessages(result.NodeResults, this);
-            InvokeAssemblyCompilationFinished(assemblies, result, compilerMessagesForNodeResults);
+            var compilerMessages = BeeScriptCompilation.ParseAllResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeResults, this);
+            InvokeAssemblyCompilationFinished(assemblies, result, compilerMessages);
             InvokeCompilationFinished(context);
-            return compilerMessagesForNodeResults;
+            return compilerMessages;
         }
 
         void InvokeAssemblyCompilationFinished(ScriptAssembly[] assemblies, BeeDriverResult beeDriverResult, CompilerMessage[][] compilerMessagesForNodeResults)

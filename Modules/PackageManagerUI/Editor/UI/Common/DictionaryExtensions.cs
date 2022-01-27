@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,26 +13,38 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static T Get<T>(this IDictionary<string, object> dict, string key) where T : class
         {
-            object result;
-            return dict.TryGetValue(key, out result)  ? (T)result : null;
+            var result = dict.TryGetValue(key, out var value);
+            try
+            {
+                return result ? (T)value : null;
+            }
+            catch (InvalidCastException)
+            {
+                throw new IncorrectFieldTypeException(key, typeof(T), value.GetType());
+            }
         }
 
         public static T Get<T>(this IDictionary<string, object> dict, string key, T fallbackValue = default(T)) where T : struct
         {
-            object result;
-            return dict.TryGetValue(key, out result) ? (T)result : fallbackValue;
+            var result = dict.TryGetValue(key, out var value);
+            try
+            {
+                return result ? (T)value: fallbackValue;
+            }
+            catch (InvalidCastException)
+            {
+                throw new IncorrectFieldTypeException(key, typeof(T), value.GetType());
+            }
         }
 
         public static T Get<T>(this IDictionary<string, T> dict, string key) where T : class
         {
-            T result;
-            return dict.TryGetValue(key, out result) ? result : null;
+            return dict.TryGetValue(key, out var result) ? result : null;
         }
 
         public static T Get<T>(this IDictionary<string, T> dict, string key, T fallbackValue = default(T)) where T : struct
         {
-            T result;
-            return dict.TryGetValue(key, out result) ? result : fallbackValue;
+            return dict.TryGetValue(key, out var result) ? result : fallbackValue;
         }
 
         public static IDictionary<string, object> GetDictionary(this IDictionary<string, object> dict, string key)

@@ -34,6 +34,7 @@ namespace UnityEngine
         extern public Vector3 flip { get; set; }
         extern public SpriteMaskInteraction maskInteraction { get; set; }
         extern public Material trailMaterial { get; set; }
+        extern internal Material oldTrailMaterial { set; }
         extern public bool enableGPUInstancing { get; set; }
         extern public bool allowRoll { get; set; }
         extern public bool freeformStretching { get; set; }

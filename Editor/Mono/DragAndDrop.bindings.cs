@@ -53,19 +53,22 @@ namespace UnityEditor
         private static Dictionary<int, List<Delegate>> m_DropHandlers;
 
         internal static ProjectBrowserDropHandler DefaultProjectBrowserDropHandler = DefaultProjectBrowserDropHandlerImpl;
-        internal static SceneDropHandler DefaultSceneDropHandler = InternalEditorUtility.SceneViewDrag;
         internal static InspectorDropHandler DefaultInspectorDropHandler = InternalEditorUtility.InspectorWindowDrag;
         internal static HierarchyDropHandler DefaultHierarchyDropHandler = InternalEditorUtility.HierarchyWindowDragByID;
 
-        internal static void InitDropHandlers()
+        internal static Dictionary<int, List<Delegate>> dropHandlers
         {
-            if (m_DropHandlers != null)
-                return;
-            m_DropHandlers = new Dictionary<int, List<Delegate>>();
-            AddDropHandler(DefaultProjectBrowserDropHandler);
-            AddDropHandler(DefaultSceneDropHandler);
-            AddDropHandler(DefaultInspectorDropHandler);
-            AddDropHandler(DefaultHierarchyDropHandler);
+            get
+            {
+                if (m_DropHandlers == null)
+                {
+                    m_DropHandlers = new Dictionary<int, List<Delegate>>();
+                    AddDropHandler(DefaultProjectBrowserDropHandler);
+                    AddDropHandler(DefaultInspectorDropHandler);
+                    AddDropHandler(DefaultHierarchyDropHandler);
+                }
+                return m_DropHandlers;
+            }
         }
 
         internal static void ClearDropHandlers()
@@ -76,24 +79,22 @@ namespace UnityEditor
 
         internal static void AddDropHandler(int dropDstId, Delegate handler)
         {
-            InitDropHandlers();
             if (HasHandler(dropDstId, handler))
             {
                 throw new Exception("Delegate already registered for dropDestinationId:" + dropDstId);
             }
 
-            if (!m_DropHandlers.TryGetValue(dropDstId, out var handlers))
+            if (!dropHandlers.TryGetValue(dropDstId, out var handlers))
             {
                 handlers = new List<Delegate>();
-                m_DropHandlers[dropDstId] = handlers;
+                dropHandlers[dropDstId] = handlers;
             }
             handlers.Add(handler);
         }
 
         internal static void RemoveDropHandler(int dropDstId, Delegate handler)
         {
-            InitDropHandlers();
-            if (m_DropHandlers.TryGetValue(dropDstId, out var handlers))
+            if (dropHandlers.TryGetValue(dropDstId, out var handlers))
             {
                 handlers.RemoveAll(dropHandler => dropHandler == handler);
             }
@@ -101,10 +102,9 @@ namespace UnityEditor
 
         internal static DragAndDropVisualMode Drop(int dropDstId, params object[] args)
         {
-            InitDropHandlers();
             SavedGUIState guiState = SavedGUIState.Create();
 
-            if (!m_DropHandlers.TryGetValue(dropDstId, out var handlers))
+            if (!dropHandlers.TryGetValue(dropDstId, out var handlers))
             {
                 return DragAndDropVisualMode.Rejected;
             }
@@ -201,6 +201,7 @@ namespace UnityEditor
             s_GenericData = null;
             paths = null;
             objectReferences = new UnityEngine.Object[] {};
+            visualMode = DragAndDropVisualMode.None;
             PrepareStartDrag_Internal();
         }
 
@@ -253,10 +254,15 @@ namespace UnityEditor
         public delegate DragAndDropVisualMode InspectorDropHandler(UnityEngine.Object[] targets, bool perform);
         public delegate DragAndDropVisualMode HierarchyDropHandler(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
+        internal static bool HasHandler(int dropDstId)
+        {
+            return dropHandlers.ContainsKey(dropDstId);
+        }
+
         public static bool HasHandler(int dropDstId, Delegate handler)
         {
             List<Delegate> handlers = null;
-            if (m_DropHandlers != null && !m_DropHandlers.TryGetValue(dropDstId, out handlers))
+            if (!dropHandlers.TryGetValue(dropDstId, out handlers))
             {
                 return false;
             }
