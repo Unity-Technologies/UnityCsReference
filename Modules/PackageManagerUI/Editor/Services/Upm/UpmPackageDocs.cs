@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -60,12 +61,26 @@ namespace UnityEditor.PackageManager.UI
             return upmVersion == null ? string.Empty : GetPackageUrlRedirect(upmVersion.name, upmVersion.shortVersionId);
         }
 
-        public static string[] SplitBuiltinDescription(UpmPackageVersion version)
+        public static string[] FetchUrlsFromDescription(UpmPackageVersion version)
         {
-            if (string.IsNullOrEmpty(version?.packageInfo?.description))
-                return new string[] { $"This built in package controls the presence of the {version.displayName} module." };
-            else
-                return version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            List<string> urls = new List<string>();
+
+            var descriptionSlitWithUrl = version.packageInfo.description.Split(new[] { $"{k_BuiltinPackageDocsUrlKey}https://docs.unity3d.com/" }, StringSplitOptions.None);
+            if (descriptionSlitWithUrl.Length > 1)
+                urls.Add($"https://docs.unity3d.com/{ApplicationUtil.instance.shortUnityVersion}/Documentation/" + descriptionSlitWithUrl[1]);
+
+            var descriptionSlitWithoutUrl = version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            if (descriptionSlitWithoutUrl.Length > 1)
+                urls.Add(descriptionSlitWithoutUrl[1]);
+
+            return urls.ToArray();
+        }
+
+        public static string FetchBuiltinDescription(UpmPackageVersion version)
+        {
+            return string.IsNullOrEmpty(version?.packageInfo?.description) ?
+                string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), version.displayName) :
+                version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None)[0];
         }
 
         private static string GetOfflineDocumentationUrl(UpmPackageVersion version)
@@ -87,34 +102,31 @@ namespace UnityEditor.PackageManager.UI
             return string.Empty;
         }
 
-        public static string GetDocumentationUrl(IPackageVersion version, bool offline = false)
+        public static string[] GetDocumentationUrl(IPackageVersion version, bool offline = false)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
-                return string.Empty;
+                return new string[0];
 
             if (offline)
-                return GetOfflineDocumentationUrl(upmVersion);
+                return new[] { GetOfflineDocumentationUrl(upmVersion) };
 
             if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
-            {
-                var split = SplitBuiltinDescription(upmVersion);
-                if (split.Length > 1)
-                    return split[1];
-            }
-            return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
+                return FetchUrlsFromDescription(upmVersion);
+
+            return new[] { $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html" };
         }
 
-        public static string GetChangelogUrl(IPackageVersion version, bool offline = false)
+        public static string[] GetChangelogUrl(IPackageVersion version, bool offline = false)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
-                return string.Empty;
+                return new string[0];
 
             if (offline)
-                return GetOfflineChangelogUrl(upmVersion);
+                return new[] { GetOfflineChangelogUrl(upmVersion) };
 
-            return $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html";
+            return new[] { $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html" };
         }
 
         private static string GetOfflineChangelogUrl(UpmPackageVersion version)
@@ -127,21 +139,21 @@ namespace UnityEditor.PackageManager.UI
             return string.Empty;
         }
 
-        public static string GetLicensesUrl(IPackageVersion version, bool offline = false)
+        public static string[] GetLicensesUrl(IPackageVersion version, bool offline = false)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
-                return string.Empty;
+                return new string[0];
 
             if (offline)
-                return GetOfflineLicensesUrl(upmVersion);
+                return new[] { GetOfflineLicensesUrl(upmVersion) };
 
             string url;
             if (!string.IsNullOrEmpty(GetPackageUrlRedirect(upmVersion)))
                 url = "https://unity3d.com/legal/licenses/Unity_Companion_License";
             else
                 url = $"http://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
-            return url;
+            return new[] { url };
         }
 
         private static string GetOfflineLicensesUrl(UpmPackageVersion version)
