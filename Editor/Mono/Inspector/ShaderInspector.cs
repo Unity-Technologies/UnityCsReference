@@ -529,6 +529,9 @@ namespace UnityEditor
 
         private readonly Shader m_Shader;
 
+        private ulong totalVariants;
+        private ulong variantsWithUsage;
+
 
         public static int currentMode
         {
@@ -586,6 +589,8 @@ namespace UnityEditor
         {
             m_Shader = shader;
             InitializeShaderPlatforms();
+            totalVariants = 0;
+            variantsWithUsage = 0;
         }
 
         static void InitializeShaderPlatforms()
@@ -705,7 +710,7 @@ namespace UnityEditor
             if (count > 1000 * 1000)
                 return ((double)count / 1000000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "M";
             if (count > 1000)
-                return ((double)count / 1000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "k";
+                return ((double)count / 1000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "K";
             return count.ToString();
         }
 
@@ -720,7 +725,19 @@ namespace UnityEditor
 
             // display included variant count, and a button to show list of them
             drawPos.y += kSeparatorHeight;
-            ulong variantCount = ShaderUtil.GetVariantCount(m_Shader, strip);
+            ulong variantCount = 0;
+            if (strip)
+            {
+                if (variantsWithUsage == 0)
+                    variantsWithUsage = ShaderUtil.GetVariantCount(m_Shader, true);
+                variantCount = variantsWithUsage;
+            }
+            else
+            {
+                if (totalVariants == 0)
+                    totalVariants = ShaderUtil.GetVariantCount(m_Shader, false);
+                variantCount = totalVariants;
+            }
             var variantText = FormatCount(variantCount) +
                 (strip ?
                     " variants included" :

@@ -84,6 +84,8 @@ namespace UnityEditor.PackageManager.UI
 
         private bool m_DescriptionExpanded;
 
+        private string[] m_OnlineUrls;
+
         public PackageDetails()
         {
             var root = Resources.GetTemplate("PackageDetails.uxml");
@@ -118,6 +120,8 @@ namespace UnityEditor.PackageManager.UI
             detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
 
             GetTagLabel(PackageTag.Verified.ToString()).text = ApplicationUtil.instance.shortUnityVersion + " verified";
+
+            m_OnlineUrls = new string[0];
         }
 
         private void OnEditorSelectionChanged()
@@ -857,48 +861,56 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerWindowAnalytics.SendEvent("uninstall", displayVersion?.uniqueId);
         }
 
-        private static void ViewOfflineUrl(IPackageVersion version, Func<IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        private static void ViewOfflineUrl(IPackageVersion version, Func<IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
         {
             if (!version.isAvailableOnDisk)
             {
                 EditorUtility.DisplayDialog("Unity Package Manager", "This package is not available offline.", "Ok");
                 return;
             }
-            var offlineUrl = getUrl(version, true);
-            if (!string.IsNullOrEmpty(offlineUrl))
-                ApplicationUtil.instance.OpenURL(offlineUrl);
+            var offlineUrls = getUrl(version, true);
+            if (offlineUrls.Length > 0 && !string.IsNullOrEmpty(offlineUrls[0]))
+                ApplicationUtil.instance.OpenURL(offlineUrls[0]);
             else
                 EditorUtility.DisplayDialog("Unity Package Manager", messageOnNotFound, "Ok");
         }
 
-        private static void ViewUrl(IPackageVersion version, Func<IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        private void ViewUrl(IPackageVersion version, Func<IPackageVersion, bool, string[]> getUrls, string messageOnNotFound)
         {
             if (ApplicationUtil.instance.isInternetReachable)
             {
-                var onlineUrl = getUrl(version, false);
+                m_OnlineUrls = getUrls(version, false);
+                if (m_OnlineUrls.Length == 0)
+                {
+                    ViewOfflineUrl(version, getUrls, messageOnNotFound);
+                    return;
+                }
+
+                var onlineUrl = m_OnlineUrls[0];
                 var request = UnityWebRequest.Head(onlineUrl);
                 var operation = request.SendWebRequest();
                 operation.completed += (op) =>
                 {
                     if (request.responseCode != 404)
-                    {
                         ApplicationUtil.instance.OpenURL(onlineUrl);
-                    }
                     else
-                    {
-                        ViewOfflineUrl(version, getUrl, messageOnNotFound);
-                    }
+                        ViewUrl(version, SkipFirstUrl, messageOnNotFound);
                 };
             }
             else
-            {
-                ViewOfflineUrl(version, getUrl, messageOnNotFound);
-            }
+                ViewOfflineUrl(version, getUrls, messageOnNotFound);
+        }
+
+        private string[] SkipFirstUrl(IPackageVersion version, bool offline)
+        {
+            if (m_OnlineUrls.Length > 0)
+                return m_OnlineUrls.ToList().Skip(1).ToArray();
+            return new string[0];
         }
 
         private void ViewDocClick()
         {
-            ViewUrl(displayVersion, UpmPackageDocs.GetDocumentationUrl, "This package does not contain offline documentation.");
+            ViewUrl(displayVersion, UpmPackageDocs.GetDocumentationUrl, L10n.Tr("This package does not contain offline documentation."));
         }
 
         private void ViewChangelogClick()

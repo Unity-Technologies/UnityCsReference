@@ -395,6 +395,14 @@ namespace UnityEditor.Build
                         invocationTwo(callback);
                     }
                 }
+                catch (TargetInvocationException e)
+                {
+                    // Note: Attribute based callbacks are called via reflection.
+                    // Exceptions in those calls are wrapped in TargetInvocationException
+                    Debug.LogException(e.InnerException);
+                    if (exitOnFailure)
+                        return false;
+                }
                 catch (Exception e)
                 {
                     Debug.LogException(e);
