@@ -211,7 +211,7 @@ namespace UnityEditor
 
                 ReserveWidthLeft(standardButtonWidth, ref pos);
                 if (GUI.Button(EditorToolGUI.GetToolbarEntryRect(pos), s_CloudIcon, Styles.command))
-                    ServicesEditorWindow.ShowServicesWindow();
+                    ServicesEditorWindow.ShowServicesWindow("cloud_icon");
             }
 
             foreach (SubToolbar subToolbar in s_SubToolbars)

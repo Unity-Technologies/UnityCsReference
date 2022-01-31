@@ -162,6 +162,7 @@ namespace UnityEditor.Media
         unsafe public bool AddFrame(
             int width, int height, int rowBytes, TextureFormat format, NativeArray<byte> data)
         {
+            ThrowIfDisposed();
             return Internal_AddFrameRaw(
                 m_ThisPtr, width, height, rowBytes, format, data.GetUnsafeReadOnlyPtr(), data.Length, MediaTime.Invalid);
         }
@@ -169,22 +170,26 @@ namespace UnityEditor.Media
         unsafe public bool AddFrame(
             int width, int height, int rowBytes, TextureFormat format, NativeArray<byte> data, MediaTime time)
         {
+            ThrowIfDisposed();
             return Internal_AddFrameRaw(
                 m_ThisPtr, width, height, rowBytes, format, data.GetUnsafeReadOnlyPtr(), data.Length, time);
         }
 
         public bool AddFrame(Texture2D texture)
         {
+            ThrowIfDisposed();
             return Internal_AddFrame(m_ThisPtr, texture, MediaTime.Invalid);
         }
 
         public bool AddFrame(Texture2D texture, MediaTime time)
         {
+            ThrowIfDisposed();
             return Internal_AddFrame(m_ThisPtr, texture, time);
         }
 
         unsafe public bool AddSamples(ushort trackIndex, NativeArray<float> interleavedSamples)
         {
+            ThrowIfDisposed();
             return Internal_AddSamples(
                 m_ThisPtr, trackIndex, interleavedSamples.GetUnsafeReadOnlyPtr(),
                 interleavedSamples.Length);
@@ -231,6 +236,13 @@ namespace UnityEditor.Media
                 throw new InvalidOperationException(
                     "MediaEncoder: Output file creation failed for " + filePath);
             return ptr;
+        }
+
+
+        private void ThrowIfDisposed()
+        {
+            if (m_ThisPtr == IntPtr.Zero)
+                throw new ObjectDisposedException("MediaEncoder");
         }
 
         [FreeFunction]

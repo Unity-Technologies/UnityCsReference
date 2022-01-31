@@ -61,7 +61,7 @@ namespace UnityEditorInternal
 
         public static string GetPropertyIdentifier(SerializedProperty serializedProperty)
         {
-            return serializedProperty.propertyPath + serializedProperty.serializedObject.targetObject.GetInstanceID();
+            return serializedProperty.propertyPath + (GUIView.current?.nativeHandle.ToInt32() ?? -1);
         }
 
         ReorderableListWrapper() {}

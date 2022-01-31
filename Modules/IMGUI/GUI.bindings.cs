@@ -20,6 +20,7 @@ namespace UnityEngine
         public static extern int depth { get; set; }
 
         internal static extern bool usePageScrollbars { get; }
+        internal static extern bool isInsideList { get; set; }
         internal static extern Material blendMaterial {[FreeFunction("GetGUIBlendMaterial")] get; }
         internal static extern Material blitMaterial {[FreeFunction("GetGUIBlitMaterial")] get; }
         internal static extern Material roundedRectMaterial {[FreeFunction("GetGUIRoundedRectMaterial")] get; }

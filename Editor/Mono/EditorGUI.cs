@@ -226,6 +226,8 @@ namespace UnityEditor
         {
             s_PropertyCount = 0;
             s_EnabledStack.Clear();
+            s_IsInsideListStack.Clear();
+            GUI.isInsideList = false;
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
             ScriptAttributeUtility.s_DrawerStack.Clear();
@@ -239,6 +241,7 @@ namespace UnityEditor
         private static readonly Stack<PropertyGUIData> s_PropertyStack = new Stack<PropertyGUIData>();
 
         private static readonly Stack<bool> s_EnabledStack = new Stack<bool>();
+        private static readonly Stack<Tuple<bool , int>> s_IsInsideListStack = new Stack<Tuple<bool, int>>();
 
         // @TODO: API soon to be deprecated but still in a grace period; documentation states that users
         //        are encouraged to use EditorGUI.DisabledScope instead. Uncomment next line when appropriate.
@@ -344,6 +347,28 @@ namespace UnityEditor
             // Stack might have been cleared with ClearStack(), check before pop.
             if (s_EnabledStack.Count > 0)
                 GUI.enabled = s_EnabledStack.Pop();
+        }
+
+        internal static void BeginIsInsideList(int depth)
+        {
+            s_IsInsideListStack.Push(new Tuple<bool, int>(GUI.isInsideList, depth));
+            GUI.isInsideList = true;
+        }
+
+        internal static int GetInsideListDepth()
+        {
+            if (s_IsInsideListStack.Count > 0)
+                return s_IsInsideListStack.Peek().Item2;
+            return -1;
+        }
+
+        internal static void EndIsInsideList()
+        {
+            // Stack might have been cleared with ClearStack(), check before pop.
+            if (s_IsInsideListStack.Count > 0)
+                GUI.isInsideList = s_IsInsideListStack.Pop().Item1;
+            else
+                GUI.isInsideList = false;
         }
 
         private static readonly Stack<bool> s_ChangedStack = new Stack<bool>();

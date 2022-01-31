@@ -66,6 +66,11 @@ namespace UnityEditor.Connect
         [MenuItem("Window/General/Services %0", false, 302)]
         internal static void ShowServicesWindow()
         {
+            ShowServicesWindow("window_menu_item");
+        }
+
+        internal static void ShowServicesWindow(string analyticsReferrer)
+        {
             // Opens the window, otherwise focuses it if it’s already open.
             if (s_Instance == null)
             {
@@ -76,7 +81,8 @@ namespace UnityEditor.Connect
             {
                 GetWindow<ServicesEditorWindow>();
             }
-            EditorAnalytics.SendEventShowService(new ServicesProjectSettings.ShowServiceState() { service = k_WindowTitle, page = "", referrer = "window_menu_item"});
+
+            EditorAnalytics.SendEventShowService(new ServicesProjectSettings.ShowServiceState() { service = k_WindowTitle, page = "", referrer = analyticsReferrer});
         }
 
         void OnStateRefreshRequired(ProjectInfo state)
