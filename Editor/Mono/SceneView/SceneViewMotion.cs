@@ -466,11 +466,11 @@ namespace UnityEditor
                 if (!view.orthographic)
                 {
                     float relativeDelta = Mathf.Abs(view.size) * zoomDelta * .015f;
-                    const float deltaCutoff = .3f;
-                    if (relativeDelta > 0 && relativeDelta < deltaCutoff)
-                        relativeDelta = deltaCutoff;
-                    else if (relativeDelta < 0 && relativeDelta > -deltaCutoff)
-                        relativeDelta = -deltaCutoff;
+                    const float k_MinZoomDelta = .0001f;
+                    if (relativeDelta > 0 && relativeDelta < k_MinZoomDelta)
+                        relativeDelta = k_MinZoomDelta;
+                    else if (relativeDelta < 0 && relativeDelta > -k_MinZoomDelta)
+                        relativeDelta = -k_MinZoomDelta;
 
                     targetSize = view.size + relativeDelta;
                 }
