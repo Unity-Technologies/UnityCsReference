@@ -11,8 +11,6 @@ namespace UnityEditor.Overlays
 {
     sealed class OverlayDragger : MouseManipulator
     {
-        internal const string k_DragAreaHovered = "unity-overlay-drag-area-hovered";
-
         public static event Action<Overlay> dragStarted;
         public static event Action<Overlay> dragEnded;
 
@@ -43,10 +41,8 @@ namespace UnityEditor.Overlays
         protected override void RegisterCallbacksOnTarget()
         {
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
-            target.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -55,7 +51,6 @@ namespace UnityEditor.Overlays
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
-            target.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         OverlayDropZoneBase GetOverlayDropZone(Vector2 mousePosition, Overlay ignoreTarget)
@@ -126,17 +121,15 @@ namespace UnityEditor.Overlays
             }
 
             m_Active = true;
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.CaptureMouse();
             e.StopPropagation();
-            UpdateHovered(e.mousePosition);
 
             dragStarted?.Invoke(m_Overlay);
         }
 
         void OnMouseMove(MouseMoveEvent e)
         {
-            UpdateHovered(e.mousePosition);
-
             if (!m_Active)
                 return;
 
@@ -182,22 +175,6 @@ namespace UnityEditor.Overlays
             OnDragEnd(e.mousePosition);
         }
 
-        void OnMouseLeave(MouseLeaveEvent evt)
-        {
-            //No need to consider the event position in case of a mouse leave event
-            UpdateHovered(false);
-        }
-
-        void UpdateHovered(Vector2 mousePosition)
-        {
-            UpdateHovered(m_Active || IsInDraggableArea(mousePosition));
-        }
-
-        void UpdateHovered(bool hoverStatus)
-        {
-            m_Overlay.rootVisualElement.EnableInClassList(k_DragAreaHovered, hoverStatus);
-        }
-
         void OnKeyDown(KeyDownEvent evt)
         {
             if (m_Active && evt.keyCode == KeyCode.Escape)
@@ -237,7 +214,7 @@ namespace UnityEditor.Overlays
             canvas.HideOriginGhost();
             canvas.destinationMarker.SetTarget(null);
             m_StartContainer.stateLocked = false;
-            UpdateHovered(mousePosition);
+            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
 
             dragEnded?.Invoke(m_Overlay);
         }
