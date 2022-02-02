@@ -51,6 +51,8 @@ namespace UnityEditor.DeviceSimulation
             m_Main = new DeviceSimulatorMain(m_SimulatorState, rootVisualElement, this);
             s_SimulatorInstances.Add(this);
             InitPlayModeViewSwapMenu();
+
+            DevicePackage.OnPackageStatus += OnDevicePackageStatus;
         }
 
         private void InitPlayModeViewSwapMenu()
@@ -70,6 +72,8 @@ namespace UnityEditor.DeviceSimulation
         {
             s_SimulatorInstances.Remove(this);
             m_Main.Dispose();
+
+            DevicePackage.OnPackageStatus -= OnDevicePackageStatus;
 
             PlayModeAnalytics.SimulatorDisableEvent();
         }
@@ -151,6 +155,15 @@ namespace UnityEditor.DeviceSimulation
         protected override void OnEnterPlayModeBehaviorChange()
         {
             m_Main.userInterface.UpdateEnterPlayModeBehaviorMsg();
+        }
+
+        private void OnDevicePackageStatus(DevicePackageStatus status)
+        {
+            m_Main.userInterface.DeviceButtonState = new DevicePackageInstallButtonState
+            {
+                PackageStatus = status,
+                OnPressed = DevicePackage.Add
+            };
         }
 
         public void OnPlayPopupSelection(int indexClicked, object objectSelected)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
 {
@@ -204,7 +205,7 @@ namespace UnityEngine.UIElements
 
         internal bool processingEvents { get; private set; }
 
-        internal void Dispatch(EventBase evt, IPanel panel, DispatchMode dispatchMode)
+        internal void Dispatch(EventBase evt, [NotNull] IPanel panel, DispatchMode dispatchMode)
         {
             evt.MarkReceivedByDispatcher();
 
@@ -329,7 +330,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void ProcessEvent(EventBase evt, IPanel panel)
+        void ProcessEvent(EventBase evt, [NotNull] IPanel panel)
         {
             Event e = evt.imguiEvent;
             // Sometimes (in tests only?) we receive Used events. Protect our verification from this case.
@@ -344,9 +345,19 @@ namespace UnityEngine.UIElements
                     ApplyDispatchingStrategies(evt, panel, imguiEventIsInitiallyUsed);
                 }
 
-                if (evt.path != null)
+                // Last chance to build a path. Some dispatching strategies (e.g. PointerCaptureDispatchingStrategy)
+                // don't call PropagateEvents but still need to call ExecuteDefaultActions on composite roots.
+                var path = evt.path;
+                if (path == null && evt.bubblesOrTricklesDown && evt.leafTarget is VisualElement leafTarget)
                 {
-                    foreach (var element in evt.path.targetElements)
+                    path = PropagationPaths.Build(leafTarget, evt);
+                    evt.path = path;
+                    EventDebugger.LogPropagationPaths(evt, path);
+                }
+
+                if (path != null)
+                {
+                    foreach (var element in path.targetElements)
                     {
                         if (element.panel == panel)
                         {
@@ -361,11 +372,15 @@ namespace UnityEngine.UIElements
                 else
                 {
                     // If no propagation path, make sure EventDispatchUtilities.ExecuteDefaultAction has a target
-                    if (evt.target == null && panel != null)
+                    if (!(evt.target is VisualElement target))
                     {
-                        evt.target = panel.visualTree;
+                        evt.target = target = panel.visualTree;
                     }
-                    EventDispatchUtilities.ExecuteDefaultAction(evt);
+
+                    if (target.panel == panel)
+                    {
+                        EventDispatchUtilities.ExecuteDefaultAction(evt);
+                    }
                 }
 
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);

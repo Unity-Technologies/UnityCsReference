@@ -60,23 +60,6 @@ namespace UnityEditor.Connect
         {
             SettingsProvider projectSettings = null;
 
-            if (ShouldShowBuiltInProjectSettings(PurchasingService.instance))
-            {
-                projectSettings = new PurchasingProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
-                    {
-                        L10n.Tr(k_KeywordPurchasing),
-                        L10n.Tr(k_KeywordInApp),
-                        L10n.Tr(k_KeywordPurchase),
-                        L10n.Tr(k_KeywordRevenue),
-                        L10n.Tr(k_KeywordPlatforms),
-                        L10n.Tr(k_KeywordGooglePlay),
-                        L10n.Tr(k_KeywordPublicKey)
-                    });
-            }
-            else if (ShouldShowFallbackProjectSettings(PurchasingService.instance))
-            {
-                projectSettings = new FallbackProjectSettings(PurchasingService.instance, SettingsScope.Project);
-            }
 
             return projectSettings;
         }

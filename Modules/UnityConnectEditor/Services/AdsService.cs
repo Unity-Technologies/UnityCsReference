@@ -37,9 +37,6 @@ namespace UnityEditor.Connect
         public override string packageName { get; }
 
         public override string editorGamePackageName { get; } = "com.unity.ads";
-        public override bool canShowFallbackProjectSettings { get; } = true;
-        public override bool canShowBuiltInProjectSettings { get; } = true;
-        public override string minimumEditorGamePackageVersion { get; } = "3.7.5";
 
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;

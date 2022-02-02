@@ -503,10 +503,21 @@ namespace UnityEngine.UIElements
         }
 
         [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
+        internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionDisabledAtTarget(evt);
+            ProcessEvent(evt);
+        }
+
+        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
+            ProcessEvent(evt);
+        }
 
+        private void ProcessEvent(EventBase evt)
+        {
             if (evt.imguiEvent == null)
                 return;
 

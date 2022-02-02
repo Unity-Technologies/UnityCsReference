@@ -218,19 +218,6 @@ namespace UnityEditor.Connect
             };
         }
 
-        protected static bool ShouldShowFallbackProjectSettings(SingleService singleService)
-        {
-            return singleService.canShowFallbackProjectSettings &&
-                !PackageHelper.IsPackageInstalled(singleService.editorGamePackageName);
-        }
-
-        protected static bool ShouldShowBuiltInProjectSettings(SingleService singleService)
-        {
-            return singleService.canShowBuiltInProjectSettings &&
-                (!PackageHelper.IsCorePackageInstalled() ||
-                !PackageHelper.IsInstalledPackageAtMinimumVersionOrHigher(singleService.packageName, singleService.minimumEditorGamePackageVersion));
-        }
-
         bool IsProjectInfoChanged()
         {
             // All struct fields are private, we check the public interface...

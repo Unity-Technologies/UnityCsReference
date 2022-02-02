@@ -353,22 +353,30 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else
                 {
+                    // If an asset store package is disabled, we won't get properly update info from the server (the id field will be transformed to something else)
+                    // in the past we consider this case as `updateInfo` not checked and that causes the Package Manager to check update indefinitely.
+                    // Now we want to mark all packages that we called `CheckUpdate` on as updateInfoFetched to avoid unnecessary calls on disabled packages.
+                    foreach (var localInfo in productIds.Select(id => m_AssetStoreCache.GetLocalInfo(id)).Where(info => info != null))
+                        localInfo.updateInfoFetched = true;
+
                     var results = updateDetails.GetList<IDictionary<string, object>>("results") ?? Enumerable.Empty<IDictionary<string, object>>();
+                    var updatedLocalInfos = new List<AssetStoreLocalInfo>();
                     foreach (var updateDetail in results)
                     {
                         var id = updateDetail.GetString("id");
                         var localInfo = m_AssetStoreCache.GetLocalInfo(id);
                         if (localInfo != null)
                         {
-                            localInfo.updateInfoFetched = true;
                             var newValue = updateDetail.Get("can_update", 0L) != 0L;
                             if (localInfo.canUpdate != newValue)
                             {
                                 localInfo.canUpdate = newValue;
-                                OnLocalInfosChanged(new[] { localInfo }, null);
+                                updatedLocalInfos.Add(localInfo);
                             }
                         }
                     }
+                    if (updatedLocalInfos.Any())
+                       OnLocalInfosChanged(updatedLocalInfos, null);
                     onUpdateChecked?.Invoke(productIds);
                 }
                 doneCallbackAction?.Invoke();

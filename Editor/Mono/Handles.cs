@@ -1436,7 +1436,7 @@ namespace UnityEditor
         public static void DrawOutline(GameObject[] objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
-            HandleUtility.FilterRendererIDs(objects, out parentRenderers, out childRenderers);
+            HandleUtility.FilterInstanceIDs(objects, out parentRenderers, out childRenderers);
             Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
@@ -1460,7 +1460,7 @@ namespace UnityEditor
         public static void DrawOutline(List<GameObject> objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
-            HandleUtility.FilterRendererIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers);
+            HandleUtility.FilterInstanceIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers);
             Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
@@ -1494,7 +1494,7 @@ namespace UnityEditor
         internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
         {
             int[] parentRenderers, childRenderers;
-            HandleUtility.FilterRendererIDs(Selection.gameObjects, out parentRenderers, out childRenderers);
+            HandleUtility.FilterInstanceIDs(Selection.gameObjects, out parentRenderers, out childRenderers);
 
             // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
             var parentOutlineAlpha = parentNodeColor.a;

@@ -275,21 +275,21 @@ namespace UnityEditorInternal
 
         internal static IL2CPPBuilder RunIl2Cpp(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry)
         {
-            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
+            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(platformProvider.namedBuildTarget));
             builder.Run();
             return builder;
         }
 
         internal static IL2CPPBuilder RunIl2Cpp(string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry)
         {
-            var builder = new IL2CPPBuilder(stagingAreaData, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
+            var builder = new IL2CPPBuilder(stagingAreaData, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(platformProvider.namedBuildTarget));
             builder.Run();
             return builder;
         }
 
         internal static IL2CPPBuilder RunCompileAndLink(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, string il2cppBuildCacheSource)
         {
-            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
+            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(platformProvider.namedBuildTarget));
             builder.RunCompileAndLink(il2cppBuildCacheSource);
             return builder;
         }
@@ -338,18 +338,18 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static bool UseIl2CppCodegenWithMonoBackend(BuildTargetGroup targetGroup)
+        internal static bool UseIl2CppCodegenWithMonoBackend(NamedBuildTarget namedBuildTarget)
         {
             return EditorApplication.useLibmonoBackendForIl2cpp &&
-                PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
+                PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP;
         }
 
-        internal static bool EnableIL2CPPDebugger(IIl2CppPlatformProvider provider, BuildTargetGroup targetGroup)
+        internal static bool EnableIL2CPPDebugger(IIl2CppPlatformProvider provider)
         {
             if (!provider.allowDebugging || !provider.development)
                 return false;
 
-            switch (PlayerSettings.GetApiCompatibilityLevel(targetGroup))
+            switch (PlayerSettings.GetApiCompatibilityLevel(provider.namedBuildTarget))
             {
                 case ApiCompatibilityLevel.NET_Unity_4_8:
                 case ApiCompatibilityLevel.NET_Standard:
@@ -360,10 +360,10 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static string[] GetBuilderDefinedDefines(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        internal static string[] GetBuilderDefinedDefines(IIl2CppPlatformProvider il2cppPlatformProvider)
         {
             List<string> defines = new List<string>();
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(il2cppPlatformProvider.namedBuildTarget);
 
             switch (apiCompatibilityLevel)
             {
@@ -398,7 +398,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+            if (EnableIL2CPPDebugger(il2cppPlatformProvider))
                 defines.Add("IL2CPP_MONO_DEBUGGER=1");
 
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))
@@ -424,21 +424,21 @@ namespace UnityEditorInternal
             return defines.ToArray();
         }
 
-        internal static string[] GetDebuggerIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        internal static string[] GetDebuggerIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider)
         {
             var arguments = new List<string>();
 
-            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+            if (EnableIL2CPPDebugger(il2cppPlatformProvider))
                 arguments.Add("--enable-debugger");
 
             return arguments.ToArray();
         }
 
-        internal static string[] GetBuildingIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        internal static string[] GetBuildingIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider)
         {
             // When changing this function, don't forget to change GetBuilderDefinedDefines!
             var arguments = new List<string>();
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(il2cppPlatformProvider.namedBuildTarget);
 
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", il2cppPlatformProvider.target))
             {
@@ -611,9 +611,7 @@ namespace UnityEditorInternal
             // Make all assemblies in Staging/Managed writable for stripping.
             ClearReadOnlyFlagOnAllFilesNonRecursively(managedDir);
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-
-            var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+            var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(m_PlatformProvider.namedBuildTarget);
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
@@ -667,23 +665,22 @@ namespace UnityEditorInternal
                 Directory.CreateDirectory(buildCacheDirectory);
 
                 var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputRelativeDirectory(buildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
-                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
+                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(m_PlatformProvider.namedBuildTarget);
                 var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
                 var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
                 if (!string.IsNullOrEmpty(additionalArgs))
                     arguments.Add(additionalArgs);
 
-                foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
+                foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider))
                 {
                     if (!arguments.Contains(buildingArgument))
                         arguments.Add(buildingArgument);
                 }
 
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(il2cppBuildCacheSource))}");
-                arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), m_PlatformProvider.target)}\"");
-                arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
+                arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(m_PlatformProvider.namedBuildTarget), m_PlatformProvider.target)}\"");
+                arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
 
                 RunIl2CppWithArguments(arguments, setupStartInfo);
@@ -729,12 +726,10 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(m_PlatformProvider.namedBuildTarget);
             arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel, m_PlatformProvider.target)));
 
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
-            var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
+            var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(m_PlatformProvider.namedBuildTarget);
             if (il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize)
                 arguments.Add("--generics-option=EnableFullSharing");
 
@@ -742,7 +737,7 @@ namespace UnityEditorInternal
             if (il2CppNativeCodeBuilder != null)
             {
                 var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputRelativeDirectory(m_PlatformProvider.il2cppBuildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
-                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
+                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(m_PlatformProvider.namedBuildTarget);
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
@@ -755,8 +750,8 @@ namespace UnityEditorInternal
             foreach (var additionalCppFile in Directory.GetFiles(GetAdditionalCppFilesDirectory(m_PlatformProvider.il2cppBuildCacheDirectory)))
                 arguments.Add($"--additional-cpp={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(additionalCppFile)))}");
 
-            arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
-            foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
+            arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider));
+            foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider))
             {
                 if (!arguments.Contains(buildingArgument))
                     arguments.Add(buildingArgument);
@@ -876,6 +871,7 @@ namespace UnityEditorInternal
     internal interface IIl2CppPlatformProvider
     {
         BuildTarget target { get; }
+        NamedBuildTarget namedBuildTarget { get; }
         bool emitNullChecks { get; }
         bool enableStackTraces { get; }
         bool enableArrayBoundsCheck { get; }
@@ -907,12 +903,15 @@ namespace UnityEditorInternal
                                           string baselibLibraryDirectory)
         {
             this.target = target;
+            this.namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
             this.libraryFolder = libraryFolder;
             this.buildReport = buildReport;
             _baselibLibraryDirectory = baselibLibraryDirectory;
         }
 
         public virtual BuildTarget target { get; private set; }
+
+        public virtual NamedBuildTarget namedBuildTarget { get; private set; }
 
         public virtual string libraryFolder { get; private set; }
 

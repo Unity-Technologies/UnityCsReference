@@ -1235,7 +1235,7 @@ namespace UnityEditor
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(k_StyleCommon) as StyleSheet);
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? k_StyleDark : k_StyleLight) as StyleSheet);
 
-            HandleUtility.FilterRendererIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
+            HandleUtility.FilterInstanceIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
         }
 
         IMGUIContainer m_PrefabToolbar;
@@ -1567,7 +1567,7 @@ namespace UnityEditor
 
             m_WasFocused = false;
 
-            HandleUtility.FilterRendererIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
+            HandleUtility.FilterInstanceIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
 
             Repaint();
         }

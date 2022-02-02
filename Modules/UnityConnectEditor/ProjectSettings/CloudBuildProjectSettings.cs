@@ -126,14 +126,6 @@ namespace UnityEditor.Connect
         {
             SettingsProvider projectSettings = null;
 
-            if (ShouldShowBuiltInProjectSettings(BuildService.instance))
-            {
-                projectSettings = new CloudBuildProjectSettings(BuildService.instance.projectSettingsPath, SettingsScope.Project);
-            }
-            else if (ShouldShowFallbackProjectSettings(BuildService.instance))
-            {
-                projectSettings = new FallbackProjectSettings(BuildService.instance, SettingsScope.Project);
-            }
 
             return projectSettings;
         }

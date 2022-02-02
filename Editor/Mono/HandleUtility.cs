@@ -1567,69 +1567,68 @@ namespace UnityEditor
                 return;
             }
 
-            var childCount = 1024;
             var parentIndex = 0;
-            var childIndex = 0;
             parentRendererIDs = new int[renderers.Length];
 
             foreach (var renderer in renderers)
-            {
-                // Transform.hierarchyCapacity is used as a starting point as there is no reliable way to pre-calculate
-                // the real count without traversing the hierarchy and cross-checking parents/children which is too slow (case 1372127)
-                if (renderer.transform.hierarchyCapacity > childCount)
-                    childCount = renderer.transform.hierarchyCapacity;
                 parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
-            }
 
-            childRendererIDs = new int[childCount];
+            var tempChildRendererIDs = new HashSet<int>();
             foreach (var renderer in renderers)
             {
                 var children = renderer.GetComponentsInChildren<Renderer>();
                 for (int i = 1; i < children.Length; i++)
                 {
                     var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id, childIndex) && !HasMatchingInstanceID(childRendererIDs, id, childIndex))
-                        childRendererIDs[childIndex++] = id;
+                    if (!HasMatchingInstanceID(parentRendererIDs, id, parentIndex))
+                        tempChildRendererIDs.Add(id);
                 }
             }
+
+            childRendererIDs = tempChildRendererIDs.ToArray();
         }
 
-        internal static void FilterRendererIDs(GameObject[] gameObjects, out int[] parentRendererIDs, out int[] childRendererIDs)
+        internal static void FilterInstanceIDs(GameObject[] gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs)
         {
             if (gameObjects == null)
             {
                 Debug.LogWarning("The GameObject array is null. Handles.DrawOutline will not be rendered.");
-                parentRendererIDs = new int[0];
-                childRendererIDs = new int[0];
+                parentInstanceIDs = new int[0];
+                childInstanceIDs = new int[0];
                 return;
             }
 
-            var childCount = 1024;
-            var parentIndex = 0;
-            var childIndex = 0;
-            parentRendererIDs = new int[gameObjects.Length];
-
+            var tempParentInstanceIDs = new HashSet<int>();
             foreach (var go in gameObjects)
             {
-                // Transform.hierarchyCapacity is used as a starting point as there is no reliable way to pre-calculate
-                // the real count without traversing the hierarchy and cross-checking parents/children which is too slow (case 1372127)
-                if (go.transform.hierarchyCapacity > childCount)
-                    childCount = go.transform.hierarchyCapacity;
                 if (go.TryGetComponent(out Renderer renderer))
-                    parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
+                    tempParentInstanceIDs.Add(renderer.GetInstanceID());
+                else if (go.TryGetComponent(out Terrain terrain))
+                    tempParentInstanceIDs.Add(terrain.GetInstanceID());
             }
 
-            childRendererIDs = new int[childCount];
+            var tempChildInstanceIDs = new HashSet<int>();
             foreach (var go in gameObjects)
             {
-                var children = go.GetComponentsInChildren<Renderer>();
-                for (int i = 1; i < children.Length; i++)
+                var childRenderers = go.GetComponentsInChildren<Renderer>();
+                for (int i = 0; i < childRenderers.Length; i++)
                 {
-                    var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id, parentRendererIDs.Length) && !HasMatchingInstanceID(childRendererIDs, id, childIndex))
-                        childRendererIDs[childIndex++] = id;
+                    var id = childRenderers[i].GetInstanceID();
+                    if (!tempParentInstanceIDs.Contains(id))
+                        tempChildInstanceIDs.Add(id);
+                }
+
+                var childTerrains = go.GetComponentsInChildren<Terrain>();
+                for (int i = 0; i < childTerrains.Length; i++)
+                {
+                    var id = childTerrains[i].GetInstanceID();
+                    if (!tempParentInstanceIDs.Contains(id))
+                        tempChildInstanceIDs.Add(id);
                 }
             }
+
+            parentInstanceIDs = tempParentInstanceIDs.ToArray();
+            childInstanceIDs = tempChildInstanceIDs.ToArray();
         }
 
         static bool HasMatchingInstanceID(int[] ids, int id, int cutoff)

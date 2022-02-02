@@ -4948,6 +4948,9 @@
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceListPopup.cs">
       <Link>Modules\DeviceSimulatorEditor\DeviceListPopup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\DeviceSimulatorEditor\DevicePackage.cs">
+      <Link>Modules\DeviceSimulatorEditor\DevicePackage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\DeviceSimulatorEditor\DeviceSimulatorMain.cs">
       <Link>Modules\DeviceSimulatorEditor\DeviceSimulatorMain.cs</Link>
     </Compile>
@@ -7923,9 +7926,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\CollabProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\CollabProjectSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\FallbackProjectSettings.cs">
-      <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\FallbackProjectSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\Fallback\InstallPackageSection.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\Fallback\InstallPackageSection.cs</Link>

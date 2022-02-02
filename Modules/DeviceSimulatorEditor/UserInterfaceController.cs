@@ -67,6 +67,17 @@ namespace UnityEditor.DeviceSimulation
         private const int kScaleMax = 100;
         private bool m_FitToScreenEnabled = true;
 
+        private DevicePackageInstallButtonState m_DeviceButtonState = new DevicePackageInstallButtonState { PackageStatus = DevicePackageStatus.Unknown};
+        public DevicePackageInstallButtonState DeviceButtonState
+        {
+            set
+            {
+                m_DeviceButtonState = value;
+                if(m_DeviceListPopup != null)
+                    m_DeviceListPopup.DeviceButtonState = m_DeviceButtonState;
+            }
+        }
+
         // Controls for the toolbar
         private string m_DeviceSearchContent;
         private VisualElement m_DeviceListMenu;
@@ -96,6 +107,7 @@ namespace UnityEditor.DeviceSimulation
         private float m_ControlPanelWidth;
         private readonly Dictionary<string, Foldout> m_PluginFoldouts = new Dictionary<string, Foldout>();
         private VisualElement m_ControlPanel;
+        private DeviceListPopup m_DeviceListPopup;
 
         public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, SimulatorState serializedState, PluginController pluginController, TouchEventManipulator touchEventManipulator)
         {
@@ -330,13 +342,13 @@ namespace UnityEditor.DeviceSimulation
         private void ShowDeviceInfoList()
         {
             var rect = new Rect(m_DeviceListMenu.worldBound.position + new Vector2(1, m_DeviceListMenu.worldBound.height), new Vector2());
-            var maximumVisibleDeviceCount = 10;
+            var maximumVisibleDeviceCount = 15;
 
-            var deviceListPopup = new DeviceListPopup(m_Main.devices, m_Main.deviceIndex, maximumVisibleDeviceCount, m_DeviceSearchContent);
-            deviceListPopup.OnDeviceSelected += OnDeviceSelected;
-            deviceListPopup.OnSearchInput += OnSearchInput;
+            m_DeviceListPopup = new DeviceListPopup(m_Main.devices, m_Main.deviceIndex, maximumVisibleDeviceCount, m_DeviceSearchContent, m_DeviceButtonState);
+            m_DeviceListPopup.OnDeviceSelected += OnDeviceSelected;
+            m_DeviceListPopup.OnSearchInput += OnSearchInput;
 
-            PopupWindow.Show(rect, deviceListPopup);
+            PopupWindow.Show(rect, m_DeviceListPopup);
         }
 
         private void ShowOnPlayBehaviorSelector()

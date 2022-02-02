@@ -10,6 +10,51 @@ using UnityEngine;
 
 namespace UnityEditor.DeviceSimulation
 {
+    internal enum DeviceButtonVisibility { Enabled, Disabled, Hidden}
+
+    internal struct DevicePackageInstallButtonState
+    {
+        public DevicePackageStatus PackageStatus;
+        public Action OnPressed;
+
+        public DeviceButtonVisibility Visibility
+        {
+            get
+            {
+                switch (PackageStatus)
+                {
+                    case DevicePackageStatus.Unavailable:
+                    case DevicePackageStatus.Outdated:
+                        return DeviceButtonVisibility.Enabled;
+                    case DevicePackageStatus.Adding:
+                    case DevicePackageStatus.Updating:
+                        return DeviceButtonVisibility.Disabled;
+                    default:
+                        return DeviceButtonVisibility.Hidden;
+                }
+            }
+        }
+
+        public string Text
+        {
+            get
+            {
+                switch (PackageStatus)
+                {
+                    case DevicePackageStatus.Unavailable:
+                        return "Install Additional Devices";
+                    case DevicePackageStatus.Outdated:
+                        return "Update Devices";
+                    case DevicePackageStatus.Adding:
+                    case DevicePackageStatus.Updating:
+                        return "In Progress...";
+                    default:
+                        return "Invisible Button";
+                }
+            }
+        }
+    }
+
     internal class DeviceListPopup : PopupWindowContent
     {
         private struct IndexedDevice
@@ -48,8 +93,11 @@ namespace UnityEditor.DeviceSimulation
 
         public Action<string> OnSearchInput { get; set; }
 
-        public DeviceListPopup(DeviceInfoAsset[] deviceList, int selectedDeviceIndex, int maximumVisibleDeviceCount, string lastSearchContent)
+        public DevicePackageInstallButtonState DeviceButtonState;
+
+        public DeviceListPopup(DeviceInfoAsset[] deviceList, int selectedDeviceIndex, int maximumVisibleDeviceCount, string lastSearchContent, DevicePackageInstallButtonState deviceButtonState)
         {
+            DeviceButtonState = deviceButtonState;
             m_DeviceList = deviceList;
             m_SelectedDeviceIndex = selectedDeviceIndex;
             m_MaximumVisibleDeviceCount = maximumVisibleDeviceCount;
@@ -102,8 +150,9 @@ namespace UnityEditor.DeviceSimulation
 
         public override Vector2 GetWindowSize()
         {
+            var buttonVisible = DeviceButtonState.Visibility != DeviceButtonVisibility.Hidden;
             // Add 1 for search filter.
-            return new Vector2(220, (GetVisibleDeviceCount() + 1) * (k_ItemHeight + k_SpaceHeight) + 5);
+            return new Vector2(220, (GetVisibleDeviceCount() + 1 + (buttonVisible ? 1 : 0)) * (k_ItemHeight + k_SpaceHeight) + (buttonVisible ? 10 : 5));
         }
 
         private int GetVisibleDeviceCount()
@@ -149,6 +198,18 @@ namespace UnityEditor.DeviceSimulation
                 EditorGUILayout.EndHorizontal();
             }
             GUI.EndScrollView();
+
+            if (m_FilteredDevices.Count > 0)
+            {
+                EditorGUILayout.Space(visibleRect.height);
+            }
+
+            if (DeviceButtonState.Visibility == DeviceButtonVisibility.Disabled)
+                GUI.enabled = false;
+            if(DeviceButtonState.Visibility != DeviceButtonVisibility.Hidden && GUILayout.Button(new GUIContent(DeviceButtonState.Text, "Install the latest available version of Device Simulator Devices package (com.unity.device-simulator.devices)")))
+                DeviceButtonState.OnPressed?.Invoke();
+
+            GUI.enabled = true;
         }
 
         private void OnDeviceListGUI(int startIndex, int drawDeviceCount, Rect totalRect)

@@ -119,8 +119,8 @@ namespace UnityEditor.Modules
 
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            var strippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+            var namedBuildTarget = GetNamedBuildTarget(args);
+            var strippingLevel = PlayerSettings.GetManagedStrippingLevel(namedBuildTarget);
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
@@ -162,7 +162,7 @@ namespace UnityEditor.Modules
                         .ToArray(),
                     Runtime = GetUseIl2Cpp(args) ? "il2cpp" : "mono",
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
-                        PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                        PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                     Ruleset = strippingLevel switch
                     {
                         ManagedStrippingLevel.Minimal => "Minimal",
@@ -185,8 +185,7 @@ namespace UnityEditor.Modules
 
         protected virtual string Il2CppBuildConfigurationNameFor(BuildPostProcessArgs args)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup));
+            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(GetNamedBuildTarget(args)));
         }
 
         protected virtual IEnumerable<string> AdditionalIl2CppArgsFor(BuildPostProcessArgs args)
@@ -212,9 +211,8 @@ namespace UnityEditor.Modules
             if (CrashReportingSettings.enabled)
                 additionalArgs.Add("--emit-source-mapping");
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+            var namedBuildTarget = GetNamedBuildTarget(args);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
             var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
             return new Il2CppConfig
@@ -223,7 +221,7 @@ namespace UnityEditor.Modules
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
-                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
@@ -258,7 +256,7 @@ namespace UnityEditor.Modules
             CompanyName = args.companyName,
             ProductName = Paths.MakeValidFileName(args.productName),
             PlayerPackage = args.playerPackage,
-            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(args.target)),
+            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(GetNamedBuildTarget(args)),
             InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
             GenerateIdeProject = GetCreateSolution(args),
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
@@ -552,7 +550,7 @@ namespace UnityEditor.Modules
         {
             base.PostProcessCompletedBuild(args);
 
-            if (PlayerSettings.GetManagedStrippingLevel(BuildPipeline.GetBuildTargetGroup(args.target)) == ManagedStrippingLevel.Disabled)
+            if (PlayerSettings.GetManagedStrippingLevel(GetNamedBuildTarget(args)) == ManagedStrippingLevel.Disabled)
                 return;
 
             var strippingInfo = GetStrippingInfoFromBuild(args);
@@ -576,6 +574,19 @@ namespace UnityEditor.Modules
             return !string.Equals(cpu, "None", StringComparison.OrdinalIgnoreCase);
         }
 
+        protected NamedBuildTarget GetNamedBuildTarget(BuildPostProcessArgs args)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                return (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server
+                    ? NamedBuildTarget.Server : NamedBuildTarget.Standalone;
+            }
+
+            return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+        }
+
         protected bool GetDevelopment(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.Development);
 
@@ -586,6 +597,6 @@ namespace UnityEditor.Modules
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);
 
         protected virtual bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
-            PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(args.target)) == ScriptingImplementation.IL2CPP;
+            PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.IL2CPP;
     }
 }
