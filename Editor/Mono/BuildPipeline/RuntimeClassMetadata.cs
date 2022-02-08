@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -50,6 +51,16 @@ namespace UnityEditor
         public void SetUsedTypesInUserAssembly(string[] typeNames, string assemblyName)
         {
             m_UsedTypesPerUserAssembly[assemblyName] = typeNames;
+        }
+
+        [RequiredByNativeCode]
+        public void SetSerializedTypesInUserAssembly(string[] typeNames, string assemblyName)
+        {
+            if (!serializedClassesPerAssembly.TryGetValue(assemblyName, out HashSet<string> types))
+                serializedClassesPerAssembly[assemblyName] = types = new HashSet<string>();
+
+            foreach (var typeName in typeNames)
+                types.Add(typeName);
         }
 
         public bool IsDLLUsed(string dll)
@@ -131,6 +142,18 @@ namespace UnityEditor
             {
                 yield return new KeyValuePair<string, string[]>(pair.Key, pair.Value.ToArray());
             }
+        }
+
+        [RequiredByNativeCode]
+        public string[] GetAllSerializedClassesAssemblies()
+        {
+            return serializedClassesPerAssembly.Keys.ToArray();
+        }
+
+        [RequiredByNativeCode]
+        public string[] GetAllSerializedClassesForAssembly(string assembly)
+        {
+            return serializedClassesPerAssembly[assembly].ToArray();
         }
 
         public static RuntimeClassRegistry Create()

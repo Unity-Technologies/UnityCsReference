@@ -220,6 +220,8 @@ namespace UnityEditor
                             var prop = (SerializedProperty)o;
                             pasteFunc(prop);
                             prop.serializedObject.ApplyModifiedProperties();
+                            // Constrain proportions scale widget might need extra recalculation, notify if a paste
+                            ConstrainProportionsTransformScale.NotifyPropertyPasted(prop.propertyPath);
                         }, property);
                 }
                 else

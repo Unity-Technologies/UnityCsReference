@@ -51,6 +51,8 @@ namespace UnityEditor.SceneTemplate
                 var assetsInDstPath = AssetDatabase.LoadAllAssetsAtPath(dstPath);
                 foreach (var o in assetsInDstPath)
                 {
+                    if (o == null)
+                        continue;
                     objects.Add(o);
                 }
             }

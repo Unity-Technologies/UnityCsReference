@@ -159,9 +159,9 @@ namespace UnityEditor
             }
 
             // Get and reserve rect
-            drawingContainer.style.minWidth = previewSize.x;
-            drawingContainer.style.minHeight = previewSize.y;
-            var cameraRect = drawingContainer.rect;
+            imguiContainer.style.minWidth = previewSize.x;
+            imguiContainer.style.minHeight = previewSize.y;
+            var cameraRect = imguiContainer.rect;
             cameraRect.width = Mathf.Floor(cameraRect.width);
 
             if (Event.current.type == EventType.Repaint)

@@ -181,14 +181,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var previousEnabled = GUI.enabled;
-            GUI.enabled =  m_Package?.state == PackageState.InDevelopment && (m_Version?.isInstalled ?? false);
+
+            PackageManifest manifest = null;
+            if (m_Package?.state == PackageState.InDevelopment && (m_Version?.isInstalled ?? false))
+                manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{m_Version.packageInfo.assetPath}/package.json");
+            GUI.enabled =  manifest != null;
             if (GUILayout.Button(Styles.editPackage, EditorStyles.miniButton))
-            {
-                var path = m_Version.packageInfo.assetPath;
-                var manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{path}/package.json");
-                if (manifest != null)
-                    m_Selection.activeObject = manifest;
-            }
+                m_Selection.activeObject = manifest;
+
             GUI.enabled = m_Package != null && m_Version != null;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {

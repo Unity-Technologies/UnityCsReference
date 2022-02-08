@@ -836,27 +836,28 @@ namespace UnityEditor
                 m_ListArea.EndRename(true);
         }
 
-        string[] GetTypesDisplayNames()
+        Dictionary<string, string[]> GetTypesDisplayNames()
         {
-            return new[]
+            return new Dictionary<string, string[]>
             {
-                "AnimationClip",
-                "AudioClip",
-                "AudioMixer",
-                "ComputeShader",
-                "Font",
-                "GUISkin",
-                "Material",
-                "Mesh",
-                "Model",
-                "PhysicMaterial",
-                "Prefab",
-                "Scene",
-                "Script",
-                "Shader",
-                "Sprite",
-                "Texture",
-                "VideoClip",
+                { "Animation Clip", new [] { "AnimationClip" } },
+                { "Audio Clip", new [] { "AudioClip"} },
+                { "Audio Mixer", new [] { "AudioMixer" } },
+                { "Compute Shader", new [] { "ComputeShader" } },
+                { "Font", new [] { "Font" } },
+                { "GUI Skin", new [] { "GUISkin" } },
+                { "Material", new [] { "Material" } },
+                { "Mesh", new [] { "Mesh" } },
+                { "Model", new [] { "Model" } },
+                { "Physic Material", new [] { "PhysicMaterial" } },
+                { "Prefab", new [] { "Prefab" } },
+                { "Scene", new [] { "Scene"} },
+                { "Script", new [] { "Script" } },
+                { "Shader", new [] { "Shader" } },
+                { "Sprite", new [] { "Sprite" } },
+                { "Texture", new [] { "Texture" } },
+                { "Video Clip", new [] { "VideoClip" } },
+                { "Visual Effect Asset", new [] { "VisualEffectAsset", "VisualEffectSubgraph" } },
 
                 // "Texture2D",
                 // "RenderTexture",
@@ -877,7 +878,7 @@ namespace UnityEditor
 
             // Toggle clicked element
             element.selected = !element.selected;
-            string[] selectedDisplayNames = (from item in m_ObjectTypes.m_ListElements where item.selected select item.text).ToArray();
+            string[] selectedDisplayNames = m_ObjectTypes.m_ListElements.Where(x => x.selected).SelectMany(x => x.types).ToArray();
 
             m_SearchFilter.classNames = selectedDisplayNames;
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
@@ -917,13 +918,12 @@ namespace UnityEditor
             m_ObjectTypes.m_OnSelectCallback = TypeListCallback;
             m_ObjectTypes.m_SortAlphabetically = false;
             m_ObjectTypes.m_MaxCount = 0;
-            string[] types = GetTypesDisplayNames();
-            for (int i = 0; i < types.Length; ++i)
+            var types = GetTypesDisplayNames();
+            foreach (var keyPair in types)
             {
-                PopupList.ListElement element = m_ObjectTypes.NewOrMatchingElement(types[i]);
-                if (i == 0)
-                    element.selected = true;
+                m_ObjectTypes.AddElement(keyPair.Key, keyPair.Value);
             }
+            m_ObjectTypes.m_ListElements[0].selected = true;
         }
 
         void SetupAssetLabelList()
