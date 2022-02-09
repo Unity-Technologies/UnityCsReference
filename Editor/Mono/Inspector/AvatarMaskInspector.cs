@@ -750,16 +750,19 @@ namespace UnityEditor
 
             static bool GetFirstActiveValue(SerializedNodeInfo parent, out bool value)
             {
-                foreach (var treeViewItem in parent.children)
+                if (parent.children != null)
                 {
-                    var child = (SerializedNodeInfo)treeViewItem;
-                    if (child.m_State != SerializedNodeInfo.State.Disabled)
+                    foreach (var treeViewItem in parent.children)
                     {
-                        value = child.nodeState;
-                        return true;
+                        var child = (SerializedNodeInfo)treeViewItem;
+                        if (child.m_State != SerializedNodeInfo.State.Disabled)
+                        {
+                            value = child.nodeState;
+                            return true;
+                        }
+                        if (GetFirstActiveValue(child, out value))
+                            return true;
                     }
-                    if (GetFirstActiveValue(child, out value))
-                        return true;
                 }
                 value = false;
                 return false;

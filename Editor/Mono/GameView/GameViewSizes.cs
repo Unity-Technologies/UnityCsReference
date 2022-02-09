@@ -168,29 +168,52 @@ namespace UnityEditor
             GameViewSize k_720p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1280, 720, "1280x720 Landscape");
 
             // iOS
-            GameViewSize k_iPhone_750p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 750, 1334, "iPhone 1334x750 Portrait");
-            GameViewSize k_iPhone_750p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1334, 750, "iPhone 1334x750 Landscape");
-            GameViewSize k_iPhone_X_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1125, 2436, "iPhone X/XS 2436x1125 Portrait");
-            GameViewSize k_iPhone_X_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2436, 1125, "iPhone X/XS 2436x1125 Landscape");
-            GameViewSize k_iPhone_828p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 828, 1792, "iPhone XR 1792x828 Portrait");
-            GameViewSize k_iPhone_828p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1792, 828, "iPhone XR 1792x828 Landscape");
-            GameViewSize k_iPhone_1242p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1242, 2688, "iPhone XS Max 2688x1242 Portrait");
-            GameViewSize k_iPhone_1242p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2688, 1242, "iPhone XS Max 2688x1242 Landscape");
+            // iPhone 5, 5c, 5s, SE (1st gen)
+            GameViewSize k_iPhone_640p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 640, 1136, "iPhone SE (1st gen)   1136x640 Portrait");
+            GameViewSize k_iPhone_640p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1136, 640, "iPhone SE (1st gen)   1136x640 Landscape");
+            // iPhone 6, 6s, 7, 8, SE (2nd gen)
+            GameViewSize k_iPhone_750p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 750, 1334, "iPhone SE (2nd gen)   1334x750 Portrait");
+            GameViewSize k_iPhone_750p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1334, 750, "iPhone SE (2nd gen)   1334x750 Landscape");
+            // iPhone XR, 11
+            GameViewSize k_iPhone_828p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 828, 1792, "iPhone 11   1792x828 Portrait");
+            GameViewSize k_iPhone_828p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1792, 828, "iPhone 11   1792x828 Landscape");
+            // iPhone iPhone 6 Plus, 6s Plus, 7 Plus, 8 Plus
+            GameViewSize k_iPhone_1080p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1080, 1920, "iPhone 8 Plus   1920x1080 Portrait");
+            GameViewSize k_iPhone_1080p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1920, 1080, "iPhone 8 Plus   1920x1080 Landscape");
+            // iPhone 12 mini
+            GameViewSize k_iPhone_2340x1080_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1080, 2340, "iPhone 12 mini   2340x1080 Portrait");
+            GameViewSize k_iPhone_2340x1080_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2340, 1080, "iPhone 12 mini   2340x1080 Landscape");
+            // iPhone X, XS, 11 Pro
+            GameViewSize k_iPhone_1125p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1125, 2436, "iPhone 11 Pro   2436x1125 Portrait");
+            GameViewSize k_iPhone_1125p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2436, 1125, "iPhone 11 Pro   2436x1125 Landscape");
+            // iPhone 12, 12 Pro
+            GameViewSize k_iPhone_1170p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1170, 2532, "iPhone 12 Pro   2532x1170 Portrait");
+            GameViewSize k_iPhone_1170p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2532, 1170, "iPhone 12 Pro   2532x1170 Landscape");
+            // iPhone XS Max, 11 Pro Max
+            GameViewSize k_iPhone_1242p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1242, 2688, "iPhone 11 Pro Max   2688x1242 Portrait");
+            GameViewSize k_iPhone_1242p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2688, 1242, "iPhone 11 Pro Max   2688x1242 Landscape");
+            // iPhone 12 Pro Max
+            GameViewSize k_iPhone_1284p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1284, 2778, "iPhone 12 Pro Max   2778x1284 Portrait");
+            GameViewSize k_iPhone_1284p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2778, 1284, "iPhone 12 Pro Max   2778x1284 Landscape");
 
-            GameViewSize k_iPad_1536p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 1536, "iPad 2048x1536 Landscape");
-            GameViewSize k_iPad_1536p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1536, 2048, "iPad 2048x1536 Portrait");
-
-            GameViewSize k_iPad_2048p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2732, 2048, "iPadPro 2732x2048 Landscape");
-            GameViewSize k_iPad_2048p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 2732, "iPadPro 2732x2048 Portrait");
-            GameViewSize k_iPad_1668p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2224, 1668, "iPadPro 2224x1668 Landscape");
-            GameViewSize k_iPad_1668p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1668, 2224, "iPadPro 2224x1668 Portrait");
-
-            GameViewSize k_iPhone4_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 640, 960, "iPhone 4/4S Portrait");
-            GameViewSize k_iPhone4_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 960, 640, "iPhone 4/4S Landscape");
-            GameViewSize k_iPhone5_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 640, 1136, "iPhone 5/5S/5C/SE Portrait");
-            GameViewSize k_iPhone5_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1136, 640, "iPhone 5/5S/5C/SE Landscape");
-            GameViewSize k_iPad_768p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1024, 768, "iPad 2/Mini Landscape");
-            GameViewSize k_iPad_768p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 768, 1024, "iPad 2/Mini Portrait");
+            // iPad Pro 9.7-inch, iPad (3rd-6th gen), Air 1-2, Mini (2-5th gen)
+            GameViewSize k_iPad_1536p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1536, 2048, "iPad Pro 9.7\"   2048x1536 Portrait");
+            GameViewSize k_iPad_1536p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 1536, "iPad Pro 9.7\"   2048x1536 Landscape");
+            // iPad (7th-8th gen)
+            GameViewSize k_iPad_1620p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1620, 2160, "iPad (8th gen)   2160x1620 Portrait");
+            GameViewSize k_iPad_1620p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2160, 1620, "iPad (8th gen)   2160x1620 Landscape");
+            // iPad Air (4th gen)
+            GameViewSize k_iPad_1640p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1640, 2360, "iPad Air (4th gen)   2360x1640 Portrait");
+            GameViewSize k_iPad_1640p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2360, 1640, "iPad Air (4th gen)   2360x1640 Landscape");
+            // iPad Pro 10.5-inch, Air (3rd gen)
+            GameViewSize k_iPad_2224x1668_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1668, 2224, "iPad Pro 10.5\"   2224x1668 Portrait");
+            GameViewSize k_iPad_2224x1668_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2224, 1668, "iPad Pro 10.5\"   2224x1668 Landscape");
+            // iPad Pro 11-inch
+            GameViewSize k_iPad_2388x1668_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1668, 2388, "iPad Pro 11\"   2388x1668 Portrait");
+            GameViewSize k_iPad_2388x1668_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2388, 1668, "iPad Pro 11\"   2388x1668 Landscape");
+            // iPad Pro 12.9-inch
+            GameViewSize k_iPad_2048p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 2732, "iPad Pro 12.9\"   2732x2048 Portrait");
+            GameViewSize k_iPad_2048p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2732, 2048, "iPad Pro 12.9\"   2732x2048 Landscape");
 
             // Android
             GameViewSize k_800x480_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 480, 800, "800x480 Portrait");
@@ -206,19 +229,23 @@ namespace UnityEditor
             m_Standalone.AddBuiltinSizes(kFree, k16_9, k16_10, k_PC_1920x1080, k_PC_1366x768, k_PC_2560x1440, k_PC_3840x2160);
 
             m_iOS.AddBuiltinSizes(kFree,
+                k_iPhone_640p_Portrait, k_iPhone_640p_Landscape,
                 k_iPhone_750p_Portrait, k_iPhone_750p_Landscape,
-                k_1080p_Portrait, k_1080p_Landscape,
-                k_iPhone_X_Portrait, k_iPhone_X_Landscape,
                 k_iPhone_828p_Portrait, k_iPhone_828p_Landscape,
+                k_iPhone_1080p_Portrait, k_iPhone_1080p_Landscape,
+                k_iPhone_2340x1080_Portrait, k_iPhone_2340x1080_Landscape,
+                k_iPhone_1125p_Portrait, k_iPhone_1125p_Landscape,
+                k_iPhone_1170p_Portrait, k_iPhone_1170p_Landscape,
                 k_iPhone_1242p_Portrait, k_iPhone_1242p_Landscape,
-                k_iPad_1536p_Landscape, k_iPad_1536p_Portrait,
-                k_iPad_2048p_Landscape, k_iPad_2048p_Portrait,
-                k_iPad_1668p_Landscape, k_iPad_1668p_Portrait,
-                k_16_9_Landscape, k_16_9_Portrait,
-                k_4_3_Landscape, k_4_3_Portrait,
-                k_iPhone4_Portrait, k_iPhone4_Landscape,
-                k_iPhone5_Portrait, k_iPhone5_Landscape,
-                k_iPad_768p_Landscape, k_iPad_768p_Portrait,
+                k_iPhone_1284p_Portrait, k_iPhone_1284p_Landscape,
+                k_iPad_1536p_Portrait, k_iPad_1536p_Landscape,
+                k_iPad_1620p_Portrait, k_iPad_1620p_Landscape,
+                k_iPad_1640p_Portrait, k_iPad_1640p_Landscape,
+                k_iPad_2224x1668_Portrait, k_iPad_2224x1668_Landscape,
+                k_iPad_2388x1668_Portrait, k_iPad_2388x1668_Landscape,
+                k_iPad_2048p_Portrait, k_iPad_2048p_Landscape,
+                k_16_9_Portrait, k_16_9_Landscape,
+                k_4_3_Portrait, k_4_3_Landscape,
                 m_Remote);
 
             m_Android.AddBuiltinSizes(kFree,
