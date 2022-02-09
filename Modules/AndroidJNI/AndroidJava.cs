@@ -468,7 +468,7 @@ namespace UnityEngine
                 else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
+                    return FromJavaArrayDeleteLocalRef<ReturnType>(jobject);
                 }
                 else
                 {
@@ -526,7 +526,7 @@ namespace UnityEngine
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNISafe.GetObjectField(m_jobject, fieldID);
-                return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJNIHelper.ConvertFromJNIArray<FieldType>(jobject);
+                return FromJavaArrayDeleteLocalRef<FieldType>(jobject);
             }
             else
             {
@@ -646,7 +646,7 @@ namespace UnityEngine
                 else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
+                    return FromJavaArrayDeleteLocalRef<ReturnType>(jobject);
                 }
                 else
                 {
@@ -705,7 +705,7 @@ namespace UnityEngine
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNISafe.GetStaticObjectField(m_jclass, fieldID);
-                return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJNIHelper.ConvertFromJNIArray<FieldType>(jobject);
+                return FromJavaArrayDeleteLocalRef<FieldType>(jobject);
             }
             else
             {
@@ -770,6 +770,20 @@ namespace UnityEngine
         internal static AndroidJavaClass AndroidJavaClassDeleteLocalRef(IntPtr jclass)
         {
             try { return new AndroidJavaClass(jclass); } finally { AndroidJNISafe.DeleteLocalRef(jclass); }
+        }
+
+        internal static ReturnType FromJavaArrayDeleteLocalRef<ReturnType>(IntPtr jobject)
+        {
+            if (jobject == IntPtr.Zero)
+                return default(ReturnType);
+            try
+            {
+                return (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
+            }
+            finally
+            {
+                AndroidJNISafe.DeleteLocalRef(jobject);
+            }
         }
 
         //===================================================================

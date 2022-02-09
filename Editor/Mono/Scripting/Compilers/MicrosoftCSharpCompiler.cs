@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using NiceIO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -109,7 +110,8 @@ namespace UnityEditor.Scripting.Compilers
 
             if (!String.IsNullOrEmpty(assembly.CompilerOptions.RoslynAnalyzerRulesetPath))
             {
-                arguments.Add($"/ruleset:\"{assembly.CompilerOptions.RoslynAnalyzerRulesetPath}\"");
+                var rulsetPath = FileUtil.PathToAbsolutePath(assembly.CompilerOptions.RoslynAnalyzerRulesetPath);
+                arguments.Add($"/ruleset:\"{rulsetPath}\"");
             }
 
             Array.Sort(assembly.Files, StringComparer.Ordinal);
