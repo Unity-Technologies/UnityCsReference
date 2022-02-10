@@ -15,11 +15,14 @@ namespace UnityEditor
         bool m_ConstrainProportionsScale;
         Vector3 m_InitialScale;
 
+        static bool s_IsPropertyPaste;
+
         internal bool constrainProportionsScale { get => m_ConstrainProportionsScale; set => m_ConstrainProportionsScale = value; }
 
         internal ConstrainProportionsTransformScale(Vector3 previousScale)
         {
             m_InitialScale = previousScale != Vector3.zero ? previousScale : Vector3.one;
+            s_IsPropertyPaste = false;
         }
 
         internal Vector3 DoGUI(Rect rect, GUIContent scaleContent, Vector3 value,  UnityEngine.Object[] targetObjects, ref int axisModified, SerializedProperty property = null, SerializedProperty constrainProportionsProperty = null)
@@ -86,6 +89,10 @@ namespace UnityEditor
         internal static Vector3 DoScaleProportions(Vector3 value, Vector3 previousValue, Vector3 initialScale, ref int axisModified)
         {
             float ratio = 1;
+            bool ratioChanged = false;
+
+            if (!Selection.DoAllGOsHaveConstrainProportionsEnabled(Selection.gameObjects))
+                return value;
 
             if (previousValue != value)
             {
@@ -94,7 +101,6 @@ namespace UnityEditor
                 // X axis
                 ratio = SetRatio(value.x, previousValue.x, initialScale.x);
                 axisModified = ratio != 1 || !Mathf.Approximately(value.x, previousValue.x) ? 0 : -1;
-
                 // Y axis
                 if (axisModified == -1)
                 {
@@ -102,16 +108,45 @@ namespace UnityEditor
                     axisModified = ratio != 1 || !Mathf.Approximately(value.y, previousValue.y) ? 1 : -1;
                 }
                 // Z axis
-
                 if (axisModified == -1)
                 {
                     ratio = SetRatio(value.z, previousValue.z, initialScale.z);
                     axisModified = ratio != 1 || !Mathf.Approximately(value.z, previousValue.z) ? 2 : -1;
                 }
 
-                value = GetVector3WithRatio(initialScale, ratio);
+                ratioChanged = true;
             }
-            return value;
+            // If customer has pasted a scale property via a context menu, we might need to enforce proportions
+            else if (s_IsPropertyPaste)
+            {
+                s_IsPropertyPaste = false;
+                // Catch if any value has changed by checking scale based on X axis
+                if (initialScale * (previousValue.x / initialScale.x) != value)
+                {
+                    Vector3 axisRatios = new Vector3(previousValue.x / initialScale.x, previousValue.y / initialScale.y,
+                        previousValue.z / initialScale.z);
+
+                    if (axisRatios.x != axisRatios.y && axisRatios.x != axisRatios.z && IsValidRatio(axisRatios.x))
+                    {
+                        axisModified = 0;
+                        ratio = axisRatios.x;
+                    }
+                    else if (axisRatios.y != axisRatios.x && axisRatios.y != axisRatios.z && IsValidRatio(axisRatios.y))
+                    {
+                        axisModified = 1;
+                        ratio = axisRatios.y;
+                    }
+                    else if (axisRatios.z != axisRatios.x && axisRatios.z != axisRatios.y && IsValidRatio(axisRatios.z))
+                    {
+                        axisModified = 2;
+                        ratio = axisRatios.z;
+                    }
+
+                    ratioChanged = axisModified != -1;
+                }
+            }
+
+            return ratioChanged ? GetVector3WithRatio(initialScale, ratio) : value;
         }
 
         static float SetRatio(float value, float previousValue, float initialValue)
@@ -242,6 +277,17 @@ namespace UnityEditor
                 return mask | bitmask;
             else
                 return mask & (~bitmask);
+        }
+
+        static bool IsValidRatio(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        internal static void NotifyPropertyPasted(string propertyPath)
+        {
+            // If user has pasted a scale property via a context menu, we might need to enforce proportions.
+            s_IsPropertyPaste = propertyPath.StartsWith("m_LocalScale");
         }
     }
 }

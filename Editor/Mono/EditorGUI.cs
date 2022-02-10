@@ -4404,12 +4404,9 @@ namespace UnityEditor
         {
             GUIContent copy = label;
             Rect fullLabelRect = position;
-            // If SerializedProperty is passed, make sure to call begin and end for property
 
-            // Since we have two separate properties to handle, make sure fields are not overlaping each other
-            // If only localScale property has override, make sure constrainProportionsScale property is in the layer behind
-            if (proportionalScaleProperty != null && property.prefabOverride && !proportionalScale)
-                label = BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
+            if (proportionalScaleProperty != null)
+                BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
 
             if (property != null)
                 label = BeginPropertyInternal(position, label, property);
@@ -4426,33 +4423,17 @@ namespace UnityEditor
             BeginChangeCheck();
             Styles.linkButton.alignment = TextAnchor.MiddleCenter;
 
-            if (proportionalScaleProperty != null)
-            {
-                // If localScale property does not have override, make sure proportionalScale is in front layer
-                if (!property.prefabOverride || proportionalScale)
-                {
-                    // If proportional scaling is enabled, make sure to use full scale rect, to be able revert all axis and state at the same time,
-                    // otherwise rect size should match label size
-                    if (!proportionalScale)
-                        fullLabelRect.xMax = toggleRect.xMin;
+            // In case we have a background overlay, make sure Constrain proportions toggle won't be affected
+            Color currentColor = GUI.backgroundColor;
+            GUI.backgroundColor = Color.white;
 
-                    label = BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
-                }
+            bool previousProportionalScale = proportionalScale;
+            proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
+            if (proportionalScaleProperty != null && previousProportionalScale != proportionalScale)
+                proportionalScaleProperty.boolValue = proportionalScale;
 
-                BeginChangeCheck();
-                bool previousProportionalScale = proportionalScale;
-                proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
-                if (previousProportionalScale != proportionalScale)
-                    proportionalScaleProperty.boolValue = proportionalScale;
-                EndChangeCheck();
+            GUI.backgroundColor = currentColor;
 
-                if (proportionalScale)
-                    EndProperty();
-            }
-            else
-            {
-                proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
-            }
 
             position.x += toggle.x + kDefaultSpacing;
             position.width -= toggle.x + kDefaultSpacing;
@@ -4463,7 +4444,7 @@ namespace UnityEditor
             if (property != null)
                 EndProperty();
 
-            if (proportionalScaleProperty != null && property.prefabOverride && !proportionalScale)
+            if (proportionalScaleProperty != null)
                 EndProperty();
 
             return newValue;
@@ -4492,8 +4473,7 @@ namespace UnityEditor
                 valueAfterChangeCheck.z = s_Vector3Floats[2];
             }
 
-            return proportionalScale && valueAfterChangeCheck != value ?
-                ConstrainProportionsTransformScale.DoScaleProportions(valueAfterChangeCheck, value, initialScale, ref axisModified) : valueAfterChangeCheck;
+            return proportionalScale ? ConstrainProportionsTransformScale.DoScaleProportions(valueAfterChangeCheck, value, initialScale, ref axisModified) : valueAfterChangeCheck;
         }
 
         // Make an X, Y field - not public (use PropertyField instead)

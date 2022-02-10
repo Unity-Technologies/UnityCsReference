@@ -401,6 +401,36 @@ namespace UnityEngine
             internal List<int> positionCounts;
             internal int maxTrailCount;
             internal int maxPositionsPerTrailCount;
+
+            internal void Allocate()
+            {
+                if (positions == null)
+                    positions = new List<Vector4>();
+                if (frontPositions == null)
+                    frontPositions = new List<int>();
+                if (backPositions == null)
+                    backPositions = new List<int>();
+                if (positionCounts == null)
+                    positionCounts = new List<int>();
+            }
+
+            public int capacity
+            {
+                set
+                {
+                    Allocate();
+                    positions.Capacity = value;
+                    frontPositions.Capacity = value;
+                    backPositions.Capacity = value;
+                    positionCounts.Capacity = value;
+                }
+                get
+                {
+                    if (positions == null)
+                        return 0;
+                    return positions.Capacity;
+                }
+            }
         }
 
         public struct ColliderData

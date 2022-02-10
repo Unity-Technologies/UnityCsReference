@@ -68,7 +68,10 @@ namespace Unity.UI.Builder
             {
                 evt.menu.AppendAction(
                     "Open In UIBuilder",
-                    action => { m_PaneWindow.LoadDocument(libraryItem.sourceAsset); },
+                    action =>
+                    {
+                        m_PaneWindow.LoadDocument(libraryItem.sourceAsset);
+                    },
                     action =>
                     {
                         if (libraryItem.sourceAsset == m_PaneWindow.document.visualTreeAsset)
@@ -79,7 +82,7 @@ namespace Unity.UI.Builder
 
                 evt.menu.AppendAction(
                     "Open with IDE",
-                    action => {  AssetDatabase.OpenAsset(libraryItem.sourceAsset); },
+                    action => {  AssetDatabase.OpenAsset(libraryItem.sourceAsset, BuilderConstants.OpenInIDELineNumber); },
                     action => DropdownMenuAction.Status.Normal);
             }
         }
@@ -175,7 +178,7 @@ namespace Unity.UI.Builder
             AddItemToTheDocument(item);
         }
 
-        public override void Refresh() => m_TreeView.Rebuild();  
+        public override void Refresh() => m_TreeView.Rebuild();
 
         void AssignTreeItemIcon(VisualElement itemRoot, Texture2D icon)
         {

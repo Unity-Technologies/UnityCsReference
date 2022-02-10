@@ -77,7 +77,7 @@ namespace UnityEditor.SceneTemplate
             };
 
             sceneTemplate.UpdateDependencies();
-            var hasAnyCloneableDependencies = sceneTemplate.dependencies.Any(dep => dep.instantiationMode == TemplateInstantiationMode.Clone);
+            var hasAnyCloneableDependencies = sceneTemplate.hasCloneableDependencies;
 
             SceneAsset newSceneAsset = null;
             Scene newScene;
@@ -146,6 +146,11 @@ namespace UnityEditor.SceneTemplate
                 if (needTempSceneCleanup)
                 {
                     AssetDatabase.DeleteAsset(sourceScenePath);
+                }
+
+                if (!string.IsNullOrEmpty(newSceneOutputPath))
+                {
+                    EditorSceneManager.SaveScene(newScene, newSceneOutputPath);
                 }
             }
 

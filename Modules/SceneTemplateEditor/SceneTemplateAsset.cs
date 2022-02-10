@@ -52,9 +52,12 @@ namespace UnityEditor.SceneTemplate
 
         internal void BindScene(SceneAsset scene)
         {
-            templateScene = scene;
-            dependencies = new DependencyInfo[0];
-            UpdateDependencies();
+            if (scene != templateScene)
+            {
+                templateScene = scene;
+                dependencies = new DependencyInfo[0];
+                UpdateDependencies();
+            }
         }
 
         internal bool UpdateDependencies()

@@ -38,6 +38,7 @@ namespace Unity.UI.Builder
         public static readonly float PickSelectionRepeatRectSize = 2f;
         public static readonly float PickSelectionRepeatRectHalfSize = PickSelectionRepeatRectSize / 2;
         public static readonly double PickSelectionRepeatMinTimeDelay = 0.5;
+        public static readonly int OpenInIDELineNumber = int.MinValue;
 
         // Paths
         public const string UIBuilderPackageRootPath = "UIBuilderPackageResources";

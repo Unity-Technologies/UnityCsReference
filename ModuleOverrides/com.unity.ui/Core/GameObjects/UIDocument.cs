@@ -399,7 +399,7 @@ namespace UnityEngine.UIElements
         {
             if (m_RootVisualElement != null)
             {
-                m_RootVisualElement.RemoveFromHierarchy();
+               RemoveFromHierarchy();
                 m_RootVisualElement = null;
             }
 
@@ -498,18 +498,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void OnDisable()
-        {
-            if (m_RootVisualElement != null)
-            {
-                m_RootVisualElement.RemoveFromHierarchy();
-                // Unhook tracking, we're going down (but only after we detach from the panel).
-                m_RootVisualElement.visualTreeAssetTracker = null;
-                m_RootVisualElement = null;
-            }
-        }
-
-        private void OnDestroy()
+        private void RemoveFromHierarchy()
         {
             if (parentUI != null)
             {
@@ -518,6 +507,17 @@ namespace UnityEngine.UIElements
             else if (m_PanelSettings != null)
             {
                 m_PanelSettings.DetachUIDocument(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (m_RootVisualElement != null)
+            {
+                RemoveFromHierarchy();
+                // Unhook tracking, we're going down (but only after we detach from the panel).
+                m_RootVisualElement.visualTreeAssetTracker = null;
+                m_RootVisualElement = null;
             }
         }
 
@@ -666,7 +666,7 @@ namespace UnityEngine.UIElements
                 m_OldUxml = sourceAsset;
             }
 
-            if (m_PreviousPanelSettings != m_PanelSettings)
+            if (m_PreviousPanelSettings != m_PanelSettings && m_RootVisualElement != null && m_RootVisualElement.panel != null)
             {
                 // We'll use the setter as it guarantees the right behavior.
                 // It's necessary for the setter that the old value is still in place.
@@ -677,8 +677,12 @@ namespace UnityEngine.UIElements
 
             if (m_OldSortingOrder != m_SortingOrder)
             {
+                if (m_RootVisualElement != null && m_RootVisualElement.panel != null)
+                {
+                    ApplySortingOrder();
+                }
+
                 m_OldSortingOrder = m_SortingOrder;
-                ApplySortingOrder();
             }
         }
 

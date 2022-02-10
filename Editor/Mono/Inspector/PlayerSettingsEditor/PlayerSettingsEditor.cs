@@ -1351,6 +1351,26 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_RequireES32, SettingsContent.require32);
         }
 
+        void ExclusiveGraphicsAPIsGUI(BuildTarget targetPlatform, string displayTitle)
+        {
+            EditorGUI.BeginChangeCheck();
+            GraphicsDeviceType[] currentDevices = PlayerSettings.GetGraphicsAPIs(targetPlatform);
+            GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
+
+            GUIContent[] names = new GUIContent[availableDevices.Length];
+            for (int i = 0; i < availableDevices.Length; ++i)
+            {
+                names[i] = EditorGUIUtility.TrTextContent(L10n.Tr(GraphicsDeviceTypeToString(targetPlatform, availableDevices[i])));
+            }
+
+            GraphicsDeviceType selected = BuildEnumPopup(EditorGUIUtility.TrTextContent(displayTitle), currentDevices[0], availableDevices, names);
+            if (EditorGUI.EndChangeCheck() && selected != currentDevices[0])
+            {
+                Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
+                PlayerSettings.SetGraphicsAPIs(targetPlatform, new GraphicsDeviceType[] { selected });
+            }
+        }
+
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
             if (isPreset)
@@ -1384,6 +1404,12 @@ namespace UnityEditor
                 var displayTitle = "Graphics APIs";
                 if (platformTitle != null)
                     displayTitle += platformTitle;
+
+                if (targetPlatform == BuildTarget.PS5)
+                {
+                    ExclusiveGraphicsAPIsGUI(targetPlatform, displayTitle);
+                    return;
+                }
 
                 // create reorderable list for this target if needed
                 if (!s_GraphicsDeviceLists.ContainsKey(targetPlatform))
@@ -1867,6 +1893,24 @@ namespace UnityEditor
                 }
                 PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
                 graphicsJobsModeOptionEnabled = false;
+            }
+            else if (platform.namedBuildTarget == new NamedBuildTarget("PS5"))
+            {
+                // On PS5NGGC, we only have kGfxJobModeNative so we disable the options in that case
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                if (gfxAPIs[0] == GraphicsDeviceType.PlayStation5NGGC)
+                {
+                    graphicsJobsOptionEnabled = false;
+                    if (graphicsJobs == false)
+                    {
+                        PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
+                        graphicsJobs = true;
+                        newGraphicsJobs = true;
+                    }
+
+                    PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, GraphicsJobMode.Native);
+                    graphicsJobsModeOptionEnabled = false;
+                }
             }
 
             if (!isPreset)
