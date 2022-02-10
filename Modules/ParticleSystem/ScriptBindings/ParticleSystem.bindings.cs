@@ -129,9 +129,17 @@ namespace UnityEngine
         extern private void GetTrailDataInternal(ref Trails trailData);
         public Trails GetTrails()
         {
-            var result = new Trails() { positions = new List<Vector4>(), frontPositions = new List<int>(), backPositions = new List<int>(), positionCounts = new List<int>() };
+            var result = new Trails();
+            result.Allocate();
             GetTrailDataInternal(ref result);
             return result;
+        }
+
+        public int GetTrails(ref Trails trailData)
+        {
+            trailData.Allocate();
+            GetTrailDataInternal(ref trailData);
+            return trailData.positions.Count;
         }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetTrailData", HasExplicitThis = true)]

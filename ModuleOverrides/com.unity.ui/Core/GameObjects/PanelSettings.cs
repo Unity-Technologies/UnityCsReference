@@ -442,7 +442,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal VisualElement visualTree => m_PanelAccess.panel.visualTree;
 
-        private UIDocumentList m_AttachedUIDocumentsList;
+        internal UIDocumentList m_AttachedUIDocumentsList;
 
         [HideInInspector]
         [SerializeField]

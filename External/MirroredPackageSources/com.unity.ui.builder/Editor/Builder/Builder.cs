@@ -207,7 +207,7 @@ namespace Unity.UI.Builder
         {
             return m_Toolbar.NewDocument(checkForUnsavedChanges, unloadAllSubdocuments);
         }
-        
+
         public override void SaveChanges()
         {
             m_Toolbar.SaveDocument(false);
@@ -257,6 +257,11 @@ namespace Unity.UI.Builder
         {
             var asset = EditorUtility.InstanceIDToObject(instanceID) as VisualTreeAsset;
             if (asset == null)
+                return false;
+
+            // Special case: we use a magic value to distinguish between opening in the UI Builder and opening in the
+            // IDE.
+            if (line == BuilderConstants.OpenInIDELineNumber)
                 return false;
 
             var builderWindow = ActiveWindow;

@@ -125,6 +125,7 @@ namespace UnityEngine
     {
         Speaker = 0,
         Vibration = 1,
+        SecondaryVibration = 2
     }
 
 

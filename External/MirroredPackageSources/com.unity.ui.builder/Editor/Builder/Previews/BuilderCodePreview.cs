@@ -34,7 +34,7 @@ namespace Unity.UI.Builder
         public BuilderCodePreview(BuilderPaneWindow paneWindow)
         {
             m_PaneWindow = paneWindow;
-            
+
             m_ScrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             m_ScrollView.AddToClassList(s_CodeScrollViewClassName);
             Add(m_ScrollView);
@@ -116,7 +116,7 @@ namespace Unity.UI.Builder
             if(!isTargetAssetAvailableOnDisk)
                 return;
 
-            AssetDatabase.OpenAsset(m_TargetAsset);
+            AssetDatabase.OpenAsset(m_TargetAsset, BuilderConstants.OpenInIDELineNumber);
         }
 
         void BlockEvent(KeyUpEvent evt)

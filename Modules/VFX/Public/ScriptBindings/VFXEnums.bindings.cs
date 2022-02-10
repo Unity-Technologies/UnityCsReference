@@ -153,7 +153,7 @@ namespace UnityEngine.VFX
         ExtractFarPlaneFromMainCamera,
         ExtractAspectRatioFromMainCamera,
         ExtractPixelDimensionsFromMainCamera,
-
+        ExtractLensShiftFromMainCamera,
         GetBufferFromMainCamera,
         IsMainCameraOrthographic,
         GetOrthographicSizeFromMainCamera,
