@@ -106,7 +106,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (status == TermOfServiceAgreementStatus.Accepted)
                 return;
 
-            var result = m_Application.DisplayDialog(L10n.Tr("Package Manager"),
+            var result = m_Application.DisplayDialog("acceptToS",
+                L10n.Tr("Accepting Terms of Service and EULA"),
                 L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
                 L10n.Tr("Read and accept"), L10n.Tr("Close"));
 

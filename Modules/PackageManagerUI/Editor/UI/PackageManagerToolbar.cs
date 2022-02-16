@@ -529,7 +529,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     PackageManagerFiltersWindow.instance.Close();
 
                 var page = m_PageManager.GetCurrentPage();
-                if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page.tab, page.filters))
+                if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page))
                 {
                     filtersMenu.pseudoStates |= PseudoStates.Active;
                     PackageManagerFiltersWindow.instance.OnFiltersChanged += filters =>

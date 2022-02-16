@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
 
     internal class RuntimePanel : BaseRuntimePanel, IRuntimePanel
     {
-        static readonly EventDispatcher s_EventDispatcher = RuntimeEventDispatcher.Create();
+        internal static readonly EventDispatcher s_EventDispatcher = RuntimeEventDispatcher.Create();
 
         private readonly PanelSettings m_PanelSettings;
         public PanelSettings panelSettings => m_PanelSettings;

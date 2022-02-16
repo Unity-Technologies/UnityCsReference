@@ -17,12 +17,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SelectionProxy m_Selection;
         private AssetDatabaseProxy m_AssetDatabase;
         private IOProxy m_IOProxy;
+        private ApplicationProxy m_ApplicationProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_Selection = container.Resolve<SelectionProxy>();
             m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
+            m_ApplicationProxy = container.Resolve<ApplicationProxy>();
         }
 
         public PackageSampleItem(IPackageVersion version, Sample sample)
@@ -67,7 +69,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (!string.IsNullOrEmpty(warningMessage) &&
-                !EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"),
+                !m_ApplicationProxy.DisplayDialog("importPackageSample",
+                    L10n.Tr("Importing package sample"),
                     warningMessage + L10n.Tr(" Are you sure you want to continue?"),
                     L10n.Tr("Yes"), L10n.Tr("No")))
             {

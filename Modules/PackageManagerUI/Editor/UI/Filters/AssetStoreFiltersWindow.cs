@@ -29,20 +29,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private AssetStoreClient m_AssetStoreClient;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
-        private void ResolveDependencies()
+        protected override void ResolveDependencies()
         {
+            base.ResolveDependencies();
             var container = ServicesContainer.instance;
             m_AssetStoreClient = container.Resolve<AssetStoreClient>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
         }
 
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-            ResolveDependencies();
-        }
-
-        protected override Vector2 GetSize()
+        protected override Vector2 GetSize(IPage page)
         {
             var height = k_FoldOutHeight + k_Statuses.Length * k_ToggleHeight;
 
@@ -66,12 +61,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return height;
         }
 
-        protected override void Init(Rect rect, PageFilters filters)
+        protected override void Init(Rect rect, IPage page)
         {
             m_AssetStoreClient.ListCategories(categories =>
             {
                 m_Categories = categories ?? new List<string>();
-                base.Init(rect, filters);
+                base.Init(rect, page);
 
                 // Defer display of labels
                 m_AssetStoreClient.ListLabels(labels =>
@@ -132,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        protected override void DoDisplay()
+        protected override void DoDisplay(IPage page)
         {
             m_StatusFoldOut = new Foldout {text = L10n.Tr("Status"), name = k_StatusFoldOutName, classList = {k_FoldoutClass}};
             foreach (var status in k_Statuses)

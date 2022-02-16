@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (m_ApplicationProxy.DisplayDialog("showPreReleasePackages", L10n.Tr("Show pre-release packages"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;

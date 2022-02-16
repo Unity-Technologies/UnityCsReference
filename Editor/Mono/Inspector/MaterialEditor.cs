@@ -14,6 +14,7 @@ using Object = UnityEngine.Object;
 using UnityEngine.Scripting;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
+using System.IO;
 
 namespace UnityEditor
 {
@@ -73,7 +74,8 @@ namespace UnityEditor
             public const string undoAssignSkyboxMaterial = "Assign Skybox Material";
 
             public static readonly GUIContent parentContent = EditorGUIUtility.TrTextContent("Parent", "Specify the parent of this material.");
-            public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow");
+            public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow", "|Open Material Hierarchy Popup."); // right of | means tooltip
+            public static readonly GUIContent convertIcon = EditorGUIUtility.IconContent("d_RotateTool", "|This material is in a conversion process."); // right of | means tooltip
 
             public const int kPadding = 3;
             public const int kHierarchyIconWidth = 44;
@@ -146,6 +148,9 @@ namespace UnityEditor
         bool                                m_InsidePropertiesGUI;
         Renderer[]                          m_RenderersForAnimationMode;
         Component                       m_MeshRendererComp;
+
+        internal enum ConvertAction { None, Flatten, Convert }
+        internal ConvertAction convertState;
 
         private bool ShouldEditorBeHidden()
         {
@@ -471,7 +476,7 @@ namespace UnityEditor
             return EditorGUI.DoObjectField(rect, rect, controlID, parent, null, typeof(Material), null, true) as Material;
         }
 
-        internal static void ParentField(Rect rect, Object[] targets)
+        internal void ParentField(Rect rect)
         {
             rect = EditorGUI.PrefixLabel(rect, Styles.parentContent);
 
@@ -479,6 +484,7 @@ namespace UnityEditor
             var parent = DoParentObjectField(rect, targets);
             if (EditorGUI.EndChangeCheck())
             {
+                convertState = ConvertAction.None;
                 Undo.RecordObjects(targets, "Assign parent");
                 foreach (Material target in targets)
                     target.parent = parent;
@@ -492,23 +498,30 @@ namespace UnityEditor
             bool hasMixedParent = HasMixedParent();
             EditorGUI.showMixedValue = hasMixedParent;
             Rect fieldRect = new Rect(rect) { width = rect.width - (Styles.kHierarchyIconWidth + Styles.kPadding - 1) };
-            ParentField(fieldRect, targets);
+            using (new EditorGUI.DisabledScope(!IsEnabled()))
+                ParentField(fieldRect);
             EditorGUI.showMixedValue = false;
 
-            bool enabled = GUI.enabled;
-            GUI.enabled = !hasMixedParent;
+            using (new EditorGUI.DisabledScope(hasMixedParent))
             {
                 rect.x = fieldRect.xMax + Styles.kPadding;
                 rect.width = Styles.kHierarchyIconWidth;
                 if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive))
                 {
-                    PopupWindow.Show(rect, new MaterialHierarchyPopup(targets));
+                    PopupWindow.Show(rect, new MaterialHierarchyPopup(targets, IsEnabled(), this, rect));
                     GUIUtility.ExitGUI();
                 }
                 rect.x += 6;
-                EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+                if (convertState == ConvertAction.Convert)
+                {
+                    float height = rect.height;
+                    rect.height *= 0.8f;
+                    rect.y += (height - rect.height) * 0.5f;
+                    EditorGUI.LabelField(rect, Styles.convertIcon);
+                }
+                else
+                    EditorGUI.LabelField(rect, Styles.hierarchyIcon);
             }
-            GUI.enabled = enabled;
         }
 
         private class ShaderSelectionDropdown : AdvancedDropdown
@@ -981,48 +994,43 @@ namespace UnityEditor
             serializedObject.Update();
 
             var oldLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 50;
 
-            using (new EditorGUI.DisabledScope(!IsEnabled()))
+            // Shader selection dropdown
+            using (new EditorGUI.DisabledScope(!IsEnabled() || GetVariantCount() != 0))
+                ShaderPopup("MiniPulldown");
+
+            // Edit button for custom shaders
+            if (m_Shader != null && !HasMultipleMixedShaderValues() && (m_Shader.hideFlags & HideFlags.DontSave) == 0)
             {
-                EditorGUIUtility.labelWidth = 50;
-
-                // Shader selection dropdown
-                using (new EditorGUI.DisabledScope(GetVariantCount() != 0))
-                    ShaderPopup("MiniPulldown");
-
-                // Edit button for custom shaders
-                if (m_Shader != null && !HasMultipleMixedShaderValues() && (m_Shader.hideFlags & HideFlags.DontSave) == 0)
-                {
-                    if (GUILayout.Button("Edit...", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                        AssetDatabase.OpenAsset(m_Shader);
-                }
-
-                if (AllTargetsAreVariants())
-                {
-                    // Start a new line for parent
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    if (!firstInspectedEditor)
-                        GUILayout.Space(Styles.kSpaceForFoldoutArrow);
-                    ParentFieldAndPopup();
-                }
-                else if (targets.Length == 1)
-                {
-                    bool enabled = GUI.enabled;
-                    GUI.enabled = true;
-                    if (EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, GUILayout.MaxWidth(Styles.kHierarchyIconWidth)))
-                    {
-                        PopupWindow.Show(GUILayoutUtility.topLevel.GetLast(), new MaterialHierarchyPopup(targets));
-                        GUIUtility.ExitGUI();
-                    }
-                    GUI.enabled = enabled;
-                    var rect = new Rect(GUILayoutUtility.topLevel.GetLast());
-                    rect.x += 6;
-                    EditorGUI.LabelField(rect, Styles.hierarchyIcon);
-                }
-
-                EditorGUIUtility.labelWidth = oldLabelWidth;
+                if (GUILayout.Button("Edit...", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    AssetDatabase.OpenAsset(m_Shader);
             }
+
+            if (AllTargetsAreVariants() || (targets.Length == 1 && convertState == ConvertAction.Convert))
+            {
+                // Start a new line for parent
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal();
+                if (!firstInspectedEditor)
+                    GUILayout.Space(Styles.kSpaceForFoldoutArrow);
+                ParentFieldAndPopup();
+            }
+            else if (targets.Length == 1)
+            {
+                Rect rect;
+                if (EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, GUILayout.MaxWidth(Styles.kHierarchyIconWidth)))
+                {
+                    rect = GUILayoutUtility.topLevel.GetLast();
+                    PopupWindow.Show(rect, new MaterialHierarchyPopup(targets, IsEnabled(), this, rect));
+                    GUIUtility.ExitGUI();
+                }
+                rect = new Rect(GUILayoutUtility.topLevel.GetLast());
+                rect.x += 6;
+                EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+            }
+
+            EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
         // -------- obsolete helper functions to get/set material values
@@ -1913,6 +1921,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {
+                RegisterPropertyChangeUndo("Emission Flags");
                 foreach (Material mat in materials)
                 {
                     mat.globalIlluminationFlags = enabled ? defaultEnabled : MaterialGlobalIlluminationFlags.EmissiveIsBlack;
@@ -1973,6 +1982,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
 
             // Apply flags. But only the part that this tool modifies (RealtimeEmissive, BakedEmissive, None)
+            RegisterPropertyChangeUndo("Emission Flags");
             bool applyFlags = EditorGUI.EndChangeCheck();
             foreach (Material mat in materials)
             {
@@ -3007,6 +3017,58 @@ namespace UnityEditor
 
             Undo.RecordObject(mat, "Flatten Material Variant");
             mat.parent = null;
+        }
+
+        // We need to access renderer data in the GenericMenu callback, which is called from a static function
+        // So we backup these variables during header rendering in case context menu is openned
+        static Renderer[] renderersForContextMenu = null;
+        static Material materialForContextMenu = null;
+
+        internal override Rect DrawHeaderHelpAndSettingsGUI(Rect r)
+        {
+            if (!firstInspectedEditor && targets.Length == 1)
+            {
+                renderersForContextMenu = GetAssociatedRenderersFromInspector();
+                materialForContextMenu = target as Material;
+            }
+            return base.DrawHeaderHelpAndSettingsGUI(r);
+        }
+
+        internal static void AddAdditionalMaterialMenuItems(GenericMenu menu)
+        {
+            if (renderersForContextMenu == null || renderersForContextMenu.Length == 0)
+                return;
+
+            // Capture local copies for lambda, and clear static values
+            var renderers = renderersForContextMenu;
+            var material = materialForContextMenu;
+            renderersForContextMenu = null;
+            materialForContextMenu = null;
+
+            menu.AddItem(new GUIContent("Create Variant for Renderer"), false, () => {
+                var variant = new Material(material) { name = material.name + " Variant", parent = material };
+
+                var directory = "Assets/Materials";
+                var assetPath = AssetDatabase.GetAssetPath(material);
+                var package = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+                if (package == null || package.source == PackageManager.PackageSource.Local)
+                    directory = Path.GetDirectoryName(assetPath);
+                Directory.CreateDirectory(directory);
+                var path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(directory, variant.name + ".mat"));
+                AssetDatabase.CreateAsset(variant, path);
+
+                foreach (var renderer in renderers)
+                {
+                    Undo.RegisterCompleteObjectUndo(renderer, "Assign Material");
+                    var materials = renderer.sharedMaterials;
+                    for (int i = 0; i < materials.Length; i++)
+                    {
+                        if (materials[i] == material)
+                            materials[i] = variant;
+                    }
+                    renderer.sharedMaterials = materials;
+                }
+            });
         }
     }
 } // namespace UnityEditor

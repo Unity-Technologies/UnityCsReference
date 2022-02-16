@@ -394,11 +394,12 @@ namespace UnityEditor
                 return DisplayMode.Mixed;
             }
 
-            static void ResetMaterialProperties(List<MaterialProperty> properties, Shader shader)
+            static void ResetMaterialProperties()
             {
                 foreach (var property in capturedProperties)
                 {
                     // fetch default value from shader
+                    var shader = (property.targets[0] as Material).shader;
                     int nameId = shader.FindPropertyIndex(property.name);
                     switch (property.type)
                     {
@@ -416,11 +417,13 @@ namespace UnityEditor
                             property.intValue = shader.GetPropertyDefaultIntValue(nameId);
                             break;
                         case PropType.Texture:
+                            Texture texture = null;
                             var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(shader)) as ShaderImporter;
                             if (importer != null)
-                                property.textureValue = importer.GetDefaultTexture(property.name);
-                            else
-                                property.textureValue = null;
+                                texture = importer.GetDefaultTexture(property.name);
+                            if (texture == null)
+                                texture = EditorMaterialUtility.GetShaderDefaultTexture(shader, property.name);
+                            property.textureValue = texture;
                             property.textureScaleAndOffset = new Vector4(1, 1, 0, 0);
                             break;
                     }
@@ -523,20 +526,7 @@ namespace UnityEditor
                     if (menu.GetItemCount() != 0)
                         menu.AddSeparator("");
 
-                    var shader = (targets[0] as Material).shader;
-                    GenericMenu.MenuFunction func = () => ResetMaterialProperties(capturedProperties, shader);
-                    if ((AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(shader)) as ShaderImporter) == null)
-                    {
-                        foreach (var property in capturedProperties)
-                        {
-                            if (property.type == PropType.Texture)
-                            {
-                                func = null;
-                                break;
-                            }
-                        }
-                    }
-                    menu.AddItem(Styles.resetContent, false, func);
+                    menu.AddItem(Styles.resetContent, false, ResetMaterialProperties);
                 }
                 else if (displayMode == DisplayMode.Variant)
                     HandleRevertAll(menu, singleEditing, targets);

@@ -6,12 +6,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
+using static UnityEditor.MaterialEditor;
 
 namespace UnityEditor
 {
     class MaterialHierarchyPopup : PopupWindowContent
     {
         const int k_MaxSearchIterationPerFrame = 500;
+        const int k_MaxTableRows = 10;
 
         const float k_MinWindowWidth = 300f, k_MaxWindowWidth = 500f;
 
@@ -25,21 +27,22 @@ namespace UnityEditor
         const float k_OffsetX = 6f;
         const float k_SplitWidth = 1f;
 
-        readonly float k_MinNameWidth, k_MaxNameWidth;
+        readonly float k_MinNameWidth;
         readonly float k_TitleWidth = k_OffsetX + 50f;
         readonly float k_LocksWidth = EditorStyles.miniLabel.CalcSize(Styles.locksLabel).x + 2 * k_Padding;
         readonly float k_OverridesWidth = k_SplitWidth + EditorStyles.miniLabel.CalcSize(Styles.overridesLabel).x + 2 * k_Padding;
 
+        readonly float k_PositionShiftY = EditorGUIUtility.singleLineHeight + 2;
+        readonly float k_ScrollbarWidth = GUI.skin.verticalScrollbar.fixedWidth + GUI.skin.verticalScrollbar.margin.left;
         readonly float k_ScrollbarHeight = GUI.skin.horizontalScrollbar.fixedHeight + GUI.skin.horizontalScrollbar.margin.top;
 
-        Object[] targets;
+        MaterialEditor materialEditor;
         Material target;
+        bool enabled;
         GUID targetGUID;
         int numRows;
-        float windowWidth, namesWidth, noResultsX, locksX, overridesX;
-
-        enum ConvertAction { None, Flatten, Convert }
-        ConvertAction convertState;
+        float singleLinePositionY, targetPositionY;
+        float windowWidth, namesWidth, maxNameWidth, noResultsX, locksX, overridesX;
 
         // Children list
         bool displayChildren;
@@ -85,6 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent selectedLabel = EditorGUIUtility.TrTextContent("Current", "The currently selected Material.");
 
             public static readonly GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Hierarchy of");
+            public static readonly GUIContent variantLabel = EditorGUIUtility.TrTextContent("Hierarchy of Variant");
             public static readonly GUIContent ancestorLabel = EditorGUIUtility.TrTextContent("Ancestor");
             public static readonly GUIContent overridesLabel = EditorGUIUtility.TrTextContent("Overrides");
             public static readonly GUIContent locksLabel = EditorGUIUtility.TrTextContent("Locks");
@@ -114,16 +118,18 @@ namespace UnityEditor
             };
         }
 
-        internal MaterialHierarchyPopup(Object[] targets)
+        internal MaterialHierarchyPopup(Object[] targets, bool enabled, MaterialEditor materialEditor, Rect activatorRect)
         {
-            this.targets = targets;
+            this.enabled = enabled;
+            this.materialEditor = materialEditor;
             target = targets[0] as Material;
             targetGUID = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath(target));
 
-            k_MinNameWidth = k_MinWindowWidth - (k_TitleWidth + k_SplitWidth + k_OverridesWidth + k_LocksWidth);
-            k_MaxNameWidth = k_MaxWindowWidth - (k_TitleWidth + k_SplitWidth + k_OverridesWidth + k_LocksWidth);
+            targetPositionY = singleLinePositionY = GUIUtility.GUIToScreenRect(activatorRect).yMax;
+            if (target.isVariant || materialEditor.convertState == ConvertAction.Convert) singleLinePositionY -= k_PositionShiftY;
 
-            convertState = ConvertAction.None;
+            k_MinNameWidth = k_MinWindowWidth - (k_TitleWidth + k_SplitWidth + k_OverridesWidth + k_LocksWidth);
+
             searchFilter = new SearchFilter()
             {
                 classNames = new string[] { "Material" },
@@ -156,10 +162,13 @@ namespace UnityEditor
                 numRows = Mathf.Max(numRows, 2); // at least this and his parent
             }
 
+            float scrollBarWidthOffset = numRows >= k_MaxTableRows ? k_ScrollbarWidth : 0;
+            maxNameWidth = k_MaxWindowWidth - (k_TitleWidth + k_SplitWidth + k_OverridesWidth + k_LocksWidth) - scrollBarWidthOffset;
+
             float prevWidth = windowWidth;
             if (namesWidth <= k_MinNameWidth)
                 windowWidth = k_MinWindowWidth;
-            else if (namesWidth >= k_MaxNameWidth)
+            else if (namesWidth >= maxNameWidth)
                 windowWidth = k_MaxWindowWidth;
             else
                 windowWidth = k_TitleWidth + namesWidth + k_SplitWidth + k_OverridesWidth + k_LocksWidth;
@@ -167,7 +176,7 @@ namespace UnityEditor
             // Prevent window size from getting smaller when changing options
             windowWidth = Mathf.Max(windowWidth, prevWidth);
 
-            locksX = windowWidth - k_LocksWidth;
+            locksX = windowWidth - k_LocksWidth - scrollBarWidthOffset;
             overridesX = locksX - k_OverridesWidth;
             noResultsX = (windowWidth - EditorStyles.label.CalcSize(Styles.noResultsLabel).x) * 0.5f;
         }
@@ -185,14 +194,14 @@ namespace UnityEditor
             if (target.isVariant)
             {
                 // Horizontal scrollbar
-                if (namesWidth > k_MaxNameWidth)
+                if (namesWidth > maxNameWidth)
                     height += k_ScrollbarHeight;
 
                 // Ancestors table
-                height += numRows * k_EntryHeight + k_EntryHeight;
+                height += Mathf.Min(numRows, k_MaxTableRows) * k_EntryHeight + k_EntryHeight;
             }
 
-            if (convertState != ConvertAction.Convert)
+            if (materialEditor.convertState != ConvertAction.Convert)
             {
                 // Children list
                 height += k_EntryHeight;
@@ -210,6 +219,9 @@ namespace UnityEditor
 
         public override void OnGUI(Rect rect)
         {
+            if (editorWindow.position.y != targetPositionY)
+                editorWindow.position = new Rect(editorWindow.position) { y = targetPositionY };
+
             // Escape closes the window
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
             {
@@ -229,9 +241,9 @@ namespace UnityEditor
             if (displayChildren)
                 DrawChildren(height);
 
-            if (convertState == ConvertAction.Flatten)
+            if (materialEditor.convertState == ConvertAction.Flatten)
             {
-                convertState = ConvertAction.None;
+                materialEditor.convertState = ConvertAction.None;
                 Undo.RecordObject(target, "Flatten Material Variant");
                 target.parent = null;
                 Init();
@@ -243,25 +255,34 @@ namespace UnityEditor
             Rect headerRect = GUILayoutUtility.GetRect(20, windowWidth, k_HeaderHeight, k_HeaderHeight);
             EditorGUI.DrawRect(headerRect, Colors.headerBackground);
 
-            float labelSize = Styles.boldRightAligned.CalcSize(Styles.instanceLabel).x;
+            var headerLabel = target.isVariant ? Styles.variantLabel : Styles.instanceLabel;
+            float labelSize = Styles.boldRightAligned.CalcSize(headerLabel).x;
 
             Rect labelRect = new Rect(k_OffsetX, headerRect.y + k_Padding, labelSize, EditorGUIUtility.singleLineHeight);
             Rect contentRect = new Rect(labelRect.x + labelRect.width + k_Padding, labelRect.y, windowWidth, labelRect.height);
 
-            GUI.Label(labelRect, Styles.instanceLabel, Styles.boldRightAligned);
+            GUI.Label(labelRect, headerLabel, Styles.boldRightAligned);
             DoObjectLabel(contentRect, target, EditorStyles.boldLabel);
 
             labelRect.y = labelRect.height + 2 * k_Padding;
-            if (convertState == ConvertAction.None)
+            if (materialEditor.convertState == ConvertAction.None)
             {
+                int result;
                 labelRect.width = k_ConvertLabelWidth;
-                int result = EditorGUI.Popup(labelRect, target.isVariant ? 1 : 0, Styles.headerPopupOptions);
+                using (new EditorGUI.DisabledScope(!enabled))
+                    result = EditorGUI.Popup(labelRect, target.isVariant ? 1 : 0, Styles.headerPopupOptions);
                 if (result == 0 && target.isVariant)
-                    convertState = ConvertAction.Flatten;
+                {
+                    materialEditor.convertState = ConvertAction.Flatten;
+                    targetPositionY = singleLinePositionY;
+                }
                 if (result == 1 && !target.isVariant)
-                    convertState = ConvertAction.Convert;
+                {
+                    materialEditor.convertState = ConvertAction.Convert;
+                    targetPositionY = singleLinePositionY + k_PositionShiftY;
+                }
             }
-            else if (convertState == ConvertAction.Convert)
+            else if (materialEditor.convertState == ConvertAction.Convert)
             {
                 GUI.enabled = false;
                 labelRect.width = 200f;
@@ -275,17 +296,21 @@ namespace UnityEditor
 
                 labelRect.x = windowWidth - 14;
                 if (GUI.Button(labelRect, GUIContent.none, EditorStyles.toolbarSearchFieldCancelButton))
-                    convertState = ConvertAction.None;
+                {
+                    materialEditor.convertState = ConvertAction.None;
+                    targetPositionY = singleLinePositionY;
+                    materialEditor.Repaint();
+                }
 
                 labelRect.x = k_OffsetX;
                 var oldLabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 70;
                 EditorGUI.BeginChangeCheck();
                 var parent = target.parent;
-                MaterialEditor.ParentField(new Rect(k_OffsetX, labelRect.yMax + k_Padding, windowWidth - 2 * k_OffsetX, k_EntryHeight), targets);
+                materialEditor.ParentField(new Rect(k_OffsetX, labelRect.yMax + k_Padding, windowWidth - 2 * k_OffsetX, k_EntryHeight));
                 if (EditorGUI.EndChangeCheck() && parent != target.parent)
                 {
-                    convertState = ConvertAction.None;
+                    materialEditor.convertState = ConvertAction.None;
                     Init();
                 }
                 EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -311,6 +336,11 @@ namespace UnityEditor
             labelRect.x = locksX + k_Padding;
             GUI.Label(labelRect, Styles.locksLabel, EditorStyles.miniLabel);
 
+            float tableHeight = Mathf.Min(numRows, k_MaxTableRows) * k_EntryHeight + (namesWidth > maxNameWidth ? k_ScrollbarHeight : 0);
+            float realHeight = numRows * k_EntryHeight + (namesWidth > maxNameWidth ? k_ScrollbarHeight : 0);
+            var tableRect = new Rect(0, k_HeaderHeight + k_EntryHeight, windowWidth - 1, tableHeight);
+            scroll.y = GUI.BeginScrollView(tableRect, scroll, new Rect(tableRect) { width = tableRect.width - k_ScrollbarWidth, height = realHeight }).y;
+
             // Draw overrides and locks table
             int i = numRows;
             Material current = target;
@@ -323,8 +353,8 @@ namespace UnityEditor
                 current = current.parent;
             }
 
-            var scrollRect = new Rect(k_TitleWidth, k_HeaderHeight + k_EntryHeight, Mathf.Min(namesWidth, k_MaxNameWidth), numRows * k_EntryHeight);
-            scroll = GUI.BeginScrollView(new Rect(scrollRect) { height = scrollRect.height + k_ScrollbarHeight }, scroll, new Rect(scrollRect) { width = namesWidth });
+            var scrollRect = new Rect(k_TitleWidth, k_HeaderHeight + k_EntryHeight, Mathf.Min(namesWidth, maxNameWidth), numRows * k_EntryHeight);
+            scroll.x = GUI.BeginScrollView(new Rect(scrollRect) { height = scrollRect.height + k_ScrollbarHeight }, scroll, new Rect(scrollRect) { width = namesWidth }).x;
 
             // Draw scrollable table
             i = numRows;
@@ -345,9 +375,7 @@ namespace UnityEditor
 
             GUI.EndScrollView();
 
-            float height = (numRows + 1) * k_EntryHeight;
-            if (namesWidth > k_MaxNameWidth)
-                height += k_ScrollbarHeight;
+            float height = tableHeight + k_EntryHeight;
 
             // Draw selected label
             labelRect.x = k_OffsetX;
@@ -371,6 +399,8 @@ namespace UnityEditor
             EditorGUI.DrawRect(splitBar, Colors.headerBackground);
             splitBar.x = locksX - k_SplitWidth;
             EditorGUI.DrawRect(splitBar, Colors.headerBackground);
+
+            GUI.EndScrollView();
 
             return height;
         }

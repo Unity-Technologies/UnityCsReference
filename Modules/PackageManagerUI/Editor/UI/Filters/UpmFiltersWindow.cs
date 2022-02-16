@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,15 +12,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UpmFiltersWindow : PackageManagerFiltersWindow
     {
-        internal static readonly string[] k_Statuses =
+        private PackageDatabase m_PackageDatabase;
+        protected override void ResolveDependencies()
         {
-            PageFilters.k_UpdateAvailableStatus,
-            PageFilters.k_SubscriptionBasedStatus
-        };
+            base.ResolveDependencies();
+            var container = ServicesContainer.instance;
+            m_PackageDatabase = container.Resolve<PackageDatabase>();
+        }
 
-        protected override Vector2 GetSize()
+        private IEnumerable<string> GetStatuses(IPage page)
         {
-            var height = k_FoldOutHeight + k_Statuses.Length * k_ToggleHeight;
+            yield return PageFilters.k_UpdateAvailableStatus;
+            if (page.visualStates.Any(v => m_PackageDatabase.GetPackage(v.packageUniqueId)?.hasEntitlements == true))
+                yield return PageFilters.k_SubscriptionBasedStatus;
+        }
+
+        protected override Vector2 GetSize(IPage page)
+        {
+            var height = k_FoldOutHeight + GetStatuses(page).Count() * k_ToggleHeight;
             return new Vector2(k_Width, Math.Min(height, k_MaxHeight));
         }
 
@@ -29,10 +39,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 toggle.SetValueWithoutNotify(toggle.name == m_Filters.status);
         }
 
-        protected override void DoDisplay()
+        protected override void DoDisplay(IPage page)
         {
             m_StatusFoldOut = new Foldout {text = L10n.Tr("Status"), name = k_StatusFoldOutName, classList = {k_FoldoutClass}};
-            foreach (var status in k_Statuses)
+            foreach (var status in GetStatuses(page))
             {
                 var toggle = new Toggle(status) {name = status.ToLower(), classList = {k_ToggleClass}};
                 toggle.RegisterValueChangedCallback(evt =>

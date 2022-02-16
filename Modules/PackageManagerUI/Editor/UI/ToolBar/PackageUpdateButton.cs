@@ -53,16 +53,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var featureSetDependents = m_PackageDatabase.GetFeatureDependents(installedVersion);
                 // if the installed version is being used by a Feature Set show the more specific
                 //  Feature Set dialog instead of the generic one
+                var title = string.Format(L10n.Tr("Updating {0}"), version.package.GetDescriptor());
                 if (featureSetDependents.Any())
                 {
                     var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?"), version.package.GetDescriptor());
-                    if (!m_Application.DisplayDialog(L10n.Tr("Warning"), message, L10n.Tr("Yes"), L10n.Tr("No")))
+                    if (!m_Application.DisplayDialog("updatePackagePartOfFeature", title, message, L10n.Tr("Yes"), L10n.Tr("No")))
                         return false;
                 }
                 else
                 {
                     var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?");
-                    if (!m_Application.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Yes"), L10n.Tr("No")))
+                    if (!m_Application.DisplayDialog("updatePackageUsedByOthers", title, message, L10n.Tr("Yes"), L10n.Tr("No")))
                         return false;
                 }
             }
@@ -76,6 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var packageNameAndVersions = string.Join("\n\u2022 ",
                         customizedDependencies.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
 
+                    var title = string.Format(L10n.Tr("Updating {0}"), version.package.GetDescriptor());
                     var message = customizedDependencies.Length == 1 ?
                         string.Format(
                         L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
@@ -84,7 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
                         version.package.GetDescriptor(), packageNameAndVersions);
 
-                    var result = m_Application.DisplayDialogComplex(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
+                    var result = m_Application.DisplayDialogComplex("installAndReset", title, message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
                     if (result == 1) // Cancel
                         return false;
                     if (result == 0) // Install and reset

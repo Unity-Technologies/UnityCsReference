@@ -5305,6 +5305,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageCacheManagementAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageCacheManagementAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerDialogAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerDialogAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
     </Compile>
@@ -5478,6 +5481,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\EditorAnalyticsProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\EditorAnalyticsProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\HttpClientFactory.cs</Link>

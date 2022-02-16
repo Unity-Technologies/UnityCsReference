@@ -286,6 +286,8 @@ namespace UnityEngine.UIElements
                 }
                 if (ownerObject != null)
                     UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+
+                PointerDeviceState.RemovePanelData(this);
             }
             else
                 DisposeHelper.NotifyMissingDispose(this);
@@ -1126,7 +1128,7 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            // if the renderTarget is not set, we simply render on whatever target is currently set
+            // if the targetTexture is not set, we simply render on whatever target is currently set
             if (targetTexture == null)
             {
                 // This is called after the camera(s) are done rendering, so the
@@ -1140,11 +1142,17 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var toBeRestoredTarget = RenderTexture.active;
+            var oldCam = Camera.current;
+            var oldRT = RenderTexture.active;
+
+            Camera.SetupCurrent(null);
             RenderTexture.active = targetTexture;
+
             GL.Viewport(new Rect(0, 0, targetTexture.width, targetTexture.height));
             base.Repaint(e);
-            RenderTexture.active = toBeRestoredTarget;
+
+            Camera.SetupCurrent(oldCam);
+            RenderTexture.active = oldRT;
         }
 
         internal static readonly Func<Vector2, Vector2> DefaultScreenToPanelSpace = (p) => (p);
@@ -1168,6 +1176,8 @@ namespace UnityEngine.UIElements
 
             Vector2 panelPrevPosition;
 
+            // We don't allow pointer events outside of a panel to be considered
+            // unless it is capturing the mouse (see SendPositionBasedEvent).
             if (!allowOutside)
             {
                 var panelRect = visualTree.layout;
@@ -1209,6 +1219,18 @@ namespace UnityEngine.UIElements
             {
                 ObjectListPool<IRuntimePanelComponent>.Release(components);
             }
+        }
+
+        internal void PointerLeavesPanel(int pointerId, Vector2 position)
+        {
+            ClearCachedElementUnderPointer(pointerId, null);
+            CommitElementUnderPointers();
+            PointerDeviceState.SavePointerPosition(pointerId, position, null, contextType);
+        }
+
+        internal void PointerEntersPanel(int pointerId, Vector2 position)
+        {
+            PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
         }
     }
 

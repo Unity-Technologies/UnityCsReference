@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (version.HasTag(PackageTag.Custom))
             {
-                if (!m_Application.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
+                if (!m_Application.DisplayDialog("removeEmbeddedPackage", L10n.Tr("Removing package in development"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
                     return false;
 
                 m_PackageDatabase.RemoveEmbedded(version.package);

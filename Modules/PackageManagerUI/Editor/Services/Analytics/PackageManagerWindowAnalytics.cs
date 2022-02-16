@@ -12,6 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal struct PackageManagerWindowAnalytics
     {
+        private const string k_EventName = "packageManagerWindowUserAction";
+
         public string action;
         public string package_id;
         public string[] package_ids;
@@ -20,25 +22,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool window_docked;
         public bool dependencies_visible;
         public bool preview_visible;
-        public long t_since_start;  // in microseconds
-        public long ts;             // in milliseconds
-
-        public static void Setup()
-        {
-            int maxEventsPerHour = 1000;
-            int maxNumberOfElementInStruct = 100;
-            string vendorKey = "unity.package-manager-ui";
-
-            EditorAnalytics.RegisterEventWithLimit("packageManagerWindowUserAction", maxEventsPerHour, maxNumberOfElementInStruct, vendorKey);
-        }
 
         public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null)
         {
+            var servicesContainer = ServicesContainer.instance;
+            var editorAnalyticsProxy = servicesContainer.Resolve<EditorAnalyticsProxy>();
+            if (!editorAnalyticsProxy.RegisterEvent(k_EventName))
+                return;
+
             // remove sensitive part of the id: file path or url is not tracked
             if (!string.IsNullOrEmpty(packageId))
                 packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
 
-            var servicesContainer = ServicesContainer.instance;
             var packageFiltering = servicesContainer.Resolve<PackageFiltering>();
             var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
 
@@ -58,11 +53,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 filter_name = filterName,
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
                 dependencies_visible = settingsProxy.enablePackageDependencies,
-                preview_visible = settingsProxy.enablePreReleasePackages,
-                t_since_start = (long)(EditorApplication.timeSinceStartup * 1E6),
-                ts = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond
+                preview_visible = settingsProxy.enablePreReleasePackages
             };
-            EditorAnalytics.SendEventWithLimit("packageManagerWindowUserAction", parameters);
+            editorAnalyticsProxy.SendEventWithLimit(k_EventName, parameters);
         }
     }
 }

@@ -360,10 +360,9 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static string[] GetBuilderDefinedDefines(IIl2CppPlatformProvider il2cppPlatformProvider)
+        internal static string[] GetBuilderDefinedDefines(BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel, bool enableIl2CppDebugger)
         {
             List<string> defines = new List<string>();
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(il2cppPlatformProvider.namedBuildTarget);
 
             switch (apiCompatibilityLevel)
             {
@@ -381,8 +380,6 @@ namespace UnityEditorInternal
                     throw new InvalidOperationException($"IL2CPP doesn't support building with {apiCompatibilityLevel} API compatibility level!");
             }
 
-
-            var target = il2cppPlatformProvider.target;
             if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64 ||
                 target == BuildTarget.XboxOne || target == BuildTarget.WSAPlayer)
             {
@@ -398,7 +395,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (EnableIL2CPPDebugger(il2cppPlatformProvider))
+            if (enableIl2CppDebugger)
                 defines.Add("IL2CPP_MONO_DEBUGGER=1");
 
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))

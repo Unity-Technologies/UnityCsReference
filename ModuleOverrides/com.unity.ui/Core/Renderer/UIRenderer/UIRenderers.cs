@@ -126,6 +126,8 @@ namespace UnityEngine.UIElements.UIR
 
                     s_ImmediateOverheadMarker.Begin();
                     Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
+                    Camera oldCamera = Camera.current;
+                    RenderTexture oldRT = RenderTexture.active;
                     bool hasScissor = drawParams.scissor.Count > 1; // We always expect the "unbound" scissor rectangle to exists
                     if (hasScissor)
                         Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
@@ -144,6 +146,8 @@ namespace UnityEngine.UIElements.UIR
                         s_ImmediateOverheadMarker.Begin();
                     }
 
+                    Camera.SetupCurrent(oldCamera);
+                    RenderTexture.active = oldRT;
                     GL.modelview = drawParams.view.Peek().transform;
                     GL.LoadProjectionMatrix(oldProjection);
 

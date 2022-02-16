@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation)
             {
                 var message = L10n.Tr("Are you sure you want to remove these items?");
-                result = m_Application.DisplayDialogComplex(title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
+                result = m_Application.DisplayDialogComplex("removeMultiplePackages", title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
             }
 
             // Cancel
@@ -58,7 +58,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!m_PackageManagerPrefs.skipDisableConfirmation)
                 {
-                    result = m_Application.DisplayDialogComplex(L10n.Tr("Disable Built-In Package"),
+                    result = m_Application.DisplayDialogComplex("disableBuiltInPackage",
+                        L10n.Tr("Disable Built-In Package"),
                         L10n.Tr("Are you sure you want to disable this built-in package?"),
                         L10n.Tr("Disable"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
                 }
@@ -69,17 +70,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (isPartOfFeature || !m_PackageManagerPrefs.skipRemoveConfirmation)
                 {
                     var descriptor = version.package.GetDescriptor();
-                    var title = string.Format(L10n.Tr("Removing {0}"), CultureInfo.InvariantCulture.TextInfo.ToTitleCase(descriptor));
+                    var title = string.Format(L10n.Tr("Removing {0}"), descriptor);
                     if (isPartOfFeature)
                     {
                         var message = string.Format(L10n.Tr("Are you sure you want to remove this {0} that is used by at least one installed feature?"), descriptor);
-                        var removeIt = m_Application.DisplayDialog(title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"));
+                        var removeIt = m_Application.DisplayDialog("removePackagePartOfFeature", title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"));
                         result = removeIt ? 0 : 1;
                     }
                     else
                     {
                         var message = string.Format(L10n.Tr("Are you sure you want to remove this {0}?"), descriptor);
-                        result = m_Application.DisplayDialogComplex(title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
+                        result = m_Application.DisplayDialogComplex("removePackage", title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
                     }
                 }
             }
