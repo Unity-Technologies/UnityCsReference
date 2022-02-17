@@ -2039,6 +2039,7 @@ namespace UnityEditor
                 if (SceneCameraRendersIntoRT())
                 {
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
+                    GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), groupSpaceCameraRect);
                     pushedGUIClip = true;
                 }
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos, true);
@@ -2349,8 +2350,11 @@ namespace UnityEditor
                     Graphics.SetRenderTarget(null);
                 }
                 // If we reset the offsets pop that clip off now.
-                if (pushedGUIClip)
+                if(pushedGUIClip)
+                {
+                    GUIClip.Internal_PopParentClip();
                     GUIClip.Pop();
+                }
                 if (evt.type == EventType.Repaint)
                 {
                     Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);

@@ -187,15 +187,25 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.PathIsVersioned(assetPath))
                 return AssetDeleteResult.DidNotDelete;
 
-            Task task = Provider.Delete(assetPath);
-            task.SetCompletionAction(CompletionAction.UpdatePendingWindow);
-            task.Wait();
+            Task task = null;
 
-            if (task.success)
+            try
+            {
+                task = Provider.Delete(assetPath);
+                task.SetCompletionAction(CompletionAction.UpdatePendingWindow);
+                task.Wait();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarningFormat("Cannot delete path '{0}' by version control: {1}", assetPath, e.Message);
+            }
+
+            if (task != null && task.success)
             {
                 // We need to check if the provider deleted the file itself or not.
                 return File.Exists(assetPath) ? AssetDeleteResult.DidNotDelete : AssetDeleteResult.DidDelete;
             }
+
             return AssetDeleteResult.FailedDelete;
         }
 
@@ -211,14 +221,29 @@ namespace UnityEditorInternal.VersionControl
             {
                 var deleteAssetList = new AssetList();
                 for (int i = batchStart; i < batchStart + deletionBatchSize && i < assetPaths.Length; i++)
-                    deleteAssetList.Add(Provider.GetAssetByPath(assetPaths[i]));
+                {
+                    Asset asset = Provider.GetAssetByPath(assetPaths[i]);
+                    deleteAssetList.Add(asset);
 
-                Task task = Provider.Delete(deleteAssetList);
+                    if (asset == null)
+                        Debug.LogWarningFormat("Asset not found in path '{0}', (null) value returned", assetPaths[i]);
+                }
 
-                task.SetCompletionAction(CompletionAction.UpdatePendingWindow);
-                task.Wait();
+                Task task = null;
 
-                if (task.success)
+                try
+                {
+                    task = Provider.Delete(deleteAssetList);
+
+                    task.SetCompletionAction(CompletionAction.UpdatePendingWindow);
+                    task.Wait();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarningFormat("Not all files were deleted by version control: {0}", e.Message);
+                }
+
+                if (task != null && task.success)
                 {
                     for (int i = batchStart; i < batchStart + deleteAssetList.Count(); i++)
                         deletionResults[i] = File.Exists(assetPaths[i]) ? AssetDeleteResult.DidNotDelete : AssetDeleteResult.DidDelete;

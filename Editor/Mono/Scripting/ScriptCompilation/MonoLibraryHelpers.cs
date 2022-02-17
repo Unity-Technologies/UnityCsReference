@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -20,9 +21,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static CachedReferences cachedReferences;
 
+        [RequiredByNativeCode]
         public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel)
         {
             return GetCachedSystemLibraryReferences(apiCompatibilityLevel);
+        }
+
+        static IEnumerable<string> FindAllFilesInDirectories(string[] directories, string pattern)
+        {
+            foreach (string dir in directories)
+            {
+                if (!Directory.Exists(dir)) { continue; }
+
+                var files = Directory.GetFiles(dir, pattern);
+                foreach (string file in files)
+                {
+                    yield return file;
+                }
+            }
         }
 
         static string[] FindReferencesInDirectories(this string[] references, string[] directories)
@@ -53,12 +69,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
             {
-                references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
-                references.AddRange(GetNet46SystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
+                var systemReferences = GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories);
+                var net46References = GetNet46SystemReferences().FindReferencesInDirectories(monoAssemblyDirectories);
+                var additionalSystemReferences = FindAllFilesInDirectories(monoAssemblyDirectories, "System.*.dll");
+                var facades = Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll");
 
                 // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
                 // used later by the language compilers.
-                references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
+                references.AddRange(systemReferences
+                    .Concat(net46References)
+                    .Concat(additionalSystemReferences)
+                    .Concat(facades)
+                    .Distinct());
             }
             else
             {

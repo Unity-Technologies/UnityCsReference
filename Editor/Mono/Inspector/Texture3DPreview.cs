@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class Texture3DPreview : Editor
+    internal class Texture3DPreview : ScriptableObject
     {
         enum Preview3DMode
         {
@@ -181,7 +181,7 @@ namespace UnityEditor
         float m_StepScale = 1;
         float m_SurfaceOffset = 0;
 
-        public override string GetInfoString()
+        public string GetInfoString()
         {
             if (Texture == null) return "";
 
@@ -438,7 +438,7 @@ namespace UnityEditor
             m_PreviewUtility.Render();
         }
 
-        public override void OnPreviewGUI(Rect r, GUIStyle background)
+        public void OnPreviewGUI(Rect r, GUIStyle background)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture || !SystemInfo.supports3DTextures)
             {

@@ -1103,18 +1103,8 @@ namespace UnityEngine.UIElements
                 var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
 
                 m_ScrollingPointerId = evt.pointerId;
-                m_PointerStartPosition = evt.position;
-                m_StartPosition = scrollOffset;
                 m_StartedMoving = false;
-                m_Velocity = Vector2.zero;
-                m_SpringBackVelocity = Vector2.zero;
-
-                m_LowBounds = new Vector2(
-                    Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
-                    Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
-                m_HighBounds = new Vector2(
-                    Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
-                    Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+                InitTouchScrolling(evt.position);
 
                 if (touchStopsVelocityOnly)
                 {
@@ -1142,54 +1132,7 @@ namespace UnityEngine.UIElements
 
             m_StartedMoving = true;
 
-            Vector2 newScrollOffset;
-            if (touchScrollBehavior == TouchScrollBehavior.Clamped)
-            {
-                newScrollOffset = m_StartPosition - (new Vector2(evt.position.x, evt.position.y) - m_PointerStartPosition);
-                newScrollOffset = Vector2.Max(newScrollOffset, m_LowBounds);
-                newScrollOffset = Vector2.Min(newScrollOffset, m_HighBounds);
-            }
-            else if (touchScrollBehavior == TouchScrollBehavior.Elastic)
-            {
-                Vector2 deltaPointer = new Vector2(evt.position.x, evt.position.y) - m_PointerStartPosition;
-                newScrollOffset.x = ComputeElasticOffset(deltaPointer.x, m_StartPosition.x,
-                    m_LowBounds.x, m_LowBounds.x - contentViewport.resolvedStyle.width,
-                    m_HighBounds.x, m_HighBounds.x + contentViewport.resolvedStyle.width);
-                newScrollOffset.y = ComputeElasticOffset(deltaPointer.y, m_StartPosition.y,
-                    m_LowBounds.y, m_LowBounds.y - contentViewport.resolvedStyle.height,
-                    m_HighBounds.y, m_HighBounds.y + contentViewport.resolvedStyle.height);
-            }
-            else
-            {
-                newScrollOffset = m_StartPosition - (new Vector2(evt.position.x, evt.position.y) - m_PointerStartPosition);
-            }
-
-            if (hasInertia)
-            {
-                // Reset velocity if we reached bounds.
-                if (newScrollOffset == m_LowBounds || newScrollOffset == m_HighBounds)
-                {
-                    m_Velocity = Vector2.zero;
-                    scrollOffset = newScrollOffset;
-                    return; // We don't want to stop propagation, to allow nested draggables to respond.
-                }
-
-                // Account for idle pointer time.
-                if (m_LastVelocityLerpTime > 0)
-                {
-                    var deltaTimeSinceLastLerp = Time.unscaledTime - m_LastVelocityLerpTime;
-                    m_Velocity = Vector2.Lerp(m_Velocity, Vector2.zero, deltaTimeSinceLastLerp * k_VelocityLerpTimeFactor);
-                }
-
-                m_LastVelocityLerpTime = Time.unscaledTime;
-
-                var deltaTime = Time.unscaledDeltaTime;
-                var newVelocity = (newScrollOffset - scrollOffset) / deltaTime;
-                m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
-            }
-
-            var scrollOffsetChanged = scrollOffset != newScrollOffset;
-            scrollOffset = newScrollOffset;
+            var scrollOffsetChanged = ComputeTouchScrolling(evt.position);
 
             if (scrollOffsetChanged)
             {
@@ -1215,6 +1158,84 @@ namespace UnityEngine.UIElements
                 contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
                 evt.StopPropagation();
             }
+        }
+
+        // Internal for tests.
+        internal void InitTouchScrolling(Vector2 position)
+        {
+            m_PointerStartPosition = position;
+            m_StartPosition = scrollOffset;
+            m_Velocity = Vector2.zero;
+            m_SpringBackVelocity = Vector2.zero;
+
+            m_LowBounds = new Vector2(
+                Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
+                Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
+            m_HighBounds = new Vector2(
+                Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
+                Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+        }
+
+        // Internal for tests.
+        internal bool ComputeTouchScrolling(Vector2 position)
+        {
+            // Calculate offset based on touch scroll behavior.
+            Vector2 newScrollOffset;
+            if (touchScrollBehavior == TouchScrollBehavior.Clamped)
+            {
+                newScrollOffset = m_StartPosition - (new Vector2(position.x, position.y) - m_PointerStartPosition);
+                newScrollOffset = Vector2.Max(newScrollOffset, m_LowBounds);
+                newScrollOffset = Vector2.Min(newScrollOffset, m_HighBounds);
+            }
+            else if (touchScrollBehavior == TouchScrollBehavior.Elastic)
+            {
+                Vector2 deltaPointer = new Vector2(position.x, position.y) - m_PointerStartPosition;
+                newScrollOffset.x = ComputeElasticOffset(deltaPointer.x, m_StartPosition.x,
+                    m_LowBounds.x, m_LowBounds.x - contentViewport.resolvedStyle.width,
+                    m_HighBounds.x, m_HighBounds.x + contentViewport.resolvedStyle.width);
+                newScrollOffset.y = ComputeElasticOffset(deltaPointer.y, m_StartPosition.y,
+                    m_LowBounds.y, m_LowBounds.y - contentViewport.resolvedStyle.height,
+                    m_HighBounds.y, m_HighBounds.y + contentViewport.resolvedStyle.height);
+            }
+            else
+            {
+                newScrollOffset = m_StartPosition - (new Vector2(position.x, position.y) - m_PointerStartPosition);
+            }
+
+            // Cancel opposite axis if mode is set to only a single direction.
+            if (mode == ScrollViewMode.Vertical)
+                newScrollOffset.x = m_LowBounds.x;
+            else if (mode == ScrollViewMode.Horizontal)
+                newScrollOffset.y = m_LowBounds.y;
+
+            if (hasInertia)
+            {
+                // Reset velocity if we reached bounds.
+                if (newScrollOffset == m_LowBounds || newScrollOffset == m_HighBounds)
+                {
+                    m_Velocity = Vector2.zero;
+                    scrollOffset = newScrollOffset;
+                    return false; // We don't want to stop propagation, to allow nested draggables to respond.
+                }
+
+                // Account for idle pointer time.
+                if (m_LastVelocityLerpTime > 0)
+                {
+                    var deltaTimeSinceLastLerp = Time.unscaledTime - m_LastVelocityLerpTime;
+                    m_Velocity = Vector2.Lerp(m_Velocity, Vector2.zero, deltaTimeSinceLastLerp * k_VelocityLerpTimeFactor);
+                }
+
+                m_LastVelocityLerpTime = Time.unscaledTime;
+
+                var deltaTime = Time.unscaledDeltaTime;
+                var newVelocity = (newScrollOffset - scrollOffset) / deltaTime;
+                m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
+            }
+
+            var scrollOffsetChanged = scrollOffset != newScrollOffset;
+            scrollOffset = newScrollOffset;
+
+            return scrollOffsetChanged;
         }
 
         bool ReleaseScrolling(int pointerId, IEventHandler target)

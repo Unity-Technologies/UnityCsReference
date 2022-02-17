@@ -193,6 +193,26 @@ namespace UnityEditor.Modules
             yield break;
         }
 
+        IEnumerable<string> SplitArgs(string args)
+        {
+            int startIndex = 0;
+            bool inQuotes = false;
+            int i = 0;
+            for (; i < args.Length; i++)
+            {
+                if (args[i] == '"')
+                    inQuotes = !inQuotes;
+                if (args[i] == ' ' && !inQuotes)
+                {
+                    if (i - startIndex > 0)
+                        yield return args.Substring(startIndex, i - startIndex);
+                    startIndex = i + 1;
+                }
+            }
+            if (i - startIndex > 0)
+                yield return args.Substring(startIndex, i - startIndex);
+        }
+
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
             if (!GetUseIl2Cpp(args))
@@ -202,11 +222,11 @@ namespace UnityEditor.Modules
 
             var diagArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs").value as string;
             if (!string.IsNullOrEmpty(diagArgs))
-                additionalArgs.Add(diagArgs.Trim('\''));
+                additionalArgs.AddRange(SplitArgs(diagArgs.Trim('\'')));
 
             var playerSettingsArgs = PlayerSettings.GetAdditionalIl2CppArgs();
             if (!string.IsNullOrEmpty(playerSettingsArgs))
-                additionalArgs.Add(playerSettingsArgs);
+                additionalArgs.AddRange(SplitArgs(playerSettingsArgs));
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
