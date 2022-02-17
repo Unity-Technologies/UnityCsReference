@@ -45,7 +45,6 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         new GUIContent("x"), new GUIContent("y"), new GUIContent("z")
     };
 
-
     bool showBackGround
     {
         get
@@ -142,7 +141,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         collapsedChanged += OnCollapsedChanged;
     }
 
-    void OnCollapsedChanged(bool collapsed)
+    void OnCollapsedChanged(bool _)
     {
         UpdateHeaderAndBackground();
     }
@@ -216,16 +215,12 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         {
             m_ViewDirectionControlIDs = new int[kDirectionRotations.Length];
             for (int i = 0; i < m_ViewDirectionControlIDs.Length; ++i)
-            {
                 m_ViewDirectionControlIDs[i] = GUIUtility.GetPermanentControlID();
-            }
 
             m_CenterButtonControlID = GUIUtility.GetPermanentControlID();
             m_RotationLockControlID = GUIUtility.GetPermanentControlID();
             m_PerspectiveIsoControlID = GUIUtility.GetPermanentControlID();
         }
-
-        UpdateHeaderAndBackground();
     }
 
     public override void OnWillBeDestroyed()
@@ -235,6 +230,11 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         Object.DestroyImmediate(m_RenderTexture);
         if (m_Camera != null)
             Object.DestroyImmediate(m_Camera.gameObject);
+    }
+
+    internal override void OnContentRebuild()
+    {
+        UpdateHeaderAndBackground();
     }
 
     void AxisSelectors(SceneView view, Camera cam, float size, float sgn, GUIStyle viewAxisLabelStyle)

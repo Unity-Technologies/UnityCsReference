@@ -171,7 +171,7 @@ namespace UnityEditor
 
             SetMipLevelDefaultForVT();
 
-            if (m_Texture3DPreview == null) m_Texture3DPreview = CreateInstance<Texture3DPreview>();
+            m_Texture3DPreview = CreateInstance<Texture3DPreview>();
             m_Texture3DPreview.Texture = target as Texture;
             m_Texture3DPreview.OnEnable();
         }
@@ -230,7 +230,7 @@ namespace UnityEditor
             RestoreLastTextureMipLevels();
 
             m_CubemapPreview.OnDisable();
-            m_Texture3DPreview.OnDisable();
+            DestroyImmediate(m_Texture3DPreview);
         }
 
         public override bool RequiresConstantRepaint()
