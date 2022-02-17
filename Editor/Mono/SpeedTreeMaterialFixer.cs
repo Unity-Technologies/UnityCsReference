@@ -28,7 +28,7 @@ namespace UnityEditor
                 {
                     foreach (var renderer in lod.renderers)
                     {
-                        if (renderer.GetType() == typeof(MeshRenderer))
+                        if (renderer != null && renderer.GetType() == typeof(MeshRenderer))
                             yield return renderer as MeshRenderer;
                     }
                 }
