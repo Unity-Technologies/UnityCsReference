@@ -1038,14 +1038,15 @@ namespace UnityEditor
             }
         }
 
-        private static bool HasLabel(Object target)
+        private static bool IsOpenForEdit(Object target)
         {
-            return HasLabel(target, AssetDatabase.GetAssetPath(target));
-        }
+            if (EditorUtility.IsPersistent(target))
+            {
+                var assetPath = AssetDatabase.GetAssetPath(target);
+                return Provider.PathHasMetaFile(assetPath) && AssetDatabase.IsMetaFileOpenForEdit(target);
+            }
 
-        private static bool HasLabel(Object target, string assetPath)
-        {
-            return EditorUtility.IsPersistent(target) && assetPath.StartsWith("assets", StringComparison.OrdinalIgnoreCase);
+            return false;
         }
 
         private Object[] GetInspectedAssets()
@@ -1055,13 +1056,13 @@ namespace UnityEditor
             if (assetEditor != null && assetEditor.targets.Length == 1)
             {
                 string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
-                if (HasLabel(assetEditor.target, assetPath) && !Directory.Exists(assetPath))
+                if (IsOpenForEdit(assetEditor.target) && !Directory.Exists(assetPath))
                     return assetEditor.targets;
             }
 
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
-            return Selection.objects.Where(HasLabel).ToArray();
+            return Selection.objects.Where(IsOpenForEdit).ToArray();
         }
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }

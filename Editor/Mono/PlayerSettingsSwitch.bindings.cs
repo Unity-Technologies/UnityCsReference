@@ -583,6 +583,14 @@ namespace UnityEditor
             // Number of micro seconds used by switchUseMicroSleepForYield
             [NativeProperty("switchMicroSleepForYieldTime", TargetType.Field)]
             extern public static int switchMicroSleepForYieldTime { get; set; }
+
+            //Enable the RamDisk support
+            [NativeProperty("switchEnableRamDiskSupport", TargetType.Field)]
+            extern public static bool switchEnableRamDiskSupport { get; set; }
+
+            //To specify how much space should be allocated for the ram disk
+            [NativeProperty("switchRamDiskSpaceSize", TargetType.Field)]
+            extern public static int switchRamDiskSpaceSize { get; set; }
         }
     }
 }
