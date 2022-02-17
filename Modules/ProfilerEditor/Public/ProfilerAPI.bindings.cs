@@ -192,11 +192,12 @@ namespace UnityEditorInternal
             set;
         }
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern ProfilerMemoryRecordMode memoryRecordMode
         {
-            [FreeFunction("profiler_get_memory_record_mode")]
+            [NativeMethod("GetMemoryRecordMode")]
             get;
-            [FreeFunction("profiler_set_memory_record_mode")]
+            [NativeMethod("SetMemoryRecordMode")]
             set;
         }
 
