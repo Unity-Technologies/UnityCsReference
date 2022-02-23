@@ -878,19 +878,19 @@ namespace UnityEngine
             return ReinitializeWithFormatImpl(width, height, format, hasMipMap);
         }
 
-        [Obsolete("Texture2D.Resize(int, int) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32)", false)]
+        [Obsolete("Texture2D.Resize(int, int) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int) instead (UnityUpgradable) -> Reinitialize([*] System.Int32, [*] System.Int32)", false)]
         public bool Resize(int width, int height)
         {
             return Reinitialize(width, height);
         }
 
-        [Obsolete("Texture2D.Resize(int, int, TextureFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, TextureFormat, bool) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32, UnityEngine.TextureFormat, System.Boolean)", false)]
+        [Obsolete("Texture2D.Resize(int, int, TextureFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, TextureFormat, bool) instead (UnityUpgradable) -> Reinitialize([*] System.Int32, [*] System.Int32, UnityEngine.TextureFormat, [*] System.Boolean)", false)]
         public bool Resize(int width, int height, TextureFormat format, bool hasMipMap)
         {
             return Reinitialize(width, height, format, hasMipMap);
         }
 
-        [Obsolete("Texture2D.Resize(int, int, GraphicsFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, GraphicsFormat, bool) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32, UnityEngine.Experimental.Rendering.GraphicsFormat, System.Boolean)", false)]
+        [Obsolete("Texture2D.Resize(int, int, GraphicsFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, GraphicsFormat, bool) instead (UnityUpgradable) -> Reinitialize([*] System.Int32, [*] System.Int32, UnityEngine.Experimental.Rendering.GraphicsFormat, [*] System.Boolean)", false)]
         public bool Resize(int width, int height, GraphicsFormat format, bool hasMipMap)
         {
             return Reinitialize(width, height, format, hasMipMap);
