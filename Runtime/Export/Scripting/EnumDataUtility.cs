@@ -14,6 +14,7 @@ namespace UnityEngine
         public Enum[] values;
         public int[] flagValues;
         public string[] displayNames;
+        public string[] names;
         public string[] tooltip;
         public bool flags;
         public Type underlyingType;
@@ -57,6 +58,7 @@ namespace UnityEngine
                 enumData.values = defaultenum;
                 enumData.flagValues = defaultarr;
                 enumData.displayNames = defaultstr;
+                enumData.names = defaultstr;
                 enumData.tooltip = defaultstr;
                 enumData.flags = true;
                 enumData.serializable = true;
@@ -89,6 +91,14 @@ namespace UnityEngine
             enumData.flagValues = enumData.unsigned
                 ? enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray()
                 : enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
+
+            // We use the actual names of the enums for ordering options in the UI, so we cache the values with the rest
+            // of its data to avoid doing it repeatedly.
+            enumData.names = new string[enumData.values.Length];
+            for (int i = 0; i < enumData.values.Length; ++i)
+            {
+                enumData.names[i] = enumData.values[i].ToString();
+            }
 
             // convert "everything" values to ~0 for unsigned 8- and 16-bit types
             if (enumData.underlyingType == typeof(ushort))

@@ -232,7 +232,7 @@ namespace UnityEditor.DeviceSimulation
             m_DeviceView.ScreenInsets = m_ScreenSimulation.Insets;
             m_DeviceView.SafeArea = m_ScreenSimulation.ScreenSpaceSafeArea;
 
-            m_ScreenSimulation.OnOrientationChanged += autoRotate => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
+            m_ScreenSimulation.OnOrientationChanged += () => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
             m_ScreenSimulation.OnInsetsChanged += insets => m_DeviceView.ScreenInsets = insets;
             m_ScreenSimulation.OnScreenSpaceSafeAreaChanged += safeArea => m_DeviceView.SafeArea = safeArea;
 

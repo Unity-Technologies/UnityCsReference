@@ -47,7 +47,7 @@ namespace UnityEditorInternal.APIUpdating
 
         private static HashSet<AssemblyUpdateCandidate> s_AssembliesToUpdate;
 
-        internal static extern bool WaitForVCSServerConnection(bool reportTimeout);
+        internal static extern bool WaitForVCSServerConnection();
         [NativeName("NumberOfTimesAsked")]
         public static extern int numberOfTimesAsked
         {
@@ -92,22 +92,6 @@ namespace UnityEditorInternal.APIUpdating
             var assemblyPaths = assembliesToUpdate.Select(c => c.Path);
             var anyAssemblyInAssetsFolder = assemblyPaths.Any(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1);
 
-            // Only try to connect to VCS if there are files under VCS that need to be updated
-            if (anyAssemblyInAssetsFolder)
-            {
-                var failedToConnectToVcs = false;
-                if (WaitForVCSServerConnection(true))
-                {
-                    failedToConnectToVcs = !APIUpdaterHelper.MakeEditable(assemblyPaths);
-                }
-
-                if (failedToConnectToVcs)
-                {
-                    assembliesToUpdate.Clear();
-                    return;
-                }
-            }
-
             var sw = Stopwatch.StartNew();
             var updatedCount = 0;
 
@@ -124,7 +108,7 @@ namespace UnityEditorInternal.APIUpdating
                 if (!HandleAssemblyUpdaterErrors(tasks))
                 {
                     updatedCount = ProcessSuccessfulUpdates(tasks);
-                    finishOk = true;
+                    finishOk = updatedCount >= 0;
                 }
             }
             else
@@ -133,7 +117,7 @@ namespace UnityEditorInternal.APIUpdating
             }
 
             sw.Stop();
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount, assembliesToCheckCount);
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount >= 0 ? updatedCount : 0, assembliesToCheckCount);
 
             PersistListOfAssembliesToUpdate();
         }
@@ -322,9 +306,12 @@ namespace UnityEditorInternal.APIUpdating
                 return 0;
             }
 
-            var assemblyPaths2 = succeededUpdates.Select(u => u.Candidate.Path).ToArray();
-            APIUpdaterHelper.HandleFilesInPackagesVirtualFolder(assemblyPaths2);
-            if (!APIUpdaterHelper.CheckReadOnlyFiles(assemblyPaths2))
+            var updatedAssemblyPaths = succeededUpdates.Select(u => u.Candidate.Path).ToArray();
+            if (!CheckoutFromVCSIfNeeded(updatedAssemblyPaths))
+                return -1;
+
+            APIUpdaterHelper.HandleFilesInPackagesVirtualFolder(updatedAssemblyPaths);
+            if (!APIUpdaterHelper.CheckReadOnlyFiles(updatedAssemblyPaths))
                 return 0;
 
             foreach (var succeed in succeededUpdates)
@@ -335,6 +322,28 @@ namespace UnityEditorInternal.APIUpdating
 
             assembliesToUpdate.Clear();
             return succeededUpdates.Count();
+
+            bool CheckoutFromVCSIfNeeded(string[] assemblyPathsToCheck)
+            {
+                // Only try to connect to VCS if there are files under VCS that need to be updated
+                var assembliesInAssetsFolder = assemblyPathsToCheck.Where(path => path.IndexOf("Assets/", StringComparison.OrdinalIgnoreCase) != -1).ToArray();
+                if (!assembliesInAssetsFolder.Any())
+                    return true;
+
+                if (!WaitForVCSServerConnection())
+                {
+                    return false;
+                }
+
+                var failedToCheckoutFiles = !APIUpdaterHelper.MakeEditable(assembliesInAssetsFolder);
+                if (failedToCheckoutFiles)
+                {
+                    assembliesToUpdate.Clear();
+                    return false;
+                }
+
+                return true;
+            }
 
             IEnumerable<string> FilterOutLocalAndEmbeddedPackagesWhenAskingForConsent(IEnumerable<string> ass)
             {
