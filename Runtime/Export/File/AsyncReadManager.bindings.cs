@@ -23,6 +23,20 @@ namespace Unity.IO.LowLevel.Unsafe
         public long Size;
     }
 
+    [RequiredByNativeCode]
+    public enum FileState
+    {
+        Absent = 0,
+        Exists = 1
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    unsafe public struct FileInfoResult
+    {
+        public long      FileSize;
+        public FileState FileState;
+    }
+
     // When adding a subsystem, keep in sync with AssetContext.h
     public enum AssetLoadingSubsystem
     {
@@ -33,14 +47,16 @@ namespace Unity.IO.LowLevel.Unsafe
         Audio,
         Scripts,
         EntitiesScene,
-        EntitiesStreamBinaryReader
+        EntitiesStreamBinaryReader,
+        FileInfo
     }
 
     public enum ReadStatus
     {
-        Complete,
-        InProgress,
-        Failed
+        Complete = 0,
+        InProgress = 1,
+        Failed = 2,
+        Truncated = 4
     }
 
     [RequiredByNativeCode]
@@ -88,9 +104,20 @@ namespace Unity.IO.LowLevel.Unsafe
             }
         }
 
+        public long GetBytesRead()
+        {
+            if (!IsReadHandleValid(this))
+                throw new InvalidOperationException("ReadHandle.GetBytesRead cannot be called after the ReadHandle has been disposed");
+            return GetBytesRead(this);
+        }
+
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::GetReadStatus", IsThreadSafe = true)]
         private extern static ReadStatus GetReadStatus(ReadHandle handle);
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::GetBytesRead", IsThreadSafe = true)]
+        private extern static long GetBytesRead(ReadHandle handle);
 
         [ThreadAndSerializationSafe()]
         [FreeFunction("AsyncReadManagerManaged::ReleaseReadHandle", IsThreadSafe = true)]
@@ -114,6 +141,14 @@ namespace Unity.IO.LowLevel.Unsafe
         public static ReadHandle Read(string filename, ReadCommand* readCmds, uint readCmdCount, string assetName = "", UInt64 typeID = 0, AssetLoadingSubsystem subsystem =  AssetLoadingSubsystem.Scripts)
         {
             return ReadInternal(filename, readCmds, readCmdCount, assetName, typeID, subsystem);
+        }
+
+        [ThreadAndSerializationSafe()]
+        [FreeFunction("AsyncReadManagerManaged::GetFileInfo", IsThreadSafe = true)]
+        private extern unsafe static ReadHandle GetFileInfoInternal(string filename, void* cmd);
+        public static ReadHandle GetFileInfo(string filename, FileInfoResult* result)
+        {
+            return GetFileInfoInternal(filename, result);
         }
     }
 

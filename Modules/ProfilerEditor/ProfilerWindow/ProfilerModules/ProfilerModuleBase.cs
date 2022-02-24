@@ -10,7 +10,10 @@ using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 using System.Globalization;
+using UnityEngine.UIElements;
+using Unity.Profiling.Editor;
 
+// TODO When migrating to ProfilerModuleController, ensure its namespace becomes Unity.Profiling.Editor.
 namespace UnityEditorInternal.Profiling
 {
     [Serializable]
@@ -28,10 +31,12 @@ namespace UnityEditorInternal.Profiling
 
         protected ProfilerChart m_Chart;
         [SerializeField] protected List<ProfilerCounterData> m_ChartCounters;
-        [SerializeField] protected List<ProfilerCounterData> m_DetailCounters; // TODO All built-in modules should use this for their details pane?
+        [SerializeField] protected List<ProfilerCounterData> m_DetailCounters;
         [SerializeField] protected Chart.ChartType m_ChartType;
 
         [SerializeField] protected Vector2 m_PaneScroll;
+
+        ProfilerModuleViewController m_DetailsViewController;
 
         protected ProfilerModuleBase(IProfilerWindowController profilerWindow, string name, string iconName, Chart.ChartType chartType = Chart.ChartType.Line)
         {
@@ -55,6 +60,10 @@ namespace UnityEditorInternal.Profiling
         public ReadOnlyCollection<ProfilerCounterData> chartCounters => m_ChartCounters.AsReadOnly();
         public ProfilerChart chart => m_Chart;
         public ReadOnlyCollection<ProfilerCounterData> detailCounters => m_DetailCounters.AsReadOnly();
+
+        // TODO This property's default value will be changed to a view controller drawing a UIToolkit-based list of counters as part of the Extensibility API.
+        public virtual ProfilerModuleViewController DetailsViewController => new LegacyDetailsViewController(ProfilerWindow, this);
+
         public bool isActive { get; private set; }
         public string name
         {
@@ -69,6 +78,10 @@ namespace UnityEditorInternal.Profiling
             get => EditorPrefs.GetInt(orderIndexPreferenceKey, defaultOrderIndex);
             set => EditorPrefs.SetInt(orderIndexPreferenceKey, value);
         }
+
+        // TODO This property must be made public as part of Extensibility work.
+        internal ProfilerWindow ProfilerWindow => EditorWindow.GetWindowDontShow<ProfilerWindow>(); // TODO Future Extensibility PR will just return the direct profiler window reference here.
+
         public bool usesCounters => ((uint)area == Profiler.invalidProfilerArea);
 
         protected virtual int defaultOrderIndex => k_InvalidIndex;
@@ -125,8 +138,6 @@ namespace UnityEditorInternal.Profiling
         }
 
         public virtual void SaveViewSettings() {}
-        public virtual void OnSelected() {}
-        public virtual void OnDeselected() {}
         public virtual void OnClosed() {}
         public virtual void Clear() {}
         public virtual void OnNativePlatformSupportModuleChanged() {}
@@ -136,8 +147,34 @@ namespace UnityEditorInternal.Profiling
             RebuildChart();
         }
 
-        public abstract void DrawToolbar(Rect position);
-        public abstract void DrawDetailsView(Rect position);
+        internal VisualElement CreateDetailsView()
+        {
+            OnSelected();
+
+            if (m_DetailsViewController != null)
+                throw new InvalidOperationException($"A new details view was requested for the module '{m_Name}' but the previous one has not been destroyed.");
+
+            m_DetailsViewController = DetailsViewController;
+            if (m_DetailsViewController == null)
+                throw new InvalidOperationException($"A new details view controller was requested for the module '{m_Name}' but none was provided.");
+
+            return m_DetailsViewController.View;
+        }
+
+        internal void CloseDetailsView()
+        {
+            OnDeselected();
+
+            if (m_DetailsViewController != null)
+            {
+                m_DetailsViewController.Dispose();
+                m_DetailsViewController = null;
+            }
+        }
+
+        public virtual void DrawToolbar(Rect position) {}
+
+        public virtual void DrawDetailsView(Rect position) {}
 
         public float GetMinimumChartHeight()
         {
@@ -239,6 +276,10 @@ namespace UnityEditorInternal.Profiling
             EditorPrefs.DeleteKey(orderIndexPreferenceKey);
             m_Chart.DeleteSettings();
         }
+
+        protected virtual void OnSelected() {}
+
+        protected virtual void OnDeselected() {}
 
         /// <summary>
         /// Override this method to customize the text displayed in the module's details view.

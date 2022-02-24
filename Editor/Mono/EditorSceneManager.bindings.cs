@@ -11,6 +11,19 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEditor.SceneManagement
 {
+    // Bit mask that controls the enabled features on a preview scene
+    [System.Flags]
+    internal enum PreviewSceneFlags
+    {
+        NoFlags = 0,
+        IsPreviewScene = 1,
+        AllowCamerasForRendering = 2,
+        AllowMonoBehaviourEvents = 4,
+        AllowGlobalIlluminationLights = 8,
+
+        AllFlags = 1 + 2 + 4 + 8
+    }
+
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/DefaultImporter.h")]
     [NativeHeader("Editor/Mono/EditorSceneManager.bindings.h")]
@@ -85,12 +98,12 @@ namespace UnityEditor.SceneManagement
 
         public static Scene NewPreviewScene()
         {
-            return NewPreviewScene(true);
+            return NewPreviewScene(true, PreviewSceneFlags.IsPreviewScene);
         }
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("NewPreviewScene")]
-        internal extern static Scene NewPreviewScene(bool allocateSceneCullingMask);
+        internal extern static Scene NewPreviewScene(bool allocateSceneCullingMask, PreviewSceneFlags previewSceneFlags = PreviewSceneFlags.IsPreviewScene);
 
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         [NativeMethod("CreateSceneAsset")]
@@ -122,6 +135,14 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("IsPreviewScene")]
         public extern static bool IsPreviewScene(Scene scene);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("SetPreviewScenesVisibleInHierarchy")]
+        internal extern static void SetPreviewScenesVisibleInHierarchy(bool visible);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("GetPreviewScenesVisibleInHierarchy")]
+        internal extern static bool GetPreviewScenesVisibleInHierarchy();
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("IsPreviewSceneObject")]

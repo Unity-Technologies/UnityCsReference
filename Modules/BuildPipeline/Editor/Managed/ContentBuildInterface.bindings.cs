@@ -34,6 +34,8 @@ namespace UnityEditor.Build.Content
 
         public static extern BuildUsageTagGlobal GetGlobalUsageFromGraphicsSettings();
 
+        public static extern BuildUsageTagGlobal GetGlobalUsageFromActiveScene(BuildTarget target);
+
         public static extern bool ObjectIsSupportedInBuild(UnityEngine.Object targetObject);
 
         public static SceneDependencyInfo CalculatePlayerDependenciesForScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet)

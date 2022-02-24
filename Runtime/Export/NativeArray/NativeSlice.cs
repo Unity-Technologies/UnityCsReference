@@ -318,6 +318,11 @@ namespace Unity.Collections
 
             public bool MoveNext()
             {
+                if (!AtomicSafetyHandle.IsValidNonDefaultHandle(m_Array.m_Safety))
+                {
+                    return false;
+                }
+
                 m_Index++;
                 return m_Index < m_Array.Length;
             }

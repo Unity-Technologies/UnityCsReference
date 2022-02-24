@@ -179,6 +179,19 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        // When the handle is of a non-default value, checks whether it is still valid
+        // If not valid, return false
+        public static unsafe bool IsValidNonDefaultHandle(in AtomicSafetyHandle handle)
+        {
+            if (!IsDefaultValue(handle))
+            {
+                return IsHandleValid(handle);
+            }
+
+            return false;
+        }
+
+
         // Checks if the handle is still valid.
         // If not (already destroyed) throws an exception.
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -188,6 +201,17 @@ namespace Unity.Collections.LowLevel.Unsafe
             if (handle.version != ((*versionPtr) & ReadWriteDisposeCheck))
                 throw new ObjectDisposedException("The NativeArray has been disposed, it is not allowed to access it");
         }
+
+        // Checks if the handle is still valid and returns true if it is, false otherwise
+        public static unsafe bool IsHandleValid(in AtomicSafetyHandle handle)
+        {
+            var versionPtr = (int*)handle.versionNode;
+            if (handle.version != ((*versionPtr) & ReadWriteDisposeCheck))
+                return false;
+
+            return true;
+        }
+
 
         [ThreadSafe]
         public static extern string GetReaderName(AtomicSafetyHandle handle, int readerIndex);
