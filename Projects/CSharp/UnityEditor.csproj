@@ -5206,6 +5206,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GlobalIllumination\GlobalIlluminationProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\GlobalIllumination\GlobalIlluminationProfilerModule.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\LegacyDetailsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\LegacyDetailsViewController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElement.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Memory\MemoryElement.cs</Link>
     </Compile>
@@ -5232,6 +5235,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\ProfilerModuleViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Rendering\RenderingProfilerModule.cs</Link>

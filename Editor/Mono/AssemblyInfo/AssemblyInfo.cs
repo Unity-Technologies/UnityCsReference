@@ -126,5 +126,6 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]
+[assembly: InternalsVisibleTo("Unity.Scenes")]
 
 [assembly: AssemblyIsEditorAssembly]
