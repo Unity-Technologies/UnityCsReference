@@ -673,7 +673,7 @@ namespace UnityEngine.UIElements.UIR
             s_MarkerBeforeDraw.End();
         }
 
-        unsafe static NativeSlice<T> PtrToSlice<T>(void* p, int count) where T : struct
+        internal unsafe static NativeSlice<T> PtrToSlice<T>(void* p, int count) where T : struct
         {
             var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<T>(p, UnsafeUtility.SizeOf<T>(), count);
             NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, AtomicSafetyHandle.GetTempUnsafePtrSliceHandle());

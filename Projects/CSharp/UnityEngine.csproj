@@ -682,6 +682,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\SafeHandleAccess.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\SafeHandleAccess.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAllocator2D.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAllocator2D.cs</Link>
     </Compile>
@@ -2010,6 +2013,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\ImmediateStylePainter.bindings.cs">
       <Link>Modules\UIElementsNative\ImmediateStylePainter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIPainter2D.bindings.cs">
+      <Link>Modules\UIElementsNative\Renderer\UIPainter2D.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs">
       <Link>Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs</Link>
