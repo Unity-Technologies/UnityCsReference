@@ -340,5 +340,20 @@ namespace UnityEngine.Video
             if (source.clockResyncOccurred != null)
                 source.clockResyncOccurred(source, seconds);
         }
+
+        internal static event Action<string> analyticsSent;
+
+        [RequiredByNativeCode]
+        private static void InvokeAnalyticsSentCallback_Internal(string analytics)
+        {
+            if (analyticsSent != null)
+                analyticsSent(analytics);
+        }
+
+        [RequiredByNativeCode]
+        private static bool AnalyticsEventHandlerAttached_Internal()
+        {
+            return analyticsSent != null;
+        }
     }
 }

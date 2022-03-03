@@ -77,9 +77,6 @@ namespace UnityEditor
 
             if (attribute is ContextMenuItemAttribute)
             {
-                // Use context menu items on array elements, not on array itself
-                if (propertyType.IsArrayOrList())
-                    return;
                 if (contextMenuItems == null)
                     contextMenuItems = new List<ContextMenuItemAttribute>();
                 contextMenuItems.Add(attribute as ContextMenuItemAttribute);

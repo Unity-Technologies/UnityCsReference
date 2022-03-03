@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Reflection;
 using UnityEngine.Scripting;
+using UnityEngine;
 
 namespace UnityEngine
 {
@@ -77,6 +78,7 @@ namespace UnityEngine
                     int displayIndex = camera.targetDisplay;
 
                     var eventPosition = Display.RelativeMouseAt(mousePosition);
+
                     if (eventPosition != Vector3.zero)
                     {
                         // We support multiple display and display identification based on event position.
@@ -108,6 +110,9 @@ namespace UnityEngine
                         // The multiple display system is not supported on all platforms, when it is not supported the returned position
                         // will be all zeros so when the returned index is 0 we will default to the mouse position to be safe.
                         eventPosition = mousePosition;
+                        if (Display.activeEditorGameViewTarget  != displayIndex)
+                            continue;
+                        eventPosition.z = Display.activeEditorGameViewTarget ;
                     }
 
                     // Is the mouse inside the cameras viewport?

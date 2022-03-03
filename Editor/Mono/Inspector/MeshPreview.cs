@@ -25,27 +25,56 @@ namespace UnityEditor
 
         internal class Settings : IDisposable
         {
-            public DisplayMode displayMode = DisplayMode.Shaded;
-            public int activeUVChannel = 0;
-            public int activeBlendshape = 0;
-            public bool drawWire = true;
+            public DisplayMode displayMode { get => m_DisplayMode; set => SetValue(ref m_DisplayMode, value); }
+            DisplayMode m_DisplayMode = DisplayMode.Shaded;
 
-            public Vector3 orthoPosition = new Vector3(0.0f, 0.0f, 0.0f);
-            public Vector2 previewDir = new Vector2(0, 0);
-            public Vector2 lightDir = new Vector2(0, 0);
-            public Vector3 pivotPositionOffset = Vector3.zero;
-            public float zoomFactor = 1.0f;
-            public int checkerTextureMultiplier = 10;
+            public int activeUVChannel { get => m_ActiveUVChannel; set => SetValue(ref m_ActiveUVChannel, value); }
+            int m_ActiveUVChannel = 0;
 
-            public Material shadedPreviewMaterial;
-            public Material activeMaterial;
-            public Material meshMultiPreviewMaterial;
-            public Material wireMaterial;
-            public Material lineMaterial;
-            public Texture2D checkeredTexture;
+            public int activeBlendshape { get => m_ActiveBlendshape; set => SetValue(ref m_ActiveBlendshape, value); }
+            int m_ActiveBlendshape = 0;
 
-            public bool[] availableDisplayModes = Enumerable.Repeat(true, 7).ToArray();
-            public bool[] availableUVChannels = Enumerable.Repeat(true, 8).ToArray();
+            public bool drawWire { get => m_DrawWire; set => SetValue(ref m_DrawWire, value); }
+            bool m_DrawWire = true;
+
+            public Vector3 orthoPosition { get => m_OrthoPosition; set => SetValue(ref m_OrthoPosition, value); }
+            Vector3 m_OrthoPosition = new Vector3(0.0f, 0.0f, 0.0f);
+
+            public Vector2 previewDir { get => m_PreviewDir; set => SetValue(ref m_PreviewDir, value); }
+            Vector2 m_PreviewDir = new Vector2(0, 0);
+
+            public Vector2 lightDir { get => m_LightDir; set => SetValue(ref m_LightDir, value); }
+            Vector2 m_LightDir = new Vector2(0, 0);
+
+            public Vector3 pivotPositionOffset { get => m_PivotPositionOffset; set => SetValue(ref m_PivotPositionOffset, value); }
+            Vector3 m_PivotPositionOffset = Vector3.zero;
+
+            public float zoomFactor { get => m_ZoomFactor; set => SetValue(ref m_ZoomFactor, value); }
+            float m_ZoomFactor = 1.0f;
+
+            public int checkerTextureMultiplier { get => m_CheckerTextureMultiplier; set => SetValue(ref m_CheckerTextureMultiplier, value); }
+            int m_CheckerTextureMultiplier = 10;
+
+            public Material shadedPreviewMaterial { get => m_ShadedPreviewMaterial; set => SetValue(ref m_ShadedPreviewMaterial, value); }
+            Material m_ShadedPreviewMaterial;
+            public Material activeMaterial { get => m_ActiveMaterial; set => SetValue(ref m_ActiveMaterial, value); }
+            Material m_ActiveMaterial;
+            public Material meshMultiPreviewMaterial { get => m_MeshMultiPreviewMaterial; set => SetValue(ref m_MeshMultiPreviewMaterial, value); }
+            Material m_MeshMultiPreviewMaterial;
+            public Material wireMaterial { get => m_WireMaterial; set => SetValue(ref m_WireMaterial, value); }
+            Material m_WireMaterial;
+            public Material lineMaterial { get => m_LineMaterial; set => SetValue(ref m_LineMaterial, value); }
+            Material m_LineMaterial;
+            public Texture2D checkeredTexture { get => m_CheckeredTexture; set => SetValue(ref m_CheckeredTexture, value); }
+            Texture2D m_CheckeredTexture;
+
+            public bool[] availableDisplayModes { get => m_AvailableDisplayModes; set => SetValue(ref m_AvailableDisplayModes, value); }
+            bool[] m_AvailableDisplayModes = Enumerable.Repeat(true, 7).ToArray();
+
+            public bool[] availableUVChannels { get => m_AvailableUVChannels; set => SetValue(ref m_AvailableUVChannels, value); }
+            bool[] m_AvailableUVChannels = Enumerable.Repeat(true, 8).ToArray();
+
+            public event Action changed;
 
             public Settings()
             {
@@ -72,6 +101,43 @@ namespace UnityEditor
                     UObject.DestroyImmediate(meshMultiPreviewMaterial);
                 if (lineMaterial != null)
                     UObject.DestroyImmediate(lineMaterial);
+            }
+
+            void SetValue<T>(ref T setting, T newValue)
+            {
+                if (setting == null || !setting.Equals(newValue))
+                {
+                    setting = newValue;
+                    changed?.Invoke();
+                }
+            }
+
+            public void Copy(Settings other)
+            {
+                displayMode = other.displayMode;
+                activeUVChannel = other.activeUVChannel;
+                activeBlendshape = other.activeBlendshape;
+                drawWire = other.drawWire;
+
+                orthoPosition = other.orthoPosition;
+                previewDir = other.previewDir;
+                lightDir = other.lightDir;
+                pivotPositionOffset = other.pivotPositionOffset;
+                zoomFactor = other.zoomFactor;
+                checkerTextureMultiplier = other.checkerTextureMultiplier;
+
+                shadedPreviewMaterial = other.shadedPreviewMaterial;
+                activeMaterial = other.activeMaterial;
+                meshMultiPreviewMaterial = other.meshMultiPreviewMaterial;
+                wireMaterial = other.wireMaterial;
+                lineMaterial = other.lineMaterial;
+                checkeredTexture = other.checkeredTexture;
+
+                availableDisplayModes = new bool[other.availableDisplayModes.Length];
+                Array.Copy(other.availableDisplayModes, availableDisplayModes, other.availableDisplayModes.Length);
+
+                availableUVChannels = new bool[other.availableUVChannels.Length];
+                Array.Copy(other.availableUVChannels, availableUVChannels, other.availableUVChannels.Length);
             }
         }
 
@@ -108,6 +174,8 @@ namespace UnityEditor
         PreviewRenderUtility m_PreviewUtility;
         Settings m_Settings;
 
+        internal event Action<MeshPreview> settingsChanged;
+
         Mesh m_BakedSkinnedMesh;
         List<string> m_BlendShapes;
 
@@ -120,6 +188,7 @@ namespace UnityEditor
             m_PreviewUtility.camera.transform.position = new Vector3(5, 5, 0);
 
             m_Settings = new Settings();
+            m_Settings.changed += OnSettingsChanged;
             m_BlendShapes = new List<string>();
             CheckAvailableAttributes();
         }
@@ -128,7 +197,14 @@ namespace UnityEditor
         {
             DestroyBakedSkinnedMesh();
             m_PreviewUtility.Cleanup();
+            m_Settings.changed -= OnSettingsChanged;
             m_Settings.Dispose();
+        }
+
+
+        void OnSettingsChanged()
+        {
+            settingsChanged?.Invoke(this);
         }
 
         static Material CreateWireframeMaterial()
@@ -314,6 +390,11 @@ namespace UnityEditor
 
             DestroyBakedSkinnedMesh();
             BakeSkinnedMesh();
+        }
+
+        internal void CopySettings(MeshPreview other)
+        {
+            m_Settings.Copy(other.m_Settings);
         }
 
         internal static void RenderMeshPreview(
@@ -707,8 +788,7 @@ namespace UnityEditor
             }
             else
             {
-                m_Settings.orthoPosition.x = newCamPos.x;
-                m_Settings.orthoPosition.y = newCamPos.y;
+                m_Settings.orthoPosition = new Vector3(newCamPos.x,  newCamPos.y, m_Settings.orthoPosition.z);
             }
 
             m_Settings.zoomFactor = newZoom;
@@ -734,8 +814,8 @@ namespace UnityEditor
                 screenPos = cam.WorldToScreenPoint(m_Settings.orthoPosition);
                 screenPos += delta;
                 worldPos = cam.ScreenToWorldPoint(screenPos);
-                m_Settings.orthoPosition.x = worldPos.x;
-                m_Settings.orthoPosition.y = worldPos.y;
+
+                m_Settings.orthoPosition = new Vector3(worldPos.x,  worldPos.y, m_Settings.orthoPosition.z);
             }
             else
             {

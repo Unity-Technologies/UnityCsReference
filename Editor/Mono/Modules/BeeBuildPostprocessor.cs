@@ -112,8 +112,8 @@ namespace UnityEditor.Modules
 
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            var strippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+            var namedBuildTarget = GetNamedBuildTarget(args);
+            var strippingLevel = PlayerSettings.GetManagedStrippingLevel(namedBuildTarget);
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
@@ -159,7 +159,7 @@ namespace UnityEditor.Modules
                     SearchDirectories = new[] {managedAssemblyFolderPath.MakeAbsolute().ToString()},
                     Runtime = GetUseIl2Cpp(args) ? "il2cpp" : "mono",
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
-                        PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                        PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                     // *begin-nonstandard-formatting*
                     Ruleset = strippingLevel switch
                     {
@@ -184,8 +184,7 @@ namespace UnityEditor.Modules
 
         protected virtual string Il2CppBuildConfigurationNameFor(BuildPostProcessArgs args)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup));
+            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(GetNamedBuildTarget(args)));
         }
 
         protected virtual IEnumerable<string> AdditionalIl2CppArgsFor(BuildPostProcessArgs args)
@@ -228,8 +227,8 @@ namespace UnityEditor.Modules
             if (!string.IsNullOrEmpty(playerSettingsArgs))
                 additionalArgs.AddRange(SplitArgs(playerSettingsArgs));
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var namedBuildTarget = GetNamedBuildTarget(args);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
             var allowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
 
@@ -239,7 +238,7 @@ namespace UnityEditor.Modules
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = EditorUserBuildSettings.il2CppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
-                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                 Defines = string.Join(";", IL2CPPUtils.GetBuilderDefinedDefines(args.target, apiCompatibilityLevel, allowDebugging)),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
@@ -265,7 +264,7 @@ namespace UnityEditor.Modules
             CompanyName = args.companyName,
             ProductName = Paths.MakeValidFileName(args.productName),
             PlayerPackage = args.playerPackage,
-            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(args.target)),
+            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(GetNamedBuildTarget(args)),
             InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
             GenerateIdeProject = GetCreateSolution(args),
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,

@@ -306,9 +306,16 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum EmbeddedLinuxArchitecture
     {
+        [UnityEngine.InspectorName("Arm64")]
         Arm64 = 0,
+
+        [UnityEngine.InspectorName("Arm32")]
         Arm32 = 1,
+
+        [UnityEngine.InspectorName("X64")]
         X64 = 2,
+
+        [UnityEngine.InspectorName("X86")]
         X86 = 3,
     }
 
@@ -345,6 +352,13 @@ namespace UnityEditor
             [NativeMethod("SetSelectedEmbeddedLinuxArchitecture")]
             set;
         }
+
+        // Embedded Linux remote device information
+        public static extern bool remoteDeviceInfo { get; set; }
+        public static extern string remoteDeviceAddress { get; set; }
+        public static extern string remoteDeviceUsername { get; set; }
+        public static extern string remoteDeviceExports { get; set; }
+        public static extern string pathOnRemoteDevice { get; set; }
 
         // The currently selected target for a standalone build.
         public static extern BuildTarget selectedStandaloneTarget
