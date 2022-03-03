@@ -13,6 +13,7 @@ using UnityEditor.Experimental;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
+using UnityEditor.Build;
 
 namespace UnityEditorInternal
 {
@@ -646,7 +647,7 @@ namespace UnityEditorInternal
 
         internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target)
         {
-            return GetCompilationDefines(options, targetGroup, target, PlayerSettings.GetApiCompatibilityLevel(targetGroup));
+            return GetCompilationDefines(options, targetGroup, target, PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(target)));
         }
 
         public static void SetShowGizmos(bool value)

@@ -926,7 +926,7 @@ namespace UnityEditor
 
                     if (EditorUserBuildSettings.allowDebugging && PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
                     {
-                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget.ToBuildTargetGroup());
+                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
                         bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
                             apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard;
 

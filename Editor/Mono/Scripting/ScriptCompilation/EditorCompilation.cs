@@ -894,6 +894,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
         {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
+            var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
 
             if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
             {
@@ -905,7 +906,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 predefinedAssembliesCompilerOptions.UseDeterministicCompilation = true;
             }
 
-            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup));
+            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
 
             ICompilationExtension compilationExtension = null;
             if ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0)
@@ -914,7 +915,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
 
-            List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArguments(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup)));
+            List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget));
 
             if (PlayerSettings.suppressCommonWarnings)
             {
@@ -1573,7 +1574,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ScriptAssemblyReferences = new ScriptAssembly[0],
                 RootNamespace = string.Empty
             };
-            scriptAssembly.CompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(assemblyBuilder.buildTargetGroup);
+            scriptAssembly.CompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(assemblyBuilder.buildTarget));
 
             return scriptAssembly;
         }

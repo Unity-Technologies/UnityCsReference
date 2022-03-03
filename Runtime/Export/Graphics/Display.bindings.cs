@@ -152,6 +152,10 @@ namespace UnityEngine
         private static Display _mainDisplay = displays[0];
         public static Display   main        { get {return _mainDisplay; } }
 
+        private static int m_ActiveEditorGameViewTarget = 0;
+
+        public static int activeEditorGameViewTarget  { get { return m_ActiveEditorGameViewTarget; } internal set { m_ActiveEditorGameViewTarget = value; } }
+
         [RequiredByNativeCode]
         private static void RecreateDisplayList(IntPtr[] nativeDisplay)
         {

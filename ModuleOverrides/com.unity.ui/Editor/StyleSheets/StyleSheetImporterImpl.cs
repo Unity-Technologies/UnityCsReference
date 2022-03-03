@@ -447,7 +447,10 @@ namespace UnityEditor.UIElements.StyleSheets
                     spriteAsset = AssetDatabase.LoadAssetAtPath<Sprite>(projectRelativePath);
                 }
 
-                if (isTexture || asset is Sprite || asset is Font || asset is FontAsset || asset is VectorImage || asset is RenderTexture)
+                bool isValidAssetType = isTexture || asset is Sprite || asset is Font || asset is FontAsset || asset is VectorImage || asset is RenderTexture;
+
+                // Allow custom USS properties to reference any type of asset
+                if (isValidAssetType || (asset != null && m_Builder.currentProperty.name.StartsWith("--")))
                 {
                     // Looking suffixed images files only
                     if (isTexture)
