@@ -1007,7 +1007,8 @@ namespace UnityEditor
                 if (containsMaterial)
                 {
                     infotext.AppendLine();
-                    infotext.AppendLine("One or more files are Materials. Would you like to reparent all their children in project to the closest ancestor?");
+                    string name = (paths.Length == 1) ? "This Material" : "One or more of these Material(s)";
+                    infotext.AppendLine(name + " has one or more children. Would you like to reparent all of these children to their closest remaining ancestor?");
                     int dialogOptionIndex = EditorUtility.DisplayDialogComplex(title, infotext.ToString(), L10n.Tr("Delete and reparent children"), L10n.Tr("Delete only"), L10n.Tr("Cancel"));
                     if (dialogOptionIndex == 0)
                         reparentMaterials = true;

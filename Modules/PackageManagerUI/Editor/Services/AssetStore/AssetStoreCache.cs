@@ -255,10 +255,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (localInfoUpdated)
                     addedOrUpdatedLocalInfos.Add(info);
                 else
-                {
-                    info.updateInfoFetched = oldInfo.updateInfoFetched;
-                    info.canUpdate = oldInfo.canUpdate;
-                }
+                    info.updateStatus = oldInfo.updateStatus;
             }
             if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);

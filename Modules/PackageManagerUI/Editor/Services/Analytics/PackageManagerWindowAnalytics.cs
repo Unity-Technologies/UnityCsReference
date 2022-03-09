@@ -23,6 +23,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool dependencies_visible;
         public bool preview_visible;
 
+        public static string GetFilterNameWithSubPage(PackageFiltering packageFiltering, PageManager pageManager)
+        {
+            var filterName = packageFiltering.currentFilterTab.ToString();
+            var page = pageManager.GetCurrentPage();
+            var subPage = page.subPages.Skip(1).Any() ? page.currentSubPage : null;
+            // Add the name of the sub page into the filter name for now
+            if (!string.IsNullOrEmpty(subPage?.name))
+                filterName += "/" + subPage.name;
+            return filterName;
+        }
+
         public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null)
         {
             var servicesContainer = ServicesContainer.instance;
@@ -36,13 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var packageFiltering = servicesContainer.Resolve<PackageFiltering>();
             var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
-
-            // Add the name of the sub page into the filter name for now
-            var filterName = packageFiltering.currentFilterTab.ToString();
-            var page = servicesContainer.Resolve<PageManager>().GetCurrentPage();
-            var subPage = page.subPages.Skip(1).Any() ? page.currentSubPage : null;
-            if (!string.IsNullOrEmpty(subPage?.name))
-                filterName += "/" + subPage.name;
+            var filterName = GetFilterNameWithSubPage(packageFiltering, servicesContainer.Resolve<PageManager>());
 
             var parameters = new PackageManagerWindowAnalytics
             {

@@ -2,14 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEditor;
 using System;
 using System.Globalization;
+using UnityEditor.Audio;
+using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class ParamEqGUI : IAudioEffectPluginGUI
+    class ParamEqGUI : IAudioEffectPluginGUI
     {
         public static string kCenterFreqName = "Center freq";
         public static string kOctaveRangeName = "Octave range";
@@ -48,7 +48,7 @@ namespace UnityEditor
 
         public static GUIStyle textStyle10 = BuildGUIStyleForLabel(Color.grey, 10, false, FontStyle.Normal, TextAnchor.MiddleCenter);
 
-        private static void DrawFrequencyTickMarks(Rect r, float samplerate, bool logScale, Color col)
+        static void DrawFrequencyTickMarks(Rect r, float samplerate, bool logScale, Color col)
         {
             textStyle10.normal.textColor = col;
             float px = r.x, w = 60.0f;
@@ -71,7 +71,7 @@ namespace UnityEditor
         }
 
         // Maps from normalized frequency to real frequency
-        private static double MapNormalizedFrequency(double f, double sr, bool useLogScale, bool forward)
+        static double MapNormalizedFrequency(double f, double sr, bool useLogScale, bool forward)
         {
             double maxFreq = 0.5 * sr;
             if (useLogScale)
@@ -81,6 +81,7 @@ namespace UnityEditor
                     return lowestFreq * Math.Pow(maxFreq / lowestFreq, f);
                 return Math.Log(f / lowestFreq) / Math.Log(maxFreq / lowestFreq);
             }
+
             return (forward) ? (f * maxFreq) : (f / maxFreq);
         }
 
@@ -91,9 +92,12 @@ namespace UnityEditor
 
             r = AudioCurveRendering.BeginCurveFrame(r);
 
-            float minCenterFreq, maxCenterFreq, defCenterFreq; plugin.GetFloatParameterInfo(kCenterFreqName, out minCenterFreq, out maxCenterFreq, out defCenterFreq);
-            float minOctaveRange, maxOctaveRange, defOctaveRange; plugin.GetFloatParameterInfo(kOctaveRangeName, out minOctaveRange, out maxOctaveRange, out defOctaveRange);
-            float minGain, maxGain, defGain; plugin.GetFloatParameterInfo(kFrequencyGainName, out minGain, out maxGain, out defGain);
+            float minCenterFreq, maxCenterFreq, defCenterFreq;
+            plugin.GetFloatParameterInfo(kCenterFreqName, out minCenterFreq, out maxCenterFreq, out defCenterFreq);
+            float minOctaveRange, maxOctaveRange, defOctaveRange;
+            plugin.GetFloatParameterInfo(kOctaveRangeName, out minOctaveRange, out maxOctaveRange, out defOctaveRange);
+            float minGain, maxGain, defGain;
+            plugin.GetFloatParameterInfo(kFrequencyGainName, out minGain, out maxGain, out defGain);
 
             bool modifiedValue = false;
             switch (evt.GetTypeForControl(controlID))
@@ -105,15 +109,19 @@ namespace UnityEditor
                         EditorGUIUtility.SetWantsMouseJumping(1);
                         evt.Use();
                     }
+
                     break;
 
                 case EventType.MouseUp:
+                    // Signal
                     if (GUIUtility.hotControl == controlID && evt.button == 0)
                     {
                         GUIUtility.hotControl = 0;
                         EditorGUIUtility.SetWantsMouseJumping(0);
                         evt.Use();
+                        AudioMixerEffectPlugin.OnParameterChangesDone();
                     }
+
                     break;
 
                 case EventType.MouseDrag:
@@ -128,6 +136,7 @@ namespace UnityEditor
                         modifiedValue = true;
                         evt.Use();
                     }
+
                     break;
             }
 
@@ -145,17 +154,17 @@ namespace UnityEditor
                 double Q = 1.0 / bandwidth;
                 double A = gain;
                 double alpha = Math.Sin(w0) / (2.0 * Q);
-                double b0 =  1.0 + alpha * A;
+                double b0 = 1.0 + alpha * A;
                 double b1 = -2.0 * Math.Cos(w0);
-                double b2 =  1.0 - alpha * A;
-                double a0 =  1.0 + alpha / A;
+                double b2 = 1.0 - alpha * A;
+                double a0 = 1.0 + alpha / A;
                 double a1 = -2.0 * Math.Cos(w0);
-                double a2 =  1.0 - alpha / A;
+                double a2 = 1.0 - alpha / A;
                 AudioCurveRendering.DrawCurve(
                     r,
                     delegate(float x)
                     {
-                        double f = MapNormalizedFrequency((double)x, plugin.GetSampleRate(), useLogScale, true);
+                        double f = MapNormalizedFrequency(x, plugin.GetSampleRate(), useLogScale, true);
                         ComplexD w = ComplexD.Exp(wm * f);
                         ComplexD n = w * (w * b2 + b1) + b0;
                         ComplexD d = w * (w * a2 + a1) + a0;
@@ -176,15 +185,16 @@ namespace UnityEditor
 
         public override bool OnGUI(IAudioEffectPlugin plugin)
         {
-            float blend = plugin.IsPluginEditableAndEnabled() ? 1.0f : 0.5f;
+            var blend = plugin.IsPluginEditableAndEnabled() ? 1.0f : 0.5f;
 
-            float centerFreq, octaveRange, frequencyGain;
-            plugin.GetFloatParameter(kCenterFreqName, out centerFreq);
-            plugin.GetFloatParameter(kOctaveRangeName, out octaveRange);
-            plugin.GetFloatParameter(kFrequencyGainName, out frequencyGain);
+            plugin.GetFloatParameter(kCenterFreqName, out var centerFreq);
+            plugin.GetFloatParameter(kOctaveRangeName, out var octaveRange);
+            plugin.GetFloatParameter(kFrequencyGainName, out var frequencyGain);
 
             GUILayout.Space(5f);
-            Rect r = GUILayoutUtility.GetRect(200, 100, GUILayout.ExpandWidth(true));
+
+            var r = GUILayoutUtility.GetRect(200, 100, GUILayout.ExpandWidth(true));
+
             if (ParamEqualizerCurveEditor(plugin, r, ref centerFreq, ref octaveRange, ref frequencyGain, blend))
             {
                 plugin.SetFloatParameter(kCenterFreqName, centerFreq);

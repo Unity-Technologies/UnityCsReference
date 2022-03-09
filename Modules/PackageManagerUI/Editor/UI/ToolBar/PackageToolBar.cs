@@ -52,6 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageRedownloadButton m_RedownloadButton;
         private PackageDownloadButton m_DownloadButton;
         private PackageDownloadUpdateButton m_DownloadUpdateButton;
+        private PackageDowngradeButton m_DowngradeButton;
 
         private PackageUnlockButton m_UnlockButton;
         private PackageSignInButton m_SignInButton;
@@ -158,6 +159,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadUpdateButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_DownloadUpdateButton.onAction += Refresh;
             m_BuiltInActions.Add(m_DownloadUpdateButton.element);
+
+            m_DowngradeButton = new PackageDowngradeButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_DowngradeButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
+            m_DowngradeButton.onAction += Refresh;
+            m_BuiltInActions.Add(m_DowngradeButton.element);
 
             m_SignInButton = new PackageSignInButton(m_UnityConnectProxy);
             m_SignInButton.SetGlobalDisableConditions(m_DisableIfNoNetwork);
@@ -273,6 +279,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RedownloadButton.Refresh(m_Version);
             m_DownloadButton.Refresh(m_Version);
             m_DownloadUpdateButton.Refresh(m_Version);
+            m_DowngradeButton.Refresh(m_Version);
         }
 
         private void RefreshProgressControlButtons()

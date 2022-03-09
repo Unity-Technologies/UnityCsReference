@@ -3,26 +3,29 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageRedownloadButton : PackageToolBarRegularButton
+    internal class PackageDowngradeButton : PackageToolBarDropdownButton
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
         private PackageDatabase m_PackageDatabase;
-        public PackageRedownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageDatabase packageDatabase)
+        public PackageDowngradeButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageDatabase packageDatabase)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_AssetStoreCache = assetStoreCache;
             m_PackageDatabase = packageDatabase;
+
+            m_Element.SetIcon("warning");
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
             var canDownload = m_PackageDatabase.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startReDownload", version.packageUniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startDownloadDowngrade", version.packageUniqueId);
             return canDownload;
         }
 
@@ -32,29 +35,32 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
+            if (localInfo?.canDowngrade != true)
+                return false;
+
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
-            return localInfo?.canUpdateOrDowngrade == false
-                && (operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible);
+            return operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible;
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
             if (isInProgress)
-                return L10n.Tr("The re-download request has been sent. Please wait for the re-download to start.");
+                return L10n.Tr("The download request has been sent. Please wait for the download to start.");
 
-            return string.Format(L10n.Tr("Click to re-download this {0} to get the current editor's version."), version.package.GetDescriptor());
+            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
+            return string.Format(AssetStorePackage.k_IncompatibleWarningMessage, localInfo.supportedVersion);
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
         {
-            return L10n.Tr("Re-Download");
+            return L10n.Tr("Update");
         }
 
         protected override bool IsInProgress(IPackageVersion version)
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
             var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            return localInfo?.canUpdateOrDowngrade == false && operation?.isInProgress == true;
+            return localInfo?.canDowngrade == true && operation?.isInProgress == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)

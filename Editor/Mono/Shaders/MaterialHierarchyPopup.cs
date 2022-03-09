@@ -14,6 +14,7 @@ namespace UnityEditor
     {
         const int k_MaxSearchIterationPerFrame = 500;
         const int k_MaxTableRows = 10;
+        const int k_MinIconSize = 20;
 
         const float k_MinWindowWidth = 300f, k_MaxWindowWidth = 500f;
 
@@ -32,31 +33,29 @@ namespace UnityEditor
         readonly float k_LocksWidth = EditorStyles.miniLabel.CalcSize(Styles.locksLabel).x + 2 * k_Padding;
         readonly float k_OverridesWidth = k_SplitWidth + EditorStyles.miniLabel.CalcSize(Styles.overridesLabel).x + 2 * k_Padding;
 
-        readonly float k_PositionShiftY = EditorGUIUtility.singleLineHeight + 2;
         readonly float k_ScrollbarWidth = GUI.skin.verticalScrollbar.fixedWidth + GUI.skin.verticalScrollbar.margin.left;
         readonly float k_ScrollbarHeight = GUI.skin.horizontalScrollbar.fixedHeight + GUI.skin.horizontalScrollbar.margin.top;
 
-        MaterialEditor materialEditor;
-        Material target;
-        bool enabled;
-        GUID targetGUID;
-        int numRows;
-        float singleLinePositionY, targetPositionY;
+        readonly MaterialEditor materialEditor;
+        readonly Material target;
+        readonly bool enabled;
+        readonly GUID targetGUID;
         float windowWidth, namesWidth, maxNameWidth, noResultsX, locksX, overridesX;
+        Vector2 scroll = Vector2.zero;
+        int numRows;
 
         // Children list
         bool displayChildren;
         ObjectListArea listArea;
+        ObjectListAreaState m_ListAreaState;
+        SavedInt m_SavedGridSize = new SavedInt("MaterialHierarchyPopup.GridSize", 56);
+
+        // Search
+        readonly Delayer debounce;
+        readonly SearchFilter searchFilter;
         int[] results = null;
-        Delayer debounce;
-        SearchFilter searchFilter;
         string searchFilterString = "";
-        Vector2 scroll = Vector2.zero;
         IEnumerator<HierarchyProperty> enumerator = null;
-
-
-        const int k_MinIconSize = 20;
-        static ObjectListAreaState s_ListAreaState = new ObjectListAreaState() { m_GridSize = 56 };
 
         public static class Colors
         {
@@ -81,15 +80,11 @@ namespace UnityEditor
 
         public static class Styles
         {
-            public const string materialVariantHierarchyText = "Material Variant Hierarchy";
-
-            public static readonly GUIContent parentLabel = EditorGUIUtility.TrTextContent("Parent", "The direct parent of the Material.");
             public static readonly GUIContent rootLabel = EditorGUIUtility.TrTextContent("Root", "The root of the hierarchy.");
             public static readonly GUIContent selectedLabel = EditorGUIUtility.TrTextContent("Current", "The currently selected Material.");
 
-            public static readonly GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Hierarchy of");
-            public static readonly GUIContent variantLabel = EditorGUIUtility.TrTextContent("Hierarchy of Variant");
-            public static readonly GUIContent ancestorLabel = EditorGUIUtility.TrTextContent("Ancestor");
+            public static readonly GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Variant Family of");
+            public static readonly GUIContent ancestorLabel = EditorGUIUtility.TrTextContent("Ancestors");
             public static readonly GUIContent overridesLabel = EditorGUIUtility.TrTextContent("Overrides");
             public static readonly GUIContent locksLabel = EditorGUIUtility.TrTextContent("Locks");
             public static readonly GUIContent childrenLabel = EditorGUIUtility.TrTextContent("Children");
@@ -118,15 +113,12 @@ namespace UnityEditor
             };
         }
 
-        internal MaterialHierarchyPopup(Object[] targets, bool enabled, MaterialEditor materialEditor, Rect activatorRect)
+        internal MaterialHierarchyPopup(Material target, bool enabled, MaterialEditor materialEditor, Rect activatorRect)
         {
             this.enabled = enabled;
             this.materialEditor = materialEditor;
-            target = targets[0] as Material;
+            this.target = target;
             targetGUID = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath(target));
-
-            targetPositionY = singleLinePositionY = GUIUtility.GUIToScreenRect(activatorRect).yMax;
-            if (target.isVariant || materialEditor.convertState == ConvertAction.Convert) singleLinePositionY -= k_PositionShiftY;
 
             k_MinNameWidth = k_MinWindowWidth - (k_TitleWidth + k_SplitWidth + k_OverridesWidth + k_LocksWidth);
 
@@ -219,14 +211,18 @@ namespace UnityEditor
 
         public override void OnGUI(Rect rect)
         {
-            if (editorWindow.position.y != targetPositionY)
-                editorWindow.position = new Rect(editorWindow.position) { y = targetPositionY };
-
             // Escape closes the window
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
             {
                 editorWindow.Close();
                 GUIUtility.ExitGUI();
+            }
+
+            // Handle undo
+            if (target.parent != null && materialEditor.convertState == ConvertAction.Convert)
+            {
+                materialEditor.convertState = ConvertAction.None;
+                Init();
             }
 
             if (!DrawHeader())
@@ -255,13 +251,12 @@ namespace UnityEditor
             Rect headerRect = GUILayoutUtility.GetRect(20, windowWidth, k_HeaderHeight, k_HeaderHeight);
             EditorGUI.DrawRect(headerRect, Colors.headerBackground);
 
-            var headerLabel = target.isVariant ? Styles.variantLabel : Styles.instanceLabel;
-            float labelSize = Styles.boldRightAligned.CalcSize(headerLabel).x;
+            float labelSize = Styles.boldRightAligned.CalcSize(Styles.instanceLabel).x;
 
             Rect labelRect = new Rect(k_OffsetX, headerRect.y + k_Padding, labelSize, EditorGUIUtility.singleLineHeight);
             Rect contentRect = new Rect(labelRect.x + labelRect.width + k_Padding, labelRect.y, windowWidth, labelRect.height);
 
-            GUI.Label(labelRect, headerLabel, Styles.boldRightAligned);
+            GUI.Label(labelRect, Styles.instanceLabel, Styles.boldRightAligned);
             DoObjectLabel(contentRect, target, EditorStyles.boldLabel);
 
             labelRect.y = labelRect.height + 2 * k_Padding;
@@ -272,15 +267,9 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!enabled))
                     result = EditorGUI.Popup(labelRect, target.isVariant ? 1 : 0, Styles.headerPopupOptions);
                 if (result == 0 && target.isVariant)
-                {
                     materialEditor.convertState = ConvertAction.Flatten;
-                    targetPositionY = singleLinePositionY;
-                }
                 if (result == 1 && !target.isVariant)
-                {
                     materialEditor.convertState = ConvertAction.Convert;
-                    targetPositionY = singleLinePositionY + k_PositionShiftY;
-                }
             }
             else if (materialEditor.convertState == ConvertAction.Convert)
             {
@@ -298,7 +287,6 @@ namespace UnityEditor
                 if (GUI.Button(labelRect, GUIContent.none, EditorStyles.toolbarSearchFieldCancelButton))
                 {
                     materialEditor.convertState = ConvertAction.None;
-                    targetPositionY = singleLinePositionY;
                     materialEditor.Repaint();
                 }
 
@@ -344,7 +332,7 @@ namespace UnityEditor
             // Draw overrides and locks table
             int i = numRows;
             Material current = target;
-            while (current != null)
+            while (current != null && i > 0)
             {
                 entryRect.y = k_HeaderHeight + i * k_EntryHeight;
                 EditorGUI.DrawRect(entryRect, Colors.rowBackground(i--));
@@ -382,10 +370,6 @@ namespace UnityEditor
             labelRect.y = k_HeaderHeight + numRows * k_EntryHeight;
             labelRect.width = k_TitleWidth - labelRect.x;
             GUI.Label(labelRect, Styles.selectedLabel);
-
-            // Draw parent label
-            labelRect.y = k_HeaderHeight + (numRows - 1) * k_EntryHeight;
-            GUI.Label(labelRect, Styles.parentLabel);
 
             // Draw root label
             if (labelRect.y != k_HeaderHeight + k_EntryHeight)
@@ -426,7 +410,7 @@ namespace UnityEditor
                 labelRect.x = windowWidth - k_OffsetX - k_SliderWidth;
                 var newGridSize = (int)GUI.HorizontalSlider(labelRect, listArea.gridSize, listArea.minGridSize, listArea.maxGridSize);
                 if (EditorGUI.EndChangeCheck())
-                    listArea.gridSize = newGridSize;
+                    listArea.gridSize = m_SavedGridSize.value = newGridSize;
             }
 
             return k_EntryHeight;
@@ -461,7 +445,8 @@ namespace UnityEditor
 
         void InitListArea()
         {
-            listArea = new ObjectListArea(s_ListAreaState, editorWindow, false)
+            m_ListAreaState = new ObjectListAreaState() { m_GridSize = m_SavedGridSize };
+            listArea = new ObjectListArea(m_ListAreaState, editorWindow, false)
             {
                 allowDeselection = true,
                 allowMultiSelect = false,

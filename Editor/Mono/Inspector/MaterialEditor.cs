@@ -476,12 +476,14 @@ namespace UnityEditor
             return EditorGUI.DoObjectField(rect, rect, controlID, parent, null, typeof(Material), null, true) as Material;
         }
 
-        internal void ParentField(Rect rect)
+        internal void ParentField(Rect rect, bool showMixedValue = false)
         {
             rect = EditorGUI.PrefixLabel(rect, Styles.parentContent);
 
             EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = showMixedValue;
             var parent = DoParentObjectField(rect, targets);
+            EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {
                 convertState = ConvertAction.None;
@@ -491,37 +493,23 @@ namespace UnityEditor
             }
         }
 
-        private void ParentFieldAndPopup()
+        private bool DoHierarchyButton()
         {
-            Rect rect = EditorGUILayout.GetControlRect();
+            bool clicked = EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, GUILayout.MaxWidth(Styles.kHierarchyIconWidth));
 
-            bool hasMixedParent = HasMixedParent();
-            EditorGUI.showMixedValue = hasMixedParent;
-            Rect fieldRect = new Rect(rect) { width = rect.width - (Styles.kHierarchyIconWidth + Styles.kPadding - 1) };
-            using (new EditorGUI.DisabledScope(!IsEnabled()))
-                ParentField(fieldRect);
-            EditorGUI.showMixedValue = false;
-
-            using (new EditorGUI.DisabledScope(hasMixedParent))
+            Rect rect = GUILayoutUtility.topLevel.GetLast();
+            rect.x += 6;
+            if (convertState == ConvertAction.Convert)
             {
-                rect.x = fieldRect.xMax + Styles.kPadding;
-                rect.width = Styles.kHierarchyIconWidth;
-                if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive))
-                {
-                    PopupWindow.Show(rect, new MaterialHierarchyPopup(targets, IsEnabled(), this, rect));
-                    GUIUtility.ExitGUI();
-                }
-                rect.x += 6;
-                if (convertState == ConvertAction.Convert)
-                {
-                    float height = rect.height;
-                    rect.height *= 0.8f;
-                    rect.y += (height - rect.height) * 0.5f;
-                    EditorGUI.LabelField(rect, Styles.convertIcon);
-                }
-                else
-                    EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+                float height = rect.height;
+                rect.height *= 0.8f;
+                rect.y += (height - rect.height) * 0.5f;
+                EditorGUI.LabelField(rect, Styles.convertIcon);
             }
+            else
+                EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+
+            return clicked;
         }
 
         private class ShaderSelectionDropdown : AdvancedDropdown
@@ -1007,27 +995,25 @@ namespace UnityEditor
                     AssetDatabase.OpenAsset(m_Shader);
             }
 
-            if (AllTargetsAreVariants() || (targets.Length == 1 && convertState == ConvertAction.Convert))
+            using (new EditorGUI.DisabledScope(targets.Length != 1))
+            {
+                if (DoHierarchyButton())
+                {
+                    var rect = GUILayoutUtility.topLevel.GetLast();
+                    PopupWindow.Show(rect, new MaterialHierarchyPopup(target as Material, IsEnabled(), this, rect));
+                    GUIUtility.ExitGUI();
+                }
+            }
+
+            if (AllTargetsAreVariants() || convertState == ConvertAction.Convert)
             {
                 // Start a new line for parent
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.BeginHorizontal();
                 if (!firstInspectedEditor)
                     GUILayout.Space(Styles.kSpaceForFoldoutArrow);
-                ParentFieldAndPopup();
-            }
-            else if (targets.Length == 1)
-            {
-                Rect rect;
-                if (EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, GUILayout.MaxWidth(Styles.kHierarchyIconWidth)))
-                {
-                    rect = GUILayoutUtility.topLevel.GetLast();
-                    PopupWindow.Show(rect, new MaterialHierarchyPopup(targets, IsEnabled(), this, rect));
-                    GUIUtility.ExitGUI();
-                }
-                rect = new Rect(GUILayoutUtility.topLevel.GetLast());
-                rect.x += 6;
-                EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+                using (new EditorGUI.DisabledScope(!IsEnabled()))
+                    ParentField(EditorGUILayout.GetControlRect(), HasMixedParent());
             }
 
             EditorGUIUtility.labelWidth = oldLabelWidth;

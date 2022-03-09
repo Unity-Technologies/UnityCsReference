@@ -197,6 +197,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             onOperationError?.Invoke(this, error);
             FinalizedOperation();
+
+            PackageManagerOperationErrorAnalytics.SendEvent(GetType().Name, error);
         }
 
         private void FinalizedOperation()

@@ -165,8 +165,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ErrorMessage = k_DownloadErrorMessage;
             }
 
-            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, attr, operationErrorCode));
+            var error = new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, attr, operationErrorCode);
+            onOperationError?.Invoke(this, error);
             onOperationFinalized?.Invoke(this);
+
+            PackageManagerOperationErrorAnalytics.SendEvent(GetType().Name, error);
         }
 
         public void Pause()

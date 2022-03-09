@@ -304,6 +304,15 @@ namespace UnityEditor
         internal bool triggerGraphicsDebuggersConfigUpdate;
     }
 
+    // *undocumented*
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum SwitchRomCompressionType
+    {
+        None = 0,
+        Lz4 = 1,
+    }
+
+
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum EmbeddedLinuxArchitecture
     {
@@ -758,6 +767,45 @@ namespace UnityEditor
             set;
         }
 
+        public static extern bool switchEnableRomCompression
+        {
+            [NativeMethod("GetEnableRomCompressionForSwitch")]
+            get;
+            [NativeMethod("SetEnableRomCompressionForSwitch")]
+            set;
+        }
+
+        public static extern bool switchSaveADF
+        {
+            [NativeMethod("GetSaveADFForSwitch")]
+            get;
+            [NativeMethod("SetSaveADFForSwitch")]
+            set;
+        }
+
+        public static extern SwitchRomCompressionType switchRomCompressionType
+        {
+            [NativeMethod("GetRomCompressionTypeForSwitch")]
+            get;
+            [NativeMethod("SetRomCompressionTypeForSwitch")]
+            set;
+        }
+
+        public static extern int switchRomCompressionLevel
+        {
+            [NativeMethod("GetRomCompressionLevelForSwitch")]
+            get;
+            [NativeMethod("SetRomCompressionLevelForSwitch")]
+            set;
+        }
+
+        public static extern string switchRomCompressionConfig
+        {
+            [NativeMethod("GetRomCompressionConfigForSwitch")]
+            get;
+            [NativeMethod("SetRomCompressionConfigForSwitch")]
+            set;
+        }
 
         // Enable linkage of NVN Graphics Debugger for Nintendo Switch.
         public static extern bool switchNVNGraphicsDebugger

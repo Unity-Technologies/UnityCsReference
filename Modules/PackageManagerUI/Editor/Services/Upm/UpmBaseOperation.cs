@@ -169,6 +169,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {message}");
             onOperationError?.Invoke(this, error);
+
+            PackageManagerOperationErrorAnalytics.SendEvent(GetType().Name, error);
         }
 
         private void OnSuccess()

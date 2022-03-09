@@ -5308,6 +5308,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerDialogAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerDialogAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerFiltersAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerFiltersAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerOperationErrorAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerOperationErrorAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
     </Compile>
@@ -5838,6 +5844,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDeselectButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDeselectButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDowngradeButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDowngradeButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDownloadButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageDownloadButton.cs</Link>

@@ -42,19 +42,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetError(UIError error, IPackageVersion packageVersion = null)
         {
-            var state = error.HasAttribute(UIError.Attribute.IsWarning) ? PackageState.Warning : PackageState.Error;
-            var message = state == PackageState.Warning ? L10n.Tr("A warning occurred") : L10n.Tr("An error occurred");
-
+            var message = string.Empty;
             if (!string.IsNullOrEmpty(error.message))
-                message = string.Format("{0}: {1}", message, error.message);
+                message = error.message;
             if (error.HasAttribute(UIError.Attribute.IsDetailInConsole))
                 message = string.Format(L10n.Tr("{0} See console for more details."), message);
 
-            var addClass = state == PackageState.Warning ? "warning" : "error";
-            var removeFromClass = state == PackageState.Warning ? "error" : "warning";
-
-            alertContainer.RemoveFromClassList(removeFromClass);
-            alertContainer.AddClasses(addClass);
+            if (error.HasAttribute(UIError.Attribute.IsWarning))
+            {
+                alertContainer.RemoveFromClassList("error");
+                alertContainer.AddClasses("warning");
+            }
+            else
+            {
+                alertContainer.RemoveFromClassList("warning");
+                alertContainer.AddClasses("error");
+            }
 
             if (!string.IsNullOrEmpty(error.readMoreURL))
             {

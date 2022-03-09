@@ -327,6 +327,12 @@ namespace UnityEditor.UIElements
 
             Clear();
 
+            // Add prefabOverrideBlueBarsContainer again.
+            if (prefabOverrideBlueBarsContainer != null)
+            {
+                Add(prefabOverrideBlueBarsContainer);
+            }
+
             var element = CreateInspectorElementFromEditor(editor, true) ?? CreateDefaultInspector(boundObject);
 
             if (element != null && element != this)

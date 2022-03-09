@@ -79,7 +79,7 @@ namespace UnityEditor.UIElements.Bindings
                 return;
 
             // Handle prefab state.
-            UpdatePrefabStateStyle(element, prop);
+            UpdatePrefabStateStyleFromProperty(element, prop);
 
             // Handle dynamic states
             updateBindingStateStyle?.Invoke(element, prop);
