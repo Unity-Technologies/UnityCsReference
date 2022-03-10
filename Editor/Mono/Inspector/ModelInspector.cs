@@ -649,6 +649,7 @@ namespace UnityEditor
 
             m_Settings.activeMaterial.SetInt("_Mode", mode);
             m_Settings.activeMaterial.SetInt("_UVChannel", 0);
+            m_Settings.activeMaterial.SetFloat("_Cull", flatUVs ? (float)CullMode.Off : (float)CullMode.Back);
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)

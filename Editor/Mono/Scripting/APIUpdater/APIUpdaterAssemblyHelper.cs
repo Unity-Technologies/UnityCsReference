@@ -110,12 +110,31 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
-            var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed") + ","
-                + "+" + Application.dataPath;
+            var req = PackageManager.Client.List(offlineMode: true, includeIndirectDependencies: true);
+            while (!req.IsCompleted)
+                System.Threading.Thread.Sleep(10);
+
+            var packagePathsToSearchForAssemblies = new StringBuilder();
+
+            if (req.Status == PackageManager.StatusCode.Success)
+            {
+                foreach(var resolvedPackage in req.Result)
+                {
+                    packagePathsToSearchForAssemblies.Append($"{Path.PathSeparator}+{resolvedPackage.resolvedPath.Escape(Path.PathSeparator)}");
+                }
+            }
+            else
+            {
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Unable to retrieve project configured packages; AssemblyUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})"));
+            }
+
+            var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed").Escape(Path.PathSeparator) + Path.PathSeparator
+                + "+" + Application.dataPath.Escape(Path.PathSeparator)
+                + packagePathsToSearchForAssemblies.ToString();
 
             if (configurationSourceDirectories != null)
             {
-                var searchPathFromConfigSources = configurationSourceDirectories.Aggregate("", (acc, curr) =>  acc + ",+" + curr);
+                var searchPathFromConfigSources = configurationSourceDirectories.Aggregate("", (acc, curr) =>  acc + $"{Path.PathSeparator}+" + curr.Escape(Path.PathSeparator));
                 searchPath += searchPathFromConfigSources;
             }
 
@@ -142,5 +161,10 @@ namespace UnityEditor.Scripting
         {
             return " --timestamp " + DateTime.Now.Ticks + " ";
         }
+    }
+
+    internal static class StringExtensions
+    {
+        public static string Escape(this string str, char value) => str.Replace($"{value}", $"\\{value}");
     }
 }

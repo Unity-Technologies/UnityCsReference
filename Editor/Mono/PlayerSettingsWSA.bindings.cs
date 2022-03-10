@@ -373,6 +373,8 @@ namespace UnityEditor
                 set;
             }
 
+            public static extern string vcxProjDefaultLanguage { get; set; }
+
             public static class Declarations
             {
                 public static string protocolName

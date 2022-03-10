@@ -158,6 +158,19 @@ namespace UnityEditor.PackageManager.UI
             upmCache.SetInstalledPackageInfos(PackageInfo.GetAll());
         }
 
+        [UsedByNativeCode]
+        internal static void OnEditorFinishLoadingProject()
+        {
+            var servicesContainer = ServicesContainer.instance;
+            var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
+            if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
+            {
+                var upmClient = servicesContainer.Resolve<UpmClient>();
+                upmClient.List();
+            }
+        }
+
+
         internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>();

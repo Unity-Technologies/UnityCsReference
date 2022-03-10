@@ -40,6 +40,7 @@ namespace UnityEditorInternal
             set
             {
                 m_OriginalProperty = value;
+                if (!m_OriginalProperty.isValid) return;
                 m_ArraySize = m_OriginalProperty.FindPropertyRelative("Array.size");
 
                 if (m_ReorderableList != null)
@@ -50,7 +51,7 @@ namespace UnityEditorInternal
 
                     if (versionChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
                     {
-                        m_ReorderableList.ClearCacheRecursive();
+                        m_ReorderableList.InvalidateCacheRecursive();
                         ReorderableList.InvalidateParentCaches(m_ReorderableList.serializedProperty.propertyPath);
 
                         if (m_ArraySize != null) m_LastArraySize = m_ArraySize.intValue;
@@ -96,10 +97,7 @@ namespace UnityEditorInternal
             };
         }
 
-        internal void ClearCache()
-        {
-            m_ReorderableList.ClearCache();
-        }
+        internal void InvalidateCache() => m_ReorderableList.InvalidateCache();
 
         public float GetHeight()
         {
@@ -154,13 +152,15 @@ namespace UnityEditorInternal
                     EditorGUI.SetExpandedRecurse(Property, Property.isExpanded);
                 }
 
-                m_ReorderableList.ClearCacheRecursive();
+                m_ReorderableList.InvalidateCacheRecursive();
             }
 
             if (Event.current.type == EventType.Used && sizeRect.Contains(Event.current.mousePosition)) Event.current.type = prevType;
 
+            EditorGUI.BeginChangeCheck();
             EditorGUI.DefaultPropertyField(sizeRect, m_ArraySize, GUIContent.none);
             EditorGUI.LabelField(sizeRect, new GUIContent("", "Array Size"));
+            if (EditorGUI.EndChangeCheck()) m_ReorderableList.InvalidateCache();
 
             if (headerRect.Contains(Event.current.mousePosition))
             {

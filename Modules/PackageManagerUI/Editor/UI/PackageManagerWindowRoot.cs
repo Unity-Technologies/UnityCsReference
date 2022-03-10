@@ -182,6 +182,8 @@ namespace UnityEditor.PackageManager.UI
         {
             foreach (var extension in PackageManagerExtensions.ToolbarExtensions)
                 extension.OnWindowDestroy();
+
+            LoadingSpinner.ClearAllSpinners();
         }
 
         private void OnRefreshOperationFinish()

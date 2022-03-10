@@ -142,6 +142,9 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
+            public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
+            public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
+            public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
@@ -2167,11 +2170,21 @@ namespace UnityEditor
             m_IconsEditor.ShowPlatformIconsByKind(iconFieldGroup, foldByKind, foldBySubkind);
         }
 
+        internal static GUIContent GetApplicationIdentifierError(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android)
+                return SettingsContent.packageNameError;
+
+            return SettingsContent.applicationIdentifierError;
+        }
+
         internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
         {
             var oldIdentifier = "";
-            string currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
+            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
             var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+            var warningMessage = SettingsContent.applicationIdentifierWarning.text;
+            var errorMessage = GetApplicationIdentifierError(targetGroup).text;
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
@@ -2188,6 +2201,7 @@ namespace UnityEditor
                         prop.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
 
+                EditorGUILayout.BeginVertical();
                 EditorGUI.BeginChangeCheck();
 
                 using (new EditorGUI.DisabledScope(!overrideDefaultID))
@@ -2201,6 +2215,13 @@ namespace UnityEditor
                     currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
                     prop.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
+
+                if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
+                    EditorGUILayout.HelpBox(errorMessage, MessageType.Error);
+                else if (!overrideDefaultID && currentIdentifier != defaultID)
+                    EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
+
+                EditorGUILayout.EndVertical();
             }
         }
 
