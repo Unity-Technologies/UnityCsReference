@@ -37,7 +37,7 @@ namespace UnityEditor
 
         static PropertyHandler()
         {
-            Undo.undoRedoPerformed += () => ReorderableList.ClearExistingListCaches();
+            Undo.undoRedoPerformed += () => ReorderableList.InvalidateExistingListCaches();
         }
 
         public static void ClearCache()
@@ -46,11 +46,11 @@ namespace UnityEditor
             s_LastInspectionTarget = 0;
         }
 
-        public static void ClearListCacheIncludingChildren(string propertyPath)
+        public static void InvalidateListCacheIncludingChildren(string propertyPath)
         {
             foreach (var listEntry in s_reorderableLists)
             {
-                if (listEntry.Key.Contains(propertyPath)) listEntry.Value.ClearCache();
+                if (listEntry.Key.Contains(propertyPath)) listEntry.Value.InvalidateCache();
             }
         }
 

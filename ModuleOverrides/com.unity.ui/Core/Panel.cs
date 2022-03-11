@@ -1174,6 +1174,8 @@ namespace UnityEngine.UIElements
 
             Vector2 panelPrevPosition;
 
+            // We don't allow pointer events outside of a panel to be considered
+            // unless it is capturing the mouse (see SendPositionBasedEvent).
             if (!allowOutside)
             {
                 var panelRect = visualTree.layout;

@@ -188,6 +188,7 @@ namespace UnityEngine.UIElements
                 UpdateFocusedPanel(focusedPanel);
             }
 
+            // We first try to send the event to a runtime panel that might be capturing the pointer, regardless of targetDisplay.
             var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
             {
