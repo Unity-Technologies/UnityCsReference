@@ -70,7 +70,9 @@ namespace UnityEditor
         kImporting = 1 << 0,
         kImportingAsset = 1 << 1,
         kPreventCustomDependencyChanges = 1 << 2,
-        kGatheringDependenciesFromSourceFile = 1 << 3
+        kGatheringDependenciesFromSourceFile = 1 << 3,
+        kPreventForceReserializeAssets = 1 << 4,
+        kDomainBackup = 1 << 5,
     }
 
     public struct CacheServerConnectionChangedParameters
@@ -226,6 +228,7 @@ namespace UnityEditor
         [NativeThrows]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
         extern public static Object LoadAssetAtPath(string assetPath, Type type);
 
         public static T LoadAssetAtPath<T>(string assetPath) where T : Object

@@ -53,6 +53,18 @@ namespace UnityEngine.UIElements
                 panel.ProcessPointerCapture(pointerEvent.pointerId);
             }
 
+            // Case 1353921: this will enforce PointerEnter/Out events even during pointer capture.
+            // According to the W3 standard (https://www.w3.org/TR/pointerevents3/#the-pointerout-event), these events
+            // are *not* supposed to occur, but we have been sending MouseEnter/Out events during mouse capture
+            // since the early days of UI Toolkit, and users have been relying on it.
+            if (panel is BaseVisualElementPanel basePanel)
+            {
+                bool shouldRecomputeTopElementUnderPointer = (pointerEvent as IPointerEventInternal)?.recomputeTopElementUnderPointer ?? true;
+
+                if (shouldRecomputeTopElementUnderPointer)
+                    basePanel.RecomputeTopElementUnderPointer(pointerEvent.pointerId, pointerEvent.position, evt);
+            }
+
             // Exclusive processing by capturing element.
             evt.dispatch = true;
             evt.target = targetOverride;

@@ -989,6 +989,43 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal int containedPointerIds { get; private set; }
+
+        void UpdateHoverPseudoState()
+        {
+            // An element has the hover pseudoState if and only if it has at least one contained pointer which is
+            // captured by itself or no element.
+
+            // With multi-finger touch events, there can be multiple unrelated elements hovered at once, or a single
+            // element hovered by multiple fingers. In that case, the hover pseudoState for a given element will match
+            // a logical OR of the hover state of each finger on that element.
+
+            if (containedPointerIds == 0)
+            {
+                pseudoStates &= ~PseudoStates.Hover;
+                return;
+            }
+
+            bool hovered = false;
+            for (var pointerId = 0; pointerId < PointerId.maxPointers; pointerId++)
+            {
+                if ((containedPointerIds & (1 << pointerId)) != 0)
+                {
+                    var capturingElement = panel?.GetCapturingElement(pointerId);
+                    if (capturingElement == null || capturingElement == this)
+                    {
+                        hovered = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hovered)
+                pseudoStates |= PseudoStates.Hover;
+            else
+                pseudoStates &= ~PseudoStates.Hover;
+        }
+
         /// <summary>
         /// Determines if this element can be pick during mouseEvents or <see cref="IPanel.Pick"/> queries.
         /// </summary>
@@ -1109,18 +1146,33 @@ namespace UnityEngine.UIElements
 
             if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId())
             {
-                // Updating cursor has to happen on MouseOver/Out because exiting a children do not send a mouse enter to the parent.
+                // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
+                // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
                 UpdateCursorStyle(evt.eventTypeId);
             }
-            else if (evt.eventTypeId == MouseEnterEvent.TypeId())
+            else if (evt.eventTypeId == PointerEnterEvent.TypeId())
             {
-                var capturingElement = panel?.GetCapturingElement(PointerId.mousePointerId);
-                if (capturingElement == null || capturingElement == this)
-                    pseudoStates |= PseudoStates.Hover;
+                containedPointerIds |= (1 << ((IPointerEvent)evt).pointerId);
+                UpdateHoverPseudoState();
             }
-            else if (evt.eventTypeId == MouseLeaveEvent.TypeId())
+            else if (evt.eventTypeId == PointerLeaveEvent.TypeId())
             {
-                pseudoStates &= ~PseudoStates.Hover;
+                containedPointerIds &= ~(1 << ((IPointerEvent)evt).pointerId);
+                UpdateHoverPseudoState();
+            }
+            else if (evt.eventTypeId == PointerCaptureEvent.TypeId() ||
+                     evt.eventTypeId == PointerCaptureOutEvent.TypeId())
+            {
+                // Pointer capture changes can influence if an element is hovered or not.
+                UpdateHoverPseudoState();
+
+                // Make sure to also reevaluate the hover state of the elements under pointer.
+                var elementUnderPointer =
+                    elementPanel?.GetTopElementUnderPointer(((IPointerCaptureEventInternal) evt).pointerId);
+                for (var ve = elementUnderPointer; ve != null && ve != this; ve = ve.parent)
+                {
+                    ve.UpdateHoverPseudoState();
+                }
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {

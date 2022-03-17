@@ -620,7 +620,7 @@ namespace UnityEngine.UIElements
 
         private bool VerifyBounds(EventBase evt)
         {
-            return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt);
+            return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt) || IsDockAreaMouseUp(evt);
         }
 
         private bool IsContainerCapturingTheMouse()
@@ -643,6 +643,12 @@ namespace UnityEngine.UIElements
             string pointerType = (evt as IPointerEvent)?.pointerType;
             bool isDirectManipulationDevice = (pointerType == PointerType.touch || pointerType == PointerType.pen);
             return GUIUtility.HitTest(clippingRect, evt.originalMousePosition, isDirectManipulationDevice);
+        }
+
+        private static bool IsDockAreaMouseUp(EventBase evt)
+        {
+            return evt.eventTypeId == MouseUpEvent.TypeId() &&
+                   evt.target == (evt.target as VisualElement)?.elementPanel.rootIMGUIContainer;
         }
 
         private bool HandleIMGUIEvent(Event e, bool canAffectFocus)
