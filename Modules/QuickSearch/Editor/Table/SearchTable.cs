@@ -35,12 +35,12 @@ namespace UnityEditor.Search
         {
         }
 
-        internal SearchTable Clone(string newName = null)
+        public SearchTable Clone(string newName = null)
         {
             return new SearchTable(this, newName);
         }
 
-        internal void InitFunctors()
+        public void InitFunctors()
         {
             // This is called to ensure members not serialized are properly init.
             foreach (var searchColumn in columns)

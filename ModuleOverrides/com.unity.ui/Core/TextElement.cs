@@ -72,6 +72,9 @@ namespace UnityEngine.UIElements
         {
             requireMeasureFunction = true;
 
+            // We don't want the TextElement to be sequentially focusable through tab navigation by default.
+            tabIndex = -1;
+
             uitkTextHandle = new UITKTextHandle(this);
 
             AddToClassList(ussClassName);
@@ -170,7 +173,8 @@ namespace UnityEngine.UIElements
 
         private bool m_WasElided;
 
-        private void OnGenerateVisualContent(MeshGenerationContext mgc)
+        //Used in tests
+        internal void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             UpdateVisibleText();
             mgc.Text(this);
@@ -180,13 +184,10 @@ namespace UnityEngine.UIElements
 
             UpdateTooltip();
 
-            if (edition.hasFocus)
-            {
-                if(selection.HasSelection())
-                    DrawHighlighting(mgc);
-                else if(!edition.isReadOnly && m_SelectingManipulator.RevealCursor())
-                    DrawCaret(mgc);
-            }
+            if(selection.HasSelection())
+                DrawHighlighting(mgc);
+            else if(!edition.isReadOnly && isSelectable && m_SelectingManipulator.RevealCursor())
+                DrawCaret(mgc);
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)

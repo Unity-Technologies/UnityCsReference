@@ -145,8 +145,8 @@ namespace UnityEngine.UIElements
                 editingUtilities.SetImeWindowPosition(new Vector2(textElement.worldBound.x, textElement.worldBound.y));
 
             var fullText = editingUtilities.GeneratePreviewString(textElement.enableRichText);
-            fullText = textElement.edition.CullString(fullText);
-            textElement.edition.UpdateText(fullText);
+            editingUtilities.text = textElement.edition.CullString(fullText);
+            textElement.edition.UpdateText(editingUtilities.text);
 
             if (imeEnabled)
             {

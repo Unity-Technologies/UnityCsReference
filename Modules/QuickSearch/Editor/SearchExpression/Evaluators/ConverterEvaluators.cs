@@ -16,8 +16,8 @@ namespace UnityEditor.Search
         {
             return c.args.SelectMany(e => e.Execute(c)).Select(item =>
             {
-                EvaluatorUtils.TryConvertToDouble(item, out var value);
-                return EvaluatorUtils.CreateItem(value);
+                SearchExpression.TryConvertToDouble(item, out var value);
+                return SearchExpression.CreateItem(value);
             });
         }
 
@@ -27,10 +27,10 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> Format(SearchExpressionContext c)
         {
             var skipCount = 0;
-            if (EvaluatorUtils.GetFormatString(c.args[0], out var formatStr))
+            if (SearchExpression.GetFormatString(c.args[0], out var formatStr))
                 skipCount++;
             var items = c.args.Skip(skipCount).SelectMany(e => e.Execute(c));
-            var dataSet = EvaluatorUtils.ProcessValues(items, null, item => EvaluatorUtils.FormatItem(c.search, item, formatStr));
+            var dataSet = SearchExpression.ProcessValues(items, null, item => SearchExpression.FormatItem(c.search, item, formatStr));
             return dataSet;
         }
 
@@ -38,7 +38,7 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Literal | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> ToBoolean(SearchExpressionContext c)
         {
-            return c.args.SelectMany(e => e.Execute(c)).Select(item => EvaluatorUtils.CreateItem(EvaluatorUtils.IsTrue(item)));
+            return c.args.SelectMany(e => e.Execute(c)).Select(item => SearchExpression.CreateItem(SearchExpression.IsTrue(item)));
         }
     }
 }

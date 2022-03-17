@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Search;
@@ -18,7 +17,7 @@ namespace UnityEditor.Search
         string searchText { get; }
         string displayName { get; set; }
         string details { get; set; }
-        Texture2D thumbnail { get; }
+        Texture2D thumbnail { get; set; }
         string filePath { get; }
         string guid { get; }
         long creationTime { get; }
@@ -26,7 +25,9 @@ namespace UnityEditor.Search
         int itemCount { get; }
         bool isSearchTemplate { get; }
 
-        SearchViewState GetResultViewState();
+        string GetName();
+        SearchTable GetSearchTable();
+        SearchViewState GetViewState();
         IEnumerable<string> GetProviderIds();
         IEnumerable<string> GetProviderTypes();
     }
@@ -41,20 +42,18 @@ namespace UnityEditor.Search
     }
 
     [Serializable]
-    class SearchQuery : ISearchQuery, ISerializationCallbackReceiver
+    class SearchQuery : ISearchQuery
     {
         public static string userSearchSettingsFolder => Utils.CleanPath(Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search"));
         public string searchText
         {
             get
             {
-                return viewState.context == null ? viewState.searchText : viewState.context.searchText;
+                return viewState.text;
             }
             set
             {
-                viewState.searchText = value;
-                if (viewState.context != null)
-                    viewState.context.searchText = value;
+                viewState.text = value;
             }
         }
 
@@ -69,7 +68,6 @@ namespace UnityEditor.Search
         public string description;
         public string name;
         public SearchViewState viewState;
-        public SearchTable tableConfig;
 
         public string filePath { get; set; }
 
@@ -177,14 +175,18 @@ namespace UnityEditor.Search
             name = description = Utils.Simplify(state.context.searchText);
         }
 
+        public string GetName()
+        {
+            return name;
+        }
+
         public void Set(SearchViewState state, SearchTable table)
         {
             if (viewState == null)
                 viewState = new SearchViewState();
             viewState.Assign(state);
-            tableConfig = table?.Clone();
-            if (tableConfig != null)
-                viewState.tableConfig = tableConfig;
+            if (table != null)
+                viewState.tableConfig = table.Clone();
         }
 
         public IEnumerable<string> GetProviderIds()
@@ -197,14 +199,24 @@ namespace UnityEditor.Search
             return viewState.GetProviderTypes();
         }
 
-        public SearchViewState GetResultViewState()
+        public SearchViewState GetViewState()
         {
             return viewState;
+        }
+
+        public SearchTable GetSearchTable()
+        {
+            return viewState?.tableConfig;
         }
 
         public override int GetHashCode()
         {
             return string.IsNullOrEmpty(filePath) ? filePath.GetHashCode() : m_GUID.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return $"{searchText}";
         }
 
         #region UserQueryManagement
@@ -288,13 +300,19 @@ namespace UnityEditor.Search
 
         public static ISearchView Open(ISearchQuery query, SearchFlags additionalFlags)
         {
-            var providerIds = QuickSearch.GetMergedProviders(QuickSearch.GetCurrentSearchWindowProviders(), query.GetProviderIds()).Select(p => p.id);
-            var searchWindow = QuickSearch.OpenWithContextualProvider(query.searchText, providerIds.ToArray(), additionalFlags, "Unity");
-            searchWindow.ExecuteSearchQuery(query);
-            return searchWindow;
+            var viewState = query.GetViewState();
+            viewState.text = query.searchText;
+            if (viewState.context != null)
+                viewState.context.options |= additionalFlags;
+            else
+            {
+                viewState.searchFlags |= additionalFlags;
+                viewState.BuildContext();
+            }
+            return SearchService.ShowWindow(viewState);
         }
 
-        public static void ShowQueryIconPicker(Action<UnityEngine.Texture2D, bool> selectIcon)
+        public static void ShowQueryIconPicker(Action<Texture2D, bool> selectIcon)
         {
             var pickIconContext = SearchService.CreateContext(new[] { "adb", "asset" }, "", SearchFlags.WantsMore);
             var viewState = new SearchViewState(pickIconContext,
@@ -311,18 +329,8 @@ namespace UnityEditor.Search
         {
             if (query.thumbnail)
                 return query.thumbnail;
-            var displayMode = QuickSearch.GetDisplayModeFromItemSize(query.GetResultViewState().itemSize);
+            var displayMode = QuickSearch.GetDisplayModeFromItemSize(query.GetViewState().itemSize);
             return QuickSearch.GetIconFromDisplayMode(displayMode);
-        }
-
-        public void OnBeforeSerialize()
-        {
-        }
-
-        public void OnAfterDeserialize()
-        {
-            if (viewState.tableConfig == null && tableConfig != null)
-                viewState.tableConfig = tableConfig;
         }
     }
 }

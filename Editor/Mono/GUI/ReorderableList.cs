@@ -82,27 +82,33 @@ namespace UnityEditorInternal
 
         internal bool m_IsEditable;
         internal bool m_HasPropertyDrawer;
+        internal int m_CacheCount = 0; // This one has to be internal so that we can execute multiple tests in one frame
 
         private int id = -1;
 
-        internal class PropertyCacheEntry
+        bool m_ScheduleGUIChanged = false;
+        internal struct PropertyCacheEntry
         {
             public SerializedProperty property;
             public float height;
             public float offset;
-            public int lastControlCount;
+            public int controlCount;
 
-            public PropertyCacheEntry(SerializedProperty property, float height, float offset)
+            public bool Set(SerializedProperty property, float height, float offset)
             {
+                bool heightChange = this.height != height;
+
                 this.property = property;
                 this.height = height;
                 this.offset = offset;
-                lastControlCount = 0;
+
+                // Schedule recaching if height is changing. Otherwise we might mishandle animated GUI controls
+                return heightChange;
             }
         }
-        List<PropertyCacheEntry> m_PropertyCache = new List<PropertyCacheEntry>();
+        internal bool m_PropertyCacheValid = false;
+        PropertyCacheEntry[] m_PropertyCache = new PropertyCacheEntry[0];
         static List<string> m_OutdatedProperties = new List<string>();
-        internal bool IsCacheClear => m_PropertyCache.Count == 0;
 
         static string GetParentListPath(string propertyPath)
         {
@@ -127,7 +133,7 @@ namespace UnityEditorInternal
         {
             if (m_OutdatedProperties.BinarySearch(m_PropertyPath) >= 0)
             {
-                ClearCache();
+                InvalidateCache();
                 m_OutdatedProperties = m_OutdatedProperties.Where(e => !e.Equals(m_PropertyPath)).ToList();
                 return true;
             }
@@ -201,7 +207,7 @@ namespace UnityEditorInternal
                                 DoAddButton(list);
 
                             list.onChangedCallback?.Invoke(list);
-                            list.ClearCacheRecursive();
+                            list.InvalidateCacheRecursive();
                         }
                     }
                 }
@@ -221,7 +227,7 @@ namespace UnityEditorInternal
                                 list.onRemoveCallback(list);
 
                             list.onChangedCallback?.Invoke(list);
-                            list.ClearCacheRecursive();
+                            list.InvalidateCacheRecursive();
                             GUI.changed = true;
                         }
                     }
@@ -273,7 +279,7 @@ namespace UnityEditorInternal
                         Debug.LogError("Cannot add element of type Null.");
                 }
                 Undo.SetCurrentGroupName(undoAdd);
-                list.ClearCache();
+                list.InvalidateCache();
             }
 
             public void DoAddButton(ReorderableList list)
@@ -317,7 +323,7 @@ namespace UnityEditorInternal
                 }
                 list.index = Mathf.Clamp(lastDeletedIndex - 1, 0, list.count - 1);
                 Undo.SetCurrentGroupName(undoRemove);
-                list.ClearCache();
+                list.InvalidateCache();
             }
 
             // draw the default header background
@@ -411,10 +417,10 @@ namespace UnityEditorInternal
         }
 
         static List<WeakReference<ReorderableList>> s_Instances = new List<WeakReference<ReorderableList>>();
-        internal static void ClearExistingListCaches() => s_Instances.ForEach(list =>
+        internal static void InvalidateExistingListCaches() => s_Instances.ForEach(list =>
         {
             if (!list.TryGetTarget(out ReorderableList reorderableList)) return;
-            reorderableList.ClearCache();
+            reorderableList.InvalidateCache();
         });
 
         // constructors
@@ -509,90 +515,84 @@ namespace UnityEditorInternal
             set { m_Draggable = value; }
         }
 
-        internal void CacheIfNeeded()
+        void TryOverrideElementHeightWithPropertyDrawer(SerializedProperty property, ref float height)
         {
-            if (isOverMaxMultiEditLimit) return;
-
-            m_PropertyCache.Capacity = Mathf.Max(m_PropertyCache.Capacity, m_Count - 1);
-            while (m_Count > m_PropertyCache.Count)
+            if (m_HasPropertyDrawer)
             {
-                float offset;
-                if (m_Elements != null)
+                try
                 {
-                    SerializedProperty property;
-                    if (m_PropertyCache.Count == 0 && count != 0)
-                    {
-                        property = m_Elements.GetArrayElementAtIndex(0);
-                        offset = 0;
-                    }
-                    else
-                    {
-                        PropertyCacheEntry lastEntry = m_PropertyCache.Last();
-
-                        property = lastEntry.property.Copy();
-                        property.Next(false);
-                        offset = lastEntry.offset + lastEntry.height;
-                    }
-
-                    float height = elementHeight;
-                    if (elementHeightCallback != null)
-                    {
-                        height = elementHeightCallback(m_PropertyCache.Count);
-                    }
-                    else if (m_HasPropertyDrawer)
-                    {
-                        try
-                        {
-                            height = ScriptAttributeUtility.GetHandler(property).GetHeight(property, null, true);
-                        }
-                        catch
-                        {
-                            // Sometimes we find properties that no longer exist so we don't cache them
-                            height = int.MinValue;
-                            m_Count--;
-                        }
-                    }
-
-                    if (height > int.MinValue) m_PropertyCache.Add(new PropertyCacheEntry(property, height + Defaults.ElementPadding(height), offset));
+                    height = ScriptAttributeUtility.GetHandler(property).GetHeight(property, null, true);
                 }
-                else
+                catch
                 {
-                    if (m_PropertyCache.Count == 0)
-                    {
-                        offset = 0;
-                    }
-                    else
-                    {
-                        PropertyCacheEntry lastEntry = m_PropertyCache.Last();
-                        offset = lastEntry.offset + lastEntry.height;
-                    }
-
-                    float height = elementHeight;
-                    if (elementHeightCallback != null)
-                    {
-                        height = elementHeightCallback(m_PropertyCache.Count);
-                    }
-
-                    m_PropertyCache.Add(new PropertyCacheEntry(null, height + Defaults.ElementPadding(height), offset));
+                    // Sometimes we find properties that no longer exist so we don't cache them
+                    height = int.MinValue;
+                    m_Count--;
                 }
             }
         }
 
-        internal void ClearCache()
+        internal void CacheIfNeeded()
         {
-            m_PropertyCache.Clear();
+            // Don't allow recaching multiple times in one frame as we won't be able to handle animated foldouts
+            if (isOverMaxMultiEditLimit || m_PropertyCacheValid) return;
+            m_PropertyCacheValid = true;
+            m_CacheCount++;
+
+            Array.Resize(ref m_PropertyCache, count);
+
+            SerializedProperty property = null;
+            float height = 0;
+            float offset = 0;
+
+            if (m_Count > 0)
+            {
+                if (m_Elements != null)
+                {
+                    property = m_Elements.GetArrayElementAtIndex(0);
+                    TryOverrideElementHeightWithPropertyDrawer(property, ref height);
+                }
+
+                height = elementHeightCallback?.Invoke(0) ?? elementHeight;
+                m_ScheduleGUIChanged |= m_PropertyCache[0].Set(property, height + Defaults.ElementPadding(height), offset);
+            }
+
+            for (int i = 1; i < m_Count; i++)
+            {
+                PropertyCacheEntry lastEntry = m_PropertyCache[i - 1];
+
+                property = null;
+                height = elementHeightCallback?.Invoke(i) ?? elementHeight;
+                offset = lastEntry.offset + lastEntry.height;
+
+                if (m_Elements != null)
+                {
+                    property = lastEntry.property.Copy();
+                    property.Next(false);
+
+                    TryOverrideElementHeightWithPropertyDrawer(property, ref height);
+                }
+
+                if (height > int.MinValue) m_ScheduleGUIChanged |= m_PropertyCache[i].Set(property, height + Defaults.ElementPadding(height), offset);
+            }
         }
 
-        internal void ClearCacheRecursive()
+        internal void InvalidateCache()
+        {
+            m_CacheCount = 0;
+            m_PropertyCacheValid = false;
+        }
+
+        internal void InvalidateCacheRecursive()
         {
             if (m_Elements != null)
             {
-                ClearCache();
-                PropertyHandler.ClearListCacheIncludingChildren(m_Elements.propertyPath);
+                InvalidateCache();
+                PropertyHandler.InvalidateListCacheIncludingChildren(m_Elements.propertyPath);
             }
             else
             {
-                ClearCache();
+                InvalidateCache();
             }
         }
 
@@ -664,7 +664,7 @@ namespace UnityEditorInternal
 
         private float GetElementYOffset(int index, int skipIndex)
         {
-            CacheIfNeeded();
+            if (m_PropertyCache.Length <= index) return 0;
 
             float skipOffset = 0;
             if (skipIndex >= 0 && skipIndex < index)
@@ -677,7 +677,7 @@ namespace UnityEditorInternal
 
         private float GetElementHeight(int index)
         {
-            CacheIfNeeded();
+            if (m_PropertyCache.Length <= index) return 0;
             return m_PropertyCache[index].height;
         }
 
@@ -686,7 +686,7 @@ namespace UnityEditorInternal
             return new Rect(listRect.x, listRect.y + GetElementYOffset(index), listRect.width, GetElementHeight(index));
         }
 
-        bool isOverMaxMultiEditLimit => m_Elements != null && smallerArraySize > m_Elements.serializedObject.maxArraySizeForMultiEditing && m_Elements.serializedObject.isEditingMultipleObjects;
+        bool isOverMaxMultiEditLimit => m_Elements != null && m_SmallerArraySize > m_Elements.serializedObject.maxArraySizeForMultiEditing && m_Elements.serializedObject.isEditingMultipleObjects;
 
         public int count
         {
@@ -694,17 +694,18 @@ namespace UnityEditorInternal
             {
                 if (m_Elements != null)
                 {
-                    smallerArraySize = m_Elements.minArraySize;
+                    m_SmallerArraySize = m_Elements.minArraySize;
 
-                    if (isOverMaxMultiEditLimit) return 0;
+                    if (isOverMaxMultiEditLimit) return m_Count = 0;
 
-                    return smallerArraySize;
+                    return m_Count = m_SmallerArraySize;
                 }
-                return m_ElementList != null ? m_ElementList.Count : 0;
+                return m_Count = m_ElementList != null ? m_ElementList.Count : 0;
             }
         }
+        // Using count getter will automatically cache results here for quick reference;
         int m_Count;
-        int smallerArraySize;
+        int m_SmallerArraySize;
 
         public void DoLayoutList() //TODO: better API?
         {
@@ -754,18 +755,27 @@ namespace UnityEditorInternal
             return totalHeight;
         }
 
+        float lastHeight = -1;
         private float GetListElementHeight()
         {
+            float height;
             float listElementPadding = kListElementBottomPadding + listElementTopPadding;
 
-            m_Count = count;
-            if (m_Count == 0 || isOverMaxMultiEditLimit)
+            if (m_CacheCount == 0) CacheIfNeeded();
+
+            if (m_Count <= 0 || isOverMaxMultiEditLimit)
+                height = elementHeight * (isOverMaxMultiEditLimit ? 2 : 1) + listElementPadding;
+            else
+                height = GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
+
+            if(height != lastHeight)
             {
-                return elementHeight * (isOverMaxMultiEditLimit ? 2 : 1) + listElementPadding;
+                lastHeight = height;
+                InvalidateCache();
+                height = GetListElementHeight();
             }
 
-            CacheIfNeeded();
-            return GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;
+            return height;
         }
 
         int recursionCounter = 0;
@@ -776,10 +786,10 @@ namespace UnityEditorInternal
             {
                 // Recalculate cache values in case their height changed due to window resize
                 lastRect = listRect;
-                ClearCacheRecursive();
+                InvalidateCacheRecursive();
             }
 
-            CacheIfNeeded();
+            if (m_CacheCount == 0) CacheIfNeeded();
 
             var prevIndent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
@@ -805,6 +815,9 @@ namespace UnityEditorInternal
             var elementContentRect = elementRect;
 
             bool handlingInput = Event.current.type == EventType.MouseDown;
+
+            // Cache element count so we don't try to draw elements that don't exist
+            _ = count;
 
             if ((m_Elements != null && m_Elements.isArray || m_ElementList != null) && m_Count > 0 && !isOverMaxMultiEditLimit)
             {
@@ -912,8 +925,6 @@ namespace UnityEditorInternal
                         if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
                         if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
 
-                        int initialProperties = EditorGUI.s_PropertyCount;
-
                         bool activeElement = m_Selection.Any(id => id == i);
                         bool focusedElement = (activeElement && HasKeyboardControl());
 
@@ -929,13 +940,15 @@ namespace UnityEditorInternal
                         defaultBehaviours.DrawElementDraggingHandle(elementRect, i, activeElement, focusedElement, m_Draggable);
 
                         elementContentRect = GetContentRect(elementRect);
+                        int initialControlCount = GUIUtility.s_ControlCount;
 
                         // do the callback for the element
                         if (drawElementCallback == null)
                         {
                             if (m_Elements != null)
                             {
-                                s_Defaults.DrawElement(elementContentRect, m_PropertyCache[i].property, null, activeElement, focusedElement, m_Draggable, m_IsEditable);
+                                if (i < m_PropertyCache.Length && m_PropertyCache[i].property.isValid)
+                                    s_Defaults.DrawElement(elementContentRect, m_PropertyCache[i].property, null, activeElement, focusedElement, m_Draggable, m_IsEditable);
                             }
                             else
                                 defaultBehaviours.DrawElement(elementContentRect, null, m_ElementList[i], activeElement, focusedElement, m_Draggable, m_IsEditable);
@@ -953,16 +966,13 @@ namespace UnityEditorInternal
 
                         // Element drawing could be changed from distant properties or controls
                         // so if we detect any change in the way the property is drawn, clear cache
-                        int currentControlCount = EditorGUI.s_PropertyCount - initialProperties;
-                        if (m_PropertyCache[i].lastControlCount > 1 && currentControlCount > 1
-                            && m_PropertyCache[i].lastControlCount != currentControlCount)
+                        int currentControlCount = GUIUtility.s_ControlCount - initialControlCount;
+                        if (i < m_PropertyCache.Length && Event.current.type == EventType.Repaint && m_PropertyCache[i].controlCount != currentControlCount || m_ScheduleGUIChanged)
                         {
-                            ClearCacheRecursive();
-                            CacheIfNeeded();
-                            InspectorWindow.RepaintAllInspectors();
-                            if ((m_Count = count) >= i) break;
+                            InvalidateCache();
+                            m_PropertyCache[i].controlCount = currentControlCount;
+                            m_ScheduleGUIChanged = false;
                         }
-                        m_PropertyCache[i].lastControlCount = currentControlCount;
                     }
                 }
 
@@ -971,7 +981,7 @@ namespace UnityEditorInternal
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    ClearCacheRecursive();
+                    InvalidateCacheRecursive();
                 }
             }
             else
@@ -1012,6 +1022,8 @@ namespace UnityEditorInternal
                 recursionCounter++;
                 DoListElements(listRect, visibleRect);
             }
+
+            m_CacheCount = 0;
         }
 
         private void DoListHeader(Rect headerRect)

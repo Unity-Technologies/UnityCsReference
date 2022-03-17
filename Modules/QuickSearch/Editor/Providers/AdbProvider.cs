@@ -14,26 +14,19 @@ namespace UnityEditor.Search.Providers
 
         static ObjectQueryEngine<UnityEngine.Object> m_ResourcesQueryEngine;
 
-        public static IEnumerable<string> EnumeratePaths(string searchQuery, SearchFlags flags)
+        public static IEnumerable<string> EnumeratePaths(in string searchQuery, in Type filterType, in SearchFlags flags)
         {
             var searchFilter = new SearchFilter
             {
                 searchArea = GetSearchArea(flags),
-                showAllHits = true,
+                showAllHits = flags.HasAny(SearchFlags.WantsMore),
                 originalText = searchQuery
             };
-            SearchUtility.ParseSearchString(searchQuery, searchFilter);
+            if (!string.IsNullOrEmpty(searchQuery))
+                SearchUtility.ParseSearchString(searchQuery, searchFilter);
+            if (filterType != null)
+                searchFilter.classNames = new[] { filterType.Name };
             return EnumeratePaths(searchFilter);
-        }
-
-        public static IEnumerable<string> EnumeratePaths(Type type, SearchFlags flags)
-        {
-            return EnumeratePaths(new SearchFilter
-            {
-                searchArea = GetSearchArea(flags),
-                showAllHits = true,
-                classNames = new[] { type.Name }
-            });
         }
 
 
@@ -57,12 +50,11 @@ namespace UnityEditor.Search.Providers
 
         public static IEnumerable<string> EnumeratePaths(SearchContext context)
         {
-            if (!string.IsNullOrEmpty(context.searchQuery))
-                return EnumeratePaths(context.searchQuery, context.options);
-
-            if (context.filterType != null)
-                return EnumeratePaths(context.filterType, context.options);
-            return Enumerable.Empty<string>();
+            if (context.filterType == null && context.empty)
+                return Enumerable.Empty<string>();
+            if (context.userData is SearchFilter legacySearchFilter)
+                return EnumeratePaths(legacySearchFilter);
+            return EnumeratePaths(context.searchQuery, context.filterType, context.options);
         }
 
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
@@ -75,7 +67,7 @@ namespace UnityEditor.Search.Providers
 
             // Search asset database
             foreach (var path in EnumeratePaths(context))
-                yield return AssetProvider.CreateItem("ADB", context, provider, null, path, 998, SearchDocumentFlags.Asset);
+                yield return AssetProvider.CreateItem("ADB", context, provider, context.filterType, null, path, 998, SearchDocumentFlags.Asset);
 
             // Search builtin resources
             var resources = AssetDatabase.LoadAllAssetsAtPath("library/unity default resources")

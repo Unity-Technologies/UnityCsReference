@@ -14,8 +14,8 @@ namespace UnityEditor.Search
         public const string title = "Select Search Area";
         public string filterId { get; private set; }
 
-        public override bool canExclude => false;
-        public override bool canDisable => false;
+        internal override bool canExclude => false;
+        internal override bool canDisable => false;
 
         public QueryAreaBlock(IQuerySource source, in SearchProvider provider)
             : this(source, provider.name, provider.filterId)
@@ -43,7 +43,7 @@ namespace UnityEditor.Search
             this.filterId = filterId;
         }
 
-        public override IEnumerable<SearchProposition> FetchPropositions()
+        internal override IEnumerable<SearchProposition> FetchPropositions()
         {
             return FetchPropositions(context);
         }
@@ -64,7 +64,7 @@ namespace UnityEditor.Search
             return string.Equals(id, "expression", System.StringComparison.Ordinal);
         }
 
-        protected override Color GetBackgroundColor()
+        internal override Color GetBackgroundColor()
         {
             return QueryColors.area;
         }

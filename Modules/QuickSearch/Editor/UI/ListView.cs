@@ -116,7 +116,7 @@ namespace UnityEditor.Search
                 {
                     if (eventType == EventType.Repaint)
                     {
-                        using (new GUI.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
+                        using (new Utils.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
                             Styles.actionButton.Draw(buttonRect, Styles.searchFavoriteButtonContent, hovered, false, false, false);
                         EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
                     }

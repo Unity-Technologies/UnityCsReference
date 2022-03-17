@@ -328,11 +328,18 @@ namespace UnityEditor.Modules
         private SystemProcessRunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
             var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
+            var useCustomIl2cpp = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("UNITY_IL2CPP_PATH")) ||
+                                  !string.IsNullOrEmpty(Debug.GetDiagnosticSwitch("VMIl2CppPath").value as string);
+            NPath buildPipelineFolder = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline";
+            NPath beePlatformFolder = $"{args.playerPackage}/Bee";
+            NPath il2cppPath = IL2CPPUtils.GetExePath("il2cpp").ToNPath().Parent;
             return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
                 new[]
                 {
                     buildProgramAssembly.InQuotes(SlashMode.Native),
-                    $"\"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline\""
+                    useCustomIl2cpp
+                        ? $"\"{il2cppPath}:{buildPipelineFolder}\""
+                        : $"\"{beePlatformFolder}:{buildPipelineFolder}\""
                 });
         }
 
@@ -494,13 +501,29 @@ namespace UnityEditor.Modules
             if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                 EditorCompilation.CleanCache();
 
+            if (Unsupported.IsDeveloperBuild())
+            {
+                NPath editorGitRevisionFile = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/gitrevision.txt";
+                NPath playerGitRevisionFile = $"{BuildPipeline.GetPlaybackEngineDirectory(target, options)}/Bee/gitrevision.txt";
+                if (editorGitRevisionFile.Exists() && playerGitRevisionFile.Exists())
+                {
+                    string editorGitRevision = editorGitRevisionFile.ReadAllText();
+                    string playerGitRevision = playerGitRevisionFile.ReadAllText();
+                    if (editorGitRevision != playerGitRevision)
+                        return $"The Bee libraries used in the editor come from a different revision, than the ones used for the player. Please rebuild both editor and player when making changes to Bee player build libraries. (editor: '{editorGitRevision}', player: '{playerGitRevision}')";
+                }
+            }
+
             return base.PrepareForBuild(options, target);
         }
 
         protected virtual void CleanBuildOutput(BuildPostProcessArgs args)
         {
-            new NPath(args.installPath).DeleteIfExists(DeleteMode.Soft);
-            new NPath(GetIl2CppDataBackupFolderName(args)).DeleteIfExists(DeleteMode.Soft);
+            if (!GetInstallingIntoBuildsFolder(args))
+            {
+                new NPath(args.installPath).DeleteIfExists(DeleteMode.Soft);
+                new NPath(GetIl2CppDataBackupFolderName(args)).DeleteIfExists(DeleteMode.Soft);
+            }
         }
 
         public override void PostProcess(BuildPostProcessArgs args)

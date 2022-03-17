@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace UnityEditor.Search
@@ -20,15 +21,16 @@ namespace UnityEditor.Search
     {
         // To match a regex at a specific index, use \\G and Match(input, startIndex)
 
+        public const string k_BaseWordPattern = "[\\w.]+";
         public const string k_FilterOperatorsInnerPattern = "[^\\w\\s-{}()\"\\[\\].,/|\\`]+";
         // This is a balanced group for {} with an optional aggregator name
         public const string k_NestedFilterPattern = "(?<agg>[a-zA-Z0-9]*?)(?<nested>\\{(?>(?<c>\\{)|[^{}]+|(?<-c>\\}))*(?(c)(?!))\\})";
         public static readonly string k_FilterOperatorsPattern = $"(?<op>{k_FilterOperatorsInnerPattern})";
         public static readonly string k_PartialFilterOperatorsPattern = $"(?<op>{k_FilterOperatorsInnerPattern})?";
 
-        public const string k_FilterNamePattern = "\\G(?<name>[\\w.]+)";
+        public static readonly string k_FilterNamePattern = $"\\G(?<name>{k_BaseWordPattern})";
         // To begin matching a partial filter, the name of the filter must be followed by either "(" or an operator
-        public static readonly string k_PartialFilterNamePattern = $"\\G(?<name>[\\w.]+(?=\\(|(?:{k_FilterOperatorsInnerPattern})))";
+        public static readonly string k_PartialFilterNamePattern = $"\\G(?<name>{k_BaseWordPattern})(?=\\(|(?:{k_FilterOperatorsInnerPattern}))";
 
         public const string k_FilterFunctionPattern = "(?<f1>\\([^\\(\\)]+\\))?";
         // This matches either a parenthesis opened with no space like "(asd", a close parenthesis with no space like "(asd)", or a close parenthesis with spaces like "( asd )"
@@ -37,10 +39,9 @@ namespace UnityEditor.Search
         public static readonly string k_FilterValuePattern = $"(?<value>{k_NestedFilterPattern}|[^\\s{{}}]+)";
         public static readonly string k_PartialFilterValuePattern = $"(?<value>(?(op)({k_NestedFilterPattern}|[^\\s{{}}]+)))?";
 
+        public static readonly Regex k_BaseFilterNameRegex = new Regex(k_BaseWordPattern, RegexOptions.Compiled);
         public static readonly Regex k_WordRx = new Regex("\\G!?\\S+", RegexOptions.Compiled);
         public static readonly Regex k_NestedQueryRx = new Regex($"\\G{k_NestedFilterPattern}", RegexOptions.Compiled);
-
-        public static readonly Regex k_FilterNameDecomposeRx = new Regex("(?<beforeCapture>.*)(?!\\(\\?:)\\((?<name>\\?<.+?>)?(?<token>.+?)\\)", RegexOptions.Compiled);
     }
 
     [Flags]
@@ -402,17 +403,17 @@ namespace UnityEditor.Search
 
         public StringView RemoveQuotes(in StringView token)
         {
-            if (token.Length < 2)
+            if (token.length < 2)
                 return token;
 
             foreach (var quoteDelimiter in m_QuoteDelimiters)
             {
-                if (token.Length < (quoteDelimiter.openingToken.Length + quoteDelimiter.closingToken.Length))
+                if (token.length < (quoteDelimiter.openingToken.Length + quoteDelimiter.closingToken.Length))
                     continue;
 
                 if (token.StartsWith(quoteDelimiter.openingToken) && token.EndsWith(quoteDelimiter.closingToken))
                 {
-                    return token.Substring(quoteDelimiter.openingToken.Length, token.Length - quoteDelimiter.openingToken.Length - quoteDelimiter.closingToken.Length);
+                    return token.Substring(quoteDelimiter.openingToken.Length, token.length - quoteDelimiter.openingToken.Length - quoteDelimiter.closingToken.Length);
                 }
             }
 
@@ -497,46 +498,161 @@ namespace UnityEditor.Search
 
         public static string BuildFilterNamePatternFromToken(string token)
         {
+            token = Regex.Escape(token);
+            return BuildBasicFilterNamePattern(token);
+        }
+
+        static string BuildBasicFilterNamePattern(string token)
+        {
             return $"\\G(?<name>{token})";
         }
 
         public static string BuildFilterNamePatternFromToken(Regex token)
         {
-            var tokenString = token.ToString();
-            var match = QueryRegexValues.k_FilterNameDecomposeRx.Match(tokenString);
-            if (!match.Success)
-                return tokenString;
+            var tokenString = token.ToString().GetStringView();
+            if (tokenString.StartsWith("\\G"))
+                tokenString = tokenString.Substring(2, tokenString.length - 2);
 
-            var capturePattern = match.Groups["token"].Value;
-            var beforeCaptureValue = string.Empty;
-            var beforeCaptureGroup = match.Groups["beforeCapture"];
-            if (beforeCaptureGroup.Success)
-                beforeCaptureValue = beforeCaptureGroup.Value;
+            var capturedGroup = GetCapturedGroup(tokenString);
+            if (!capturedGroup.valid || capturedGroup.length <= 2)
+                return BuildBasicFilterNamePattern(tokenString.ToString());
 
-            return $"\\G{beforeCaptureValue}(?<name>{capturePattern})";
+            var capturePattern = GetCapturePattern(capturedGroup);
+
+            var sb = new StringBuilder(tokenString.length);
+            if (!tokenString.StartsWith("\\G"))
+                sb.Append("\\G");
+            for (var i = 0; i < capturedGroup.startIndex; ++i)
+                sb.Append(tokenString[i]);
+            sb.Append($"(?<name>{capturePattern})");
+            for (var i = capturedGroup.endIndex; i < tokenString.length; ++i)
+                sb.Append(tokenString[i]);
+
+            return sb.ToString();
+        }
+
+        static StringView GetCapturedGroup(StringView tokenString)
+        {
+            var startIndex = -1;
+            var nestedLevel = 0;
+
+            for (var i = 0; i < tokenString.length; ++i)
+            {
+                if (IsEscaped(tokenString, i))
+                    continue;
+
+                // We can only get capture group that we can name or are already named.
+                if (startIndex == -1 && IsValidCaptureOpener(tokenString, i))
+                {
+                    startIndex = i;
+                }
+
+                if (startIndex != -1 && tokenString[i] == '(')
+                    nestedLevel++;
+
+                if (startIndex != -1 && IsValidCaptureCloser(tokenString, i))
+                {
+                    --nestedLevel;
+                    if (nestedLevel == 0)
+                    {
+                        var endIndex = i + 1;
+                        return tokenString.Substring(startIndex, endIndex - startIndex);
+                    }
+                }
+            }
+
+            return StringView.nil;
+        }
+
+        static StringView GetCapturePattern(StringView captureGroup)
+        {
+            // We suppose the captureGroup was validated with IsValidCaptureOpener and IsValidCaptureClose
+
+            if (!captureGroup.valid)
+                return StringView.nil;
+            if (!captureGroup.StartsWith('(') || !captureGroup.EndsWith(')'))
+                return StringView.nil;
+            if (captureGroup.length == 2)
+                return StringView.empty;
+            if (captureGroup[1] != '?')
+                return captureGroup.Substring(1, captureGroup.length - 2);
+
+
+            for (var i = 2; i < captureGroup.length - 1; ++i)
+            {
+                // End of the capture name
+                if (captureGroup[i] == '>')
+                    return captureGroup.Substring(i + 1, captureGroup.length - i - 2);
+            }
+
+            return StringView.nil;
+        }
+
+        static bool IsEscaped(StringView tokenString, int index)
+        {
+            if (index < 1 || index >= tokenString.length)
+                return false;
+            if (tokenString[index - 1] == '\\')
+                return true;
+            return false;
+        }
+
+        static bool IsValidCaptureOpener(StringView tokenString, int index)
+        {
+            if (index < 0 || index >= tokenString.length)
+                return false;
+            if (tokenString[index] != '(')
+                return false;
+            if (IsEscaped(tokenString, index))
+                return false;
+            if (index < tokenString.length - 1 && tokenString[index + 1] != '?')
+                return true;
+            index = index + 2;
+            if (index >= tokenString.length)
+                return false;
+            if (tokenString[index] != '<')
+                return false;
+            ++index;
+            if (index >= tokenString.length)
+                return false;
+            if (tokenString[index] == '=' || tokenString[index] == '!')
+                return false;
+
+            for (; index < tokenString.length; ++index)
+            {
+                if (tokenString[index] == '-')
+                    return false;
+                if (tokenString[index] == '>')
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool IsValidCaptureCloser(StringView tokenString, int index)
+        {
+            if (index < 0 || index >= tokenString.length)
+                return false;
+            if (tokenString[index] != ')')
+                return false;
+            if (IsEscaped(tokenString, index))
+                return false;
+            return true;
         }
 
         public static string BuildPartialFilterNamePatternFromToken(string token, IEnumerable<string> operators)
         {
+            var filterNamePattern = BuildFilterNamePatternFromToken(token);
             var innerOperatorsPattern = BuildInnerOperatorsPattern(operators);
-            return $"\\G(?<name>{token}(?=\\(|(?:{innerOperatorsPattern})))";
+            return $"{filterNamePattern}(?=\\(|(?:{innerOperatorsPattern}))";
         }
 
         public static string BuildPartialFilterNamePatternFromToken(Regex token, IEnumerable<string> operators)
         {
+            var filterNamePattern = BuildFilterNamePatternFromToken(token);
             var innerOperatorsPattern = BuildInnerOperatorsPattern(operators);
-            var tokenString = token.ToString();
-            var match = QueryRegexValues.k_FilterNameDecomposeRx.Match(tokenString);
-            if (!match.Success)
-                return tokenString;
 
-            var capturePattern = match.Groups["token"].Value;
-            var beforeCaptureValue = string.Empty;
-            var beforeCaptureGroup = match.Groups["beforeCapture"];
-            if (beforeCaptureGroup.Success)
-                beforeCaptureValue = beforeCaptureGroup.Value;
-
-            return $"\\G{beforeCaptureValue}(?<name>{capturePattern}(?=\\(|(?:{innerOperatorsPattern})))";
+            return $"{filterNamePattern}(?=\\(|(?:{innerOperatorsPattern}))";
         }
 
         public static Regex BuildPhraseRegex(in QueryTextDelimiter textDelimiter)
@@ -643,7 +759,7 @@ namespace UnityEditor.Search
                 if (sv.Equals(combiningToken, StringComparison.OrdinalIgnoreCase))
                 {
                     matched = true;
-                    return sv.Length;
+                    return sv.length;
                 }
             }
 

@@ -265,6 +265,21 @@ namespace UnityEngine.UIElements
             public Focusable m_FocusedElement;
         }
 
+        TextElement m_SelectedTextElement;
+
+        internal TextElement selectedTextElement
+        {
+            get => m_SelectedTextElement;
+            set
+            {
+                if (m_SelectedTextElement == value)
+                    return;
+
+                m_SelectedTextElement?.selection.SelectNone();
+                m_SelectedTextElement = value;
+            }
+        }
+
         List<FocusedElement> m_FocusedElements = new List<FocusedElement>();
 
         /// <summary>
@@ -364,6 +379,9 @@ namespace UnityEngine.UIElements
 
         internal void BlurLastFocusedElement()
         {
+            // Unselect selected TextElement when panel loses focus
+            selectedTextElement = null;
+
             if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
             {
                 // Blur will change the lastFocusedElement to null

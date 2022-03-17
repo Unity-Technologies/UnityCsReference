@@ -154,10 +154,10 @@ namespace UnityEditor.Search
                     {
                         IndexTypes(obj.GetType(), documentIndex);
 
-                        if (!AssetDatabase.IsSubAsset(obj))
-                            continue;
-
-                        IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
+                        if (AssetDatabase.IsSubAsset(obj))
+                            IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
+                        else if (!string.IsNullOrEmpty(obj.name))
+                            IndexProperty(documentIndex, "name", obj.name, saveKeyword: true, exact: true);
                     }
 
                     if (isPrefab)

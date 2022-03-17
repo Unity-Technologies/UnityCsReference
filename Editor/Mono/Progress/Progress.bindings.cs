@@ -465,6 +465,9 @@ namespace UnityEditor
             s_Initialized = false;
             s_ProgressDirty = true;
             s_RemainingTimeDirty = true;
+            s_Progress = 0f;
+            s_RemainingTime = TimeSpan.Zero;
+            s_LastRemainingTimeUpdate = DateTime.Now;
         }
     }
 

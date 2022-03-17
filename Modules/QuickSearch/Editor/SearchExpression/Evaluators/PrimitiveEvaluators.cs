@@ -21,11 +21,11 @@ namespace UnityEditor.Search
                     yield return Constant(c.runtime.current).First();
             }
             else if (c.expression.types.HasAny(SearchExpressionType.Number))
-                yield return EvaluatorUtils.CreateItem(c.expression.GetNumberValue(), c.expression.alias.ToString());
+                yield return SearchExpression.CreateItem(c.expression.GetNumberValue(), c.expression.alias.ToString());
             else if (c.expression.types.HasAny(SearchExpressionType.Text | SearchExpressionType.Keyword))
-                yield return EvaluatorUtils.CreateItem(c.expression.innerText.ToString(), c.expression.alias.ToString());
+                yield return SearchExpression.CreateItem(c.expression.innerText.ToString(), c.expression.alias.ToString());
             else if (c.expression.types.HasAny(SearchExpressionType.Boolean))
-                yield return EvaluatorUtils.CreateItem(c.expression.GetBooleanValue(), c.expression.alias.ToString());
+                yield return SearchExpression.CreateItem(c.expression.GetBooleanValue(), c.expression.alias.ToString());
             else
                 c.ThrowError($"Invalid constant expression");
         }
@@ -44,7 +44,7 @@ namespace UnityEditor.Search
             if (c.args.Length == 0)
                 c.ThrowError("Text needs 1 argument");
 
-            return c.args.Select(e => EvaluatorUtils.CreateItem(e.outerText.ToString()));
+            return c.args.Select(e => SearchExpression.CreateItem(e.outerText.ToString()));
         }
 
         [SearchExpressionEvaluator(SearchExpressionType.Iterable | SearchExpressionType.Variadic)]

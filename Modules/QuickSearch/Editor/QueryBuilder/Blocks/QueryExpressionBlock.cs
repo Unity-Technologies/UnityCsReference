@@ -51,10 +51,9 @@ namespace UnityEditor.Search
         private SearchExpression m_Expression;
         private List<QueryBuilder> m_ArgumentBuilders;
 
-        public override bool canDisable => false;
-        public override bool canExclude => false;
-        public override bool wantsEvents => true;
-        //public QueryBuilder builder => m_Builder;
+        internal override bool canDisable => false;
+        internal override bool canExclude => false;
+        internal override bool wantsEvents => true;
 
         public QueryExpressionBlock(IQuerySource source, SearchExpression expression)
             : base(source)
@@ -68,16 +67,14 @@ namespace UnityEditor.Search
 
         public override string ToString() => m_Expression.outerText.ToString();
 
-        public override IBlockEditor OpenEditor(in Rect rect)
+        internal override IBlockEditor OpenEditor(in Rect rect)
         {
             return null;
-           // var screenRect = new Rect(rect.position + context.searchView.position.position, rect.size);
-           // return QueryExpressionBlockEditor.Open(screenRect, this);
         }
 
-        protected override Color GetBackgroundColor() => QueryColors.expression;
+        internal override Color GetBackgroundColor() => QueryColors.expression;
 
-        public override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override Rect Layout(in Vector2 at, in float availableSpace)
         {
             var labelStyle = Styles.QueryBuilder.label;
             var nameContent = labelStyle.CreateContent(name);
@@ -93,7 +90,7 @@ namespace UnityEditor.Search
             return GetRect(at, blockWidth, blockHeight);
         }
 
-        protected override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
         {
             var extendedBlockRect = blockRect;
             var labelStyle = Styles.QueryBuilder.label;
@@ -109,10 +106,6 @@ namespace UnityEditor.Search
                 var builderRect = ExpressionBlock.Draw(x, blockRect, b);
                 x = builderRect.xMax;
             }
-
-//             var addNewArgRect = new Rect(blockRect.xMax - 22f, blockRect.yMin, 20f, blockRect.height-2f);
-//             if (EditorGUI.DropdownButton(addNewArgRect, Styles.QueryBuilder.createContent, FocusType.Passive, Styles.dropdownItem))
-//                 Debug.LogWarning("TODO: Add argument");
 
             if (Event.current.type == EventType.Repaint)
                 DrawBorders(extendedBlockRect, mousePosition);

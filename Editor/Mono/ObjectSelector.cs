@@ -515,6 +515,8 @@ namespace UnityEditor
 
                 if (m_SearchSessionHandler.SelectObject(onSelectorClosed, onSelectionChanged))
                     return;
+                else
+                    m_SearchSessionHandler.EndSession();
             }
 
             // Freeze to prevent flicker on OSX.

@@ -76,7 +76,7 @@ namespace UnityEditor.Search
                     {
                         long score = 1;
                         var matches = new List<int>();
-                        var sq = Utils.CleanString(context.searchQuery.ToLowerInvariant());
+                        var sq = Utils.CleanString(context.searchQuery);
                         if (FuzzySearch.FuzzyMatch(sq, Utils.CleanString(truncatedDesc), ref score, matches))
                             truncatedDesc = RichTextFormatter.FormatSuggestionTitle(truncatedDesc, matches);
                     }

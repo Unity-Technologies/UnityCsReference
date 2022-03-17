@@ -12,30 +12,19 @@ namespace UnityEngine
     {
         public DblClickSnapping dblClickSnap = DblClickSnapping.WORDS;
         public int iAltCursorPos = -1;
-        public bool hasFocus;
         public event Action OnTextChanged;
-        public Vector2 graphicalCursorPos;
-        public Vector2 graphicalSelectCursorPos;
         public bool multiline = false;
         public bool hasHorizontalCursorPos = false;
-        public Vector2 scrollOffset = Vector2.zero; // The text field can have a scroll offset in order to display its contents
 
         private int m_CursorIndex = 0;
         private int m_SelectIndex = 0;
         private string m_Text;
-        private Rect m_Position;
         private bool m_bJustSelected = false;
         private bool m_MouseDragSelectsWholeWords = false;
         private int m_DblClickInitPos = 0;
-        private Rect localPosition => position;
         TextHandle m_TextHandle;
         private const int kMoveDownHeight = 5;
         private const char kNewLineChar = '\n';
-
-        // TODO: Remove once style is changed
-        public GUIContent m_Content;
-        // TODO: Interface for GUIStyle
-        public GUIStyle style;
 
         /// Does this text field has a selection
         public bool hasSelection { get { return cursorIndex != selectIndex; } }
@@ -113,23 +102,6 @@ namespace UnityEngine
             }
         }
 
-        public Rect position
-        {
-            get { return m_Position; }
-            set
-            {
-                if (m_Position == value)
-                    return;
-
-                // Reset the scrollOffset to force its recomputation.
-                scrollOffset = Vector2.zero;
-
-                m_Position = value;
-
-                UpdateScrollOffset();
-            }
-        }
-
         public TextSelectingUtilities(TextHandle textHandle)
         {
             m_TextHandle = textHandle;
@@ -148,68 +120,6 @@ namespace UnityEngine
             iAltCursorPos = -1;
         }
 
-        public void UpdateScrollOffset()
-        {
-            int cursorPos = cursorIndex;
-            graphicalCursorPos = style.GetCursorPixelPosition(new Rect(0, 0, position.width, position.height), m_Content, cursorPos);
-
-            // The rectangle inside which the text is displayed.
-            Rect viewRect = style.padding.Remove(position);
-
-            // Position of the cursor in the viewRect coordinate system.
-            var localGraphicalCursorPos = graphicalCursorPos;
-            localGraphicalCursorPos.x -= style.padding.left;
-            localGraphicalCursorPos.y -= style.padding.top;
-
-            // The size of the text, without any padding.
-            Vector2 contentSize = new Vector2(style.CalcSize(m_Content).x, style.CalcHeight(m_Content, position.width));
-            contentSize.x -= (style.padding.left + style.padding.right);
-            contentSize.y -= (style.padding.top + style.padding.bottom);
-
-            // If there is plenty of room, simply show entire string
-            if (contentSize.x < viewRect.width)
-            {
-                scrollOffset.x = 0;
-            }
-            else if (revealCursor)
-            {
-                //go right
-                if (localGraphicalCursorPos.x + 1 > scrollOffset.x + viewRect.width)
-                    // do we want html or apple behavior? this is html behavior
-                    scrollOffset.x = localGraphicalCursorPos.x - viewRect.width + 1;
-                //go left
-                if (localGraphicalCursorPos.x < scrollOffset.x)
-                    scrollOffset.x = localGraphicalCursorPos.x;
-            }
-            // ... and height/y as well
-            // If there is plenty of room, simply show entire string
-            if (contentSize.y < viewRect.height)
-            {
-                scrollOffset.y = 0;
-            }
-            else if (revealCursor)
-            {
-                //go down
-                if (localGraphicalCursorPos.y + style.lineHeight > scrollOffset.y + viewRect.height)
-                    scrollOffset.y = localGraphicalCursorPos.y - viewRect.height + style.lineHeight;
-                //go up
-                if (localGraphicalCursorPos.y < scrollOffset.y)
-                    scrollOffset.y = localGraphicalCursorPos.y;
-            }
-
-            // This case takes many words to explain:
-            // 1. Text field has more text than it can fit vertically, and the cursor is at the very bottom (text field is scrolled down)
-            // 2. user e.g. deletes some lines of text at the bottom (backspace or select+delete)
-            // 3. now suddenly we have space at the bottom of text field, that is now not filled with any content
-            // 4. scroll text field up to fill in that space (this is what other text editors do)
-            if (scrollOffset.y > 0 && contentSize.y - scrollOffset.y < viewRect.height)
-                scrollOffset.y = contentSize.y - viewRect.height;
-
-            scrollOffset.y = scrollOffset.y < 0 ? 0 : scrollOffset.y;
-
-            revealCursor = false;
-        }
-
         public void OnFocus(bool selectAll = true)
         {
             if (selectAll)
@@ -217,15 +127,6 @@ namespace UnityEngine
             else
                 cursorIndex = selectIndex = 0;
             revealCursor = true;
-            hasFocus = true;
-        }
-
-        public void OnLostFocus()
-        {
-            hasFocus = false;
-            revealCursor = false;
-            scrollOffset = Vector2.zero;
-            SelectNone();
         }
 
         /// Select all the text
@@ -652,26 +553,14 @@ namespace UnityEngine
             }
         }
 
-        public void MoveAltCursorToPosition(Vector2 cursorPosition)
-        {
-            int index = m_TextHandle.GetCursorIndexFromPosition(cursorPosition + scrollOffset);
-            iAltCursorPos = Mathf.Min(text.Length, index);
-        }
-
-        public bool IsOverSelection(Vector2 cursorPosition)
-        {
-            int p = m_TextHandle.GetCursorIndexFromPosition(cursorPosition + scrollOffset);
-            return ((p < Mathf.Max(cursorIndex, selectIndex)) && (p > Mathf.Min(cursorIndex, selectIndex)));
-        }
-
         // Do a drag selection. Used to expand the selection in MouseDrag events.
         public void SelectToPosition(Vector2 cursorPosition)
         {
             if (!m_MouseDragSelectsWholeWords)
-                cursorIndex = m_TextHandle.GetCursorIndexFromPosition(cursorPosition + scrollOffset);
+                cursorIndex = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
             else // snap to words/paragraphs
             {
-                int p = m_TextHandle.GetCursorIndexFromPosition(cursorPosition + scrollOffset);
+                int p = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
 
                 EnsureValidCodePointIndex(ref p);
                 EnsureValidCodePointIndex(ref m_DblClickInitPos);
@@ -927,16 +816,6 @@ namespace UnityEngine
             if (char.IsLetterOrDigit(text, index) || text[index] == '\'')
                 return CharacterType.LetterLike;
             return CharacterType.Symbol;
-        }
-
-        void GrabGraphicalCursorPos()
-        {
-            if (!hasHorizontalCursorPos)
-            {
-                graphicalCursorPos = m_TextHandle.GetCursorPositionFromStringIndexUsingLineHeight(cursorIndex);
-                graphicalSelectCursorPos = m_TextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selectIndex);
-                hasHorizontalCursorPos = false;
-            }
         }
     }
 }

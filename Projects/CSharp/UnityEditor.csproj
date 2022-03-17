@@ -6706,9 +6706,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SceneQueryEngine.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SceneQueryEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SearchQueryProvider.cs">
-      <Link>Modules\QuickSearch\Editor\Providers\SearchQueryProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SearchServiceProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SearchServiceProvider.cs</Link>
     </Compile>
@@ -6759,6 +6756,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryBuilder\QueryContent.cs">
       <Link>Modules\QuickSearch\Editor\QueryBuilder\QueryContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\QueryBuilder\QueryEnginePropositionsExtensions.cs">
+      <Link>Modules\QuickSearch\Editor\QueryBuilder\QueryEnginePropositionsExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\QueryBuilder\QueryHelperWidget.cs">
       <Link>Modules\QuickSearch\Editor\QueryBuilder\QueryHelperWidget.cs</Link>
@@ -6954,6 +6954,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFilterEnumTypes.cs">
+      <Link>Modules\QuickSearch\Editor\SearchFilterEnumTypes.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFlags.cs">
       <Link>Modules\QuickSearch\Editor\SearchFlags.cs</Link>

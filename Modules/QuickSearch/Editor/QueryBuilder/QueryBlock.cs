@@ -10,45 +10,45 @@ namespace UnityEditor.Search
 {
     abstract class QueryBlock : IBlockSource
     {
-        protected const float arrowOffset = 5f;
-        protected const float blockHeight = SearchField.minSinglelineTextHeight;
-        protected const float blockExtraPadding = 4f;
-        protected const float borderRadius = 8f;
+        protected internal const float arrowOffset = 5f;
+        protected internal const float blockHeight = UI.SearchField.minSinglelineTextHeight;
+        protected internal const float blockExtraPadding = 4f;
+        protected internal const float borderRadius = 8f;
 
-
-        protected Rect arrowRect { get; set; }
-        protected Rect valueRect { get; set; }
+        protected internal Rect arrowRect { get; set; }
+        protected internal Rect valueRect { get; set; }
 
         public IQuerySource source { get; private set; }
         public SearchContext context => source.context; // TODO: Can this be removed from here?
-        public IBlockEditor editor { get; protected set; }
+        internal IBlockEditor editor { get; set; }
 
         public string name { get; protected set; }
         public string value { get; set; }
         public string op { get; protected set; }
-        public bool explicitQuotes { get; protected set; }
-        public virtual bool formatNames => false;
-        public virtual bool visible => true;
-        public virtual bool wantsEvents => false;
-        public virtual bool canExclude => true;
-        public virtual bool canDisable => true;
-        public virtual bool canOpenEditorOnValueClicked => false;
-        public bool hideMenu { get; set; }
-        public bool disabled { get; set; }
-        public bool @readonly { get; set; }
-        public bool disableHovering { get; set; }
-        public bool excluded { get; set; }
-        public bool selected { get; set; }
-        public string tooltip { get; set; }
-        public string editorTitle { get; set; }
+        internal bool explicitQuotes { get; set; }
+        bool IBlockSource.formatNames => formatNames;
+        internal virtual bool formatNames => true;
+        internal virtual bool visible => true;
+        internal virtual bool wantsEvents => false;
+        internal virtual bool canExclude => true;
+        internal virtual bool canDisable => true;
+        internal virtual bool canOpenEditorOnValueClicked => false;
+        internal bool hideMenu { get; set; }
+        internal bool disabled { get; set; }
+        internal bool @readonly { get; set; }
+        internal bool disableHovering { get; set; }
+        internal bool excluded { get; set; }
+        internal bool selected { get; set; }
+        internal string tooltip { get; set; }
+        internal string editorTitle { get; set; }
 
-        public Rect drawRect { get; set; }
-        public Rect layoutRect { get; set; }
-        public float width => layoutRect.width;
-        public float height => layoutRect.height;
-        public Vector2 size => layoutRect.size;
+        internal Rect drawRect { get; set; }
+        internal Rect layoutRect { get; set; }
+        internal float width => layoutRect.width;
+        internal float height => layoutRect.height;
+        internal Vector2 size => layoutRect.size;
 
-        public virtual Rect openRect
+        internal virtual Rect openRect
         {
             get
             {
@@ -62,7 +62,11 @@ namespace UnityEditor.Search
             }
         }
 
-        public QueryBlock(IQuerySource source)
+        string IBlockSource.name => name;
+        string IBlockSource.editorTitle => editorTitle;
+        SearchContext IBlockSource.context => context;
+
+        internal QueryBlock(IQuerySource source)
         {
             this.source = source;
         }
@@ -119,7 +123,7 @@ namespace UnityEditor.Search
         }
 
 
-        protected virtual void AddContextualMenuItems(GenericMenu menu) {}
+        internal virtual void AddContextualMenuItems(GenericMenu menu) {}
 
         void OpenEditor(Event evt, in Rect rect)
         {
@@ -136,23 +140,23 @@ namespace UnityEditor.Search
             }
         }
 
-        public virtual IBlockEditor OpenEditor(in Rect rect)
+        internal virtual IBlockEditor OpenEditor(in Rect rect)
         {
             return QuerySelector.Open(rect, this);
         }
 
-        public void CloseEditor()
+        internal void CloseEditor()
         {
             editor = null;
             context?.searchView?.Repaint();
         }
 
-        protected Rect GetRect(in Vector2 at, in float width, in float height)
+        internal Rect GetRect(in Vector2 at, in float width, in float height)
         {
             return new Rect(at, new Vector2(width, height));
         }
 
-        protected virtual bool HandleEvents(Event evt, in Rect blockRect)
+        internal virtual bool HandleEvents(Event evt, in Rect blockRect)
         {
             return false;
         }
@@ -210,7 +214,7 @@ namespace UnityEditor.Search
             source.Apply();
         }
 
-        public Rect Draw(Event evt, in Rect builderRect)
+        internal Rect Draw(Event evt, in Rect builderRect)
         {
             drawRect = GUIUtility.AlignRectToDevice(new Rect(layoutRect.position + builderRect.position, layoutRect.size));
             if (evt.type == EventType.Repaint || (wantsEvents && !@readonly))
@@ -241,7 +245,7 @@ namespace UnityEditor.Search
             return drawRect;
         }
 
-        public virtual Rect Layout(in Vector2 at, in float availableSpace)
+        internal virtual Rect Layout(in Vector2 at, in float availableSpace)
         {
             var labelStyle = Styles.QueryBuilder.label;
             var nameContent = labelStyle.CreateContent(name, null, tooltip);
@@ -252,7 +256,7 @@ namespace UnityEditor.Search
             return GetRect(at, blockWidth, blockHeight);
         }
 
-        protected virtual void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal virtual void Draw(in Rect blockRect, in Vector2 mousePosition)
         {
             var labelStyle = Styles.QueryBuilder.label;
             var nameContent = labelStyle.CreateContent(name, null, tooltip);
@@ -267,7 +271,7 @@ namespace UnityEditor.Search
             DrawBorders(blockRect, mousePosition);
         }
 
-        protected void DrawValue(in Rect at, in Rect blockRect, in Vector2 mousePosition, in QueryContent valueContent)
+        internal void DrawValue(in Rect at, in Rect blockRect, in Vector2 mousePosition, in QueryContent valueContent)
         {
             var x = at.xMax + valueContent.style.margin.left;
             valueRect = new Rect(x, blockRect.y - 1f, blockRect.width - (x - blockRect.xMin) - valueContent.style.margin.right, blockRect.height);
@@ -277,7 +281,7 @@ namespace UnityEditor.Search
                 DrawArrow(blockRect, mousePosition, editor != null ? QueryContent.UpArrow : QueryContent.DownArrow);
         }
 
-        public void DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrowContent)
+        internal void DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrowContent)
         {
             var arrow = editor != null ? QueryContent.UpArrow : QueryContent.DownArrow;
             arrowRect = new Rect(blockRect.xMax - arrowContent.width - arrowOffset, blockRect.y - 1f, arrow.width, blockRect.height);
@@ -285,14 +289,14 @@ namespace UnityEditor.Search
             arrowContent.Draw(arrowRect, mousePosition);
         }
 
-        protected virtual Rect DrawSeparator(in Rect at)
+        internal virtual Rect DrawSeparator(in Rect at)
         {
             var sepRect = new Rect(at.xMax, at.yMin + 1f, 1f, Mathf.Ceil(at.height - 1f));
             GUI.DrawTexture(sepRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, Styles.QueryBuilder.splitterColor, 0f, 0f);
             return sepRect;
         }
 
-        protected Rect DrawName(in Rect blockRect, in Vector2 mousePosition, QueryContent nameContent)
+        internal Rect DrawName(in Rect blockRect, in Vector2 mousePosition, QueryContent nameContent)
         {
             var nameRect = blockRect;
             nameRect.y -= 1;
@@ -301,7 +305,7 @@ namespace UnityEditor.Search
             return nameContent.Draw(nameRect, mousePosition);
         }
 
-        protected void DrawBorders(in Rect blockRect, in Vector2 mousePosition)
+        internal void DrawBorders(in Rect blockRect, in Vector2 mousePosition)
         {
             if (selected)
             {
@@ -312,7 +316,7 @@ namespace UnityEditor.Search
             }
         }
 
-        protected void DrawBackground(in Rect blockRect, in Vector2 mousePosition)
+        internal void DrawBackground(in Rect blockRect, in Vector2 mousePosition)
         {
             var borderRadius4 = editor != null ? new Vector4(borderRadius, borderRadius, 0, 0) : new Vector4(borderRadius, borderRadius, borderRadius, borderRadius);
             var bgColor = GetBackgroundColor();
@@ -322,9 +326,9 @@ namespace UnityEditor.Search
             GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(blockRect));
         }
 
-        protected virtual Color GetBackgroundColor() => Color.red;
+        internal virtual Color GetBackgroundColor() => Color.red;
 
-        protected string EscapeLiteralString(in string sv)
+        internal string EscapeLiteralString(in string sv)
         {
             if (string.IsNullOrEmpty(sv))
                 return "\"\"";
@@ -333,13 +337,28 @@ namespace UnityEditor.Search
             return sv;
         }
 
-        public void SetOperator(in string op)
+        internal void SetOperator(in string op)
         {
             this.op = op;
             source.Apply();
         }
 
         public virtual void Apply(in SearchProposition searchProposition) => throw new NotSupportedException($"Cannot apply {searchProposition} for {this} control");
-        public virtual IEnumerable<SearchProposition> FetchPropositions() => throw new NotSupportedException($"Cannot fetch propositions for {this} control");
+        internal virtual IEnumerable<SearchProposition> FetchPropositions() => throw new NotSupportedException($"Cannot fetch propositions for {this} control");
+
+        void IBlockSource.Apply(in SearchProposition searchProposition)
+        {
+            Apply(searchProposition);
+        }
+
+        IEnumerable<SearchProposition> IBlockSource.FetchPropositions()
+        {
+            return FetchPropositions();
+        }
+
+        void IBlockSource.CloseEditor()
+        {
+            CloseEditor();
+        }
     }
 }

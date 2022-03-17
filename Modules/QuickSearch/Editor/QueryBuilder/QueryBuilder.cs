@@ -14,15 +14,15 @@ namespace UnityEditor.Search
     class QueryBuilder : IQuerySource
     {
         const float blockSpacing = 4f;
-        const float builderPadding = SearchField.textTopBottomPadding;
-        const float minHeight = SearchField.minSinglelineTextHeight;
+        const float builderPadding = UI.SearchField.textTopBottomPadding;
+        const float minHeight = UI.SearchField.minSinglelineTextHeight;
 
         private Rect m_LayoutRect;
         private float m_BuilderWidth;
         private float m_BuilderHeight;
         private QueryAddNewBlock m_AddBlock;
         private QueryTextFieldBlock m_TextBlock;
-        private SearchField m_SearchField;
+        private UI.SearchField m_SearchField;
         private bool m_ReadOnly;
 
         private readonly string m_SearchText;
@@ -90,7 +90,7 @@ namespace UnityEditor.Search
             drawBackground = true;
         }
 
-        public QueryBuilder(SearchContext searchContext, SearchField searchField = null)
+        public QueryBuilder(SearchContext searchContext, UI.SearchField searchField = null)
             : this()
         {
             m_Context = searchContext;
@@ -308,10 +308,10 @@ namespace UnityEditor.Search
                 var wordText = "";
                 for (int w = newBlocks.Count - 1; w >= 0; --w)
                 {
-                    var wordBlock = newBlocks[w] as QueryWordBlock;
-                    if (wordBlock == null)
+                    if (newBlocks[w].GetType() != typeof(QueryWordBlock))
                         break;
 
+                    var wordBlock = newBlocks[w] as QueryWordBlock;
                     if (!wordBlock.explicitQuotes && newBlocks.Remove(wordBlock))
                         wordText = (wordBlock.value + " " + wordText).Trim();
                 }
@@ -339,17 +339,17 @@ namespace UnityEditor.Search
             if (rootNode == null)
                 return null;
 
-            ParseNode(rootNode, newBlocks, exclude: false, @explicit: true);
+            ParseNode(rootNode, newBlocks, exclude: false);
 
             return newBlocks;
         }
 
-        private void ParseNode(in IQueryNode node, List<QueryBlock> blocks, bool exclude = false, bool @explicit = false)
+        private void ParseNode(in IQueryNode node, List<QueryBlock> blocks, bool exclude = false)
         {
             if (!node.leaf)
                 ParseNode(node.children[0], blocks, node.type == QueryNodeType.Not);
 
-            var newBlock = CreateBlock(node, @explicit);
+            var newBlock = CreateBlock(node);
             if (newBlock != null)
             {
                 if (exclude)
@@ -364,7 +364,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private QueryBlock CreateBlock(in IQueryNode node, bool @explicit = false)
+        private QueryBlock CreateBlock(in IQueryNode node)
         {
             if (node.type == QueryNodeType.Search && node is SearchNode sn)
                 return new QueryWordBlock(this, sn);
@@ -382,6 +382,9 @@ namespace UnityEditor.Search
                 node is NestedQueryNode nqn)
                 return new QueryWordBlock(this, nqn.rawNestedQueryStringView.ToString());
 
+            if (node.type == QueryNodeType.Toggle && node is ToggleNode tn)
+                return new QueryToggleBlock(this, tn.identifier);
+
             if (node.type == QueryNodeType.Aggregator &&
                 (node.parent == null || node.parent.type != QueryNodeType.FilterIn) &&
                 !node.leaf && node.children[0].type == QueryNodeType.NestedQuery &&
@@ -391,7 +394,7 @@ namespace UnityEditor.Search
             if (node.type == QueryNodeType.Or)
                 return new QueryAndOrBlock(this, $"or");
 
-            if (node.type == QueryNodeType.And && @explicit)
+            if (node.type == QueryNodeType.And && !string.IsNullOrEmpty(node.token.text))
                 return new QueryAndOrBlock(this, $"and");
 
             if (HasFlag(SearchFlags.Debug))
@@ -399,7 +402,8 @@ namespace UnityEditor.Search
             return null;
         }
 
-        public QueryBlock AddProposition(in SearchProposition searchProposition)
+        QueryBlock IQuerySource.AddProposition(in SearchProposition searchProposition) => AddProposition(searchProposition);
+        internal QueryBlock AddProposition(in SearchProposition searchProposition)
         {
             SetSelection(-1);
 
@@ -411,6 +415,8 @@ namespace UnityEditor.Search
             if (searchProposition.type != null && typeof(QueryListBlock).IsAssignableFrom(searchProposition.type))
             {
                 var newBlock = QueryListBlockAttribute.CreateBlock(searchProposition.type, this, searchProposition.data?.ToString());
+                if (newBlock == null)
+                    return AddBlock(searchProposition.replacement);
                 return AddBlock(newBlock);
             }
 
@@ -431,7 +437,8 @@ namespace UnityEditor.Search
             SetSearchText(queryString);
         }
 
-        public QueryBlock AddBlock(string text)
+        QueryBlock IQuerySource.AddBlock(string text) => AddBlock(text);
+        internal QueryBlock AddBlock(string text)
         {
             var newBlocks = Build(text);
             if (newBlocks == null || newBlocks.Count == 0)
@@ -442,14 +449,16 @@ namespace UnityEditor.Search
             return newBlocks.FirstOrDefault();
         }
 
-        public QueryBlock AddBlock(QueryBlock newBlock)
+        QueryBlock IQuerySource.AddBlock(QueryBlock newBlock) => AddBlock(newBlock);
+        internal QueryBlock AddBlock(QueryBlock newBlock)
         {
             blocks.Add(newBlock);
             Apply();
             return newBlock;
         }
 
-        public void RemoveBlock(in QueryBlock block)
+        void IQuerySource.RemoveBlock(in QueryBlock block) => RemoveBlock(block);
+        internal void RemoveBlock(in QueryBlock block)
         {
             var currentIndex = currentBlock == block ? GetBlockIndex(block) : -1;
             blocks.Remove(block);
@@ -460,7 +469,7 @@ namespace UnityEditor.Search
             Apply();
         }
 
-        public void BlockActivated(in QueryBlock block)
+        void IQuerySource.BlockActivated(in QueryBlock block)
         {
             if (block == m_TextBlock)
                 SetSelection(-1);

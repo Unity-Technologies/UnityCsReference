@@ -203,7 +203,7 @@ namespace UnityEditor.Search
 
             if (EditorGUI.DropdownButton(position, GUIContent.none, FocusType.Passive, s_IconButtonStyle))
             {
-                SearchQuery.ShowQueryIconPicker(SelectIcon);
+                SearchUtils.ShowIconPicker(SelectIcon);
                 GUIUtility.ExitGUI();
             }
 

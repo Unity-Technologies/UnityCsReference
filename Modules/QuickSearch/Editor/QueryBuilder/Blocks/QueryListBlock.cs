@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -17,7 +18,8 @@ namespace UnityEditor.Search
         public readonly string id;
         public readonly string category;
         protected string label;
-        protected Texture2D icon;
+        public Texture2D icon { get; protected set; }
+
         protected bool alwaysDrawLabel;
 
         public abstract IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags = SearchPropositionFlags.None);
@@ -32,7 +34,7 @@ namespace UnityEditor.Search
             this.category = attr.category;
         }
 
-        protected QueryListBlock(IQuerySource source, string id, string op, string value, string category = null)
+        internal QueryListBlock(IQuerySource source, string id, string op, string value, string category = null)
             : base(source)
         {
             this.id = id;
@@ -41,17 +43,17 @@ namespace UnityEditor.Search
             this.category = category;
         }
 
-        protected string GetCategory(SearchPropositionFlags flags)
+        internal string GetCategory(SearchPropositionFlags flags)
         {
             return flags.HasAny(SearchPropositionFlags.NoCategory) ? null : category;
         }
 
-        public override IBlockEditor OpenEditor(in Rect rect)
+        internal override IBlockEditor OpenEditor(in Rect rect)
         {
             return QuerySelector.Open(rect, this);
         }
 
-        public override IEnumerable<SearchProposition> FetchPropositions()
+        internal override IEnumerable<SearchProposition> FetchPropositions()
         {
             return GetPropositions(SearchPropositionFlags.NoCategory);
         }
@@ -62,24 +64,24 @@ namespace UnityEditor.Search
             source.Apply();
         }
 
-        protected override Color GetBackgroundColor()
+        internal override Color GetBackgroundColor()
         {
             return icon == null ? QueryColors.type : QueryColors.typeIcon;
         }
 
-        protected SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help = "", int score = 0)
+        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help = "", int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
-        protected SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help, Texture2D icon, int score = 0)
+        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help, Texture2D icon, int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
-        public override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override Rect Layout(in Vector2 at, in float availableSpace)
         {
             if (!icon || alwaysDrawLabel)
                 return base.Layout(at, availableSpace);
@@ -90,7 +92,7 @@ namespace UnityEditor.Search
             return GetRect(at, blockWidth, blockHeight);
         }
 
-        protected override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
         {
             if (!icon || alwaysDrawLabel)
             {
@@ -126,13 +128,13 @@ namespace UnityEditor.Search
             return $"{id}{op}{value}";
         }
 
-        protected override void AddContextualMenuItems(GenericMenu menu)
+        internal override void AddContextualMenuItems(GenericMenu menu)
         {
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Equal (=)"), string.Equals(op, "=", StringComparison.Ordinal), () => SetOperator("="));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Contains (:)"), string.Equals(op, ":", StringComparison.Ordinal), () => SetOperator(":"));
         }
 
-        public virtual bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
+        internal virtual bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
         {
             replacement = string.Empty;
             return false;
@@ -142,33 +144,100 @@ namespace UnityEditor.Search
     class QueryListMarkerBlock : QueryListBlock
     {
         private QueryMarker m_Marker;
+        Color? m_BackgroundColor;
+        string m_IconName;
+        string[] m_Choices;
 
         public QueryListMarkerBlock(IQuerySource source, string id, string name, string op, QueryMarker value)
             : base(source, id, op, value.value as string)
         {
             m_Marker = value;
             this.name = name ?? id;
+            ExtractArguments(m_Marker);
         }
 
         public QueryListMarkerBlock(IQuerySource source, string id, QueryMarker value, QueryListBlockAttribute attr)
             : base(source, id, value.value as string, attr)
         {
             m_Marker = value;
+            ExtractArguments(m_Marker);
+        }
+
+        internal override Color GetBackgroundColor()
+        {
+            return m_BackgroundColor ?? base.GetBackgroundColor();
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags = SearchPropositionFlags.None)
         {
-            var args = m_Marker.EvaluateArgs().ToArray();
-            if (args.Length < 2)
+            var args = m_Marker.args;
+            if (m_Choices == null || m_Choices.Length == 0)
                 yield break;
-            else
+
+            foreach (var choice in m_Choices)
             {
-                foreach (var choice in args.Skip(1))
+                yield return new SearchProposition(category: null, label: ObjectNames.NicifyVariableName(choice), replacement: choice, icon: icon, color: m_BackgroundColor ?? default);
+            }
+        }
+
+        public override string ToString()
+        {
+            var markerReplacement = SearchUtils.GetListMarkerReplacementText(value, m_Choices, m_IconName, m_BackgroundColor);
+            return $"{id}{op}{markerReplacement}";
+        }
+
+        void ExtractArguments(QueryMarker marker)
+        {
+            var args = m_Marker.EvaluateArgsNoSpread().ToList();
+            if (args.Count < 2)
+            {
+                m_Choices = new string[]{};
+                return;
+            }
+
+            m_Choices = ExtractChoices(args[1]).ToArray();
+
+            foreach (var arg in args.Skip(2))
+            {
+                if (!(arg is IEnumerable<object> enumerable))
+                    continue;
+
+                var array = enumerable.ToArray();
+                if (array.Length == 0)
+                    continue;
+
+                var argStr = (string)array[0];
+                if (argStr.StartsWith("#"))
                 {
-                    var choiceStr = (string)choice;
-                    yield return new SearchProposition(category: null, label: ObjectNames.NicifyVariableName(choiceStr), replacement: choiceStr);
+                    m_BackgroundColor = ExtractBackgroundColor(argStr);
+                }
+                else
+                {
+                    icon = ExtractIcon(argStr);
+                    if (icon)
+                        m_IconName = argStr;
                 }
             }
+        }
+
+        static Color? ExtractBackgroundColor(string colorArg)
+        {
+            if (!ColorUtility.TryParseHtmlString(colorArg, out var color))
+                return null;
+            return color;
+        }
+
+        static Texture2D ExtractIcon(string iconArg)
+        {
+            return Utils.LoadIcon(iconArg);
+        }
+
+        static IEnumerable<string> ExtractChoices(object choiceArg)
+        {
+            if (choiceArg == null || !(choiceArg is IEnumerable<object> enumerable))
+                return Enumerable.Empty<string>();
+
+            return enumerable.Cast<string>();
         }
     }
 
@@ -266,7 +335,6 @@ namespace UnityEditor.Search
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
         {
-
             foreach (var t in InternalEditorUtility.tags)
             {
                 yield return CreateProposition(flags, ObjectNames.NicifyVariableName(t), t);
@@ -312,7 +380,7 @@ namespace UnityEditor.Search
             return base.ToString();
         }
 
-        public override bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
+        internal override bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
         {
             replacement = $"{id}{op}{GetDefaultMarker()}";
             return true;
@@ -342,7 +410,7 @@ namespace UnityEditor.Search
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
         {
             yield return CreateProposition(flags, "Any", "any", "Search prefabs");
-            yield return CreateProposition(flags, "Base", "Base", "Search base prefabs");
+            yield return CreateProposition(flags, "Base", "base", "Search base prefabs");
             yield return CreateProposition(flags, "Root", "root", "Search prefab roots");
             yield return CreateProposition(flags, "Top", "top", "Search top-level prefab root instances");
             yield return CreateProposition(flags, "Instance", "instance", "Search objects that are part of a prefab instance");

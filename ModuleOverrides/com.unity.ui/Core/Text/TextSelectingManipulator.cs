@@ -63,12 +63,18 @@ namespace UnityEngine.UIElements
         {
             m_TextElement.IncrementVersion(VersionChangeType.Repaint);
             m_TextElement.edition.UpdateScrollOffset?.Invoke();
+
+            if(HasSelection() && m_TextElement.focusController != null)
+                m_TextElement.focusController.selectedTextElement = m_TextElement;
         }
 
         void OnCursorIndexChange()
         {
             m_TextElement.IncrementVersion(VersionChangeType.Repaint);
             m_TextElement.edition.UpdateScrollOffset?.Invoke();
+
+            if(HasSelection() && m_TextElement.focusController != null)
+                m_TextElement.focusController.selectedTextElement = m_TextElement;
         }
 
         internal bool RevealCursor()
@@ -124,7 +130,6 @@ namespace UnityEngine.UIElements
 
         void OnBlurEvent(BlurEvent evt)
         {
-            m_SelectingUtilities.OnLostFocus();
             selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
         }
 

@@ -613,11 +613,13 @@ namespace UnityEngine.UIElements
                 delegatesFocus = true;
 
                 textElement = new TextElement();
-                textElement.focusable = true;
-                textElement.enableRichText = false;
+                textElement.isSelectable = true;
                 textEdition.isReadOnly = false;
+                textElement.enableRichText = false;
                 textSelection.selectAllOnFocus = true;
                 textSelection.selectAllOnMouseUp = true;
+                textElement.tabIndex = 0;
+
                 textEdition.AcceptCharacter += AcceptCharacter;
                 textEdition.UpdateScrollOffset += UpdateScrollOffset;
                 textEdition.UpdateValueFromText += UpdateValueFromText;
@@ -641,6 +643,14 @@ namespace UnityEngine.UIElements
 
                 RegisterCallback<CustomStyleResolvedEvent>(OnInputCustomStyleResolved);
                 scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
+
+                // The ScrollView's slider can send ChangeEvent<float>. This makes sure these do not leak.
+                RegisterCallback<ChangeEvent<float>>((evt =>
+                {
+                    if(evt.target.GetType() != typeof(TextElement))
+                        evt.StopPropagation();
+
+                }), TrickleDown.TrickleDown);
 
                 tabIndex = -1;
             }

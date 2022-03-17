@@ -97,10 +97,9 @@ namespace UnityEngine.UIElements
 
         internal TextSelectingManipulator m_SelectingManipulator;
 
-        bool m_IsSelectable = false;
-
+        bool m_IsSelectable;
         /// <summary>
-        /// Controls whether the element's content is selectable.
+        /// Controls whether the element's content is selectable.  Note that selectable TextElement are required to be focusable.
         /// </summary>
         public bool isSelectable
         {
@@ -110,6 +109,7 @@ namespace UnityEngine.UIElements
                 if (value == m_IsSelectable)
                     return;
 
+                focusable = value;
                 m_SelectingManipulator = value ? new TextSelectingManipulator(this) : null;
                 m_IsSelectable = value;
             }
@@ -160,7 +160,6 @@ namespace UnityEngine.UIElements
             return isSelectable && m_SelectingManipulator.HasSelection();
         }
 
-
         bool ITextSelection.doubleClickSelectsWord { get; set; } = true;
 
         bool ITextSelection.tripleClickSelectsLine { get; set; } = true;
@@ -192,7 +191,7 @@ namespace UnityEngine.UIElements
 
         float ITextSelection.cursorWidth { get; set; } = 1.0f;
 
-        private void DrawHighlighting(MeshGenerationContext mgc)
+        void DrawHighlighting(MeshGenerationContext mgc)
         {
             var playmodeTintColor = panel.contextType == ContextType.Editor
                 ? UIElementsUtility.editorPlayModeTintColor
