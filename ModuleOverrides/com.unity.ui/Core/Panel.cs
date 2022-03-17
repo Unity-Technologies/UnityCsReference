@@ -268,6 +268,8 @@ namespace UnityEngine.UIElements
                 }
                 if (ownerObject != null)
                     UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+
+                PointerDeviceState.RemovePanelData(this);
             }
             else
                 DisposeHelper.NotifyMissingDispose(this);
@@ -1217,6 +1219,18 @@ namespace UnityEngine.UIElements
             {
                 ObjectListPool<IRuntimePanelComponent>.Release(components);
             }
+        }
+
+        internal void PointerLeavesPanel(int pointerId, Vector2 position)
+        {
+            ClearCachedElementUnderPointer(pointerId, null);
+            CommitElementUnderPointers();
+            PointerDeviceState.SavePointerPosition(pointerId, position, null, contextType);
+        }
+
+        internal void PointerEntersPanel(int pointerId, Vector2 position)
+        {
+            PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
         }
     }
 

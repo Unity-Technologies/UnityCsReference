@@ -86,18 +86,13 @@ namespace UnityEditor
                 m_DynamicHintContent.Extended = s_EnableExtendedDynamicHints && (m_HoldingShift || (m_DynamicHintIsBeingDisplayed && DynamicHintAutoExtendTimeReached));
                 m_DynamicHintContent.Update();
                 Size = m_DynamicHintContent.GetContentSize();
+                /* Repainting is an expensive operation (causes CPU/GPU spikes), but
+                 * Dynamic Hints need to be repainted in order to be expanded
+                 * and to play media properly.
+                 */
+                Repaint();
             }
-
-            Repaint();
-
-            if (s_CloseState == CloseState.CloseRequested && !m_HoldingShift)
-            {
-                if (m_DynamicHintContent != null && m_DynamicHintContent.GetRect().Contains(evt.mousePosition))
-                {
-                    return;
-                }
-                s_CloseState = CloseState.CloseApproved;
-            }
+            ValidateCloseRequest(evt, false);
         }
 
         void Setup(string tooltip, Rect rect, GUIView hostView)
@@ -143,7 +138,7 @@ namespace UnityEditor
                 m_VisualRoot.Query<Button>().ForEach((button) =>
                 {
                     button.clickable.activators.Add(new ManipulatorActivationFilter
-                        { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
+                    { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
                 });
             }
             else
@@ -248,8 +243,33 @@ namespace UnityEditor
             s_guiView.window.SetAlpha(percent);
         }
 
+        void ValidateCloseRequest(Event currentEvent, bool keepDynamicHintRegardlessOfMousePosition)
+        {
+            if (s_CloseState != CloseState.CloseRequested)
+            {
+                return;
+            }
+
+            if (m_DynamicHintContent != null)
+            {
+                if (keepDynamicHintRegardlessOfMousePosition || m_HoldingShift)
+                {
+                    return;
+                }
+
+                if (currentEvent != null
+                && m_DynamicHintContent.GetRect().Contains(currentEvent.mousePosition))
+                {
+                    return;
+                }
+            }
+
+            s_CloseState = CloseState.CloseApproved;
+        }
+
         void Update()
         {
+            ValidateCloseRequest(Event.current, true);
             if (s_CloseState != CloseState.CloseApproved) { return; }
             ForceClose();
             m_DynamicHintIsBeingDisplayed = false;

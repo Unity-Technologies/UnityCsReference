@@ -36,6 +36,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Vector2 lastMousePosition { get; private set; }
 
+        private int m_ActivePointerId = -1; // The pointer that set the active state to true, if any
+
         private bool m_AcceptClicksIfDisabled;
 
         internal bool acceptClicksIfDisabled
@@ -94,7 +96,7 @@ namespace UnityEngine.UIElements
         {
             if ((clicked != null || clickedWithEventInfo != null) && IsRepeatable())
             {
-                if (target.ContainsPoint(lastMousePosition))
+                if (ContainsPointer(m_ActivePointerId))
                 {
                     Invoke(null);
                     target.pseudoStates |= PseudoStates.Active;
@@ -266,6 +268,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool ContainsPointer(int pointerId)
+        {
+            var elementUnderPointer = target.elementPanel.GetTopElementUnderPointer(pointerId);
+            return target == elementUnderPointer || target.Contains(elementUnderPointer);
+        }
+
         static bool IsNotMouseEvent(int pointerId)
         {
             return pointerId != PointerId.mousePointerId;
@@ -293,6 +301,7 @@ namespace UnityEngine.UIElements
         protected virtual void ProcessDownEvent(EventBase evt, Vector2 localPosition, int pointerId)
         {
             active = true;
+            m_ActivePointerId = pointerId;
             target.CapturePointer(pointerId);
             if (!(evt is IPointerEvent))
                 target.panel.ProcessPointerCapture(pointerId);
@@ -301,7 +310,7 @@ namespace UnityEngine.UIElements
             if (IsRepeatable())
             {
                 // Repeatable button clicks are performed on the MouseDown and at timer events
-                if (target.ContainsPoint(localPosition))
+                if (ContainsPointer(pointerId))
                 {
                     Invoke(evt);
                 }
@@ -328,7 +337,7 @@ namespace UnityEngine.UIElements
         {
             lastMousePosition = localPosition;
 
-            if (target.ContainsPoint(localPosition))
+            if (ContainsPointer(m_ActivePointerId))
             {
                 target.pseudoStates |= PseudoStates.Active;
             }
@@ -346,6 +355,7 @@ namespace UnityEngine.UIElements
         protected virtual void ProcessUpEvent(EventBase evt, Vector2 localPosition, int pointerId)
         {
             active = false;
+            m_ActivePointerId = -1;
             target.ReleasePointer(pointerId);
             if (!(evt is IPointerEvent))
                 target.panel.ProcessPointerCapture(pointerId);
@@ -360,7 +370,7 @@ namespace UnityEngine.UIElements
             else
             {
                 // Non repeatable button clicks are performed on the MouseUp
-                if (target.ContainsPoint(localPosition))
+                if (ContainsPointer(pointerId))
                 {
                     Invoke(evt);
                 }
@@ -375,6 +385,7 @@ namespace UnityEngine.UIElements
         protected virtual void ProcessCancelEvent(EventBase evt, int pointerId)
         {
             active = false;
+            m_ActivePointerId = -1;
             target.ReleasePointer(pointerId);
             if (!(evt is IPointerEvent))
                 target.panel.ProcessPointerCapture(pointerId);

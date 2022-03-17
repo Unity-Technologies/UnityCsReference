@@ -42,6 +42,11 @@ namespace UnityEngine.UIElements
         private static PointerLocation[] s_PlayerPointerLocations = new PointerLocation[PointerId.maxPointers];
         private static int[] s_PressedButtons = new int[PointerId.maxPointers];
 
+        // When a pointer button is pressed on top of a runtime panel, that panel is flagged as having "soft capture" of that pointer,
+        // that is, unless an element has an actual pointer capture, pointer move events should stay inside this panel until
+        // all pointer buttons are released again. This is used by runtime panels to mimic GUIView.cpp window capture behavior.
+        private static readonly IPanel[] s_PlayerPanelWithSoftPointerCapture = new IPanel[PointerId.maxPointers];
+
         // For test usage
         internal static void Reset()
         {
@@ -50,6 +55,20 @@ namespace UnityEngine.UIElements
                 s_EditorPointerLocations[i].SetLocation(Vector2.zero, null);
                 s_PlayerPointerLocations[i].SetLocation(Vector2.zero, null);
                 s_PressedButtons[i] = 0;
+                s_PlayerPanelWithSoftPointerCapture[i] = null;
+            }
+        }
+
+        internal static void RemovePanelData(IPanel panel)
+        {
+            for (var i = 0; i < PointerId.maxPointers; i++)
+            {
+                if (s_EditorPointerLocations[i].Panel == panel)
+                    s_EditorPointerLocations[i].SetLocation(Vector2.zero, null);
+                if (s_PlayerPointerLocations[i].Panel == panel)
+                   s_PlayerPointerLocations[i].SetLocation(Vector2.zero, null);
+                if (s_PlayerPanelWithSoftPointerCapture[i] == panel)
+                   s_PlayerPanelWithSoftPointerCapture[i] = null;
             }
         }
 
@@ -139,6 +158,16 @@ namespace UnityEngine.UIElements
         internal static bool HasAdditionalPressedButtons(int pointerId, int exceptButtonId)
         {
             return (s_PressedButtons[pointerId] & ~(1 << exceptButtonId)) != 0;
+        }
+
+        internal static void SetPlayerPanelWithSoftPointerCapture(int pointerId, IPanel panel)
+        {
+            s_PlayerPanelWithSoftPointerCapture[pointerId] = panel;
+        }
+
+        internal static IPanel GetPlayerPanelWithSoftPointerCapture(int pointerId)
+        {
+            return s_PlayerPanelWithSoftPointerCapture[pointerId];
         }
     }
 }

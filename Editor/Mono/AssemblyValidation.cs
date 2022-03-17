@@ -385,7 +385,7 @@ namespace UnityEditor
             bool isReferencingUnityAssemblies = false;
             foreach (var reference in assemblyReferences)
             {
-                if (!isReferencingUnityAssemblies && (Utility.FastStartsWith(reference.Name, "UnityEngine.", "unityengine.") || Utility.FastStartsWith(reference.Name, "UnityEditor.", "unityeditor.")))
+                if (!isReferencingUnityAssemblies && (Utility.FastStartsWith(reference.Name, "UnityEngine", "unityengine") || Utility.FastStartsWith(reference.Name, "UnityEditor", "unityeditor")))
                 {
                     isReferencingUnityAssemblies = true;
                 }

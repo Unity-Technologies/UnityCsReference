@@ -13,10 +13,15 @@ namespace UnityEngine.UIElements
     {
     }
 
+    internal interface IPointerCaptureEventInternal
+    {
+        int pointerId { get; }
+    }
+
     /// <summary>
     /// Base class for pointer capture events and mouse capture events.
     /// </summary>
-    public abstract class PointerCaptureEventBase<T> : EventBase<T>, IPointerCaptureEvent where T : PointerCaptureEventBase<T>, new()
+    public abstract class PointerCaptureEventBase<T> : EventBase<T>, IPointerCaptureEvent, IPointerCaptureEventInternal where T : PointerCaptureEventBase<T>, new()
     {
         /// <summary>
         /// For PointerCaptureEvent and MouseCaptureEvent, returns the VisualElement that loses the pointer capture, if any. For PointerCaptureOutEvent and MouseCaptureOutEvent, returns the VisualElement that captures the pointer.

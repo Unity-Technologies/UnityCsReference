@@ -994,9 +994,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            panel.ActivateCompatibilityMouseEvents(pointerId);
-
             base.PostDispatch(panel);
+
+            panel.ActivateCompatibilityMouseEvents(pointerId);
         }
     }
 
@@ -1055,6 +1055,8 @@ namespace UnityEngine.UIElements
             }
 
             base.PostDispatch(panel);
+
+            panel.ActivateCompatibilityMouseEvents(pointerId);
         }
     }
 
