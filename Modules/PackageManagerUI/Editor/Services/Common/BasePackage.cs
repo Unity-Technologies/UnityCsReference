@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI
 
                 if (errors.Any())
                 {
-                    if (errors.All(error => error.attribute == UIError.Attribute.IsWarning))
+                    if (errors.All(error => error.HasAttribute(UIError.Attribute.IsWarning)))
                         return PackageState.Warning;
                     else if (errors.Any(error => !error.HasAttribute(UIError.Attribute.IsClearable)))
                         return PackageState.Error;

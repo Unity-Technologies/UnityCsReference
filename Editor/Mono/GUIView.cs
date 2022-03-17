@@ -178,6 +178,8 @@ namespace UnityEditor
         // In that case, commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
         protected virtual void OnGUI() {}
 
+        protected virtual void OnBackingScaleFactorChanged() { }
+
         protected override void SetPosition(Rect newPos)
         {
             Rect oldWinPos = windowPosition;

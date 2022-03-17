@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,6 +18,7 @@ namespace UnityEditor.PackageManager.UI
         private const int k_RotationSpeed = 360; // Euler degrees per second
         private int m_Rotation;
         private double m_LastRotationTime;
+        private static readonly List<LoadingSpinner> s_CurrentSpinners = new List<LoadingSpinner>();
 
         public LoadingSpinner()
         {
@@ -26,21 +29,22 @@ namespace UnityEditor.PackageManager.UI
             var innerElement = new VisualElement();
             innerElement.AddToClassList("image");
             Add(innerElement);
-
-            RegisterCallback<DetachFromPanelEvent>(OnDetachPanel);
         }
 
-        private void UpdateProgress()
+        private static void UpdateProgress()
         {
-            var currentTime = EditorApplication.timeSinceStartup;
-            var deltaTime = currentTime - m_LastRotationTime;
+            foreach (var spinner in s_CurrentSpinners)
+            {
+                var currentTime = EditorApplication.timeSinceStartup;
+                var deltaTime = currentTime - spinner.m_LastRotationTime;
 
-            transform.rotation = Quaternion.Euler(0, 0, m_Rotation);
-            m_Rotation += (int)(k_RotationSpeed * deltaTime);
-            m_Rotation = m_Rotation % 360;
-            if (m_Rotation < 0) m_Rotation += 360;
+                spinner.transform.rotation = Quaternion.Euler(0, 0, spinner.m_Rotation);
+                spinner.m_Rotation += (int)(k_RotationSpeed * deltaTime);
+                spinner.m_Rotation %= 360;
+                if (spinner.m_Rotation < 0) spinner.m_Rotation += 360;
 
-            m_LastRotationTime = currentTime;
+                spinner.m_LastRotationTime = currentTime;
+            }
         }
 
         public void Start()
@@ -51,10 +55,12 @@ namespace UnityEditor.PackageManager.UI
             m_Rotation = 0;
             m_LastRotationTime = EditorApplication.timeSinceStartup;
 
-            EditorApplication.update += UpdateProgress;
-
             started = true;
             UIUtils.SetElementDisplay(this, true);
+
+            if (!s_CurrentSpinners.Any())
+                EditorApplication.update += UpdateProgress;
+            s_CurrentSpinners.Add(this);
         }
 
         public void Stop()
@@ -62,19 +68,21 @@ namespace UnityEditor.PackageManager.UI
             if (!started)
                 return;
 
-            EditorApplication.update -= UpdateProgress;
-
             started = false;
             UIUtils.SetElementDisplay(this, false);
+
+            s_CurrentSpinners.Remove(this);
+            if (!s_CurrentSpinners.Any())
+                EditorApplication.update -= UpdateProgress;
         }
 
-        private void OnDetachPanel(DetachFromPanelEvent evt)
+        public static void ClearAllSpinners()
         {
-            if (!started)
+            if (!s_CurrentSpinners.Any())
                 return;
 
+            s_CurrentSpinners.Clear();
             EditorApplication.update -= UpdateProgress;
-            started = false;
         }
     }
 }

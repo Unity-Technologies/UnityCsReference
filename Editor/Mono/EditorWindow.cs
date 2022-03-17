@@ -1250,6 +1250,13 @@ namespace UnityEditor
             root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             return root;
         }
+
+        internal void OnBackingScaleFactorChangedInternal()
+        {
+            OnBackingScaleFactorChanged();
+        }
+
+        protected virtual void OnBackingScaleFactorChanged() { }
     }
 
     [AttributeUsage(AttributeTargets.Class)]

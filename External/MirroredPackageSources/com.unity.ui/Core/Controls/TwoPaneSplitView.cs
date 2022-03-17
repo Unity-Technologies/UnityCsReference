@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        TwoPaneSplitViewResizer m_Resizer;
+        internal TwoPaneSplitViewResizer m_Resizer;
 
         public TwoPaneSplitView()
         {
@@ -354,41 +354,59 @@ namespace UnityEngine.UIElements
             if (m_CollapseMode)
                 return;
 
-            var maxLength = this.resolvedStyle.width;
-            var dragLinePos = m_DragLineAnchor.resolvedStyle.left;
-            var activeElementPos = m_FixedPane.resolvedStyle.left;
+            var maxLength = resolvedStyle.width;
+            var fixedPaneLength = m_FixedPane.resolvedStyle.width;
+            var fixedPaneMinLength = m_FixedPane.resolvedStyle.minWidth.value;
+            var flexedPaneMinLength = m_FlexedPane.resolvedStyle.minWidth.value;
+
             if (m_Orientation == TwoPaneSplitViewOrientation.Vertical)
             {
-                maxLength = this.resolvedStyle.height;
-                dragLinePos = m_DragLineAnchor.resolvedStyle.top;
-                activeElementPos = m_FixedPane.resolvedStyle.top;
+                maxLength = resolvedStyle.height;
+                fixedPaneLength = m_FixedPane.resolvedStyle.height;
+                fixedPaneMinLength = m_FixedPane.resolvedStyle.minHeight.value;
+                flexedPaneMinLength = m_FlexedPane.resolvedStyle.minHeight.value;
             }
-
-            if (m_FixedPaneIndex == 0 && dragLinePos > maxLength)
+            // Big enough to account for current fixed pane size and flexed pane minimum size, so we let the layout
+            // dictates where the dragger should be.
+            if (maxLength >= fixedPaneLength + flexedPaneMinLength)
             {
-                var delta = maxLength - dragLinePos;
-                m_Resizer.ApplyDelta(delta);
+                SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneLength : maxLength - fixedPaneLength);
             }
-            else if (m_FixedPaneIndex == 1)
+            // Big enough to account for fixed and flexed pane minimum sizes, so we resize the fixed pane and adjust
+            // where the dragger should be.
+            else if (maxLength >= fixedPaneMinLength + flexedPaneMinLength)
             {
-                if (activeElementPos < 0)
-                {
-                    var delta = -dragLinePos;
-                    m_Resizer.ApplyDelta(delta);
-                }
-                else
-                {
-                    if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
-                        m_DragLineAnchor.style.left = activeElementPos;
-                    else
-                        m_DragLineAnchor.style.top = activeElementPos;
-                }
+                var newDimension = maxLength - flexedPaneMinLength;
+                SetFixedPaneDimension(newDimension);
+                SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension : flexedPaneMinLength);
+            }
+            // Not big enough for fixed and flexed pane minimum sizes
+            else
+            {
+                SetFixedPaneDimension(fixedPaneMinLength);
+                SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneMinLength : flexedPaneMinLength);
             }
         }
 
         public override VisualElement contentContainer
         {
             get { return m_Content; }
+        }
+
+        void SetDragLineOffset(float offset)
+        {
+            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                m_DragLineAnchor.style.left = offset;
+            else
+                m_DragLineAnchor.style.top = offset;
+        }
+
+        void SetFixedPaneDimension(float dimension)
+        {
+            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                m_FixedPane.style.width = dimension;
+            else
+                m_FixedPane.style.height = dimension;
         }
     }
 
