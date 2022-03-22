@@ -60,6 +60,8 @@ namespace UnityEngine.UIElements
             m_Toggle = new Toggle { name = BaseTreeView.itemToggleUssClassName };
             m_Toggle.userData = this;
             m_Toggle.AddToClassList(Foldout.toggleUssClassName);
+            m_Toggle.visualInput.AddToClassList(Foldout.inputUssClassName);
+            m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(Foldout.checkmarkUssClassName);
             m_Container.hierarchy.Add(m_Toggle);
 
             m_BindableContainer = new VisualElement()

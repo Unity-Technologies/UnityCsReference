@@ -10990,6 +10990,7 @@ namespace UnityEditor
         {
             if (s_TabOnlyOne == null)
             {
+                // Keep in sync with Tests/EditModeAndPlayModeTests/PlayerSettings/Assets/Editor/PlayerSettingsApplicationIdentifierTests.cs.
                 s_TabOnlyOne = "Tab onlyOne";
                 s_TabFirst = "Tab first";
                 s_TabMiddle = "Tab middle";
