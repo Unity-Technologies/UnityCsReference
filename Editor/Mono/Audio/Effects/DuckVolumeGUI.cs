@@ -4,12 +4,14 @@
 
 //#define DEBUG_PLOT_GAIN
 
+using System;
 using System.Globalization;
+using UnityEditor.Audio;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class DuckVolumeGUI : IAudioEffectPluginGUI
+    class DuckVolumeGUI : IAudioEffectPluginGUI
     {
         public static string kThresholdName = "Threshold";
         public static string kRatioName = "Ratio";
@@ -68,7 +70,7 @@ namespace UnityEditor
             MakeupGain,
         };
 
-        private static DragType dragtype = DragType.None;
+        static DragType dragtype = DragType.None;
 
         protected static Color ScaleAlpha(Color col, float blend)
         {
@@ -104,6 +106,7 @@ namespace UnityEditor
             }
             else if (t > 0.0f)
                 gain = duckThreshold + duckGradient * t;
+
             return (2.0f * (gain + duckMakeupGain - dbMin) / dbRange) - 1.0f;
         }
 
@@ -117,10 +120,14 @@ namespace UnityEditor
             const float thresholdActiveWidth = 10f;
             float vuWidth = 10f;
 
-            float minThreshold, maxThreshold, defThreshold; plugin.GetFloatParameterInfo(kThresholdName, out minThreshold, out maxThreshold, out defThreshold);
-            float minRatio, maxRatio, defRatio; plugin.GetFloatParameterInfo(kRatioName, out minRatio, out maxRatio, out defRatio);
-            float minMakeupGain, maxMakeupGain, defMakeupGain; plugin.GetFloatParameterInfo(kMakeupGainName, out minMakeupGain, out maxMakeupGain, out defMakeupGain);
-            float minKnee, maxKnee, defKnee; plugin.GetFloatParameterInfo(kKneeName, out minKnee, out maxKnee, out defKnee);
+            float minThreshold, maxThreshold, defThreshold;
+            plugin.GetFloatParameterInfo(kThresholdName, out minThreshold, out maxThreshold, out defThreshold);
+            float minRatio, maxRatio, defRatio;
+            plugin.GetFloatParameterInfo(kRatioName, out minRatio, out maxRatio, out defRatio);
+            float minMakeupGain, maxMakeupGain, defMakeupGain;
+            plugin.GetFloatParameterInfo(kMakeupGainName, out minMakeupGain, out maxMakeupGain, out defMakeupGain);
+            float minKnee, maxKnee, defKnee;
+            plugin.GetFloatParameterInfo(kKneeName, out minKnee, out maxKnee, out defKnee);
 
             float dbRange = 100.0f, dbMin = -80.0f;
             float thresholdPosX = r.width * (threshold - dbMin) / dbRange;
@@ -142,6 +149,7 @@ namespace UnityEditor
                         else
                             dragtype = DragType.ThresholdAndKnee;
                     }
+
                     break;
 
                 case EventType.MouseUp:
@@ -151,7 +159,9 @@ namespace UnityEditor
                         GUIUtility.hotControl = 0;
                         EditorGUIUtility.SetWantsMouseJumping(0);
                         evt.Use();
+                        AudioMixerEffectPlugin.OnParameterChangesDone();
                     }
+
                     break;
 
                 case EventType.MouseDrag:
@@ -178,6 +188,7 @@ namespace UnityEditor
                         modifiedValue = true;
                         evt.Use();
                     }
+
                     break;
             }
 
@@ -222,6 +233,7 @@ namespace UnityEditor
                         }
                         else if (t > 0.0f)
                             gain = duckThreshold + duckGradient * t;
+
                         return (2.0f * (gain + duckMakeupGain - dbMin) / dbRange) - 1.0f;
                     }
                 );
@@ -243,6 +255,7 @@ namespace UnityEditor
                             }
                             else if (t > 0.0f)
                                 gain = duckThreshold + duckGradient * t;
+
                             return (2.0f * (gain + duckMakeupGain - dbMin) / dbRange) - 1.0f;
                         },
                         Color.white
@@ -261,17 +274,17 @@ namespace UnityEditor
 
                 if (dragtype == DragType.Ratio)
                 {
-                    float aspect = (float)r.height / (float)r.width;
+                    float aspect = r.height / r.width;
                     Handles.DrawAAPolyLine(2.0f,
-                        new Color[] { Color.black, Color.black },
-                        new Vector3[]
+                        new[] { Color.black, Color.black },
+                        new[]
                         {
                             new Vector3(r.x + thresholdPosX + r.width, r.y + thresholdPosY - aspect * r.width, 0.0f),
                             new Vector3(r.x + thresholdPosX - r.width, r.y + thresholdPosY + aspect * r.width, 0.0f)
                         });
                     Handles.DrawAAPolyLine(3.0f,
-                        new Color[] { Color.white, Color.white },
-                        new Vector3[]
+                        new[] { Color.white, Color.white },
+                        new[]
                         {
                             new Vector3(r.x + thresholdPosX + r.width, r.y + thresholdPosY - aspect * duckGradient * r.width, 0.0f),
                             new Vector3(r.x + thresholdPosX - r.width, r.y + thresholdPosY + aspect * duckGradient * r.width, 0.0f)
@@ -309,9 +322,10 @@ namespace UnityEditor
 
         public override bool OnGUI(IAudioEffectPlugin plugin)
         {
-            float blend = plugin.IsPluginEditableAndEnabled() ? 1.0f : 0.5f;
+            var blend = plugin.IsPluginEditableAndEnabled() ? 1.0f : 0.5f;
 
             float threshold, ratio, makeupGain, attackTime, releaseTime, knee;
+
             plugin.GetFloatParameter(kThresholdName, out threshold);
             plugin.GetFloatParameter(kRatioName, out ratio);
             plugin.GetFloatParameter(kMakeupGainName, out makeupGain);
@@ -319,10 +333,14 @@ namespace UnityEditor
             plugin.GetFloatParameter(kReleaseTimeName, out releaseTime);
             plugin.GetFloatParameter(kKneeName, out knee);
 
-            float[] metering; plugin.GetFloatBuffer("Metering", out metering, 2);
+            float[] metering;
+
+            plugin.GetFloatBuffer("Metering", out metering, 2);
 
             GUILayout.Space(5f);
-            Rect r = GUILayoutUtility.GetRect(200, 160, GUILayout.ExpandWidth(true));
+
+            var r = GUILayoutUtility.GetRect(200, 160, GUILayout.ExpandWidth(true));
+
             if (CurveDisplay(plugin, r, ref threshold, ref ratio, ref makeupGain, ref attackTime, ref releaseTime, ref knee, metering[0], metering[1], blend))
             {
                 plugin.SetFloatParameter(kThresholdName, threshold);

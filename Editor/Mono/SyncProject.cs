@@ -185,7 +185,16 @@ namespace UnityEditor
                 return;
 
             s_AlreadySyncedThisDomainReload = true;
-            Synchronizer.Sync();
+
+            if (ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.Other
+                || ScriptEditorUtility.GetScriptEditorFromPath(CodeEditor.CurrentEditorInstallation) == ScriptEditorUtility.ScriptEditor.SystemDefault)
+            {
+                CodeEditorProjectSync.SyncEditorProject();
+            }
+            else
+            {
+                Synchronizer.Sync();
+            }
         }
 
         /// <summary>
