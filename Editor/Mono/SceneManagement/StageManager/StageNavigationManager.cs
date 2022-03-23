@@ -41,7 +41,7 @@ namespace UnityEditor.SceneManagement
             get { return m_NavigationHistory.GetMainStage(); }
         }
 
-        internal ReadOnlyCollection<Stage> stageHistory
+        internal List<Stage> stageHistory
         {
             get { return m_NavigationHistory.GetHistory(); }
         }
@@ -95,8 +95,12 @@ namespace UnityEditor.SceneManagement
         internal Stage GetStage(Scene scene)
         {
             var inputStageHandle = StageHandle.GetStageHandle(scene);
-            var result = stageHistory.FirstOrDefault(stage => stage.stageHandle == inputStageHandle);
-            return result;
+            foreach (var stage in stageHistory)
+            {
+                if (stage.stageHandle == inputStageHandle)
+                    return stage;
+            }
+            return null;
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)

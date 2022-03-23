@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI
         public override string category => m_PackageInfo.category;
 
         UIError entitlementsError => !entitlements.isAllowed && isInstalled ?
-        new UIError(UIErrorCode.UpmError, L10n.Tr("You do not have entitlements for this package."), UIError.Attribute.IsWarning) : null;
+        new UIError(UIErrorCode.UpmError, L10n.Tr("This package is not available to use because there is no license registered for your user. If you believe you have permission to use this package, refresh your license in the license management window of Unity Hub. Otherwise, contact your administrator.")) : null;
         public override IEnumerable<UIError> errors =>
             m_PackageInfo.errors.Select(e => new UIError((UIErrorCode)e.errorCode, e.message, UIError.Attribute.None)).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;

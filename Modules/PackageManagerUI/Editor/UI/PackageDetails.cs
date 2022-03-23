@@ -55,7 +55,8 @@ namespace UnityEditor.PackageManager.UI
             Resume,
             Cancel,
             Import,
-            ReDownload
+            ReDownload,
+            Downgrade
         }
 
         internal static readonly string[] k_PackageActionVerbs =
@@ -71,7 +72,8 @@ namespace UnityEditor.PackageManager.UI
             L10n.Tr("Resume"),
             L10n.Tr("Cancel"),
             L10n.Tr("Import"),
-            L10n.Tr("Re-Download")
+            L10n.Tr("Re-Download"),
+            L10n.Tr("Update")
         };
 
         private static readonly string[] k_PackageActionInProgressVerbs =
@@ -87,7 +89,8 @@ namespace UnityEditor.PackageManager.UI
             L10n.Tr("Resume"),
             L10n.Tr("Cancel"),
             L10n.Tr("Import"),
-            L10n.Tr("Re-Download")
+            L10n.Tr("Re-Download"),
+            L10n.Tr("Update")
         };
 
         internal static readonly string[] k_PackageActionTooltips =
@@ -103,7 +106,8 @@ namespace UnityEditor.PackageManager.UI
             L10n.Tr("Click to resume the download of this package."),
             L10n.Tr("Click to cancel the download of this package."),
             L10n.Tr("Click to import assets from the package into your project."),
-            L10n.Tr("Click to re-download the latest version of this package."),
+            L10n.Tr("Click to re-download the latest version of this {0}."),
+            string.Empty
         };
 
         internal static readonly PackageTag[] k_VisibleTags =
@@ -178,7 +182,9 @@ namespace UnityEditor.PackageManager.UI
             removeButton.clickable.clicked += RemoveClick;
             importButton.clickable.clicked += ImportClick;
             downloadButton.clickable.clicked += DownloadClick;
-            redownloadButton.clickable.clicked += DownloadClick;
+            redownloadButton.clickable.clicked += ReDownloadClick;
+            downgradeButton.clicked += DowngradeClick;
+            downgradeButton.Status = DropdownStatus.Warning;
             cancelButton.clickable.clicked += CancelClick;
             pauseButton.clickable.clicked += PauseClick;
             resumeButton.clickable.clicked += ResumeClick;
@@ -260,6 +266,9 @@ namespace UnityEditor.PackageManager.UI
                 new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
 
             RefreshButtonStatusAndTooltip(downloadButton, PackageAction.Download,
+                new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
+
+            RefreshButtonStatusAndTooltip(downgradeButton, PackageAction.Downgrade,
                 new ButtonDisableCondition(!value, L10n.Tr("You need to restore your network connection to perform this action.")));
 
             RefreshButtonStatusAndTooltip(redownloadButton, PackageAction.ReDownload,
@@ -558,7 +567,12 @@ namespace UnityEditor.PackageManager.UI
             // add links from the package
             foreach (var link in package.links)
             {
-                AddToLinks(new Button(() => { m_Application.OpenURL(link.url); })
+                AddToLinks(new Button(() =>
+                {
+                    m_Application.OpenURL(link.url);
+                    if (!string.IsNullOrEmpty(link.analyticsEventName))
+                        PackageManagerWindowAnalytics.SendEvent(link.analyticsEventName, displayVersion?.uniqueId);
+                })
                 {
                     text = link.name,
                     tooltip = link.url,
@@ -905,7 +919,24 @@ namespace UnityEditor.PackageManager.UI
                         disableIfCompiling);
                 }
 
-                var showReDownloadButton = isLatestVersionOnDisk && (isDownloadRequested || operation == null || !showCancelButton);
+                var hasDowngradeAvailable = m_AssetStoreCache.GetLocalInfo(displayVersion.packageUniqueId)?.canDowngrade == true;
+                var showDowngradeButton = isLatestVersionOnDisk && hasDowngradeAvailable && (isDownloadRequested || operation == null || !showCancelButton);
+                UIUtils.SetElementDisplay(downgradeButton, showDowngradeButton);
+                if (showDowngradeButton)
+                {
+                    var action = PackageAction.Downgrade;
+                    downgradeButton.text = GetButtonText(action);
+                    RefreshButtonStatusAndTooltip(downgradeButton, action,
+                        new ButtonDisableCondition(isDownloadRequested,
+                            L10n.Tr("The download request has been sent. Please wait for the download to start.")),
+                        new ButtonDisableCondition(packageDisabled,
+                            L10n.Tr("This package is no longer available and can not be downloaded anymore.")),
+                        new ButtonDisableCondition(!m_Application.isInternetReachable,
+                            L10n.Tr("You need to restore your network connection to perform this action.")),
+                        disableIfCompiling);
+                }
+
+                var showReDownloadButton = isLatestVersionOnDisk && !hasDowngradeAvailable && (isDownloadRequested || operation == null || !showCancelButton);
                 UIUtils.SetElementDisplay(redownloadButton, showReDownloadButton);
                 if (showReDownloadButton)
                 {
@@ -939,6 +970,7 @@ namespace UnityEditor.PackageManager.UI
             else
             {
                 UIUtils.SetElementDisplay(downloadButton, false);
+                UIUtils.SetElementDisplay(downgradeButton, false);
                 UIUtils.SetElementDisplay(redownloadButton, false);
                 UIUtils.SetElementDisplay(cancelButton, false);
                 UIUtils.SetElementDisplay(pauseButton, false);
@@ -965,7 +997,7 @@ namespace UnityEditor.PackageManager.UI
         private ButtonDisableCondition disableIfInstallOrUninstallInProgress =>
             new ButtonDisableCondition(m_PackageDatabase.isInstallOrUninstallInProgress, L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
 
-        private static void RefreshButtonStatusAndTooltip(Button button, PackageAction action, params ButtonDisableCondition[] disableConditions)
+        private void RefreshButtonStatusAndTooltip(Button button, PackageAction action, params ButtonDisableCondition[] disableConditions)
         {
             foreach (var condition in disableConditions)
             {
@@ -997,8 +1029,15 @@ namespace UnityEditor.PackageManager.UI
             return version == null ? actionText : $"{actionText} {version}";
         }
 
-        internal static string GetButtonTooltip(PackageAction action)
+        internal string GetButtonTooltip(PackageAction action)
         {
+            if (action == PackageAction.Downgrade)
+            {
+                var localInfo = m_AssetStoreCache.GetLocalInfo(displayVersion.packageUniqueId);
+                if (localInfo == null)
+                    return string.Empty;
+                return string.Format(AssetStorePackage.k_IncompatibleWarningMessage, localInfo.supportedVersion);
+            }
             return k_PackageActionTooltips[(int)action];
         }
 
@@ -1022,7 +1061,10 @@ namespace UnityEditor.PackageManager.UI
         {
             var authorLink = displayVersion?.authorLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
+            {
                 m_Application.OpenURL(authorLink);
+                PackageManagerWindowAnalytics.SendEvent("viewAuthorLink", displayVersion?.uniqueId);
+            }
         }
 
         private void UpdateClick()
@@ -1253,11 +1295,24 @@ namespace UnityEditor.PackageManager.UI
 
         private void DownloadClick()
         {
+            DownloadClickInternal();
+        }
+
+        private void DowngradeClick()
+        {
+            DownloadClickInternal("startDownloadDowngrade");
+        }
+
+        private void ReDownloadClick()
+        {
+            DownloadClickInternal("startReDownload");
+        }
+
+        private void DownloadClickInternal(string eventName = null)
+        {
             var downloadInProgress = m_PackageDatabase.IsDownloadInProgress(displayVersion);
             if (!downloadInProgress && !m_Application.isInternetReachable)
                 return;
-
-            var isUpdate = package.state == PackageState.UpdateAvailable;
 
             var canDownload = m_PackageDatabase.Download(package);
             RefreshDownloadStatesButtons();
@@ -1267,7 +1322,8 @@ namespace UnityEditor.PackageManager.UI
                 var operation = m_AssetStoreDownloadManager.GetDownloadOperation(displayVersion.packageUniqueId);
                 downloadProgress.UpdateProgress(operation);
 
-                var eventName = isUpdate ? "startDownloadUpdate" : "startDownloadNew";
+                if (string.IsNullOrEmpty(eventName))
+                    eventName = package.state == PackageState.UpdateAvailable ? "startDownloadUpdate" : "startDownloadNew";
                 PackageManagerWindowAnalytics.SendEvent(eventName, package.uniqueId);
             }
         }
@@ -1329,6 +1385,7 @@ namespace UnityEditor.PackageManager.UI
         internal Button removeButton { get { return cache.Get<Button>("remove"); } }
         internal Button importButton { get { return cache.Get<Button>("import"); } }
         internal Button downloadButton { get { return cache.Get<Button>("download"); } }
+        internal DropdownButton downgradeButton { get { return cache.Get<DropdownButton>("downgrade"); } }
         internal Button redownloadButton { get { return cache.Get<Button>("redownload"); } }
         private Button cancelButton { get { return cache.Get<Button>("cancel"); } }
         internal Button pauseButton { get { return cache.Get<Button>("pause"); } }

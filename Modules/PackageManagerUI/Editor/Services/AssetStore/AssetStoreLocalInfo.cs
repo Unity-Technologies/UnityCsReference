@@ -10,17 +10,29 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class AssetStoreLocalInfo
     {
+        [Flags]
+        internal enum UpdateStatus
+        {
+            None            = 0,
+            UpdateChecked   = 1 << 0,
+            CanUpdate       = 1 << 1,
+            CanDowngrade    = 1 << 2
+        }
+
         public string id;
         public string versionString;
         public string versionId;
+        public string uploadId;
         public string publishedDate;
         public string supportedVersion;
         public string packagePath;
         public string publishNotes;
         public string firstPublishedDate;
 
-        public bool updateInfoFetched;
-        public bool canUpdate;
+        public UpdateStatus updateStatus;
+        public bool updateInfoFetched => (updateStatus & UpdateStatus.UpdateChecked) != 0;
+        public bool canUpdate => (updateStatus & UpdateStatus.CanUpdate) != 0;
+        public bool canDowngrade => (updateStatus & UpdateStatus.CanDowngrade) != 0;
 
         public static AssetStoreLocalInfo ParseLocalInfo(UnityEditor.PackageInfo localInfo)
         {
@@ -40,11 +52,11 @@ namespace UnityEditor.PackageManager.UI
                     packagePath = localInfo.packagePath ?? string.Empty,
                     versionString = jsonInfo.GetString("version") ?? string.Empty,
                     versionId = jsonInfo.GetString("version_id") ?? string.Empty,
+                    uploadId = jsonInfo.GetString("upload_id") ?? string.Empty,
                     publishedDate = jsonInfo.GetString("pubdate") ?? string.Empty,
                     supportedVersion = jsonInfo.GetString("unity_version") ?? string.Empty,
                     publishNotes = jsonInfo.GetString("publishnotes") ?? string.Empty,
-                    updateInfoFetched = false,
-                    canUpdate = false
+                    updateStatus = UpdateStatus.None
                 };
             }
             catch (Exception)
@@ -60,7 +72,8 @@ namespace UnityEditor.PackageManager.UI
                 ["local_path"] = packagePath ?? string.Empty,
                 ["id"] = id ?? string.Empty,
                 ["version"] = versionString ?? string.Empty,
-                ["version_id"] = versionId ?? string.Empty
+                ["version_id"] = versionId ?? string.Empty,
+                ["upload_id"] = uploadId ?? string.Empty
             };
         }
     }

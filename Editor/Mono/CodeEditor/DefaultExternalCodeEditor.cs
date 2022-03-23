@@ -130,6 +130,12 @@ namespace UnityEditor
             }
 
             string applicationPath = CodeEditor.CurrentEditorInstallation.Trim();
+
+            if (!string.IsNullOrEmpty(applicationPath) && !File.Exists(applicationPath))
+            {
+                UnityEngine.Debug.LogWarning($"External Code Editor application path does not exist ({applicationPath})! Please select a different application");
+            }
+
             if (applicationPath == CodeEditor.SystemDefaultPath)
             {
                 return InternalEditorUtility.OpenFileAtLineExternal("", -1, -1);

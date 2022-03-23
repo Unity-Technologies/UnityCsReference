@@ -99,7 +99,7 @@ namespace UnityEngine
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticlesWithNativeArray", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetParticlesWithNativeArray(IntPtr particles, int particlesLength, int size, int offset);
-        public void SetParticles([Out] NativeArray<Particle> particles, int size, int offset) { unsafe { SetParticlesWithNativeArray((IntPtr)particles.GetUnsafeReadOnlyPtr(), particles.Length, size, 0); } }
+        public void SetParticles([Out] NativeArray<Particle> particles, int size, int offset) { unsafe { SetParticlesWithNativeArray((IntPtr)particles.GetUnsafeReadOnlyPtr(), particles.Length, size, offset); } }
         public void SetParticles([Out] NativeArray<Particle> particles, int size) { SetParticles(particles, size, 0); }
         public void SetParticles([Out] NativeArray<Particle> particles) { SetParticles(particles, -1); }
 
@@ -110,7 +110,7 @@ namespace UnityEngine
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticlesWithNativeArray", HasExplicitThis = true, ThrowsException = true)]
         extern private int GetParticlesWithNativeArray(IntPtr particles, int particlesLength, int size, int offset);
-        public int GetParticles([Out] NativeArray<Particle> particles, int size, int offset) { unsafe { return GetParticlesWithNativeArray((IntPtr)particles.GetUnsafePtr(), particles.Length, size, 0); } }
+        public int GetParticles([Out] NativeArray<Particle> particles, int size, int offset) { unsafe { return GetParticlesWithNativeArray((IntPtr)particles.GetUnsafePtr(), particles.Length, size, offset); } }
         public int GetParticles([Out] NativeArray<Particle> particles, int size) { return GetParticles(particles, size, 0); }
         public int GetParticles([Out] NativeArray<Particle> particles) { return GetParticles(particles, -1); }
 

@@ -224,7 +224,6 @@ namespace UnityEditor
 
         internal static void ClearStacks()
         {
-            s_PropertyCount = 0;
             s_EnabledStack.Clear();
             s_IsInsideListStack.Clear();
             GUI.isInsideList = false;
@@ -234,10 +233,6 @@ namespace UnityEditor
             s_FoldoutHeaderGroupActive = false;
         }
 
-        // Property counting is required by ReorderableList. Element rendering callbacks can change and use
-        // different number of properties to represent an element each frame. We need a way to be able to track
-        // if the property count changed from the last frame so we can recache those elements.
-        internal static int s_PropertyCount = 0;
         private static readonly Stack<PropertyGUIData> s_PropertyStack = new Stack<PropertyGUIData>();
 
         private static readonly Stack<bool> s_EnabledStack = new Stack<bool>();
@@ -2632,7 +2627,7 @@ namespace UnityEditor
                                     {
                                         TargetChoiceHandler.DuplicateArrayElement(resolvedProperty);
                                     }
-                                    ReorderableList.ClearExistingListCaches();
+                                    ReorderableList.InvalidateExistingListCaches();
                                 }
                             }
                             else // Non reorderable
@@ -2666,7 +2661,7 @@ namespace UnityEditor
                                     {
                                         TargetChoiceHandler.DeleteArrayElement(resolvedProperty);
                                     }
-                                    ReorderableList.ClearExistingListCaches();
+                                    ReorderableList.InvalidateExistingListCaches();
                                 }
                             }
                             else // Non reorderable
@@ -6016,7 +6011,6 @@ namespace UnityEditor
         // Create a Property wrapper, useful for making regular GUI controls work with [[SerializedProperty]].
         internal static GUIContent BeginPropertyInternal(Rect totalPosition, GUIContent label, SerializedProperty property)
         {
-            s_PropertyCount++;
             if (s_PendingPropertyKeyboardHandling != null)
             {
                 DoPropertyFieldKeyboardHandling(s_PendingPropertyKeyboardHandling);

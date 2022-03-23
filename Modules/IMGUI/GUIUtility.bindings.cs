@@ -51,9 +51,18 @@ namespace UnityEngine
             [FreeFunction("SetCopyBuffer")] set;
         }
 
-        [StaticAccessor("GetGUIState()", StaticAccessorType.Dot)]
-        public static extern int GetControlID(int hint, FocusType focusType, Rect rect);
+        [FreeFunction("GetGUIState().GetControlID")]
+        static extern int Internal_GetControlID(int hint, FocusType focusType, Rect rect);
 
+        // Control counting is required by ReorderableList. Element rendering callbacks can change and use
+        // different number of controls to represent an element each frame. We need a way to be able to track
+        // if the control count changed from the last frame so we can recache those elements.
+        internal static int s_ControlCount = 0;
+        public static int GetControlID(int hint, FocusType focusType, Rect rect)
+        {
+            s_ControlCount++;
+            return Internal_GetControlID(hint, focusType, rect);
+        }
 
         internal static extern void BeginContainerFromOwner(ScriptableObject owner);
 

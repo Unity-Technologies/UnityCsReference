@@ -11,5 +11,6 @@ namespace UnityEditor.PackageManager.UI
     {
         public string name;
         public string url;
+        public string analyticsEventName;
     }
 }

@@ -119,19 +119,23 @@ namespace UnityEditor
             positionChanged += PositionChanged;
 
             get = this;
+            m_EventInterests.wantsLessLayoutEvents = true;
 
+            CreateContents();
+        }
+
+        void CreateContents()
+        {
             if (m_MainToolbar == null)
                 m_MainToolbar = (EditorToolbar)CreateInstance(EditorUIService.instance.GetDefaultToolbarType());
 
             if (m_MainToolbar.rootVisualElement != null)
             {
-                var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
+                var visualTree = windowBackend?.visualTree as UnityEngine.UIElements.VisualElement;
                 visualTree?.Add(m_MainToolbar.rootVisualElement);
             }
 
             PositionChanged(this);
-
-            m_EventInterests.wantsLessLayoutEvents = true;
         }
 
         protected override void OnDisable()
@@ -155,6 +159,11 @@ namespace UnityEditor
             mainToolbar.OnGUI();
             EndOffsetArea();
 
+        }
+
+        protected override void OnBackingScaleFactorChanged()
+        {
+            CreateContents();
         }
 
         internal static void RepaintToolbar()
