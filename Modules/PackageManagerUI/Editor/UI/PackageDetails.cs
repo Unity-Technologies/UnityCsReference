@@ -567,7 +567,12 @@ namespace UnityEditor.PackageManager.UI
             // add links from the package
             foreach (var link in package.links)
             {
-                AddToLinks(new Button(() => { m_Application.OpenURL(link.url); })
+                AddToLinks(new Button(() =>
+                {
+                    m_Application.OpenURL(link.url);
+                    if (!string.IsNullOrEmpty(link.analyticsEventName))
+                        PackageManagerWindowAnalytics.SendEvent(link.analyticsEventName, displayVersion?.uniqueId);
+                })
                 {
                     text = link.name,
                     tooltip = link.url,
@@ -1056,7 +1061,10 @@ namespace UnityEditor.PackageManager.UI
         {
             var authorLink = displayVersion?.authorLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
+            {
                 m_Application.OpenURL(authorLink);
+                PackageManagerWindowAnalytics.SendEvent("viewAuthorLink", displayVersion?.uniqueId);
+            }
         }
 
         private void UpdateClick()

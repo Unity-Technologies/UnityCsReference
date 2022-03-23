@@ -131,7 +131,7 @@ namespace UnityEditor
 
             if (m_MainToolbar.rootVisualElement != null)
             {
-                var visualTree = windowBackend.visualTree as UnityEngine.UIElements.VisualElement;
+                var visualTree = windowBackend?.visualTree as UnityEngine.UIElements.VisualElement;
                 visualTree?.Add(m_MainToolbar.rootVisualElement);
             }
 
