@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting;
@@ -145,6 +146,12 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        public MethodDescription[] GetAllMethodsToPreserve()
+        {
+            return m_MethodsToPreserve.ToArray();
+        }
+
+        [RequiredByNativeCode]
         public string[] GetAllSerializedClassesAssemblies()
         {
             return serializedClassesPerAssembly.Keys.ToArray();
@@ -178,6 +185,8 @@ namespace UnityEditor
             }
         }
 
+        // Needs to stay in sync with MethodDescription in Editor/Src/BuildPipeline/BuildSerialization.h
+        [StructLayout(LayoutKind.Sequential)]
         internal class MethodDescription
         {
             public string assembly;
@@ -188,12 +197,24 @@ namespace UnityEditor
         internal List<MethodDescription> m_MethodsToPreserve = new List<MethodDescription>();
 
         //invoked by native code
-        internal void AddMethodToPreserve(string assembly, string @namespace, string klassName, string methodName)
+        [RequiredByNativeCode]
+        public void AddMethodToPreserve(string assembly, string ns, string klassName, string methodName)
         {
             m_MethodsToPreserve.Add(new MethodDescription()
             {
                 assembly = assembly,
-                fullTypeName = @namespace + (@namespace.Length > 0 ? "." : "") + klassName,
+                fullTypeName = ns + (ns.Length > 0 ? "." : "") + klassName,
+                methodName = methodName
+            });
+        }
+
+        [RequiredByNativeCode]
+        public void AddMethodToPreserveWithFullTypeName(string assembly, string fullTypeName, string methodName)
+        {
+            m_MethodsToPreserve.Add(new MethodDescription()
+            {
+                assembly = assembly,
+                fullTypeName = fullTypeName,
                 methodName = methodName
             });
         }

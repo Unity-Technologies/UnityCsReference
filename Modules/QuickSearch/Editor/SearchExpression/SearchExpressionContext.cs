@@ -36,14 +36,14 @@ namespace UnityEditor.Search
         public readonly SearchExpressionRuntime runtime;
         public readonly SearchExpression expression;
         public readonly SearchExpression[] args;
-        public readonly SearchExpressionExecutionFlags flags;
+        internal readonly SearchExpressionExecutionFlags flags;
 
         public bool valid => runtime.valid && expression != null;
         public SearchContext search => runtime.search;
-        public ExecutionState state => runtime.state;
+        internal ExecutionState state => runtime.state;
         public IReadOnlyCollection<SearchItem> items => runtime.items;
 
-        public SearchExpressionContext(SearchExpressionRuntime runtime, SearchExpression expression, SearchExpression[] args, SearchExpressionExecutionFlags flags)
+        internal SearchExpressionContext(SearchExpressionRuntime runtime, SearchExpression expression, SearchExpression[] args, SearchExpressionExecutionFlags flags)
         {
             this.runtime = runtime;
             this.expression = expression;
@@ -58,7 +58,7 @@ namespace UnityEditor.Search
 
         public void ThrowError(string message)
         {
-            ThrowError(message, StringView.Null);
+            ThrowError(message, StringView.nil);
         }
 
         public void ThrowError(string message, StringView errorPosition)
@@ -69,12 +69,12 @@ namespace UnityEditor.Search
                 throw new SearchExpressionEvaluatorException(message, expression.outerText, this);
         }
 
-        public ArgumentEnumerable ForEachArgument(OnArgument onArgumentCallback, int argumentSkipCount = 0)
+        internal ArgumentEnumerable ForEachArgument(OnArgument onArgumentCallback, int argumentSkipCount = 0)
         {
             return ArgumentEnumerable.ForEachArgument(this, onArgumentCallback, argumentSkipCount);
         }
 
-        public ArgumentEnumerable ForEachArgument(int argumentSkipCount = 0)
+        internal ArgumentEnumerable ForEachArgument(int argumentSkipCount = 0)
         {
             return ArgumentEnumerable.ForEachArgument(this, argumentSkipCount);
         }
@@ -104,7 +104,7 @@ namespace UnityEditor.Search
             state.ResetIterationControl();
         }
 
-        public bool HasFlag(SearchExpressionExecutionFlags checkFlag)
+        internal bool HasFlag(SearchExpressionExecutionFlags checkFlag)
         {
             return flags.HasFlag(checkFlag);
         }

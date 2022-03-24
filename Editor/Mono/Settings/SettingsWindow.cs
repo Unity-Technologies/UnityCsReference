@@ -209,6 +209,7 @@ namespace UnityEditor
             if (m_ProviderChanging)
                 return;
             Init();
+            RestoreSelection();
             Repaint();
         }
 

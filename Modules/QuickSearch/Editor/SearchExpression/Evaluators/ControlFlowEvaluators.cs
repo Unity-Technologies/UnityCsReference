@@ -25,7 +25,7 @@ namespace UnityEditor.Search
                     yield return null;
                 else
                 {
-                    cond |= EvaluatorUtils.IsTrue(item);
+                    cond |= SearchExpression.IsTrue(item);
                     if (!cond)
                         break;
                 }
@@ -50,7 +50,7 @@ namespace UnityEditor.Search
         [SearchExpressionEvaluator(SearchExpressionType.AnyValue | SearchExpressionType.Variadic)]
         public static IEnumerable<SearchItem> Empty(SearchExpressionContext c)
         {
-            return c.args.Select(e => EvaluatorUtils.CreateItem(!e.Execute(c).Any()));
+            return c.args.Select(e => SearchExpression.CreateItem(!e.Execute(c).Any()));
         }
 
         [Description("Return true if each elements evaluates has being true."), Category("Filters")]
@@ -66,13 +66,13 @@ namespace UnityEditor.Search
                         yield return null;
                     else
                     {
-                        isTrue |= EvaluatorUtils.IsTrue(item);
+                        isTrue |= SearchExpression.IsTrue(item);
                         if (!isTrue)
                             break;
                     }
                 }
 
-                yield return EvaluatorUtils.CreateItem(isTrue, c.ResolveAlias(e, "IsTrue"));
+                yield return SearchExpression.CreateItem(isTrue, c.ResolveAlias(e, "IsTrue"));
             }
         }
 
@@ -94,7 +94,7 @@ namespace UnityEditor.Search
             {
                 var templateExpr = c.expression.parameters[i];
                 var currentStreamName = $"apply@stream#{i}";
-                var currentStream = EvaluatorUtils.CreateStreamExpression(resultStreamExpr, currentStreamName);
+                var currentStream = SearchExpression.CreateStreamExpression(resultStreamExpr, currentStreamName);
                 var args = new[] { currentStream }.Concat(templateExpr.parameters).ToArray();
                 var innerText = templateExpr.innerText;
                 var evaluator = templateExpr.evaluator;

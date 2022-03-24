@@ -22,7 +22,7 @@ namespace UnityEditor.Search
             if (c.args.Length == 3)
             {
                 var sortAscendExpr = c.args[2];
-                if (sortAscendExpr.IsKeyword(SearchExpressionKeyword.desc))
+                if (sortAscendExpr.IsKeyword(SearchExpressionKeyword.Desc))
                     sortAscend = false;
                 else
                     sortAscend = sortAscendExpr.GetBooleanValue(sortAscend);

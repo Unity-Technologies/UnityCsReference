@@ -24,6 +24,7 @@ namespace UnityEditor
 
             public static readonly GUIContent newLightingSettings = EditorGUIUtility.TrTextContent("New Lighting Settings");
 
+            public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting Settings");
             public static readonly GUIContent workflowSettings = EditorGUIUtility.TrTextContent("Workflow Settings");
             public static readonly GUIContent lightProbeVisualization = EditorGUIUtility.TrTextContent("Light Probe Visualization");
             public static readonly GUIContent displayWeights = EditorGUIUtility.TrTextContent("Display Weights");
@@ -49,6 +50,7 @@ namespace UnityEditor
             };
         }
 
+        SavedBool m_ShowLightingSettings;
         SavedBool m_ShowWorkflowSettings;
         SavedBool m_ShowProbeDebugSettings;
         Vector2 m_ScrollPosition = Vector2.zero;
@@ -78,6 +80,7 @@ namespace UnityEditor
             m_BakeSettings = new LightingWindowBakeSettings();
             m_BakeSettings.OnEnable();
 
+            m_ShowLightingSettings = new SavedBool("LightingWindow.ShowLightingSettings", true);
             m_ShowWorkflowSettings = new SavedBool("LightingWindow.ShowWorkflowSettings", true);
             m_ShowProbeDebugSettings = new SavedBool("LightingWindow.ShowProbeDebugSettings", false);
         }
@@ -95,23 +98,7 @@ namespace UnityEditor
 
             m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
-            EditorGUILayout.PropertyField(m_LightingSettingsAsset);
-
-            EditorGUILayout.Space();
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button(Styles.newLightingSettings, GUILayout.Width(170)))
-            {
-                var ls = new LightingSettings();
-                ls.name = "New Lighting Settings";
-                Undo.RecordObject(m_LightmapSettings.targetObject, "New Lighting Settings");
-                Lightmapping.lightingSettingsInternal = ls;
-                ProjectWindowUtil.CreateAsset(ls, (ls.name + ".lighting"));
-            }
-
-            GUILayout.EndHorizontal();
-            EditorGUILayout.Space();
+            LightingSettingsGUI();
 
             m_BakeSettings.OnGUI();
             WorkflowSettingsGUI();
@@ -124,6 +111,36 @@ namespace UnityEditor
 
         public void OnSelectionChange()
         {
+        }
+
+        void LightingSettingsGUI()
+        {
+            m_ShowLightingSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowLightingSettings.value, Styles.lightingSettings, true);
+
+            if (m_ShowLightingSettings.value)
+            {
+                ++EditorGUI.indentLevel;
+
+                EditorGUILayout.PropertyField(m_LightingSettingsAsset, GUIContent.Temp("Lighting Settings Asset"));
+
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button(Styles.newLightingSettings, GUILayout.Width(170)))
+                {
+                    var ls = new LightingSettings();
+                    ls.name = "New Lighting Settings";
+                    Undo.RecordObject(m_LightmapSettings.targetObject, "New Lighting Settings");
+                    Lightmapping.lightingSettingsInternal = ls;
+                    ProjectWindowUtil.CreateAsset(ls, (ls.name + ".lighting"));
+                }
+
+                GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+
+                --EditorGUI.indentLevel;
+            }
         }
 
         void WorkflowSettingsGUI()

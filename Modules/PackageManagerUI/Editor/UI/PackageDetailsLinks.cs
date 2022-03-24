@@ -59,7 +59,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (string.IsNullOrEmpty(link.name) || string.IsNullOrEmpty(link.url))
                     continue;
-                AddToLinks(leftItems, new Button(() => { m_Application.OpenURL(link.url); })
+                AddToLinks(leftItems, new Button(() =>
+                {
+                    m_Application.OpenURL(link.url);
+                    if (!string.IsNullOrEmpty(link.analyticsEventName))
+                        PackageManagerWindowAnalytics.SendEvent(link.analyticsEventName, version?.uniqueId);
+                })
                 {
                     text = link.name,
                     tooltip = link.url,

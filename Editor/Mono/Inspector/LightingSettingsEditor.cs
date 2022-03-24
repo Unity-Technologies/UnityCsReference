@@ -257,6 +257,9 @@ namespace UnityEditor
             public static readonly GUIContent environmentMIS = EditorGUIUtility.TrTextContent("Multiple Importance Sampling", "Specifies whether to use multiple importance sampling for sampling the environment. This will generally lead to faster convergence when generating lightmaps but can lead to noisier results in certain low frequency environments.");
             public static readonly GUIContent environmentSampleCount = EditorGUIUtility.TrTextContent("Environment Samples", "Controls the number of samples the lightmapper will use for environment lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent probeSampleCountMultiplier = EditorGUIUtility.TrTextContent("Light Probe Sample Multiplier", "Controls how many samples are used for Light Probes as a multiplier of the general sample counts above. Higher values improve the quality of Light Probes, but also take longer to bake. Enable the Light Probe sample count multiplier by disabling Project Settings > Editor > Use legacy Light Probe sample counts");
+            public static readonly GUIContent texelsPerUnit = EditorGUIUtility.TrTextContent(" texels per unit");
+            public static readonly GUIContent texels = EditorGUIUtility.TrTextContent(" texels");
+            public static readonly GUIContent sigma = EditorGUIUtility.TrTextContent(" sigma");
 
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
         }
@@ -698,7 +701,7 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.DisabledScope((m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten) && !enableRealtimeGI))
                         {
-                            DrawResolutionField(m_RealtimeResolution, Styles.indirectResolution);
+                            DrawPropertyFieldWithPostfixLabel(m_RealtimeResolution, Styles.indirectResolution, Styles.texelsPerUnit);
                         }
                     }
 
@@ -706,12 +709,9 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.DisabledScope(!enableBakedGI))
                         {
-                            DrawResolutionField(m_BakeResolution, Styles.lightmapResolution);
+                            DrawPropertyFieldWithPostfixLabel(m_BakeResolution, Styles.lightmapResolution, Styles.texelsPerUnit);
 
-                            GUILayout.BeginHorizontal();
-                            EditorGUILayout.PropertyField(m_Padding, Styles.padding);
-                            GUILayout.Label(" texels", Styles.labelStyle);
-                            GUILayout.EndHorizontal();
+                            DrawPropertyFieldWithPostfixLabel(m_Padding, Styles.padding, Styles.texels);
 
                             EditorGUILayout.IntPopup(m_LightmapMaxSize, Styles.lightmapMaxSizeStrings, Styles.lightmapMaxSizeValues, Styles.lightmapMaxSize);
 
@@ -815,13 +815,31 @@ namespace UnityEditor
             return hasSM20Api;
         }
 
-        static void DrawResolutionField(SerializedProperty resolution, GUIContent label)
+        static void DrawPropertyFieldWithPostfixLabel(SerializedProperty property, GUIContent label, GUIContent postfixLabel)
         {
-            GUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(resolution, label);
+            const float minimumWidth = 170.0f;
+            const float postfixLabelWidth = 80.0f;
 
-            GUILayout.Label(" texels per unit", Styles.labelStyle);
-            GUILayout.EndHorizontal();
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.Float:
+                    DrawFieldWithPostfixLabel(
+                        (Rect propertyRect) => { property.floatValue = EditorGUI.FloatField(propertyRect, label, property.floatValue); },
+                        postfixLabel,
+                        EditorStyles.numberField,
+                        minimumWidth,
+                        postfixLabelWidth);
+                    break;
+
+                case SerializedPropertyType.Integer:
+                    DrawFieldWithPostfixLabel(
+                        (Rect propertyRect) => { property.intValue = EditorGUI.IntField(propertyRect, label, property.intValue); },
+                        postfixLabel,
+                        EditorStyles.numberField,
+                        minimumWidth,
+                        postfixLabelWidth);
+                    break;
+            }
         }
 
         static void DrawFilterSettingField(SerializedProperty gaussSetting,
@@ -830,23 +848,52 @@ namespace UnityEditor
             GUIContent atrousLabel,
             LightingSettings.FilterType type)
         {
-            if (type == LightingSettings.FilterType.None)
-                return;
+            const float minimumWidth = 230.0f;
+            const float postfixLabelWidth = 40.0f;
 
-            GUILayout.BeginHorizontal();
-
-            if (type == LightingSettings.FilterType.Gaussian)
+            switch(type)
             {
-                EditorGUILayout.IntSlider(gaussSetting, 0, 5, gaussLabel);
-                GUILayout.Label(" texels", Styles.labelStyle);
-            }
-            else if (type == LightingSettings.FilterType.ATrous)
-            {
-                EditorGUILayout.Slider(atrousSetting, 0.0f, 2.0f, atrousLabel);
-                GUILayout.Label(" sigma", Styles.labelStyle);
-            }
+                case LightingSettings.FilterType.Gaussian:
+                    DrawFieldWithPostfixLabel(
+                      (Rect propertyRect) => { EditorGUI.IntSlider(propertyRect, gaussSetting, 0, 5, gaussLabel); },
+                      Styles.texels,
+                      EditorStyles.toolbarSlider,
+                      minimumWidth,
+                      postfixLabelWidth);
+                    break;
 
-            GUILayout.EndHorizontal();
+                case LightingSettings.FilterType.ATrous:
+                    DrawFieldWithPostfixLabel(
+                        (Rect propertyRect) => { EditorGUI.Slider(propertyRect, atrousSetting, 0.0f, 2.0f, atrousLabel); },
+                        Styles.sigma,
+                        EditorStyles.toolbarSlider,
+                        minimumWidth,
+                        postfixLabelWidth);
+                    break;
+            }
+        }
+
+        static void DrawFieldWithPostfixLabel(Action<Rect> drawFieldLambda, GUIContent postfixLabel, GUIStyle style, float minWidth, float postfixLabelWidth)
+        {
+            Rect propertyRect = GUILayoutUtility.GetRect(
+                EditorGUILayout.kLabelFloatMinW,
+                EditorGUILayout.kLabelFloatMaxW,
+                EditorGUI.kSingleLineHeight,
+                EditorGUI.kSingleLineHeight,
+                style);
+
+            propertyRect.width = Mathf.Max(propertyRect.width - postfixLabelWidth, minWidth);
+
+            drawFieldLambda(propertyRect);
+
+            int indent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
+            Rect labelRect = propertyRect;
+            labelRect.x += propertyRect.width;
+            EditorGUI.LabelField(labelRect, postfixLabel, Styles.labelStyle);
+
+            EditorGUI.indentLevel = indent;
         }
 
         static bool isBuiltIn(SerializedProperty prop)

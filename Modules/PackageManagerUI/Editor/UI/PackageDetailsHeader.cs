@@ -250,7 +250,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var authorLink = m_Version?.authorLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
+            {
                 m_Application.OpenURL(authorLink);
+                PackageManagerWindowAnalytics.SendEvent("viewAuthorLink", m_Version?.uniqueId);
+            }
         }
 
         public void RefreshEntitlement()

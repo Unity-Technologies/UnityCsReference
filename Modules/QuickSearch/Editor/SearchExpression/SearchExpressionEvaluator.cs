@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace UnityEditor.Search
 {
-    delegate IEnumerable<SearchItem> SearchExpressionEvaluatorHandler(SearchExpressionContext context);
+    internal delegate IEnumerable<SearchItem> SearchExpressionEvaluatorHandler(SearchExpressionContext context);
 
     [Flags]
     enum SearchExpressionEvaluationHints
@@ -43,9 +43,9 @@ namespace UnityEditor.Search
             this.hints = hints;
         }
 
-        public string name { get; private set; }
-        public SearchExpressionValidator.Signature signature { get; private set; }
-        public SearchExpressionEvaluationHints hints { get; private set; }
+        internal string name { get; private set; }
+        internal SearchExpressionValidator.Signature signature { get; private set; }
+        internal SearchExpressionEvaluationHints hints { get; private set; }
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
@@ -58,7 +58,7 @@ namespace UnityEditor.Search
             this.signature = signature;
         }
 
-        public SearchExpressionValidator.Signature signature { get; private set; }
+        internal SearchExpressionValidator.Signature signature { get; private set; }
     }
 
     static class EvaluatorManager
@@ -97,7 +97,7 @@ namespace UnityEditor.Search
             if (!evaluator.valid)
             {
                 if (duringParsing)
-                    throw new SearchExpressionParseException(GetEvaluatorNameExceptionMessage(name), errorView.startIndex, errorView.Length);
+                    throw new SearchExpressionParseException(GetEvaluatorNameExceptionMessage(name), errorView.startIndex, errorView.length);
                 else
                     context.ThrowError(GetEvaluatorNameExceptionMessage(name), errorView);
             }
@@ -231,28 +231,19 @@ namespace UnityEditor.Search
         public readonly SearchExpressionEvaluatorHandler execute;
         public readonly SearchExpressionEvaluationHints hints;
         public bool valid => execute != null;
-        public readonly SearchExpressionParserFlags with;
-        public readonly SearchExpressionParserFlags without;
 
-        public SearchExpressionEvaluator(string name, string description, string category, SearchExpressionEvaluatorHandler execute, SearchExpressionEvaluationHints hints)
-            : this(name, description, category, execute, hints, SearchExpressionParserFlags.None, SearchExpressionParserFlags.None)
-        {
-        }
-
-        public SearchExpressionEvaluator(string name, SearchExpressionEvaluatorHandler execute, SearchExpressionEvaluationHints hints)
-            : this(name, description : null , category : "General", execute, hints, SearchExpressionParserFlags.None, SearchExpressionParserFlags.None)
-        {
-        }
-
-        public SearchExpressionEvaluator(string name, string description, string category, SearchExpressionEvaluatorHandler execute, SearchExpressionEvaluationHints hints, SearchExpressionParserFlags with, SearchExpressionParserFlags without)
+        internal SearchExpressionEvaluator(string name, string description, string category, SearchExpressionEvaluatorHandler execute, SearchExpressionEvaluationHints hints)
         {
             this.name = name;
             this.description = description;
             this.category = category;
             this.execute = execute;
             this.hints = hints;
-            this.with = with;
-            this.without = without;
+        }
+
+        internal SearchExpressionEvaluator(string name, SearchExpressionEvaluatorHandler execute, SearchExpressionEvaluationHints hints)
+            : this(name, description : null , category : "General", execute, hints)
+        {
         }
 
         public override string ToString()
@@ -268,161 +259,6 @@ namespace UnityEditor.Search
         public int GetHashCode(SearchExpressionEvaluator obj)
         {
             return obj.name.GetHashCode();
-        }
-    }
-
-    static class EvaluatorUtils
-    {
-        public static bool TryConvertToDouble(SearchItem item, out double value, string selector = null)
-        {
-            value = double.NaN;
-            object itemValue = SelectorManager.SelectValue(item, null, selector);
-            if (itemValue == null)
-                return false;
-            return Utils.TryGetNumber(itemValue, out value);
-        }
-
-        public static string CreateId()
-        {
-            return Guid.NewGuid().ToString("N");
-        }
-
-        public static SearchItem CreateItem(string label, object value, string description)
-        {
-            return SearchServiceProvider.CreateItem(CreateId(), label, description, value);
-        }
-
-        public static SearchItem CreateItem(string value, string label = null)
-        {
-            return CreateItem(label, value, value.ToString());
-        }
-
-        public static SearchItem CreateItem(double value, string label = null)
-        {
-            return CreateItem(label, value, null);
-        }
-
-        public static SearchItem CreateItem(int value, string label = null)
-        {
-            return CreateItem((double)value, label);
-        }
-
-        internal static SearchItem CreateItem(bool booleanValue, string label = null)
-        {
-            return CreateItem(label, booleanValue, booleanValue.ToString().ToLowerInvariant());
-        }
-
-        internal static bool IsTrue(SearchItem item)
-        {
-            var value = false;
-            if (item.value != null)
-            {
-                if (item.value is string argValue)
-                {
-                    value = argValue != "";
-                }
-                else if (item.value is bool itemValue)
-                {
-                    value = itemValue;
-                }
-                else if (item.value is int i)
-                {
-                    value = i != 0;
-                }
-                else if (item.value is double d)
-                {
-                    value = d != 0.0;
-                }
-                else if (item.value is float f)
-                {
-                    value = f != 0.0f;
-                }
-            }
-            return value;
-        }
-
-        internal static bool Check(SearchExpression e, SearchExpressionContext c)
-        {
-            var result = e.Execute(c);
-            var count = result.Count();
-            if (count == 0)
-                return false;
-            if (count == 1)
-                return IsTrue(result.First());
-            return true;
-        }
-
-        public static bool GetFormatString(SearchExpression expr, out string formatStr)
-        {
-            formatStr = null;
-            if (expr.types.HasFlag(SearchExpressionType.Text))
-            {
-                formatStr = expr.innerText.ToString();
-                return true;
-            }
-
-            if (expr.types.HasFlag(SearchExpressionType.Selector))
-            {
-                formatStr = expr.outerText.ToString();
-                return true;
-            }
-
-            return false;
-        }
-
-        public static string FormatItem(SearchContext ctx, SearchItem item, string formatString)
-        {
-            if (formatString == null)
-            {
-                var value = SelectorManager.SelectValue(item, ctx, null);
-                return value == null ? "null" : value.ToString();
-            }
-            return ParserUtils.ReplaceSelectorInExpr(formatString, (selector, cleanedSelector) =>
-            {
-                var value = SelectorManager.SelectValue(item, ctx, cleanedSelector);
-                return value == null ? "<no value>" : value.ToString();
-            });
-        }
-
-        public static SearchExpression CreateStreamExpression(SearchExpression currentStream, string name = "<streamexpr>")
-        {
-            var exp = new SearchExpression(SearchExpressionType.Function, name.GetStringView(),
-                new SearchExpressionEvaluator("StreamEvaluator", context => currentStream.Execute(context), SearchExpressionEvaluationHints.Default));
-            return exp;
-        }
-
-        public static SearchItem CreateSearchExpressionItem(string queryString, string alias = null)
-        {
-            var queryView = queryString.GetStringView();
-            return CreateSearchExpressionItem(new SearchExpression(
-                SearchExpressionType.QueryString, queryView, queryView, alias.GetStringView(),
-                EvaluatorManager.GetConstantEvaluatorByName("query")));
-        }
-
-        public static SearchItem CreateSearchExpressionItem(SearchExpression expr)
-        {
-            return new SearchItem("") { data = expr };
-        }
-
-        public static IEnumerable<SearchItem> ProcessValues<T>(IEnumerable<SearchItem> items, string outputValueFieldName, Func<SearchItem, T> processHandler)
-        {
-            var selectedItems = new List<SearchItem>(items);
-            return TaskEvaluatorManager.EvaluateMainThread<SearchItem>((yielder) =>
-            {
-                foreach (var item in selectedItems)
-                {
-                    var selectedValue = processHandler(item);
-                    if (selectedValue == null)
-                        continue;
-
-                    if (outputValueFieldName == null)
-                        item.value = selectedValue;
-                    else
-                        item.SetField(outputValueFieldName, selectedValue);
-
-                    yielder(item);
-                }
-            });
         }
     }
 }

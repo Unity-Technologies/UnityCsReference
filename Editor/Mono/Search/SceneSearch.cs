@@ -26,72 +26,87 @@ namespace UnityEditor.SearchService
     [InitializeOnLoad]
     public static class SceneSearch
     {
-        static readonly SearchApiBaseImp<SceneSearchEngineAttribute, ISceneSearchEngine> k_EngineImp;
+        static SearchApiBaseImp<SceneSearchEngineAttribute, ISceneSearchEngine> s_EngineImp;
+        static SearchApiBaseImp<SceneSearchEngineAttribute, ISceneSearchEngine> engineImp
+        {
+            get
+            {
+                if (s_EngineImp == null)
+                    StaticInit();
+                return s_EngineImp;
+            }
+        }
 
         public const SearchEngineScope EngineScope = SearchEngineScope.Scene;
 
         static SceneSearch()
         {
-            k_EngineImp = new SearchApiBaseImp<SceneSearchEngineAttribute, ISceneSearchEngine>(EngineScope, "Scene");
+            EditorApplication.tick += StaticInit;
+        }
+
+        private static void StaticInit()
+        {
+            EditorApplication.tick -= StaticInit;
+            s_EngineImp = s_EngineImp ?? new SearchApiBaseImp<SceneSearchEngineAttribute, ISceneSearchEngine>(EngineScope, "Scene");
         }
 
         internal static bool Filter(string query, HierarchyProperty objectToFilter, SceneSearchContext context)
         {
-            var activeEngine = k_EngineImp.activeSearchEngine;
+            var activeEngine = engineImp.activeSearchEngine;
             try
             {
                 return activeEngine.Filter(context, query, objectToFilter);
             }
             catch (Exception ex)
             {
-                k_EngineImp.HandleUserException(ex);
+                engineImp.HandleUserException(ex);
                 return false;
             }
         }
 
         internal static bool HasEngineOverride()
         {
-            return k_EngineImp.HasEngineOverride();
+            return engineImp.HasEngineOverride();
         }
 
         internal static void BeginSession(SceneSearchContext context)
         {
-            k_EngineImp.BeginSession(context);
+            engineImp.BeginSession(context);
         }
 
         internal static void EndSession(SceneSearchContext context)
         {
-            k_EngineImp.EndSession(context);
+            engineImp.EndSession(context);
         }
 
         internal static void BeginSearch(string query, SceneSearchContext context)
         {
-            k_EngineImp.BeginSearch(query, context);
+            engineImp.BeginSearch(query, context);
         }
 
         internal static void EndSearch(SceneSearchContext context)
         {
-            k_EngineImp.EndSearch(context);
+            engineImp.EndSearch(context);
         }
 
         internal static ISceneSearchEngine GetActiveSearchEngine()
         {
-            return k_EngineImp.GetActiveSearchEngine();
+            return engineImp.GetActiveSearchEngine();
         }
 
         internal static void SetActiveSearchEngine(string searchEngineName)
         {
-            k_EngineImp.SetActiveSearchEngine(searchEngineName);
+            engineImp.SetActiveSearchEngine(searchEngineName);
         }
 
         public static void RegisterEngine(ISceneSearchEngine engine)
         {
-            k_EngineImp.RegisterEngine(engine);
+            engineImp.RegisterEngine(engine);
         }
 
         public static void UnregisterEngine(ISceneSearchEngine engine)
         {
-            k_EngineImp.UnregisterEngine(engine);
+            engineImp.UnregisterEngine(engine);
         }
     }
 

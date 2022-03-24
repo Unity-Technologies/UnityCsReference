@@ -998,6 +998,9 @@ namespace UnityEditor
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern bool IsApplicationIdentifierValid(string name, BuildTargetGroup targetGroup);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern string SanitizeApplicationIdentifier(string name, BuildTargetGroup targetGroup);
 
         [NativeThrows]

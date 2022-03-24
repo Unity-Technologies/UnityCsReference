@@ -5,7 +5,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityEditor.Search
+namespace UnityEditor.Search.UI
 {
     class SearchField
     {

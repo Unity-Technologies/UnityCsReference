@@ -16,7 +16,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> Count(SearchExpressionContext c)
         {
             foreach (var arg in c.args)
-                yield return EvaluatorUtils.CreateItem(arg.Execute(c).Count(), c.ResolveAlias(arg, "Count"));
+                yield return SearchExpression.CreateItem(arg.Execute(c).Count(), c.ResolveAlias(arg, "Count"));
         }
 
         [Description("Find the minimal value for each expression."), Category("Math")]
@@ -37,7 +37,7 @@ namespace UnityEditor.Search
                 double min = double.MaxValue;
                 foreach (var r in arg.Execute(c))
                     min = Aggregate(r, selector, min, (d, _min) => d < _min);
-                yield return EvaluatorUtils.CreateItem(min, c.ResolveAlias(arg, "Min"));
+                yield return SearchExpression.CreateItem(min, c.ResolveAlias(arg, "Min"));
             }
         }
 
@@ -59,7 +59,7 @@ namespace UnityEditor.Search
                 double max = double.MinValue;
                 foreach (var r in arg.Execute(c))
                     max = Aggregate(r, selector, max, (d, _max) => d > _max);
-                yield return EvaluatorUtils.CreateItem(max, c.ResolveAlias(arg, "Max"));
+                yield return SearchExpression.CreateItem(max, c.ResolveAlias(arg, "Max"));
             }
         }
 
@@ -81,7 +81,7 @@ namespace UnityEditor.Search
                 var avg = Average.Zero;
                 foreach (var r in arg.Execute(c))
                     avg = Aggregate(r, selector, avg, (d, _avg) => _avg.Add(d));
-                yield return EvaluatorUtils.CreateItem(avg.result, c.ResolveAlias(arg, "Average"));
+                yield return SearchExpression.CreateItem(avg.result, c.ResolveAlias(arg, "Average"));
             }
         }
 
@@ -103,7 +103,7 @@ namespace UnityEditor.Search
                 var sum = 0d;
                 foreach (var r in arg.Execute(c))
                     sum = Aggregate(r, selector, sum, (d, _sum) => _sum + d);
-                yield return EvaluatorUtils.CreateItem(sum, c.ResolveAlias(arg, "Sum"));
+                yield return SearchExpression.CreateItem(sum, c.ResolveAlias(arg, "Sum"));
             }
         }
 
@@ -111,7 +111,7 @@ namespace UnityEditor.Search
         static T Aggregate<T>(SearchItem item, string selector, T agg, Func<double, T, T> aggregator) where T : struct => Aggregate(item, selector, agg, (d, v) => true, aggregator);
         static T Aggregate<T>(SearchItem item, string selector, T agg, Func<double, T, bool> comparer, Func<double, T, T> aggregator) where T : struct
         {
-            if (item != null && EvaluatorUtils.TryConvertToDouble(item, out var d, selector) && comparer(d, agg))
+            if (item != null && SearchExpression.TryConvertToDouble(item, out var d, selector) && comparer(d, agg))
                 return aggregator(d, agg);
             return agg;
         }

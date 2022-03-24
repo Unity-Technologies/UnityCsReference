@@ -16,7 +16,7 @@ namespace UnityEditor.Search
         {
             var aliasSelector = c.args.Last();
             if (c.HasFlag(SearchExpressionExecutionFlags.Expand))
-                yield return EvaluatorUtils.CreateSearchExpressionItem(new SearchExpression(c.args[0], newAlias: aliasSelector.innerText));
+                yield return SearchExpression.CreateSearchExpressionItem(new SearchExpression(c.args[0], newAlias: aliasSelector.innerText));
             else
             {
                 foreach (var r in c.args[0].Execute(c))
@@ -27,10 +27,10 @@ namespace UnityEditor.Search
                         continue;
                     }
 
-                    var hasFormatString = EvaluatorUtils.GetFormatString(aliasSelector, out var formatStr);
+                    var hasFormatString = SearchExpression.GetFormatString(aliasSelector, out var formatStr);
                     if (hasFormatString && aliasSelector.types.HasAny(SearchExpressionType.Text))
                     {
-                        r.label = EvaluatorUtils.FormatItem(c.search, r, formatStr);
+                        r.label = SearchExpression.FormatItem(c.search, r, formatStr);
                     }
                     else if (aliasSelector.types.HasAny(SearchExpressionType.Selector))
                     {
@@ -56,7 +56,7 @@ namespace UnityEditor.Search
                         }
 
                         if (!valueSelected)
-                            r.label = r.label = EvaluatorUtils.FormatItem(c.search, r, aliasSelector.innerText.ToString());
+                            r.label = r.label = SearchExpression.FormatItem(c.search, r, aliasSelector.innerText.ToString());
                     }
                     else
                         c.ThrowError($"Alias selector `{aliasSelector.outerText}` not supported", aliasSelector.outerText);

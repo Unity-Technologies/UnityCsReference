@@ -6478,9 +6478,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SceneQueryEngine.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SceneQueryEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SearchQueryProvider.cs">
-      <Link>Modules\QuickSearch\Editor\Providers\SearchQueryProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SearchServiceProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SearchServiceProvider.cs</Link>
     </Compile>
@@ -6672,6 +6669,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\TaskEvaluatorManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFilterEnumTypes.cs">
+      <Link>Modules\QuickSearch\Editor\SearchFilterEnumTypes.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchFlags.cs">
       <Link>Modules\QuickSearch\Editor\SearchFlags.cs</Link>
@@ -7793,7 +7793,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\artifacts\Stevedore\bee_ba15\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\External\Bee\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

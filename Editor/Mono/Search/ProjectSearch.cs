@@ -17,6 +17,7 @@ namespace UnityEditor.SearchService
         public SearchEngineScope engineScope { get; protected set; } = ProjectSearch.EngineScope;
         public IEnumerable<Type> requiredTypes { get; set; }
         public IEnumerable<string> requiredTypeNames { get; set; }
+        internal SearchFilter searchFilter { get; set; }
     }
 
     public interface IProjectSearchEngine : ISearchEngine<string> {}
@@ -24,72 +25,87 @@ namespace UnityEditor.SearchService
     [InitializeOnLoad]
     public static class ProjectSearch
     {
-        static readonly SearchApiBaseImp<ProjectSearchEngineAttribute, IProjectSearchEngine> k_EngineImp;
+        static SearchApiBaseImp<ProjectSearchEngineAttribute, IProjectSearchEngine> s_EngineImp;
+        static SearchApiBaseImp<ProjectSearchEngineAttribute, IProjectSearchEngine> engineImp
+        {
+            get
+            {
+                if (s_EngineImp == null)
+                    StaticInit();
+                return s_EngineImp;
+            }
+        }
 
         public const SearchEngineScope EngineScope = SearchEngineScope.Project;
 
         static ProjectSearch()
         {
-            k_EngineImp = new SearchApiBaseImp<ProjectSearchEngineAttribute, IProjectSearchEngine>(EngineScope, "Project");
+            EditorApplication.tick += StaticInit;
+        }
+
+        private static void StaticInit()
+        {
+            EditorApplication.tick -= StaticInit;
+            s_EngineImp = s_EngineImp ?? new SearchApiBaseImp<ProjectSearchEngineAttribute, IProjectSearchEngine>(EngineScope, "Project");
         }
 
         internal static IEnumerable<string> Search(string query, ProjectSearchContext context, Action<IEnumerable<string>> asyncItemsReceived)
         {
-            var activeEngine = k_EngineImp.activeSearchEngine;
+            var activeEngine = engineImp.activeSearchEngine;
             try
             {
                 return activeEngine.Search(context, query, asyncItemsReceived);
             }
             catch (Exception ex)
             {
-                k_EngineImp.HandleUserException(ex);
+                engineImp.HandleUserException(ex);
                 return null;
             }
         }
 
         internal static bool HasEngineOverride()
         {
-            return k_EngineImp.HasEngineOverride();
+            return engineImp.HasEngineOverride();
         }
 
         internal static void BeginSession(ProjectSearchContext context)
         {
-            k_EngineImp.BeginSession(context);
+            engineImp.BeginSession(context);
         }
 
         internal static void EndSession(ProjectSearchContext context)
         {
-            k_EngineImp.EndSession(context);
+            engineImp.EndSession(context);
         }
 
         internal static void BeginSearch(string query, ProjectSearchContext context)
         {
-            k_EngineImp.BeginSearch(query, context);
+            engineImp.BeginSearch(query, context);
         }
 
         internal static void EndSearch(ProjectSearchContext context)
         {
-            k_EngineImp.EndSearch(context);
+            engineImp.EndSearch(context);
         }
 
         internal static IProjectSearchEngine GetActiveSearchEngine()
         {
-            return k_EngineImp.GetActiveSearchEngine();
+            return engineImp.GetActiveSearchEngine();
         }
 
         internal static void SetActiveSearchEngine(string searchEngineName)
         {
-            k_EngineImp.SetActiveSearchEngine(searchEngineName);
+            engineImp.SetActiveSearchEngine(searchEngineName);
         }
 
         public static void RegisterEngine(IProjectSearchEngine engine)
         {
-            k_EngineImp.RegisterEngine(engine);
+            engineImp.RegisterEngine(engine);
         }
 
         public static void UnregisterEngine(IProjectSearchEngine engine)
         {
-            k_EngineImp.UnregisterEngine(engine);
+            engineImp.UnregisterEngine(engine);
         }
     }
 
