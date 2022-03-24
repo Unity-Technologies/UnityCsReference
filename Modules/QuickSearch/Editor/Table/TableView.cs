@@ -12,8 +12,6 @@ namespace UnityEditor.Search
 {
     class TableView : ResultView, ITableView
     {
-        const string TableConfigSessionKey = "CurrentSearchTableConfig_V1";
-
         private PropertyTable m_PropertyTable;
         private bool m_Disposed = false;
         private SearchTable m_TableConfig;
@@ -29,8 +27,7 @@ namespace UnityEditor.Search
         public TableView(ISearchView hostView, SearchTable tableConfig)
             : base(hostView)
         {
-            m_TableId = Guid.NewGuid().ToString("N");
-            s_ActiveSearchTable = m_TableConfig = tableConfig ?? s_ActiveSearchTable;
+            SetSearchTable(tableConfig ?? s_ActiveSearchTable);
         }
 
         ~TableView() => Dispose(false);
@@ -40,10 +37,7 @@ namespace UnityEditor.Search
             Dispose(true);
         }
 
-        public bool IsReadOnly()
-        {
-            return false;
-        }
+        public bool readOnly => false;
 
         public IEnumerable<SearchItem> GetElements()
         {
@@ -75,7 +69,7 @@ namespace UnityEditor.Search
         public override void Refresh(RefreshFlags flags = RefreshFlags.Default)
         {
             base.Refresh(flags);
-            Update();
+            Update(flags);
         }
 
         public override SearchViewState SaveViewState(string name)
@@ -247,13 +241,14 @@ namespace UnityEditor.Search
             searchView.SetSelection(items.Select(e => searchView.results.IndexOf(e)).Where(i => i != -1).ToArray());
         }
 
-        public void DoubleClick(SearchItem item)
+        public void OnItemExecuted(SearchItem item)
         {
             searchView.ExecuteSelection();
         }
 
         public void SetDirty()
         {
+            s_ActiveSearchTable = m_TableConfig;
             if (m_TableConfig == null)
                 return;
             searchView.Repaint();
@@ -271,7 +266,7 @@ namespace UnityEditor.Search
             m_PropertyTable?.Dispose();
 
             if (m_TableConfig != null)
-                SessionState.SetString(TableConfigSessionKey, m_TableConfig.Export());
+                ExportTableConfig();
 
             m_Disposed = true;
         }
@@ -282,22 +277,60 @@ namespace UnityEditor.Search
             searchView?.Repaint();
         }
 
-        private void Update()
+        private void Update(RefreshFlags flags)
         {
             if (items == null)
                 return;
 
             // Set a default configuration if none
             if (m_TableConfig == null)
+                SetSearchTable(LoadDefaultTableConfig(reset: false));
+
+            if ((flags & RefreshFlags.ItemsChanged) == RefreshFlags.ItemsChanged)
+                UpdatePropertyTable();
+        }
+
+        string GetDefaultGroupId(string id = null)
+        {
+            var key = "CurrentSearchTableConfig_V2";
+            if (id == null && searchView is QuickSearch qs)
             {
-                var sessionSearchTableData = SessionState.GetString(TableConfigSessionKey, null);
-                if (string.IsNullOrEmpty(sessionSearchTableData))
-                    SetSearchTable(SearchTable.CreateDefault());
-                else
-                    SetSearchTable(SearchTable.Import(sessionSearchTableData));
+                var providers = qs.context.GetProviders();
+                if (providers.Count == 1)
+                    key += "_" + providers[0].id;
+                else if (!string.IsNullOrEmpty(qs.currentGroup))
+                    key += "_" + qs.currentGroup;
+            }
+            else if (!string.IsNullOrEmpty(id))
+                key += "_" + id;
+            return key;
+        }
+
+        void ExportTableConfig(string id = null)
+        {
+            if (m_TableConfig == null)
+                return;
+            SessionState.SetString(GetDefaultGroupId(id), m_TableConfig.Export());
+        }
+
+        SearchTable LoadDefaultTableConfig(bool reset, string id = null, SearchTable defaultConfig = null)
+        {
+            if (!reset)
+            {
+                var sessionSearchTableData = SessionState.GetString(GetDefaultGroupId(id), null);
+                if (!string.IsNullOrEmpty(sessionSearchTableData))
+                    return SearchTable.Import(sessionSearchTableData);
             }
 
-            UpdatePropertyTable();
+            if (searchView is QuickSearch qs)
+            {
+                var providers = qs.context.GetProviders();
+                var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(qs.currentGroup);
+                if (provider?.tableConfig != null)
+                    return provider.tableConfig(context);
+            }
+
+            return defaultConfig ?? SearchTable.CreateDefault();
         }
 
         private void UpdatePropertyTable()
@@ -308,11 +341,24 @@ namespace UnityEditor.Search
             searchView.Repaint();
         }
 
-        public void SetSearchTable(SearchTable tableConfig)
+        public bool SetSearchTable(SearchTable tableConfig)
         {
+            if (tableConfig == m_TableConfig)
+                return false;
+
             m_TableId = Guid.NewGuid().ToString("N");
-            s_ActiveSearchTable = m_TableConfig = tableConfig;
-            UpdatePropertyTable();
+            m_TableConfig = tableConfig;
+            if (m_TableConfig != null)
+            {
+                if (m_TableConfig.columns.Length == 0)
+                    SetupColumns();
+                else
+                    UpdatePropertyTable();
+
+                return true;
+            }
+
+            return false;
         }
 
         public SearchTable GetSearchTable()
@@ -327,7 +373,7 @@ namespace UnityEditor.Search
 
         public void SetupColumns(IEnumerable<SearchItem> items, SearchColumnFlags options)
         {
-            var fields = new HashSet<SearchItem.Field>();
+            var fields = new HashSet<SearchField>();
             foreach (var e in items ?? GetElements())
                 fields.UnionWith(e.GetFields().Where(f => f.value != null));
 
@@ -337,16 +383,16 @@ namespace UnityEditor.Search
                 SetSearchTable(m_TableConfig);
             }
             else
-                SetSearchTable(SearchTable.CreateDefault());
+                SetSearchTable(LoadDefaultTableConfig(reset: true));
         }
 
-        public void SetupColumns(IList<SearchItem.Field> fields)
+        public void SetupColumns(IList<SearchField> fields)
         {
             SearchTable tableConfig = GetSearchTable();
 
             var columns = new List<SearchColumn>(tableConfig.columns.Where(c =>
             {
-                var fp = fields.IndexOf(new SearchItem.Field(c.selector));
+                var fp = fields.IndexOf(new SearchField(c.selector));
                 if (fp != -1)
                 {
                     if (!string.IsNullOrEmpty(fields[fp].alias))
@@ -374,6 +420,13 @@ namespace UnityEditor.Search
             }
         }
 
+        public override void OnGroupChanged(string prevGroupId, string newGroupId)
+        {
+            base.OnGroupChanged(prevGroupId, newGroupId);
+            if (!SetSearchTable(LoadDefaultTableConfig(reset: false, newGroupId, m_TableConfig)))
+                UpdatePropertyTable();
+        }
+
         public static void SetupColumns(SearchContext context, SearchExpression expression)
         {
             if (!(context.searchView is QuickSearch qs) || !(qs.resultView is TableView tv))
@@ -382,7 +435,7 @@ namespace UnityEditor.Search
             if (expression.evaluator.name == nameof(Evaluators.Select))
             {
                 var selectors = expression.parameters.Skip(1).Where(e => Evaluators.IsSelectorLiteral(e));
-                var tableViewFields = new List<SearchItem.Field>(selectors.Select(s => new SearchItem.Field(s.innerText.ToString(), s.alias.ToString())));
+                var tableViewFields = new List<SearchField>(selectors.Select(s => new SearchField(s.innerText.ToString(), s.alias.ToString())));
                 tv.SetupColumns(tableViewFields);
             }
         }

@@ -386,7 +386,7 @@ namespace UnityEditor.Search
                 SortBy(m_ProjectQueries, m_SortOrder);
 
                 var evt = searchView.CreateEvent(SearchAnalytics.GenericEventType.QuickSearchCreateSearchQuery, query.searchText, query.filePath, "project");
-                evt.intPayload1 = query.GetResultViewState().tableConfig != null ? 1 : 0;
+                evt.intPayload1 = query.GetViewState().tableConfig != null ? 1 : 0;
                 SearchAnalytics.SendEvent(evt);
             }
             else if (query is SearchQuery sq && SearchQuery.IsUserQuery(sq))
@@ -397,7 +397,7 @@ namespace UnityEditor.Search
                 SortBy(m_UserQueries, m_SortOrder);
 
                 var evt = searchView.CreateEvent(SearchAnalytics.GenericEventType.QuickSearchCreateSearchQuery, query.searchText, "", "user");
-                evt.intPayload1 = query.GetResultViewState().tableConfig != null ? 1 : 0;
+                evt.intPayload1 = query.GetViewState().tableConfig != null ? 1 : 0;
                 SearchAnalytics.SendEvent(evt);
             }
 

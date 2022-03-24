@@ -113,7 +113,7 @@ namespace UnityEditor.Search
             // First pass to get all valid argument number signatures (must do a ToList to separate the 2 passes)
             // Second pass to validate the argument types. The last error is kept (lowest number of arguments if no signature matches the number of argument, wrong type if there is at least one)
             var lastError = "";
-            var errorPosition = StringView.Null;
+            var errorPosition = StringView.nil;
             if (signatures.Where(s => ValidateExpressionArgumentsCount(c.expression.evaluator.name, c.args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })).ToList()
                 .Any(s => ValidateExpressionArguments(c.expression.evaluator.name, c.args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })))
                 return;
@@ -128,14 +128,14 @@ namespace UnityEditor.Search
             // First pass to get all valid argument number signatures (must do a ToList to separate the 2 passes)
             // Second pass to validate the argument types. The last error is kept (lowest number of arguments if no signature matches the number of argument, wrong type if there is at least one)
             var lastError = "";
-            var errorPosition = StringView.Null;
+            var errorPosition = StringView.nil;
             if (signatures.Where(s => ValidateExpressionArgumentsCount(evaluator.name, args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })).ToList()
                 .Any(s => ValidateExpressionArguments(evaluator.name, args, s, (msg, errorPos) => { lastError = msg; errorPosition = errorPos; })))
                 return;
 
             if (!errorPosition.valid)
                 errorPosition = expressionInnerText;
-            throw new SearchExpressionParseException($"Syntax error: {lastError}", errorPosition.startIndex, errorPosition.Length);
+            throw new SearchExpressionParseException($"Syntax error: {lastError}", errorPosition.startIndex, errorPosition.length);
         }
 
         public static bool ValidateExpressionArgumentsCount(string name, SearchExpression[] args, Signature signature, Action<string, StringView> errorHandler)
@@ -148,12 +148,12 @@ namespace UnityEditor.Search
             var mandatoryArgumentNumber = signature.mandatoryArgumentNumber;
             if (actualArgsCount > expectedArgsCount && (expectedArgsCount == 0 || !signature.arguments.Last().variadic))
             {
-                errorHandler($"{name} takes a maximum of {expectedArgsCount} arguments and was passed: {actualArgsCount}.", StringView.Null);
+                errorHandler($"{name} takes a maximum of {expectedArgsCount} arguments and was passed: {actualArgsCount}.", StringView.nil);
                 return false;
             }
             if (actualArgsCount < mandatoryArgumentNumber)
             {
-                errorHandler($"{name} takes a minimum of {mandatoryArgumentNumber} arguments and was passed: {actualArgsCount}.", StringView.Null);
+                errorHandler($"{name} takes a minimum of {mandatoryArgumentNumber} arguments and was passed: {actualArgsCount}.", StringView.nil);
                 return false;
             }
             return true;

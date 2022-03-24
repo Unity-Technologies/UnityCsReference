@@ -25,7 +25,7 @@ namespace UnityEditor.Search
         bool showNoResultMessage { get; }
 
         void Draw(Rect rect, ICollection<int> selection);
-        void Draw(ICollection<int> selection, float viewWidth);
+        Rect Draw(ICollection<int> selection, float viewWidth);
         int GetDisplayItemCount();
         void HandleInputEvent(Event evt, List<int> selection);
         void DrawControlLayout(float viewWidth);
@@ -71,13 +71,14 @@ namespace UnityEditor.Search
             return items?.Count ?? 0;
         }
 
-        public void Draw(ICollection<int> selection, float viewWidth)
+        public Rect Draw(ICollection<int> selection, float viewWidth)
         {
             GUILayout.Box(string.Empty, Styles.resultview, GUILayout.ExpandHeight(true), GUILayout.Width(viewWidth));
             if (Event.current.type == EventType.Repaint)
                 m_DrawItemsRect = GUILayoutUtility.GetLastRect();
 
             Draw(m_DrawItemsRect, selection);
+            return m_DrawItemsRect;
         }
 
         public virtual void DrawControlLayout(float viewWidth)

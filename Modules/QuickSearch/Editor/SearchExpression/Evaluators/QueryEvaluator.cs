@@ -93,7 +93,7 @@ namespace UnityEditor.Search
             {
                 if (c.flags.HasFlag(SearchExpressionExecutionFlags.Expand))
                 {
-                    yield return EvaluatorUtils.CreateSearchExpressionItem(s.query, s.alias);
+                    yield return SearchExpression.CreateSearchExpressionItem(s.query, s.alias);
                 }
                 else
                 {

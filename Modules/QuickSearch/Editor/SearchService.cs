@@ -575,7 +575,8 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public static ISearchView ShowWindow(SearchViewState viewState)
         {
-            return QuickSearch.Create(viewState).ShowWindow();
+            return QuickSearch.Create(viewState).ShowWindow(viewState.windowSize.x, viewState.windowSize.y,
+                SearchFlags.OpenDefault | (viewState.context?.options ?? SearchFlags.None));
         }
 
         /// <summary>
@@ -727,6 +728,12 @@ namespace UnityEditor.Search
             TrackCreateIndex(db, options, indexName, indexPath, onIndexReady, 1d);
         }
 
+        internal static IEnumerable<ISearchDatabase> EnumerateDatabases()
+        {
+            foreach (var db in SearchDatabase.EnumerateAll())
+                yield return db;
+        }
+
         /// <summary>
         /// Checks if a search index is ready to be used.
         /// </summary>
@@ -824,7 +831,7 @@ namespace UnityEditor.Search
             }
             catch (SearchExpressionEvaluatorException ex)
             {
-                var queryError = new SearchQueryError(ex.errorView.startIndex, ex.errorView.Length, ex.Message,
+                var queryError = new SearchQueryError(ex.errorView.startIndex, ex.errorView.length, ex.Message,
                     context, s_SearchServiceProvider, fromSearchQuery: false, SearchQueryErrorType.Error);
                 context.AddSearchQueryError(queryError);
                 return false;

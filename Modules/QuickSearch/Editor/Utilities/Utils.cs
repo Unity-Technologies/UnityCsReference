@@ -1114,6 +1114,26 @@ namespace UnityEditor.Search
             return EditorGUIUtility.LoadIcon(name);
         }
 
+        public static string GetIconSkinAgnosticName(Texture2D icon)
+        {
+            if (icon == null)
+                return null;
+            return GetIconSkinAgnosticName(icon.name);
+        }
+
+        public static string GetIconSkinAgnosticName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+
+            var oldName = Path.GetFileName(name);
+            var dirName = Path.GetDirectoryName(name);
+            var newName = oldName.StartsWith("d_") ? oldName.Substring(2) : oldName;
+            if (!string.IsNullOrEmpty(dirName))
+                newName = $"{dirName}/{newName}";
+            return newName;
+        }
+
         public static ulong GetFileIDHint(in UnityEngine.Object obj)
         {
             return Unsupported.GetFileIDHint(obj);

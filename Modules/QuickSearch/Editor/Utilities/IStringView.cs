@@ -11,7 +11,7 @@ namespace UnityEditor.Search
     {
         bool valid { get; }
         string baseString { get; }
-        int Length { get; }
+        int length { get; }
         char this[int index] { get; }
         string ToString();
 
@@ -44,14 +44,14 @@ namespace UnityEditor.Search
         {
             if (sv == null || !sv.valid)
                 return true;
-            return sv.Length == 0;
+            return sv.length == 0;
         }
 
         public static bool IsNullOrWhiteSpace(this IStringView sv)
         {
             if (sv.IsNullOrEmpty())
                 return true;
-            for (var i = 0; i < sv.Length; ++i)
+            for (var i = 0; i < sv.length; ++i)
             {
                 if (!char.IsWhiteSpace(sv[i]))
                     return false;

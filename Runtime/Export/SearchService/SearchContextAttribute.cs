@@ -30,7 +30,8 @@ namespace UnityEngine.Search
         DisableSavedSearchQuery = 1 << 21,
         OpenInBuilderMode = 1 << 22,
         OpenInTextMode = 1 << 23,
-        DisableBuilderModeToggle = 1 << 24
+        DisableBuilderModeToggle = 1 << 24,
+        Borderless = 1 << 25
     }
 
     [AttributeUsage(AttributeTargets.Field)]

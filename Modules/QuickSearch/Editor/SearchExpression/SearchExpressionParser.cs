@@ -179,7 +179,7 @@ namespace UnityEditor.Search
             }
 
             throw new SearchExpressionParseException($"Expression `{args.text}` cannot be parsed.\n" +
-                $"{string.Join("\n", args.context.GetAllErrors().Select(e => e.reason))}".Trim(), args.text.startIndex, args.text.Length);
+                $"{string.Join("\n", args.context.GetAllErrors().Select(e => e.reason))}".Trim(), args.text.startIndex, args.text.length);
         }
     }
 
@@ -201,7 +201,7 @@ namespace UnityEditor.Search
             openersStack.Push(paramsBlock[0]);
             int currentStringTokenIndex = -1;
             var i = 1;
-            for (; i < paramsBlock.Length; ++i)
+            for (; i < paramsBlock.length; ++i)
             {
                 if (paramsBlock[i] == ' ')
                     continue;
@@ -302,7 +302,7 @@ namespace UnityEditor.Search
 
         public static bool HasQuotes(StringView sv)
         {
-            if (sv.Length < 2)
+            if (sv.length < 2)
                 return false;
             var c = sv[0];
             if (!IsQuote(c))
@@ -317,7 +317,7 @@ namespace UnityEditor.Search
             var expressions = new List<StringView>();
             int firstOpenerIndex = -1;
             int currentStringTokenIndex = -1;
-            for (int i = 0; i < text.Length; ++i)
+            for (int i = 0; i < text.length; ++i)
             {
                 if (text[i] == ' ')
                     continue;
@@ -364,9 +364,9 @@ namespace UnityEditor.Search
                     rootHasParameters = true;
             }
             if (currentStringTokenIndex != -1)
-                throw new SearchExpressionParseException($"The string \"{text.Substring(currentStringTokenIndex)}\" is not closed correctly", text.startIndex + currentStringTokenIndex, text.Length - currentStringTokenIndex);
+                throw new SearchExpressionParseException($"The string \"{text.Substring(currentStringTokenIndex)}\" is not closed correctly", text.startIndex + currentStringTokenIndex, text.length - currentStringTokenIndex);
             if (openersStack.Any())
-                throw new SearchExpressionParseException($"Missing \"{GetCorrespondingCloser(openersStack.Peek())}\" in \"{text}\"", text.startIndex + firstOpenerIndex, text.Length - firstOpenerIndex);
+                throw new SearchExpressionParseException($"Missing \"{GetCorrespondingCloser(openersStack.Peek())}\" in \"{text}\"", text.startIndex + firstOpenerIndex, text.length - firstOpenerIndex);
             return expressions.ToArray();
         }
 
@@ -375,7 +375,7 @@ namespace UnityEditor.Search
             // First we look for the closers that could be trimmed
             Stack<int> nestedLevelsEnd = new Stack<int>();
             Stack<int> nestedLevelsStart = new Stack<int>();
-            for (int i = outerText.Length - 1; i >= 0; --i)
+            for (int i = outerText.length - 1; i >= 0; --i)
             {
                 if (char.IsWhiteSpace(outerText[i]))
                     continue;
@@ -393,7 +393,7 @@ namespace UnityEditor.Search
                 bool inNonTrimmableText = false;
                 int nonTrimmableOpeners = 0;
                 bool isInString = false;
-                for (int i = 0; i < outerText.Length; ++i)
+                for (int i = 0; i < outerText.length; ++i)
                 {
                     if (char.IsWhiteSpace(outerText[i]))
                         continue;

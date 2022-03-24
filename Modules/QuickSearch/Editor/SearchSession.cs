@@ -336,5 +336,11 @@ namespace UnityEditor.Search
             m_SearchSessions.Clear();
             asyncItemReceived = null;
         }
+
+        public void Tick()
+        {
+            foreach (var searchSession in m_SearchSessions)
+                searchSession.Value.OnUpdate();
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace UnityEditor.Search
 
     abstract class SearchIndexEntryImporter : ScriptedImporter
     {
-        public const int version = SearchIndexEntry.version | (0x0004 << 7);
+        public const int version = SearchIndexEntry.version | (0x0004 << 8);
 
         protected abstract IndexingOptions options { get; }
 
@@ -62,6 +62,7 @@ namespace UnityEditor.Search
                 using (var fileStream = new FileStream(indexArtifactPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                     indexer.Write(fileStream);
 
+                ctx.DependsOnSourceAsset(ctx.assetPath);
                 ctx.DependsOnCustomDependency(GetType().GUID.ToString("N"));
                 ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
 

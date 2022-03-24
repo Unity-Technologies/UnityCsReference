@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -49,6 +50,11 @@ namespace UnityEditor.Search
             return variations.ToArray();
         }
 
+        internal static Texture2D GetSceneObjectPreview(GameObject obj, Vector2 size, FetchPreviewOptions options, Texture2D thumbnail)
+        {
+            return Utils.GetSceneObjectPreview(obj, size, options, thumbnail);
+        }
+
         /// <summary>
         /// Tokenize a string each Capital letter.
         /// </summary>
@@ -71,7 +77,18 @@ namespace UnityEditor.Search
             return char.ToUpper(s[0]) + s.Substring(1);
         }
 
-        internal static string ToPascalWithSpaces(string s)
+        internal static string LowercaseFirst(string s)
+        {
+            // Check for empty string.
+            if (string.IsNullOrEmpty(s))
+            {
+                return string.Empty;
+            }
+            // Return char and concat substring.
+            return char.ToLower(s[0]) + s.Substring(1);
+        }
+
+        internal static string ToPascalWithSpaces(string s, bool uppercaseFirstWordOnly = false)
         {
             // Check for empty string.
             if (string.IsNullOrEmpty(s))
@@ -81,7 +98,12 @@ namespace UnityEditor.Search
 
             var tokens = Regex.Split(s, @"-+|_+|\s+|(?<!^)(?=[A-Z0-9])")
                 .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Select(UppercaseFirst);
+                .Select((word, index) =>
+                {
+                    if (uppercaseFirstWordOnly && index != 0)
+                        return LowercaseFirst(word);
+                    return UppercaseFirst(word);
+                });
             return string.Join(" ", tokens);
         }
 
@@ -558,6 +580,17 @@ namespace UnityEditor.Search
                     GetTypeIcon(ownerType));
         }
 
+        internal static IEnumerable<SearchProposition> FetchEnumPropositions<T>(string category = null, string replacementId = null, string replacementOp = null, Type blockType = null, int priority = 0, Texture2D icon = null, Color color = default) where T : Enum
+        {
+            var type = typeof(T);
+            return FetchEnumPropositions(type, category, replacementId, replacementOp, blockType, priority, icon, color);
+        }
+
+        internal static IEnumerable<SearchProposition> FetchEnumPropositions(Type enumType, string category = null, string replacementId = null, string replacementOp = null, Type blockType = null, int priority = 0, Texture2D icon = null, Color color = default)
+        {
+            return Enumerable.Empty<SearchProposition>();
+        }
+
         static Dictionary<Type, Texture2D> s_TypeIcons = new Dictionary<Type, Texture2D>();
         internal static Texture2D GetTypeIcon(in Type type)
         {
@@ -871,6 +904,134 @@ namespace UnityEditor.Search
                     yield return t;
                 }
             }
+        }
+
+        internal static string GetListMarkerReplacementText(string currentValue, IEnumerable<string> choices, string iconName = null, Color? color = null)
+        {
+            var sb = new StringBuilder($"<$list:{currentValue}, [{string.Join(", ", choices)}]");
+            if (!string.IsNullOrEmpty(iconName))
+                sb.Append($", {iconName}");
+            if (color.HasValue)
+                sb.Append($", #{ColorUtility.ToHtmlStringRGBA(color.Value)}");
+
+            sb.Append("$>");
+
+            return sb.ToString();
+        }
+
+        internal static ISearchQuery CreateQuery(in string name, SearchContext context, SearchTable tableConfig)
+        {
+            return new SearchQuery()
+            {
+                name = name,
+                viewState = new SearchViewState(context),
+                displayName = name
+            };
+        }
+
+        internal static ISearchQuery FindQuery(string guid)
+        {
+            return SearchQuery.searchQueries.FirstOrDefault(sq => sq.guid == guid);
+        }
+
+        internal static ISearchView OpenQuery(ISearchQuery sq, SearchFlags flags)
+        {
+            return SearchQuery.Open(sq, flags);
+        }
+
+        internal static IEnumerable<ISearchQuery> EnumerateAllQueries()
+        {
+            return SearchQuery.searchQueries.Cast<ISearchQuery>().Concat(SearchQueryAsset.savedQueries);
+        }
+
+        internal static SearchItem CreateSceneResult(SearchContext context, SearchProvider sceneProvider, GameObject go)
+        {
+            return Providers.SceneProvider.AddResult(context, sceneProvider, go);
+        }
+
+        internal static void ShowIconPicker(Action<Texture2D, bool> iconSelectedHandler)
+        {
+            var pickIconContext = SearchService.CreateContext(new[] { "adb", "asset" }, "", SearchFlags.WantsMore);
+            var viewState = new SearchViewState(pickIconContext,
+                (newIcon, canceled) => iconSelectedHandler(newIcon as Texture2D, canceled),
+                null,
+                "Texture",
+                typeof(Texture2D))
+            {
+                title = "Icon"
+            };
+            viewState.SetSearchViewFlags(UnityEngine.Search.SearchViewFlags.GridView);
+            SearchService.ShowPicker(viewState);
+        }
+
+        internal static void ShowColumnSelector(Action<IEnumerable<SearchColumn>, int> columnsAddedHandler, IEnumerable<SearchColumn> columns, Vector2 mousePosition, int activeColumnIndex)
+        {
+            Utils.CallDelayed(() => ColumnSelector.AddColumns(columnsAddedHandler, columns, mousePosition, activeColumnIndex));
+        }
+
+        internal static EditorWindow ShowColumnEditor(IMGUI.Controls.MultiColumnHeaderState.Column column, Action<IMGUI.Controls.MultiColumnHeaderState.Column> editHandler)
+        {
+            return ColumnEditor.ShowWindow(column, editHandler);
+        }
+
+        internal static bool TryParse<T>(string expression, out T result)
+        {
+            return Utils.TryParse<T>(expression, out result);
+        }
+
+        internal static string FormatCount(ulong count)
+        {
+            return Utils.FormatCount(count);
+        }
+
+        internal static string FormatBytes(long byteCount)
+        {
+            return Utils.FormatBytes(byteCount);
+        }
+
+        internal static int GetMainAssetInstanceID(string assetPath)
+        {
+            return Utils.GetMainAssetInstanceID(assetPath);
+        }
+
+        internal static void PingAsset(string assetPath)
+        {
+            Utils.PingAsset(assetPath);
+        }
+
+        internal static void StartDrag(UnityEngine.Object[] objects, string label = null)
+        {
+            Utils.StartDrag(objects, label);
+        }
+
+        internal static void StartDrag(UnityEngine.Object[] objects, string[] paths, string label = null)
+        {
+            Utils.StartDrag(objects, paths, label);
+        }
+
+        internal static Rect GetMainWindowCenteredPosition(Vector2 size)
+        {
+            return Utils.GetMainWindowCenteredPosition(size);
+        }
+
+        internal static Texture2D GetAssetThumbnailFromPath(string path)
+        {
+            return Utils.GetAssetThumbnailFromPath(path);
+        }
+
+        internal static Texture2D GetAssetPreviewFromPath(string path, FetchPreviewOptions previewOptions)
+        {
+            return Utils.GetAssetPreviewFromPath(path, previewOptions);
+        }
+
+        internal static Texture2D GetAssetPreviewFromPath(string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
+        {
+            return Utils.GetAssetPreviewFromPath(path, previewSize, previewOptions);
+        }
+
+        internal static void FrameAssetFromPath(string path)
+        {
+            Utils.FrameAssetFromPath(path);
         }
     }
 }

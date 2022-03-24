@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Internal;
 
@@ -197,5 +198,10 @@ namespace UnityEditor.Search
         /// Focus the search text field control.
         /// </summary>
         void FocusSearch();
+
+        /// <summary>
+        /// Set table view columns.
+        /// </summary>
+        internal void SetColumns(IEnumerable<SearchColumn> columns);
     }
 }

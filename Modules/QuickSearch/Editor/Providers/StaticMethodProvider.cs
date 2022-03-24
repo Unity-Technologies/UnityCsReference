@@ -44,7 +44,7 @@ namespace UnityEditor.Search.Providers
             if (methods == null)
                 methods = FetchStaticAPIMethodInfo();
 
-            var lowerCasePattern = context.searchQuery.ToLowerInvariant().Replace(" ", "");
+            var casePattern = context.searchQuery.Replace(" ", "");
             var matches = new List<int>();
             foreach (var m in methods)
             {
@@ -53,7 +53,7 @@ namespace UnityEditor.Search.Providers
                 long score = 0;
                 var fullName = $"{m.DeclaringType.FullName}.{m.Name}";
                 var fullNameLower = fullName.ToLowerInvariant();
-                if (FuzzySearch.FuzzyMatch(lowerCasePattern, fullNameLower, ref score, matches) && score > 300)
+                if (FuzzySearch.FuzzyMatch(casePattern, fullNameLower, ref score, matches) && score > 300)
                 {
                     var visibilityString = m.IsPublic ? string.Empty : "(Non Public)";
                     yield return provider.CreateItem(context, m.Name, m.IsPublic ? ~(int)score - 999 : ~(int)score, m.Name, $"{fullName} {visibilityString}", null, m);

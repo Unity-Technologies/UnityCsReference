@@ -17,7 +17,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> Print(SearchExpressionContext c)
         {
             var skipCount = 0;
-            if (EvaluatorUtils.GetFormatString(c.args[0], out var formatStr))
+            if (SearchExpression.GetFormatString(c.args[0], out var formatStr))
                 skipCount++;
 
             var outputValueFieldName = System.Guid.NewGuid().ToString("N");
@@ -30,9 +30,9 @@ namespace UnityEditor.Search
                 }
 
                 var str = new List<string>();
-                var dataSet = EvaluatorUtils.ProcessValues(expr.Execute(c), outputValueFieldName, item =>
+                var dataSet = SearchExpression.ProcessValues(expr.Execute(c), outputValueFieldName, item =>
                 {
-                    var valueStr = EvaluatorUtils.FormatItem(c.search, item, formatStr);
+                    var valueStr = SearchExpression.FormatItem(c.search, item, formatStr);
                     str.Add(valueStr);
                     return valueStr;
                 });
@@ -82,7 +82,7 @@ namespace UnityEditor.Search
                 c.ThrowError("Incomplete range");
 
             for (double d = range.start.Value; d < range.end.Value; d += 1d)
-                yield return EvaluatorUtils.CreateItem(d, alias);
+                yield return SearchExpression.CreateItem(d, alias);
         }
 
         static bool GetRange(SearchItem item, ref RangeDouble range)

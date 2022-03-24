@@ -171,6 +171,11 @@ namespace UnityEditor.Search
         {
             // Do nothing
         }
+
+        void ISearchView.SetColumns(IEnumerable<SearchColumn> columns)
+        {
+            throw new NotSupportedException("This result view cannot set columns");
+        }
     }
 
     class SearchResultViewContainer : IMGUIContainer

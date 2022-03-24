@@ -45,11 +45,14 @@ namespace UnityEditor.Search
 
             var itemIndex = 0;
             var itemRect = new Rect(screenRect.x, topSpaceSkipped + screenRect.y, viewRect.width, itemRowHeight);
+            var visibleRect = new Rect(screenRect.x, screenRect.y + m_ScrollPosition.y, screenRect.width, screenRect.height);
+            var mousePosition = evt.mousePosition;
+            var eventType = evt.type;
             foreach (var item in items)
             {
                 if (itemIndex >= itemSkipCount && itemIndex <= itemSkipCount + limitCount)
                 {
-                    DrawItem(evt, item, itemRect, itemIndex, selection);
+                    DrawItem(eventType, item, itemRect, mousePosition, visibleRect, itemIndex, selection);
                     itemRect.y += itemRect.height;
                 }
                 else
@@ -79,40 +82,68 @@ namespace UnityEditor.Search
             return Math.Max(0, Math.Min(itemCount, Mathf.RoundToInt(m_DrawItemsRect.height / m_ItemRowHeight)));
         }
 
-        private void DrawItem(in Event evt, in SearchItem item, in Rect itemRect, in int itemIndex, in ICollection<int> selection)
+        private void DrawItem(in EventType eventType, in SearchItem item, in Rect itemRect, in Vector2 mousePosition, in Rect visibleRect, in int itemIndex, in ICollection<int> selection)
         {
             bool isItemSelected = selection.Contains(itemIndex);
-            if (evt.type == EventType.Repaint)
+            if (eventType == EventType.Repaint)
             {
                 // Draw item background
                 var bgStyle = itemIndex % 2 == 0 ? Styles.itemBackground1 : Styles.itemBackground2;
                 if (isItemSelected)
                     bgStyle = Styles.selectedItemBackground;
-                bgStyle.Draw(itemRect, itemRect.Contains(evt.mousePosition), false, false, false);
+                bgStyle.Draw(itemRect, itemRect.Contains(mousePosition), false, false, false);
             }
 
             // Draw action dropdown
-            var hovered = itemRect.Contains(evt.mousePosition);
+            var hovered = itemRect.Contains(mousePosition) && visibleRect.Contains(mousePosition);
             var buttonWidth = Styles.actionButton.fixedWidth + Styles.actionButton.margin.right;
             var buttonRect = new Rect(itemRect.xMax - buttonWidth, itemRect.y + (itemRect.height - Styles.actionButton.fixedHeight) / 2f,
                 Styles.actionButton.fixedWidth, Styles.actionButton.fixedHeight);
             var markedAsFavorite = SearchSettings.searchItemFavorites.Contains(item.id);
             if (hovered || markedAsFavorite)
-                buttonRect = DrawFavoriteButton(item, markedAsFavorite, buttonWidth, buttonRect);
+            {
+                if (markedAsFavorite)
+                {
+                    if (eventType == EventType.Repaint)
+                    {
+                        Styles.actionButton.Draw(buttonRect, Styles.searchFavoriteOnButtonContent, hovered, false, false, false);
+                        EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                    }
+                    else if (eventType == EventType.MouseDown && buttonRect.Contains(mousePosition))
+                        SearchSettings.RemoveItemFavorite(item);
+                }
+                else
+                {
+                    if (eventType == EventType.Repaint)
+                    {
+                        using (new Utils.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
+                            Styles.actionButton.Draw(buttonRect, Styles.searchFavoriteButtonContent, hovered, false, false, false);
+                        EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                    }
+                    else if (eventType == EventType.MouseDown && buttonRect.Contains(mousePosition))
+                        SearchSettings.AddItemFavorite(item);
+                }
+
+                buttonRect.x -= buttonWidth;
+            }
 
             if (hovered)
             {
                 bool hasActionDropdown = searchView.selectCallback == null && searchView.selection.Count <= 1 && item.provider.actions.Count > 1;
                 if (hasActionDropdown)
                 {
-                    bool actionHover = buttonRect.Contains(evt.mousePosition);
-                    GUI.Label(buttonRect, Styles.moreActionsContent, actionHover ? Styles.actionButtonHovered : Styles.actionButton);
-                    EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
-                    if (evt.type == EventType.MouseDown && actionHover)
+                    bool actionHover = buttonRect.Contains(mousePosition);
+                    if (eventType == EventType.Repaint)
                     {
-                        var contextRect = new Rect(evt.mousePosition, new Vector2(1, 1));
+                        var actionStyle = actionHover ? Styles.actionButtonHovered : Styles.actionButton;
+                        actionStyle.Draw(buttonRect, Styles.moreActionsContent, actionHover, false, false, false);
+                        EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                    }
+                    else if (eventType == EventType.MouseDown && actionHover)
+                    {
+                        var contextRect = new Rect(mousePosition, new Vector2(1, 1));
                         searchView.ShowItemContextualMenu(item, contextRect);
-                        evt.Use();
+                        Event.current.Use();
                         GUIUtility.ExitGUI();
                     }
 
@@ -120,7 +151,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (evt.type == EventType.Repaint)
+            if (eventType == EventType.Repaint)
             {
                 // Draw thumbnail
                 var thumbnailRect = DrawListThumbnail(item, itemRect);
@@ -139,43 +170,23 @@ namespace UnityEditor.Search
                 if (!compactView)
                 {
                     var label = item.provider.fetchLabel(item, context);
-                    GUI.Label(labelRect, label, labelStyle);
+                    labelStyle.Draw(labelRect, label, hovered, false, false, false);
                     labelRect.y = labelRect.yMax + labelStyle.margin.bottom;
 
                     // Draw description
                     var labelContent = SearchContent.FormatDescription(item, context, maxWidth);
                     labelStyle = isItemSelected ? Styles.selectedItemDescription : Styles.itemDescription;
                     labelRect.y += labelStyle.margin.top;
-                    GUI.Label(labelRect, labelContent, labelStyle);
+                    labelStyle.Draw(labelRect, labelContent, hovered, false, false, false);
                 }
                 else
                 {
                     item.options |= SearchItemOptions.Compacted;
                     var labelContent = SearchContent.FormatDescription(item, context, maxWidth);
-                    GUI.Label(labelRect, labelContent, labelStyle);
+                    labelStyle.Draw(labelRect, labelContent, hovered, false, false, false);
                     item.options &= ~SearchItemOptions.Compacted;
                 }
             }
-        }
-
-        private Rect DrawFavoriteButton(in SearchItem item, in bool markedAsFavorite, in float buttonWidth, Rect buttonRect)
-        {
-            if (markedAsFavorite)
-            {
-                if (GUI.Button(buttonRect, Styles.searchFavoriteOnButtonContent, Styles.actionButton))
-                    SearchSettings.RemoveItemFavorite(item);
-                EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
-            }
-            else
-            {
-                using (new Utils.ColorScope(new Color(0.9f, 0.9f, 0.9f, 0.4f)))
-                    if (GUI.Button(buttonRect, Styles.searchFavoriteButtonContent, Styles.actionButton))
-                        SearchSettings.AddItemFavorite(item);
-                EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
-            }
-
-            buttonRect.x -= buttonWidth;
-            return buttonRect;
         }
 
         private Rect DrawListThumbnail(SearchItem item, Rect itemRect)

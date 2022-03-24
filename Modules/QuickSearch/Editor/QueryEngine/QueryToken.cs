@@ -50,7 +50,7 @@ namespace UnityEditor.Search
         }
 
         internal QueryToken(in StringView stringView, int position)
-            : this(stringView, position, stringView.Length)
+            : this(stringView, position, stringView.length)
         {}
 
         internal QueryToken(in StringView stringView, int position, int length)
@@ -62,7 +62,7 @@ namespace UnityEditor.Search
         }
 
         internal QueryToken(int position, int length)
-            : this(StringView.Empty, position, length)
+            : this(StringView.empty, position, length)
         {}
     }
 }

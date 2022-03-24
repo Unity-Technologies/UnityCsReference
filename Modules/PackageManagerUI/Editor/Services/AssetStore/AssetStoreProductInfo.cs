@@ -211,11 +211,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var url = publisher.GetString("url");
                 if (!string.IsNullOrEmpty(url) && Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink("Publisher Website", url));
+                    result.Add(GetPackageLink(L10n.Tr("Publisher Website"), url, "viewPublisherWebsite"));
 
                 var supportUrl = publisher.GetString("supportUrl");
                 if (!string.IsNullOrEmpty(supportUrl) && Uri.IsWellFormedUriString(supportUrl, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink("Publisher Support", supportUrl));
+                    result.Add(GetPackageLink(L10n.Tr("Publisher Support"), supportUrl, "viewPublisherSupport"));
             }
             return result;
         }
@@ -225,7 +225,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
             var packagePath = $"/packages/p/{slug}";
 
-            return GetPackageLink("View in the Asset Store", packagePath);
+            return GetPackageLink(L10n.Tr("View in the Asset Store"), packagePath, "viewProductInAssetStore");
         }
 
         private List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
@@ -259,11 +259,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        private PackageLink GetPackageLink(string name, string url)
+        private PackageLink GetPackageLink(string name, string url, string analyticsEventName)
         {
             if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
                 url = m_AssetStoreUtils.assetStoreUrl + url;
-            return new PackageLink { name = name, url = url };
+            return new PackageLink { name = name, url = url, analyticsEventName = analyticsEventName};
         }
     }
 }

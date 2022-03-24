@@ -17,7 +17,7 @@ namespace UnityEditor.Search
             if (!c.expression.types.IsText())
                 c.ThrowError($"Invalid selector");
 
-            yield return EvaluatorUtils.CreateItem(c.ResolveAlias("Selector"), c.expression.innerText, c.expression.innerText.ToString());
+            yield return SearchExpression.CreateItem(c.ResolveAlias("Selector"), c.expression.innerText, c.expression.innerText.ToString());
         }
 
         [SearchExpressionEvaluator(SearchExpressionEvaluationHints.DoNotValidateSignature)]

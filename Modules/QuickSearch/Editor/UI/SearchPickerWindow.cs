@@ -17,6 +17,14 @@ namespace UnityEditor.Search
             return true;
         }
 
+        internal override void OnEnable()
+        {
+            base.OnEnable();
+
+            // If we get opened from an object field, the caller will still our focus, so lets put it back in the picker.
+            Utils.CallDelayed(() => { if (this) SelectSearch(); }, 0.1d);
+        }
+
         public override void ExecuteSelection()
         {
             if (selectCallback == null || selection.Count == 0)
@@ -39,8 +47,8 @@ namespace UnityEditor.Search
 
         protected override IEnumerable<SearchItem> FetchItems()
         {
-            if (!viewState.excludeNoneItem)
-                yield return SearchItem.none;
+            if (!viewState.excludeClearItem)
+                yield return SearchItem.clear;
             foreach (var item in SearchService.GetItems(context))
             {
                 if (filterCallback != null && !filterCallback(item))
@@ -88,7 +96,6 @@ namespace UnityEditor.Search
         {
             return m_ViewState.HasFlag(SearchViewFlags.EnableSearchQuery);
         }
-
 
         public static QuickSearch ShowPicker(SearchViewState args)
         {

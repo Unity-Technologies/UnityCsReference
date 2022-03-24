@@ -207,7 +207,7 @@ namespace UnityEditor.Search
     {
         public string filterName => filter.token;
         public StringView filterValueString { get; }
-        public virtual StringView filterParams => StringView.Empty;
+        public virtual StringView filterParams => StringView.empty;
         public IFilter filter { get; }
         public QueryFilterOperator queryFilterOperator { get; }
 
@@ -279,7 +279,7 @@ namespace UnityEditor.Search
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
-            m_ParamValue = StringView.Empty;
+            m_ParamValue = StringView.empty;
             m_Param = default;
         }
 
@@ -287,7 +287,7 @@ namespace UnityEditor.Search
             : base(filter, in queryFilterOperator, filterValue)
         {
             this.m_Operation = operation;
-            m_ParamValue = StringView.Empty;
+            m_ParamValue = StringView.empty;
             m_Param = default;
         }
 

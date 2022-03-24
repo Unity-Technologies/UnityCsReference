@@ -28,6 +28,14 @@ namespace UnityEditor.Search
     /// </summary>
     public abstract class ObjectIndexer : SearchIndexer
     {
+        // Define a list of patterns that will automatically skip path entries if they start with it.
+        readonly static string[] BuiltInTransientFilePatterns = new[]
+        {
+            "~",
+            "##ignore",
+            "InitTestScene"
+        };
+
         internal SearchDatabase.Settings settings { get; private set; }
 
         private HashSet<string> m_IgnoredProperties;
@@ -78,6 +86,8 @@ namespace UnityEditor.Search
                 var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
                 if (op == SearchIndexOperator.Equal)
                     options = FindOptions.Exact;
+                else if (m_DoFuzzyMatch)
+                    options |= FindOptions.Fuzzy;
 
                 var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
                 foreach (var r in FindProvider.SearchWord(false, word, options, documents))
@@ -88,6 +98,12 @@ namespace UnityEditor.Search
             }
         }
 
+        static bool ShouldIgnorePattern(in string pattern, in string path)
+        {
+            var filename = Path.GetFileName(path);
+            return filename.StartsWith(pattern, StringComparison.Ordinal) || filename.EndsWith(pattern, StringComparison.Ordinal);
+        }
+
         /// <summary>
         /// Called when the index is built to see if a specified document needs to be indexed. See <see cref="SearchIndexer.skipEntryHandler"/>
         /// </summary>
@@ -96,11 +112,11 @@ namespace UnityEditor.Search
         /// <returns>Returns true if the document doesn't need to be indexed.</returns>
         public override bool SkipEntry(string path, bool checkRoots = false)
         {
-            if (String.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path))
                 return true;
 
-            // Skip files with ~ in their file path
-            if (path.IndexOf('~') != -1)
+            // Skip files with ~ in their file path and built-in transient files
+            if (BuiltInTransientFilePatterns.Any(pattern => ShouldIgnorePattern(pattern, path)))
                 return true;
 
             if (checkRoots)

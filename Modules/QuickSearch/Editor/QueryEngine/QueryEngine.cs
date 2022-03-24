@@ -757,7 +757,7 @@ namespace UnityEditor.Search
             }
 
             newNode.token = new QueryToken(in sv, startIndex);
-            userData.nodesToStringPosition.Add(newNode, new QueryToken(startIndex, sv.Length));
+            userData.nodesToStringPosition.Add(newNode, new QueryToken(startIndex, sv.length));
             userData.expressionNodes.Add(newNode);
             userData.tokens.Add(token);
             return true;
@@ -913,10 +913,10 @@ namespace UnityEditor.Search
             var nestedQueryAggregator = GetStringViewFromMatch(text, aggregatorGroup);
             var queryString = GetStringViewFromMatch(text, nestedGroup);
 
-            var nestedQueryString = queryString.Substring(1, queryString.Length - 2);
+            var nestedQueryString = queryString.Substring(1, queryString.length - 2);
             nestedQueryString = nestedQueryString.Trim();
             var nestedQueryNode = new NestedQueryNode(in nestedQueryString, in queryString, m_NestedQueryHandler);
-            nestedQueryNode.token = new QueryToken(startIndex + (nestedQueryAggregator.IsNullOrEmpty() ? 0 : nestedQueryAggregator.Length), queryString.Length);
+            nestedQueryNode.token = new QueryToken(startIndex + (nestedQueryAggregator.IsNullOrEmpty() ? 0 : nestedQueryAggregator.length), queryString.length);
             userData.nodesToStringPosition.Add(nestedQueryNode, nestedQueryNode.token);
             if (validationOptions.skipNestedQueries)
             {
@@ -934,12 +934,12 @@ namespace UnityEditor.Search
                 var lowerAggregator = nestedQueryAggregator.ToString().ToLowerInvariant();
                 if (!m_NestedQueryAggregators.TryGetValue(lowerAggregator, out var aggregator) && validationOptions.validateFilters && !validationOptions.validateSyntaxOnly)
                 {
-                    errors.Add(new QueryError(startIndex, nestedQueryAggregator.Length, $"Unknown nested query aggregator \"{nestedQueryAggregator}\""));
+                    errors.Add(new QueryError(startIndex, nestedQueryAggregator.length, $"Unknown nested query aggregator \"{nestedQueryAggregator}\""));
                     return false;
                 }
 
                 var aggregatorNode = new AggregatorNode(in nestedQueryAggregator, aggregator);
-                aggregatorNode.token = new QueryToken(startIndex, nestedQueryAggregator.Length + nestedQueryNode.token.length);
+                aggregatorNode.token = new QueryToken(startIndex, nestedQueryAggregator.length + nestedQueryNode.token.length);
                 userData.nodesToStringPosition.Add(aggregatorNode, aggregatorNode.token);
                 aggregatorNode.children.Add(nestedQueryNode);
                 nestedQueryNode.parent = aggregatorNode;
@@ -990,7 +990,7 @@ namespace UnityEditor.Search
 
             if (!filterTypeGroup.Success || !filterOperatorGroup.Success || !filterValueGroup.Success)
             {
-                errors.Add(new QueryError(index, token.Length, $"Could not parse filter block \"{token}\"."));
+                errors.Add(new QueryError(index, token.length, $"Could not parse filter block \"{token}\"."));
                 return null;
             }
 
@@ -1023,13 +1023,13 @@ namespace UnityEditor.Search
         {
             if (!GetFilterOperator(filter, in args.filterOperator, out var op))
             {
-                args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"Unknown filter operator \"{args.filterOperator.ToString()}\"."));
+                args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"Unknown filter operator \"{args.filterOperator.ToString()}\"."));
                 return null;
             }
 
             if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(op.token)))
             {
-                args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"The operator \"{op.token}\" is not supported for this filter."));
+                args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
                 return null;
             }
 
@@ -1047,15 +1047,15 @@ namespace UnityEditor.Search
 
                 if (validationOptions.validateFilters && m_NestedQueryHandler == null && !validationOptions.validateSyntaxOnly)
                 {
-                    args.errors.Add(new QueryError(args.filterValueIndex, args.filterValue.Length, $"Cannot use a nested query without setting the handler first."));
+                    args.errors.Add(new QueryError(args.filterValueIndex, args.filterValue.length, $"Cannot use a nested query without setting the handler first."));
                     return null;
                 }
 
                 filterNode = new InFilterNode(filter, args.filterType, in op, args.filterOperator, filterValue, rawFilterValue, args.filterParam, args.token);
 
                 var startIndex = filterValue.IndexOf('{');
-                var rawNestedQuery = filterValue.Substring(startIndex, filterValue.Length - startIndex);
-                filterValue = rawNestedQuery.Substring(1, rawNestedQuery.Length - 2);
+                var rawNestedQuery = filterValue.Substring(startIndex, filterValue.length - startIndex);
+                filterValue = rawNestedQuery.Substring(1, rawNestedQuery.length - 2);
                 filterValue = filterValue.Trim();
                 var nestedQueryNode = new NestedQueryNode(in filterValue, in rawNestedQuery, in args.filterType, m_NestedQueryHandler);
                 nestedQueryNode.token = new QueryToken(filterValue, args.filterValueIndex);
@@ -1065,7 +1065,7 @@ namespace UnityEditor.Search
                     var lowerAggregator = args.nestedQueryAggregator.ToString().ToLowerInvariant();
                     if (!m_NestedQueryAggregators.TryGetValue(lowerAggregator, out var aggregator) && validationOptions.validateFilters && !validationOptions.validateSyntaxOnly)
                     {
-                        args.errors.Add(new QueryError(args.filterValueIndex, args.nestedQueryAggregator.Length, $"Unknown nested query aggregator \"{args.nestedQueryAggregator}\""));
+                        args.errors.Add(new QueryError(args.filterValueIndex, args.nestedQueryAggregator.length, $"Unknown nested query aggregator \"{args.nestedQueryAggregator}\""));
                         return null;
                     }
 
@@ -1100,7 +1100,7 @@ namespace UnityEditor.Search
         {
             if (match.Groups.Count != 3) // There is 3 groups
             {
-                errors.Add(new QueryError(index, token.Length, $"Could not parse filter block \"{token}\"."));
+                errors.Add(new QueryError(index, token.length, $"Could not parse filter block \"{token}\"."));
                 return null;
             }
 
@@ -1114,7 +1114,7 @@ namespace UnityEditor.Search
                 filterParam = filterParam.Trim('(', ')');
             }
 
-            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in StringView.Empty, in StringView.Empty, in StringView.Empty, filterTypeIndex, 0, 0);
+            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in StringView.empty, in StringView.empty, in StringView.empty, filterTypeIndex, 0, 0);
             if (filter == null && !GetFilter(in args, out var queryNode, out filter))
             {
                 return queryNode;
@@ -1128,7 +1128,7 @@ namespace UnityEditor.Search
             var filterOperator = "=".GetStringView();
             if (!GetFilterOperator(filter, in filterOperator, out var op))
             {
-                args.errors.Add(new QueryError(args.index, args.token.Length, $"Boolean filter not supported."));
+                args.errors.Add(new QueryError(args.index, args.token.length, $"Boolean filter not supported."));
                 return null;
             }
 
@@ -1171,7 +1171,7 @@ namespace UnityEditor.Search
                 return new FilterNode(in filterType, in filterOperator, in filterValue, in filterValue, in filterParam, in token) { skipped = true };
             }
 
-            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in filterOperator, in filterValue, in StringView.Empty, filterTypeIndex, filterOperatorIndex, filterValueIndex);
+            var args = new CreateFilterTokenArgs(in token, match, index, errors, in filterType, in filterParam, in filterOperator, in filterValue, in StringView.empty, filterTypeIndex, filterOperatorIndex, filterValueIndex);
             if (filter == null && !GetFilter(in args, out var queryNode, out filter))
             {
                 return queryNode;
@@ -1186,14 +1186,14 @@ namespace UnityEditor.Search
             {
                 if (!GetFilterOperator(filter, in args.filterOperator, out op))
                 {
-                    args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"Unknown filter operator \"{args.filterOperator}\"."));
+                    args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"Unknown filter operator \"{args.filterOperator}\"."));
                     return null;
                 }
 
                 var opToken = op.token;
                 if (!validationOptions.validateSyntaxOnly && filter.supportedOperators.Any() && !filter.supportedOperators.Any(filterOp => filterOp.Equals(opToken)))
                 {
-                    args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.Length, $"The operator \"{op.token}\" is not supported for this filter."));
+                    args.errors.Add(new QueryError(args.filterOperatorIndex, args.filterOperator.length, $"The operator \"{op.token}\" is not supported for this filter."));
                     return null;
                 }
             }
@@ -1202,7 +1202,7 @@ namespace UnityEditor.Search
             var filterValue = RemoveQuotes(in rawFilterValue);
 
             var filterNode = new FilterNode(filter, in args.filterType, in op, in args.filterOperator, in filterValue, in rawFilterValue, in args.filterParam, in args.token);
-            args.errors.Add(new QueryError(args.index, args.token.Length, $"The filter \"{args.filterType}\" is incomplete."));
+            args.errors.Add(new QueryError(args.index, args.token.length, $"The filter \"{args.filterType}\" is incomplete."));
 
             return filterNode;
         }
@@ -1222,7 +1222,7 @@ namespace UnityEditor.Search
 
                 if (!validationOptions.validateSyntaxOnly && !HasDefaultHandler(!args.filterParam.IsNullOrEmpty()) && validationOptions.validateFilters)
                 {
-                    args.errors.Add(new QueryError(args.filterTypeIndex, args.filterType.Length, $"Unknown filter \"{filterTypeStr}\"."));
+                    args.errors.Add(new QueryError(args.filterTypeIndex, args.filterType.length, $"Unknown filter \"{filterTypeStr}\"."));
                     queryNode = null;
                     return false;
                 }
@@ -1367,7 +1367,7 @@ namespace UnityEditor.Search
             var localToken = token;
             var isExact = localToken.StartsWith("!");
             if (isExact)
-                localToken = localToken.Substring(1, token.Length - 1);
+                localToken = localToken.Substring(1, token.length - 1);
             var rawToken = localToken;
             localToken = RemoveQuotes(localToken);
 
@@ -2200,7 +2200,7 @@ namespace UnityEditor.Search
 
         void AddCustomPartialFilterWithQuotesTokenHandler(int handlerId, int priority, in QueryTextDelimiter textDelimiter, IEnumerable<string> operators, bool sort = true)
         {
-            AddCustomPartialFilterWithQuotesTokenHandler(handlerId, priority, BuildPartialFilterNamePatternFromToken("[\\w.]+", operators), BuildPartialFilterValuePatternFromQuoteDelimiter(textDelimiter), textDelimiter, operators, sort);
+            AddCustomPartialFilterWithQuotesTokenHandler(handlerId, priority, BuildPartialFilterNamePatternFromToken(QueryRegexValues.k_BaseFilterNameRegex, operators), BuildPartialFilterValuePatternFromQuoteDelimiter(textDelimiter), textDelimiter, operators, sort);
         }
 
         void AddCustomPartialFilterWithQuotesTokenHandler(int handlerId, int priority, string filterNamePattern, string filterValuePattern, in QueryTextDelimiter textDelimiter, IEnumerable<string> operators, bool sort = true)
@@ -2216,7 +2216,7 @@ namespace UnityEditor.Search
 
         void RebuildAllBasicPartialFilterRegex(IEnumerable<string> operators, bool sort = true)
         {
-            m_PartialFilterRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken("[\\w.]+", operators), operators);
+            m_PartialFilterRx = BuildPartialFilterRegex(BuildPartialFilterNamePatternFromToken(QueryRegexValues.k_BaseFilterNameRegex, operators), operators);
 
             // Rebuild all token handlers for partial filters with quotes
             RemoveQueryTokenHandlers(handler => handler.priority == (int)ExtendedTokenHandlerPriority.PartialWithQuotes);
@@ -2232,7 +2232,7 @@ namespace UnityEditor.Search
         static StringView GetStringViewFromMatch(string text, Group matchGroup)
         {
             if (matchGroup.Length == 0)
-                return StringView.Empty;
+                return StringView.empty;
             return new StringView(text, matchGroup.Index, matchGroup.Index + matchGroup.Length);
         }
     }

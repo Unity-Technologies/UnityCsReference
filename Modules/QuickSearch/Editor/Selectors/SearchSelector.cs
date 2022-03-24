@@ -255,7 +255,7 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchItem> SelectValues(SearchContext context, IEnumerable<SearchItem> items, string selector, string setFieldName)
         {
-            return EvaluatorUtils.ProcessValues(items, setFieldName, item => SelectValue(item, context, selector)?.ToString());
+            return SearchExpression.ProcessValues(items, setFieldName, item => SelectValue(item, context, selector)?.ToString());
         }
     }
 }

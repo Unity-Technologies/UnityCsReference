@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Text.RegularExpressions;
+using UnityEditorInternal;
 
 namespace UnityEditor.Search.Providers
 {
@@ -72,14 +73,14 @@ namespace UnityEditor.Search.Providers
             : base(gameObjects)
         {
             m_QueryEngine.AddFilter("active", IsActive);
+            m_QueryEngine.AddFilter("size", GetSize);
+            m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("layer", GetLayer);
             m_QueryEngine.AddFilter("tag", GetTag);
-            m_QueryEngine.AddFilter<string>("prefab", OnPrefabFilter, new[] { ":" });
+            m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { ":" });
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter("p", OnPropertyFilter, s => s, StringComparison.OrdinalIgnoreCase);
             m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter);
-            m_QueryEngine.AddFilter("size", GetSize);
-            m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("overlap", GetOverlapCount);
 
             m_QueryEngine.AddFiltersFromAttribute<SceneQueryEngineFilterAttribute, SceneQueryEngineParameterTransformerAttribute>();
@@ -90,45 +91,38 @@ namespace UnityEditor.Search.Providers
             return go != null && go.activeInHierarchy;
         }
 
-        bool OnPrefabFilter(GameObject go, QueryFilterOperator op, string value)
+        static bool OnPrefabFilter(GameObject go, QueryFilterOperator op, PrefabFilter value)
         {
             if (!PrefabUtility.IsPartOfAnyPrefab(go))
                 return false;
 
-            if (value == "root")
-                return PrefabUtility.IsAnyPrefabInstanceRoot(go);
-
-            if (value == "instance")
-                return PrefabUtility.IsPartOfPrefabInstance(go);
-
-            if (value == "top")
-                return PrefabUtility.IsOutermostPrefabInstanceRoot(go);
-
-            if (value == "nonasset")
-                return PrefabUtility.IsPartOfNonAssetPrefabInstance(go);
-
-            if (value == "asset")
-                return PrefabUtility.IsPartOfPrefabAsset(go);
-
-            if (value == "any")
-                return PrefabUtility.IsPartOfAnyPrefab(go);
-
-            if (value == "model")
-                return PrefabUtility.IsPartOfModelPrefab(go);
-
-            if (value == "regular")
-                return PrefabUtility.IsPartOfRegularPrefab(go);
-
-            if (value == "variant")
-                return PrefabUtility.IsPartOfVariantPrefab(go);
-
-            if (value == "modified")
-                return PrefabUtility.HasPrefabInstanceAnyOverrides(go, false);
-
-            if (value == "altered")
-                return PrefabUtility.HasPrefabInstanceAnyOverrides(go, true);
-
-            return false;
+            switch (value)
+            {
+                case PrefabFilter.Root:
+                    return PrefabUtility.IsAnyPrefabInstanceRoot(go);
+                case PrefabFilter.Instance:
+                    return PrefabUtility.IsPartOfPrefabInstance(go);
+                case PrefabFilter.Top:
+                    return PrefabUtility.IsOutermostPrefabInstanceRoot(go);
+                case PrefabFilter.NonAsset:
+                    return PrefabUtility.IsPartOfNonAssetPrefabInstance(go);
+                case PrefabFilter.Asset:
+                    return PrefabUtility.IsPartOfPrefabAsset(go);
+                case PrefabFilter.Any:
+                    return PrefabUtility.IsPartOfAnyPrefab(go);
+                case PrefabFilter.Model:
+                    return PrefabUtility.IsPartOfModelPrefab(go);
+                case PrefabFilter.Regular:
+                    return PrefabUtility.IsPartOfRegularPrefab(go);
+                case PrefabFilter.Variant:
+                    return PrefabUtility.IsPartOfVariantPrefab(go);
+                case PrefabFilter.Modified:
+                    return PrefabUtility.HasPrefabInstanceAnyOverrides(go, false);
+                case PrefabFilter.Altered:
+                    return PrefabUtility.HasPrefabInstanceAnyOverrides(go, true);
+                default:
+                    return false;
+            }
         }
 
         string GetTag(GameObject go)

@@ -110,6 +110,10 @@ namespace UnityEditorInternal
                     targetPlatform = "webgl";
                     targetArch = "";
                     return true;
+                case BuildTarget.EmbeddedLinux:
+                    targetPlatform = "embeddedlinux";
+                    targetArch = "";
+                    return true;
             }
 
             targetPlatform = null;
@@ -211,7 +215,7 @@ namespace UnityEditorInternal
                             host = $"{_hostPlatform}-{_hostArch}";
                             break;
                     }
-                    string target = $"{targetPlatform}-{targetArch}";
+                    string target = String.IsNullOrEmpty(targetArch) ? targetPlatform : $"{targetPlatform}-{targetArch}";
                     return host == target ? target : $"{host}-{target}";
                 }
             }

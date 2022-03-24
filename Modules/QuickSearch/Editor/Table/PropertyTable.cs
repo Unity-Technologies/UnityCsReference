@@ -14,6 +14,7 @@ namespace UnityEditor.Search
     interface ITableView
     {
         SearchContext context { get; }
+        bool readOnly { get; }
         void AddColumn(Vector2 mousePosition, int activeColumnIndex);
         void AddColumns(IEnumerable<SearchColumn> descriptors, int activeColumnIndex);
         void SetupColumns(IEnumerable<SearchItem> elements = null);
@@ -25,12 +26,11 @@ namespace UnityEditor.Search
         IEnumerable<SearchItem> GetRows();
         SearchTable GetSearchTable();
         void SetSelection(IEnumerable<SearchItem> items);
-        void DoubleClick(SearchItem item);
+        void OnItemExecuted(SearchItem item);
         void SetDirty();
         void AddColumnHeaderContextMenuItems(GenericMenu menu, SearchColumn sourceColumn);
         bool AddColumnHeaderContextMenuItems(GenericMenu menu);
         bool OpenContextualMenu(Event evt, SearchItem item);
-        bool IsReadOnly();
     }
 
     class PropertyItem : TreeViewItem
@@ -149,7 +149,7 @@ namespace UnityEditor.Search
                 }
 
                 // If the table view is readonly, we can't change the columns
-                if (m_TableView.IsReadOnly())
+                if (m_TableView.readOnly)
                     return;
 
                 menu.AddSeparator("");
@@ -209,7 +209,7 @@ namespace UnityEditor.Search
             public override void OnGUI(Rect rect, float xScroll)
             {
                 // If the table view is readonly, we can't change the columns or export the table
-                if (m_TableView.IsReadOnly())
+                if (m_TableView.readOnly)
                 {
                     base.OnGUI(rect, xScroll);
                     return;
@@ -388,7 +388,7 @@ namespace UnityEditor.Search
 
         protected override void DoubleClickedItem(int id)
         {
-            m_TableView.DoubleClick(((PropertyItem)FindItem(id, rootItem)).GetData());
+            m_TableView.OnItemExecuted(((PropertyItem)FindItem(id, rootItem)).GetData());
         }
 
         protected override void KeyEvent()

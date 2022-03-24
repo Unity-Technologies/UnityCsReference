@@ -31,8 +31,17 @@ namespace UnityEditor.Search
         public readonly SearchIndexer combinedIndex;
     }
 
+    internal interface ISearchDatabase
+    {
+        string name { get; }
+        IReadOnlyCollection<string> roots { get; }
+        IReadOnlyCollection<string> includePatterns { get; }
+        IReadOnlyCollection<string> excludePatterns { get; }
+        IndexingOptions indexingOptions { get; }
+    }
+
     [ExcludeFromPreset]
-    class SearchDatabase : ScriptableObject, ITaskReporter
+    class SearchDatabase : ScriptableObject, ITaskReporter, ISearchDatabase
     {
         // 1- First version
         // 2- Rename ADBIndex for SearchDatabase
@@ -164,6 +173,11 @@ namespace UnityEditor.Search
                 base.name = value;
             }
         }
+
+        public IReadOnlyCollection<string> roots => settings.roots;
+        public IReadOnlyCollection<string> includePatterns => settings.includes;
+        public IReadOnlyCollection<string> excludePatterns => settings.excludes;
+        public IndexingOptions indexingOptions => (IndexingOptions)settings.options.GetHashCode();
 
         [SerializeField] public Settings settings;
         [SerializeField, HideInInspector] public byte[] bytes;

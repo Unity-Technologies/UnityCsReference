@@ -24,11 +24,11 @@ namespace UnityEditor.Search
                 return null;
 
             var expressionName = match.Groups["name"].Value;
-            if ((expressionName.Length + expressionsStartAndLength[0].Length) != text.Length)
+            if ((expressionName.Length + expressionsStartAndLength[0].length) != text.length)
                 return null;
 
             var evaluator = EvaluatorManager.GetEvaluatorByNameDuringParsing(expressionName, text.Substring(0, expressionName.Length));
-            var parametersText = text.Substring(expressionName.Length, text.Length - expressionName.Length);
+            var parametersText = text.Substring(expressionName.Length, text.length - expressionName.Length);
             var parametersPositions = ParserUtils.ExtractArguments(parametersText, expressionName);
             var parameters = new List<SearchExpression>();
 
@@ -48,7 +48,7 @@ namespace UnityEditor.Search
                     SearchExpressionValidator.ValidateExpressionArguments(evaluator, parameters.ToArray(), signatures, text);
             }
 
-            var expressionText = ParserUtils.SimplifyExpression(expressionsStartAndLength[0].Substring(1, expressionsStartAndLength[0].Length - 2));
+            var expressionText = ParserUtils.SimplifyExpression(expressionsStartAndLength[0].Substring(1, expressionsStartAndLength[0].length - 2));
             return new SearchExpression(SearchExpressionType.Function, args.text, expressionText, evaluator, parameters.ToArray());
         }
 

@@ -15,13 +15,11 @@ namespace UnityEditor.Search
         const string k_AddlAllItemName = "Add all...";
         private readonly string m_Title;
         private readonly IEnumerable<SearchColumn> m_Columns;
-        private readonly AddColumnsHandler m_AddColumnsHandler;
+        private readonly Action<IEnumerable<SearchColumn>, int> m_AddColumnsHandler;
         private readonly int m_ActiveColumnIndex;
         private readonly Dictionary<int, SearchColumn> m_ColumnIndexes = new Dictionary<int, SearchColumn>();
 
-        public delegate void AddColumnsHandler(IEnumerable<SearchColumn> descriptors, int activeColumnIndex);
-
-        public ColumnSelector(IEnumerable<SearchColumn> descriptors, string title, AddColumnsHandler addColumnsHandler, int activeColumnIndex)
+        public ColumnSelector(IEnumerable<SearchColumn> descriptors, string title, Action<IEnumerable<SearchColumn>, int> addColumnsHandler, int activeColumnIndex)
             : base(new AdvancedDropdownState())
         {
             m_Title = title;
@@ -32,7 +30,7 @@ namespace UnityEditor.Search
             minimumSize = new Vector2(250, 350);
         }
 
-        public static AdvancedDropdown AddColumns(AddColumnsHandler addColumnsHandler, IEnumerable<SearchColumn> descriptors, Vector2 mousePosition, int activeColumnIndex)
+        public static AdvancedDropdown AddColumns(Action<IEnumerable<SearchColumn>, int> addColumnsHandler, IEnumerable<SearchColumn> descriptors, Vector2 mousePosition, int activeColumnIndex)
         {
             var dropdown = new ColumnSelector(descriptors, "Select column...", addColumnsHandler, activeColumnIndex);
             dropdown.Show(new Rect(mousePosition.x, mousePosition.y, 1, 1));
