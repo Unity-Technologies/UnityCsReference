@@ -173,7 +173,10 @@ namespace UnityEditor
             SetMipLevelDefaultForVT();
 
             m_Texture3DPreview = CreateInstance<Texture3DPreview>();
-            m_Texture3DPreview.Texture = target as Texture;
+            if (IsTexture3D())
+            {
+                m_Texture3DPreview.Texture = target as Texture;
+            }
             m_Texture3DPreview.OnEnable();
         }
 

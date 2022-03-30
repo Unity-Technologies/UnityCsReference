@@ -663,6 +663,9 @@ namespace UnityEditorInternal
                 // Collect all the names and record how many times the same name is used.
                 foreach (Component comp in comps)
                 {
+                    if (comp == null)
+                        continue;
+
                     var duplicateIndex = 0;
                     if (duplicateNames.TryGetValue(comp.GetType().Name, out duplicateIndex))
                         duplicateIndex++;

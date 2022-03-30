@@ -810,7 +810,7 @@ namespace UnityEditorInternal
             arguments.Add("--convert-in-graph");
 
             var args = arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
-            Console.WriteLine("Invoking il2cpp with arguments: " + args);
+            UnityLogWriter.WriteStringToUnityLog($"Invoking il2cpp with arguments: {args}\n");
             Runner.RunNetCoreProgram(GetIl2CppExe(), args, m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, setupStartInfo);
 
             // Copy IL2CPP outputs to StagingArea

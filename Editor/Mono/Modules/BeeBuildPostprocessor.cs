@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Bee.BeeDriver;
@@ -338,8 +339,8 @@ namespace UnityEditor.Modules
                 {
                     buildProgramAssembly.InQuotes(SlashMode.Native),
                     useCustomIl2cpp
-                        ? $"\"{il2cppPath}:{buildPipelineFolder}\""
-                        : $"\"{beePlatformFolder}:{buildPipelineFolder}\""
+                        ? $"\"{il2cppPath}{Path.PathSeparator}{buildPipelineFolder}\""
+                        : $"\"{beePlatformFolder}{Path.PathSeparator}{buildPipelineFolder}\""
                 });
         }
 

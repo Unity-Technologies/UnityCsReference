@@ -427,7 +427,7 @@ namespace UnityEngine.TextCore.Text
                     switch ((int)sourceText[i + 1])
                     {
                         case 85: // \U00000000 for UTF-32 Unicode
-                            if (sourceText.Length > i + 9)
+                            if (sourceText.Length > i + 9 && IsValidUTF32(sourceText, i + 2))
                             {
                                 if (writeIndex == charBuffer.Length)
                                     ResizeInternalArray(ref charBuffer);
@@ -487,7 +487,7 @@ namespace UnityEngine.TextCore.Text
                             writeIndex += 1;
                             continue;
                         case 117: // \u0000 for UTF-16 Unicode
-                            if (sourceText.Length > i + 5)
+                            if (sourceText.Length > i + 5 && IsValidUTF16(sourceText, i + 2))
                             {
                                 if (writeIndex == charBuffer.Length)
                                     ResizeInternalArray(ref charBuffer);
@@ -859,6 +859,18 @@ namespace UnityEngine.TextCore.Text
             return style;
         }
 
+        static bool IsValidUTF16(string text, int index)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                uint c = text[index + i];
+                if (!(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'))
+                    return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Convert UTF-32 Hex to Char
         /// </summary>
@@ -877,6 +889,18 @@ namespace UnityEngine.TextCore.Text
             unicode += HexToInt(text[i + 6]) << 4;
             unicode += HexToInt(text[i + 7]);
             return unicode;
+        }
+
+        static bool IsValidUTF32(string text, int index)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                uint c = text[index + i];
+                if (!(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'))
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>

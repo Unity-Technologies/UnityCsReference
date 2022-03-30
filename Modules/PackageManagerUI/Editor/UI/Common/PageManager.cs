@@ -226,6 +226,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     requireUserLoggedIn = false,
                     supportLocalReordering = true,
                     requireNetwork = false,
+                    supportFilters = true,
                     orderingValues = new[]
                     {
                         new PageCapability.Ordering("Name (asc)", "displayName", PageCapability.Order.Ascending),

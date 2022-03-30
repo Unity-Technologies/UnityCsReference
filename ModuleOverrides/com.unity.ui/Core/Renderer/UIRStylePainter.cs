@@ -440,6 +440,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // Draw background image (be it from a texture or a vector image)
                 var rectParams = new MeshGenerationContextUtils.RectangleParams();
+                float sliceScale = 1.0f;
 
                 if (background.texture != null)
                 {
@@ -459,6 +460,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         currentElement.panel.contextType,
                         radiusParams.HasRadius(Tessellation.kEpsilon),
                         ref slices);
+
+                    sliceScale *= UIElementsUtility.PixelsPerUnitScaleForElement(visualElement, background.sprite);
                 }
                 else if (background.renderTexture != null)
                 {
@@ -494,6 +497,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 rectParams.color = style.unityBackgroundImageTintColor;
                 rectParams.colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.tintColorID);
+                rectParams.sliceScale = sliceScale;
 
                 MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
 

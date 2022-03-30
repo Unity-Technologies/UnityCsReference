@@ -72,6 +72,7 @@ namespace UnityEditor
             public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling", "Profiling is only enabled in a Development Player.");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.");
             public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.");
+            public GUIContent managedDebuggerFixedPort = EditorGUIUtility.TrTextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.");
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
             public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
@@ -937,6 +938,12 @@ namespace UnityEditor
                         if (EditorUserBuildSettings.allowDebugging && shouldDrawWaitForManagedDebugger)
                         {
                             EditorUserBuildSettings.waitForManagedDebugger = EditorGUILayout.Toggle(styles.waitForManagedDebugger, EditorUserBuildSettings.waitForManagedDebugger);
+                        }
+
+                        bool shouldDrawManagedDebuggerFixedPort = buildWindowExtension != null ? buildWindowExtension.ShouldDrawManagedDebuggerFixedPort() : false;
+                        if (EditorUserBuildSettings.allowDebugging && shouldDrawManagedDebuggerFixedPort)
+                        {
+                            EditorUserBuildSettings.managedDebuggerFixedPort = EditorGUILayout.IntField(styles.managedDebuggerFixedPort, EditorUserBuildSettings.managedDebuggerFixedPort);
                         }
                     }
 
