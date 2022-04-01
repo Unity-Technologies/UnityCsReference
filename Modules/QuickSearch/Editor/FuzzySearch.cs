@@ -62,6 +62,12 @@ namespace UnityEditor.Search
             }
         }
 
+        public static bool FuzzyMatch(string pattern, string origin, List<int> matches = null)
+        {
+            long score = 0;
+            return FuzzyMatch(pattern, origin, ref score, matches);
+        }
+
         /// <summary>
         /// Performs a fuzzy search on a string to see if it matches a pattern.
         /// </summary>
@@ -87,6 +93,7 @@ namespace UnityEditor.Search
                 if (string.IsNullOrEmpty(pattern)) return true;
 
                 str = origin.ToLowerInvariant();
+                pattern = pattern.ToLowerInvariant();
                 pattern_n = pattern.Length;
 
                 // find [str_start..str_end) that contains pattern's first and last letter

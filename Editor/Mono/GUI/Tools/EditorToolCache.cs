@@ -247,7 +247,6 @@ namespace UnityEditor.EditorTools
 
         void CollectEditorsForTracker(EditorToolContext ctx, ActiveEditorTracker tracker, List<ComponentEditor> editors)
         {
-
             var trackerEditors = tracker.activeEditors;
 
             for (int i = 0, c = trackerEditors.Length; i < c; i++)
@@ -255,7 +254,7 @@ namespace UnityEditor.EditorTools
                 var editor = trackerEditors[i];
                 var target = editor != null ? editor.target : null;
 
-                if (target == null)
+                if (target == null || EditorUtility.IsPersistent(target))
                     return;
 
                 var eligible = GetEditorsForTargetType(editor.target.GetType());

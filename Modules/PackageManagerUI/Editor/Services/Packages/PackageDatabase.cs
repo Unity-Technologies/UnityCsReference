@@ -215,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 => (directDependenciesOnly ? p.dependencies : p.resolvedDependencies)?.Any(r => r.name == version.name) ?? false);
         }
 
-        public virtual IEnumerable<IPackageVersion> GetFeatureDependents(IPackageVersion version)
+        public virtual IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)
         {
             return GetReverseDependencies(version, true)?.Where(p => p.HasTag(PackageTag.Feature)) ?? Enumerable.Empty<IPackageVersion>();
         }
@@ -383,20 +383,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDownloadFinalized(IOperation operation)
         {
+            // We want to call RefreshLocal() before calling GetPackage(operation.packageUniqueId),
+            // because if we call GetPackage first, we might get an old instance of the package.
+            // This is due to RefreshLocal potentially replacing the instance in the database with a new one.
+            var downloadOperation = operation as AssetStoreDownloadOperation;
+            if (downloadOperation?.state == DownloadState.Completed)
+                m_AssetStoreClient.RefreshLocal();
+
             var package = GetPackage(operation.packageUniqueId);
             if (package == null)
                 return;
 
-            var downloadOperation = operation as AssetStoreDownloadOperation;
-            if (downloadOperation != null)
-            {
-                if (downloadOperation.state == DownloadState.Error)
-                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
-                else if (downloadOperation.state == DownloadState.Aborted)
-                    AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
-                else if (downloadOperation.state == DownloadState.Completed)
-                    m_AssetStoreClient.RefreshLocal();
-            }
+            if (downloadOperation?.state == DownloadState.Error)
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage, UIError.Attribute.IsClearable));
+            else if (downloadOperation?.state == DownloadState.Aborted)
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, downloadOperation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
 
             SetPackageProgress(package, PackageProgress.None);
         }
@@ -808,7 +809,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot import package {package.displayName}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot import package {package.displayName}: {e.Message}");
             }
         }
     }

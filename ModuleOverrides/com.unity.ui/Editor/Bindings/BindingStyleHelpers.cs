@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,6 +11,12 @@ namespace UnityEditor.UIElements.Bindings
     internal static class BindingsStyleHelpers
     {
         internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
+        private enum BarType
+        {
+            PrefabOverride,
+            LiveProperty
+        }
+
         private static void UpdateElementRecursively(VisualElement element, SerializedProperty prop, Action<VisualElement, SerializedProperty> updateCallback)
         {
             VisualElement elementToUpdate = element;
@@ -79,7 +84,10 @@ namespace UnityEditor.UIElements.Bindings
                 return;
 
             // Handle prefab state.
-            UpdatePrefabStateStyle(element, prop);
+            UpdatePrefabStateStyleFromProperty(element, prop);
+
+            // Handle live property state.
+            UpdateLivePropertyStyleFromProperty(element, prop);
 
             // Handle dynamic states
             updateBindingStateStyle?.Invoke(element, prop);
@@ -102,6 +110,66 @@ namespace UnityEditor.UIElements.Bindings
             inputElement.EnableInClassList(BindingExtensions.animationRecordedUssClassName, animated && recording);
             inputElement.EnableInClassList(BindingExtensions.animationCandidateUssClassName, animated && !recording && candidate);
             inputElement.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, animated && !recording && !candidate);
+        }
+
+        internal static void UpdateLivePropertyStyleFromProperty(VisualElement element, SerializedProperty prop)
+        {
+            bool handleLivePropertyState = false;
+
+            try
+            {
+                // This can throw if the serialized object changes type under our feet
+                handleLivePropertyState = prop.isLiveModified;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            if (handleLivePropertyState)
+            {
+                if (!element.ClassListContains(BindingExtensions.livePropertyUssClassName))
+                {
+                    var container = FindPrefabOverrideOrLivePropertyBarCompatibleParent(element);
+                    var barContainer = container?.livePropertyYellowBarsContainer;
+
+                    element.AddToClassList(BindingExtensions.livePropertyUssClassName);
+
+                    if (container != null && barContainer != null)
+                    {
+                        var livePropertyBar = new VisualElement();
+                        livePropertyBar.name = BindingExtensions.livePropertyBarName;
+                        livePropertyBar.userData = element;
+                        livePropertyBar.AddToClassList(BindingExtensions.livePropertyBarUssClassName);
+                        barContainer.Add(livePropertyBar);
+
+                        element.SetProperty(BindingExtensions.livePropertyBarName, livePropertyBar);
+
+                        // We need to try and set the bar style right away, even if the container
+                        // didn't compute its layout yet. This is for when the override is done after
+                        // everything has been layed out.
+                        UpdatePrefabOverrideOrLivePropertyBarStyle(livePropertyBar);
+
+                        // We intentionally re-register this event on the container per element and
+                        // never unregister.
+                        container.RegisterCallback<GeometryChangedEvent, BarType>(UpdatePrefabOverrideOrLivePropertyBarStyleEvent, BarType.LiveProperty);
+                    }
+                }
+            }
+            else if (element.ClassListContains(BindingExtensions.livePropertyUssClassName))
+            {
+                element.RemoveFromClassList(BindingExtensions.livePropertyUssClassName);
+
+                var container = FindPrefabOverrideOrLivePropertyBarCompatibleParent(element);
+                var barContainer = container?.livePropertyYellowBarsContainer;
+
+                if (container != null && barContainer != null)
+                {
+                    var livePropertyBar = element.GetProperty(BindingExtensions.livePropertyBarName) as VisualElement;
+                    if (livePropertyBar != null)
+                        livePropertyBar.RemoveFromHierarchy();
+                }
+            }
         }
 
         internal static void UpdatePrefabStateStyle(VisualElement element, SerializedProperty prop)
@@ -133,7 +201,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 if (!element.ClassListContains(BindingExtensions.prefabOverrideUssClassName))
                 {
-                    var container = FindPrefabOverrideBarCompatibleParent(element);
+                    var container = FindPrefabOverrideOrLivePropertyBarCompatibleParent(element);
                     var barContainer = container?.prefabOverrideBlueBarsContainer;
 
                     element.AddToClassList(BindingExtensions.prefabOverrideUssClassName);
@@ -158,11 +226,11 @@ namespace UnityEditor.UIElements.Bindings
                         // We need to try and set the bar style right away, even if the container
                         // didn't compute its layout yet. This is for when the override is done after
                         // everything has been layed out.
-                        UpdatePrefabOverrideBarStyle(prefabOverrideBar);
+                        UpdatePrefabOverrideOrLivePropertyBarStyle(prefabOverrideBar);
 
                         // We intentionally re-register this event on the container per element and
                         // never unregister.
-                        container.RegisterCallback<GeometryChangedEvent>(UpdatePrefabOverrideBarStyleEvent);
+                        container.RegisterCallback<GeometryChangedEvent, BarType>(UpdatePrefabOverrideOrLivePropertyBarStyleEvent, BarType.PrefabOverride);
                     }
                 }
             }
@@ -170,7 +238,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
 
-                var container = FindPrefabOverrideBarCompatibleParent(element);
+                var container = FindPrefabOverrideOrLivePropertyBarCompatibleParent(element);
                 var barContainer = container?.prefabOverrideBlueBarsContainer;
 
                 if (container != null && barContainer != null)
@@ -182,17 +250,17 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        private static InspectorElement FindPrefabOverrideBarCompatibleParent(VisualElement field)
+        private static InspectorElement FindPrefabOverrideOrLivePropertyBarCompatibleParent(VisualElement field)
         {
-            // For now we only support these blue prefab override bars within an InspectorElement.
+            // For now we only support these blue prefab override bars and yellow live property bars within an InspectorElement.
             return field.GetFirstAncestorOfType<InspectorElement>();
         }
 
-        private static void UpdatePrefabOverrideBarStyle(VisualElement blueBar)
+        private static void UpdatePrefabOverrideOrLivePropertyBarStyle(VisualElement bar)
         {
-            var element = blueBar.userData as VisualElement;
+            var element = bar.userData as VisualElement;
 
-            var container = FindPrefabOverrideBarCompatibleParent(element);
+            var container = FindPrefabOverrideOrLivePropertyBarCompatibleParent(element);
             if (container == null)
                 return;
 
@@ -208,23 +276,29 @@ namespace UnityEditor.UIElements.Bindings
             // because most fields have a small margin.
             var bottomOffset = element.resolvedStyle.marginBottom;
 
-            blueBar.style.top = top;
-            blueBar.style.height = elementHeight + bottomOffset;
-            blueBar.style.left = 0.0f;
+            bar.style.top = top;
+            bar.style.height = elementHeight + bottomOffset;
+            bar.style.left = 0.0f;
         }
 
-        private static void UpdatePrefabOverrideBarStyleEvent(GeometryChangedEvent evt)
+        private static void UpdatePrefabOverrideOrLivePropertyBarStyleEvent(GeometryChangedEvent evt, BarType barType)
         {
             var container = evt.target as InspectorElement;
             if (container == null)
                 return;
 
-            var barContainer = container.Q(BindingExtensions.prefabOverrideBarContainerName);
+            var barContainer = barType switch
+            {
+                BarType.PrefabOverride => container.Q(BindingExtensions.prefabOverrideBarContainerName),
+                BarType.LiveProperty => container.Q(BindingExtensions.livePropertyBarContainerName),
+                _ => throw new ArgumentOutOfRangeException(nameof(barType), barType, null)
+            };
+
             if (barContainer == null)
                 return;
 
-            foreach (var bar in barContainer.Children())
-                UpdatePrefabOverrideBarStyle(bar);
+            for (var i = 0; i < barContainer.childCount; i++)
+                UpdatePrefabOverrideOrLivePropertyBarStyle(barContainer[i]);
         }
 
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)

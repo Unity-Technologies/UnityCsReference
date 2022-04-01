@@ -134,6 +134,14 @@ namespace UnityEngine.Tilemaps
             return tiles;
         }
 
+        [FreeFunction(Name = "TilemapBindings::GetTileAssetsBlockNonAlloc", HasExplicitThis = true)]
+        internal extern int GetTileAssetsBlockNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Object[] tiles);
+
+        public int GetTilesBlockNonAlloc(BoundsInt bounds, TileBase[] tiles)
+        {
+            return GetTileAssetsBlockNonAlloc(bounds.min, bounds.size, tiles);
+        }
+
         public extern int GetTilesRangeCount(Vector3Int startPosition, Vector3Int endPosition);
 
         [FreeFunction(Name = "TilemapBindings::GetTileAssetsRangeNonAlloc", HasExplicitThis = true)]
@@ -355,12 +363,19 @@ namespace UnityEngine.Tilemaps
             }
         }
 
-        [RequiredByNativeCode]
-        internal void GetSyncTileCallbackSettings(ref bool hasSyncTileCallback, ref bool hasPositionsChangedCallback, ref bool isBufferSyncTile)
+        internal struct SyncTileCallbackSettings
         {
-            hasSyncTileCallback = HasSyncTileCallback();
-            hasPositionsChangedCallback = HasPositionsChangedCallback();
-            isBufferSyncTile = bufferSyncTile;
+            internal bool hasSyncTileCallback;
+            internal bool hasPositionsChangedCallback;
+            internal bool isBufferSyncTile;
+        }
+
+        [RequiredByNativeCode]
+        internal void GetSyncTileCallbackSettings(ref SyncTileCallbackSettings settings)
+        {
+            settings.hasSyncTileCallback = HasSyncTileCallback();
+            settings.hasPositionsChangedCallback = HasPositionsChangedCallback();
+            settings.isBufferSyncTile = bufferSyncTile;
         }
 
         internal extern void SendAndClearSyncTileBuffer();
@@ -489,6 +504,17 @@ namespace UnityEngine.Tilemaps
         private int m_GameObject;
         private TileFlags m_Flags;
         private Tile.ColliderType m_ColliderType;
+
+        internal static readonly TileData Default = CreateDefault();
+        private static TileData CreateDefault()
+        {
+            TileData tileData = default;
+            tileData.color = Color.white;
+            tileData.transform = Matrix4x4.identity;
+            tileData.flags = default;
+            tileData.colliderType = default;
+            return tileData;
+        }
     }
 
     [RequiredByNativeCode]

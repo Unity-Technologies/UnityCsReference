@@ -903,6 +903,18 @@ namespace UnityEngine
 {
     public sealed partial class QualitySettings
     {
+        /// <summary>
+        /// Callback raised when the current active quality level is being changed
+        /// It passes to the callback the previous quality level and the current quality level
+        /// </summary>
+        public static event Action<int,int> activeQualityLevelChanged;
+
+        [RequiredByNativeCode]
+        internal static void OnActiveQualityLevelChanged(int previousQualityLevel, int currentQualityLevel)
+        {
+            activeQualityLevelChanged?.Invoke(previousQualityLevel, currentQualityLevel);
+        }
+
         public static void IncreaseLevel([uei.DefaultValue("false")] bool applyExpensiveChanges)
         {
             SetQualityLevel(GetQualityLevel() + 1, applyExpensiveChanges);

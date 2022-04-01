@@ -107,6 +107,9 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
+            if (textEdition.isReadOnly)
+                return;
+
             bool hasChanged = false;
             if (evt.eventTypeId == KeyDownEvent.TypeId())
             {
@@ -153,15 +156,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-            [EventInterest(typeof(BlurEvent))]
+        [EventInterest(typeof(BlurEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt == null)
-            {
+            if (evt == null || textEdition.isReadOnly)
                 return;
-            }
 
             if (evt.eventTypeId == BlurEvent.TypeId())
             {

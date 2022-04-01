@@ -176,7 +176,7 @@ namespace Unity.UI.Builder
                 {
                     Debug.LogError("UI Builder: VisualTreeAsset.m_Usings field has not been found! Update the reflection code!");
                 }
-                stringBuilder.Append(" " + BuilderConstants.UxmlEndTagSymbol);
+                stringBuilder.Append(BuilderConstants.UxmlEndTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
 
@@ -246,7 +246,7 @@ namespace Unity.UI.Builder
                 styleSheetPath = GetProcessedPathForSrcAttribute(styleSheet, vtaPath, styleSheetPath);
                 AppendElementAttribute("src", styleSheetPath, stringBuilder);
             }
-            stringBuilder.Append(" " + BuilderConstants.UxmlEndTagSymbol);
+            stringBuilder.Append(BuilderConstants.UxmlEndTagSymbol);
             stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
 
             hasChildTags = true;
@@ -361,7 +361,7 @@ namespace Unity.UI.Builder
                     foreach (var attributeOverride in overrides)
                         AppendElementAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value, stringBuilder);
 
-                    stringBuilder.Append(" " + BuilderConstants.UxmlCloseTagSymbol);
+                    stringBuilder.Append(BuilderConstants.UxmlEndTagSymbol);
                     stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 }
 
@@ -387,7 +387,7 @@ namespace Unity.UI.Builder
 
                 hasChildTags = true;
             }
-            
+
             // Iterate through Uxml Objects
             var entry = vta.GetUxmlObjectEntry(root.id);
             if (entry.uxmlObjectAssets != null && entry.uxmlObjectAssets.Count > 0)
@@ -397,7 +397,7 @@ namespace Unity.UI.Builder
                     stringBuilder.Append(BuilderConstants.UxmlCloseTagSymbol);
                     stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 }
-                
+
                 foreach (var childVea in entry.uxmlObjectAssets)
                     GenerateUXMLRecursive(
                         vta, vtaPath, childVea, idToChildren, stringBuilder,
@@ -416,7 +416,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                stringBuilder.Append(" " + BuilderConstants.UxmlEndTagSymbol);
+                stringBuilder.Append(BuilderConstants.UxmlEndTagSymbol);
                 stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
         }

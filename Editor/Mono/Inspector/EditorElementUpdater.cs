@@ -65,8 +65,8 @@ namespace UnityEditor
         /// <param name="count">The number of elements to create.</param>
         public void CreateInspectorElementsWithoutLayout(int count)
         {
-            for (var i = 0; m_Index < m_EditorElements.Count && i < count; i++, m_Index++)
-                m_EditorElements[m_Index].CreateInspectorElement();
+            for (var i = 0; m_Index < m_EditorElements.Count && i < count; i++)
+                m_EditorElements[m_Index++].CreateInspectorElement();
         }
 
         /// <summary>

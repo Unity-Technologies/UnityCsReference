@@ -55,7 +55,7 @@ namespace Unity.UI.Builder
             m_DetailsView = new VariableInfoView();
             m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
             detailsContent = m_DetailsView;
-            onSelectionChange += data =>
+            selectionChanged += data =>
             {
                 m_DetailsView.SetInfo(data);
                 if (data.IsValid())

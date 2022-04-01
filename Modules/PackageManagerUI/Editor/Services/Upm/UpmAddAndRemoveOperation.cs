@@ -15,6 +15,15 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
+        protected override string operationErrorMessage
+        {
+            get
+            {
+                var packageIds = packageIdsToAdd.Concat(packagesNamesToRemove);
+                return string.Format(L10n.Tr("Error adding/removing packages: {0}."), string.Join(",", packageIds.ToArray()));
+            }
+        }
+
         [SerializeField]
         protected string[] m_PackageIdsToReset = new string[0];
         public IEnumerable<string> packageIdsToReset => m_PackageIdsToReset;

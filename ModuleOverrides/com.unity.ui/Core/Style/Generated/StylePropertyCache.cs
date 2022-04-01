@@ -94,6 +94,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-bottom", "<integer>"},
             {"-unity-slice-left", "<integer>"},
             {"-unity-slice-right", "<integer>"},
+            {"-unity-slice-scale", "<length>"},
             {"-unity-slice-top", "<integer>"},
             {"-unity-text-align", "upper-left | middle-left | lower-left | upper-center | middle-center | lower-center | upper-right | middle-right | lower-right"},
             {"-unity-text-outline", "<length> || <color>"},

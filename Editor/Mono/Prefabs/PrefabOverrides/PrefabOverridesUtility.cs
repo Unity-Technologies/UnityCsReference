@@ -171,6 +171,10 @@ namespace UnityEditor.SceneManagement
                 // Find asset objects that no instance objects are referencing
                 foreach (var assetComponent in s_AssetComponentList)
                 {
+                    // This is possible if there's a component with a missing script.
+                    if (assetComponent == null)
+                        continue;
+
                     bool found = false;
                     foreach (var instanceComponent in s_ComponentList)
                     {

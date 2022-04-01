@@ -26,13 +26,6 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
                 return;
 
-            // Yoga DOES NOT expect the node tree to mutate while layout is being computed.
-            // it could lead to crashes (EXC_BAD_ACCESS)
-            if ((versionChangeType & VersionChangeType.Hierarchy) != 0 && panel.duringLayoutPhase)
-            {
-                throw new InvalidOperationException("Hierarchy change detected while computing layout, this is not supported.");
-            }
-
             var yogaNode = ve.yogaNode;
             if (yogaNode != null && yogaNode.IsMeasureDefined)
             {
@@ -40,12 +33,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        List<KeyValuePair<Rect, VisualElement>> changeEventsList = new List<KeyValuePair<Rect, VisualElement>>();
+
         public override void Update()
         {
             // update flex once
             int validateLayoutCount = 0;
             while (visualTree.yogaNode.IsDirty)
             {
+                changeEventsList.Clear();
+
                 // Doing multiple layout passes requires to update the styles or else the
                 // elements may not be initialized properly and the resulting layout will be invalid.
                 if (validateLayoutCount > 0)
@@ -55,10 +52,8 @@ namespace UnityEngine.UIElements
                 visualTree.yogaNode.CalculateLayout();
                 panel.duringLayoutPhase = false;
 
-                using (new EventDispatcherGate(visualTree.panel.dispatcher))
-                {
-                    UpdateSubTree(visualTree, validateLayoutCount);
-                }
+                UpdateSubTree(visualTree, true, changeEventsList);
+                DispatchChangeEvents(changeEventsList, validateLayoutCount);
 
                 if (validateLayoutCount++ >= kMaxValidateLayoutCount)
                 {
@@ -75,19 +70,23 @@ namespace UnityEngine.UIElements
             visualTree.focusController.ReevaluateFocus();
         }
 
-        private void UpdateSubTree(VisualElement ve, int currentLayoutPass, bool isDisplayed = true)
+        private void UpdateSubTree(VisualElement ve, bool isDisplayed, List<KeyValuePair<Rect, VisualElement>> changeEvents)
         {
             Rect yogaLayoutRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
+
+            // we encode right/bottom into width/height
+            Rect rawPadding = new Rect(ve.yogaNode.LayoutPaddingLeft, ve.yogaNode.LayoutPaddingLeft, ve.yogaNode.LayoutPaddingRight, ve.yogaNode.LayoutPaddingBottom);
+
             // This is not the "real" padding rect: it may differ in size and position because the borders are ignored.
             // Alone, it cannot be used to identify padding size changes, because the bottom and right values depend on the
             // layout rect width/height. A change in layout rect width/height with a corresponding variation in
             // right/bottom values may yield the same pseudoPaddingRect. Fortunately, the layout rect size and padding rect
             // size change trigger the same code path which explains why we haven't seen any issue with this so far.
             Rect yogaPseudoPaddingRect = new Rect(
-                ve.yogaNode.LayoutPaddingLeft,
-                ve.yogaNode.LayoutPaddingTop,
-                ve.yogaNode.LayoutWidth - (ve.yogaNode.LayoutPaddingLeft + ve.yogaNode.LayoutPaddingRight),
-                ve.yogaNode.LayoutHeight - (ve.yogaNode.LayoutPaddingTop + ve.yogaNode.LayoutPaddingBottom));
+               rawPadding.x,
+                rawPadding.y,
+                yogaLayoutRect.width - (rawPadding.x + rawPadding.width),
+                yogaLayoutRect.height - (rawPadding.y + rawPadding.height));
             Rect lastLayoutRect = ve.lastLayout;
             Rect lastPseudoPaddingRect = ve.lastPseudoPadding;
             bool wasHierarchyDisplayed = ve.isHierarchyDisplayed;
@@ -124,20 +123,15 @@ namespace UnityEngine.UIElements
                 var childCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childCount; ++i)
                 {
-                    UpdateSubTree(ve.hierarchy[i], currentLayoutPass, isDisplayed);
+                    UpdateSubTree(ve.hierarchy[i], isDisplayed, changeEvents);
                 }
             }
 
             // Only send GeometryChanged events when the layout changes
-            // (padding changes don't affect the element's geometry).
+            // (padding changes don't affect the element's outer geometry).
             if ((layoutSizeChanged || layoutPositionChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
             {
-                using (var evt = GeometryChangedEvent.GetPooled(lastLayoutRect, yogaLayoutRect))
-                {
-                    evt.layoutPass = currentLayoutPass;
-                    evt.target = ve;
-                    ve.HandleEventAtTargetAndDefaultPhase(evt);
-                }
+                changeEvents.Add(new KeyValuePair<Rect, VisualElement>(lastLayoutRect, ve));
             }
 
             if (hasNewLayout)
@@ -145,5 +139,22 @@ namespace UnityEngine.UIElements
                 ve.yogaNode.MarkLayoutSeen();
             }
         }
+
+
+        private void DispatchChangeEvents(List<KeyValuePair<Rect, VisualElement>> changeEvents, int currentLayoutPass)
+        {
+            foreach (var changeElement in changeEvents)
+            {
+                var ve = changeElement.Value;
+
+                using (var evt = GeometryChangedEvent.GetPooled(changeElement.Key, ve.lastLayout))
+                {
+                    evt.layoutPass = currentLayoutPass;
+                    evt.target = ve;
+                    ve.HandleEventAtTargetAndDefaultPhase(evt);
+                }
+            }
+        }
+
     }
 }

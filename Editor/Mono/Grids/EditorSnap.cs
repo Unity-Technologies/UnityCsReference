@@ -60,9 +60,9 @@ namespace UnityEditor
             }
         }
 
-        internal static bool gridSnapActive
+        public static bool gridSnapActive
         {
-            get { return !incrementalSnapActive && activeToolGridSnapEnabled && instance.snapEnabled; }
+            get { return !incrementalSnapActive && activeToolGridSnapEnabled && gridSnapEnabled; }
         }
 
         public static event Action gridSnapEnabledChanged;
@@ -85,12 +85,18 @@ namespace UnityEditor
             }
         }
 
+        public static Vector3 gridSize
+        {
+            get => GridSettings.size;
+            set => GridSettings.size = value;
+        }
+
         internal static bool hotkeyActive
         {
             get { return EditorGUI.actionKey; }
         }
 
-        internal static bool incrementalSnapActive
+        public static bool incrementalSnapActive
         {
             get { return Event.current != null && EditorGUI.actionKey; }
         }

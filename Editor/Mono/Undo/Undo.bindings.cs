@@ -25,6 +25,18 @@ namespace UnityEditor
         public bool keepPrefabOverride { get { return m_KeepPrefabOverride != 0; } set { m_KeepPrefabOverride = value ? 1 : 0; } }
     }
 
+    [RequiredByNativeCode]
+    public struct UndoRedoInfo
+    {
+        public string undoName;
+        public int undoGroup;
+        [NativeName("isRedo")]
+        int m_IsRedo;
+
+        public bool isRedo { get { return m_IsRedo != 0; } set { m_IsRedo = value ? 1 : 0; } }
+
+    }
+
     internal class AtomicUndoScope : IDisposable
     {
         bool m_Disposed;
@@ -155,6 +167,9 @@ namespace UnityEditor
         [FreeFunction("RegisterChildrenOrderUndo")]
         public static extern void RegisterChildrenOrderUndo([NotNull] Object objectToUndo, string name);
 
+        [FreeFunction("RegisterFileChangeUndo_Internal")]
+        internal static extern void RegisterFileChangeUndo(GUID prefabToUndo, [NotNull] byte[] oldFileContent, [NotNull] byte[] newFileContent);
+
         [FreeFunction("RegisterFullObjectHierarchyUndo")]
         public static extern void RegisterFullObjectHierarchyUndo([NotNull] Object objectToUndo, string name);
 
@@ -244,8 +259,18 @@ namespace UnityEditor
         // Undo/redo performed
         public delegate void UndoRedoCallback();
 
+        /* TODO_UNDO
+           This can't be properly deprecated until all packages being tested through Katana that use the old callback have been updated to use the new callback.
+        [Obsolete("Use Undo.undoRedoEvent instead which provides Undo Event information", false)] */
         public static UndoRedoCallback undoRedoPerformed;
+        [Obsolete("Use m_UndoRedoEvent instead", false)]
         private static DelegateWithPerformanceTracker<UndoRedoCallback> m_UndoRedoPerformedEvent = new DelegateWithPerformanceTracker<UndoRedoCallback>($"{nameof(Undo)}.{nameof(undoRedoPerformed)}");
+
+        // Undo event
+        public delegate void UndoRedoEventCallback(in UndoRedoInfo undo);
+
+        public static UndoRedoEventCallback undoRedoEvent;
+        private static DelegateWithPerformanceTracker<UndoRedoEventCallback> m_UndoRedoEvent = new DelegateWithPerformanceTracker<UndoRedoEventCallback>($"{nameof(Undo)}.{nameof(undoRedoEvent)}");
 
         // Called when about to flush undo recording
         public delegate void WillFlushUndoRecord();
@@ -287,10 +312,17 @@ namespace UnityEditor
                 evt();
         }
 
+        [Obsolete("Use Undo.Internal_CallUndoRedoEvent instead")]
         private static void Internal_CallUndoRedoPerformed()
         {
             foreach (var evt in m_UndoRedoPerformedEvent.UpdateAndInvoke(undoRedoPerformed))
                 evt();
+        }
+
+        private static void Internal_CallUndoRedoEvent(UndoRedoInfo undoInfo)
+        {
+            foreach (var evt in m_UndoRedoEvent.UpdateAndInvoke(undoRedoEvent))
+                evt(undoInfo);
         }
 
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]

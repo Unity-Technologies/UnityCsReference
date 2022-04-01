@@ -168,6 +168,7 @@ namespace UnityEditor
         extern private static System.Type Internal_GetScriptableObjectEditorCurveValueType([NotNull] ScriptableObject scriptableObject, EditorCurveBinding binding);
 
         extern public static bool GetFloatValue([NotNull] GameObject root, EditorCurveBinding binding, out float data);
+        extern public static bool GetDiscreteIntValue([NotNull] GameObject root, EditorCurveBinding binding, out int data);
         public static bool GetObjectReferenceValue(GameObject root, EditorCurveBinding binding, out Object data)
         {
             data = Internal_GetObjectReferenceValue(root, binding);
@@ -388,6 +389,7 @@ namespace UnityEditor
         extern public static string CalculateTransformPath([NotNull] Transform targetTransform, Transform root);
 
         extern public static AnimationClipSettings GetAnimationClipSettings([NotNull] AnimationClip clip);
+        extern internal static void RebuildMecanimData([NotNull] AnimationClip clip);
         extern public static void SetAnimationClipSettings([NotNull] AnimationClip clip, AnimationClipSettings srcClipInfo);
         extern internal static void SetAnimationClipSettingsNoDirty([NotNull] AnimationClip clip, AnimationClipSettings srcClipInfo);
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Unity.Profiling.Editor;
 using UnityEngine;
 using UnityEditor;
@@ -378,6 +379,12 @@ namespace UnityEditorInternal
             if (statisticsAvailabilityMessage != null)
             {
                 message = statisticsAvailabilityMessage(statisticsAvailabilityState);
+
+                if (message != null)
+                {
+                    // Remove hyperlinks for the player settings from tooltip, since they can't be clicked.
+                    message = Regex.Replace(message, @"\(<a playersettingslink=.*<\/a>\)", "");
+                }
                 content = new GUIContent("", message);
             }
             // draw tooltip int

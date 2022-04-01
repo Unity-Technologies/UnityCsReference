@@ -29,9 +29,10 @@ namespace UnityEditorInternal.Profiling
         static readonly string k_GpuProfilingNotSupportedWithNativeGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.");
         static readonly string k_GpuProfilingNotSupportedByDevice = L10n.Tr("GPU Profiling is currently not supported by this device.");
         static readonly string k_GpuProfilingNotSupportedByGraphicsAPI = L10n.Tr("GPU Profiling is currently not supported by the used graphics API.");
-        static readonly string k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = L10n.Tr("GPU Profiling is currently not supported on this device when PlayerSettings.enableFrameTimingStats is enabled.");
+        static readonly string k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = L10n.Tr("GPU Profiling is currently not supported on this device when PlayerSettings.enableFrameTimingStats is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"Frame Timing Stats\">Click here to edit</a>)");
         static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling is currently not supported when using Vulkan.");
         static readonly string k_GpuProfilingNotSupportedWithMetal = L10n.Tr("GPU Profiling is currently not supported when using Metal.");
+        static readonly string k_GpuProfilingNotSupportedWithOpenGLGPURecorders = L10n.Tr("GPU Profiling is currently not supported in OpenGL when PlayerSettings.\nenableOpenGLProfilerGPURecorders is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"OpenGL: Profiler GPU Recorders\">Click here to edit</a>)");
 
         static readonly Dictionary<GpuProfilingStatisticsAvailabilityStates, string> s_StatisticsAvailabilityStateReason
             = new Dictionary<GpuProfilingStatisticsAvailabilityStates, string>()
@@ -46,6 +47,7 @@ namespace UnityEditorInternal.Profiling
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedDueToFrameTimingStatsAndDisjointTimerQuery , k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery},
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithVulkan , k_GpuProfilingNotSupportedWithVulkan},
             {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithMetal , k_GpuProfilingNotSupportedWithMetal},
+            {GpuProfilingStatisticsAvailabilityStates.NotSupportedWithOpenGLGPURecorders , k_GpuProfilingNotSupportedWithOpenGLGPURecorders},
             };
 
         const int k_DefaultOrderIndex = 1;
@@ -94,7 +96,7 @@ namespace UnityEditorInternal.Profiling
                             if (string.IsNullOrEmpty(combinedReason))
                                 combinedReason = s_StatisticsAvailabilityStateReason[currentBit];
                             else
-                                combinedReason += '\n' + s_StatisticsAvailabilityStateReason[currentBit];
+                                combinedReason += "\n\n" + s_StatisticsAvailabilityStateReason[currentBit];
                         }
                     }
                 }

@@ -59,7 +59,7 @@ namespace UnityEditor.Search
     }
 
     [Flags]
-    enum SearchPropositionFlags
+    public enum SearchPropositionFlags
     {
         None = 0,
         FilterOnly    = 1 << 0,
@@ -69,7 +69,7 @@ namespace UnityEditor.Search
         ForceAllProviders = 1 << 4
     }
 
-    static class SearchPropositionFlagsExtensions
+    public static class SearchPropositionFlagsExtensions
     {
         public static bool HasAny(this SearchPropositionFlags flags, SearchPropositionFlags f) => (flags & f) != 0;
         public static bool HasAll(this SearchPropositionFlags flags, SearchPropositionFlags all) => (flags & all) == all;
@@ -86,7 +86,7 @@ namespace UnityEditor.Search
         internal readonly string category;
         internal readonly Color color;
         internal readonly Type type;
-        internal readonly object data;
+        public readonly object data;
 
         internal string path => string.IsNullOrEmpty(category) ? label : $"{category}/{label}";
 
@@ -101,13 +101,13 @@ namespace UnityEditor.Search
         {
         }
 
-        internal SearchProposition(string label, string replacement, string help,
+        public SearchProposition(string label, string replacement, string help,
                                    int priority, Texture2D icon, object data, Color color = new Color())
             : this(null, label, replacement, help, priority, TextCursorPlacement.MoveAutoComplete, icon, null, data, color)
         {
         }
 
-        internal SearchProposition(string category = null, string label = null, string replacement = null, string help = null,
+        public SearchProposition(string category = null, string label = null, string replacement = null, string help = null,
                                    int priority = 0, TextCursorPlacement moveCursor = TextCursorPlacement.MoveAutoComplete,
                                    Texture2D icon = null, Type type = null, object data = null, Color color = new Color())
         {
@@ -245,7 +245,7 @@ namespace UnityEditor.Search
 
         internal readonly string query;
         internal readonly int cursor;
-        internal readonly SearchPropositionFlags flags;
+        public SearchPropositionFlags flags { get; private set; }
 
         private string m_Word;
         private string[] m_Tokens;

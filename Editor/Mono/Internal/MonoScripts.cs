@@ -15,7 +15,11 @@ namespace UnityEditorInternal
         public static MonoScript CreateMonoScript(string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript)
         {
             var script = new MonoScript();
-            script.Init(scriptContents, className, nameSpace, assemblyName, isEditorScript);
+            if (!string.IsNullOrEmpty(scriptContents))
+            {
+                Debug.LogWarning($"MonoScript {className} was initialized with a non-empty script. This has never worked and should not be attempted. The script contents will be ignored");
+            }
+            script.Init(className, nameSpace, assemblyName, isEditorScript);
             return script;
         }
     }

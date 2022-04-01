@@ -240,14 +240,7 @@ namespace UnityEditor.PackageManager
                 return FindForAssetPath(asmdefPath);
 
             // No asmdef - this is a precompiled DLL.
-            // Do a scan through all packages for one that owns the directory in which it is.
-            foreach (var package in GetAllRegisteredPackages())
-            {
-                if (fullPath.StartsWith(package.resolvedPath + Path.DirectorySeparatorChar))
-                    return package;
-            }
-
-            return null;
+            return FindForAssetPath(fullPath);
         }
 
         internal static List<PackageInfo> GetForAssemblyFilePaths(List<string> assemblyPaths)

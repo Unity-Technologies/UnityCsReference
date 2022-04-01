@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     internal class NavigateFocusRing : IFocusRing
@@ -85,12 +87,22 @@ namespace UnityEngine.UIElements
             return currentFocusable;
         }
 
+        // Searches for a navigable element starting from currentFocusable and scanning along the specified direction.
+        // If no elements are found, wraps around from the other side of the panel and scan along the same direction
+        // up to currentFocusable. If still no elements are found, returns currentFocusable.
+        //
+        // Though search order is hierarchy-based, the "best candidate" selection process is intended to be independent
+        // from any hierarchy consideration. Scanned elements are validated using an intersection test between their
+        // worldBound and a scanning validation rect, currentFocusable's worldBound extended to the panel's limits in
+        // the direction of the search (or from the other side during the second "wrap-around" scan).
+        //
+        // The best candidate is the element whose border is "least advanced" in the scanning direction, using the
+        // element's worldBound border opposite from scanning direction, left border when scanning right, right border
+        // for scanning left, etc. See FocusableHierarchyTraversal for more details and how further ties are resolved.
         Focusable GetNextFocusable2D(Focusable currentFocusable, ChangeDirection direction)
         {
             if (!(currentFocusable is VisualElement ve))
                 ve = m_Root;
-
-            ve = GetRootFocusable(ve);
 
             Rect panelBounds = m_Root.worldBoundingBox;
             Rect panelRect = new Rect(panelBounds.position - Vector2.one, panelBounds.size + Vector2.one * 2);
@@ -101,7 +113,7 @@ namespace UnityEngine.UIElements
             else if (direction == Left) validRect.xMin = panelRect.xMin;
             else if (direction == Right) validRect.xMax = panelRect.xMax;
 
-            var best = new FocusableHierarchyTraversal
+            Focusable best = new FocusableHierarchyTraversal
             {
                 currentFocusable = ve,
                 direction = direction,
@@ -110,7 +122,7 @@ namespace UnityEngine.UIElements
             }.GetBestOverall(m_Root);
 
             if (best != null)
-                return GetLeafFocusable(best);
+                return best;
 
             validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
             if (direction == Down) validRect.yMin = panelRect.yMin;
@@ -127,7 +139,7 @@ namespace UnityEngine.UIElements
             }.GetBestOverall(m_Root);
 
             if (best != null)
-                return GetLeafFocusable(best);
+                return best;
 
             return currentFocusable;
         }
@@ -137,53 +149,13 @@ namespace UnityEngine.UIElements
             return v.resolvedStyle.display != DisplayStyle.None && v.enabledInHierarchy;
         }
 
-        static bool IsFocusable(Focusable focusable)
+        // Valid navigation results are
+        // - focusable: canGrabFocus and tabIndex >= 0
+        // - leaf: !delegatesFocus and !excludeFromFocusRing
+        static bool IsNavigable(Focusable focusable)
         {
-            return focusable.canGrabFocus && focusable.tabIndex >= 0;
-        }
-
-        static bool IsLeaf(Focusable focusable)
-        {
-            return !focusable.excludeFromFocusRing && !focusable.delegatesFocus;
-        }
-
-        static bool IsFocusRoot(VisualElement focusable)
-        {
-            if (focusable.isCompositeRoot) return true;
-            var parent = focusable.hierarchy.parent;
-            return parent == null || !IsFocusable(parent);
-        }
-
-        static VisualElement GetLeafFocusable(VisualElement v)
-        {
-            return GetLeafFocusableRecursive(v) ?? v;
-        }
-
-        static VisualElement GetLeafFocusableRecursive(VisualElement v)
-        {
-            if (IsLeaf(v))
-                return v;
-            int n = v.childCount;
-            for (int i = 0; i < n; i++)
-            {
-                var child = v[i];
-                if (!IsFocusable(child))
-                    continue;
-                var leaf = GetLeafFocusableRecursive(child);
-                if (leaf != null)
-                    return leaf;
-            }
-            return null;
-        }
-
-        static VisualElement GetRootFocusable(VisualElement v)
-        {
-            while (true)
-            {
-                if (IsFocusRoot(v))
-                    return v;
-                v = v.hierarchy.parent;
-            }
+            return focusable.canGrabFocus && focusable.tabIndex >= 0 &&
+                   !focusable.delegatesFocus && !focusable.excludeFromFocusRing;
         }
 
         struct FocusableHierarchyTraversal
@@ -200,7 +172,7 @@ namespace UnityEngine.UIElements
 
             bool ValidateElement(VisualElement v)
             {
-                return IsFocusable(v) && v.worldBound.Overlaps(validRect);
+                return IsNavigable(v) && v.worldBound.Overlaps(validRect);
             }
 
             int Order(VisualElement a, VisualElement b)
@@ -229,7 +201,7 @@ namespace UnityEngine.UIElements
 
             int TieBreaker(Rect ra, Rect rb)
             {
-                // Elements are aligned in the search axis. Find who's top-left corner is closer to current element.
+                // Elements are aligned in the search axis. Find whose top-left corner is closer to current element.
                 // TODO: use other corners if grow direction is not left-to-right / top-to-bottom
                 Rect rc = currentFocusable.worldBound;
                 float diff = (ra.min - rc.min).sqrMagnitude - (rb.min - rc.min).sqrMagnitude;
@@ -251,8 +223,7 @@ namespace UnityEngine.UIElements
                         (bestSoFar == null || Order(bestSoFar, candidate) > 0))
                         bestSoFar = candidate;
 
-                    if (IsFocusRoot(candidate))
-                        return bestSoFar;
+                    return bestSoFar;
                 }
 
                 int n = candidate.childCount;

@@ -81,6 +81,26 @@ namespace UnityEditor
         All = TopEdge | LeftEdge | BottomEdge | RightEdge
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("AspectRatio enum has been deprecated and its functionality has been removed from Unity.", false)]
+    public enum AspectRatio
+    {
+        // Undefined aspect ratios.
+        AspectOthers = 0,
+
+        // 4:3 aspect ratio.
+        Aspect4by3 = 1,
+
+        // 5:4 aspect ratio.
+        Aspect5by4 = 2,
+
+        // 16:10 aspect ratio.
+        Aspect16by10 = 3,
+
+        // 16:9 aspect ratio.
+        Aspect16by9 = 4,
+    }
+
     partial class PlayerSettings
     {
         // deprecated since forever
@@ -111,6 +131,14 @@ namespace UnityEditor
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use PlayerSettings.applicationIdentifier instead (UnityUpgradable) -> UnityEditor.PlayerSettings.applicationIdentifier", true)]
         public static string bundleIdentifier { get { return applicationIdentifier; } set { applicationIdentifier = value; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("HasAspectRatio is deprecated, Unity supports all aspect ratios.", false)]
+        public static bool HasAspectRatio(AspectRatio aspectRatio) => true;
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("SetAspectRatio is deprecated, Unity supports all aspect ratios.", false)]
+        public static void SetAspectRatio(AspectRatio aspectRatio, bool enable) { }
     }
 
     partial class PlayerSettings

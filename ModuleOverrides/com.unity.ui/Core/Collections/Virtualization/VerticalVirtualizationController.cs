@@ -19,9 +19,17 @@ namespace UnityEngine.UIElements
 
         public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems as IEnumerable<ReusableCollectionItem>;
 
+        int m_LastFocusedElementIndex = -1;
+        List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
+
         protected int m_FirstVisibleIndex;
 
         Func<T, bool> m_VisibleItemPredicateDelegate;
+
+        internal int itemsCount =>
+            m_CollectionView.sourceIncludesArraySize
+                ? m_CollectionView.itemsSource.Count - 1
+                : m_CollectionView.itemsSource.Count;
 
         protected virtual bool VisibleItemPredicate(T i)
         {
@@ -79,7 +87,7 @@ namespace UnityEngine.UIElements
                     continue;
                 }
 
-                if (m_CollectionView.itemsSource != null && index >= 0 && index < m_CollectionView.itemsSource.Count)
+                if (m_CollectionView.itemsSource != null && index >= 0 && index < itemsCount)
                 {
                     if (hasValidBindings && isVisible)
                     {
@@ -90,8 +98,7 @@ namespace UnityEngine.UIElements
                 }
                 else if (isVisible)
                 {
-                    m_Pool.Release(recycledItem);
-                    m_ActiveItems.RemoveAt(i--);
+                    ReleaseItem(i--);
                 }
             }
 
@@ -103,17 +110,17 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected void Setup(T recycledItem, int newIndex, bool forceHide = false)
+        protected void Setup(T recycledItem, int newIndex)
         {
             // We want to skip the item that is being reordered with the animated dragger.
             if (m_CollectionView.dragger is ListViewDraggerAnimated dragger)
                 if (dragger.isDragging && (dragger.draggedItem.index == newIndex || dragger.draggedItem == recycledItem))
                     return;
 
-            if (newIndex >= m_CollectionView.itemsSource.Count || forceHide)
+            if (newIndex >= itemsCount)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
-                if (recycledItem.index >= 0 && recycledItem.index < m_CollectionView.itemsSource.Count)
+                if (recycledItem.index >= 0 && recycledItem.index < itemsCount)
                 {
                     m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
                     recycledItem.index = ReusableCollectionItem.UndefinedIndex;
@@ -121,12 +128,14 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
             recycledItem.rootElement.style.display = DisplayStyle.Flex;
             if (recycledItem.index == newIndex) return;
 
             var useAlternateUss = m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;
             recycledItem.rootElement.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
+
+            var previousIndex = recycledItem.index;
+            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
 
             if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                 m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
@@ -151,7 +160,47 @@ namespace UnityEngine.UIElements
             m_CollectionView.viewController.InvokeBindItem(recycledItem, newIndex);
 
             // Handle focus cycling
-            m_CollectionView.HandleFocus(recycledItem);
+            HandleFocus(recycledItem, previousIndex);
+        }
+
+        public override void OnFocus(VisualElement leafTarget)
+        {
+            if (leafTarget == m_ScrollView.contentContainer)
+                return;
+
+            m_LastFocusedElementTreeChildIndexes.Clear();
+
+            if (m_ScrollView.contentContainer.FindElementInTree(leafTarget, m_LastFocusedElementTreeChildIndexes))
+            {
+                var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
+                foreach (var recycledItem in activeItems)
+                {
+                    if (recycledItem.rootElement == recycledElement)
+                    {
+                        m_LastFocusedElementIndex = recycledItem.index;
+                        break;
+                    }
+                }
+
+                m_LastFocusedElementTreeChildIndexes.RemoveAt(0);
+            }
+            else
+            {
+                m_LastFocusedElementIndex = -1;
+            }
+        }
+
+        void HandleFocus(ReusableCollectionItem recycledItem, int previousIndex)
+        {
+            if (m_LastFocusedElementIndex == -1)
+                return;
+
+            if (m_LastFocusedElementIndex == recycledItem.index)
+                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Focus();
+            else if (m_LastFocusedElementIndex != previousIndex)
+                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Blur();
+            else
+                m_ScrollView.contentContainer.Focus();
         }
 
         public override void UpdateBackground()
@@ -235,6 +284,20 @@ namespace UnityEngine.UIElements
             item.PreAttachElement();
 
             return item;
+        }
+
+        internal virtual void ReleaseItem(int activeItemsIndex)
+        {
+            var item = m_ActiveItems[activeItemsIndex];
+            var index = item.index;
+
+            if (index >= 0 && index < itemsCount)
+            {
+                m_CollectionView.viewController.InvokeUnbindItem(item, index);
+            }
+
+            m_Pool.Release(item);
+            m_ActiveItems.RemoveAt(activeItemsIndex);
         }
     }
 }

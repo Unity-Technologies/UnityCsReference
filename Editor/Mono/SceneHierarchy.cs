@@ -677,6 +677,7 @@ namespace UnityEditor
             else
             {
                 SceneView.FrameLastActiveSceneView();
+                EditorGUIUtility.ExitGUI();
             }
         }
 
@@ -695,17 +696,11 @@ namespace UnityEditor
                 treeView.data.SetExpandedWithChildren(item, expand);
         }
 
-        void OnRowGUICallback(int instanceID, Rect rect)
-        {
-            if (EditorApplication.hierarchyWindowItemOnGUI != null)
-            {
-                // Adjust rect for the right aligned column for the prefab isolation button
-                rect.xMax -=
-                    GameObjectTreeViewGUI.GameObjectStyles.rightArrow.fixedWidth +
-                    GameObjectTreeViewGUI.GameObjectStyles.rightArrow.margin.horizontal;
 
-                EditorApplication.hierarchyWindowItemOnGUI(instanceID, rect);
-            }
+
+        void OnRowGUICallback(int itemID, Rect rect)
+        {
+            GameObjectTreeViewGUI.UserCallbackRowGUI(itemID, rect);
         }
 
         void OnDragEndedCallback(int[] draggedInstanceIds, bool draggedItemsFromOwnTreeView)
@@ -788,10 +783,13 @@ namespace UnityEditor
         void TreeViewSelectionChanged(int[] ids)
         {
             //Last selected should be the active selected object to reflect the behavior of the scene view selection
-            if (ids.Length > 0)
-                Selection.activeInstanceID = ids[ids.Length - 1];
+            int active = ids.Length > 0 ? ids[ids.Length - 1] : 0;
+            Selection.SetSelectionWithActiveInstanceID(ids, active);
 
-            Selection.instanceIDs = ids;
+            if (!IsTreeViewSelectionInSyncWithBackend())
+            {
+                selectionSyncNeeded = true;
+            }
 
             m_DidSelectSearchResult = !string.IsNullOrEmpty(m_SearchFilter);
         }
@@ -1050,13 +1048,13 @@ namespace UnityEditor
             }
             else if (evt.commandName == EventCommandNames.Cut)
             {
-                CutCopyPasteUtility.CutGO();
+                ClipboardUtility.CutGO();
                 GUIUtility.ExitGUI();
             }
             else if (evt.commandName == EventCommandNames.Copy)
             {
                 if (execute)
-                    CutCopyPasteUtility.CopyGO();
+                    ClipboardUtility.CopyGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
@@ -1115,7 +1113,7 @@ namespace UnityEditor
 
             if (evt.keyCode == KeyCode.Escape && CutBoard.CanGameObjectsBePasted())
             {
-                CutCopyPasteUtility.ResetCutboardAndRepaintHierarchyWindows();
+                ClipboardUtility.ResetCutboardAndRepaintHierarchyWindows();
                 GUIUtility.ExitGUI();
             }
         }
@@ -1125,14 +1123,14 @@ namespace UnityEditor
             // For Sub Scenes GameObjects, have menu items for cut, paste and delete.
             // Not copy or duplicate, since multiple of the same Sub Scene is not supported anyway.
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutCopyPasteUtility.CutGO);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
 
-            if (CutCopyPasteUtility.CanPasteAsChild())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, CutCopyPasteUtility.PasteGOAsChild);
+            if (ClipboardUtility.CanPasteAsChild())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, ClipboardUtility.PasteGOAsChild);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
 
@@ -1146,14 +1144,14 @@ namespace UnityEditor
 
         void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, CutCopyPasteUtility.CutGO);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, CutCopyPasteUtility.CopyGO);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste"));
-            if (CutCopyPasteUtility.CanPasteAsChild())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, CutCopyPasteUtility.PasteGOAsChild);
+            if (ClipboardUtility.CanPasteAsChild())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Paste As Child"), false, ClipboardUtility.PasteGOAsChild);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
 
@@ -1399,7 +1397,7 @@ namespace UnityEditor
                 menu.AddSeparator("");
             }
 
-            bool isUnloadOrRemoveValid = EditorSceneManager.loadedSceneCount != GetNumLoadedScenesInSelection();
+            bool isUnloadOrRemoveValid = SceneManager.loadedSceneCount != GetNumLoadedScenesInSelection();
 
             if (!scene.isSubScene)
             {
@@ -1583,12 +1581,12 @@ namespace UnityEditor
 
         void PasteGO()
         {
-            CutCopyPasteUtility.PasteGO(m_CustomParentForNewGameObjects);
+            ClipboardUtility.PasteGO(m_CustomParentForNewGameObjects);
         }
 
         void DuplicateGO()
         {
-            CutCopyPasteUtility.DuplicateGO(m_CustomParentForNewGameObjects);
+            ClipboardUtility.DuplicateGO(m_CustomParentForNewGameObjects);
         }
 
         void RenameGO()
@@ -1695,7 +1693,7 @@ namespace UnityEditor
             {
                 visitor.VisitAll(root.transform, (transform, list) => {
                     GameObject go = transform.gameObject;
-                    if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverrides_CachedForUI(go))
+                    if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(go))
                     {
                         gameObjects.Add(go);
                     }

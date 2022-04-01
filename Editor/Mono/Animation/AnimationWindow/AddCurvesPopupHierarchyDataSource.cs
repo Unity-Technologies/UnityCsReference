@@ -75,7 +75,7 @@ namespace UnityEditorInternal
                     // Don't show for the root go
                     if (curveBinding.path != "")
                     {
-                        TreeViewItem newNode = CreateNode(singleObjectBindings.ToArray(), node);
+                        TreeViewItem newNode = CreateNode(singleObjectBindings.ToArray(), node, null);
                         if (newNode != null)
                             childNodes.Add(newNode);
                         singleObjectBindings.Clear();
@@ -111,20 +111,6 @@ namespace UnityEditorInternal
                 }
             }
 
-            var animator = rootGameObject.GetComponent<Animator>();
-            if (animator != null)
-            {
-                //If the Animator has a human avatar, we need to check if the avatar's hierarchy matches that of the current GameObject. If they do not match, disable the node.
-                if (animator.avatarRoot != null && animator.isHuman)
-                {
-                    if (animator.avatarRoot.Find(path) == null)
-                    {
-                        node.propertyPathMismatchWithHumanAvatar = true;
-                    }
-                }
-            }
-
-
             if (showEntireHierarchy)
             {
                 // Iterate over all child GOs
@@ -135,6 +121,13 @@ namespace UnityEditorInternal
                     if (childNode != null)
                         childNodes.Add(childNode);
                 }
+            }
+
+            // Remove Leaf nodes without properties.
+            if (childNodes.Count == 0)
+            {
+                node.parent = null;
+                return null;
             }
 
             TreeViewUtility.SetChildParentReferences(childNodes, node);
@@ -191,17 +184,24 @@ namespace UnityEditorInternal
 
             List<TreeViewItem> childNodes = new List<TreeViewItem>();
             List<EditorCurveBinding> singlePropertyBindings = new List<EditorCurveBinding>();
+            SerializedObject so = null;
 
             for (int i = 0; i < curveBindings.Length; i++)
             {
                 EditorCurveBinding curveBinding = curveBindings[i];
+                if (curveBinding.isSerializeReferenceCurve)
+                {
+                    var animatedObject = AnimationUtility.GetAnimatedObject(AddCurvesPopup.s_State.activeRootGameObject, curveBinding);
+                    if (animatedObject != null && (so == null || so.targetObject != animatedObject))
+                        so = new SerializedObject(animatedObject);
+                }
 
                 singlePropertyBindings.Add(curveBinding);
 
                 // We expect curveBindings to come sorted by propertyname
                 if (i == curveBindings.Length - 1 || AnimationWindowUtility.GetPropertyGroupName(curveBindings[i + 1].propertyName) != AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName))
                 {
-                    TreeViewItem newNode = CreateNode(singlePropertyBindings.ToArray(), node);
+                    TreeViewItem newNode = CreateNode(singlePropertyBindings.ToArray(), node, so);
                     if (newNode != null)
                         childNodes.Add(newNode);
                     singlePropertyBindings.Clear();
@@ -214,9 +214,9 @@ namespace UnityEditorInternal
             return node;
         }
 
-        private TreeViewItem CreateNode(EditorCurveBinding[] curveBindings, TreeViewItem parentNode)
+        private TreeViewItem CreateNode(EditorCurveBinding[] curveBindings, TreeViewItem parentNode, SerializedObject so)
         {
-            var node = new AddCurvesPopupPropertyNode(parentNode, curveBindings);
+            var node = new AddCurvesPopupPropertyNode(parentNode, curveBindings, AnimationWindowUtility.GetNicePropertyDisplayName(curveBindings[0], so));
 
             // For RectTransform.position we only want .z
             if (AnimationWindowUtility.IsRectTransformPosition(node.curveBindings[0]))
@@ -234,7 +234,6 @@ namespace UnityEditorInternal
 
     internal class AddCurvesPopupGameObjectNode : TreeViewItem
     {
-        internal bool propertyPathMismatchWithHumanAvatar = false;
         public AddCurvesPopupGameObjectNode(GameObject gameObject, TreeViewItem parent, string displayName)
             : base(gameObject.GetInstanceID(), parent != null ? parent.depth + 1 : -1, parent, displayName)
         {
@@ -253,8 +252,8 @@ namespace UnityEditorInternal
     {
         public EditorCurveBinding[] curveBindings;
 
-        public AddCurvesPopupPropertyNode(TreeViewItem parent, EditorCurveBinding[] curveBindings)
-            : base(curveBindings[0].GetHashCode(), parent.depth + 1, parent, AnimationWindowUtility.NicifyPropertyGroupName(curveBindings[0].type, AnimationWindowUtility.GetPropertyGroupName(curveBindings[0].propertyName)))
+        public AddCurvesPopupPropertyNode(TreeViewItem parent, EditorCurveBinding[] curveBindings, string displayPath)
+            : base(curveBindings[0].GetHashCode(), parent.depth + 1, parent, displayPath)
         {
             this.curveBindings = curveBindings;
         }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -93,7 +92,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (evt.oldRect.height == evt.newRect.height)
                 return;
-            featureDependencies.RecalculateFillerHeight(detail.layout.height, scrollView.layout.height);
+
+            var featureDependencies = tabView.GetTab<FeatureDependenciesTab>(FeatureDependenciesTab.k_Id);
+            featureDependencies?.RecalculateFillerHeight(detail.layout.height, scrollView.layout.height);
         }
 
         private void OnDetailScroll(float offset)
@@ -106,7 +107,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (status == TermOfServiceAgreementStatus.Accepted)
                 return;
 
-            var result = m_Application.DisplayDialog(L10n.Tr("Package Manager"),
+            var result = m_Application.DisplayDialog("acceptToS",
+                L10n.Tr("Accepting Terms of Service and EULA"),
                 L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
                 L10n.Tr("Read and accept"), L10n.Tr("Close"));
 
@@ -233,6 +235,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement customContainer => cache.Get<VisualElement>("detailCustomContainer");
         internal VisualElement extensionContainer => cache.Get<VisualElement>("detailExtensionContainer");
 
-        private FeatureDependencies featureDependencies => cache.Get<FeatureDependencies>("featureDependencies");
+        private PackageDetailsTabView tabView => cache.Get<PackageDetailsTabView>("packageDetailsTabView");
     }
 }

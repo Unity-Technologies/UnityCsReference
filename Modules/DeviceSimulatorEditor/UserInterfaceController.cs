@@ -18,10 +18,10 @@ namespace UnityEditor.DeviceSimulation
         private ScreenSimulation m_ScreenSimulation;
 
         private int m_Rotation;
-        private int Rotation
+        internal int Rotation
         {
             get => m_Rotation;
-            set
+            private set
             {
                 m_Rotation = value % 360;
                 m_DeviceView.Rotation = m_Rotation;
@@ -67,6 +67,17 @@ namespace UnityEditor.DeviceSimulation
         private const int kScaleMax = 100;
         private bool m_FitToScreenEnabled = true;
 
+        private DevicePackageInstallButtonState m_DeviceButtonState = new DevicePackageInstallButtonState { PackageStatus = DevicePackageStatus.Unknown};
+        public DevicePackageInstallButtonState DeviceButtonState
+        {
+            set
+            {
+                m_DeviceButtonState = value;
+                if(m_DeviceListPopup != null)
+                    m_DeviceListPopup.DeviceButtonState = m_DeviceButtonState;
+            }
+        }
+
         // Controls for the toolbar
         private string m_DeviceSearchContent;
         private VisualElement m_DeviceListMenu;
@@ -96,6 +107,7 @@ namespace UnityEditor.DeviceSimulation
         private float m_ControlPanelWidth;
         private readonly Dictionary<string, Foldout> m_PluginFoldouts = new Dictionary<string, Foldout>();
         private VisualElement m_ControlPanel;
+        private DeviceListPopup m_DeviceListPopup;
 
         public UserInterfaceController(DeviceSimulatorMain deviceSimulatorMain, VisualElement rootVisualElement, SimulatorState serializedState, PluginController pluginController, TouchEventManipulator touchEventManipulator)
         {
@@ -225,7 +237,7 @@ namespace UnityEditor.DeviceSimulation
 
             m_SelectedDeviceName.text = m_Main.currentDevice.deviceInfo.friendlyName;
 
-            m_ScreenSimulation.OnOrientationChanged += autoRotate => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
+            m_ScreenSimulation.OnOrientationChanged += () => m_DeviceView.ScreenOrientation = m_ScreenSimulation.orientation;
             m_ScreenSimulation.OnInsetsChanged += insets => m_DeviceView.ScreenInsets = insets;
             m_ScreenSimulation.OnScreenSpaceSafeAreaChanged += safeArea => m_DeviceView.SafeArea = safeArea;
 
@@ -330,13 +342,13 @@ namespace UnityEditor.DeviceSimulation
         private void ShowDeviceInfoList()
         {
             var rect = new Rect(m_DeviceListMenu.worldBound.position + new Vector2(1, m_DeviceListMenu.worldBound.height), new Vector2());
-            var maximumVisibleDeviceCount = 10;
+            var maximumVisibleDeviceCount = 15;
 
-            var deviceListPopup = new DeviceListPopup(m_Main.devices, m_Main.deviceIndex, maximumVisibleDeviceCount, m_DeviceSearchContent);
-            deviceListPopup.OnDeviceSelected += OnDeviceSelected;
-            deviceListPopup.OnSearchInput += OnSearchInput;
+            m_DeviceListPopup = new DeviceListPopup(m_Main.devices, m_Main.deviceIndex, maximumVisibleDeviceCount, m_DeviceSearchContent, m_DeviceButtonState);
+            m_DeviceListPopup.OnDeviceSelected += OnDeviceSelected;
+            m_DeviceListPopup.OnSearchInput += OnSearchInput;
 
-            PopupWindow.Show(rect, deviceListPopup);
+            PopupWindow.Show(rect, m_DeviceListPopup);
         }
 
         private void ShowOnPlayBehaviorSelector()

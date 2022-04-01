@@ -58,9 +58,8 @@ namespace UnityEditor.EditorTools
                 {
                     instance.m_ActiveToolContext = GetSingleton<GameObjectToolContext>();
                     ToolManager.ActiveContextDidChange();
-                    instance.m_ActiveToolContext.OnActivated();
+                    instance.m_ActiveToolContext.Activate();
                 }
-
                 return instance.m_ActiveToolContext;
             }
 
@@ -83,11 +82,12 @@ namespace UnityEditor.EditorTools
                 // Make sure to get the active tool enum prior to setting the context, otherwise we'll be comparing
                 // apples to oranges. Ie, the transform tools will be different despite being the same `Tool` enum value.
                 var tool = Tools.current;
+                var wasAdditionalContextTool = tool == Tool.Custom && additionalContextToolTypesCache.Contains(activeTool.GetType());
                 var prev = instance.m_ActiveToolContext;
 
                 if (prev != null)
                 {
-                    prev.OnWillBeDeactivated();
+                    prev.Deactivate();
 
                     if (!(prev is GameObjectToolContext))
                         instance.m_LastCustomContext = prev.GetType();
@@ -96,7 +96,7 @@ namespace UnityEditor.EditorTools
                 ToolManager.ActiveContextWillChange();
                 instance.m_ActiveToolContext = ctx;
 
-                ctx.OnActivated();
+                ctx.Activate();
 
                 instance.RebuildAvailableTools();
 
@@ -117,6 +117,15 @@ namespace UnityEditor.EditorTools
                     // If resolved is still null at this point, the setter for activeTool will substitute an instance of
                     // NoneTool for us.
                     activeTool = resolved;
+                }
+                // If the previous tool was an additional tool from the context, return to the Previous Persistent Tool
+                // when moving to that new context
+                else if(wasAdditionalContextTool)
+                {
+                    var isAdditionalContextTool = instance.m_ActiveToolContext.GetAdditionalToolTypes().Contains(activeTool.GetType());
+
+                    if(!isAdditionalContextTool)
+                        RestorePreviousPersistentTool();
                 }
 
                 ToolManager.ActiveContextDidChange();
@@ -154,7 +163,7 @@ namespace UnityEditor.EditorTools
 
                 if (previous != null)
                 {
-                    previous.OnWillBeDeactivated();
+                    previous.Deactivate();
                     var prev = EditorToolUtility.GetEnumWithEditorTool(previous, activeToolContext);
 
                     if (prev != Tool.View && prev != Tool.None && !EditorToolUtility.IsComponentTool(previous.GetType()))
@@ -169,8 +178,7 @@ namespace UnityEditor.EditorTools
                 }
 
                 instance.m_ActiveTool = tool;
-
-                instance.m_ActiveTool.OnActivated();
+                instance.m_ActiveTool.Activate();
 
                 ToolManager.ActiveToolDidChange();
 
@@ -269,24 +277,24 @@ namespace UnityEditor.EditorTools
 
         void OnEnable()
         {
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
             ToolManager.activeContextChanged += ActiveContextChanged;
 
-            if (activeTool != null)
-                EditorApplication.delayCall += activeTool.OnActivated;
+            if(activeTool != null)
+                EditorApplication.delayCall += activeTool.Activate;
             if(activeToolContext != null)
             {
-                EditorApplication.delayCall += activeToolContext.OnActivated;
+                EditorApplication.delayCall += activeToolContext.Activate;
                 ActiveContextChanged();
             }
         }
 
         void OnDisable()
         {
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
             ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
@@ -296,10 +304,10 @@ namespace UnityEditor.EditorTools
         void BeforeAssemblyReload()
         {
             if (m_ActiveTool != null)
-                m_ActiveTool.OnWillBeDeactivated();
+                m_ActiveTool.Deactivate();
 
             if (m_ActiveToolContext != null)
-                m_ActiveToolContext.OnWillBeDeactivated();
+                m_ActiveToolContext.Deactivate();
         }
 
         void ActiveContextChanged()
@@ -347,7 +355,7 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        void UndoRedoPerformed()
+        void UndoRedoPerformed(in UndoRedoInfo info)
         {
             RestoreCustomEditorTool();
         }
@@ -374,7 +382,7 @@ namespace UnityEditor.EditorTools
             foreach (var customEditorTool in m_ComponentTools)
             {
                 if (customEditorTool.editor == m_ActiveTool)
-                    m_ActiveTool.OnWillBeDeactivated();
+                    m_ActiveTool.Deactivate();
                 DestroyImmediate(customEditorTool.editor);
             }
 
@@ -386,7 +394,7 @@ namespace UnityEditor.EditorTools
             foreach (var context in m_ComponentContexts)
             {
                 if (context.GetEditor<EditorToolContext>() == m_ActiveToolContext)
-                    m_ActiveToolContext.OnWillBeDeactivated();
+                    m_ActiveToolContext.Deactivate();
                 DestroyImmediate(context.editor);
             }
 
@@ -465,6 +473,28 @@ namespace UnityEditor.EditorTools
             activeTool = instance.lastManipulationTool;
         }
 
+        // Used by tests - EditModeAndPlayModeTests/EditorTools/EscKeyTests
+        internal static bool TryPopToolState()
+        {
+            if(Tools.viewToolActive)
+                return false;
+
+            if(!EditorToolUtility.IsBuiltinOverride(activeTool))
+            {
+                RestorePreviousPersistentTool();
+                return true;
+            }
+
+            if(ToolManager.activeContextType != typeof(GameObjectToolContext))
+            {
+                //if is in a Manipulation or additional tool leaves the current context to return to GameObject Context
+                ToolManager.SetActiveContext<GameObjectToolContext>();
+                return true;
+            }
+
+            return false;
+        }
+
         internal static void OnToolGUI(EditorWindow window)
         {
             activeToolContext.OnToolGUI(window);
@@ -480,21 +510,8 @@ namespace UnityEditor.EditorTools
             }
 
             var evt = Event.current;
-            if(evt.type == EventType.KeyDown && evt.keyCode == KeyCode.Escape)
-            {
-                if(!Tools.viewToolActive
-                    && !EditorToolUtility.IsManipulationTool(EditorToolUtility.GetEnumWithEditorTool(current, instance.m_ActiveToolContext))
-                    && additionalContextToolTypesCache.All(toolType => toolType != current.GetType()))
-                {
-                    RestorePreviousPersistentTool();
-                    evt.Use();
-                }
-                else
-                {
-                    //if is in a Manipulation or additional tool leaves the current context to return to GameObject Context
-                    ToolManager.SetActiveContext<GameObjectToolContext>();
-                }
-            }
+            if (evt.type == EventType.KeyDown && evt.keyCode == KeyCode.Escape && TryPopToolState())
+                evt.Use();
         }
 
         static bool IsCustomEditorTool(EditorTool tool)

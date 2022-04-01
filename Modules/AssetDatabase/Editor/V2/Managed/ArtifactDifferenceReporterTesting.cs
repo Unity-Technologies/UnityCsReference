@@ -17,5 +17,29 @@ namespace UnityEditor
             //Only way to test internals
             GraphicsAPIMaskModified(ref diff, msgsList);
         }
+
+        internal static void Test_GlobalArtifactFormatVersionModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            //Only way to test internals
+            GlobalArtifactFormatVersionModified(ref diff, msgsList);
+        }
+
+        internal static void Test_GlobalAllImporterVersionModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            //Only way to test internals
+            GlobalAllImporterVersionModified(ref diff, msgsList);
+        }
+
+        internal static void Test_ArtifactFileIdOfMainObjectModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            //Only way to test internals
+            ArtifactFileIdOfMainObjectModified(ref diff, msgsList);
+        }
+
+        internal static void Test_ScriptingRuntimeVersionModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            //Only way to test internals
+            ScriptingRuntimeVersionModified(ref diff, msgsList);
+        }
     }
 }

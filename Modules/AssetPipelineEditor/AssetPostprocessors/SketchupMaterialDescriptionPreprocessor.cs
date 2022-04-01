@@ -12,8 +12,8 @@ namespace UnityEditor.AssetImporters
     [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class SketchupMaterialDescriptionPreprocessor : AssetPostprocessor
     {
-        static readonly uint k_Version = 1;
-        static readonly int k_Order = 1;
+        static readonly uint k_Version = 2;
+        static readonly int k_Order = -990;
         public override uint GetVersion()
         {
             return k_Version;

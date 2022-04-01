@@ -42,6 +42,11 @@ namespace UnityEditor
             m_NativeObjectPtr = InternalCreate(objs, context);
         }
 
+        internal SerializedObject(IntPtr nativeObjectPtr)
+        {
+            m_NativeObjectPtr = nativeObjectPtr;
+        }
+
         ~SerializedObject() { Dispose(); }
 
         [ThreadAndSerializationSafe()]
@@ -75,6 +80,25 @@ namespace UnityEditor
             // when we are still iterating properties
             i.m_SerializedObject = this;
             if (i.FindPropertyInternal(propertyPath))
+                return i;
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Given a path of the form "managedReferences[refid].field" this finds the first field
+        /// that references that reference id and returns a serialized property based on that path.
+        /// For example if an object "Foo" with id 1 is referenced by multiple fields "a", "b" and
+        /// "c.nested" on a MonoBehaviour (declared in that order), then calling this method with
+        /// "managedReferences[1].x" would return the SerializedProperty with property path "a.x".
+        /// </summary>
+        internal SerializedProperty FindFirstPropertyFromManagedReferencePath(string propertyPath)
+        {
+            SerializedProperty i = GetIterator_Internal();
+            // This is so the garbage collector won't clean up SerializedObject behind the scenes,
+            // when we are still iterating properties
+            i.m_SerializedObject = this;
+            if (i.FindFirstPropertyFromManagedReferencePathInternal(propertyPath))
                 return i;
             else
                 return null;
@@ -139,6 +163,9 @@ namespace UnityEditor
         internal extern static SerializedObject LoadFromCache(int instanceID);
 
         public extern bool ApplyModifiedPropertiesWithoutUndo();
+
+        // Enable/Disable live property feature globally.
+        internal extern static void EnableLivePropertyFeatureGlobally(bool value);
 
         // Copies a value from a SerializedProperty to the same serialized property on this serialized object.
         public void CopyFromSerializedProperty(SerializedProperty prop)

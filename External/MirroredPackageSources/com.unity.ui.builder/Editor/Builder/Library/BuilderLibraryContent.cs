@@ -73,6 +73,9 @@ namespace Unity.UI.Builder
         public static List<TreeViewItem> projectContentTree { get; private set; }
         public static List<TreeViewItem> projectContentTreeNoPackages { get; private set; }
 
+        static readonly int k_DefaultVisualElementFlexGrow = 1;
+        static readonly Color k_DefaultVisualElementBackgroundColor = new (0, 0, 0, 0);
+
         static BuilderLibraryContent()
         {
             RegenerateLibraryContent();
@@ -92,8 +95,7 @@ namespace Unity.UI.Builder
         {
             standardControlsTree = GenerateControlsItemsTree();
             standardControlsTreeNoEditor = new List<TreeViewItem>();
-            var controlsItemsTree = GenerateControlsItemsTree();
-            foreach (var item in controlsItemsTree)
+            foreach (var item in standardControlsTree)
             {
                 var builderLibraryTreeItem = item.data;
                 if (builderLibraryTreeItem.isEditorOnly)
@@ -222,24 +224,24 @@ namespace Unity.UI.Builder
             var controlsTree = new List<TreeViewItem>();
             IList<TreeViewItem> containersItemList = new List<TreeViewItem>
             {
-                CreateItem("VisualElement", "VisualElement", typeof(VisualElement), () =>
-                {
-                    var ve = new VisualElement();
-                    var veMinSizeChild = new VisualElement();
-                    veMinSizeChild.name = BuilderConstants.SpecialVisualElementInitialMinSizeName;
-                    veMinSizeChild.AddToClassList(BuilderConstants.SpecialVisualElementInitialMinSizeClassName);
-                    ve.Add(veMinSizeChild);
-                    return ve;
-                },
+                CreateItem("VisualElement", "VisualElement", typeof(VisualElement),
+                    () => new VisualElement(),
                     (inVta, inParent, ve) =>
                     {
                         var vea = new VisualElementAsset(typeof(VisualElement).ToString());
                         VisualTreeAssetUtilities.InitializeElement(vea);
+
+                        BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow",
+                            k_DefaultVisualElementFlexGrow);
+                        BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "background-color",
+                            k_DefaultVisualElementBackgroundColor);
+                        
                         inVta.AddElement(inParent, vea);
                         return vea;
                     }),
                 CreateItem("ScrollView", "ScrollView", typeof(ScrollView), () => new ScrollView()),
                 CreateItem("ListView", "ListView", typeof(ListView), () => new ListView()),
+                CreateItem("TreeView", "TreeView", typeof(TreeView), () => new TreeView()),
                 CreateItem("GroupBox", "VisualElement", typeof(GroupBox), () => new GroupBox()),
             };
             containersItem.AddChildren(containersItemList);
@@ -315,7 +317,8 @@ namespace Unity.UI.Builder
                 CreateItem("Tag", nameof(TagField), typeof(TagField), () => new TagField("Tag", "Player")),
                 CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
                 CreateItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
-                CreateItem("LayerMask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask"))
+                CreateItem("LayerMask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask")),
+                CreateItem("EnumFlags", nameof(EnumFlagsField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))
             }, isEditorOnly: true, isHeader: true);
 
             var toolbar = CreateItem("Toolbar", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>

@@ -86,7 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_UpmCacheRootClient.onSetCacheRootOperationError -= OnPackagesSetCacheRootOperationError;
                     m_UpmCacheRootClient.onSetCacheRootOperationResult -= OnPackagesSetCacheRootOperationResult;
                     m_UpmCacheRootClient.onClearCacheRootOperationError -= OnPackagesClearCacheRootOperationError;
-                    m_UpmCacheRootClient.onClearCacheRootOperationResult -= OnPackagesSetCacheRootOperationResult;
+                    m_UpmCacheRootClient.onClearCacheRootOperationResult -= OnPackagesClearCacheRootOperationResult;
                 }
 
                 if (m_AssetStoreCachePathProxy != null)
@@ -132,7 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCacheRootClient.onSetCacheRootOperationError += OnPackagesSetCacheRootOperationError;
             m_UpmCacheRootClient.onSetCacheRootOperationResult += OnPackagesSetCacheRootOperationResult;
             m_UpmCacheRootClient.onClearCacheRootOperationError += OnPackagesClearCacheRootOperationError;
-            m_UpmCacheRootClient.onClearCacheRootOperationResult += OnPackagesSetCacheRootOperationResult;
+            m_UpmCacheRootClient.onClearCacheRootOperationResult += OnPackagesClearCacheRootOperationResult;
 
             if (!m_ApplicationProxy.isBatchMode && m_ApplicationProxy.isUpmRunning)
             {
@@ -155,7 +155,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void DisplayAssetStoreCachePathSetting()
         {
             assetsCacheLocationInfo.enableRichText = true;
-            assetsCacheLocationInfo.text = string.Format(L10n.Tr("Your assets will be store in <b>{0}</b> subfolder."), k_AssetStoreFolder);
+            assetsCacheLocationInfo.text = string.Format(L10n.Tr("Your assets will be stored in <b>{0}</b> subfolder."), k_AssetStoreFolder);
             assetsCacheDropdown.SetIcon("folder");
             var assetsCacheDropdownMenu = new DropdownMenu();
             assetsCacheDropdownMenu.AppendAction(k_OpenFolder, action =>
@@ -178,7 +178,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (!CancelDownloadInProgress())
                         return;
 
+                    var oldStatus = m_CurrentAssetStoreConfig?.status.ToString() ?? string.Empty;
+                    var oldSource = m_CurrentAssetStoreConfig?.source.ToString() ?? string.Empty;
                     var status = m_AssetStoreCachePathProxy.SetConfig(path);
+
+                    // Send analytics
+                    PackageCacheManagementAnalytics.SendAssetStoreEvent("changePath",
+                        new []{ oldSource, oldStatus },
+                        new []{ m_CurrentAssetStoreConfig.source.ToString(), m_CurrentAssetStoreConfig.status.ToString() });
+
                     if (status == AssetStoreCachePathManager.ConfigStatus.Failed)
                         DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr($"Cannot set the Assets Cache location, \"{path}\" is invalid or inaccessible."));
                 }
@@ -188,7 +196,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!CancelDownloadInProgress())
                     return;
 
+                var oldStatus = m_CurrentAssetStoreConfig?.status.ToString() ?? string.Empty;
+                var oldSource = m_CurrentAssetStoreConfig?.source.ToString() ?? string.Empty;
                 var status = m_AssetStoreCachePathProxy.ResetConfig();
+
+                // Send analytics
+                PackageCacheManagementAnalytics.SendAssetStoreEvent("resetPath",
+                    new []{ oldSource, oldStatus },
+                    new []{ m_CurrentAssetStoreConfig.source.ToString(), m_CurrentAssetStoreConfig.status.ToString()});
+
                 if (status == AssetStoreCachePathManager.ConfigStatus.Failed)
                     DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("Cannot reset the Assets Cache location to default."));
             }, action => m_CurrentAssetStoreConfig.source == ConfigSource.User ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled, "resetLocation");
@@ -203,7 +219,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!m_AssetStoreDownloadManager.IsAnyDownloadInProgressOrPause())
                 return true;
 
-            if (m_ApplicationProxy.isBatchMode || !m_ApplicationProxy.DisplayDialog(L10n.Tr("Package Manager"),
+            if (m_ApplicationProxy.isBatchMode || !m_ApplicationProxy.DisplayDialog("abortDownloadBeforeChangeAssetsCacheLocation",
+                L10n.Tr("Changing Assets Cache location"),
                 L10n.Tr("Changing the Assets Cache location will abort all downloads in progress."),
                 L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 return false;
@@ -220,7 +237,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshAssetStoreCachePathConfig(CachePathConfig config)
         {
             m_CurrentAssetStoreConfig = config;
-            assetsCachePath.SetValueWithoutNotify(m_CurrentAssetStoreConfig.path.NormalizePath());
+            assetsCachePath.SetValueWithoutNotify(m_CurrentAssetStoreConfig.path.NormalizePath().EscapeBackslashes());
             UIUtils.SetElementDisplay(assetsCacheErrorBox, false);
 
             if (m_CurrentAssetStoreConfig.source == ConfigSource.Environment)
@@ -262,6 +279,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesSetCacheRootOperationResult(CacheRootConfig config)
         {
+            // Send analytics
+            PackageCacheManagementAnalytics.SendUpmEvent("changePath",
+                new []{ m_CurrentPackagesConfig.source.ToString() },
+                new []{ config.source.ToString()});
+
+            RefreshCurrentPackagesConfig(config);
+            m_ClientProxy.Resolve();
+        }
+
+        private void OnPackagesClearCacheRootOperationResult(CacheRootConfig config)
+        {
+            // Send analytics
+            PackageCacheManagementAnalytics.SendUpmEvent("resetPath",
+                new []{ m_CurrentPackagesConfig.source.ToString() },
+                new []{ config.source.ToString()});
+
             RefreshCurrentPackagesConfig(config);
             m_ClientProxy.Resolve();
         }
@@ -269,7 +302,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshCurrentPackagesConfig(CacheRootConfig config)
         {
             m_CurrentPackagesConfig = config;
-            packagesCachePath.SetValueWithoutNotify(m_CurrentPackagesConfig.path.NormalizePath());
+            packagesCachePath.SetValueWithoutNotify(m_CurrentPackagesConfig.path.NormalizePath().EscapeBackslashes());
             packagesCacheDropdown.SetEnabled(true);
             UIUtils.SetElementDisplay(packagesCacheErrorBox, false);
         }

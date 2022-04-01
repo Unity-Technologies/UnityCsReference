@@ -508,39 +508,16 @@ namespace UnityEditor.UIElements
             }
             else if (hasSrc)
             {
-                var response = URIHelpers.ValidateAssetURL(assetPath, src);
-                var result = response.result;
-                var projectRelativePath = response.resolvedProjectRelativePath;
-
-                if (response.hasWarningMessage)
+                var (validationResponse, asset) = ValidateAndLoadResource(elt, vta, src);
+                if (validationResponse.result == URIValidationResult.OK)
                 {
-                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidURIProjectAssetPath,
-                        response.warningMessage, Error.Level.Warning, elt);
-                }
-
-                if (result != URIValidationResult.OK)
-                {
-                    LogError(vta, ImportErrorType.Semantic, ConvertErrorCode(result), response.errorToken, elt);
-                }
-                else
-                {
-                    var asset = response.resolvedQueryAsset;
-                    if (asset && m_Context != null)
-                    {
-                        m_Context.DependsOnSourceAsset(projectRelativePath);
-                    }
-                    else
-                    {
-                        asset = DeclareDependencyAndLoad(projectRelativePath);
-                    }
-
                     if (asset is VisualTreeAsset treeAsset)
                     {
                         vta.RegisterTemplate(name, treeAsset);
                     }
                     else
                     {
-                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, elt);
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, validationResponse.resolvedProjectRelativePath, elt);
                     }
                 }
             }
@@ -608,6 +585,18 @@ namespace UnityEditor.UIElements
                     dependencies.Add(projectRelativePath);
                     break;
             }
+        }
+
+        static void AddAssetDependency(string assetPath, string src, List<string> dependencies)
+        {
+            if (string.IsNullOrEmpty(src))
+                return;
+
+            var result = URIHelpers.ValidAssetURL(assetPath, src, out var _, out var projectRelativePath);
+            if (result != URIValidationResult.OK)
+                return;
+
+            dependencies.Add(projectRelativePath);
         }
 
         internal static bool HasTemplateCircularDependencies(string templateAssetPath, HashSet<string> templateDependencies)
@@ -697,6 +686,17 @@ namespace UnityEditor.UIElements
                         AddDependency(assetPath, child, dependencies);
                         break;
                     default:
+                        // Find and add any asset attribute dependency.
+                        var typeName = ResolveFullType(child);
+                        var uxmlAssetAttributeDescriptions = GetAssetAttributeDescriptionForType(typeName.fullName);
+                        if (uxmlAssetAttributeDescriptions != null)
+                        {
+                            foreach (var assetAttribute in uxmlAssetAttributeDescriptions)
+                            {
+                                AddAssetDependency(assetPath, child.Attribute(assetAttribute.name)?.Value, dependencies);
+                            }
+                        }
+
                         PopulateDependencies(assetPath, child, dependencies);
                         continue;
                 }
@@ -845,9 +845,9 @@ namespace UnityEditor.UIElements
             }
         }
 
-        VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
+        static (string elementNamespaceName, string fullName) ResolveFullType(XElement elt)
         {
-            string elementNamespaceName = elt.Name.NamespaceName;
+            var elementNamespaceName = elt.Name.NamespaceName;
 
             if (elementNamespaceName.StartsWith("UnityEditor.Experimental.UIElements") ||
                 elementNamespaceName.StartsWith("UnityEngine.Experimental.UIElements"))
@@ -858,6 +858,13 @@ namespace UnityEditor.UIElements
             var fullName = String.IsNullOrEmpty(elementNamespaceName)
                 ? elt.Name.LocalName
                 : elementNamespaceName + "." + elt.Name.LocalName;
+
+            return (elementNamespaceName, fullName);
+        }
+
+        VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
+        {
+            var (elementNamespaceName, fullName) = ResolveFullType(elt);
 
             if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
             {
@@ -923,13 +930,101 @@ namespace UnityEditor.UIElements
             return true;
         }
 
+        (URIHelpers.URIValidationResponse response, Object asset) ValidateAndLoadResource(XElement elt, VisualTreeAsset vta, string src)
+        {
+            var response = URIHelpers.ValidateAssetURL(assetPath, src);
+            var result = response.result;
+            var projectRelativePath = response.resolvedProjectRelativePath;
+
+            if (response.hasWarningMessage)
+            {
+                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidURIProjectAssetPath,
+                    response.warningMessage, Error.Level.Warning, elt);
+            }
+
+            if (result != URIValidationResult.OK)
+            {
+                LogError(vta, ImportErrorType.Semantic, ConvertErrorCode(result), response.errorToken, elt);
+            }
+            else
+            {
+                var asset = response.resolvedQueryAsset;
+                if (asset && m_Context != null)
+                {
+                    m_Context.DependsOnSourceAsset(projectRelativePath);
+                }
+                else
+                {
+                    asset = DeclareDependencyAndLoad(projectRelativePath);
+                }
+
+                return (response, asset);
+            }
+
+            return (default, null);
+        }
+
+        static List<UxmlAttributeDescription> GetAssetAttributeDescriptionForType(string fullTypeName)
+        {
+            static bool IsAssetAttributeDescription(UxmlAttributeDescription desc)
+            {
+                var type = desc.GetType();
+                return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>);
+            }
+
+            if (UxmlObjectFactoryRegistry.factories.TryGetValue(fullTypeName, out var uxmlObjectFactories))
+            {
+                foreach (var factory in uxmlObjectFactories)
+                {
+                    return factory.uxmlAttributesDescription.Where(IsAssetAttributeDescription)
+                        .Select(d => d as UxmlAttributeDescription).ToList();
+                }
+            }
+
+            if (VisualElementFactoryRegistry.factories.TryGetValue(fullTypeName, out var uxmlFactories))
+            {
+                foreach (var factory in uxmlFactories)
+                {
+                    return factory.uxmlAttributesDescription.Where(IsAssetAttributeDescription)
+                        .Select(d => d as UxmlAttributeDescription).ToList();
+                }
+            }
+
+            return null;
+        }
+
         bool ParseAttributes(XElement elt, VisualElementAsset res, VisualTreeAsset vta, VisualElementAsset parent)
         {
-            bool startedRule = false;
+            var startedRule = false;
+            var uxmlAssetAttributeDescriptions = GetAssetAttributeDescriptionForType(res.fullTypeName);
 
-            foreach (XAttribute xattr in elt.Attributes())
+            foreach (var xattr in elt.Attributes())
             {
-                string attrName = xattr.Name.LocalName;
+                var attrName = xattr.Name.LocalName;
+
+                if (uxmlAssetAttributeDescriptions != null)
+                {
+                    var added = false;
+                    var assetAttributeDescription = uxmlAssetAttributeDescriptions.FirstOrDefault(attrDesc => attrDesc?.name == attrName);
+                    if (assetAttributeDescription != null)
+                    {
+                        added = true;
+                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
+
+                        var type = assetAttributeDescription.GetType().GetGenericArguments()[0];
+                        var (response, asset) = ValidateAndLoadResource(elt, vta, xattr.Value);
+
+                        if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, type))
+                        {
+                            // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
+                            asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, type);
+                            vta.RegisterAssetEntry(xattr.Value, type, asset);
+                        }
+                    }
+
+                    if (added)
+                        continue;
+                }
 
                 // start with special cases
                 switch (attrName)

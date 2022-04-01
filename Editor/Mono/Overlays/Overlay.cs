@@ -48,6 +48,13 @@ namespace UnityEditor.Overlays
         Vector2 m_FloatingSnapOffset;
         internal Vector2 m_SnapOffsetDelta = Vector2.zero;
 
+        //Min and Max being 0 means the resizing is disabled for that axis without enforcing an actual size
+        //Resizing is disabled by default
+        Vector2 m_MinSize = Vector2.zero;
+        Vector2 m_MaxSize = Vector2.zero;
+        Vector2 m_Size;
+        bool m_SizeOverridden;
+
         // Temporary Variables
         bool m_LockAnchor = false;
         bool m_ContentsChanged = true;
@@ -62,6 +69,8 @@ namespace UnityEditor.Overlays
         VisualElement m_CollapsedContent;
         OverlayPopup m_ModalPopup; // collapsed popup root
         VisualElement m_RootVisualElement;
+        VisualElement m_ResizeTarget;
+        internal VisualElement resizeTarget => m_ResizeTarget;
 
         OverlayDropZone m_BeforeDropZone;
         OverlayDropZone m_AfterDropZone;
@@ -70,6 +79,11 @@ namespace UnityEditor.Overlays
         public event Action<Layout> layoutChanged;
         public event Action<bool> collapsedChanged;
         public event Action<bool> displayedChanged;
+        internal event Action<OverlayContainer> containerChanged;
+        internal event Action minSizeChanged;
+        internal event Action maxSizeChanged;
+        internal event Action sizeOverridenChanged;
+
         // Invoked in partial class OverlayPlacement.cs
 #pragma warning disable 67
         public event Action<bool> floatingChanged;
@@ -121,6 +135,7 @@ namespace UnityEditor.Overlays
             {
                 if (m_Layout == value)
                     return;
+
                 m_Layout = value;
                 RebuildContent();
             }
@@ -164,12 +179,19 @@ namespace UnityEditor.Overlays
         internal OverlayContainer container
         {
             get => m_Container;
-            set => m_Container = value;
+            set
+            {
+                if (m_Container == value)
+                    return;
+
+                m_Container = value;
+                containerChanged?.Invoke(m_Container);
+            }
         }
 
         internal DockZone dockZone => floating ? DockZone.Floating : OverlayCanvas.GetDockZone(container);
 
-        internal DockPosition dockPosition => container?.GetDockPosition(this) ?? DockPosition.Bottom;
+        internal DockPosition dockPosition => container.GetSection(OverlayContainerSection.BeforeSpacer).Contains(this) ? DockPosition.Top : DockPosition.Bottom;
 
         internal static VisualTreeAsset treeAsset
         {
@@ -179,11 +201,6 @@ namespace UnityEditor.Overlays
                     return s_TreeAsset;
                 return s_TreeAsset = (VisualTreeAsset)EditorGUIUtility.Load(k_UxmlPath);
             }
-        }
-
-        internal void SetDisplayedNoCallback(bool value)
-        {
-            rootVisualElement.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public bool displayed
@@ -249,6 +266,10 @@ namespace UnityEditor.Overlays
                 m_RootVisualElement.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
                 m_RootVisualElement.tooltip = L10n.Tr(displayName);
 
+                m_ResizeTarget = m_RootVisualElement.Q("unity-overlay");
+                m_ResizeTarget.style.overflow = Overflow.Hidden;
+                m_ResizeTarget.Add(new OverlayResizerGroup(this));
+
                 return m_RootVisualElement;
             }
         }
@@ -266,7 +287,80 @@ namespace UnityEditor.Overlays
             }
         }
 
-        public bool isInToolbar => !floating && container is ToolbarOverlayContainer;
+        public bool isInToolbar => container is ToolbarOverlayContainer;
+        internal bool sizeOverridden
+        {
+            get => m_SizeOverridden;
+            private set
+            {
+                if (m_SizeOverridden == value)
+                    return;
+
+                m_SizeOverridden = value;
+                sizeOverridenChanged?.Invoke();
+            }
+        }
+
+        internal Vector2 sizeToSave => m_Size;
+
+        public Vector2 size
+        {
+            get
+            {
+                if (!ShouldUseSizeValue())
+                    return m_ResizeTarget.layout.size;
+
+                return new Vector2(
+                    IsSizeAuto(m_MinSize.x, m_MaxSize.x) ? m_ResizeTarget.layout.width : m_Size.x,
+                    IsSizeAuto(m_MinSize.y, m_MaxSize.y) ? m_ResizeTarget.layout.height : m_Size.y);
+            }
+            set
+            {
+                if (m_Size == value && sizeOverridden)
+                    return;
+
+                m_Size = value;
+                sizeOverridden = true;
+                UpdateSize();
+            }
+        }
+
+        public Vector2 minSize
+        {
+            get => m_MinSize;
+            set
+            {
+                if (m_MinSize == value)
+                    return;
+
+                m_MinSize = value;
+                minSizeChanged?.Invoke();
+                UpdateSize();
+            }
+        }
+
+        public Vector2 maxSize
+        {
+            get => m_MaxSize;
+            set
+            {
+                if (m_MaxSize == value)
+                    return;
+
+                m_MaxSize = value;
+                maxSizeChanged?.Invoke();
+                UpdateSize();
+            }
+        }
+
+        internal void ResetSize()
+        {
+            if (!sizeOverridden)
+                return;
+
+            sizeOverridden = false;
+            UpdateSize();
+        }
 
         bool CanCreateRequestedLayout(Layout requested)
         {
@@ -302,7 +396,7 @@ namespace UnityEditor.Overlays
 
             // We need to invoke a callback if the collapsed state changes (either from user request or invalid layout)
             bool wasCollapsed = collapsedContent.parent == contentRoot;
-            var prevLayout = layout;
+            var prevLayout = m_ActiveLayout;
             m_ActiveLayout = GetBestLayoutForState();
 
             // Clear any existing contents.
@@ -315,8 +409,8 @@ namespace UnityEditor.Overlays
 
             // An Overlay can collapsed by request, or by necessity. If collapsed due to invalid layout/container match,
             // the collapsed property is not modified. The next time a content rebuild is requested we'll try again to
-            // create the contents with the st  ored state.
-            bool isCollapsed = m_Collapsed || m_ActiveLayout == 0;
+            // create the contents with the stored state.
+            bool isCollapsed = m_Collapsed || activeLayout == 0;
 
             if (isCollapsed)
             {
@@ -357,7 +451,7 @@ namespace UnityEditor.Overlays
             m_BeforeDropZone.style.display = dropZonesDisplay;
             m_AfterDropZone.style.display = dropZonesDisplay;
 
-            container?.UpdateIsVisibleInContainer(this);
+            UpdateSize();
 
             // Invoke callbacks after content is created and styling has been applied
             if(wasCollapsed != isCollapsed)
@@ -365,6 +459,40 @@ namespace UnityEditor.Overlays
 
             if (prevLayout != m_ActiveLayout)
                 layoutChanged?.Invoke(m_ActiveLayout);
+        }
+
+        bool ShouldUseSizeValue()
+        {
+            return sizeOverridden && layout == Layout.Panel && !collapsed && !(container is ToolbarOverlayContainer);
+        }
+
+        bool IsSizeAuto(float min, float max)
+        {
+            return Mathf.Approximately(min, 0) && Mathf.Approximately(max, 0);
+        }
+
+        void UpdateSize()
+        {
+            m_Size.x = Mathf.Clamp(m_Size.x, m_MinSize.x, m_MaxSize.x);
+            m_Size.y = Mathf.Clamp(m_Size.y, m_MinSize.y, m_MaxSize.y);
+
+            if (m_ResizeTarget == null)
+                return;
+
+            if (!ShouldUseSizeValue())
+            {
+                m_ResizeTarget.style.width = new StyleLength(StyleKeyword.Auto);
+                m_ResizeTarget.style.height = new StyleLength(StyleKeyword.Auto);
+            }
+            else
+            {
+                //If both min-max for one axis are 0, disable resizing for that axis
+                m_ResizeTarget.style.width = IsSizeAuto(m_MinSize.x, m_MaxSize.x) ? new StyleLength(StyleKeyword.Auto) : m_Size.x;
+                m_ResizeTarget.style.height = IsSizeAuto(m_MinSize.y, m_MaxSize.y) ? new StyleLength(StyleKeyword.Auto) : m_Size.y;
+            }
+
+            var position = canvas.ClampToOverlayWindow(new Rect(floatingPosition, m_Size)).position;
+            UpdateSnapping(position);
         }
 
         // CreateContent always returns a new VisualElement tree with the Overlay contents. It does not modify the
@@ -450,7 +578,7 @@ namespace UnityEditor.Overlays
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>
             {
-                if (evt.relatedTarget is VisualElement target && m_ModalPopup.Contains(target))
+                if (evt.relatedTarget is VisualElement target && (m_ModalPopup == target || m_ModalPopup.Contains(target)))
                     return;
 
                 // When the new focus is an embedded IMGUIContainer or popup window, give focus back to the modal
@@ -494,6 +622,8 @@ namespace UnityEditor.Overlays
 
             if (!isInToolbar)
             {
+                menu.AppendAction(L10n.Tr("Reset Size"), action => ResetSize());
+
                 menu.AppendSeparator();
                 var layouts = supportedLayouts;
 
@@ -531,6 +661,8 @@ namespace UnityEditor.Overlays
             m_Layout = data.layout;
             m_FloatingSnapOffset = data.snapOffset;
             m_SnapOffsetDelta = data.snapOffsetDelta;
+            m_SizeOverridden = data.sizeOverriden;
+            m_Size = data.size;
         }
     }
 }

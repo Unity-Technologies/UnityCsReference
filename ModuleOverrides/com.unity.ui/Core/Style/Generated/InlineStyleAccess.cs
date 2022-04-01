@@ -1055,6 +1055,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleFloat IStyle.unitySliceScale
+        {
+            get
+            {
+                return GetStyleFloat(StylePropertyId.UnitySliceScale);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnitySliceScale, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleInt IStyle.unitySliceTop
         {
             get

@@ -19,10 +19,12 @@ namespace UnityEditor
             public static GUIContent missingSerializeReferenceHelpText = EditorGUIUtility.TrTextContent("Prefab has missing SerializeReference Types. Open Prefab to fix the issue. Changing the Prefab directly will cause those types to be lost.");
             public static GUIContent multiSelectionMissingScriptsHelpText = EditorGUIUtility.TrTextContent("Some of the selected Prefabs have missing scripts and needs to be fixed before editing them. Click to Open Prefab to fix the issue.");
             public static GUIContent savingFailedHelpText = EditorGUIUtility.TrTextContent("Saving has failed. Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nOpen Prefab to fix the issue.");
-            public static GUIContent baseContent = EditorGUIUtility.TrTextContent("Base");
+            public static GUIContent variantOfText = EditorGUIUtility.TrTextContent("Variant Parent");
             public static string localizedTitleMultiplePrefabs = L10n.Tr("Prefab Assets");
             public static string localizedTitleSinglePrefab = L10n.Tr("Prefab Asset");
             public static GUIStyle openButtonStyle = "AC Button";
+            public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow");
+            public const int kHierarchyIconWidth = 44;
         }
 
         int m_HasMixedBaseVariants = -1;
@@ -246,15 +248,15 @@ namespace UnityEditor
             if (m_HasMixedBaseVariants >= 0)
                 return; // already cached
 
-            var firstBaseVarient = PrefabUtility.GetCorrespondingObjectFromSource(assetTarget);
-            if (firstBaseVarient == null)
+            var firstVariantParent = PrefabUtility.GetCorrespondingObjectFromSource(assetTarget);
+            if (firstVariantParent == null)
                 return;
 
             m_HasMixedBaseVariants = 0;
             foreach (var t in assetTargets)
             {
-                var variantBase = PrefabUtility.GetCorrespondingObjectFromSource(t);
-                if (variantBase != firstBaseVarient)
+                var variantParent = PrefabUtility.GetCorrespondingObjectFromSource(t);
+                if (variantParent != firstVariantParent)
                 {
                     m_HasMixedBaseVariants = 1;
                     break;
@@ -275,23 +277,59 @@ namespace UnityEditor
             }
         }
 
+        void PrefabFamilyButton()
+        {
+            if (EditorGUILayout.DropdownButton(GUIContent.none, FocusType.Passive, GUILayout.MaxWidth(Styles.kHierarchyIconWidth)))
+            {
+                if (!PrefabFamilyPopup.isOpen)
+                    PopupWindow.Show(GUILayoutUtility.topLevel.GetLast(), new PrefabFamilyPopup((GameObject)assetTarget));
+                GUIUtility.ExitGUI();
+            }
+            var rect = new Rect(GUILayoutUtility.topLevel.GetLast());
+            rect.x += 6;
+            EditorGUI.LabelField(rect, Styles.hierarchyIcon);
+        }
+
+        internal override void OnHeaderControlsGUI()
+        {
+            GUILayout.FlexibleSpace();
+
+            using (new EditorGUI.DisabledScope(targets.Length != 1))
+            {
+                PrefabFamilyButton();
+            }
+
+            if (!ShouldHideOpenButton())
+            {
+                var assets = assetTargets;
+                ShowOpenButton(assets, assetTarget != null);
+            }
+
+            var variantParent = PrefabUtility.GetCorrespondingObjectFromSource(assetTarget) as GameObject;
+            if (variantParent != null)
+            {
+                // OnHeaderControlsGUI() is called within a BeginHorizontal() scope so to create a new line
+                // we end and start a new BeginHorizontal().
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal();
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    CacheHasMixedBaseVariants();
+                    EditorGUI.showMixedValue = m_HasMixedBaseVariants == 1;
+                    var oldLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = 90;
+                    EditorGUILayout.ObjectField(Styles.variantOfText, variantParent, typeof(GameObject), false);
+                    EditorGUIUtility.labelWidth = oldLabelWidth;
+                    EditorGUI.showMixedValue = false;
+                }
+            }
+        }
+
         public override void OnInspectorGUI()
         {
             if (assetTarget is DefaultAsset)
             {
                 return;
-            }
-
-            var variantBase = PrefabUtility.GetCorrespondingObjectFromSource(assetTarget);
-            if (variantBase != null)
-            {
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    CacheHasMixedBaseVariants();
-                    EditorGUI.showMixedValue = m_HasMixedBaseVariants == 1;
-                    EditorGUILayout.ObjectField(Styles.baseContent, variantBase, typeof(GameObject), false);
-                    EditorGUI.showMixedValue = false;
-                }
             }
 
             if (hasMissingScripts)

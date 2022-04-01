@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -59,7 +61,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class MeshWriteData
     {
-        internal MeshWriteData() {}  // Don't want users to instatiate this class themselves
+        internal MeshWriteData() {}  // Don't want users to instantiate this class themselves
 
         /// <summary>
         /// The number of vertices successfully allocated for <see cref="VisualElement"/> content drawing.
@@ -91,6 +93,7 @@ namespace UnityEngine.UIElements
         ///
         /// Note that calling <see cref="SetNextVertex"/> fewer times than the allocated number of vertices will leave the remaining vertices with random values as <see cref="MeshGenerationContext.Allocate"/> does not initialize the returned data to 0 to avoid redundant work.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetNextVertex(Vertex vertex) { m_Vertices[currentVertex++] = vertex; }
 
         /// <summary>
@@ -106,6 +109,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Note that calling <see cref="SetNextIndex"/> fewer times than the allocated number of indices will leave the remaining indices with random values as <see cref="MeshGenerationContext.Allocate"/> does not initialize the returned data to 0 to avoid redundant work.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetNextIndex(UInt16 index) { m_Indices[currentIndex++] = index; }
 
         /// <summary>
@@ -291,6 +295,8 @@ namespace UnityEngine.UIElements
             public int topSlice;
             public int rightSlice;
             public int bottomSlice;
+
+            public float sliceScale;
 
             // Cached sprite geometry, which is expensive to evaluate.
             internal Rect spriteGeomRect;
@@ -702,8 +708,10 @@ namespace UnityEngine.UIElements
     /// inside the <see cref="MeshWriteData.uvRegion"/> rectangle. If you do not remap the UVs, the texture may display incorrectly when atlassed.
     /// The following example demonstrates the correct way to generate UVs.
     /// </para>
-    /// <example>
+    /// </remarks>
+    ///<example>
     /// <code>
+    /// <![CDATA[
     /// class TexturedElement : VisualElement
     /// {
     ///     static readonly Vertex[] k_Vertices = new Vertex[4];
@@ -720,7 +728,7 @@ namespace UnityEngine.UIElements
     ///     public TexturedElement()
     ///     {
     ///         generateVisualContent += OnGenerateVisualContent;
-    ///         m_Texture = AssetDatabase.LoadAssetAtPath&lt;Texture2D&gt;("Assets/tex.png");
+    ///         m_Texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/tex.png");
     ///     }
     ///
     ///     Texture2D m_Texture;
@@ -728,7 +736,7 @@ namespace UnityEngine.UIElements
     ///     void OnGenerateVisualContent(MeshGenerationContext mgc)
     ///     {
     ///         Rect r = contentRect;
-    ///         if (r.width &lt; 0.01f || r.height &lt; 0.01f)
+    ///         if (r.width < 0.01f || r.height < 0.01f)
     ///             return; // Skip rendering when too small.
     ///
     ///         float left = 0;
@@ -755,9 +763,9 @@ namespace UnityEngine.UIElements
     ///         mwd.SetAllIndices(k_Indices);
     ///     }
     /// }
+    /// ]]>
     /// </code>
     /// </example>
-    /// </remarks>
     public class MeshGenerationContext
     {
         [Flags]
@@ -791,6 +799,8 @@ namespace UnityEngine.UIElements
 
         internal MeshGenerationContext(IStylePainter painter) { this.painter = painter; }
 
+        private static readonly ProfilerMarker s_AllocateMarker = new ProfilerMarker("UIR.MeshGenerationContext.Allocate");
+
         /// <summary>
         /// Allocates the specified number of vertices and indices required to express geometry for drawing the content of a <see cref="VisualElement"/>.
         /// </summary>
@@ -803,12 +813,14 @@ namespace UnityEngine.UIElements
         /// <returns>An object that gives access to the newely allocated data. If the returned vertex count is 0, then allocation failed (the system ran out of memory).</returns>
         public MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture = null)
         {
-            return painter.DrawMesh(vertexCount, indexCount, texture, null, MeshFlags.None);
+            using (s_AllocateMarker.Auto())
+                return painter.DrawMesh(vertexCount, indexCount, texture, null, MeshFlags.None);
         }
 
         internal MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture, Material material, MeshFlags flags)
         {
-            return painter.DrawMesh(vertexCount, indexCount, texture, material, flags);
+            using (s_AllocateMarker.Auto())
+                return painter.DrawMesh(vertexCount, indexCount, texture, material, flags);
         }
 
         internal IStylePainter painter;

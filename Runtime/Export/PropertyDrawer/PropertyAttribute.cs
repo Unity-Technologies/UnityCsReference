@@ -8,6 +8,7 @@ namespace UnityEngine
 {
     // Base class to derive custom property attributes from. Use this to create custom attributes for script variables.
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [UnityEngine.Scripting.UsedByNativeCode]
     public abstract class PropertyAttribute : Attribute
     {
         public int order { get; set; }
@@ -27,6 +28,7 @@ namespace UnityEngine
     }
 
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [UnityEngine.Scripting.UsedByNativeCode]
     public class InspectorNameAttribute : PropertyAttribute
     {
         public readonly string displayName;

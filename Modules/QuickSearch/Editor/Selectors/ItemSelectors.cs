@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    static class ItemSelectors
+    public static class ItemSelectors
     {
         [SearchSelector("id", priority: 1)] static object GetSearchItemID(SearchItem item) => item.id;
         [SearchSelector("label", priority: 1)] static object GetSearchItemLabel(SearchItem item) => item.GetLabel(item.context);

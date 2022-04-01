@@ -265,16 +265,19 @@ namespace UnityEngine
             return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override string ToString()
         {
             return ToString(null, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format)
         {
             return ToString(format, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))

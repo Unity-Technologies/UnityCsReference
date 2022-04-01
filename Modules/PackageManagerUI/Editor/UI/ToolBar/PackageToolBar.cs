@@ -41,6 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageUpdateButton m_UpdateButton;
         private PackageGitUpdateButton m_GitUpdateButton;
         private PackageRemoveButton m_RemoveButton;
+        private PackageRemoveCustomButton m_RemoveCustomButton;
         private PackageResetButton m_ResetButton;
 
         private PackagePauseDownloadButton m_PauseButton;
@@ -51,13 +52,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageRedownloadButton m_RedownloadButton;
         private PackageDownloadButton m_DownloadButton;
         private PackageDownloadUpdateButton m_DownloadUpdateButton;
+        private PackageDowngradeButton m_DowngradeButton;
 
         private PackageUnlockButton m_UnlockButton;
         private PackageSignInButton m_SignInButton;
 
         private VisualElement m_MainContainer;
         private VisualElement m_ProgressContainer;
-        private PackageToolBarError m_ErrorContainer;
+        private PackageToolBarError m_ErrorState;
 
         private ProgressBar m_DownloadProgress;
 
@@ -70,6 +72,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_MainContainer = new VisualElement { name = "toolbarMainContainer" };
             Add(m_MainContainer);
+
+            m_ErrorState = new PackageToolBarError() { name = "toolbarErrorState" };
+            m_MainContainer.Add(m_ErrorState);
 
             var leftItems = new VisualElement();
             leftItems.AddToClassList("leftItems");
@@ -87,9 +92,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_DownloadProgress = new ProgressBar { name = "downloadProgress" };
             m_ProgressContainer.Add(m_DownloadProgress);
-
-            m_ErrorContainer = new PackageToolBarError(m_PackageDatabase) { name = "toolbarErrorContainer" };
-            Add(m_ErrorContainer);
 
             InitializeButtons();
         }
@@ -127,6 +129,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RemoveButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_RemoveButton.element);
 
+            m_RemoveCustomButton = new PackageRemoveCustomButton(m_Application, m_PackageDatabase, m_PageManager);
+            m_RemoveCustomButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
+            m_RemoveCustomButton.onAction += RefreshBuiltInButtons;
+            m_BuiltInActions.Add(m_RemoveCustomButton.element);
+
             m_ResetButton = new PackageResetButton(m_Application, m_PackageDatabase, m_PageManager);
             m_ResetButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_ResetButton.onAction += RefreshBuiltInButtons;
@@ -153,26 +160,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadUpdateButton.onAction += Refresh;
             m_BuiltInActions.Add(m_DownloadUpdateButton.element);
 
+            m_DowngradeButton = new PackageDowngradeButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_DowngradeButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
+            m_DowngradeButton.onAction += Refresh;
+            m_BuiltInActions.Add(m_DowngradeButton.element);
+
             m_SignInButton = new PackageSignInButton(m_UnityConnectProxy);
             m_SignInButton.SetGlobalDisableConditions(m_DisableIfNoNetwork);
             m_SignInButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_SignInButton.element);
 
             // Since pause, resume, cancel buttons are only used to control the download progress, we want to put them in the progress container instead
-            m_CancelButton = new PackageCancelDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_CancelButton.SetGlobalDisableConditions(m_DisableIfCompiling);
-            m_CancelButton.onAction += Refresh;
-            m_ProgressContainer.Add(m_CancelButton.element);
+            m_ResumeButton = new PackageResumeDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase, true);
+            m_ResumeButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
+            m_ResumeButton.onAction += RefreshProgressControlButtons;
+            m_ProgressContainer.Add(m_ResumeButton.element);
 
-            m_PauseButton = new PackagePauseDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
+            m_PauseButton = new PackagePauseDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase, true);
             m_PauseButton.SetGlobalDisableConditions(m_DisableIfCompiling);
             m_PauseButton.onAction += RefreshProgressControlButtons;
             m_ProgressContainer.Add(m_PauseButton.element);
 
-            m_ResumeButton = new PackageResumeDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase);
-            m_ResumeButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
-            m_ResumeButton.onAction += RefreshProgressControlButtons;
-            m_ProgressContainer.Add(m_ResumeButton.element);
+            m_CancelButton = new PackageCancelDownloadButton(m_AssetStoreDownloadManager, m_PackageDatabase, true);
+            m_CancelButton.SetGlobalDisableConditions(m_DisableIfCompiling);
+            m_CancelButton.onAction += Refresh;
+            m_ProgressContainer.Add(m_CancelButton.element);
         }
 
         public void OnEnable()
@@ -203,27 +215,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void Refresh()
         {
-            // Since only one of `errorContainer`, `progressContainer` or `mainContainer` can be visible at the same time
-            // we can use `chain` refresh mechanism in the order of priority (error > progress > main)
-            if (RefreshErrorContainer())
-                return;
-
+            // Since only one of `progressContainer` or `mainContainer` can be visible at the same time
+            // we can use `chain` refresh mechanism in the order of priority (progress > main)
             if (RefreshProgressContainer())
                 return;
 
             RefreshMainContainer();
-        }
-
-        // Returns true if error is visible and there's no need to further check other containers
-        private bool RefreshErrorContainer()
-        {
-            var errorVisible = m_ErrorContainer.Refresh(m_Package, m_Version);
-            if (errorVisible)
-            {
-                UIUtils.SetElementDisplay(m_MainContainer, false);
-                UIUtils.SetElementDisplay(m_ProgressContainer, false);
-            }
-            return errorVisible;
         }
 
         // Returns true if the progress bar is visible and there's no need to further check other containers
@@ -234,7 +231,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_ProgressContainer, progressVisible);
             if (progressVisible)
             {
-                UIUtils.SetElementDisplay(m_ErrorContainer, false);
                 UIUtils.SetElementDisplay(m_MainContainer, false);
                 RefreshProgressControlButtons();
             }
@@ -243,7 +239,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshMainContainer()
         {
-            UIUtils.SetElementDisplay(m_ErrorContainer, false);
+            UIUtils.SetElementDisplay(m_ErrorState, m_ErrorState.Refresh(m_Package, m_Version));
             UIUtils.SetElementDisplay(m_ProgressContainer, false);
             UIUtils.SetElementDisplay(m_MainContainer, true);
 
@@ -260,12 +256,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AddButton.Refresh(m_Version);
             m_UpdateButton.Refresh(m_Version);
             m_RemoveButton.Refresh(m_Version);
+            m_RemoveCustomButton.Refresh(m_Version);
             m_ResetButton.Refresh(m_Version);
 
             m_ImportButton.Refresh(m_Version);
             m_RedownloadButton.Refresh(m_Version);
             m_DownloadButton.Refresh(m_Version);
             m_DownloadUpdateButton.Refresh(m_Version);
+            m_DowngradeButton.Refresh(m_Version);
         }
 
         private void RefreshProgressControlButtons()

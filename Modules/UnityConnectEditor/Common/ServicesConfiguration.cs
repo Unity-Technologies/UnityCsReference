@@ -156,7 +156,7 @@ namespace UnityEditor.Connect
             m_CloudDiagCrashesDashboardUrl = m_ServicesUrlsConfig["build"] + "/diagnostics/orgs/{0}/projects/{1}/crashes";
             m_CollabDashboardUrl = m_ServicesUrlsConfig["build"] + "/collab/orgs/{0}/projects/{1}/assets/";
             m_PurchasingDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/projects/{0}/purchasing/";
-            m_AnalyticsDashboardUrl = UnityEditor.Analytics.AnalyticsSettings.dashboardUrl + "/organizations/{0}/projects/{1}/analytics/events/";
+            m_AnalyticsDashboardUrl = UnityEditor.Analytics.AnalyticsSettings.dashboardUrl + "/organizations/{0}/projects/{1}/analytics/about";
 
             pathsReady = true;
             loadingConfigurations = false;

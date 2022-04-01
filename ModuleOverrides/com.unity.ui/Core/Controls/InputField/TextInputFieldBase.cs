@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -25,7 +26,6 @@ namespace UnityEngine.UIElements
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
             UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
             UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
             UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
 
@@ -40,7 +40,6 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var field = ((TextInputBaseField<TValueType>)ve);
-                field.text = m_Text.GetValueFromBag(bag, cc);
                 field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
@@ -75,6 +74,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
         /// <summary>
+        /// USS class name of the multiline container.
+        /// </summary>
+        internal static readonly string multilineContainerClassName = ussClassName + "__multiline-container";
+        /// <summary>
         /// USS class name of single line input elements in elements of this type.
         /// </summary>
         public static readonly string singleLineInputUssClassName = inputUssClassName + "--single-line";
@@ -83,6 +86,10 @@ namespace UnityEngine.UIElements
         /// USS class name of multiline input elements in elements of this type.
         /// </summary>
         public static readonly string multilineInputUssClassName = inputUssClassName + "--multiline";
+        /// <summary>
+        /// USS class name of multiline input elements with no scroll view.
+        /// </summary>
+        internal static readonly string multilineInputWithScrollViewUssClassName = multilineInputUssClassName + "--scroll-view";
 
         /// <summary>
         /// USS class name of input elements in elements of this type.
@@ -108,10 +115,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool isReadOnly
         {
-            get => m_TextInputBase.isReadOnly;
+            get => textEdition.isReadOnly;
             set
             {
-                m_TextInputBase.isReadOnly = value;
+                textEdition.isReadOnly = value;
                 onIsReadOnlyChanged?.Invoke(value);
             }
         }
@@ -340,6 +347,9 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
+            if (textEdition.isReadOnly)
+                return;
+
             if (evt.eventTypeId == KeyDownEvent.TypeId())
             {
                 KeyDownEvent keyDownEvt = evt as KeyDownEvent;
@@ -350,6 +360,11 @@ namespace UnityEngine.UIElements
                     (keyDownEvt?.character == '\n'))    // KeyCode.Return
                 {
                     textInputBase.textElement.Focus();
+                }
+                else if (keyDownEvt?.keyCode == KeyCode.Escape)
+                {
+                    textEdition.RestoreValueAndText();
+                    Focus();
                 }
             }
 
@@ -410,7 +425,7 @@ namespace UnityEngine.UIElements
         {
             internal TextElement textElement { get; private set; }
             internal ScrollView scrollView;
-
+            internal VisualElement multilineContainer;
 
             /// <summary>
             /// Modifier name of the inner components
@@ -421,6 +436,11 @@ namespace UnityEngine.UIElements
             /// USS class name of the inner TextElement
             /// </summary>
             public static readonly string innerTextElementUssClassName = TextElement.ussClassName + innerComponentsModifierName;
+
+            /// <summary>
+            /// USS class name of the inner TextElement
+            /// </summary>
+            internal static readonly string innerTextElementWithScrollViewUssClassName = TextElement.ussClassName + innerComponentsModifierName + "--scroll-view";
 
             /// <summary>
             /// USS class name that's added when the inner TextElement if in horizontal.
@@ -613,45 +633,109 @@ namespace UnityEngine.UIElements
                 delegatesFocus = true;
 
                 textElement = new TextElement();
-                textElement.focusable = true;
-                textElement.enableRichText = false;
+                textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
+                textSelection.isSelectable = true;
+                textElement.enableRichText = false;
                 textSelection.selectAllOnFocus = true;
                 textSelection.selectAllOnMouseUp = true;
+                textElement.tabIndex = 0;
+
                 textEdition.AcceptCharacter += AcceptCharacter;
                 textEdition.UpdateScrollOffset += UpdateScrollOffset;
                 textEdition.UpdateValueFromText += UpdateValueFromText;
 
-                scrollView = new ScrollView();
-                SetScrollViewMode();
-                scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-                scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-
-                scrollView.Add(textElement);
-                Add(scrollView);
-
                 AddToClassList(inputUssClassName);
-                AddToClassList(singleLineInputUssClassName);
                 name = TextField.textInputUssName;
 
-                textElement.AddToClassList(innerTextElementUssClassName);
-                scrollView.AddToClassList(innerScrollviewUssClassName);
-                scrollView.contentViewport.AddToClassList(innerViewportUssClassName);
-                scrollView.contentContainer.AddToClassList(innerContentContainerUssClassName);
+                SetSingleLine();
 
                 RegisterCallback<CustomStyleResolvedEvent>(OnInputCustomStyleResolved);
-                scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
+
+                // The ScrollView's slider can send ChangeEvent<float>. This makes sure these do not leak.
+                RegisterCallback<ChangeEvent<float>>((evt =>
+                {
+                    if(evt.target.GetType() != typeof(TextElement))
+                        evt.StopPropagation();
+
+                }), TrickleDown.TrickleDown);
 
                 tabIndex = -1;
             }
 
-            internal void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)
+            internal void SetSingleLine()
             {
-                if (e.oldRect.size == e.newRect.size || !m_DelayedUpdateScrollOffset)
+                hierarchy.Clear();
+                RemoveMultilineComponents();
+
+                Add(textElement);
+                AddToClassList(singleLineInputUssClassName);
+                textElement.AddToClassList(innerTextElementUssClassName);
+
+                textElement.RegisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+
+                // Make sure we reinitialize the vertical scrollOffset but keep the horizontal scrollOffset.
+                if (scrollOffset != Vector2.zero)
+                {
+                   scrollOffset.y = 0;
+                   UpdateScrollOffset();
+                }
+            }
+
+            internal void SetMultiline()
+            {
+                if (!textEdition.multiline)
                     return;
 
-                m_DelayedUpdateScrollOffset = false;
-                scrollView.scrollOffset = scrollOffset;
+                RemoveSingleLineComponents();
+                RemoveMultilineComponents();
+
+                if (m_VerticalScrollerVisibility != ScrollerVisibility.Hidden && scrollView == null)
+                {
+                    scrollView = new ScrollView();
+                    scrollView.Add(textElement);
+                    Add(scrollView);
+
+                    SetScrollViewMode();
+                    scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                    scrollView.verticalScrollerVisibility = m_VerticalScrollerVisibility;
+
+                    scrollView.AddToClassList(innerScrollviewUssClassName);
+                    scrollView.contentViewport.AddToClassList(innerViewportUssClassName);
+                    scrollView.contentContainer.AddToClassList(innerContentContainerUssClassName);
+                    scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
+
+                    AddToClassList(multilineInputWithScrollViewUssClassName);
+                    textElement.AddToClassList(innerTextElementWithScrollViewUssClassName);
+                }
+                else if (multilineContainer == null)
+                {
+                    textElement.RegisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+                    multilineContainer = new VisualElement() { classList = { multilineContainerClassName } };
+
+                    multilineContainer.Add(textElement);
+                    Add(multilineContainer);
+                    SetMultilineContainerStyle();
+
+                    AddToClassList(multilineInputUssClassName);
+                    textElement.AddToClassList(innerTextElementUssClassName);
+                }
+            }
+
+            internal void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)
+            {
+                if (e.oldRect.size == e.newRect.size)
+                    return;
+
+                UpdateScrollOffset();
+            }
+
+            internal void TextElementOnGeometryChangedEvent(GeometryChangedEvent e)
+            {
+                if (e.oldRect.size == e.newRect.size)
+                    return;
+
+                UpdateScrollOffset();
             }
 
             internal void OnInputCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -669,6 +753,7 @@ namespace UnityEngine.UIElements
                     textSelection.cursorColor = cursorValue;
 
                 SetScrollViewMode();
+                SetMultilineContainerStyle();
             }
 
             internal virtual bool AcceptCharacter(char c)
@@ -679,40 +764,69 @@ namespace UnityEngine.UIElements
 
             // scrollOffset and m_DelayedUpdateScrollOffset are used in automated tests
             internal Vector2 scrollOffset = Vector2.zero;
-            bool m_DelayedUpdateScrollOffset;
             internal void UpdateScrollOffset()
             {
                 var selection = textSelection;
                 if (selection.cursorIndex < 0)
                     return;
 
-                var cursorPos = selection.cursorPosition;
-                var cursorWidth = selection.cursorWidth;
-                var xOffset = scrollView.scrollOffset.x;
-                var yOffset = scrollView.scrollOffset.y;
-                var contentViewportWidth = scrollView.contentViewport.layout.width;
-
-                if ((cursorPos.x + cursorWidth - scrollView.scrollOffset.x) > contentViewportWidth)
-                    xOffset = cursorPos.x + cursorWidth - contentViewportWidth;
-                else if (cursorPos.x - cursorWidth - scrollView.scrollOffset.x < 0 && scrollView.scrollOffset.x > 0)
-                    xOffset = cursorPos.x - cursorWidth;
-
-                if ((cursorPos.y - scrollView.scrollOffset.y) > contentRect.height)
-                    yOffset = cursorPos.y - contentRect.height;
-                else if (cursorPos.y - selection.cursorLineHeight - scrollView.scrollOffset.y < 0)
-                    yOffset = cursorPos.y - selection.cursorLineHeight;
-
-                if (xOffset != scrollView.scrollOffset.x || yOffset != scrollView.scrollOffset.y)
+                if (scrollView != null)
                 {
-                    scrollOffset = new Vector2(xOffset, yOffset);
-                    if (scrollView.verticalScroller.highValue < yOffset || scrollView.horizontalScroller.highValue < xOffset)
-                        m_DelayedUpdateScrollOffset = true;
-                    scrollView.scrollOffset = new Vector2(xOffset, yOffset);
+                    scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width);
+                    scrollView.scrollOffset = scrollOffset;
+                }
+                else
+                {
+                    var t = textElement.transform.position;
+
+                    scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width);
+
+                    t.y = -Mathf.Min(scrollOffset.y, Math.Abs(textElement.contentRect.height - contentRect.height));
+                    t.x = -scrollOffset.x;
+
+                    if (!t.Equals(textElement.transform.position))
+                        textElement.transform.position = t;
                 }
             }
 
-            void SetScrollViewMode()
+            Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth)
             {
+                var cursorPos = textSelection.cursorPosition;
+                var cursorWidth = textSelection.cursorWidth;
+
+                var newXOffset = xOffset;
+                var newYOffset = yOffset;
+
+                const int leftScrollOffsetPadding = 5;
+
+                // Update scrollOffset when cursor moves right.
+                if ((cursorPos.x + cursorWidth - xOffset) > contentViewportWidth)
+                    newXOffset = cursorPos.x + cursorWidth - contentViewportWidth;
+                // Update scrollOffset when cursor moves left.
+                else if (cursorPos.x - xOffset - leftScrollOffsetPadding < contentViewportWidth && xOffset > 0)
+                    newXOffset = Mathf.Max(cursorPos.x - contentViewportWidth + leftScrollOffsetPadding, 0);
+
+                if (textEdition.multiline)
+                {
+                    // Update scrollOffset when cursor moves down.
+                    if ((cursorPos.y - yOffset) > contentRect.height)
+                        newYOffset = cursorPos.y - contentRect.height;
+                    // Update scrollOffset when cursor moves up.
+                    else if (cursorPos.y - textSelection.cursorLineHeight - yOffset < 0)
+                        newYOffset = cursorPos.y - textSelection.cursorLineHeight;
+                }
+
+                if (xOffset != newXOffset || yOffset != newYOffset)
+                    return new Vector2(newXOffset, newYOffset);
+
+                return scrollOffset;
+            }
+
+            internal void SetScrollViewMode()
+            {
+                if (scrollView == null)
+                    return;
+
                 textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassName);
                 textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassName);
                 textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassName);
@@ -734,13 +848,68 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            void SetMultilineContainerStyle()
+            {
+                if (multilineContainer != null)
+                {
+                    if (computedStyle.whiteSpace == WhiteSpace.Normal)
+                        style.overflow = Overflow.Hidden;
+                    else
+                        style.overflow = (Overflow)OverflowInternal.Scroll;
+                }
+            }
+
+            void RemoveSingleLineComponents()
+            {
+                RemoveFromClassList(singleLineInputUssClassName);
+                textElement.RemoveFromClassList(innerTextElementUssClassName);
+                textElement.RemoveFromHierarchy();
+                textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+            }
+
+            void RemoveMultilineComponents()
+            {
+                if (scrollView != null)
+                {
+                    scrollView.RemoveFromHierarchy();
+                    scrollView.contentContainer.UnregisterCallback<GeometryChangedEvent>(ScrollViewOnGeometryChangedEvent);
+                    scrollView = null;
+
+                    textElement.RemoveFromClassList(verticalVariantInnerTextElementUssClassName);
+                    textElement.RemoveFromClassList(verticalHorizontalVariantInnerTextElementUssClassName);
+                    textElement.RemoveFromClassList(horizontalVariantInnerTextElementUssClassName);
+
+                    RemoveFromClassList(multilineInputWithScrollViewUssClassName);
+                    textElement.RemoveFromClassList(innerTextElementWithScrollViewUssClassName);
+                }
+
+                if (multilineContainer != null)
+                {
+                    // Make sure we reset the transform
+                    textElement.transform.position = Vector3.zero;
+
+                    multilineContainer.RemoveFromHierarchy();
+                    textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);
+                    multilineContainer = null;
+
+                    RemoveFromClassList(multilineInputUssClassName);
+                }
+            }
+
+            ScrollerVisibility m_VerticalScrollerVisibility = ScrollerVisibility.Hidden;
             internal bool SetVerticalScrollerVisibility(ScrollerVisibility sv)
             {
                 if (textEdition.multiline)
                 {
-                    scrollView.verticalScrollerVisibility = sv;
+                    m_VerticalScrollerVisibility = sv;
+                    if (scrollView == null)
+                        SetMultiline();
+                    else
+                        scrollView.verticalScrollerVisibility = m_VerticalScrollerVisibility;
+
                     return true;
                 }
+                Debug.LogWarning("Can't SetVerticalScrollerVisibility as the field isn't multiline.");
                 return false;
             }
         }

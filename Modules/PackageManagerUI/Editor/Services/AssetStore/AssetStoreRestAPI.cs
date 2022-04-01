@@ -267,7 +267,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             var responseCode = request.responseCode;
                             if (responseCode == 0)
                             {
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, responseCode));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -281,7 +281,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 var errorMessage = k_KnownErrors[k_GeneralClientError];
                                 k_KnownErrors.TryGetValue(request.responseCode, out errorMessage);
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", responseCode));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -293,7 +293,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 if (parsedResult.ContainsKey("errorMessage"))
                                 {
                                     var operationErrorCode = parsedResult.ContainsKey("errorCode") ? int.Parse(parsedResult.GetString("errorCode")) : -1;
-                                    errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage"), operationErrorCode));
+                                    errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage"), operationErrorCode: operationErrorCode));
                                 }
                                 else
                                     doneCallbackAction?.Invoke(parsedResult);
@@ -314,10 +314,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 var errorMessage = k_KnownErrors[k_GeneralServerError];
                                 k_KnownErrors.TryGetValue(lastResponseCode, out errorMessage);
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", lastResponseCode));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: lastResponseCode));
                             }
                             else
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, lastResponseCode));
+                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: lastResponseCode));
                         }
                     }
 

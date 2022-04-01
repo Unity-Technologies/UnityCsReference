@@ -25,7 +25,7 @@ namespace Unity.UI.Builder
 
         public bool EnableCanvasBackground;
         public BuilderCanvasBackgroundMode CanvasBackgroundMode = BuilderCanvasBackgroundMode.Color;
-        public Color CanvasBackgroundColor = new Color(0, 0, 0, 255);
+        public Color CanvasBackgroundColor = new Color(0, 0, 0, 1f);
         public Texture2D CanvasBackgroundImage;
         public ScaleMode CanvasBackgroundImageScaleMode = ScaleMode.ScaleAndCrop;
         public string CanvasBackgroundCameraName;

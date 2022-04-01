@@ -34,6 +34,15 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class DebuggerSearchBar : VisualElement
     {
+        internal const string searchBarUssClassName = "unity-treeview-searchbar";
+        internal const string searchBarLabelUssClassName = searchBarUssClassName + "-label";
+        internal const string searchBarLabelHelpUssClassName = searchBarLabelUssClassName + "-help";
+        internal const string searchBarFieldUssClassName = searchBarUssClassName + "-field";
+        internal const string searchBarButtonUssClassName = searchBarUssClassName + "-button";
+        internal const string searchBarButtonPrevUssClassName = searchBarButtonUssClassName + "-prev";
+        internal const string searchBarButtonNextUssClassName = searchBarButtonUssClassName + "-next";
+        internal const string searchBarHiddenUssClassName = searchBarUssClassName + "-hidden";
+
         private List<SearchResultItem> m_FoundItems;
         private int m_SelectedIndex;
         private string m_CurrentQuery;
@@ -50,16 +59,16 @@ namespace UnityEditor.UIElements.Debugger
             m_ParentTreeView = parent;
             m_FoundItems = new List<SearchResultItem>();
 
-            this.AddToClassList("unity-treeview-searchbar");
+            this.AddToClassList(searchBarUssClassName);
 
             m_FieldHelpLabel = new Label("Search by type, name, or class");
             m_FieldHelpLabel.pickingMode = PickingMode.Ignore;
-            m_FieldHelpLabel.AddToClassList("unity-treeview-searchbar-label");
-            m_FieldHelpLabel.AddToClassList("unity-treeview-searchbar-label-help");
+            m_FieldHelpLabel.AddToClassList(searchBarLabelUssClassName);
+            m_FieldHelpLabel.AddToClassList(searchBarLabelHelpUssClassName);
             Add(m_FieldHelpLabel);
 
             m_SearchTextField = new TextField();
-            m_SearchTextField.AddToClassList("unity-treeview-searchbar-field");
+            m_SearchTextField.AddToClassList(searchBarFieldUssClassName);
             m_SearchTextField.RegisterValueChangedCallback(PerformSearch);
             m_SearchTextField.RegisterCallback<KeyDownEvent>((e) =>
             {
@@ -82,18 +91,18 @@ namespace UnityEditor.UIElements.Debugger
             Add(m_SearchTextField);
 
             m_CountLabel = new Label();
-            m_CountLabel.AddToClassList("unity-treeview-searchbar-label");
-            m_CountLabel.AddToClassList("unity-treeview-searchbar-hidden");
+            m_CountLabel.AddToClassList(searchBarLabelUssClassName);
+            m_CountLabel.AddToClassList(searchBarHiddenUssClassName);
             Add(m_CountLabel);
 
             var prevButton = new Button(SelectPrev) { text = "<" };
-            prevButton.AddToClassList("unity-treeview-searchbar-button");
-            prevButton.AddToClassList("unity-treeview-searchbar-button-prev");
+            prevButton.AddToClassList(searchBarButtonUssClassName);
+            prevButton.AddToClassList(searchBarButtonPrevUssClassName);
             Add(prevButton);
 
             var nextButton = new Button(SelectNext) { text = ">" };
-            nextButton.AddToClassList("unity-treeview-searchbar-button");
-            nextButton.AddToClassList("unity-treeview-searchbar-button-next");
+            nextButton.AddToClassList(searchBarButtonUssClassName);
+            nextButton.AddToClassList(searchBarButtonNextUssClassName);
             Add(nextButton);
         }
 
@@ -133,16 +142,16 @@ namespace UnityEditor.UIElements.Debugger
             m_SelectedIndex = 0;
 
             m_CountLabel.text = string.Empty;
-            m_CountLabel.AddToClassList("unity-treeview-searchbar-hidden");
+            m_CountLabel.AddToClassList(searchBarHiddenUssClassName);
 
             m_ParentTreeView.ClearSearchResults();
 
-            m_FieldHelpLabel.AddToClassList("unity-treeview-searchbar-hidden");
+            m_FieldHelpLabel.AddToClassList(searchBarHiddenUssClassName);
 
             var query = evt.newValue;
             if (string.IsNullOrEmpty(query))
             {
-                m_FieldHelpLabel.RemoveFromClassList("unity-treeview-searchbar-hidden");
+                m_FieldHelpLabel.RemoveFromClassList(searchBarHiddenUssClassName);
                 return;
             }
 
@@ -194,7 +203,7 @@ namespace UnityEditor.UIElements.Debugger
             if (m_FoundItems.Count == 0)
                 return;
 
-            m_CountLabel.RemoveFromClassList("unity-treeview-searchbar-hidden");
+            m_CountLabel.RemoveFromClassList(searchBarHiddenUssClassName);
             m_CountLabel.text =
                 string.Format("{0} of {1}", m_SelectedIndex + 1, m_FoundItems.Count);
 

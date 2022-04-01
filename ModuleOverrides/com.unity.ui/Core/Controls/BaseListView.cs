@@ -174,9 +174,6 @@ namespace UnityEngine.UIElements
             m_ArraySizeField.focusable = true;
             hierarchy.Add(m_ArraySizeField);
 
-            //m_ArraySizeField.tabIndex = 1;
-            //m_Foldout.contentContainer.tabIndex = 2;
-
             UpdateArraySizeField();
         }
 
@@ -419,9 +416,8 @@ namespace UnityEngine.UIElements
 
         void OnItemsSourceSizeChanged()
         {
-            if (itemsSource.IsFixedSize)
-                Rebuild();
-            else
+            // When bound, the ListViewBinding class takes care of refreshing when the array size is updated.
+            if (!(binding is IInternalListViewBinding))
                 RefreshItems();
         }
 

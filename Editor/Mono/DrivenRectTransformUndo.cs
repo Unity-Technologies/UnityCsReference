@@ -14,10 +14,15 @@ namespace UnityEditor
         {
             Undo.willFlushUndoRecord += ForceUpdateCanvases;
             // After undo or redo performed, the 'driven values' & 'driven properties mask' need to be updated.
-            Undo.undoRedoPerformed += ForceUpdateCanvases;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
         }
 
         static void ForceUpdateCanvases()
+        {
+            Canvas.ForceUpdateCanvases();
+        }
+
+        static void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             Canvas.ForceUpdateCanvases();
         }

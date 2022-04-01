@@ -65,8 +65,6 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_EdgeRadius);
             EditorGUILayout.EndFadeGroup();
 
-            serializedObject.ApplyModifiedProperties();
-
             FinalizeInspectorGUI();
         }
     }

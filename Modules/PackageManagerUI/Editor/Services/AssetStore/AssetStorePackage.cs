@@ -12,6 +12,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStorePackage : BasePackage
     {
+        public static readonly string k_IncompatibleWarningMessage = L10n.Tr("The downloaded version of this package is intended for Unity {0} and higher." +
+            " This version might not work with your current version of Unity." +
+            " Click Update to download a compatible version of the package.");
+
         [SerializeField]
         private string m_ProductId;
         public override string uniqueId => m_ProductId;
@@ -110,11 +114,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var latestVersion = new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo);
                 if (localInfo != null)
                 {
-                    // When no update is available, we just ignore most of the info in the `localInfo` and only take the path
-                    if (!localInfo.canUpdate)
-                        latestVersion.SetLocalPath(localInfo.packagePath);
-                    else
+                    if (localInfo.canUpdate)
                         m_VersionList.AddVersion(new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo, localInfo));
+                    else
+                    {
+                        latestVersion.SetLocalPath(localInfo.packagePath);
+                        if (localInfo.canDowngrade)
+                        {
+                            var warningMessage = string.Format(k_IncompatibleWarningMessage, localInfo.supportedVersion);
+                            AddError(new UIError(UIErrorCode.AssetStorePackageError, warningMessage, UIError.Attribute.IsWarning));
+                        }
+                    }
                 }
                 m_VersionList.AddVersion(latestVersion);
             }

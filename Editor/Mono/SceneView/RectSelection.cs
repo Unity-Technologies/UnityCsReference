@@ -246,12 +246,8 @@ namespace UnityEditor
                         System.Array.Copy(existingSelection, newSelection, existingSelection.Length);
                         for (int i = 0; i < newObjects.Length; i++)
                             newSelection[existingSelection.Length + i] = newObjects[i];
-                        if (!isRectSelection)
-                            Selection.activeObject = newObjects[0];
-                        else
-                            Selection.activeObject = newSelection[0];
-
-                        Selection.objects = newSelection;
+                        Object active = isRectSelection ? newSelection[0] : newObjects[0];
+                        Selection.SetSelectionWithActiveObject(newSelection, active);
                     }
                     else
                     {
@@ -276,6 +272,7 @@ namespace UnityEditor
                     Selection.objects = newObjects;
                     break;
             }
+            GUIUtility.ExitGUI();
         }
 
         // When rect selecting, we update the selected objects based on which modifier keys are currently held down,

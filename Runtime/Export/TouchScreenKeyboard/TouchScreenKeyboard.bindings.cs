@@ -95,6 +95,8 @@ namespace UnityEngine
                     case RuntimePlatform.PS5:
                     case RuntimePlatform.Stadia:
                     case RuntimePlatform.WebGLPlayer:
+                    case RuntimePlatform.GameCoreXboxSeries:
+                    case RuntimePlatform.GameCoreXboxOne:
 
                     // The OnScreen keyboard is ALWAYS supported in UWP
                     // Whether or not it can be used is determined automatically by the OS at runtime
@@ -340,25 +342,40 @@ namespace UnityEngine
 
         public class Android
         {
+
+            [Obsolete("TouchScreenKeyboard.Android.closeKeyboardOnOutsideTap is obsolete. Use TouchScreenKeyboard.Android.consumesOutsideTouches instead (UnityUpgradable) -> UnityEngine.TouchScreenKeyboard/Android.consumesOutsideTouches")]
             public static bool closeKeyboardOnOutsideTap
+            {
+                get
+                {
+                    return TouchScreenKeyboard.Android.consumesOutsideTouches;
+                }
+
+                set
+                {
+                    TouchScreenKeyboard.Android.consumesOutsideTouches = value;
+                }
+            }
+
+            public static bool consumesOutsideTouches
             {
                 set
                 {
-                    TouchScreenKeyboard_SetAndroidCloseKeyboardOnOutsideTap(value);
+                    TouchScreenKeyboard_SetAndroidKeyboardConsumesOutsideTouches(value);
                 }
                 get
                 {
-                    return TouchScreenKeyboard_GetAndroidCloseKeyboardOnOutsideTap();
+                    return TouchScreenKeyboard_GetAndroidKeyboardConsumesOutsideTouches();
                 }
             }
 
             [NativeConditional("PLATFORM_ANDROID")]
-            [FreeFunction("TouchScreenKeyboard_SetAndroidCloseKeyboardOnOutsideTap")]
-            private static extern void TouchScreenKeyboard_SetAndroidCloseKeyboardOnOutsideTap(bool enable);
+            [FreeFunction("TouchScreenKeyboard_SetAndroidKeyboardConsumesOutsideTouches")]
+            private static extern void TouchScreenKeyboard_SetAndroidKeyboardConsumesOutsideTouches(bool enable);
 
             [NativeConditional("PLATFORM_ANDROID")]
-            [FreeFunction("TouchScreenKeyboard_GetAndroidCloseKeyboardOnOutsideTap")]
-            private static extern bool TouchScreenKeyboard_GetAndroidCloseKeyboardOnOutsideTap();
+            [FreeFunction("TouchScreenKeyboard_GetAndroidKeyboardConsumesOutsideTouches")]
+            private static extern bool TouchScreenKeyboard_GetAndroidKeyboardConsumesOutsideTouches();
         }
     }
 }

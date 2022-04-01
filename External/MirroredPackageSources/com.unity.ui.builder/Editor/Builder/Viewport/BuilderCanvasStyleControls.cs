@@ -13,6 +13,7 @@ namespace Unity.UI.Builder
         const string k_AlignItemsName = "align-items";
         const string k_JustifyContentName = "justify-content";
         const string k_TextAlignName = "-unity-text-align";
+        const string k_TextOverflowName = "text-overflow";
         const string k_TextWrapName = "white-space";
 
         public const string k_FlexDirectionButtonName = "flex-direction-button";
@@ -21,7 +22,8 @@ namespace Unity.UI.Builder
         public const string k_HorizontalTextAlignButtonName = "horizontal-text-align-button";
         public const string k_VerticalTextAlignButtonName = "vertical-text-align-button";
         public const string k_TextWrapButtonName = "text-wrap-button";
-
+        public const string k_TextOverflowButtonName = "text-overflow-button";
+        
         // Buttons
         List<Button> m_AllButtons = new List<Button>();
         List<Button> m_FlexAlignButtons = new List<Button>();
@@ -31,6 +33,7 @@ namespace Unity.UI.Builder
         Button m_HorizontalTextAlignButton;
         Button m_VerticalTextAlignButton;
         Button m_TextWrapButton;
+        Button m_TextOverflowButton;
 
         BuilderSelection m_Selection;
         VisualTreeAsset m_VisualTreeAsset;
@@ -59,6 +62,7 @@ namespace Unity.UI.Builder
             m_HorizontalTextAlignButton = QueryAndBindButton(k_HorizontalTextAlignButtonName, HorizontalTextAlignOnToggle);
             m_VerticalTextAlignButton = QueryAndBindButton(k_VerticalTextAlignButtonName, VerticalTextAlignOnToggle);
             m_TextWrapButton = QueryAndBindButton(k_TextWrapButtonName, TextWrapOnToggle);
+            m_TextOverflowButton = QueryAndBindButton(k_TextOverflowButtonName, TextOverflowOnToggle);
 
             // Group special buttons.
             m_FlexAlignButtons.Add(m_FlexDirectionButton);
@@ -125,6 +129,9 @@ namespace Unity.UI.Builder
 
                 m_TextWrapButton.style.display = DisplayStyle.Flex;
                 TextWrapUpdateToggleIcon();
+
+                m_TextOverflowButton.style.display = DisplayStyle.Flex;
+                TextOverflowUpdateToggleIcon();
             }
         }
 
@@ -148,6 +155,7 @@ namespace Unity.UI.Builder
                         HorizontalTextAlignUpdateToggleIcon();
                         VerticalTextAlignUpdateToggleIcon();
                         break;
+                    case k_TextOverflowName: TextOverflowUpdateToggleIcon(); break;
                     case k_TextWrapName: TextWrapUpdateToggleIcon(); break;
                 }
             }
@@ -205,7 +213,7 @@ namespace Unity.UI.Builder
             }
             FlexDirectionUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_FlexDirectionName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_FlexDirectionName });
         }
 
@@ -251,7 +259,7 @@ namespace Unity.UI.Builder
             }
             AlignItemsUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_AlignItemsName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_AlignItemsName });
         }
 
@@ -297,7 +305,7 @@ namespace Unity.UI.Builder
             }
             JustifyContentUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_JustifyContentName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_JustifyContentName });
         }
 
@@ -349,7 +357,7 @@ namespace Unity.UI.Builder
             }
             HorizontalTextAlignUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextAlignName });
         }
 
@@ -401,8 +409,19 @@ namespace Unity.UI.Builder
             }
             VerticalTextAlignUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextAlignName });
+        }
+
+        void TextOverflowUpdateToggleIcon()
+        {
+            TextOverflowUpdateToggleIcon(m_Target.resolvedStyle.textOverflow);
+        }
+
+        void TextOverflowUpdateToggleIcon(TextOverflow resolveStyle)
+        {
+            m_TextOverflowButton.EnableInClassList("clip", resolveStyle == TextOverflow.Clip);
+            m_TextOverflowButton.EnableInClassList("ellipsis", resolveStyle == TextOverflow.Ellipsis);
         }
 
         //
@@ -428,6 +447,20 @@ namespace Unity.UI.Builder
             }
         }
 
+        void TextOverflowOnToggle()
+        {
+            var result = TextOverflow.Clip;
+            switch (m_Target.resolvedStyle.textOverflow)
+            {
+                case TextOverflow.Clip: result = TextOverflow.Ellipsis; break;
+                case TextOverflow.Ellipsis: result = TextOverflow.Clip; break;
+            }
+            TextOverflowUpdateToggleIcon(result);
+            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextOverflowName, result);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
+            m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextOverflowName });
+        }
+
         void TextWrapOnToggle()
         {
             var result = WhiteSpace.NoWrap;
@@ -438,7 +471,7 @@ namespace Unity.UI.Builder
             }
             TextWrapUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextWrapName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextWrapName });
         }
     }

@@ -80,6 +80,7 @@ namespace UnityEngine.TextCore.Text
         [FormerlySerializedAs("m_missingGlyphCharacter")][SerializeField]
         protected int m_MissingCharacterUnicode;
 
+
         /// <summary>
         /// Determines if the "Clear Dynamic Data on Build" property will be set to true or false on newly created dynamic font assets.
         /// </summary>

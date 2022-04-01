@@ -288,6 +288,7 @@ namespace UnityEditor
         }
 
         // Create a folder
+        [ShortcutManagement.ShortcutAttribute("Project Browser/Create/Folder", typeof(ProjectBrowser), KeyCode.N, ShortcutManagement.ShortcutModifiers.Shift | ShortcutManagement.ShortcutModifiers.Action)]
         public static void CreateFolder()
         {
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
@@ -509,6 +510,8 @@ namespace UnityEditor
 
         internal static Object CreateScriptAssetWithContent(string pathName, string templateContent)
         {
+            AssetModificationProcessorInternal.OnWillCreateAsset(pathName);
+
             templateContent = SetLineEndings(templateContent, EditorSettings.lineEndingsForNewScripts);
 
             string fullPath = Path.GetFullPath(pathName);
@@ -868,6 +871,83 @@ namespace UnityEditor
             return result.ToArray();
         }
 
+        static bool AnyTargetMaterialHasChildren(string[] targetPaths)
+        {
+            GUID[] guids = targetPaths.Select(path => AssetDatabase.GUIDFromAssetPath(path)).ToArray();
+
+            Func<string, bool> HasChildrenInPath = (string rootPath) => {
+                var property = new HierarchyProperty(rootPath, false);
+                property.SetSearchFilter(new SearchFilter { classNames = new string[] { "Material" }, searchArea = SearchFilter.SearchArea.AllAssets });
+                while (property.Next(null))
+                {
+                    GUID parent;
+                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetInstanceIDIfImported()) as Material;
+                    if (child)
+                    {
+                        if (AssetDatabase.IsForeignAsset(child))
+                            continue;
+                        parent = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath(child.parent));
+                    }
+                    else
+                    {
+                        var path = AssetDatabase.GUIDToAssetPath(property.guid);
+                        if (!path.EndsWith(".mat", StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        parent = EditorMaterialUtility.GetMaterialParentFromFile(path);
+                    }
+
+                    for (int i = 0; i < guids.Length; i++)
+                    {
+                        if (guids[i] == parent)
+                            return true;
+                    }
+                }
+                return false;
+            };
+
+            if (HasChildrenInPath("Assets"))
+                return true;
+            foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages(false))
+            {
+                if (package.source == PackageManager.PackageSource.Local && HasChildrenInPath(package.assetPath))
+                    return true;
+            }
+            return false;
+        }
+
+        static void ReparentMaterialChildren(string assetPath)
+        {
+            var toDelete = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            var toDeleteGUID = AssetDatabase.GUIDFromAssetPath(assetPath);
+            var newParent = toDelete.parent;
+
+            Action<string> ReparentInPath = (string rootPath) => {
+                var property = new HierarchyProperty(rootPath, false);
+                property.SetSearchFilter(new SearchFilter { classNames = new string[] { "Material" }, searchArea = SearchFilter.SearchArea.AllAssets });
+                while (property.Next(null))
+                {
+                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetInstanceIDIfImported()) as Material;
+                    if (!child)
+                    {
+                        // First check guid from file to avoid loading all materials in memory
+                        string path = AssetDatabase.GUIDToAssetPath(property.guid);
+                        if (EditorMaterialUtility.GetMaterialParentFromFile(path) != toDeleteGUID)
+                            continue;
+                        child = AssetDatabase.LoadAssetAtPath<Material>(path);
+                    }
+                    if (child != null && child.parent == toDelete && !AssetDatabase.IsForeignAsset(child))
+                        child.parent = newParent;
+                }
+            };
+
+            ReparentInPath("Assets");
+            foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages(false))
+            {
+                if (package.source == PackageManager.PackageSource.Local)
+                    ReparentInPath(package.assetPath);
+            }
+        }
+
         // Deletes the assets of the instance IDs, with an optional user confirmation dialog.
         // Returns true if the delete operation was successfully performed on all assets.
         // Note: Zero input assets always returns true.
@@ -884,15 +964,16 @@ namespace UnityEditor
                 return false;
             }
 
-            var paths = GetMainPathsOfAssets(instanceIDs).ToList();
+            bool reparentMaterials = false;
+            var paths = GetMainPathsOfAssets(instanceIDs).ToArray();
 
-            if (paths.Count == 0)
+            if (paths.Length == 0)
                 return false;
 
             if (askIfSure)
             {
                 string title;
-                if (paths.Count > 1)
+                if (paths.Length > 1)
                 {
                     title = L10n.Tr("Delete selected assets?");
                 }
@@ -901,32 +982,62 @@ namespace UnityEditor
                     title = L10n.Tr("Delete selected asset?");
                 }
 
+                int maxCount = 3;
+                bool containsMaterial = false;
+
                 var infotext = new StringBuilder();
-                int pathsCount = Mathf.Min(3, paths.Count);
-                for (int i = 0; i < pathsCount; ++i)
+                for (int i = 0; i < paths.Length; ++i)
                 {
-                    infotext.AppendLine(paths[i]);
+                    if (i < maxCount)
+                        infotext.AppendLine(paths[i]);
+
+                    if (paths[i].EndsWith(".mat", StringComparison.OrdinalIgnoreCase))
+                    {
+                        containsMaterial = true;
+                        if (i >= maxCount)
+                            break;
+                    }
                 }
 
-                if (paths.Count > pathsCount)
+                if (paths.Length > maxCount)
                 {
                     infotext.AppendLine("...");
                 }
                 infotext.AppendLine("");
                 infotext.AppendLine(L10n.Tr("You cannot undo the delete assets action."));
 
-                if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))
+                containsMaterial &= AnyTargetMaterialHasChildren(paths);
+                if (containsMaterial)
                 {
-                    return false;
+                    infotext.AppendLine();
+                    infotext.AppendLine("One or more files are Materials. Would you like to reparent all their children in project to the closest ancestor?");
+                    int dialogOptionIndex = EditorUtility.DisplayDialogComplex(title, infotext.ToString(), L10n.Tr("Delete and reparent children"), L10n.Tr("Delete only"), L10n.Tr("Cancel"));
+                    if (dialogOptionIndex == 0)
+                        reparentMaterials = true;
+                    else if (dialogOptionIndex == 2)
+                        return false;
                 }
+                else if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))
+                    return false;
             }
 
             bool success = true;
             List<string> failedPaths = new List<string>();
 
             AssetDatabase.StartAssetEditing();
-            if (!AssetDatabase.MoveAssetsToTrash(paths.ToArray(), failedPaths))
+
+            if (reparentMaterials)
+            {
+                for (int i = 0; i < paths.Length; i++)
+                {
+                    if (paths[i].EndsWith(".mat", StringComparison.OrdinalIgnoreCase))
+                        ReparentMaterialChildren(paths[i]);
+                }
+            }
+
+            if (!AssetDatabase.MoveAssetsToTrash(paths, failedPaths))
                 success = false;
+
             AssetDatabase.StopAssetEditing();
 
             if (!success)

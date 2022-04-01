@@ -68,9 +68,6 @@ namespace UnityEditor.Connect
         public abstract string packageName { get; }
 
         public abstract string editorGamePackageName { get; }
-        public abstract bool canShowFallbackProjectSettings { get; }
-        public abstract bool canShowBuiltInProjectSettings { get; }
-        public abstract string minimumEditorGamePackageVersion { get; }
 
         public virtual string serviceFlagName { get; }
 

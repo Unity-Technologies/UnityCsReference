@@ -86,6 +86,24 @@ namespace UnityEditor
             m_sRGB = serializedObject.FindProperty("m_SRGB");
             m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
             m_ShadowSamplingMode = serializedObject.FindProperty("m_ShadowSamplingMode");
+
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+        }
+
+        private void OnUndoRedoPerformed(in UndoRedoInfo info)
+        {
+            var rt = target as RenderTexture;
+            if (rt != null)
+            {
+                rt.Release();
+            }
         }
 
         protected void OnRenderTextureGUI(GUIElements guiElements)

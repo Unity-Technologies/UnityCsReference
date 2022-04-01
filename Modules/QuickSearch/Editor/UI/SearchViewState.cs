@@ -20,10 +20,45 @@ namespace UnityEditor.Search
     [Serializable]
     public class SearchViewState : ISerializationCallbackReceiver
     {
-        static readonly Vector2 defaultSize = new Vector2(850f, 539f);
+        public static readonly Vector2 defaultSize = new Vector2(850f, 539f);
         static readonly string[] emptyProviders = new string[0];
 
-        internal SearchContext context
+        [NonSerialized] private SearchContext m_Context;
+        [NonSerialized] private bool m_WasDeserialized;
+        [SerializeField] internal string[] providerIds;
+        [SerializeField] internal SearchFlags searchFlags;
+        [SerializeField] internal string searchText; // Also used as the initial query when the view was created
+        [SerializeField] internal bool forceViewMode;
+        [SerializeField] private SearchFunctor<Action<SearchItem, bool>> m_SelectHandler;
+        [SerializeField] private SearchFunctor<Action<SearchItem>> m_TrackingHandler;
+        [SerializeField] private SearchFunctor<Func<SearchItem, bool>> m_FilterHandler;
+        [SerializeField] private SearchFunctor<Action<SearchContext, string, string>> m_GroupChanged;
+
+        [SerializeField] public bool hideTabs;
+        public string sessionId;
+        public string sessionName;
+        public bool excludeClearItem;
+        public SearchTable tableConfig;
+        public bool ignoreSaveSearches;
+        public bool hideAllGroup;
+        public GUIContent windowTitle;
+        public string title;
+        public float itemSize;
+        public Rect position;
+        public SearchViewFlags flags;
+        public string group;
+
+        [SerializeField] public bool queryBuilderEnabled;
+
+        public Action<SearchItem, bool> selectHandler { get => m_SelectHandler?.handler; set => m_SelectHandler = new SearchFunctor<Action<SearchItem, bool>>(value); }
+        public Action<SearchItem> trackingHandler { get => m_TrackingHandler?.handler; set => m_TrackingHandler = new SearchFunctor<Action<SearchItem>>(value); }
+        internal Func<SearchItem, bool> filterHandler { get => m_FilterHandler?.handler; set => m_FilterHandler = new SearchFunctor<Func<SearchItem, bool>>(value); }
+        public Action<SearchContext, string, string> groupChanged { get => m_GroupChanged?.handler; set => m_GroupChanged = new SearchFunctor<Action<SearchContext, string, string>>(value); }
+
+        public bool hasWindowSize => position.width > 0f && position.height > 0;
+        public Vector2 windowSize => hasWindowSize ? position.size : defaultSize;
+
+        public SearchContext context
         {
             get
             {
@@ -32,46 +67,30 @@ namespace UnityEditor.Search
                 return m_Context;
             }
 
-            set
+            internal set
             {
                 m_Context = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
-        [NonSerialized] private SearchContext m_Context;
-        [NonSerialized] private bool m_WasDeserialized;
-        [SerializeField] internal string[] providerIds;
-        [SerializeField] private SearchFlags searchFlags;
-        [SerializeField] internal string searchText; // Also used as the initial query when the view was created
-        [SerializeField] internal bool forceViewMode;
-        [SerializeField] internal string sessionId;
-        [SerializeField] internal string sessionName;
-        [SerializeField] internal bool excludeNoneItem;
-        [SerializeField] internal SearchTable tableConfig;
-        [SerializeField] internal bool ignoreSaveSearches;
-        [SerializeField] internal bool hideAllGroup;
-        [SerializeField] internal GUIContent windowTitle;
+        public string text
+        {
+            get
+            {
+                if (m_Context != null)
+                    return m_Context.searchText;
+                return searchText;
+            }
 
-        [SerializeField] internal bool queryBuilderEnabled;
+            set
+            {
+                searchText = value;
+                if (m_Context != null)
+                    m_Context.searchText = value;
+            }
+        }
 
-        public string title;
-        public float itemSize;
-        public Rect position;
-        public SearchViewFlags flags;
-        public string group;
-
-        [SerializeField] private SearchFunctor<Action<SearchItem, bool>> m_SelectHandler;
-        [SerializeField] private SearchFunctor<Action<SearchItem>> m_TrackingHandler;
-        [SerializeField] private SearchFunctor<Func<SearchItem, bool>> m_FilterHandler;
-        [SerializeField] private SearchFunctor<Action<SearchContext, string, string>> m_GroupChanged;
-
-        internal Action<SearchItem, bool> selectHandler { get => m_SelectHandler?.handler; set => m_SelectHandler = new SearchFunctor<Action<SearchItem, bool>>(value); }
-        internal Action<SearchItem> trackingHandler { get => m_TrackingHandler?.handler; set => m_TrackingHandler = new SearchFunctor<Action<SearchItem>>(value); }
-        internal Func<SearchItem, bool> filterHandler { get => m_FilterHandler?.handler; set => m_FilterHandler = new SearchFunctor<Func<SearchItem, bool>>(value); }
-        internal Action<SearchContext, string, string> groupChanged { get => m_GroupChanged?.handler; set => m_GroupChanged = new SearchFunctor<Action<SearchContext, string, string>>(value); }
-
-        internal bool hasWindowSize => position.width > 0f && position.height > 0;
-        internal Vector2 windowSize => hasWindowSize ? position.size : defaultSize;
+        internal string initialQuery => searchText;
 
         internal SearchViewState() : this(null, null) {}
         public SearchViewState(SearchContext context) : this(context, null) {}
@@ -82,7 +101,7 @@ namespace UnityEditor.Search
             SetSearchViewFlags(flags);
         }
 
-        internal SearchViewState(SearchContext context, Action<SearchItem, bool> selectHandler)
+        public SearchViewState(SearchContext context, Action<SearchItem, bool> selectHandler)
         {
             m_Context = context;
             sessionId = Guid.NewGuid().ToString("N");
@@ -97,7 +116,7 @@ namespace UnityEditor.Search
             providerIds = emptyProviders;
         }
 
-        internal SearchViewState(SearchContext context,
+        public SearchViewState(SearchContext context,
                                  Action<UnityEngine.Object, bool> selectObjectHandler,
                                  Action<UnityEngine.Object> trackingObjectHandler,
                                  string typeName, Type filterType)
@@ -112,12 +131,12 @@ namespace UnityEditor.Search
             context.filterType = filterType;
 
             selectHandler = (item, canceled) => selectObjectHandler?.Invoke(Utils.ToObject(item, filterType), canceled);
-            filterHandler = (item) => item == SearchItem.none || (IsObjectMatchingType(item ?? SearchItem.none, filterType ?? typeof(UnityEngine.Object)));
+            filterHandler = (item) => item == SearchItem.clear || (IsObjectMatchingType(item ?? SearchItem.clear, filterType ?? typeof(UnityEngine.Object)));
             trackingHandler = (item) => trackingObjectHandler?.Invoke(Utils.ToObject(item, filterType));
             title = filterType?.Name ?? typeName;
         }
 
-        internal SearchViewState(SearchContext context, SearchTable tableConfig, SearchViewFlags flags = SearchViewFlags.None)
+        public SearchViewState(SearchContext context, SearchTable tableConfig, SearchViewFlags flags = SearchViewFlags.None)
             : this(context, flags | SearchViewFlags.TableView)
         {
             group = null;
@@ -164,7 +183,7 @@ namespace UnityEditor.Search
             searchText = state.context.searchText;
             sessionId = state.sessionId;
             sessionName = state.sessionName;
-            excludeNoneItem = state.excludeNoneItem;
+            excludeClearItem = state.excludeClearItem;
             ignoreSaveSearches = state.ignoreSaveSearches;
 
             title = state.title;
@@ -175,11 +194,9 @@ namespace UnityEditor.Search
             group = state.group;
 
             queryBuilderEnabled = state.queryBuilderEnabled;
-
-            BuildContext();
         }
 
-        private void BuildContext()
+        internal void BuildContext()
         {
             if (providerIds != null && providerIds.Length > 0)
                 m_Context = SearchService.CreateContext(providerIds, searchText ?? string.Empty, searchFlags);
@@ -199,7 +216,7 @@ namespace UnityEditor.Search
 
         static bool IsObjectMatchingType(in SearchItem item, in Type filterType)
         {
-            if (item == SearchItem.none)
+            if (item == SearchItem.clear)
                 return true;
             var objType = item.ToType(filterType);
             if (objType == null)
@@ -207,7 +224,7 @@ namespace UnityEditor.Search
             return filterType.IsAssignableFrom(objType);
         }
 
-        internal static SearchViewState LoadDefaults()
+        public static SearchViewState LoadDefaults()
         {
             var viewState = new SearchViewState();
             return viewState.LoadDefaults();
@@ -249,19 +266,19 @@ namespace UnityEditor.Search
                 tableConfig = null;
         }
 
-        internal IEnumerable<string> GetProviderIds()
+        public IEnumerable<string> GetProviderIds()
         {
-            if (context != null)
-                return context.GetProviders().Select(p => p.id);
+            if (m_Context != null)
+                return m_Context.GetProviders().Select(p => p.id);
             return providerIds;
         }
 
-        internal IEnumerable<string> GetProviderTypes()
+        public IEnumerable<string> GetProviderTypes()
         {
-            var providers = context != null ? context.GetProviders() : SearchService.GetProviders(providerIds);
+            var providers = m_Context != null ? m_Context.GetProviders() : SearchService.GetProviders(providerIds);
             return providers.Select(p => p.type).Distinct();
         }
 
-        internal bool HasFlag(SearchViewFlags f) => (flags & f) != 0;
+        public bool HasFlag(SearchViewFlags flags) => (this.flags & flags) != 0;
     }
 }

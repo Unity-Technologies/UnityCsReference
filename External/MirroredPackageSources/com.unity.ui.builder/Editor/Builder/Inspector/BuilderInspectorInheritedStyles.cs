@@ -1,10 +1,7 @@
 using UnityEngine.UIElements;
-using UnityEditor.UIElements.Debugger;
 using System.Text;
-using UnityEngine.UIElements.StyleSheets;
 using UnityEditor;
 using UnityEngine;
-using System.Text.RegularExpressions;
 using System.Linq;
 
 namespace Unity.UI.Builder
@@ -138,9 +135,6 @@ namespace Unity.UI.Builder
         {
             m_AddClassField.SetValueWithoutNotify(string.Empty);
 
-            // Remove temporary min-size class on VisualElement.
-            currentVisualElement.RemoveMinSizeSpecialElement();
-
             // Actually add the style class to the element in the canvas.
             currentVisualElement.AddToClassList(className);
         }
@@ -229,9 +223,6 @@ namespace Unity.UI.Builder
         {
             var target = evt.target as VisualElement;
             var className = target.userData as string;
-
-            // Remove temporary min-size class on VisualElement.
-            currentVisualElement.RemoveMinSizeSpecialElement();
 
             // Actually remove the style class from the element in the canvas.
             currentVisualElement.RemoveFromClassList(className);

@@ -11,10 +11,9 @@ namespace UnityEditor.Compilation
     enum CompilationSetupErrors     // Keep in sync with enum CompilationSetupErrors::Flags in ScriptCompilationPipeline.h
     {
         None                        = 0,
-        CyclicReferences            = 1 << 0, // set when CyclicAssemblyReferenceException is thrown
-        LoadError                   = 1 << 1, // set when AssemblyDefinitionException is thrown
-        PrecompiledAssemblyError    = 1 << 2, // set when PrecompiledAssemblyException is thrown
-        All                         = CyclicReferences | LoadError | PrecompiledAssemblyError,
+        LoadError                   = 1 << 0, // set when AssemblyDefinitionException is thrown
+        PrecompiledAssemblyError    = 1 << 1, // set when PrecompiledAssemblyException is thrown
+        All                         = LoadError | PrecompiledAssemblyError,
     };
 
     [NativeHeader("Editor/Src/ScriptCompilation/ScriptCompilationPipeline.h")]

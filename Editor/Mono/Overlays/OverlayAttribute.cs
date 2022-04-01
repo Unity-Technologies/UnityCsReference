@@ -87,7 +87,7 @@ namespace UnityEditor.Overlays
             if (string.IsNullOrEmpty(m_UssName)) m_UssName = m_Id;
         }
 
-        public OverlayAttribute(Type editorWindowType, string id, string displayName, string ussName, bool defaultDisplay = false)
+        public OverlayAttribute(Type editorWindowType, string id, string displayName, string ussName, bool defaultDisplay = false):this()
         {
             this.editorWindowType = editorWindowType;
             this.displayName = displayName;

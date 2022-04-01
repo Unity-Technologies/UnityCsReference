@@ -507,6 +507,7 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoText")]
         extern public static string GetLicenseInfo();
 
+        [Obsolete("GetLicenseFlags is no longer supported", error: true)]
         [FreeFunction("InternalEditorUtilityBindings::GetLicenseFlags")]
         extern public static int[] GetLicenseFlags();
 
@@ -836,10 +837,6 @@ namespace UnityEditorInternal
         [FreeFunction("ScriptingManager::GetClasslibsProfile")]
         extern internal static string GetEditorProfile();
 
-        [StaticAccessor("UnityExtensions::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("IsInitialized")]
-        extern internal static bool IsUnityExtensionsInitialized();
-
         [FreeFunction("UnityExtensions::IsValidExtensionPath")]
         extern internal static bool IsValidUnityExtensionPath(string path);
 
@@ -890,9 +887,6 @@ namespace UnityEditorInternal
 
         [FreeFunction("GetUnityAssembliesManaged")]
         extern private static PrecompiledAssembly[] GetUnityAssembliesInternal(bool buildingForEditor, BuildTarget target);
-
-        [FreeFunction("GetPrecompiledAssembliesManaged")]
-        extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines = null);
 
         [FreeFunction("GetPrecompiledAssemblyPathsManaged")]
         extern internal static string[] GetPrecompiledAssemblyPaths();

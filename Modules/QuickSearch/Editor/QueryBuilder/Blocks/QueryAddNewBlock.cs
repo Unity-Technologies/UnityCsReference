@@ -10,9 +10,11 @@ namespace UnityEditor.Search
 {
     class QueryAddNewBlock : QueryBlock, IBlockSource
     {
-        public override bool wantsEvents => true;
+        internal override bool wantsEvents => true;
+        internal override bool draggable => false;
+
         public override string ToString() => null;
-        public override IBlockEditor OpenEditor(in Rect rect) => AddBlock(rect);
+        internal override IBlockEditor OpenEditor(in Rect rect) => AddBlock(rect);
 
         public QueryAddNewBlock(IQuerySource source)
             : base(source)
@@ -20,12 +22,12 @@ namespace UnityEditor.Search
             hideMenu = true;
         }
 
-        public override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override Rect Layout(in Vector2 at, in float availableSpace)
         {
             return GetRect(at, 20f, 20f);
         }
 
-        protected override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
         {
             if (EditorGUI.DropdownButton(blockRect, Styles.QueryBuilder.createContent, FocusType.Passive, Styles.dropdownItem))
                 AddBlock(blockRect);
@@ -42,7 +44,7 @@ namespace UnityEditor.Search
             source.AddProposition(searchProposition);
         }
 
-        public override IEnumerable<SearchProposition> FetchPropositions()
+        IEnumerable<SearchProposition> IBlockSource.FetchPropositions()
         {
             var options = new SearchPropositionOptions(string.Empty,
                 SearchPropositionFlags.IgnoreRecents |
@@ -60,5 +62,26 @@ namespace UnityEditor.Search
                     .Concat(QueryAndOrBlock.BuiltInQueryBuilderPropositions()).OrderBy(p => p);
             }
         }
+    }
+
+    class QueryInsertBlock : IBlockSource
+    {
+        private readonly IBlockSource insertAfter;
+        private readonly IBlockSource insertWith;
+
+        public QueryInsertBlock(IBlockSource insertAfter, IBlockSource insertWith)
+        {
+            this.insertAfter = insertAfter;
+            this.insertWith = insertWith;
+        }
+
+        public string name => insertAfter.name;
+        public string editorTitle => insertAfter.editorTitle;
+        public SearchContext context => insertAfter.context;
+        public bool formatNames => insertAfter.formatNames;
+
+        public IEnumerable<SearchProposition> FetchPropositions() => insertWith.FetchPropositions();
+        public void Apply(in SearchProposition searchProposition) => insertWith.Apply(searchProposition);
+        public void CloseEditor() => insertAfter.CloseEditor();
     }
 }

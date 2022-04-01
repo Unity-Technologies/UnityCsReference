@@ -192,25 +192,53 @@ namespace UnityEngine.UIElements
         public static bool StartAnimationInlineRotate(VisualElement element, ref ComputedStyle computedStyle, StyleRotate rotate, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = rotate.keyword == StyleKeyword.Initial ? InitialStyle.rotate : rotate.value;
-            return element.styleAnimation.Start(StylePropertyId.Rotate, computedStyle.transformData.Read().rotate, to, durationMs, delayMs, easingCurve);
+            var result = element.styleAnimation.Start(StylePropertyId.Rotate, computedStyle.transformData.Read().rotate, to, durationMs, delayMs, easingCurve);
+
+            if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+            {
+                element.usageHints |= UsageHints.DynamicTransform;
+            }
+
+            return result;
         }
 
         public static bool StartAnimationInlineTranslate(VisualElement element, ref ComputedStyle computedStyle, StyleTranslate translate, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = translate.keyword == StyleKeyword.Initial ? InitialStyle.translate : translate.value;
-            return element.styleAnimation.Start(StylePropertyId.Translate, computedStyle.transformData.Read().translate, to, durationMs, delayMs, easingCurve);
+            var result = element.styleAnimation.Start(StylePropertyId.Translate, computedStyle.transformData.Read().translate, to, durationMs, delayMs, easingCurve);
+
+            if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+            {
+                element.usageHints |= UsageHints.DynamicTransform;
+            }
+
+            return result;
         }
 
         public static bool StartAnimationInlineScale(VisualElement element, ref ComputedStyle computedStyle, StyleScale scale, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = scale.keyword == StyleKeyword.Initial ? InitialStyle.scale : scale.value;
-            return element.styleAnimation.Start(StylePropertyId.Scale, computedStyle.transformData.Read().scale, to, durationMs, delayMs, easingCurve);
+            var result = element.styleAnimation.Start(StylePropertyId.Scale, computedStyle.transformData.Read().scale, to, durationMs, delayMs, easingCurve);
+
+            if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+            {
+                element.usageHints |= UsageHints.DynamicTransform;
+            }
+
+            return result;
         }
 
         public static bool StartAnimationInlineTransformOrigin(VisualElement element, ref ComputedStyle computedStyle, StyleTransformOrigin transformOrigin, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = transformOrigin.keyword == StyleKeyword.Initial ? InitialStyle.transformOrigin : transformOrigin.value;
-            return element.styleAnimation.Start(StylePropertyId.TransformOrigin, computedStyle.transformData.Read().transformOrigin, to, durationMs, delayMs, easingCurve);
+            var result = element.styleAnimation.Start(StylePropertyId.TransformOrigin, computedStyle.transformData.Read().transformOrigin, to, durationMs, delayMs, easingCurve);
+
+            if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+            {
+                element.usageHints |= UsageHints.DynamicTransform;
+            }
+
+            return result;
         }
     }
 }

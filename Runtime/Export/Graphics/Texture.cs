@@ -9,6 +9,7 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -363,6 +364,8 @@ namespace UnityEngine
                 throw new ArgumentException("RenderTextureDesc volumeDepth must be greater than zero.", "desc.volumeDepth");
             if (desc.msaaSamples != 1 && desc.msaaSamples != 2 && desc.msaaSamples != 4 && desc.msaaSamples != 8)
                 throw new ArgumentException("RenderTextureDesc msaaSamples must be 1, 2, 4, or 8.", "desc.msaaSamples");
+            if (desc.dimension == TextureDimension.CubeArray && desc.volumeDepth % 6 != 0)
+                throw new ArgumentException("RenderTextureDesc volumeDepth must be a multiple of 6 when dimension is CubeArray", "desc.volumeDepth");
 
 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
 #pragma warning disable 618
@@ -892,19 +895,19 @@ namespace UnityEngine
             return ReinitializeWithFormatImpl(width, height, format, hasMipMap);
         }
 
-        [Obsolete("Texture2D.Resize(int, int) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32)", false)]
+        [Obsolete("Texture2D.Resize(int, int) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int) instead (UnityUpgradable) -> Reinitialize([*] System.Int32, [*] System.Int32)", false)]
         public bool Resize(int width, int height)
         {
             return Reinitialize(width, height);
         }
 
-        [Obsolete("Texture2D.Resize(int, int, TextureFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, TextureFormat, bool) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32, UnityEngine.TextureFormat, System.Boolean)", false)]
+        [Obsolete("Texture2D.Resize(int, int, TextureFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, TextureFormat, bool) instead (UnityUpgradable) -> Reinitialize([*] System.Int32, [*] System.Int32, UnityEngine.TextureFormat, [*] System.Boolean)", false)]
         public bool Resize(int width, int height, TextureFormat format, bool hasMipMap)
         {
             return Reinitialize(width, height, format, hasMipMap);
         }
 
-        [Obsolete("Texture2D.Resize(int, int, GraphicsFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, GraphicsFormat, bool) instead (UnityUpgradable) -> Reinitialize(System.Int32, System.Int32, UnityEngine.Experimental.Rendering.GraphicsFormat, System.Boolean)", false)]
+        [Obsolete("Texture2D.Resize(int, int, GraphicsFormat, bool) has been deprecated because it actually reinitializes the texture. Use Texture2D.Reinitialize(int, int, GraphicsFormat, bool) instead (UnityUpgradable) -> Reinitialize([*] System.Int32, [*] System.Int32, UnityEngine.Experimental.Rendering.GraphicsFormat, [*] System.Boolean)", false)]
         public bool Resize(int width, int height, GraphicsFormat format, bool hasMipMap)
         {
             return Reinitialize(width, height, format, hasMipMap);
@@ -1605,6 +1608,30 @@ namespace UnityEngine
 
     public sealed partial class SparseTexture : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sparse);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         internal bool ValidateSize(int width, int height, GraphicsFormat format)
         {
             if (GraphicsFormatUtility.GetBlockSize(format) * (width / GraphicsFormatUtility.GetBlockWidth(format)) * (height / GraphicsFormatUtility.GetBlockHeight(format)) < 65536)
@@ -1630,7 +1657,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public SparseTexture(int width, int height, GraphicsFormat format, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sparse))
+            if (!ValidateFormat(format, width, height))
                 return;
 
             if (!ValidateSize(width, height, format))
@@ -1647,12 +1674,29 @@ namespace UnityEngine
 
         public SparseTexture(int width, int height, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("false")] bool linear)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width, height))
                 return;
 
             ValidateIsNotCrunched(textureFormat);
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
+            if (!SystemInfo.IsFormatSupported(format, FormatUsage.Sparse))
+            {
+                // Special case: SystemInfo.SupportsTextureFormat(textureFormat) tells us whether we
+                // can use the format for a more "regular" texture type, but not necessarily whether
+                // we can use that same format for a SparseTexture. This is because the function
+                // checks the Sample FormatUsage, hence the extra FormatUsage.Sparse check here
+                // to prevent various crashes, errors, ...
+                Debug.LogError($"Creation of a SparseTexture with '{textureFormat}' is not supported on this platform.");
+                // Note about the usage of LogError above (versus an exception): according to
+                // https://confluence.unity3d.com/pages/viewpage.action?spaceKey=DEV&title=Error+Handling
+                // : exceptions should only be thrown if the user invokes a method with bad data (example: null)
+                // or when the program is not in a valid state anymore. (example: disk failure/disconnected)
+                // Additionally, according to the scripting team: throwing an exception for an unsupported
+                // format sounds wrong in general.
+                return;
+            }
+
             if (!ValidateSize(width, height, format))
                 return;
 

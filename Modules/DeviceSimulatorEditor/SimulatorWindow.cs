@@ -26,9 +26,42 @@ namespace UnityEditor.DeviceSimulation
         private bool m_PlayFocused = false;
         private bool m_VsyncEnabled = false;
 
+        private Vector2 simulatorViewPadding
+        {
+            get
+            {
+                var rotation = m_Main.userInterface.Rotation;
+                Vector2 borderPadding;
+                switch (rotation)
+                {
+                    case 90:
+                        borderPadding = new Vector2(m_Main.userInterface.DeviceView.borderSize.y,
+                            m_Main.userInterface.DeviceView.borderSize.z);
+                        break;
+                    case 180:
+                        borderPadding = new Vector2(m_Main.userInterface.DeviceView.borderSize.z,
+                            m_Main.userInterface.DeviceView.borderSize.w);
+                        break;
+                    case 270:
+                        borderPadding = new Vector2(m_Main.userInterface.DeviceView.borderSize.w,
+                            m_Main.userInterface.DeviceView.borderSize.x);
+                        break;
+                    default:
+                        borderPadding = new Vector2(m_Main.userInterface.DeviceView.borderSize.x,
+                            m_Main.userInterface.DeviceView.borderSize.y);
+                        break;
+                }
+
+                borderPadding = borderPadding * m_Main.userInterface.DeviceView.Scale;
+                return m_Main.userInterface.DeviceView.worldBound.position + borderPadding;
+            }
+        }
+
+        private float simulatorViewMouseScale => 1f / m_Main.userInterface.DeviceView.Scale;
 
         public bool playFocused { get => m_PlayFocused; set => m_PlayFocused = value; }
         public bool vSyncEnabled { get => m_VsyncEnabled; set => m_VsyncEnabled = value; }
+        public DeviceSimulatorMain main => m_Main;
 
         [MenuItem("Window/General/Device Simulator", false, 2000)]
         public static void ShowWindow()
@@ -51,6 +84,8 @@ namespace UnityEditor.DeviceSimulation
             m_Main = new DeviceSimulatorMain(m_SimulatorState, rootVisualElement, this);
             s_SimulatorInstances.Add(this);
             InitPlayModeViewSwapMenu();
+
+            DevicePackage.OnPackageStatus += OnDevicePackageStatus;
         }
 
         private void InitPlayModeViewSwapMenu()
@@ -70,6 +105,8 @@ namespace UnityEditor.DeviceSimulation
         {
             s_SimulatorInstances.Remove(this);
             m_Main.Dispose();
+
+            DevicePackage.OnPackageStatus -= OnDevicePackageStatus;
 
             PlayModeAnalytics.SimulatorDisableEvent();
         }
@@ -102,8 +139,12 @@ namespace UnityEditor.DeviceSimulation
             var type = Event.current.type;
             if (type == EventType.Repaint)
             {
+                m_Main.ScreenSimulation.ApplyChanges();
                 targetSize = m_Main.targetSize;
                 m_Main.displayTexture = RenderView(m_Main.mousePositionInUICoordinates, false);
+
+                viewPadding = simulatorViewPadding;
+                viewMouseScale = simulatorViewMouseScale;
             }
         }
 
@@ -169,6 +210,15 @@ namespace UnityEditor.DeviceSimulation
                 fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
             }
             OnEnterPlayModeBehaviorChange();
+        }
+
+        private void OnDevicePackageStatus(DevicePackageStatus status)
+        {
+            m_Main.userInterface.DeviceButtonState = new DevicePackageInstallButtonState
+            {
+                PackageStatus = status,
+                OnPressed = DevicePackage.Add
+            };
         }
     }
 }

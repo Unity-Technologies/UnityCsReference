@@ -39,14 +39,14 @@ namespace UnityEditor.Search
                 return null;
 
             var text = args.text;
-            if (text.Length > 2)
+            if (text.length > 2)
             {
                 if (ParserUtils.IsQuote(text[0]))
                 {
-                    if (text[0] == text[text.Length - 1])
+                    if (text[0] == text[text.length - 1])
                         return null;
                 }
-                if (ParserUtils.IsOpener(text[0]) && ParserUtils.IsCloser(text[text.Length - 1]))
+                if (ParserUtils.IsOpener(text[0]) && ParserUtils.IsCloser(text[text.length - 1]))
                     return null;
             }
 
@@ -58,14 +58,14 @@ namespace UnityEditor.Search
         {
             var outerText = args.text;
             var text = ParserUtils.SimplifyExpression(outerText);
-            if (text.Length < 2 || !ParserUtils.HasQuotes(text))
+            if (text.length < 2 || !ParserUtils.HasQuotes(text))
                 return null;
 
             // Check for any string, since enclosed strings are not allowed, if we find a string token that means there are multiple strings in the text
-            for (int i = 1; i < text.Length - 2; ++i)
+            for (int i = 1; i < text.length - 2; ++i)
                 if (ParserUtils.IsQuote(text[i]))
                     return null;
-            return new SearchExpression(SearchExpressionType.Text, outerText, text.Substring(1, text.Length - 2), ConstantEvaluator);
+            return new SearchExpression(SearchExpressionType.Text, outerText, text.Substring(1, text.length - 2), ConstantEvaluator);
         }
 
         [SearchExpressionParser("keyword", BuiltinParserPriority.Keyword)]

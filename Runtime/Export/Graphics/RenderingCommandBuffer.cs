@@ -498,7 +498,7 @@ namespace UnityEngine.Rendering
             DrawRenderer(renderer, material, 0);
         }
 
-        public void DrawRendererList(RendererUtils.RendererList rendererList)
+        public void DrawRendererList(RendererList rendererList)
         {
             Internal_DrawRendererList(rendererList);
         }

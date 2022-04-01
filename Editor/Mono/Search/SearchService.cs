@@ -107,13 +107,29 @@ namespace UnityEditor.SearchService
             Init();
         }
 
-        void Init()
+        void Init(bool pullEngines = false)
         {
+            if (pullEngines)
+                PullEngines();
             var index = SearchService.searchApis.FindIndex(api => api.engineScope == m_EngineScope);
             if (index >= 0)
             {
                 m_Api = SearchService.searchApis[index];
                 m_Api.activeEngineChanged += OnActiveEngineChanged;
+            }
+        }
+
+        void PullEngines()
+        {
+            // Calling HasEngineOverride will make sure the engine apis are registered.
+            switch (m_EngineScope)
+            {
+                case SearchEngineScope.Project: ProjectSearch.HasEngineOverride();
+                    break;
+                case SearchEngineScope.Scene: SceneSearch.HasEngineOverride();
+                    break;
+                case SearchEngineScope.ObjectSelector: ObjectSelectorSearch.HasEngineOverride();
+                    break;
             }
         }
 
@@ -129,7 +145,7 @@ namespace UnityEditor.SearchService
             // Do a lazy initialize if the apis were not available during creation
             if (m_Api == null)
             {
-                Init();
+                Init(true);
                 if (m_Api == null)
                     throw new NullReferenceException("SearchService Apis were not initialized properly.");
             }
@@ -188,6 +204,7 @@ namespace UnityEditor.SearchService
         event Action<string> activeEngineChanged;
     }
 
+    [InitializeOnLoad]
     static class SearchService
     {
         public const string keyPrefix = "searchservice";
@@ -215,6 +232,7 @@ namespace UnityEditor.SearchService
             defines.Add("USE_SEARCH_MODULE");
             defines.Add("USE_PROPERTY_DATABASE");
             defines.Add("USE_QUERY_BUILDER");
+            defines.Add("USE_SEARCH_EXTENSION_API");
         }
 
         public static void NotifySyncSearchChanged(SyncSearchEvent evt, string syncViewId, string searchQuery)

@@ -11,6 +11,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using Component = UnityEngine.Component;
 using UnityObject = UnityEngine.Object;
@@ -384,7 +385,6 @@ namespace UnityEditor
             }
         }
 
-
         internal static float kLineHeight = EditorGUI.kSingleLineHeight;
 
         internal bool hideInspector = false;
@@ -397,6 +397,45 @@ namespace UnityEditor
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
 
         internal static bool m_AllowMultiObjectAccess = true;
+
+        bool m_HasUnsavedChanges = false;
+
+        [UsedByNativeCode]
+        private bool GetHasUnsavedChanges()
+        {
+            return hasUnsavedChanges;
+        }
+
+        public bool hasUnsavedChanges
+        {
+            get
+            {
+                return m_HasUnsavedChanges;
+            }
+            protected set
+            {
+                if (m_HasUnsavedChanges != value)
+                {
+                    m_HasUnsavedChanges = value;
+                    if (propertyViewer != null)
+                    {
+                        propertyViewer.UnsavedChangesStateChanged(this, value);
+                    }
+                }
+            }
+        }
+
+        public string saveChangesMessage { get; protected set; }
+
+        public virtual void SaveChanges()
+        {
+            hasUnsavedChanges = false;
+        }
+
+        public virtual void DiscardChanges()
+        {
+            hasUnsavedChanges = false;
+        }
 
         // used internally to know if this the first editor in the inspector window
         internal bool firstInspectedEditor { get; set; }
@@ -674,7 +713,7 @@ namespace UnityEditor
             }
         }
 
-        internal virtual void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
+        internal void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
         internal void InternalSetHidden(bool hidden) { hideInspector = hidden; }
         internal void InternalSetContextObject(UnityObject context) { m_Context = context; }
 
@@ -1062,6 +1101,11 @@ namespace UnityEditor
             else
                 titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth, titleHeight);
 
+            if (editor && editor.hasUnsavedChanges && !string.IsNullOrEmpty(header))
+            {
+                header += " *";
+            }
+
             // Title
             if (editor)
                 editor.OnHeaderTitleGUI(titleRect, header);
@@ -1088,7 +1132,7 @@ namespace UnityEditor
 
         internal static void CheckForMainObjectNameMismatch(Editor editor)
         {
-            if (editor && editor.target && AssetDatabase.IsNativeAsset(editor.target) && AssetDatabase.IsMainAsset(editor.target))
+            if (editor && editor.target && AssetDatabase.IsNativeAsset(editor.target) && AssetDatabase.IsMainAsset(editor.target) && !Unsupported.GetSerializedAssetInterfaceSingleton(editor.target.name))
             {
                 var mainObjectName = editor.target.name;
                 var fileName = FileUtil.GetLastPathNameComponent(AssetDatabase.GetAssetPath(editor.target));

@@ -333,7 +333,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Tight"),
             };
 
-            public readonly GUIContent spritePackingTag = EditorGUIUtility.TrTextContent("Packing Tag", "Tag for the Sprite Packing system.");
             public readonly GUIContent spritePixelsPerUnit = EditorGUIUtility.TrTextContent("Pixels Per Unit", "How many pixels in the sprite correspond to one unit in the world.");
             public readonly GUIContent spriteExtrude = EditorGUIUtility.TrTextContent("Extrude Edges", "How much empty area to leave around the sprite in the generated mesh.");
             public readonly GUIContent spriteMeshType = EditorGUIUtility.TrTextContent("Mesh Type", "Type of sprite mesh to generate.");
@@ -447,7 +446,6 @@ namespace UnityEditor
         SerializedProperty m_WrapV;
         SerializedProperty m_WrapW;
 
-        SerializedProperty m_SpritePackingTag;
         SerializedProperty m_SpritePixelsToUnits;
         SerializedProperty m_SpriteExtrude;
         SerializedProperty m_SpriteMeshType;
@@ -517,7 +515,6 @@ namespace UnityEditor
             m_CubemapConvolution = serializedObject.FindProperty("m_CubemapConvolution");
 
             m_SpriteMode = serializedObject.FindProperty("m_SpriteMode");
-            m_SpritePackingTag = serializedObject.FindProperty("m_SpritePackingTag");
             m_SpritePixelsToUnits = serializedObject.FindProperty("m_SpritePixelsToUnits");
             m_SpriteExtrude = serializedObject.FindProperty("m_SpriteExtrude");
             m_SpriteMeshType = serializedObject.FindProperty("m_SpriteMeshType");
@@ -957,7 +954,10 @@ namespace UnityEditor
 
         void ColorSpaceGUI(TextureInspectorGUIElement guiElements)
         {
-            ToggleFromInt(m_sRGBTexture, s_Styles.sRGBTexture);
+            if (CountImportersWithHDR(targets, out int countHDR) && countHDR == 0)
+            {
+                ToggleFromInt(m_sRGBTexture, s_Styles.sRGBTexture);
+            }
         }
 
         void POTScaleGUI(TextureInspectorGUIElement guiElements)
@@ -991,7 +991,7 @@ namespace UnityEditor
 
             // some texture types are not relevant for mip streaming
             var type = textureType;
-            if (type == TextureImporterType.Sprite || type == TextureImporterType.Cookie || type == TextureImporterType.GUI || type == TextureImporterType.Cursor)
+            if (type == TextureImporterType.Cookie || type == TextureImporterType.GUI || type == TextureImporterType.Cursor)
                 return;
 
             ToggleFromInt(m_StreamingMipmaps, s_Styles.streamingMipmaps);
@@ -1088,9 +1088,6 @@ namespace UnityEditor
             m_ShowGenericSpriteSettings.target = (m_SpriteMode.intValue != 0);
             if (EditorGUILayout.BeginFadeGroup(m_ShowGenericSpriteSettings.faded))
             {
-                using (new EditorGUI.DisabledScope(true))
-                    EditorGUILayout.PropertyField(m_SpritePackingTag, s_Styles.spritePackingTag);
-
                 EditorGUILayout.PropertyField(m_SpritePixelsToUnits, s_Styles.spritePixelsPerUnit);
 
                 m_ShowSpriteMeshTypeOption.target = ShouldShowSpriteMeshTypeOption();
@@ -1132,7 +1129,7 @@ namespace UnityEditor
                             dialogText += "Apply and continue to sprite editor or cancel.";
                             if (EditorUtility.DisplayDialog("Unapplied import settings", dialogText, "Apply", "Cancel"))
                             {
-                                ApplyAndImport();
+                                SaveChanges();
                                 SpriteUtilityWindow.ShowSpriteEditorWindow(this.assetTarget);
 
                                 // We reimported the asset which destroyed the editor, so we can't keep running the UI here.
@@ -1636,9 +1633,16 @@ namespace UnityEditor
             return false;
         }
 
+
+        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
         protected override void ResetValues()
         {
-            base.ResetValues();
+            DiscardChanges();
+        }
+
+        public override void DiscardChanges()
+        {
+            base.DiscardChanges();
 
             CacheSerializedProperties();
 

@@ -54,7 +54,19 @@ namespace UnityEditor
 
         private const int k_MaxSupportedDisplays = 8;
 
-        private Dictionary<Type, string> m_AvailableWindowTypes;
+        static Dictionary<Type, string> s_AvailableWindowTypes;
+
+        internal Vector2 viewPadding
+        {
+            get;
+            private protected set;
+        }
+
+        internal float viewMouseScale
+        {
+            get;
+            private protected set;
+        }
 
         protected string playModeViewName
         {
@@ -257,15 +269,15 @@ namespace UnityEditor
             }
         }
 
-        protected string GetWindowTitle(Type type)
+        protected static string GetWindowTitle(Type type)
         {
             var attributes = type.GetCustomAttributes(typeof(EditorWindowTitleAttribute), true);
             return attributes.Length > 0 ? ((EditorWindowTitleAttribute)attributes[0]).title : type.Name;
         }
 
-        protected Dictionary<Type, string> GetAvailableWindowTypes()
+        internal static Dictionary<Type, string> GetAvailableWindowTypes()
         {
-            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
+            return s_AvailableWindowTypes ?? (s_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
         }
 
         private void SetSerializedViews(Dictionary<string, string> serializedViews)
@@ -285,7 +297,7 @@ namespace UnityEditor
             return dict;
         }
 
-        protected void SwapMainWindow(Type type)
+        protected internal void SwapMainWindow(Type type)
         {
             if (type.BaseType != typeof(PlayModeView))
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);

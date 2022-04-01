@@ -126,6 +126,26 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        ///
+        /// </summary>
+        internal void ClearPageInfo()
+        {
+            if (pageInfo == null)
+                pageInfo = new PageInfo[2];
+
+            int length = pageInfo.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                pageInfo[i].firstCharacterIndex = 0;
+                pageInfo[i].lastCharacterIndex = 0;
+                pageInfo[i].ascender = -32767;
+                pageInfo[i].baseLine = 0;
+                pageInfo[i].descender = 32767;
+            }
+        }
+
+        /// <summary>
         /// Function to resize any of the structure contained in the TextInfo class.
         /// </summary>
         /// <typeparam name="T"></typeparam>

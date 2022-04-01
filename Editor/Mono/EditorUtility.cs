@@ -581,6 +581,10 @@ namespace UnityEditor
                     }
                 }
             }
+            else if (context != null && context.Length == 1 && context[0] is Material)
+            {
+                MaterialEditor.AddAdditionalMaterialMenuItems(pm);
+            }
 
             pm.ObjectContextDropDown(position, context, contextUserData);
 

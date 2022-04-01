@@ -53,9 +53,6 @@ namespace UnityEngine.Rendering
                 }
             }
 
-            m_PerObjectData = PerObjectData.None;
-            m_Flags = DrawRendererFlags.EnableInstancing;
-
             m_UseSrpBatcher = 0;
         }
 

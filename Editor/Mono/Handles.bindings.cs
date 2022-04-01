@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -10,6 +11,13 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
+    [Flags]
+    internal enum OutlineDrawMode
+    {
+        SelectionOutline = 1 << 0,
+        SelectionWire = 1 << 1,
+    }
+
     [NativeHeader("Editor/Src/Handles/Handles.bindings.h")]
     public sealed partial class Handles
     {
@@ -51,7 +59,7 @@ namespace UnityEditor
         static extern void Internal_DrawCameraWithGrid([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos, bool drawSelection);
 
         [FreeFunction]
-        internal static extern void Internal_DrawOutline(Color parentNodeColor, Color childNodeColor, int submeshOutlineMaterialId, int[] parentRenderers, int[] childRenderers, float parentOutlineAlpha = 0, float childOutlineAlpha = 0, bool drawSelectionWire = false);
+        internal static extern void Internal_DrawOutline(Color parentNodeColor, Color childNodeColor, int submeshOutlineMaterialId, int[] parentRenderers, int[] childRenderers, OutlineDrawMode outlineMode, float parentOutlineAlpha = 0, float childOutlineAlpha = 0);
 
         [FreeFunction]
         static extern void Internal_DrawCamera([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos, bool drawSelection);
@@ -60,7 +68,7 @@ namespace UnityEditor
         static extern void Internal_DrawCameraWithFilter([NotNull("NullExceptionObject")] Camera cam, DrawCameraMode renderMode, bool drawGizmos, bool drawSelection, GameObject[] filter);
 
         [FreeFunction]
-        static extern void Internal_FinishDrawingCamera([NotNull("NullExceptionObject")] Camera cam, [DefaultValue("true")] bool drawGizmos);
+        internal static extern void Internal_FinishDrawingCamera([NotNull("NullExceptionObject")] Camera cam, [DefaultValue("true")] bool drawGizmos);
         static void Internal_FinishDrawingCamera(Camera cam) { Internal_FinishDrawingCamera(cam, true); }
 
         [FreeFunction]

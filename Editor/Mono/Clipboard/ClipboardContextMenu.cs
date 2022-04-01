@@ -145,10 +145,21 @@ namespace UnityEditor
                         p => p.hash128Value = Clipboard.hash128Value);
                     break;
                 case SerializedPropertyType.Generic:
-                    SetupAction(property, menu, evt,
-                        Clipboard.SetSerializedProperty,
-                        p => Clipboard.HasSerializedProperty(),
-                        Clipboard.GetSerializedProperty);
+                    if (property.type == "MinMaxGradient")
+                    {
+                        SetupMinMaxGradient(property, menu, evt);
+                    }
+                    else if (property.type == "MinMaxCurve")
+                    {
+                        SetupMinMaxCurve(property, menu, evt);
+                    }
+                    else
+                    {
+                        SetupAction(property, menu, evt,
+                            Clipboard.SetSerializedProperty,
+                            p => Clipboard.HasSerializedProperty(),
+                            Clipboard.GetSerializedProperty);
+                    }
                     break;
                 case SerializedPropertyType.Integer:
                     SetupAction(property, menu, evt,
@@ -183,6 +194,14 @@ namespace UnityEditor
         static readonly GUIContent kCopyQuatContent = EditorGUIUtility.TrTextContent("Copy Quaternion");
         static readonly GUIContent kCopyPathContent = EditorGUIUtility.TrTextContent("Copy Path");
         static readonly GUIContent kCopyGuidContent = EditorGUIUtility.TrTextContent("Copy GUID");
+        static readonly GUIContent kPasteMinColorContent = EditorGUIUtility.TrTextContent("Paste Min Color");
+        static readonly GUIContent kPasteMaxColorContent = EditorGUIUtility.TrTextContent("Paste Max Color");
+        static readonly GUIContent kPasteMinGradientContent = EditorGUIUtility.TrTextContent("Paste Min Gradient");
+        static readonly GUIContent kPasteMaxGradientContent = EditorGUIUtility.TrTextContent("Paste Max Gradient");
+        static readonly GUIContent kPasteMinScalarContent = EditorGUIUtility.TrTextContent("Paste Min Scalar");
+        static readonly GUIContent kPasteMaxScalarContent = EditorGUIUtility.TrTextContent("Paste Max Scalar");
+        static readonly GUIContent kPasteMinCurveContent = EditorGUIUtility.TrTextContent("Paste Min Curve");
+        static readonly GUIContent kPasteMaxCurveContent = EditorGUIUtility.TrTextContent("Paste Max Curve");
 
         static void AddSeparator(GenericMenu menu)
         {
@@ -220,6 +239,8 @@ namespace UnityEditor
                             var prop = (SerializedProperty)o;
                             pasteFunc(prop);
                             prop.serializedObject.ApplyModifiedProperties();
+                            // Constrain proportions scale widget might need extra recalculation, notify if a paste
+                            ConstrainProportionsTransformScale.NotifyPropertyPasted(prop.propertyPath);
                         }, property);
                 }
                 else
@@ -306,6 +327,237 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+
+        static void SetupMinMaxGradient(SerializedProperty property, GenericMenu menu, Event evt)
+        {
+            var canCopy = !property.hasMultipleDifferentValues;
+            var canPasteWhole = GUI.enabled && Clipboard.HasSerializedProperty();
+
+            if (menu != null)
+            {
+                AddSeparator(menu);
+
+                var copyContent = overrideCopyContent ?? kCopyContent;
+                if (canCopy)
+                    menu.AddItem(copyContent, false, o => Clipboard.SetSerializedProperty((SerializedProperty)o), property);
+                else
+                    menu.AddDisabledItem(copyContent);
+
+                var pasteContent = overridePasteContent ?? kPasteContent;
+
+                if (canPasteWhole)
+                {
+                    menu.AddItem(pasteContent, false,
+                        delegate (object o)
+                        {
+                            var prop = (SerializedProperty)o;
+                            Clipboard.GetSerializedProperty(prop);
+                            prop.serializedObject.ApplyModifiedProperties();
+                        }, property);
+                }
+                else if (GUI.enabled && Clipboard.hasColor)
+                {
+                    MinMaxGradientState state = (MinMaxGradientState)property.FindPropertyRelative("minMaxState").intValue;
+                    if (state == MinMaxGradientState.k_Color)
+                    {
+                        AddPasteColorItem(property.FindPropertyRelative("maxColor"), menu, pasteContent);
+                    }
+                    else if (state == MinMaxGradientState.k_RandomBetweenTwoColors)
+                    {
+                        // Allow the user to choose whether to paste the color on their clipboard to either the max or min
+                        AddPasteColorItem(property.FindPropertyRelative("maxColor"), menu, kPasteMaxColorContent);
+                        AddPasteColorItem(property.FindPropertyRelative("minColor"), menu, kPasteMinColorContent);
+                    }
+                    else
+                    {
+                        menu.AddDisabledItem(pasteContent);
+                    }
+                }
+                else if (GUI.enabled && Clipboard.hasGradient)
+                {
+                    MinMaxGradientState state = (MinMaxGradientState)property.FindPropertyRelative("minMaxState").intValue;
+                    if (state == MinMaxGradientState.k_Gradient || state == MinMaxGradientState.k_RandomColor)
+                    {
+                        AddPasteGradientItem(property.FindPropertyRelative("maxGradient"), menu, pasteContent);
+                    }
+                    else if (state == MinMaxGradientState.k_RandomBetweenTwoGradients)
+                    {
+                        // Allow the user to choose whether to paste the gradient on their clipboard to either the max or min
+                        AddPasteGradientItem(property.FindPropertyRelative("maxGradient"), menu, kPasteMaxGradientContent);
+                        AddPasteGradientItem(property.FindPropertyRelative("minGradient"), menu, kPasteMinGradientContent);
+                    }
+                    else
+                    {
+                        menu.AddDisabledItem(pasteContent);
+                    }
+                }
+                else
+                {
+                    menu.AddDisabledItem(pasteContent);
+                }
+            }
+            if (evt != null)
+            {
+                if (canCopy && evt.commandName == EventCommandNames.Copy)
+                {
+                    if (evt.type == EventType.ValidateCommand)
+                        evt.Use();
+                    if (evt.type == EventType.ExecuteCommand)
+                    {
+                        Clipboard.SetSerializedProperty(property);
+                        evt.Use();
+                    }
+                }
+                if (canPasteWhole && evt.commandName == EventCommandNames.Paste)
+                {
+                    if (evt.type == EventType.ValidateCommand)
+                        evt.Use();
+                    if (evt.type == EventType.ExecuteCommand)
+                    {
+                        Clipboard.GetSerializedProperty(property);
+                        property.serializedObject.ApplyModifiedProperties();
+                        evt.Use();
+                    }
+                }
+            }
+        }
+        static void SetupMinMaxCurve(SerializedProperty property, GenericMenu menu, Event evt)
+        {
+            var canCopy = !property.hasMultipleDifferentValues;
+            var canPasteWhole = GUI.enabled && Clipboard.HasSerializedProperty();
+
+            if (menu != null)
+            {
+                AddSeparator(menu);
+
+                var copyContent = overrideCopyContent ?? kCopyContent;
+                if (canCopy)
+                    menu.AddItem(copyContent, false, o => Clipboard.SetSerializedProperty((SerializedProperty)o), property);
+                else
+                    menu.AddDisabledItem(copyContent);
+
+                var pasteContent = overridePasteContent ?? kPasteContent;
+
+                if (canPasteWhole)
+                {
+                    menu.AddItem(pasteContent, false,
+                        delegate (object o)
+                        {
+                            var prop = (SerializedProperty)o;
+                            Clipboard.GetSerializedProperty(prop);
+                            prop.serializedObject.ApplyModifiedProperties();
+                        }, property);
+                }
+                else if (GUI.enabled && Clipboard.hasFloat)
+                {
+                    MinMaxCurveState state = (MinMaxCurveState)property.FindPropertyRelative("minMaxState").intValue;
+                    if (state == MinMaxCurveState.k_Scalar)
+                    {
+                        AddPasteFloatItem(property.FindPropertyRelative("scalar"), menu, pasteContent);
+                    }
+                    else if (state == MinMaxCurveState.k_TwoScalars)
+                    {
+                        // Allow the user to choose whether to paste the float on their clipboard to either the min or max
+                        AddPasteFloatItem(property.FindPropertyRelative("minScalar"), menu, kPasteMinScalarContent);
+                        AddPasteFloatItem(property.FindPropertyRelative("scalar"), menu, kPasteMaxScalarContent);
+                    }
+                    else
+                    {
+                        menu.AddDisabledItem(pasteContent);
+                    }
+                }
+                else if (GUI.enabled && Clipboard.hasAnimationCurve)
+                {
+                    MinMaxCurveState state = (MinMaxCurveState)property.FindPropertyRelative("minMaxState").intValue;
+                    if (state == MinMaxCurveState.k_Curve)
+                    {
+                        AddPasteCurveItem(property.FindPropertyRelative("maxCurve"), menu, pasteContent);
+                    }
+                    else if (state == MinMaxCurveState.k_TwoCurves)
+                    {
+                        // Allow the user to choose whether to paste the color on their clipboard to either the max or min
+                        AddPasteCurveItem(property.FindPropertyRelative("maxCurve"), menu, kPasteMaxCurveContent);
+                        AddPasteCurveItem(property.FindPropertyRelative("minCurve"), menu, kPasteMinCurveContent);
+                    }
+                    else
+                    {
+                        menu.AddDisabledItem(pasteContent);
+                    }
+                }
+                else
+                {
+                    menu.AddDisabledItem(pasteContent);
+                }
+            }
+            if (evt != null)
+            {
+                if (canCopy && evt.commandName == EventCommandNames.Copy)
+                {
+                    if (evt.type == EventType.ValidateCommand)
+                        evt.Use();
+                    if (evt.type == EventType.ExecuteCommand)
+                    {
+                        Clipboard.SetSerializedProperty(property);
+                        evt.Use();
+                    }
+                }
+                if (canPasteWhole && evt.commandName == EventCommandNames.Paste)
+                {
+                    if (evt.type == EventType.ValidateCommand)
+                        evt.Use();
+                    if (evt.type == EventType.ExecuteCommand)
+                    {
+                        Clipboard.GetSerializedProperty(property);
+                        property.serializedObject.ApplyModifiedProperties();
+                        evt.Use();
+                    }
+                }
+            }
+        }
+
+        static void AddPasteColorItem(SerializedProperty property, GenericMenu menu, GUIContent menuItemContent)
+        {
+            menu.AddItem(menuItemContent, false,
+            delegate (object o)
+            {
+                var prop = (SerializedProperty)o;
+                prop.colorValue = Clipboard.colorValue;
+                prop.serializedObject.ApplyModifiedProperties();
+            }, property);
+        }
+
+        static void AddPasteGradientItem(SerializedProperty property, GenericMenu menu, GUIContent menuItemContent)
+        {
+            menu.AddItem(menuItemContent, false,
+            delegate (object o)
+            {
+                var prop = (SerializedProperty)o;
+                prop.gradientValue = Clipboard.gradientValue;
+                prop.serializedObject.ApplyModifiedProperties();
+                UnityEditorInternal.GradientPreviewCache.ClearCache();
+            }, property);
+        }
+        static void AddPasteFloatItem(SerializedProperty property, GenericMenu menu, GUIContent menuItemContent)
+        {
+            menu.AddItem(menuItemContent, false,
+            delegate (object o)
+            {
+                var prop = (SerializedProperty)o;
+                prop.floatValue = Clipboard.floatValue;
+                prop.serializedObject.ApplyModifiedProperties();
+            }, property);
+        }
+        static void AddPasteCurveItem(SerializedProperty property, GenericMenu menu, GUIContent menuItemContent)
+        {
+            menu.AddItem(menuItemContent, false,
+            delegate (object o)
+            {
+                var prop = (SerializedProperty)o;
+                prop.animationCurveValue = Clipboard.animationCurveValue;
+                prop.serializedObject.ApplyModifiedProperties();
+                UnityEditorInternal.AnimationCurvePreviewCache.ClearCache();
+            }, property);
         }
 
         static void PasteObjectReference(SerializedProperty p)

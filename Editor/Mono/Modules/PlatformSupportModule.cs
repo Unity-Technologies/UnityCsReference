@@ -171,12 +171,26 @@ namespace UnityEditor.Modules
     {
         public virtual ScriptingImplementation[] Supported()
         {
-            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
+            if (Unsupported.IsSourceBuild())
+            {
+                return new[]
+                {
+                    ScriptingImplementation.Mono2x,
+                    ScriptingImplementation.IL2CPP,
+                    #pragma warning disable 618
+                    ScriptingImplementation.CoreCLR
+                };
+            }
+            return new[]
+            {
+                ScriptingImplementation.Mono2x,
+                ScriptingImplementation.IL2CPP,
+            };
         }
 
         public virtual ScriptingImplementation[] Enabled()
         {
-            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
+            return Supported();
         }
 
         public virtual bool AllowIL2CPPCompilerConfigurationSelection()
@@ -302,6 +316,8 @@ namespace UnityEditor.Modules
 
         // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
         bool ShouldDrawWaitForManagedDebugger();
+
+        bool ShouldDrawManagedDebuggerFixedPort();
 
         // Grays out managed debugger options
         bool ShouldDisableManagedDebuggerCheckboxes();

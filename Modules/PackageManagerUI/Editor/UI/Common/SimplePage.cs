@@ -112,10 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var unlockedVisualStates = visualStates.Where(v => v.userUnlocked);
             foreach (var visualState in unlockedVisualStates)
-            {
                 visualState.userUnlocked = false;
-                visualState.expanded = false;
-            }
             TriggerOnVisualStateChange(unlockedVisualStates);
         }
 
@@ -200,7 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool GetDefaultLockState(IPackage package)
         {
             return package.versions.installed?.isDirectDependency != true &&
-                m_PackageDatabase.GetFeatureDependents(package.versions.installed)?.Any() == true;
+                m_PackageDatabase.GetFeaturesThatUseThisPackage(package.versions.installed)?.Any() == true;
         }
 
         private void RefreshVisualStates()
@@ -219,12 +216,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     stateChanged = true;
                 }
 
-                if (state.expandable != expandable)
-                {
-                    state.expandable = expandable;
-                    stateChanged = true;
-                }
-
                 if (stateChanged)
                     changedVisualStates.Add(state);
             }
@@ -236,12 +227,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override VisualState GetVisualState(string packageUniqueId)
         {
             return m_VisualStateList.GetVisualState(packageUniqueId);
-        }
-
-        public override void SetExpanded(string packageUniqueId, bool value)
-        {
-            if (m_VisualStateList.SetExpanded(packageUniqueId, value))
-                TriggerOnVisualStateChange(new[] { m_VisualStateList.GetVisualState(packageUniqueId) });
         }
 
         public override void SetSeeAllVersions(string packageUniqueId, bool value)

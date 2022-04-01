@@ -77,25 +77,26 @@ namespace UnityEditor.Search
 
     class PropertyStringTable : IPropertyLockable
     {
-        public const int Version = 0x50535400 | 0x02;
-        public const int StringTableFullSymbol = -1;
-        public const int EmptyStringSymbol = 0;
-        public const int HashFactor = 2;
-        public const int StringLengthByteSize = sizeof(int);
-        public const int SymbolByteSize = sizeof(int);
-        public const int DefaultStringCount = 30;
-        public const int DefaultAverageStringSize = 16;
+        public const int stringTableFullSymbol = -1;
+        public const int emptyStringSymbol = 0;
+
+        internal const int version = 0x50535400 | 0x02;
+        internal const int hashFactor = 2;
+        internal const int stringLengthByteSize = sizeof(int);
+        internal const int symbolByteSize = sizeof(int);
+        internal const int defaultStringCount = 30;
+        internal const int defaultAverageStringSize = 16;
 
         public string filePath { get; }
         public bool autoGrow { get; }
 
-        public static System.Text.Encoding encoding => System.Text.Encoding.Unicode;
+        internal static System.Text.Encoding encoding => System.Text.Encoding.Unicode;
 
         ReaderWriterLockSlim m_Lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         event Action<PropertyStringTableHeader> m_StringTableChanged;
 
-        public PropertyStringTable(string filePath, int stringCount, int averageStringLength = DefaultAverageStringSize, bool autoGrow = true)
+        public PropertyStringTable(string filePath, int stringCount, int averageStringLength = defaultAverageStringSize, bool autoGrow = true)
         {
             this.filePath = filePath;
             this.autoGrow = autoGrow;
@@ -104,19 +105,19 @@ namespace UnityEditor.Search
         }
 
         public PropertyStringTable(string filePath, bool autoGrow = true)
-            : this(filePath, DefaultStringCount, DefaultAverageStringSize, autoGrow)
+            : this(filePath, defaultStringCount, defaultAverageStringSize, autoGrow)
         {}
 
-        void Create(int stringCount, int averageStringLength = DefaultAverageStringSize)
+        void Create(int stringCount, int averageStringLength = defaultAverageStringSize)
         {
             var header = new PropertyStringTableHeader();
-            header.version = Version;
+            header.version = version;
             header.count = 0;
-            header.symbolSlots = Math.Max(stringCount * HashFactor, 1);
+            header.symbolSlots = Math.Max(stringCount * hashFactor, 1);
 
             var bytesPerString = GetStringByteSize(averageStringLength);
             header.allocatedStringBytes = stringCount * bytesPerString;
-            header.usedStringBytes = StringLengthByteSize;
+            header.usedStringBytes = stringLengthByteSize;
 
             var buffer = new byte[GetSymbolsByteSize(header.symbolSlots) + header.allocatedStringBytes];
             using (var bw = new BinaryWriter(File.Open(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete)))
@@ -131,19 +132,19 @@ namespace UnityEditor.Search
             return new PropertyStringTableView(this, delayedSync);
         }
 
-        public void RegisterStringTableChangedHandler(Action<PropertyStringTableHeader> handler)
+        internal void RegisterStringTableChangedHandler(Action<PropertyStringTableHeader> handler)
         {
             using (LockWrite())
                 m_StringTableChanged += handler;
         }
 
-        public void UnregisterStringTableChangedHandler(Action<PropertyStringTableHeader> handler)
+        internal void UnregisterStringTableChangedHandler(Action<PropertyStringTableHeader> handler)
         {
             using (LockWrite())
                 m_StringTableChanged -= handler;
         }
 
-        public void NotifyStringTableChanged(PropertyStringTableHeader newHeader)
+        internal void NotifyStringTableChanged(PropertyStringTableHeader newHeader)
         {
             using (LockUpgradeableRead())
                 m_StringTableChanged?.Invoke(newHeader);
@@ -152,7 +153,7 @@ namespace UnityEditor.Search
         public static int GetStringByteSize(int stringLength)
         {
             var maxByteCount = encoding.GetMaxByteCount(stringLength);
-            return maxByteCount + PropertyStringHashAndLength.GetSevenBitEncodedIntByteSize(maxByteCount) + StringLengthByteSize;
+            return maxByteCount + PropertyStringHashAndLength.GetSevenBitEncodedIntByteSize(maxByteCount) + stringLengthByteSize;
         }
 
         public static int GetSymbolsByteSize(int symbolCount)
@@ -160,19 +161,34 @@ namespace UnityEditor.Search
             return symbolCount * sizeof(int);
         }
 
-        public IDisposable LockRead()
+        internal IDisposable LockRead()
         {
             return new ReadLockGuard(m_Lock);
         }
 
-        public IDisposable LockUpgradeableRead()
+        IDisposable IPropertyLockable.LockRead()
+        {
+            return LockRead();
+        }
+
+        internal IDisposable LockUpgradeableRead()
         {
             return new UpgradeableReadLockGuard(m_Lock);
         }
 
-        public IDisposable LockWrite()
+        IDisposable IPropertyLockable.LockUpgradeableRead()
+        {
+            return LockUpgradeableRead();
+        }
+
+        internal IDisposable LockWrite()
         {
             return new WriteLockGuard(m_Lock);
+        }
+
+        IDisposable IPropertyLockable.LockWrite()
+        {
+            return LockWrite();
         }
     }
 
@@ -240,7 +256,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public PropertyStringTableView(PropertyStringTable stringTable, bool delayedSync)
+        internal PropertyStringTableView(PropertyStringTable stringTable, bool delayedSync)
         {
             m_StringTable = stringTable;
             m_Disposed = false;
@@ -257,7 +273,7 @@ namespace UnityEditor.Search
             m_Header = ReadHeader();
             using (LockUpgradeableRead())
             {
-                if (m_Header.version != PropertyStringTable.Version)
+                if (m_Header.version != PropertyStringTable.version)
                 {
                     Clear();
                 }
@@ -277,25 +293,40 @@ namespace UnityEditor.Search
             m_StringTable = null;
         }
 
-        public IDisposable LockRead()
+        internal IDisposable LockRead()
         {
             return m_StringTable.LockRead();
         }
 
-        public IDisposable LockUpgradeableRead()
+        IDisposable IPropertyLockable.LockRead()
+        {
+            return LockRead();
+        }
+
+        internal IDisposable LockUpgradeableRead()
         {
             return m_StringTable.LockUpgradeableRead();
         }
 
-        public IDisposable LockWrite()
+        IDisposable IPropertyLockable.LockUpgradeableRead()
+        {
+            return LockUpgradeableRead();
+        }
+
+        internal IDisposable LockWrite()
         {
             return m_StringTable.LockWrite();
+        }
+
+        IDisposable IPropertyLockable.LockWrite()
+        {
+            return LockWrite();
         }
 
         public int ToSymbol(string str)
         {
             if (string.IsNullOrEmpty(str))
-                return PropertyStringTable.EmptyStringSymbol;
+                return PropertyStringTable.emptyStringSymbol;
 
             var hashAndLength = Hash(str);
 
@@ -315,12 +346,12 @@ namespace UnityEditor.Search
                     }
 
 
-                    if (m_Header.count + 1 >= m_Header.symbolSlots || m_Header.symbolSlots / (float)m_Header.count < PropertyStringTable.HashFactor)
+                    if (m_Header.count + 1 >= m_Header.symbolSlots || m_Header.symbolSlots / (float)m_Header.count < PropertyStringTable.hashFactor)
                     {
                         if (m_StringTable.autoGrow)
                         {
                             // Double the string count
-                            Grow(m_Header.symbolSlots / PropertyStringTable.HashFactor * 2);
+                            Grow(m_Header.symbolSlots / PropertyStringTable.hashFactor * 2);
 
                             // Get a new symbol index
                             symbolIndex = (int)(hashAndLength.hash % m_Header.symbolSlots);
@@ -332,19 +363,19 @@ namespace UnityEditor.Search
                             }
                         }
                         else
-                            return PropertyStringTable.StringTableFullSymbol;
+                            return PropertyStringTable.stringTableFullSymbol;
                     }
 
-                    if (m_Header.usedStringBytes + PropertyStringTable.StringLengthByteSize + hashAndLength.length > m_Header.allocatedStringBytes)
+                    if (m_Header.usedStringBytes + PropertyStringTable.stringLengthByteSize + hashAndLength.length > m_Header.allocatedStringBytes)
                     {
                         if (m_StringTable.autoGrow)
                         {
-                            var sizeNeeded = m_Header.usedStringBytes + PropertyStringTable.StringLengthByteSize + hashAndLength.length - m_Header.allocatedStringBytes;
+                            var sizeNeeded = m_Header.usedStringBytes + PropertyStringTable.stringLengthByteSize + hashAndLength.length - m_Header.allocatedStringBytes;
                             m_Fs.SetLength(m_Fs.Length + sizeNeeded);
                             m_Header.allocatedStringBytes += sizeNeeded;
                         }
                         else
-                            return PropertyStringTable.StringTableFullSymbol;
+                            return PropertyStringTable.stringTableFullSymbol;
                     }
 
                     symbol = m_Header.usedStringBytes;
@@ -357,7 +388,7 @@ namespace UnityEditor.Search
         public int Contains(string str)
         {
             if (string.IsNullOrEmpty(str))
-                return PropertyStringTable.EmptyStringSymbol;
+                return PropertyStringTable.emptyStringSymbol;
 
             var hashAndLength = Hash(str);
 
@@ -374,15 +405,15 @@ namespace UnityEditor.Search
                     symbol = GetSymbol(symbolIndex);
                 }
 
-                return PropertyStringTable.StringTableFullSymbol;
+                return PropertyStringTable.stringTableFullSymbol;
             }
         }
 
         public string GetString(int symbol)
         {
-            if (symbol == PropertyStringTable.EmptyStringSymbol)
+            if (symbol == PropertyStringTable.emptyStringSymbol)
                 return string.Empty;
-            if (symbol == PropertyStringTable.StringTableFullSymbol)
+            if (symbol == PropertyStringTable.stringTableFullSymbol)
                 return null;
 
             using (LockRead())
@@ -390,7 +421,7 @@ namespace UnityEditor.Search
                 if (symbol >= m_Header.usedStringBytes)
                     return null;
                 var byteOffset = GetStringsOffset() + symbol;
-                if (byteOffset > m_Fs.Length - PropertyStringTable.StringLengthByteSize)
+                if (byteOffset > m_Fs.Length - PropertyStringTable.stringLengthByteSize)
                     return null;
 
                 m_Fs.Seek(byteOffset, SeekOrigin.Begin);
@@ -400,7 +431,7 @@ namespace UnityEditor.Search
                     return string.Empty;
                 if (strLength < 0)
                     return null;
-                if (byteOffset + PropertyStringTable.StringLengthByteSize + strLength > m_Fs.Length)
+                if (byteOffset + PropertyStringTable.stringLengthByteSize + strLength > m_Fs.Length)
                     return null;
 
                 return m_Br.ReadString();
@@ -417,9 +448,9 @@ namespace UnityEditor.Search
 
                 // Compute new sizes
                 var averageBytesPerString = GetAverageBytesPerString();
-                var newSymbolSlots = Math.Max(newStringCount * PropertyStringTable.HashFactor, m_Header.symbolSlots);
-                var newSymbolsByteSize = newSymbolSlots * PropertyStringTable.SymbolByteSize;
-                var newAllocatedStringBytes = (int)(newStringCount * (averageBytesPerString + PropertyStringTable.StringLengthByteSize));
+                var newSymbolSlots = Math.Max(newStringCount * PropertyStringTable.hashFactor, m_Header.symbolSlots);
+                var newSymbolsByteSize = newSymbolSlots * PropertyStringTable.symbolByteSize;
+                var newAllocatedStringBytes = (int)(newStringCount * (averageBytesPerString + PropertyStringTable.stringLengthByteSize));
                 newAllocatedStringBytes = Math.Max(newAllocatedStringBytes, m_Header.allocatedStringBytes);
 
                 if (newSymbolSlots == m_Header.symbolSlots)
@@ -450,13 +481,13 @@ namespace UnityEditor.Search
                     WriteInt32(0);
                 m_Fs.Seek(newStringsOffset, SeekOrigin.Begin);
                 // Start byteOffset at first string by skipping symbol 0
-                var byteOffset = PropertyStringTable.StringLengthByteSize;
+                var byteOffset = PropertyStringTable.stringLengthByteSize;
                 for (var i = 0; i < m_Header.count; ++i)
                 {
                     var currentString = GetString(byteOffset);
                     if (string.IsNullOrEmpty(currentString))
                     {
-                        byteOffset += PropertyStringTable.StringLengthByteSize;
+                        byteOffset += PropertyStringTable.stringLengthByteSize;
                         continue;
                     }
                     var hashAndLength = Hash(currentString);
@@ -472,7 +503,7 @@ namespace UnityEditor.Search
                     symbol = byteOffset;
                     WriteSymbol(symbolIndex, symbol);
 
-                    byteOffset += hashAndLength.length + PropertyStringTable.StringLengthByteSize;
+                    byteOffset += hashAndLength.length + PropertyStringTable.stringLengthByteSize;
                 }
 
                 WriteHeader(false);
@@ -486,13 +517,13 @@ namespace UnityEditor.Search
         {
             using (LockWrite())
             {
-                m_Header.version = PropertyStringTable.Version;
+                m_Header.version = PropertyStringTable.version;
                 m_Header.count = 0;
-                m_Header.symbolSlots = Math.Max(PropertyStringTable.DefaultStringCount * PropertyStringTable.HashFactor, 1);
+                m_Header.symbolSlots = Math.Max(PropertyStringTable.defaultStringCount * PropertyStringTable.hashFactor, 1);
 
-                var bytesPerString = PropertyStringTable.GetStringByteSize(PropertyStringTable.DefaultAverageStringSize);
-                m_Header.allocatedStringBytes = PropertyStringTable.DefaultStringCount * bytesPerString;
-                m_Header.usedStringBytes = PropertyStringTable.StringLengthByteSize;
+                var bytesPerString = PropertyStringTable.GetStringByteSize(PropertyStringTable.defaultAverageStringSize);
+                m_Header.allocatedStringBytes = PropertyStringTable.defaultStringCount * bytesPerString;
+                m_Header.usedStringBytes = PropertyStringTable.stringLengthByteSize;
 
                 var newFileSize = PropertyStringTableHeader.size + PropertyStringTable.GetSymbolsByteSize(m_Header.symbolSlots) + m_Header.allocatedStringBytes;
                 m_Fs.Seek(0, SeekOrigin.Begin);
@@ -511,7 +542,7 @@ namespace UnityEditor.Search
             {
                 if (m_Header.count == 0)
                     return 0;
-                return (long)Math.Ceiling((m_Header.usedStringBytes - (m_Header.count + 1) * PropertyStringTable.StringLengthByteSize) / (float)m_Header.count);
+                return (long)Math.Ceiling((m_Header.usedStringBytes - (m_Header.count + 1) * PropertyStringTable.stringLengthByteSize) / (float)m_Header.count);
             }
         }
 
@@ -521,7 +552,7 @@ namespace UnityEditor.Search
             {
                 var strings = new List<string>(m_Header.count);
                 // Skip the first length for empty string (symbol 0)
-                var startOffset = GetStringsOffset() + PropertyStringTable.StringLengthByteSize;
+                var startOffset = GetStringsOffset() + PropertyStringTable.stringLengthByteSize;
                 m_Fs.Seek(startOffset, SeekOrigin.Begin);
                 for (var i = 0; i < m_Header.count; ++i)
                 {
@@ -531,7 +562,7 @@ namespace UnityEditor.Search
                         strings.Add(string.Empty);
                     if (strLength < 0)
                         break;
-                    if (m_Fs.Position + PropertyStringTable.StringLengthByteSize + strLength > m_Fs.Length)
+                    if (m_Fs.Position + PropertyStringTable.stringLengthByteSize + strLength > m_Fs.Length)
                         break;
 
                     var str = m_Br.ReadString();
@@ -583,7 +614,7 @@ namespace UnityEditor.Search
         {
             using (LockRead())
             {
-                m_Fs.Seek(GetSymbolsOffset() + symbolIndex * PropertyStringTable.SymbolByteSize, SeekOrigin.Begin);
+                m_Fs.Seek(GetSymbolsOffset() + symbolIndex * PropertyStringTable.symbolByteSize, SeekOrigin.Begin);
                 return ReadInt32();
             }
         }
@@ -592,7 +623,7 @@ namespace UnityEditor.Search
         {
             using (LockWrite())
             {
-                m_Fs.Seek(GetSymbolsOffset() + symbolIndex * PropertyStringTable.SymbolByteSize, SeekOrigin.Begin);
+                m_Fs.Seek(GetSymbolsOffset() + symbolIndex * PropertyStringTable.symbolByteSize, SeekOrigin.Begin);
                 WriteInt32(symbol);
             }
         }
@@ -607,7 +638,7 @@ namespace UnityEditor.Search
                 m_Bw.Write(str);
 
                 m_Header.count++;
-                m_Header.usedStringBytes += PropertyStringTable.StringLengthByteSize + hashAndLength.length;
+                m_Header.usedStringBytes += PropertyStringTable.stringLengthByteSize + hashAndLength.length;
 
                 // Notify other views that the
                 WriteHeader(false);
@@ -623,7 +654,7 @@ namespace UnityEditor.Search
 
         int GetStringsOffset()
         {
-            return GetSymbolsOffset() + m_Header.symbolSlots * PropertyStringTable.SymbolByteSize;
+            return GetSymbolsOffset() + m_Header.symbolSlots * PropertyStringTable.symbolByteSize;
         }
 
         int ReadInt32()

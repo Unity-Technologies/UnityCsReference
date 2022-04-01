@@ -20,7 +20,7 @@ namespace UnityEditor.U2D.Common
             public readonly GUIContent compressionQualityLabel = EditorGUIUtility.TrTextContent("Compressor Quality");
             public readonly GUIContent compressionQualitySliderLabel = EditorGUIUtility.TrTextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
 
-            public readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
+            public readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
             public readonly GUIContent[] kMaxTextureSizeStrings;
 
             public readonly GUIContent[] kTextureCompressionOptions =

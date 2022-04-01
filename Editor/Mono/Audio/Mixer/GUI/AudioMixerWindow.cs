@@ -267,7 +267,7 @@ namespace UnityEditor
 
             s_Instance = this;
 
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
@@ -276,7 +276,7 @@ namespace UnityEditor
         {
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
         }
 
         void OnPauseStateChanged(PauseState state)
@@ -314,7 +314,7 @@ namespace UnityEditor
                 m_MixersTree.EndRenaming();
         }
 
-        public void UndoRedoPerformed()
+        public void UndoRedoPerformed(in UndoRedoInfo info)
         {
             if (m_Controller == null)
                 return;
@@ -325,16 +325,16 @@ namespace UnityEditor
             m_Controller.OnUnitySelectionChanged();
 
             if (m_GroupTree != null)
-                m_GroupTree.OnUndoRedoPerformed();
+                m_GroupTree.OnUndoRedoPerformed(info);
 
             if (m_GroupViews != null)
-                m_GroupViews.OnUndoRedoPerformed();
+                m_GroupViews.OnUndoRedoPerformed(info);
 
             if (m_SnapshotListView != null)
-                m_SnapshotListView.OnUndoRedoPerformed();
+                m_SnapshotListView.OnUndoRedoPerformed(info);
 
             if (m_MixersTree != null)
-                m_MixersTree.OnUndoRedoPerformed();
+                m_MixersTree.OnUndoRedoPerformed(info);
 
             AudioMixerUtility.RepaintAudioMixerAndInspectors();
         }

@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_DelayedUpdate;
 
         private ResourceLoader m_ResourceLoader;
-        private void ResolveDependencies()
+        protected virtual void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
@@ -102,22 +102,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        protected virtual void Init(Rect rect, PageFilters filters)
+        protected virtual void Init(Rect rect, IPage page)
         {
-            m_Filters = filters?.Clone() ?? new PageFilters();
+            m_Filters = page.filters?.Clone() ?? new PageFilters();
             m_Container.Clear();
-            DoDisplay();
+            DoDisplay(page);
             ApplyFilters();
-            ShowAsDropDown(rect, GetSize(), new[] { PopupLocation.Below });
+            ShowAsDropDown(rect, GetSize(page), new[] { PopupLocation.Below });
         }
 
-        protected abstract Vector2 GetSize();
+        protected abstract Vector2 GetSize(IPage page);
         protected abstract void ApplyFilters();
-        protected abstract void DoDisplay();
+        protected abstract void DoDisplay(IPage page);
 
-        public static bool ShowAtPosition(Rect rect, PackageFilterTab tab, PageFilters filters)
+        public static bool ShowAtPosition(Rect rect, IPage page)
         {
-            if (s_Window != null)
+            if (s_Window != null || page == null)
                 return false;
 
             var nowMilliSeconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -127,11 +127,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 Event.current?.Use();
 
-                if (tab != PackageFilterTab.AssetStore)
+                if (page.tab != PackageFilterTab.AssetStore)
                     s_Window = CreateInstance<UpmFiltersWindow>();
                 else
                     s_Window = CreateInstance<AssetStoreFiltersWindow>();
-                s_Window.Init(rect, filters);
+                s_Window.Init(rect, page);
             }
 
             return !justClosed;

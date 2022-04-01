@@ -67,10 +67,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // IMGUIContainers are special snowflakes that need custom treatment regarding events.
-        // This enables early outs in some dispatching strategies.
-        internal bool isIMGUIContainer = false;
-
         /// <summary>
         /// Return true if the element can be focused.
         /// </summary>
@@ -265,15 +261,40 @@ namespace UnityEngine.UIElements
             public Focusable m_FocusedElement;
         }
 
+        TextElement m_SelectedTextElement;
+
+        internal TextElement selectedTextElement
+        {
+            get => m_SelectedTextElement;
+            set
+            {
+                if (m_SelectedTextElement == value)
+                    return;
+
+                m_SelectedTextElement?.selection.SelectNone();
+                m_SelectedTextElement = value;
+            }
+        }
+
         List<FocusedElement> m_FocusedElements = new List<FocusedElement>();
 
         /// <summary>
         /// The currently focused VisualElement.
         /// </summary>
-        public Focusable focusedElement => GetRetargetedFocusedElement(null);
+        public Focusable focusedElement
+        {
+            get
+            {
+                var result = GetRetargetedFocusedElement(null);
+                return IsLocalElement(result) ? result : null;
+            }
+        }
 
         internal bool IsFocused(Focusable f)
         {
+            if (!IsLocalElement(f))
+                return false;
+
             foreach (var fe in m_FocusedElements)
             {
                 if (fe.m_FocusedElement == f)
@@ -318,9 +339,18 @@ namespace UnityEngine.UIElements
         {
             if (m_FocusedElements.Count > 0)
             {
-                return m_FocusedElements[0].m_FocusedElement;
+                var result = m_FocusedElements[0].m_FocusedElement;
+                return IsLocalElement(result) ? result : null;
             }
             return null;
+        }
+
+        private bool IsLocalElement(Focusable f)
+        {
+            // Case 1378840, case 1379300: if element leaves panel, its focus is invisible to its former panel.
+            // Case 1401673: however if element immediately comes back to panel, it's focus becomes visible again.
+            // This is needed to preserve focus when rebuilding PropertyEditor, which clears then re-adds everything.
+            return f?.focusController == this;
         }
 
         private Focusable m_LastFocusedElement;
@@ -364,6 +394,9 @@ namespace UnityEngine.UIElements
 
         internal void BlurLastFocusedElement()
         {
+            // Unselect selected TextElement when panel loses focus
+            selectedTextElement = null;
+
             if (m_LastFocusedElement != null && !(m_LastFocusedElement is IMGUIContainer))
             {
                 // Blur will change the lastFocusedElement to null
@@ -373,6 +406,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Do the focus change for real, no questions asked. This will not trigger any events.
         internal void DoFocusChange(Focusable f)
         {
             m_FocusedElements.Clear();
@@ -388,10 +422,15 @@ namespace UnityEngine.UIElements
                 }
                 ve = ve.hierarchy.parent;
             }
+        }
 
+        internal void ProcessPendingFocusChange(Focusable f)
+        {
             m_PendingFocusCount--;
             if (m_PendingFocusCount == 0)
                 m_LastPendingFocusedElement = null;
+
+            DoFocusChange(f);
         }
 
         internal Focusable FocusNextInDirection(FocusChangeDirection direction)

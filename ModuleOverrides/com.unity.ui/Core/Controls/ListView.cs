@@ -93,8 +93,8 @@ namespace UnityEngine.UIElements
     ///
     ///         listView.selectionType = SelectionType.Multiple;
     ///
-    ///         listView.onItemsChosen += objects => Debug.Log(objects);
-    ///         listView.onSelectionChange += objects => Debug.Log(objects);
+    ///         listView.itemsChosen += objects => Debug.Log(objects);
+    ///         listView.selectionChanged += objects => Debug.Log(objects);
     ///
     ///         listView.style.flexGrow = 1.0f;
     ///
@@ -142,9 +142,17 @@ namespace UnityEngine.UIElements
             get => m_MakeItem;
             set
             {
-                m_MakeItem = value;
-                Rebuild();
+                if (value != m_MakeItem)
+                {
+                    m_MakeItem = value;
+                    Rebuild();
+                }
             }
+        }
+
+        internal void SetMakeItemWithoutNotify(Func<VisualElement> func)
+        {
+            m_MakeItem = func;
         }
 
         private Action<VisualElement, int> m_BindItem;
@@ -164,9 +172,17 @@ namespace UnityEngine.UIElements
             get => m_BindItem;
             set
             {
-                m_BindItem = value;
-                RefreshItems();
+                if (value != m_BindItem)
+                {
+                    m_BindItem = value;
+                    RefreshItems();
+                }
             }
+        }
+
+        internal void SetBindItemWithoutNotify(Action<VisualElement, int> callback)
+        {
+            m_BindItem = callback;
         }
 
         /// <summary>

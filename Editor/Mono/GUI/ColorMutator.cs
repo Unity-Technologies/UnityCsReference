@@ -46,11 +46,9 @@ namespace UnityEditor
             }
         }
 
-        public Color originalColor
-        {
-            get { return m_OriginalColor; }
-        }
+        public Color originalColor => m_OriginalColor;
         [SerializeField] private Color m_OriginalColor;
+        [SerializeField] private Color m_HDRBaseColor;
 
         public Color32 color
         {
@@ -121,6 +119,7 @@ namespace UnityEditor
             if (m_ColorHdr[(int)channel] == value)
                 return;
             m_ColorHdr[(int)channel] = value;
+            m_HDRBaseColor = new Color(m_ColorHdr[0], m_ColorHdr[1], m_ColorHdr[2], m_ColorHdr[3]);
             OnRgbaHdrChannelChanged((int)channel);
         }
 
@@ -157,6 +156,7 @@ namespace UnityEditor
             m_ColorHdr[(int)RgbaChannel.R] = newColor.r;
             m_ColorHdr[(int)RgbaChannel.G] = newColor.g;
             m_ColorHdr[(int)RgbaChannel.B] = newColor.b;
+            m_HDRBaseColor = new Color(m_ColorHdr[0], m_ColorHdr[1], m_ColorHdr[2], m_ColorHdr[3]);
         }
 
         public float exposureValue
@@ -167,7 +167,7 @@ namespace UnityEditor
                 if (m_ExposureValue == value)
                     return;
                 m_ExposureValue = value;
-                var newRgbFloat = (Color)color * Mathf.Pow(2f, m_ExposureValue);
+                var newRgbFloat = m_HDRBaseColor * Mathf.Pow(2f, m_ExposureValue);
                 m_ColorHdr[(int)RgbaChannel.R] = newRgbFloat.r;
                 m_ColorHdr[(int)RgbaChannel.G] = newRgbFloat.g;
                 m_ColorHdr[(int)RgbaChannel.B] = newRgbFloat.b;
@@ -178,6 +178,7 @@ namespace UnityEditor
         public ColorMutator(Color originalColor)
         {
             m_OriginalColor = originalColor;
+            m_HDRBaseColor = originalColor;
             Reset();
         }
 
@@ -190,6 +191,7 @@ namespace UnityEditor
             m_ColorHdr[(int)RgbaChannel.G] = m_OriginalColor.g;
             m_ColorHdr[(int)RgbaChannel.B] = m_OriginalColor.b;
             m_ColorHdr[(int)RgbaChannel.A] = m_OriginalColor.a;
+            m_HDRBaseColor = new Color(m_ColorHdr[0], m_ColorHdr[1], m_ColorHdr[2], m_ColorHdr[3]);
 
             if (m_Color == null || m_Color.Length != 4)
                 m_Color = new byte[4];

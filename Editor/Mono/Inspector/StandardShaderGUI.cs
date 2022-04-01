@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine;
-using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor
 {
@@ -89,6 +88,11 @@ namespace UnityEditor
 
         MaterialEditor m_MaterialEditor;
         WorkflowMode m_WorkflowMode = WorkflowMode.Specular;
+
+        static int _SpecGlossMap = Shader.PropertyToID("_SpecGlossMap");
+        static int _SpecColor = Shader.PropertyToID("_SpecColor");
+        static int _MetallicGlossMap = Shader.PropertyToID("_MetallicGlossMap");
+        static int _Metallic = Shader.PropertyToID("_Metallic");
 
         public void FindProperties(MaterialProperty[] props)
         {
@@ -191,11 +195,22 @@ namespace UnityEditor
             m_MaterialEditor.DoubleSidedGIField();
         }
 
+        bool ShaderHasProperty(Shader shader, int nameId)
+        {
+            for (int i = 0, count = shader.GetPropertyCount(); i < count; i++)
+            {
+                if (shader.GetPropertyNameId(i) == nameId)
+                    return true;
+            }
+            return false;
+        }
+
         internal void DetermineWorkflow(Material material)
         {
-            if (material.HasProperty("_SpecGlossMap") && material.HasProperty("_SpecColor"))
+            var shader = material.shader;
+            if (ShaderHasProperty(shader, _SpecGlossMap) && ShaderHasProperty(shader, _SpecColor))
                 m_WorkflowMode = WorkflowMode.Specular;
-            if (material.HasProperty("_MetallicGlossMap") && material.HasProperty("_Metallic"))
+            else if (ShaderHasProperty(shader, _MetallicGlossMap) && ShaderHasProperty(shader, _Metallic))
                 m_WorkflowMode = WorkflowMode.Metallic;
             else
                 m_WorkflowMode = WorkflowMode.Dielectric;
@@ -236,7 +251,7 @@ namespace UnityEditor
 
         bool BlendModePopup()
         {
-            EditorGUI.showMixedValue = blendMode.hasMixedValue;
+            MaterialEditor.BeginProperty(blendMode);
             var mode = (BlendMode)blendMode.floatValue;
 
             EditorGUI.BeginChangeCheck();
@@ -248,7 +263,7 @@ namespace UnityEditor
                 blendMode.floatValue = (float)mode;
             }
 
-            EditorGUI.showMixedValue = false;
+            MaterialEditor.EndProperty();
 
             return result;
         }
@@ -257,7 +272,7 @@ namespace UnityEditor
         {
             m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null);
             if (bumpScale.floatValue != 1
-                && BuildTargetDiscovery.PlatformHasFlag(EditorUserBuildSettings.activeBuildTarget, TargetAttributes.HasIntegratedGPU))
+                && UnityEditorInternal.InternalEditorUtility.IsMobilePlatform(EditorUserBuildSettings.activeBuildTarget))
                 if (m_MaterialEditor.HelpBoxWithButton(
                     EditorGUIUtility.TrTextContent("Bump scale is not supported on mobile platforms"),
                     EditorGUIUtility.TrTextContent("Fix Now")))
@@ -284,6 +299,13 @@ namespace UnityEditor
 
                 // Texture and HDR color controls
                 m_MaterialEditor.TexturePropertyWithHDRColor(Styles.emissionText, emissionMap, emissionColorForRendering, false);
+
+                if (material.globalIlluminationFlags.HasFlag(MaterialGlobalIlluminationFlags.EmissiveIsBlack))
+                {
+                    material.GetPropertyState(MaterialSerializedProperty.LightmapFlags, out _, out _, out bool lockedByAncestor);
+                    if (lockedByAncestor)
+                        EditorGUILayout.HelpBox("Emissive lighting is locked to black by a parent Material. Changing the emissive color will have no effect.", MessageType.Warning);
+                }
 
                 // If texture was assigned and color was black set color to white
                 float brightness = emissionColorForRendering.colorValue.maxColorComponent;

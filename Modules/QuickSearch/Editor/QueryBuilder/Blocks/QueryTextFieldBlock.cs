@@ -8,10 +8,10 @@ namespace UnityEditor.Search
 {
     class QueryTextFieldBlock : QueryBlock
     {
-        private SearchField m_SearchField;
-        public override bool wantsEvents => true;
+        private UI.SearchField m_SearchField;
+        internal override bool wantsEvents => true;
 
-        public QueryTextFieldBlock(IQuerySource source, SearchField searchField)
+        public QueryTextFieldBlock(IQuerySource source, UI.SearchField searchField)
             : base(source)
         {
             hideMenu = true;
@@ -20,26 +20,26 @@ namespace UnityEditor.Search
         }
 
         public override string ToString() => value;
-        public override IBlockEditor OpenEditor(in Rect rect) => null;
+        internal override IBlockEditor OpenEditor(in Rect rect) => null;
 
-        public override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override Rect Layout(in Vector2 at, in float availableSpace)
         {
             const float blockSpacing = 4f;
 
             if (m_SearchField == null)
-                m_SearchField = new SearchField();
+                m_SearchField = new UI.SearchField();
 
             var spaceLeft = availableSpace - at.x - blockSpacing;
             var size = Styles.queryBuilderSearchField.CalcSize(Utils.GUIContentTemp(value));
             return GetRect(at, Mathf.Max(spaceLeft, size.x), size.y);
         }
 
-        internal SearchField GetSearchField()
+        internal UI.SearchField GetSearchField()
         {
             return m_SearchField;
         }
 
-        protected override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
         {
             var evt = Event.current;
             if (evt.type == EventType.MouseDown && blockRect.Contains(evt.mousePosition))

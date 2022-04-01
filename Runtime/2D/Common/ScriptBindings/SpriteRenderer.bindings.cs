@@ -130,6 +130,7 @@ namespace UnityEngine
 
         [NativeMethod(Name = "GetSpriteBounds")]
         internal extern Bounds Internal_GetSpriteBounds(SpriteDrawMode mode);
+        extern internal void GetSecondaryTextureProperties([NotNull]MaterialPropertyBlock mbp);
         internal Bounds GetSpriteBounds()
         {
             return Internal_GetSpriteBounds(drawMode);

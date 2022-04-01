@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -457,6 +458,11 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern void OnUpdateLightmapEncoding(BuildTargetGroup target);
 
+        // Called when the user changes the HDR Cubemap Encoding option,
+        // will reimport HDR cubemaps with the new encoding.
+        [FreeFunction]
+        internal static extern void OnUpdateHDRCubemapEncoding(BuildTargetGroup target);
+
         // Called when the user changes the Lightmap streaming settings:
         [FreeFunction]
         internal static extern void OnUpdateLightmapStreaming(BuildTargetGroup target);
@@ -568,7 +574,7 @@ namespace UnityEditor
             EditorSceneManager.SceneOpenedCallback BakeOnAllOpen = null;
             BakeOnAllOpen = (UnityEngine.SceneManagement.Scene scene, SceneManagement.OpenSceneMode loadSceneMode) =>
             {
-                if (EditorSceneManager.loadedSceneCount == paths.Length)
+                if (SceneManager.loadedSceneCount == paths.Length)
                 {
                     BakeAsync();
                     Lightmapping.bakeCompleted += OnBakeFinish;
@@ -675,10 +681,36 @@ namespace UnityEditor.Experimental
         public static extern bool probesIgnoreDirectEnvironment { get; set; }
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        public static extern void SetCustomBakeInputs(Vector4[] inputData, int sampleCount);
+        private unsafe static extern void SetCustomBakeInputs([Span("inputDataLength", isReadOnly:true)]Vector4* inputData, int inputDataLength, int sampleCount);
+
+        public static void SetCustomBakeInputs(Vector4[] inputData, int sampleCount)
+        {
+            SetCustomBakeInputs(inputData.AsSpan(), sampleCount);
+        }
+        public static unsafe void SetCustomBakeInputs(ReadOnlySpan<Vector4> inputData, int sampleCount)
+        {
+            fixed(Vector4* inputDataPtr = inputData)
+            {
+                SetCustomBakeInputs(inputDataPtr, inputData.Length, sampleCount);
+            }
+        }
+
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        public static extern bool GetCustomBakeResults([Out] Vector4[] results);
+        private static unsafe extern bool GetCustomBakeResultsCopy([Span("resultsLength")]Vector4* results, int resultsLength);
+        public static unsafe bool GetCustomBakeResults(Span<Vector4> results)
+        {
+            fixed (Vector4* resultsPtr = results) {
+                return GetCustomBakeResultsCopy(resultsPtr, results.Length);
+            }
+        }
+        public static bool GetCustomBakeResults([Out] Vector4[] results)
+        {
+            return GetCustomBakeResults(results.AsSpan());
+        }
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        public static extern ReadOnlySpan<Vector4> GetCustomBakeResultsNoCopy();
 
         [Obsolete("UnityEditor.Experimental.Lightmapping.extractAmbientOcclusion is obsolete, use Lightmapping.lightingSettings.extractAO instead. ", false)]
         public static bool extractAmbientOcclusion
@@ -715,6 +747,30 @@ namespace UnityEditor.Experimental
             return success;
         }
 
+        public unsafe static bool GetAdditionalBakedProbes(int id, Span<SphericalHarmonicsL2> outBakedProbeSH, Span<float> outBakedProbeValidity, Span<float> outBakedProbeOctahedralDepth)
+        {
+            const int octahedralDepthMapTexelCount = 64; // 8*8
+
+            int numEntries = outBakedProbeSH.Length;
+
+            if (outBakedProbeOctahedralDepth.Length != numEntries * octahedralDepthMapTexelCount)
+            {
+                Debug.LogError("Octahedral array must provide " + numEntries * octahedralDepthMapTexelCount + " floats.");
+                return false;
+            }
+
+            if (outBakedProbeValidity.Length != numEntries)
+            {
+                Debug.LogError("All output arrays must have equal size.");
+                return false;
+            }
+            fixed (void* shPtr = outBakedProbeSH)
+            fixed (void* validityPtr = outBakedProbeValidity)
+            fixed (void* octahedralDepthPtr = outBakedProbeOctahedralDepth)
+            {
+                return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
+            }
+        }
         public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity, NativeArray<float> outBakedProbeOctahedralDepth)
         {
             if (outBakedProbeSH == null || !outBakedProbeSH.IsCreated ||
@@ -749,7 +805,19 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction]
-        public static extern void SetAdditionalBakedProbes(int id, Vector3[] positions);
+        private static extern unsafe void SetAdditionalBakedProbes(int id, [Span("positionsLength", isReadOnly:true)]Vector3 * positions, int positionsLength);
+
+        public static void SetAdditionalBakedProbes(int id, Vector3[] positions)
+        {
+            SetAdditionalBakedProbes(id, positions.AsSpan());
+        }
+        public static unsafe void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions)
+        {
+            fixed(Vector3* positionsPtr = positions)
+            {
+                SetAdditionalBakedProbes(id, positionsPtr, positions.Length);
+            }
+        }
 
         [FreeFunction]
         public static extern void SetLightDirty(Light light);

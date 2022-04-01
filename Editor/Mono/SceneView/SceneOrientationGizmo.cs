@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEditor.Overlays;
@@ -44,7 +43,6 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
     {
         new GUIContent("x"), new GUIContent("y"), new GUIContent("z")
     };
-
 
     bool showBackGround
     {
@@ -142,7 +140,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         collapsedChanged += OnCollapsedChanged;
     }
 
-    void OnCollapsedChanged(bool collapsed)
+    void OnCollapsedChanged(bool _)
     {
         UpdateHeaderAndBackground();
     }
@@ -216,16 +214,12 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         {
             m_ViewDirectionControlIDs = new int[kDirectionRotations.Length];
             for (int i = 0; i < m_ViewDirectionControlIDs.Length; ++i)
-            {
                 m_ViewDirectionControlIDs[i] = GUIUtility.GetPermanentControlID();
-            }
 
             m_CenterButtonControlID = GUIUtility.GetPermanentControlID();
             m_RotationLockControlID = GUIUtility.GetPermanentControlID();
             m_PerspectiveIsoControlID = GUIUtility.GetPermanentControlID();
         }
-
-        UpdateHeaderAndBackground();
     }
 
     public override void OnWillBeDestroyed()
@@ -237,7 +231,12 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
             Object.DestroyImmediate(m_Camera.gameObject);
     }
 
-    void AxisSelectors(SceneView view, Camera cam, float size, float sgn, GUIStyle viewAxisLabelStyle)
+    internal override void OnContentRebuild()
+    {
+        UpdateHeaderAndBackground();
+    }
+
+    void AxisSelectors(SceneView view, Camera cam, float size, float sgn, bool hovered)
     {
         for (int h = kDirectionRotations.Length - 1; h >= 0; h--)
         {
@@ -289,7 +288,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
                 // axis widget when drawn behind label
                 if (sgn > 0 && Handles.Button(m_ViewDirectionControlIDs[h], q1 * Vector3.forward * size * -1.2f, q1,
-                    size, size * 0.7f, Handles.ConeHandleCap))
+                    size, size * 0.7f, Handles.ConeHandleCap, hovered))
                 {
                     if (!view.in2DMode && !view.isRotationLocked)
                         ViewAxisDirection(view, h);
@@ -311,8 +310,10 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
                 }
 
                 // axis widget when drawn in front of label
+                // Adding the hovered parameter to avoid all the axis proximity checks that are time consuming
+                // when the cursor is not hovering the Orientation Gizmo
                 if (sgn < 0 && Handles.Button(m_ViewDirectionControlIDs[h], q1 * Vector3.forward * size * -1.2f, q1,
-                    size, size * 0.7f, Handles.ConeHandleCap))
+                    size, size * 0.7f, Handles.ConeHandleCap, hovered))
                 {
                     if (!view.in2DMode && !view.isRotationLocked)
                         ViewAxisDirection(view, h);
@@ -585,7 +586,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
                     GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), gizmoRect);
                 }
 
-                DoOrientationHandles(view, m_Camera);
+                DoOrientationHandles(view, m_Camera, gizmoRect.Contains(evt.mousePosition));
 
                 if (evt.type == EventType.Repaint)
                     GUIClip.Internal_PopParentClip();
@@ -601,7 +602,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         }
     }
 
-    void DoOrientationHandles(SceneView view, Camera camera)
+    void DoOrientationHandles(SceneView view, Camera camera, bool isMouseHovering)
     {
         Handles.BeginGUI();
         DrawRotationLock(view, camera.pixelRect);
@@ -617,7 +618,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         float size = HandleUtility.GetHandleSize(Vector3.zero) * .2f;
 
         // Do axes behind the center one
-        AxisSelectors(view, camera, size, -1.0f, Styles.viewAxisLabelStyle);
+        AxisSelectors(view, camera, size, -1.0f, isMouseHovering);
 
         // Do center handle
         Color centerColor = Handles.centerColor;
@@ -645,7 +646,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         }
 
         // Do axes in front of the center one
-        AxisSelectors(view, camera, size, 1.0f, Styles.viewAxisLabelStyle);
+        AxisSelectors(view, camera, size, 1.0f, isMouseHovering);
 
         GUI.enabled = true;
 

@@ -8,10 +8,17 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageDatabase m_PackageDatabase;
-        public PackagePauseDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase)
+        private bool m_IsIconButton;
+        public PackagePauseDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase, bool isIconButton = false)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
+            m_IsIconButton = isIconButton;
+            if (isIconButton)
+            {
+                element.AddToClassList("pauseIcon");
+                element.AddToClassList("icon");
+            }
         }
 
         protected override bool TriggerAction(IPackageVersion version)
@@ -27,7 +34,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
-            return operation?.isInProgress == true || operation?.state == DownloadState.Pausing;
+
+            // We only want to see two icons at the same time (cancel + resume OR cancel + pause)
+            // So we hide the pause button when the resume button is shown, that's why we check the ResumeRequested state
+            return operation?.state != DownloadState.ResumeRequested && (operation?.isInProgress == true || operation?.state == DownloadState.Pausing);
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -37,10 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Format(L10n.Tr("Click to pause the download of this {0}."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(IPackageVersion version, bool isInProgress)
-        {
-            return L10n.Tr("Pause");
-        }
+        protected override string GetText(IPackageVersion version, bool isInProgress) => m_IsIconButton ? string.Empty : L10n.Tr("Pause");
 
         protected override bool IsInProgress(IPackageVersion version) => m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId).state == DownloadState.Pausing;
     }

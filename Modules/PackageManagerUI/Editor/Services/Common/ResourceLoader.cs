@@ -34,17 +34,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             internal static readonly string packageManagerCommon = "StyleSheets/PackageManager/Common.uss";
             internal static readonly string[] packageManagerComponents = {
-                "StyleSheets/PackageManager/PackageDependencies.uss",
+                "StyleSheets/PackageManager/PackageDetailsDependenciesTab.uss",
                 "StyleSheets/PackageManager/PackageDetails.uss",
                 "StyleSheets/PackageManager/PackageItem.uss",
                 "StyleSheets/PackageManager/PackageList.uss",
                 "StyleSheets/PackageManager/PackageLoadBar.uss",
-                "StyleSheets/PackageManager/PackageSampleList.uss",
+                "StyleSheets/PackageManager/PackageDetailsSamplesTab.uss",
+                "StyleSheets/PackageManager/PackageDetailsReleasesTab.uss",
+                "StyleSheets/PackageManager/PackageDetailsVersionsTab.uss",
                 "StyleSheets/PackageManager/PackageStatusBar.uss",
                 "StyleSheets/PackageManager/PackageToolbar.uss",
                 "StyleSheets/PackageManager/ProgressBar.uss",
                 "StyleSheets/PackageManager/FeatureDependencies.uss",
-                "StyleSheets/PackageManager/PackagePlatformList.uss"
+                "StyleSheets/PackageManager/PackageDetailsHeader.uss"
             };
 
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";

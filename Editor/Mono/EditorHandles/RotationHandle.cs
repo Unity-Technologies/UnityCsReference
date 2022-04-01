@@ -10,8 +10,14 @@ namespace UnityEditor
 {
     public sealed partial class Handles
     {
-        internal struct RotationHandleIds
+        /// <summary>
+        /// Set of IDs corresponding to the handles of Handles.RotationHandle.
+        /// </summary>
+        public struct RotationHandleIds
         {
+            /// <summary>
+            /// Default set of IDs to pass to Handles.RotationHandle.
+            /// </summary>
             public static RotationHandleIds @default
             {
                 get
@@ -28,7 +34,7 @@ namespace UnityEditor
 
             public readonly int x, y, z, cameraAxis, xyz;
 
-            public int this[int index]
+            internal int this[int index]
             {
                 get
                 {
@@ -44,7 +50,7 @@ namespace UnityEditor
                 }
             }
 
-            public bool Has(int id)
+            internal bool Has(int id)
             {
                 return x == id
                     || y == id
@@ -53,7 +59,7 @@ namespace UnityEditor
                     || xyz == id;
             }
 
-            public RotationHandleIds(int x, int y, int z, int cameraAxis, int xyz)
+            internal RotationHandleIds(int x, int y, int z, int cameraAxis, int xyz)
             {
                 this.x = x;
                 this.y = y;

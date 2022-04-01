@@ -213,7 +213,6 @@ namespace UnityEngine.UIElements
         {
             m_ExpandedItemIds = new List<int>();
 
-            name = ussClassName;
             viewDataKey = ussClassName;
             AddToClassList(ussClassName);
 
@@ -328,8 +327,11 @@ namespace UnityEngine.UIElements
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
-            viewController.RebuildTree();
-            RefreshItems();
+            if (viewController != null)
+            {
+                viewController.RebuildTree();
+                RefreshItems();
+            }
         }
 
         private void OnScrollViewKeyDown(KeyDownEvent evt)

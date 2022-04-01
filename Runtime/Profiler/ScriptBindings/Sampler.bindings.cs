@@ -96,18 +96,21 @@ namespace UnityEngine.Profiling
         }
 
         [Conditional("ENABLE_PROFILER")]
+        [IgnoredByDeepProfiler]
         public void Begin()
         {
             ProfilerUnsafeUtility.BeginSample(m_Ptr);
         }
 
         [Conditional("ENABLE_PROFILER")]
+        [IgnoredByDeepProfiler]
         public void Begin(Object targetObject)
         {
             ProfilerUnsafeUtility.Internal_BeginWithObject(m_Ptr, targetObject);
         }
 
         [Conditional("ENABLE_PROFILER")]
+        [IgnoredByDeepProfiler]
         public void End()
         {
             ProfilerUnsafeUtility.EndSample(m_Ptr);

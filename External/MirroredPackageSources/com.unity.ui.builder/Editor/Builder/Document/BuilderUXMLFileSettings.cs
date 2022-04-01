@@ -17,6 +17,9 @@ namespace Unity.UI.Builder
             {
                 m_EditorExtensionMode = value;
                 m_RootElementAsset?.SetAttributeValue(k_EditorExtensionModeAttributeName, m_EditorExtensionMode.ToString());
+                var builderWindow = Builder.ActiveWindow;
+                if (builderWindow != null)
+                    builderWindow.toolbar?.InitCanvasTheme();
             }
         }
 

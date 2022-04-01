@@ -47,6 +47,7 @@ namespace ScriptCompilationBuildProgram.Data
         public string[] CustomCompilerOptions = new string[0];
         public int DebugIndex;
         public bool SkipCodeGen;
+        public string Path;
     }
 
     public class ScriptCompilationData_Out

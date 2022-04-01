@@ -209,7 +209,7 @@ namespace UnityEditor.Search
             }
         }
 
-        internal bool empty => string.IsNullOrEmpty(m_SearchText);
+        public bool empty => string.IsNullOrEmpty(m_SearchText);
 
         /// <summary>
         /// Raw search text (i.e. what is in the search text box)
@@ -454,6 +454,11 @@ namespace UnityEditor.Search
         internal List<SearchItem> subset { get; set; }
 
         /// <summary>
+        /// The user data field can be used to store private data when running a custom query.
+        /// </summary>
+        internal object userData { get; set; }
+
+        /// <summary>
         /// Add a new query error on this context.
         /// </summary>
         /// <param name="error">The new error.</param>
@@ -523,6 +528,14 @@ namespace UnityEditor.Search
         public override string ToString()
         {
             return $"[{GetProviders().Count}, {options}] {searchText.Replace("\n", "")}";
+        }
+
+        internal bool Tick()
+        {
+            if (!options.HasAny(SearchFlags.Synchronous))
+                return true;
+            sessions.Tick();
+            return Dispatcher.ProcessOne();
         }
     }
 }

@@ -26,7 +26,7 @@ namespace UnityEditor.Search
                         SearchViewFlags.DisableSavedSearchQuery |
                         SearchViewFlags.GridView,
                 title = L10n.Tr("Scenes"),
-                excludeNoneItem = true
+                excludeClearItem = true
             });
         }
 

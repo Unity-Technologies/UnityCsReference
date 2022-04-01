@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -16,5 +17,6 @@ namespace UnityEditor.PackageManager.UI
         public string submitButtonText;
         public string defaultValue;
         public Action<string> onInputSubmitted;
+        public Vector2? windowSize;
     }
 }

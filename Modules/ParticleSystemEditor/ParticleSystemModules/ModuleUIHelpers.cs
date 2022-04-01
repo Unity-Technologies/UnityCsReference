@@ -497,7 +497,7 @@ namespace UnityEditor
 
         public static int IntDraggable(Rect rect, GUIContent label, SerializedProperty intProp, float dragWidth)
         {
-            EditorGUI.BeginProperty(rect, GUIContent.none, intProp);
+            label = EditorGUI.BeginProperty(rect, label, intProp);
 
             EditorGUI.BeginChangeCheck();
             int newValue = IntDraggable(rect, label, intProp.intValue, dragWidth);
@@ -513,7 +513,7 @@ namespace UnityEditor
         {
             Rect rect = GUILayoutUtility.GetRect(0, kSingleLineHeight, layoutOptions);
 
-            EditorGUI.BeginProperty(rect, GUIContent.none, intProp);
+            guiContent = EditorGUI.BeginProperty(rect, guiContent, intProp);
             PrefixLabel(rect, guiContent);
 
             EditorGUI.BeginChangeCheck();

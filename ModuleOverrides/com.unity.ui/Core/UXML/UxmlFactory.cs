@@ -128,6 +128,11 @@ namespace UnityEngine.UIElements
         string uxmlQualifiedName { get; }
 
         /// <summary>
+        /// The type of the UXML element read by the factory.
+        /// </summary>
+        Type uxmlType { get; }
+
+        /// <summary>
         /// Must return true if the UXML element attributes are not restricted to the values enumerated by <see cref="uxmlAttributesDescription"/>.
         /// </summary>
         bool canHaveAnyAttribute { get; }
@@ -237,12 +242,17 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the typefully qualified name of <c>T0</c>.
+        /// Returns the type fully qualified name of <c>T0</c>.
         /// </summary>
         public virtual string uxmlQualifiedName
         {
             get { return typeof(TCreatedType).FullName; }
         }
+
+        /// <summary>
+        /// Returns the type of <c>T0</c>.
+        /// </summary>
+        public virtual Type uxmlType => typeof(TCreatedType);
 
         /// <summary>
         /// Returns UxmlTraits<see cref="canHaveAnyAttribute"/> (where UxmlTraits is the argument for <c>T1</c>).
@@ -259,10 +269,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                foreach (var attr in m_Traits.uxmlAttributesDescription)
-                {
-                    yield return attr;
-                }
+                return m_Traits.uxmlAttributesDescription;
             }
         }
 
@@ -273,10 +280,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                foreach (var child in m_Traits.uxmlChildElementsDescription)
-                {
-                    yield return child;
-                }
+                return m_Traits.uxmlChildElementsDescription;
             }
         }
 

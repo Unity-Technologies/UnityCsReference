@@ -23,6 +23,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Profiling;
+using UnityEditor.UIElements;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 using Component = UnityEngine.Component;
@@ -183,11 +184,13 @@ namespace UnityEditor
         static void OnSelectedObjectWasDestroyed(int unused)
         {
             s_ActiveEditorsDirty = true;
+            s_SelectionCacheDirty = true;
         }
 
         static void OnEditorTrackerRebuilt()
         {
             s_ActiveEditorsDirty = true;
+            s_SelectionCacheDirty = true;
         }
 
         internal static void SetActiveEditorsDirty(bool forceRepaint = false)
@@ -203,6 +206,7 @@ namespace UnityEditor
         static List<Editor> s_ActiveEditors = new List<Editor>();
 
         static bool s_ActiveEditorsDirty;
+        static bool s_SelectionCacheDirty;
 
         internal static IEnumerable<Editor> activeEditors
         {
@@ -368,7 +372,7 @@ namespace UnityEditor
 
         private bool m_WasFocused = false;
 
-        private int[] m_CachedParentRenderersFromSelection, m_CachedChildRenderersFromSelection;
+        private static int[] s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection;
 
         [Serializable]
         public class SceneViewState
@@ -1199,6 +1203,7 @@ namespace UnityEditor
 
             UpdateHiddenObjectCount();
 
+            ObjectFactory.componentWasAdded += OnComponentWasAdded;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
@@ -1235,7 +1240,7 @@ namespace UnityEditor
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(k_StyleCommon) as StyleSheet);
             baseRootVisualElement.styleSheets.Add(EditorGUIUtility.Load(EditorGUIUtility.isProSkin ? k_StyleDark : k_StyleLight) as StyleSheet);
 
-            HandleUtility.FilterRendererIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
+            s_SelectionCacheDirty = true;
         }
 
         IMGUIContainer m_PrefabToolbar;
@@ -1265,7 +1270,7 @@ namespace UnityEditor
                         viewDataKey = name,
                         renderHints = RenderHints.ClipWithScissors
                     };
-                    EditorUIService.instance.AddDefaultEditorStyleSheets(m_PrefabToolbar);
+                    UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_PrefabToolbar);
                     m_PrefabToolbar.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
                 }
 
@@ -1284,7 +1289,7 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
 
-            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             root.style.overflow = Overflow.Hidden;
             root.style.flexGrow = 1;
 
@@ -1297,6 +1302,13 @@ namespace UnityEditor
             }
 
             return root;
+        }
+
+        void OnComponentWasAdded(Component component)
+        {
+            var renderer = component as Renderer;
+            if (renderer != null)
+                s_SelectionCacheDirty = true;
         }
 
         void GridOnGridVisibilityChanged(bool visible)
@@ -1441,6 +1453,8 @@ namespace UnityEditor
             if (m_StageHandling != null)
                 m_StageHandling.OnDisable();
             SceneViewMotion.DeactivateFlyModeContext();
+            ObjectFactory.componentWasAdded -= OnComponentWasAdded;
+
             base.OnDisable();
         }
 
@@ -1567,7 +1581,7 @@ namespace UnityEditor
 
             m_WasFocused = false;
 
-            HandleUtility.FilterRendererIDs(Selection.gameObjects, out m_CachedParentRenderersFromSelection, out m_CachedChildRenderersFromSelection);
+            s_SelectionCacheDirty = true;
 
             Repaint();
         }
@@ -1917,7 +1931,7 @@ namespace UnityEditor
             bool usingScriptableRenderPipeline = (GraphicsSettings.currentRenderPipeline != null);
             if (m_Camera == null || usingScriptableRenderPipeline)
                 return false;
-            if (m_Camera.actualRenderingPath == RenderingPath.DeferredLighting || m_Camera.actualRenderingPath == RenderingPath.DeferredShading)
+            if (m_Camera.actualRenderingPath == RenderingPath.DeferredShading)
                 return true;
             return false;
         }
@@ -2035,6 +2049,7 @@ namespace UnityEditor
         private void DoDrawCamera(Rect windowSpaceCameraRect, Rect groupSpaceCameraRect, out bool pushedGUIClip)
         {
             pushedGUIClip = false;
+
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
 
@@ -2067,13 +2082,24 @@ namespace UnityEditor
                 if (SceneCameraRendersIntoRT())
                 {
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
+                    GUIClip.Internal_PushParentClip(Matrix4x4.identity, GUIClip.GetParentMatrix(), groupSpaceCameraRect);
                     pushedGUIClip = true;
                 }
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam, drawGizmos, true);
 
-                if (AnnotationUtility.showSelectionOutline && evt.type == EventType.Repaint)
+                if (evt.type == EventType.Repaint)
                 {
-                    Handles.DrawOutlineInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, m_CachedParentRenderersFromSelection, m_CachedChildRenderersFromSelection);
+                    if (s_SelectionCacheDirty)
+                    {
+                        HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersFromSelection, out s_CachedChildRenderersFromSelection);
+                        s_SelectionCacheDirty = false;
+                    }
+
+                    OutlineDrawMode selectionOutlineWireFlags = 0;
+                    if (AnnotationUtility.showSelectionOutline) selectionOutlineWireFlags |= OutlineDrawMode.SelectionOutline;
+                    if (AnnotationUtility.showSelectionWire) selectionOutlineWireFlags |= OutlineDrawMode.SelectionWire;
+                    if (selectionOutlineWireFlags != 0)
+                        Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection, selectionOutlineWireFlags);
                 }
 
                 DrawRenderModeOverlay(groupSpaceCameraRect);
@@ -2168,6 +2194,24 @@ namespace UnityEditor
 
             RenderTexture.ReleaseTemporary(colorRT);
             RenderTexture.ReleaseTemporary(fadedRT);
+
+            OutlineDrawMode selectionDrawModeMask = 0;
+            if (AnnotationUtility.showSelectionOutline)
+                selectionDrawModeMask |= OutlineDrawMode.SelectionOutline;
+            if (AnnotationUtility.showSelectionWire)
+               selectionDrawModeMask |= OutlineDrawMode.SelectionWire;
+
+            if (Event.current.type == EventType.Repaint && selectionDrawModeMask != 0)
+            {
+                if (s_SelectionCacheDirty)
+                {
+                    HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersFromSelection, out s_CachedChildRenderersFromSelection);
+                    s_SelectionCacheDirty = false;
+                }
+
+                Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersFromSelection, s_CachedChildRenderersFromSelection, selectionDrawModeMask);
+                Handles.Internal_FinishDrawingCamera(m_Camera, true);
+            }
 
             // Reset camera
             m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
@@ -2401,9 +2445,14 @@ namespace UnityEditor
                     Profiler.BeginSample("SceneView.BlitRT");
                     Graphics.SetRenderTarget(null);
                 }
+
                 // If we reset the offsets pop that clip off now.
                 if (pushedGUIClip)
+                {
+                    GUIClip.Internal_PopParentClip();
                     GUIClip.Pop();
+                }
+
                 if (evt.type == EventType.Repaint)
                 {
                     Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
@@ -3291,7 +3340,7 @@ namespace UnityEditor
                     if (DragAndDrop.HasHandler(DragAndDropWindowTarget.sceneView))
                     {
                         PickObject(ref pickedObject, ref parentTransform);
-                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.sceneView, pickedObject, pivot, Event.current.mousePosition, parentTransform, isPerform);
+                        DragAndDrop.visualMode = DragAndDrop.DropOnSceneWindow(pickedObject, pivot, Event.current.mousePosition, parentTransform, isPerform);
                         dropHandled = DragAndDrop.visualMode != DragAndDropVisualMode.None;
                     }
 
@@ -3371,28 +3420,28 @@ namespace UnityEditor
                 case EventCommandNames.Duplicate:
                     if (execute)
                     {
-                        CutCopyPasteUtility.DuplicateGO(customParentForNewGameObjects);
+                        ClipboardUtility.DuplicateGO(customParentForNewGameObjects);
                     }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Copy:
                     if (execute)
                     {
-                        CutCopyPasteUtility.CopyGO();
+                        ClipboardUtility.CopyGO();
                     }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Cut:
                     if (execute)
                     {
-                        CutCopyPasteUtility.CutGO();
+                        ClipboardUtility.CutGO();
                     }
                     Event.current.Use();
                     break;
                 case EventCommandNames.Paste:
                     if (execute)
                     {
-                        CutCopyPasteUtility.PasteGO(customParentForNewGameObjects);
+                        ClipboardUtility.PasteGO(customParentForNewGameObjects);
                     }
                     Event.current.Use();
                     break;
@@ -3451,7 +3500,7 @@ namespace UnityEditor
             // Detect if we are canceling 'Cut' operation
             if (Event.current.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
             {
-                CutCopyPasteUtility.ResetCutboardAndRepaintHierarchyWindows();
+                ClipboardUtility.ResetCutboardAndRepaintHierarchyWindows();
                 Repaint();
             }
         }
@@ -3711,9 +3760,9 @@ namespace UnityEditor
                             GUIUtility.ExitGUI();
                     }
                 }
+                EditorToolManager.InvokeOnSceneGUICustomEditorTools();
             }
 
-            EditorToolManager.InvokeOnSceneGUICustomEditorTools();
 
             if (duringSceneGui != null)
             {
@@ -3817,12 +3866,6 @@ namespace UnityEditor
         static void ShowCompileErrorNotification()
         {
             ShowNotification("All compiler errors have to be fixed before you can enter playmode!");
-        }
-
-        static void ShowPrefabErrorNotification()
-        {
-            ShowNotification("All Prefab instances without a source Prefab must be fixed before you can enter playmode!");
-            Debug.LogError("All Prefab instances without a source Prefab Asset must be fixed before you can enter playmode!\nYou can find them by searching for 'Missing Prefab' in the Hierarchy");
         }
 
         internal static void ShowSceneViewPlayModeSaveWarning()
@@ -3960,7 +4003,7 @@ namespace UnityEditor
             m_2DMode = view.m_2DMode;
             pivot = view.pivot;
             rotation = view.rotation;
-            m_Size = view.m_Size;
+            size = view.size;
             m_Ortho.value = view.orthographic;
             if (m_Grid == null)
                 m_Grid = new SceneViewGrid();

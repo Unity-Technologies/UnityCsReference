@@ -322,7 +322,7 @@ namespace UnityEditor
             }
         }
 
-        public void OnUndoRedoPerformed()
+        public void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             LoadFromBackend();
         }

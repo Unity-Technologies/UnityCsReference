@@ -281,6 +281,7 @@ namespace UnityEngine.UIElements
             }
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             m_VisualInput = null;
         }
@@ -313,6 +314,11 @@ namespace UnityEngine.UIElements
 
                 currentElement = currentElement.parent;
             }
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent e)
+        {
+            onValidateValue = null;
         }
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
@@ -463,9 +469,12 @@ namespace UnityEngine.UIElements
             {
                 TooltipEvent e = (TooltipEvent)evt;
 
+                //When a label is present, set the tooltip position centered on the label, otherwise center it on the entire field.
                 e.rect = !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
 
-                e.tooltip = tooltip;
+                if(!string.IsNullOrEmpty(tooltip))
+                    e.tooltip = tooltip;
+
                 e.StopImmediatePropagation();
             }
         }

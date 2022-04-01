@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Linq;
 using UnityEngine.Rendering;
 using UnityEngine.U2D;
+using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -78,14 +79,49 @@ namespace UnityEditor
             return ((target.hideFlags & HideFlags.NotEditable) == 0);
         }
 
-        protected virtual UnityEngine.Object[] GetLights()
+        protected static System.Collections.Generic.IEnumerable<T> GetObjectsForLightingExplorer<T>() where T : UnityEngine.Component
         {
-            return Resources.FindObjectsOfTypeAll<Light>();
+            var objects = Resources.FindObjectsOfTypeAll<T>().Where((T obj) =>
+            {
+                return !EditorUtility.IsPersistent(obj) && !obj.hideFlags.HasFlag(HideFlags.HideInHierarchy) && !obj.hideFlags.HasFlag(HideFlags.HideAndDontSave);
+            });
+
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            // No prefab mode.
+            if (prefabStage == null)
+            {
+                // Return all object instances in the scene including prefab instances, but not those that are in prefab assets.
+                return objects;
+            }
+            // In Context prefab mode with Normal rendering mode
+            else if (prefabStage.mode == PrefabStage.Mode.InContext &&
+                    StageNavigationManager.instance.contextRenderMode == StageUtility.ContextRenderMode.Normal)
+            {
+                // Return all object instances in the scene and objects in the opened prefab asset, but not objects in the opened prefab instance.
+                return objects.Where((T obj) =>
+                {
+                    return !StageUtility.IsPrefabInstanceHiddenForInContextEditing(obj.gameObject);
+                });
+            }
+            // All remaining cases, e.g. In Context with Hidden or GrayedOut rendering mode, or In Isolation prefab mode.
+            else
+            {
+                // Return only objects in the opened prefab asset.
+                return objects.Where((T obj) =>
+                {
+                    return EditorSceneManager.IsPreviewSceneObject(obj);
+                });
+            }
         }
 
-        protected virtual UnityEngine.Object[] Get2DLights()
+        protected internal virtual UnityEngine.Object[] GetLights()
         {
-            return Resources.FindObjectsOfTypeAll<Light2DBase>();
+            return GetObjectsForLightingExplorer<Light>().ToArray();
+        }
+
+        protected internal virtual UnityEngine.Object[] Get2DLights()
+        {
+            return GetObjectsForLightingExplorer<Light2DBase>().ToArray();
         }
 
         protected virtual  LightingExplorerTableColumn[] Get2DLightColumns()
@@ -338,9 +374,9 @@ namespace UnityEditor
             };
         }
 
-        protected virtual UnityEngine.Object[] GetReflectionProbes()
+        protected internal virtual UnityEngine.Object[] GetReflectionProbes()
         {
-            return Resources.FindObjectsOfTypeAll<ReflectionProbe>();
+            return GetObjectsForLightingExplorer<ReflectionProbe>().ToArray();
         }
 
         protected virtual LightingExplorerTableColumn[] GetReflectionProbeColumns()
@@ -365,9 +401,9 @@ namespace UnityEditor
             };
         }
 
-        protected virtual UnityEngine.Object[] GetLightProbes()
+        protected internal virtual UnityEngine.Object[] GetLightProbes()
         {
-            return Resources.FindObjectsOfTypeAll<LightProbeGroup>();
+            return GetObjectsForLightingExplorer<LightProbeGroup>().ToArray();
         }
 
         protected virtual LightingExplorerTableColumn[] GetLightProbeColumns()
@@ -379,13 +415,16 @@ namespace UnityEditor
             };
         }
 
-        protected virtual UnityEngine.Object[] GetEmissives()
+        protected internal virtual UnityEngine.Object[] GetEmissives()
         {
-            return Resources.FindObjectsOfTypeAll<MeshRenderer>().Where((MeshRenderer mr) => {
-                return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.ContributeGI));
-            }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
-                    return m != null && ((m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0) && m.HasProperty("_EmissionColor");
-                }).Distinct().ToArray();
+            return GetObjectsForLightingExplorer<MeshRenderer>().Where((MeshRenderer mr) =>
+            {
+                return GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.ContributeGI);
+            }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) =>
+
+            {
+                return m != null && ((m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0) && m.HasProperty("_EmissionColor");
+            }).Distinct().ToArray();
         }
 
         protected virtual LightingExplorerTableColumn[] GetEmissivesColumns()

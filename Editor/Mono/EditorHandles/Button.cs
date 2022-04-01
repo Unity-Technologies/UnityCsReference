@@ -10,6 +10,22 @@ namespace UnityEditorInternal
 {
     internal class Button
     {
+        internal static bool Do(int id, Vector3 position, Quaternion direction, float size, float pickSize, Handles.CapFunction capFunction, bool useLayoutAndMouseMove)
+        {
+            if(!useLayoutAndMouseMove)
+            {
+                Event evt = Event.current;
+                if(evt.type == EventType.Layout || evt.type == EventType.MouseMove)
+                {
+                    //Consuming event id
+                    evt.GetTypeForControl(id);
+                    return false;
+                }
+            }
+
+            return Do(id, position, direction, size, pickSize, capFunction);
+        }
+
         public static bool Do(int id, Vector3 position, Quaternion direction, float size, float pickSize, Handles.CapFunction capFunction)
         {
             Event evt = Event.current;

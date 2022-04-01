@@ -504,7 +504,10 @@ namespace UnityEditor
         public readonly GUIStyle helpBoxBig;
         public readonly GUIContent noiseSeed = EditorGUIUtility.TrTextContent("Noise Seed", "Specifies the random seed value for detail object placement.");
         public readonly GUIContent noiseSpread = EditorGUIUtility.TrTextContent("Noise Spread", "Controls the spatial frequency of the noise pattern used to vary the scale and color of the detail objects.");
+        public readonly GUIContent detailDensity = EditorGUIUtility.TrTextContent("Detail density", "Controls detail density for this detail prototype, relative to it's size. Only enabled in \"Coverage\" detail scatter mode.");
         public readonly GUIContent holeEdgePadding = EditorGUIUtility.TrTextContent("Hole Edge Padding (%)", "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.");
+        public readonly GUIContent alignToGround = EditorGUIUtility.TrTextContent("Align To Ground (%)", "Rotate detail axis to ground normal direction.");
+        public readonly GUIContent positionOrderliness = EditorGUIUtility.TrTextContent("Position Orderliness (%)", "Controls how to generate position between random and quasirandom. \n\nquasirandom prevents instances from overlapping each other.");
 
         public DetailWizardSharedStyles()
         {
@@ -542,11 +545,14 @@ namespace UnityEditor
         public float        m_MaxHeight;
         public int          m_NoiseSeed;
         public float        m_NoiseSpread;
+        public float        m_detailDensity;
         public float        m_HoleEdgePadding;
         public Color        m_HealthyColor;
         public Color        m_DryColor;
         public DetailMeshRenderMode m_RenderMode;
         public bool         m_UseInstancing;
+        public float        m_AlignToGround;
+        public float        m_PositionOrderliness;
 
         private int     m_PrototypeIndex = -1;
 
@@ -580,6 +586,7 @@ namespace UnityEditor
             m_MaxHeight = prototype.maxHeight;
             m_NoiseSeed = prototype.noiseSeed;
             m_NoiseSpread = prototype.noiseSpread;
+            m_detailDensity = prototype.density;
             m_HoleEdgePadding = Mathf.Clamp01(prototype.holeEdgePadding) * 100.0f;
             m_HealthyColor = prototype.healthyColor;
             m_DryColor = prototype.dryColor;
@@ -597,6 +604,8 @@ namespace UnityEditor
                     break;
             }
             m_UseInstancing = prototype.useInstancing;
+            m_AlignToGround = Mathf.Clamp01(prototype.alignToGround) * 100.0f;
+            m_PositionOrderliness = Mathf.Clamp01(prototype.positionOrderliness) * 100.0f;
 
             OnWizardUpdate();
         }
@@ -617,11 +626,14 @@ namespace UnityEditor
                 noiseSeed = m_NoiseSeed,
                 noiseSpread = m_NoiseSpread,
                 holeEdgePadding = m_HoleEdgePadding / 100.0f,
+                density = m_detailDensity,
                 healthyColor = m_HealthyColor,
                 dryColor = m_DryColor,
                 renderMode = ComputeRenderMode(),
                 usePrototypeMesh = true,
                 useInstancing = m_UseInstancing,
+                alignToGround = m_AlignToGround / 100.0f,
+                positionOrderliness = m_PositionOrderliness / 100.0f
             };
         }
 
@@ -678,6 +690,8 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             m_DetailPrefab = EditorGUILayout.ObjectField("Detail Prefab", m_DetailPrefab, typeof(GameObject), !TerrainDataIsPersistent) as GameObject;
+            m_AlignToGround = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.alignToGround, m_AlignToGround, 0, 100);
+            m_PositionOrderliness = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionOrderliness, m_PositionOrderliness, 0, 100);
             m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
             m_MaxWidth = EditorGUILayout.FloatField("Max Width", m_MaxWidth);
             m_MinHeight = EditorGUILayout.FloatField("Min Height", m_MinHeight);
@@ -685,6 +699,10 @@ namespace UnityEditor
             m_NoiseSeed = EditorGUILayout.IntField(DetailWizardSharedStyles.Instance.noiseSeed, m_NoiseSeed);
             m_NoiseSpread = EditorGUILayout.FloatField(DetailWizardSharedStyles.Instance.noiseSpread, m_NoiseSpread);
             m_HoleEdgePadding = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.holeEdgePadding, m_HoleEdgePadding, 0, 100);
+
+            GUI.enabled = terrainData.detailScatterMode == DetailScatterMode.CoverageMode;
+            m_detailDensity = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.detailDensity, m_detailDensity, 0, 3);
+            GUI.enabled = true;
 
             if (!m_UseInstancing)
             {
@@ -721,10 +739,13 @@ namespace UnityEditor
         public float        m_MaxHeight;
         public int          m_NoiseSeed;
         public float        m_NoiseSpread;
+        public float        m_detailDensity;
         public float        m_HoleEdgePadding;
         public Color        m_HealthyColor;
         public Color        m_DryColor;
         public bool         m_Billboard;
+        public float        m_AlignToGround;
+        public float        m_PositionOrderliness;
 
         private int      m_PrototypeIndex = -1;
 
@@ -757,10 +778,13 @@ namespace UnityEditor
             m_MaxHeight = prototype.maxHeight;
             m_NoiseSeed = prototype.noiseSeed;
             m_NoiseSpread = prototype.noiseSpread;
+            m_detailDensity = prototype.density;
             m_HoleEdgePadding = Mathf.Clamp01(prototype.holeEdgePadding) * 100.0f;
             m_HealthyColor = prototype.healthyColor;
             m_DryColor = prototype.dryColor;
             m_Billboard = prototype.renderMode == DetailRenderMode.GrassBillboard;
+            m_AlignToGround = Mathf.Clamp01(prototype.alignToGround) * 100.0f;
+            m_PositionOrderliness = Mathf.Clamp01(prototype.positionOrderliness) * 100.0f;
 
             OnWizardUpdate();
         }
@@ -780,12 +804,15 @@ namespace UnityEditor
                 maxHeight = m_MaxHeight,
                 noiseSeed = m_NoiseSeed,
                 noiseSpread = m_NoiseSpread,
+                density = m_detailDensity,
                 holeEdgePadding = m_HoleEdgePadding / 100.0f,
                 healthyColor = m_HealthyColor,
                 dryColor = m_DryColor,
                 renderMode = ComputeRenderMode(),
                 usePrototypeMesh = false,
                 useInstancing = false,
+                alignToGround = m_AlignToGround / 100.0f,
+                positionOrderliness = m_PositionOrderliness / 100.0f
             };
         }
 
@@ -848,12 +875,18 @@ namespace UnityEditor
 
             Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
             m_DetailTexture = EditorGUI.ObjectField(r, "Detail Texture", m_DetailTexture, typeof(Texture2D), !TerrainDataIsPersistent) as Texture2D;
+
+            m_AlignToGround = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.alignToGround, m_AlignToGround, 0, 100);
+            m_PositionOrderliness = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionOrderliness, m_PositionOrderliness, 0, 100);
             m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
             m_MaxWidth = EditorGUILayout.FloatField("Max Width", m_MaxWidth);
             m_MinHeight = EditorGUILayout.FloatField("Min Height", m_MinHeight);
             m_MaxHeight = EditorGUILayout.FloatField("Max Height", m_MaxHeight);
             m_NoiseSeed = EditorGUILayout.IntField(DetailWizardSharedStyles.Instance.noiseSeed, m_NoiseSeed);
             m_NoiseSpread = EditorGUILayout.FloatField(DetailWizardSharedStyles.Instance.noiseSpread, m_NoiseSpread);
+            GUI.enabled = terrainData.detailScatterMode == DetailScatterMode.CoverageMode;
+            m_detailDensity = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.detailDensity, m_detailDensity, 0, 3);
+            GUI.enabled = true;
             m_HoleEdgePadding = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.holeEdgePadding, m_HoleEdgePadding, 0, 100);
 
             m_HealthyColor = EditorGUILayout.ColorField("Healthy Color", m_HealthyColor);

@@ -38,8 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static readonly string[] k_InfoBoxReadMoreUrl =
         {
-            "/Documentation/Manual/pack-prerelease.html",
-            "/Documentation/Manual/pack-experimental.html",
+            "/Documentation/Manual/pack-preview.html",
+            "/Documentation/Manual/pack-exp.html",
             "/Documentation/Manual/pack-releasecandidate.html",
             "/Documentation/Manual/upm-scoped.html"
         };
@@ -56,6 +56,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_Application;
         private PageManager m_PageManager;
         private PackageDatabase m_PackageDatabase;
+        private UpmCache m_UpmCache;
+
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -63,6 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = container.Resolve<ApplicationProxy>();
             m_PageManager = container.Resolve<PageManager>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_UpmCache = container.Resolve<UpmCache>();
         }
 
         private IPackage m_Package;
@@ -76,8 +79,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
+            m_PageManager.onVisualStateChange += OnVisualStateChange;
             detailAuthorLink.clickable.clicked += AuthorClick;
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
+            quickStart.clickable.clicked += ViewQuickStartClick;
         }
 
         public void Refresh(IPackage package, IPackageVersion version)
@@ -88,7 +93,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Package, m_Version);
 
+            UIUtils.SetElementDisplay(disabledWarningBox, version.HasTag(PackageTag.Disabled));
+
             RefreshName();
+            RefreshDependency();
             RefreshFeatureSetElements();
             RefreshAuthor();
             RefreshTags();
@@ -119,19 +127,43 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(hiddenAssetInfoBoxContainer, showHiddenInfoBox);
         }
 
-        private void RefreshFeatureSetElements()
+        private void RefreshFeatureSetElements(VisualState visualState = null)
         {
-            var featureSets = m_PackageDatabase.GetFeatureDependents(m_Package.versions.installed);
+            var featureSets = m_PackageDatabase.GetFeaturesThatUseThisPackage(m_Package.versions.installed);
             RefreshUsedInFeatureSetMessage(featureSets);
             RefreshFeatureSetDependentVersionDifferentInfoBox(featureSets);
-            RefreshLockIcons(featureSets);
+            RefreshLockIcons(featureSets, visualState);
+            RefreshQuickStart();
         }
 
-        private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets)
+        private void RefreshQuickStart()
         {
-            if (featureSets?.Any() == true)
+            var showQuickStartButton = m_Package.Is(PackageType.Feature) && !string.IsNullOrEmpty(UpmPackageDocs.GetQuickStartUrl(m_Version, m_UpmCache));
+            if (showQuickStartButton)
             {
-                var visualState = m_PageManager.GetVisualState(m_Package);
+                quickStart.Clear();
+                quickStart.Add(new VisualElement { classList = { "quickStartIcon" } });
+                quickStart.Add(new TextElement { text = L10n.Tr("QuickStart"), classList = { "quickStartText" } });
+            }
+            UIUtils.SetElementDisplay(quickStart, showQuickStartButton);
+        }
+
+        private void ViewQuickStartClick()
+        {
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetQuickStartUrl(m_Version, m_UpmCache), string.Empty, L10n.Tr("quick start documentation"), "viewQuickstart", m_Version, m_Package, m_Application);
+        }
+
+        private void RefreshDependency()
+        {
+            UIUtils.SetElementDisplay(dependencyContainer, m_Version.isInstalled && !m_Version.isDirectDependency && !m_Version.HasTag(PackageTag.Feature));
+        }
+
+        private void RefreshLockIcons(IEnumerable<IPackageVersion> featureSets, VisualState visualState = null)
+        {
+            var showLockedIcon = featureSets?.Any() == true;
+            if (showLockedIcon)
+            {
+                visualState = visualState ?? m_PageManager.GetVisualState(m_Package);
                 if (visualState?.isLocked == true)
                 {
                     lockedIcon.RemoveFromClassList("unlocked");
@@ -144,10 +176,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     lockedIcon.RemoveFromClassList("locked");
                     lockedIcon.tooltip = L10n.Tr("This package is unlocked. You can now change its version.");
                 }
-                UIUtils.SetElementDisplay(lockedIcon, true);
             }
-            else
-                UIUtils.SetElementDisplay(lockedIcon, false);
+            UIUtils.SetElementDisplay(lockedIcon, showLockedIcon);
+        }
+
+        private void OnVisualStateChange(IEnumerable<VisualState> visualStates)
+        {
+            var visualState = visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package.uniqueId);
+            if (visualState != null)
+                RefreshFeatureSetElements(visualState);
         }
 
         private static Button CreateLink(IPackageVersion version)
@@ -165,16 +202,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (featureSetsCount > 0)
             {
-                var element = new VisualElement {name = "usedInFeatureSetIconAndMessageContainer"};
-                var icon = new VisualElement {name = "featureSetIcon"};
+                // we don't want to see the dependency container when a package is installed as a feature dependency
+                UIUtils.SetElementDisplay(dependencyContainer, false);
+
+                var element = new VisualElement { name = "usedInFeatureSetIconAndMessageContainer" };
+                var icon = new VisualElement { name = "featureSetIcon" };
                 element.Add(icon);
 
                 var message = new Label {name = "usedInFeatureSetMessageLabel"};
-                message.text = string.Format(L10n.Tr("This {0} is installed as part of "), m_Package.GetDescriptor());
+                message.text = string.Format(L10n.Tr("is installed as part of the "), m_Package.GetDescriptor());
 
                 element.Add(message);
                 usedInFeatureSetMessageContainer.Add(element);
-
                 usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.FirstOrDefault()));
 
                 if (featureSetsCount > 2)
@@ -199,11 +238,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     usedInFeatureSetMessageContainer.Add(and);
                     usedInFeatureSetMessageContainer.Add(CreateLink(featureSets.LastOrDefault()));
-                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" Features.")));
+                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("features.")));
                 }
                 else
                 {
-                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr(" Feature.")));
+                    usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("feature.")));
                 }
             }
         }
@@ -212,13 +251,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var featureSetsCount = featureSets?.Count() ?? 0;
 
-            // if the installed version is the Feature Set version and the user is viewing a different version
+            // if the installed version is the feature set version and the user is viewing a different version
             if (featureSetsCount > 0 && m_Package?.versions.installed != null && m_Package.versions.installed.version == m_Package.versions.lifecycleVersion?.version
                 && m_Version != m_Package.versions.installed)
             {
                 featureSetDependentVersionDifferentInfoBox.text = featureSetsCount > 1 ?
-                    string.Format(L10n.Tr("This Package is part of the {0} Features, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the Features' performance."), string.Join(", ", featureSets.Select(f => f.displayName)), m_Package.versions.installed.versionString)
-                    : string.Format(L10n.Tr("This Package is part of the {0} Feature, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the Feature's performance."), featureSets.FirstOrDefault().displayName, m_Package.versions.installed.versionString);
+                    string.Format(L10n.Tr("This package is part of the {0} features, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the features' performance."), string.Join(", ", featureSets.Select(f => f.displayName)), m_Package.versions.installed.versionString)
+                    : string.Format(L10n.Tr("This package is part of the {0} feature, therefore we recommend keeping the version {1} installed. Changing to a different version may affect the feature's performance."), featureSets.FirstOrDefault().displayName, m_Package.versions.installed.versionString);
                 UIUtils.SetElementDisplay(featureSetDependentVersionDifferentInfoBox, true);
             }
             else
@@ -229,23 +268,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshAuthor()
         {
-            var showAuthorContainer = !string.IsNullOrEmpty(m_Version?.author);
-            UIUtils.SetElementDisplay(detailAuthorContainer, showAuthorContainer);
-            if (showAuthorContainer)
-            {
-                if (!string.IsNullOrEmpty(m_Version.authorLink))
-                {
-                    UIUtils.SetElementDisplay(detailAuthorText, false);
-                    UIUtils.SetElementDisplay(detailAuthorLink, true);
-                    detailAuthorLink.text = m_Version.author;
-                }
-                else
-                {
-                    UIUtils.SetElementDisplay(detailAuthorText, true);
-                    UIUtils.SetElementDisplay(detailAuthorLink, false);
-                    detailAuthorText.SetValueWithoutNotify(m_Version.author);
-                }
-            }
+            var showDetailAuthorLink = !string.IsNullOrEmpty(m_Version?.author) && !string.IsNullOrEmpty(m_Version.authorLink);
+            if (showDetailAuthorLink)
+                detailAuthorLink.text = m_Version.author;
+
+            UIUtils.SetElementDisplay(detailAuthorLink, showDetailAuthorLink);
         }
 
         private void RefreshTags()
@@ -253,7 +280,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var tag in k_VisibleTags)
             {
                 if (tag == PackageTag.Release && m_Version.HasTag(PackageTag.Feature) &&
-                    m_Version.dependencies.Any(dependency => !m_PackageDatabase.GetPackageInFeatureVersion(dependency.name).HasTag(PackageTag.Release)))
+                    (m_Version.dependencies == null || m_Version.dependencies.Any(dependency => m_PackageDatabase.GetPackageInFeatureVersion(dependency.name)?.HasTag(PackageTag.Release) != true)))
                     UIUtils.SetElementDisplay(GetTagLabel(PackageTag.Release.ToString()), false);
                 else
                     UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), m_Version.HasTag(tag));
@@ -277,7 +304,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var authorLink = m_Version?.authorLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
+            {
                 m_Application.OpenURL(authorLink);
+                PackageManagerWindowAnalytics.SendEvent("viewAuthorLink", m_Version?.uniqueId);
+            }
         }
 
         private void RefreshEntitlement()
@@ -298,8 +328,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var releaseDateString = m_Version.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
             detailVersion.SetValueWithoutNotify(string.IsNullOrEmpty(releaseDateString)
-                ? string.Format(L10n.Tr("Version {0}"), versionString)
-                : string.Format(L10n.Tr("Version {0} - {1}"), versionString, releaseDateString));
+                ? versionString
+                : string.Format(L10n.Tr("{0} · {1}"), versionString, releaseDateString));
         }
 
         private void RefreshVersionInfoIcon()
@@ -329,7 +359,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
             // then that package is not considered part of the Unity Editor "product" and we need to let users know.
             var unityVersionString = m_Application.unityVersion;
-            if (!m_Package.versions.hasLifecycleVersion && m_Package.Is(PackageType.Unity))
+            if (!m_Package.versions.hasLifecycleVersion && m_Package.Is(PackageType.Unity) && !m_Package.Is(PackageType.BuiltIn))
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
@@ -360,20 +390,32 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var registry = m_Version.registry;
             var showRegistry = registry != null;
-            UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
+            UIUtils.SetElementDisplay(detailRegistry, showRegistry);
+            UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
             if (showRegistry)
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-                if (!m_Version.packageInfo.versions.all.Any())
+
+                var detailRegistryName = L10n.Tr("Unknown");
+                detailRegistry.tooltip = string.Empty;
+                if (m_Version.packageInfo.versions.all.Any())
                 {
-                    detailRegistryName.text = L10n.Tr("Unknown");
-                    detailRegistryName.tooltip = string.Empty;
+                    detailRegistryName = registry.isDefault ? "Unity Technologies Inc." : registry.name;
+                    detailRegistry.tooltip = registry.url;
+                }
+
+                detailRegistry.enableRichText = true;
+                if (registry.isDefault)
+                {
+                    detailRegistry.text = string.Format(L10n.Tr("From <b>Unity Registry</b> by {0}"), detailRegistryName);
                 }
                 else
                 {
-                    detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
-                    detailRegistryName.tooltip = registry.url;
+                    if (!string.IsNullOrEmpty(m_Version?.author))
+                        detailRegistry.text = L10n.Tr($"From <b>{detailRegistryName}</b> by {m_Version?.author}");
+                    else
+                        detailRegistry.text = L10n.Tr($"From <b>{detailRegistryName}</b>");
                 }
             }
             if (m_Version.HasTag(PackageTag.Experimental))
@@ -419,22 +461,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private SelectableLabel detailName => cache.Get<SelectableLabel>("detailName");
 
-        private VisualElement detailAuthorContainer => cache.Get<VisualElement>("detailAuthorContainer");
-        private SelectableLabel detailAuthorText => cache.Get<SelectableLabel>("detailAuthorText");
         private Button detailAuthorLink => cache.Get<Button>("detailAuthorLink");
 
         private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
 
         internal PackageTagLabel GetTagLabel(string tag) => cache.Get<PackageTagLabel>("tag" + tag);
 
-        private VisualElement detailRegistryContainer => cache.Get<VisualElement>("detailRegistryContainer");
+        private Label detailRegistry => cache.Get<Label>("detailRegistry");
         private HelpBox scopedRegistryInfoBox => cache.Get<HelpBox>("scopedRegistryInfoBox");
-        private Label detailRegistryName => cache.Get<Label>("detailRegistryName");
+        private Button quickStart => cache.Get<Button>("quickStart");
 
         private VisualElement usedInFeatureSetMessageContainer => cache.Get<VisualElement>("usedInFeatureSetMessageContainer");
+        private VisualElement dependencyContainer => cache.Get<VisualElement>("dependencyContainer");
         private HelpBox featureSetDependentVersionDifferentInfoBox => cache.Get<HelpBox>("featureSetDependentVersionDifferentInfoBox");
         private VisualElement lockedIcon => cache.Get<VisualElement>("lockedIcon");
         private HelpBox embeddedFeatureSetWarningBox => cache.Get<HelpBox>("embeddedFeatureSetWarningBox");
         private VisualElement hiddenAssetInfoBoxContainer => cache.Get<VisualElement>("hiddenAssetInfoBoxContainer");
+        private HelpBox disabledWarningBox => cache.Get<HelpBox>("disabledWarningBox");
     }
 }

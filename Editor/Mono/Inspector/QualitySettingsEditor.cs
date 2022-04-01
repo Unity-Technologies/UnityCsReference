@@ -31,6 +31,7 @@ namespace UnityEditor
             public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
             public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
+            public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
             public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Where the maximum possible texture mip resolution for a platform is less than full, enabling Texture MipMap Stripping in Player Settings can reduce the package size.");
 
             public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
@@ -411,7 +412,7 @@ namespace UnityEditor
                 return;
 
             RenderingPath renderPath = mainCamera.actualRenderingPath;
-            if (renderPath == RenderingPath.DeferredLighting || renderPath == RenderingPath.DeferredShading)
+            if (renderPath == RenderingPath.DeferredShading)
                 return; // using deferred, all is good
 
             if ((mainCamera.depthTextureMode & DepthTextureMode.Depth) != 0)
@@ -522,6 +523,7 @@ namespace UnityEditor
             var vSyncCountProperty = currentSettings.FindPropertyRelative("vSyncCount");
             var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
             var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
+            var enableLODCrossFadeProperty = currentSettings.FindPropertyRelative("enableLODCrossFade");
             var particleRaycastBudgetProperty = currentSettings.FindPropertyRelative("particleRaycastBudget");
             var asyncUploadTimeSliceProperty = currentSettings.FindPropertyRelative("asyncUploadTimeSlice");
             var asyncUploadBufferSizeProperty = currentSettings.FindPropertyRelative("asyncUploadBufferSize");
@@ -545,7 +547,10 @@ namespace UnityEditor
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
-            RenderPipelineAssetSelector.Draw(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
+            EditorGUI.RenderPipelineAssetField(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
+            if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
+                EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
+
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 
@@ -661,6 +666,8 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
             if (!SupportedRenderingFeatures.active.overridesMaximumLODLevel)
                 EditorGUILayout.PropertyField(maximumLODLevelProperty, Content.kMaximumLODLevelLabel);
+            if (!SupportedRenderingFeatures.active.overridesEnableLODCrossFade)
+                EditorGUILayout.PropertyField(enableLODCrossFadeProperty, Content.kEnableLODCrossFadeLabel);
 
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Meshes"), EditorStyles.boldLabel);

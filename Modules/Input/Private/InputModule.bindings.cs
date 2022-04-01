@@ -49,17 +49,13 @@ namespace UnityEngineInternal.Input
         {
         }
 
-        [StaticAccessor("InputModuleBindings::Android", StaticAccessorType.DoubleColon)]
-        internal class Android
-        {
-            /// <summary>
-            /// Allows processing of input events from null devices.
-            /// Events coming from Android's instrumentation will sometimes have MotionEvent.GetDevice return null. For ex., happens on NVIDIA Shield
-            /// Primary usage are tests, where we want our events to be handled.
-            /// By default, this behavior is disabled, since Gear VR expects Unity to ignore such events.
-            /// </summary>
-            [NativeProperty("AllowNullInputDevices")]
-            internal static extern bool allowNullDevices { get; set; }
-        }
+        /// <summary>
+        /// Allows creation of input devices from events.
+        /// Primarily used by input simulation package (on Android and Windows), where we can send the simulated events.
+        /// Input simulation package doesn't create input devices, thus we must ask backend to created those when required.
+        /// By default, such behavior is disabled, since for ex., on Android Gear VR expects Unity to ignore such events.
+        /// </summary>
+        [NativeProperty("AllowInputDeviceCreationFromEvents")]
+        internal static extern bool allowInputDeviceCreationFromEvents { get; set; }
     }
 }

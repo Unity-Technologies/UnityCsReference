@@ -8,11 +8,17 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageDatabase m_PackageDatabase;
-        public PackageResumeDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager,
-                                           PackageDatabase packageDatabase)
+        private bool m_IsIconButton;
+        public PackageResumeDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase, bool isIconButton = false)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
+            m_IsIconButton = isIconButton;
+            if (isIconButton)
+            {
+                element.AddToClassList("resumeIcon");
+                element.AddToClassList("icon");
+            }
         }
 
         protected override bool TriggerAction(IPackageVersion version)
@@ -38,10 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Format(L10n.Tr("Click to resume the download of this {0}."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(IPackageVersion version, bool isInProgress)
-        {
-            return L10n.Tr("Resume");
-        }
+        protected override string GetText(IPackageVersion version, bool isInProgress) => m_IsIconButton ? string.Empty : L10n.Tr("Resume");
 
         protected override bool IsInProgress(IPackageVersion version) => m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.state == DownloadState.ResumeRequested;
     }

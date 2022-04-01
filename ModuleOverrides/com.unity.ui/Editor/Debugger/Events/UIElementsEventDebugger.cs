@@ -470,7 +470,7 @@ namespace UnityEditor.UIElements.Debugger
             m_EventsLog = (ListView)rootVisualElement.MandatoryQ("eventsLog");
             m_EventsLog.focusable = true;
             m_EventsLog.selectionType = SelectionType.Multiple;
-            m_EventsLog.onSelectionChange += OnEventsLogSelectionChanged;
+            m_EventsLog.selectionChanged += OnEventsLogSelectionChanged;
             m_EventsLog.RegisterCallback<FocusOutEvent>(OnListFocusedOut, TrickleDown.TrickleDown);
 
             m_DisplayHistogramAverageEnum = rootVisualElement.MandatoryQ<EnumField>("eventsHistogramDurationType");

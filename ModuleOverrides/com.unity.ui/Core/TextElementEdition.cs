@@ -71,7 +71,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal ITextEdition edition => this;
 
-        internal TextEditingManipulator m_EditingManipulator;
+        internal TextEditingManipulator editingManipulator;
 
         bool m_Multiline;
 
@@ -82,8 +82,8 @@ namespace UnityEngine.UIElements
             {
                 if (value != m_Multiline)
                 {
-                    if (isSelectable)
-                        m_SelectingManipulator.m_SelectingUtilities.multiline = value;
+                    if (selection.isSelectable)
+                        selectingManipulator.m_SelectingUtilities.multiline = value;
                     m_Multiline = value;
                 }
             }
@@ -99,14 +99,7 @@ namespace UnityEngine.UIElements
                 if (value == m_IsReadOnly)
                     return;
 
-                if (!value)
-                {
-                    isSelectable = true;
-                    m_EditingManipulator = new TextEditingManipulator(this);
-                }
-                else
-                    m_EditingManipulator = null;
-
+                editingManipulator = value ? null : new TextEditingManipulator(this);
                 m_IsReadOnly = value;
             }
         }
@@ -169,7 +162,7 @@ namespace UnityEngine.UIElements
 
         DropdownMenuAction.Status PasteActionStatus(DropdownMenuAction a)
         {
-            var canPaste = m_EditingManipulator.editingUtilities.CanPaste();
+            var canPaste = editingManipulator.editingUtilities.CanPaste();
             return enabledInHierarchy
                 ? canPaste ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
                 : DropdownMenuAction.Status.Hidden;
@@ -179,16 +172,17 @@ namespace UnityEngine.UIElements
         [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
             typeof(KeyDownEvent), typeof(KeyUpEvent), typeof(FocusEvent), typeof(BlurEvent),
             typeof(MouseUpEvent), typeof(MouseDownEvent), typeof(MouseMoveEvent), typeof(ValidateCommandEvent),
-            typeof(ExecuteCommandEvent), typeof(PointerDownEvent), typeof(PointerUpEvent))]
+            typeof(ExecuteCommandEvent), typeof(PointerDownEvent), typeof(PointerUpEvent),
+            typeof(NavigationCancelEvent), typeof(NavigationSubmitEvent), typeof(NavigationMoveEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            if (isSelectable)
+            if (selection.isSelectable)
             {
                 // Selecting is currently not supported with softKeyboard.
-                if (!m_EditingManipulator?.touchScreenTextField ?? true)
-                    m_SelectingManipulator.ExecuteDefaultActionAtTarget(evt);
+                if (!editingManipulator?.touchScreenTextField ?? true)
+                    selectingManipulator.ExecuteDefaultActionAtTarget(evt);
                 if (!edition.isReadOnly)
-                    m_EditingManipulator?.ExecuteDefaultActionAtTarget(evt);
+                    editingManipulator?.ExecuteDefaultActionAtTarget(evt);
                 elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())

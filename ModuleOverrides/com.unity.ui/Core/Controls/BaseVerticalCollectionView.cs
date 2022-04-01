@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -106,34 +107,46 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback triggered when a user double-clicks an item to activate it. This is different from selecting the item.
+        /// Callback triggered when the user acts on a selection of one or more items, for example by double-clicking or pressing Enter.
         /// </summary>
-        [Obsolete("onItemChosen is deprecated, use onItemsChosen instead", true)]
-#pragma warning disable 67
-        public event Action<object> onItemChosen;
-#pragma warning restore 67
+        /// <remarks>
+        /// This callback receives an enumerable that contains the item or items chosen.
+        /// </remarks>
+        [Obsolete("onItemsChosen is deprecated, use itemsChosen instead", false)]
+        public event Action<IEnumerable<object>> onItemsChosen
+        {
+            add => itemsChosen += value;
+            remove => itemsChosen -= value;
+        }
+
         /// <summary>
         /// Callback triggered when the user acts on a selection of one or more items, for example by double-clicking or pressing Enter.
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items chosen.
         /// </remarks>
-        public event Action<IEnumerable<object>> onItemsChosen;
+        public event Action<IEnumerable<object>> itemsChosen;
 
-        /// <summary>
-        /// Callback triggered when the selection changes.
-        /// </summary>
-        [Obsolete("onSelectionChanged is deprecated, use onSelectionChange instead", true)]
-#pragma warning disable 67
-        public event Action<List<object>> onSelectionChanged;
-#pragma warning restore 67
         /// <summary>
         /// Callback triggered when the selection changes.
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items selected.
         /// </remarks>
-        public event Action<IEnumerable<object>> onSelectionChange;
+        [Obsolete("onSelectionChange is deprecated, use selectionChanged instead", false)]
+        public event Action<IEnumerable<object>> onSelectionChange
+        {
+            add => selectionChanged += value;
+            remove => selectionChanged -= value;
+        }
+
+        /// <summary>
+        /// Callback triggered when the selection changes.
+        /// </summary>
+        /// <remarks>
+        /// This callback receives an enumerable that contains the item or items selected.
+        /// </remarks>
+        public event Action<IEnumerable<object>> selectionChanged;
 
         /// <summary>
         /// Callback triggered when the selection changes.
@@ -141,7 +154,20 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This callback receives an enumerable that contains the item index or item indices selected.
         /// </remarks>
-        public event Action<IEnumerable<int>> onSelectedIndicesChange;
+        [Obsolete("onSelectedIndicesChange is deprecated, use selectedIndicesChanged instead", false)]
+        public event Action<IEnumerable<int>> onSelectedIndicesChange
+        {
+            add => selectedIndicesChanged += value;
+            remove => selectedIndicesChanged -= value;
+        }
+
+        /// <summary>
+        /// Callback triggered when the selection changes.
+        /// </summary>
+        /// <remarks>
+        /// This callback receives an enumerable that contains the item index or item indices selected.
+        /// </remarks>
+        public event Action<IEnumerable<int>> selectedIndicesChanged;
 
         /// <summary>
         /// Called when an item is moved in the itemsSource.
@@ -778,7 +804,7 @@ namespace UnityEngine.UIElements
         void OnItemIndexChanged(int srcIndex, int dstIndex)
         {
             itemIndexChanged?.Invoke(srcIndex, dstIndex);
-            if (binding == null)
+            if (!(binding is IInternalListViewBinding))
                 RefreshItems();
             else
                 schedule.Execute(RefreshItems).ExecuteLater(100);
@@ -813,12 +839,15 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void RefreshItems()
         {
-            if (m_ViewController == null)
-                return;
+            using (new ProfilerMarker("BaseVerticalCollectionView.RefreshItems").Auto())
+            {
+                if (m_ViewController == null)
+                    return;
 
-            RefreshSelection();
-            virtualizationController.Refresh(false);
-            PostRefresh();
+                RefreshSelection();
+                virtualizationController.Refresh(false);
+                PostRefresh();
+            }
         }
 
         [Obsolete("Refresh() has been deprecated. Use Rebuild() instead. (UnityUpgradable) -> Rebuild()", false)]
@@ -835,12 +864,15 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void Rebuild()
         {
-            if (m_ViewController == null)
-                return;
+            using (new ProfilerMarker("BaseVerticalCollectionView.Rebuild").Auto())
+            {
+                if (m_ViewController == null)
+                    return;
 
-            RefreshSelection();
-            virtualizationController.Refresh(true);
-            PostRefresh();
+                RefreshSelection();
+                virtualizationController.Refresh(true);
+                PostRefresh();
+            }
         }
 
         private void RefreshSelection()
@@ -964,8 +996,8 @@ namespace UnityEngine.UIElements
         }
 
         // TODO: make private. This doesn't need to be in the public API. Unit tests can be implemented with SendEvent.
-        // Obsoleted for 2021.2. We can obsolete completely in the next version.
-        [Obsolete("OnKeyDown is obsolete and will be removed from ListView. Use the event system instead, i.e. SendEvent(EventBase e).", false)]
+        // Obsoleted as error for 2022.2. We can remove completely in the next version.
+        [Obsolete("OnKeyDown is obsolete and will be removed from ListView. Use the event system instead, i.e. SendEvent(EventBase e).", true)]
         public void OnKeyDown(KeyDownEvent evt)
         {
             m_NavigationManipulator.OnKeyDown(evt);
@@ -973,7 +1005,7 @@ namespace UnityEngine.UIElements
 
         private bool Apply(KeyboardNavigationOperation op, bool shiftKey)
         {
-            if (!HasValidDataAndBindings())
+            if (selectionType == SelectionType.None || !HasValidDataAndBindings())
             {
                 return false;
             }
@@ -1004,7 +1036,7 @@ namespace UnityEngine.UIElements
                     ClearSelection();
                     return true;
                 case KeyboardNavigationOperation.Submit:
-                    onItemsChosen?.Invoke(m_SelectedItems);
+                    itemsChosen?.Invoke(m_SelectedItems);
                     ScrollToItem(selectedIndex);
                     return true;
                 case KeyboardNavigationOperation.Previous:
@@ -1170,13 +1202,13 @@ namespace UnityEngine.UIElements
             if (clickedIndex > viewController.itemsSource.Count - 1)
                 return;
 
+            if (selectionType == SelectionType.None)
+                return;
+
             var clickedItemId = viewController.GetIdForIndex(clickedIndex);
             switch (clickCount)
             {
                 case 1:
-                    if (selectionType == SelectionType.None)
-                        return;
-
                     if (selectionType == SelectionType.Multiple && actionKey)
                     {
                         // Add/remove single clicked element
@@ -1208,12 +1240,12 @@ namespace UnityEngine.UIElements
 
                     break;
                 case 2:
-                    if (onItemsChosen != null)
+                    if (itemsChosen != null)
                     {
                         ProcessSingleClick(clickedIndex);
                     }
 
-                    onItemsChosen?.Invoke(m_SelectedItems);
+                    itemsChosen?.Invoke(m_SelectedItems);
                     break;
             }
         }
@@ -1401,8 +1433,8 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            onSelectionChange?.Invoke(m_SelectedItems);
-            onSelectedIndicesChange?.Invoke(m_SelectedIndices);
+            selectionChanged?.Invoke(m_SelectedItems);
+            selectedIndicesChanged?.Invoke(m_SelectedIndices);
         }
 
         /// <summary>
@@ -1452,27 +1484,7 @@ namespace UnityEngine.UIElements
             // and set it back in Setup().
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
-                m_LastFocusedElementTreeChildIndexes.Clear();
-                var target = evt.leafTarget as VisualElement;
-
-                if (m_ScrollView.contentContainer.FindElementInTree(target, m_LastFocusedElementTreeChildIndexes))
-                {
-                    var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
-                    foreach (var recycledItem in activeItems)
-                    {
-                        if (recycledItem.rootElement == recycledElement)
-                        {
-                            m_LastFocusedElementIndex = recycledItem.index;
-                            break;
-                        }
-                    }
-
-                    m_LastFocusedElementTreeChildIndexes.RemoveAt(0);
-                }
-                else
-                {
-                    m_LastFocusedElementIndex = -1;
-                }
+                m_VirtualizationController?.OnFocus(evt.leafTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {
@@ -1481,21 +1493,6 @@ namespace UnityEngine.UIElements
                     m_ScrollView.contentContainer.Focus();
                 }
             }
-        }
-
-        // Used to store the focused element to enable scrolling without losing it.
-        int m_LastFocusedElementIndex = -1;
-        List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
-
-        internal void HandleFocus(ReusableCollectionItem recycledItem)
-        {
-            if (m_LastFocusedElementIndex == -1)
-                return;
-
-            if (m_LastFocusedElementIndex == recycledItem.index)
-                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Focus();
-            else
-                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Blur();
         }
 
         private void OnSizeChanged(GeometryChangedEvent evt)

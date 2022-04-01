@@ -9,7 +9,7 @@ namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
-        private class TypeData
+        internal class TypeData
         {
             public Type type { get; }
 
@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
 
             private string m_FullTypeName = string.Empty;
             private string m_TypeName = string.Empty;
+            private string m_TypeNamespace = string.Empty;
 
             public string fullTypeName
             {
@@ -53,6 +54,26 @@ namespace UnityEngine.UIElements
                     return m_TypeName;
                 }
             }
+            public string typeNamespace
+            {
+                get
+                {
+                    if (string.IsNullOrEmpty(m_TypeNamespace))
+                        m_TypeNamespace = type.Namespace;
+                    return m_TypeNamespace;
+                }
+            }
+        }
+
+        internal static TypeData GetOrCreateTypeData(Type t)
+        {
+            if (!s_TypeData.TryGetValue(t, out var data))
+            {
+                data = new TypeData(t);
+                s_TypeData.Add(t, data);
+            }
+
+            return data;
         }
 
         private static readonly Dictionary<Type, TypeData> s_TypeData = new Dictionary<Type, TypeData>();

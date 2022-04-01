@@ -22,9 +22,8 @@ namespace UnityEditor
         const float k_HeaderLeftMargin = 6;
         const float k_NoOverridesLabelHeight = 26f;
         const float k_UnusedOverridesButtonHeight = 26f;
-        const float k_ApplyButtonHeight = 36f;
-        const float k_HelpBoxHeight = 40f;
         const float k_RowPadding = 6;
+        float m_ApplyButtonHeight = 0;
         GameObject[] m_SelectedGameObjects = null;
 
         // TreeView not used when there are multiple Prefabs.
@@ -53,8 +52,8 @@ namespace UnityEditor
             public static GUIContent revertSelectedContent = EditorGUIUtility.TrTextContent("Revert Selected", "Revert selected overrides.");
             public static GUIContent applyAllContent = EditorGUIUtility.TrTextContent("Apply All", "Apply all overrides to Prefab source '{0}'.");
             public static GUIContent applySelectedContent = EditorGUIUtility.TrTextContent("Apply Selected", "Apply selected overrides to Prefab source '{0}'.");
-            public static GUIContent applyAllToBaseContent = EditorGUIUtility.TrTextContent("Apply All to Base", "Apply all overrides to base Prefab source '{0}'.");
-            public static GUIContent applySelectedToBaseContent = EditorGUIUtility.TrTextContent("Apply Selected to Base", "Apply selected overrides to base Prefab source '{0}'.");
+            public static GUIContent applyAllToBaseContent = EditorGUIUtility.TrTextContent("Apply All to Prefab Variant parent", "Apply all overrides to Prefab Variant parent '{0}'.");
+            public static GUIContent applySelectedToBaseContent = EditorGUIUtility.TrTextContent("Apply Selected to Prefab Variant parent", "Apply selected overrides to Prefab Variant parent '{0}'.");
             public static GUIContent titleLabelDefault = EditorGUIUtility.TrTextContent("Review, Revert or Apply Overrides");
             public static GUIContent titleLabelNoApply = EditorGUIUtility.TrTextContent("Review or Revert Overrides");
             public static GUIContent noOverridesText = EditorGUIUtility.TrTextContent("No overrides");
@@ -62,7 +61,8 @@ namespace UnityEditor
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("in");
             public static GUIContent removeUnusedOverridesButtonContent = EditorGUIUtility.TrTextContentWithIcon("Unused overrides", EditorGUIUtility.LoadIcon("Clear"));
 
-            public static string nonApplicableTooltip = L10n.Tr("There are no overrides that can be applied to Prefab source '{0}'.");
+            public static string nonApplicableTooltipApply = L10n.Tr("There are no overrides that can be applied to Prefab source '{0}'.");
+            public static string nonApplicableTooltipRevert = L10n.Tr("There are no overrides that can be reverted.");
 
             public static GUIContent infoMultiple = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.");
             public static GUIContent infoMultipleNoApply = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.");
@@ -116,17 +116,17 @@ namespace UnityEditor
 
         public override void OnOpen()
         {
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
             base.OnOpen();
         }
 
         public override void OnClose()
         {
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
             base.OnClose();
         }
 
-        void OnUndoRedoPerformed()
+        void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             RefreshStatus();
         }
@@ -159,15 +159,6 @@ namespace UnityEditor
                 UpdateTextSingle(PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[0]));
             else
                 UpdateTextMultiple();
-
-            // There are a few cases where the Tree View reports no overrides even though
-            // PrefabUtility.HasPrefabInstanceAnyOverrides says there are; for example if
-            // a component has been removed on an instance, but also removed on the Asset.
-            // In these cases we want to make the UI not show apply/revert buttons,
-            // since it's confusing and inconsistent to have those when the view says
-            // "No overrides". Case 1197800.
-            if (m_TreeView != null && !m_TreeView.hasModifications)
-                m_AnyOverrides = false;
 
             m_UnusedOverridesExist = PrefabUtility.HavePrefabInstancesUnusedOverrides(m_SelectedGameObjects);
         }
@@ -211,11 +202,6 @@ namespace UnityEditor
             return m_SelectedGameObjects.Length > 1;
         }
 
-        bool DisplayingTreeView()
-        {
-            return m_AnyOverrides && !HasMultiSelection();
-        }
-
         bool IsShowingApplyWarning()
         {
             return
@@ -227,49 +213,83 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
+            return CalculateWindowSize();
+        }
+
+        Vector2 CalculateWindowSize()
+        {
             const float k_MaxAllowedTreeViewWidth = 1800f;
             const float k_MaxAllowedTreeViewHeight = 1000f;
             var width = 300f;
             var height = k_HeaderHeight;
 
+            // Match the call order as in OnGUI() to ensure the correct height is calculated
+
             if (!IsShowingActionButton())
             {
-                if (!IsShowingUnusedOverridesButton())
+                if (IsShowingUnusedOverridesButton())
+                    height += k_UnusedOverridesButtonHeight;
+                else
                     height += k_NoOverridesLabelHeight;
+
+                return new Vector2(width, height);
+            }
+
+            if (HasMultiSelection())
+            {
+                if (m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset || m_InvalidComponentOnInstance || m_ModelPrefab || m_Immutable)
+                    height += CalcHeightForHelpBox(Styles.infoMultipleNoApply, MessageType.Info, width);
+                else
+                    height += CalcHeightForHelpBox(Styles.infoMultiple, MessageType.Info, width);
+
+                if (m_UnusedOverridesExist)
+                    height += k_UnusedOverridesButtonHeight + k_RowPadding;
+                else
+                    height += 2;
             }
             else
             {
-                if (DisplayingTreeView())
+                height += k_TreeViewPadding.top;
+                if (m_TreeView.hasModifications)
                 {
-                    height += k_TreeViewPadding.top + Mathf.Min(k_MaxAllowedTreeViewHeight, m_TreeView.totalHeight) + k_TreeViewPadding.bottom;
+                    height += Mathf.Min(k_MaxAllowedTreeViewHeight, m_TreeView.totalHeight);
                     width = Mathf.Max(Mathf.Min(m_TreeView.maxItemWidth, k_MaxAllowedTreeViewWidth), width);
                 }
-                else
+
+                if (m_AnyOverrides)
                 {
-                    if (!m_AnyOverrides)
-                        height += k_NoOverridesLabelHeight;
-                    else if (IsShowingUnusedOverridesButton())
-                        height += k_HelpBoxHeight - 8;
-                    else
-                        height += k_HelpBoxHeight - 6;
+                    if (m_UnusedOverridesExist)
+                        height += k_UnusedOverridesButtonHeight + k_RowPadding;
+
+                    if (m_ModelPrefab)
+                        height += CalcHeightForHelpBox(Styles.infoModel, MessageType.Info, width);
                 }
 
-                height += k_ApplyButtonHeight;
-
                 if (IsShowingApplyWarning())
-                    height += k_HelpBoxHeight; // A second help box in this case.
+                {
+                    if (m_InvalidComponentOnAsset)
+                        height += CalcHeightForHelpBox(Styles.warningInvalidAsset, MessageType.Warning, width);
+                    else if (m_InvalidComponentOnInstance)
+                        height += CalcHeightForHelpBox(Styles.warningInvalidInstance, MessageType.Warning, width);
+                    else if (m_HasManagedReferencesWithMissingTypesOnAsset)
+                        height += CalcHeightForHelpBox(Styles.warningHasManagedReferencesWithMissingTypes, MessageType.Warning, width);
+                    else if (m_Immutable)
+                        height += CalcHeightForHelpBox(Styles.warningImmutable, MessageType.Warning, width);
+                }
             }
 
-            if (IsShowingUnusedOverridesButton())
-            {
-                height += k_UnusedOverridesButtonHeight;
-                if (IsShowingActionButton())
-                    height += k_RowPadding;
-            }
+            if (m_ApplyButtonHeight == 0)
+                m_ApplyButtonHeight = GUI.skin.button.CalcHeight(Styles.applySelectedContent, width) + GUI.skin.button.margin.top + GUI.skin.button.margin.bottom;
 
-            // Width should be no smaller than minimum width, but we could potentially improve
-            // width handling by making it expand if needed based on tree view content.
+            height += m_ApplyButtonHeight + k_RowPadding;
+
             return new Vector2(width, height);
+        }
+
+        float CalcHeightForHelpBox(GUIContent content, MessageType messageType, float width)
+        {
+            var tempContent = EditorGUIUtility.TempContent(content.text, EditorGUIUtility.GetHelpIcon(messageType));
+            return EditorStyles.helpBox.CalcHeight(tempContent, width) + EditorStyles.helpBox.margin.top + EditorStyles.helpBox.margin.bottom;
         }
 
         Color headerBgColor { get { return EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f, 0.2f) : new Color(0.9f, 0.9f, 0.9f, 0.6f); } }
@@ -356,11 +376,14 @@ namespace UnityEditor
             {
                 GUILayout.Space(k_TreeViewPadding.top);
 
-                if (m_AnyOverrides)
+                if (m_TreeView.hasModifications)
                 {
                     Rect treeViewRect = GUILayoutUtility.GetRect(100, 10000, 0, 10000);
                     m_TreeView.OnGUI(treeViewRect);
+                }
 
+                if (m_AnyOverrides)
+                {
                     if (m_UnusedOverridesExist)
                     {
                         DrawUnusedOverridesButton();
@@ -380,9 +403,9 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(Styles.warningInvalidAsset.text, MessageType.Warning);
                     else if (m_InvalidComponentOnInstance)
                         EditorGUILayout.HelpBox(Styles.warningInvalidInstance.text, MessageType.Warning);
-                    if (m_HasManagedReferencesWithMissingTypesOnAsset)
+                    else if (m_HasManagedReferencesWithMissingTypesOnAsset)
                         EditorGUILayout.HelpBox(Styles.warningHasManagedReferencesWithMissingTypes.text, MessageType.Warning);
-                    else
+                    else if (m_Immutable)
                         EditorGUILayout.HelpBox(Styles.warningImmutable.text, MessageType.Warning);
                 }
             }
@@ -453,6 +476,17 @@ namespace UnityEditor
         {
             Rect buttonRect = GUILayoutUtility.GetRect(100, 10000, k_NoOverridesLabelHeight, k_NoOverridesLabelHeight);
 
+            var isHovered = buttonRect.Contains(UnityEngine.Event.current.mousePosition);
+            if (isHovered)
+            {
+                GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(buttonRect));
+
+                using (new GUI.BackgroundColorScope(GameObjectStyles.hoveredBackgroundColor))
+                {
+                    GUI.Label(buttonRect, GUIContent.none, GameObjectStyles.hoveredItemBackgroundStyle);
+                }
+            }
+
             if (Event.current.type == EventType.Repaint)
             {
                 if (UnusedOverridesViewPopup.s_IsOpen)
@@ -465,17 +499,6 @@ namespace UnityEditor
                 EditorGUI.DrawRect(buttonBorder, horizontalLineColor);// Lower border.
 
                 Styles.removeOverridesButtonLineStyle.Draw(buttonRect, Styles.removeUnusedOverridesButtonContent, false, false, UnusedOverridesViewPopup.s_IsOpen, true);
-            }
-
-            var isHovered = buttonRect.Contains(UnityEngine.Event.current.mousePosition);
-            if (isHovered)
-            {
-                GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(buttonRect));
-
-                using (new GUI.BackgroundColorScope(GameObjectStyles.hoveredBackgroundColor))
-                {
-                    GUI.Label(buttonRect, GUIContent.none, GameObjectStyles.hoveredItemBackgroundStyle);
-                }
             }
 
             if (GUI.Button(buttonRect, GUIContent.none, GUIStyle.none))
@@ -621,18 +644,24 @@ namespace UnityEditor
 
             m_ButtonWidth = k_ButtonWidth;
             var applyAllContent = new GUIContent(Styles.applyAllContent);
+            var revertAllContent = new GUIContent(Styles.revertAllContent);
             var applySelectedContent = Styles.applySelectedContent;
             if (stage is PrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.assetPath)))
             {
                 m_ButtonWidth = k_ButtonWidthVariant;
                 applyAllContent = Styles.applyAllToBaseContent;
                 applySelectedContent = Styles.applySelectedToBaseContent;
+
             }
 
             if (!m_HasApplicableOverrides)
-                applyAllContent.tooltip = Styles.nonApplicableTooltip;
+            {
+                applyAllContent.tooltip = Styles.nonApplicableTooltipApply;
+                revertAllContent.tooltip = Styles.nonApplicableTooltipRevert;
+            }
 
             m_ApplyAllContent = new GUIContent(applyAllContent.text, string.Format(applyAllContent.tooltip, assetName));
+            m_RevertAllContent = new GUIContent(revertAllContent.text, revertAllContent.tooltip);
             m_ApplySelectedContent.text = applySelectedContent.text;
             m_ApplySelectedContent.tooltip = string.Format(applySelectedContent.tooltip, assetName);
         }
@@ -665,6 +694,8 @@ namespace UnityEditor
             public static GUIContent editorLogHint = EditorGUIUtility.TrTextContent("Details will be written to the Editor log.");
             public static GUIContent buttonContent = EditorGUIUtility.TrTextContent("Remove");
             public static GUIContent headerContent = EditorGUIUtility.TrTextContent("{0} unused overrides");
+            public static GUIContent unusedRemovedComponentsContentSingular = EditorGUIUtility.TrTextContent("{0} has 1 unused removed component");
+            public static GUIContent unusedRemovedComponentsContentPlural = EditorGUIUtility.TrTextContent("{0} has {1} unused removed components");
             public static GUIContent headerContentSingular = EditorGUIUtility.TrTextContent("1 unused override");
             public static GUIContent extraOverridesContent = EditorGUIUtility.TrTextContent("and {0} others");
             public static GUIContent extraInstancesContent = EditorGUIUtility.TrTextContent("on {0} instances");
@@ -702,6 +733,7 @@ namespace UnityEditor
         int m_AffectedInstanceCount = 0;
         int m_UnusedOverridesCount = 0;
         int m_UsedOverridesCount = 0;
+        int m_UnusedRemovedComponentsCount = 0;
 
         public UnusedOverridesViewPopup(GameObject[] selectedGameObjects, PrefabOverridesWindow owner)
         {
@@ -804,12 +836,13 @@ namespace UnityEditor
             {
                 foreach (PrefabUtility.InstanceOverridesInfo instanceMods in m_InstanceOverridesInfos)
                 {
-                    if (!instanceMods.unusedMods.Any())
+                    if (!instanceMods.unusedMods.Any() && instanceMods.unusedRemovedComponentCount == 0)
                         continue;
 
                     m_AffectedInstanceCount++;
                     m_UnusedOverridesCount += instanceMods.unusedMods.Length;
                     m_UsedOverridesCount += instanceMods.usedMods.Length;
+                    m_UnusedRemovedComponentsCount += instanceMods.unusedRemovedComponentCount;
                     m_SingleInstanceWithUnusedMods = instanceMods;
                 }
             }
@@ -818,7 +851,10 @@ namespace UnityEditor
                 m_AffectedInstanceCount = 1;
                 m_UnusedOverridesCount = m_SingleInstanceWithUnusedMods.unusedMods.Length;
                 m_UsedOverridesCount = m_SingleInstanceWithUnusedMods.usedMods.Length;
+                m_UnusedRemovedComponentsCount = m_SingleInstanceWithUnusedMods.unusedRemovedComponentCount;
             }
+
+            m_UnusedOverridesCount += m_UnusedRemovedComponentsCount;
         }
 
         float BuildHeaderText()
@@ -849,6 +885,27 @@ namespace UnityEditor
                         break;
 
                     string itemText = mod.propertyPath + " " + Styles.pathOnInstanceContent.text + " " + instanceMods.instance.name;
+
+                    GUIContent lineContent = new GUIContent(itemText);
+                    m_OverridesContent.Add(lineContent);
+
+                    float w = GetTextWidth(lineContent.text, Styles.bodyStyle);
+                    if (w > maxLineWidth)
+                        maxLineWidth = w;
+
+                    entriesFromThisInstance++;
+                    totalLineEntries++;
+                    addedLines = true;
+                }
+
+                if (instanceMods.unusedRemovedComponentCount > 0 && totalLineEntries < k_MaxEntries)
+                {
+                    string itemText = string.Empty;
+
+                    if (instanceMods.unusedRemovedComponentCount > 1)
+                        itemText = string.Format(Styles.unusedRemovedComponentsContentPlural.text, instanceMods.instance.name, instanceMods.unusedRemovedComponentCount);
+                    else
+                        itemText = string.Format(Styles.unusedRemovedComponentsContentSingular.text, instanceMods.instance.name);
 
                     GUIContent lineContent = new GUIContent(itemText);
                     m_OverridesContent.Add(lineContent);

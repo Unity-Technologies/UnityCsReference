@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -121,43 +122,52 @@ namespace UnityEditor
             {
                 if (property.type == "float")
                 {
-                    newField = EditorUIService.instance.CreateFloatField(property.displayName, OnValidateValue);
+                    newField = new FloatField(property.displayName);
+                    ((BaseField<float>)newField).onValidateValue += OnValidateValue;
                 }
                 else if (property.type == "double")
                 {
-                    newField = EditorUIService.instance.CreateDoubleField(property.displayName, OnValidateValue);
+                    newField = new DoubleField(property.displayName);
+                    ((BaseField<double>)newField).onValidateValue += OnValidateValue;
                 }
             }
             else if (property.propertyType == SerializedPropertyType.Integer)
             {
                 if (property.type == "int")
                 {
-                    newField = EditorUIService.instance.CreateIntField(property.displayName, OnValidateValue);
+                    newField = new IntegerField(property.displayName);
+                    ((BaseField<int>)newField).onValidateValue += OnValidateValue;
                 }
                 else if (property.type == "long")
                 {
-                    newField = EditorUIService.instance.CreateLongField(property.displayName, OnValidateValue);
+                    newField = new LongField(property.displayName);
+                    ((BaseField<long>)newField).onValidateValue += OnValidateValue;
                 }
             }
             else if (property.propertyType == SerializedPropertyType.Vector2)
             {
-                newField = EditorUIService.instance.CreateVector2Field(property.displayName, OnValidateValue);
+                newField = new Vector2Field(property.displayName);
+                ((BaseField<Vector2>)newField).onValidateValue += OnValidateValue;
             }
             else if (property.propertyType == SerializedPropertyType.Vector2Int)
             {
-                newField = EditorUIService.instance.CreateVector2IntField(property.displayName, OnValidateValue);
+                newField = new Vector2IntField(property.displayName);
+                ((BaseField<Vector2Int>)newField).onValidateValue += OnValidateValue;
             }
             else if (property.propertyType == SerializedPropertyType.Vector3)
             {
-                newField = EditorUIService.instance.CreateVector3Field(property.displayName, OnValidateValue);
+                newField =  new Vector3Field(property.displayName);
+                ((BaseField<Vector3>)newField).onValidateValue += OnValidateValue;
             }
             else if (property.propertyType == SerializedPropertyType.Vector3Int)
             {
-                newField = EditorUIService.instance.CreateVector3IntField(property.displayName, OnValidateValue);
+                newField = new Vector3IntField(property.displayName);
+                ((BaseField<Vector3Int>)newField).onValidateValue += OnValidateValue;
             }
             else if (property.propertyType == SerializedPropertyType.Vector4)
             {
-                newField = EditorUIService.instance.CreateVector4Field(property.displayName, OnValidateValue);
+                newField = new Vector4Field(property.displayName);
+                ((BaseField<Vector4>)newField).onValidateValue += OnValidateValue;
             }
 
             if (newField != null)
@@ -248,7 +258,8 @@ namespace UnityEditor
             if (property.propertyType == SerializedPropertyType.String)
             {
                 var lines = ((MultilineAttribute)attribute).lines;
-                var field = EditorUIService.instance.CreateTextField(property.displayName, true);
+                var field = new TextField(property.displayName);
+                field.multiline = true;
                 field.bindingPath = property.propertyPath;
                 field.style.height = EditorGUI.kSingleLineHeight + (lines - 1) * kLineHeight;
                 return field;
@@ -301,7 +312,8 @@ namespace UnityEditor
                 var element = new VisualElement();
                 var label = new Label(property.displayName);
                 var scrollView = new ScrollView();
-                var textField = EditorUIService.instance.CreateTextField(null, true);
+                var textField = new TextField();
+                textField.multiline = true;
                 var minHeight = EditorGUI.kSingleLineHeight + (textAreaAttribute.minLines - 1) * kLineHeight;
                 var maxHeight = minHeight;
 
@@ -367,7 +379,9 @@ namespace UnityEditor
             if (property.propertyType == SerializedPropertyType.Color)
             {
                 var colorUsage = (ColorUsageAttribute)attribute;
-                var field = EditorUIService.instance.CreateColorField(property.displayName, colorUsage.showAlpha, colorUsage.hdr);
+                var field = new ColorField(property.displayName);
+                field.showAlpha = colorUsage.showAlpha;
+                field.hdr = colorUsage.hdr;
                 field.bindingPath = property.propertyPath;
                 return field;
             }
@@ -398,7 +412,9 @@ namespace UnityEditor
             if (property.propertyType == SerializedPropertyType.Gradient)
             {
                 var gradientUsage = (GradientUsageAttribute)attribute;
-                var field = EditorUIService.instance.CreateGradientField(property.displayName, gradientUsage.hdr, gradientUsage.colorSpace);
+                var field = new GradientField(property.displayName);
+                field.hdr = gradientUsage.hdr;
+                field.colorSpace = gradientUsage.colorSpace;
                 return field;
             }
 
@@ -430,27 +446,32 @@ namespace UnityEditor
             {
                 if (property.type == "float")
                 {
-                    newField = EditorUIService.instance.CreateFloatField(property.displayName, null, true);
+                    newField = new FloatField(property.displayName);
+                    ((TextInputBaseField<float>)newField).isDelayed = true;
                 }
                 else if (property.type == "double")
                 {
-                    newField = EditorUIService.instance.CreateDoubleField(property.displayName, null, true);
+                    newField = new DoubleField(property.displayName);
+                    ((TextInputBaseField<double>)newField).isDelayed = true;
                 }
             }
             else if (property.propertyType == SerializedPropertyType.Integer)
             {
                 if (property.type == "int")
                 {
-                    newField = EditorUIService.instance.CreateIntField(property.displayName, null, true);
+                    newField = new IntegerField(property.displayName);
+                    ((TextInputBaseField<int>)newField).isDelayed = true;
                 }
                 else if (property.type == "long")
                 {
-                    newField = EditorUIService.instance.CreateLongField(property.displayName, null, true);
+                    newField = new LongField(property.displayName);
+                    ((TextInputBaseField<long>)newField).isDelayed = true;
                 }
             }
             else if (property.propertyType == SerializedPropertyType.String)
             {
-                newField = EditorUIService.instance.CreateTextField(property.displayName, false, true);
+                newField = new TextField(property.displayName);
+                ((TextInputBaseField<string>)newField).isDelayed = true;
             }
 
             if (newField != null)

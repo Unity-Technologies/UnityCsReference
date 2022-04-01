@@ -17,6 +17,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
+        protected override string operationErrorMessage => string.Format(L10n.Tr("Error removing registry: {0}."), registryName);
+
         public void Remove(string name)
         {
             m_RegistryName = name;

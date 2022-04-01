@@ -7,7 +7,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
 
 using UnityEditor.Utils;
 using UnityEngine;
@@ -49,13 +48,7 @@ namespace UnityEditor.Scripting
             return assemblyUpdaterProcess.ExitCode;
         }
 
-        static string AssemblyUpdaterPath()
-        {
-            var unescapedAssemblyUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
-            return Application.platform == RuntimePlatform.WindowsEditor
-                ? CommandLineFormatter.EscapeCharsWindows(unescapedAssemblyUpdaterPath)
-                : CommandLineFormatter.EscapeCharsQuote(unescapedAssemblyUpdaterPath);
-        }
+        static string AssemblyUpdaterPath() => EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
 
         internal static string ArgumentsForUpdateAssembly(string assemblyPath, string tempOutputPath, IEnumerable<string> updateConfigSourcePaths)
         {
@@ -97,10 +90,29 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
+            var req = PackageManager.Client.List(offlineMode: true, includeIndirectDependencies: true);
+            while (!req.IsCompleted)
+                System.Threading.Thread.Sleep(10);
+
+            var packagePathsToSearchForAssemblies = new StringBuilder();
+
+            if (req.Status == PackageManager.StatusCode.Success)
+            {
+                foreach(var resolvedPackage in req.Result)
+                {
+                    packagePathsToSearchForAssemblies.Append($"{Path.PathSeparator}+{resolvedPackage.resolvedPath.Escape(Path.PathSeparator)}");
+                }
+            }
+            else
+            {
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Unable to retrieve project configured packages; AssemblyUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})"));
+            }
+
             var searchPath = NetStandardFinder.GetReferenceDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
                 + NetStandardFinder.GetNetStandardCompatShimsDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
                 + NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory().Escape(Path.PathSeparator) + Path.PathSeparator
-                + "+" + Application.dataPath.Escape(Path.PathSeparator);
+                + "+" + Application.dataPath.Escape(Path.PathSeparator)
+                + packagePathsToSearchForAssemblies.ToString();
 
             if (configurationSourceDirectories != null)
             {

@@ -14,20 +14,24 @@ namespace UnityEditor.Search
     class QueryBuilder : IQuerySource
     {
         const float blockSpacing = 4f;
-        const float builderPadding = SearchField.textTopBottomPadding;
-        const float minHeight = SearchField.minSinglelineTextHeight;
+        const float builderPadding = UI.SearchField.textTopBottomPadding;
+        const float minHeight = UI.SearchField.minSinglelineTextHeight;
 
         private Rect m_LayoutRect;
         private float m_BuilderWidth;
         private float m_BuilderHeight;
         private QueryAddNewBlock m_AddBlock;
         private QueryTextFieldBlock m_TextBlock;
-        private SearchField m_SearchField;
+        private UI.SearchField m_SearchField;
         private bool m_ReadOnly;
 
         private readonly string m_SearchText;
         private readonly SearchContext m_Context;
         private readonly QueryEngine<QueryBlock> m_QueryEngine;
+
+        private const string k_TargetDataIdentifier = "Target Query Block";
+        private const string k_SourceDataIdentifier = "Source Query Block";
+        private const string k_DragAndDropTitle = "Dragging Query Block";
 
         public float width => m_BuilderWidth;
         public float height => m_BuilderHeight;
@@ -90,7 +94,7 @@ namespace UnityEditor.Search
             drawBackground = true;
         }
 
-        public QueryBuilder(SearchContext searchContext, SearchField searchField = null)
+        public QueryBuilder(SearchContext searchContext, UI.SearchField searchField = null)
             : this()
         {
             m_Context = searchContext;
@@ -173,8 +177,189 @@ namespace UnityEditor.Search
                 }
             }
 
+            DragAndDropGUI();
+
+            if (evt.type == EventType.MouseDown && evt.clickCount == 2)
+                HandleDoubleClickBlockInsertion(evt);
+
             DrawBlocks(evt);
             return m_LayoutRect;
+        }
+
+        private bool HandleDoubleClickBlockInsertion(in Event evt)
+        {
+            if (m_AddBlock == null)
+                return false;
+
+            // Are we clicking in the query builder region.
+            var mousePosition = evt.mousePosition;
+            if (!m_LayoutRect.Contains(mousePosition))
+                return false;
+
+            // Find adjacent blocks
+            QueryBlock insertAfter = null;
+            foreach (var b in EnumerateBlocks())
+            {
+                var brect = b.drawRect;
+                if (brect.Contains(mousePosition))
+                    return false;
+
+                if (brect.yMin <= mousePosition.y && mousePosition.y <= brect.yMax)
+                {
+                    if (mousePosition.x > brect.xMax || insertAfter == null)
+                        insertAfter = b;
+                }
+            }
+
+            if (insertAfter == null)
+                return false;
+
+            insertAfter.editor = QuerySelector.Open(insertAfter.drawRect, new QueryInsertBlock(insertAfter, m_AddBlock), "Insert Search Filter");
+            if (insertAfter.editor == null)
+                return false;
+            evt.Use();
+            return true;
+        }
+
+        private void OnMouseDragEvent(Event evt)
+        {
+            DragAndDrop.PrepareStartDrag();
+            foreach (var block in blocks)
+            {
+                if (block.drawRect.Contains(evt.mousePosition))
+                {
+                    SetSourceData(block, k_SourceDataIdentifier);
+                    DragAndDrop.StartDrag(k_DragAndDropTitle);
+                    break;
+                }
+            }
+
+            evt.Use();
+        }
+
+        internal void SetSourceData(QueryBlock source, string sourceDataIdentifier)
+        {
+            if (source != null && source.draggable)
+                DragAndDrop.SetGenericData(sourceDataIdentifier, source);
+        }
+
+        private void OnDragUpdatedEvent(Event evt)
+        {
+            var source = DragAndDrop.GetGenericData(k_SourceDataIdentifier) as QueryBlock;
+            if (source == null)
+                return;
+
+            if (m_LayoutRect.Contains(evt.mousePosition))
+                DragAndDrop.visualMode = DragAndDropVisualMode.Move;
+            else
+                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+
+            SetTargetData(evt.mousePosition, source, k_TargetDataIdentifier);
+            evt.Use();
+        }
+
+        internal void SetTargetData(Vector2 mousePosition, QueryBlock source, string targetDataIdentifier)
+        {
+            var sourceIndex = GetBlockIndex(source);
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                if (!blocks[i].drawRect.Contains(mousePosition))
+                    continue;
+
+                if (i != sourceIndex && blocks[i].draggable)
+                {
+                    DragAndDrop.SetGenericData(targetDataIdentifier, blocks[i]);
+                    break;
+                }
+                else if (i == sourceIndex)
+                {
+                    DragAndDrop.SetGenericData(targetDataIdentifier, null);
+                    break;
+                }
+                else if (i != sourceIndex && !blocks[i].draggable)
+                {
+                    var nextTargetIndex = i + 1;
+                    if (nextTargetIndex == sourceIndex || nextTargetIndex > blocks.Count - 1)
+                    {
+                        DragAndDrop.SetGenericData(targetDataIdentifier, null);
+                        break;
+                    }
+
+                    DragAndDrop.SetGenericData(targetDataIdentifier, blocks[nextTargetIndex]);
+                    break;
+                }
+            }
+        }
+
+        private void OnRepaintEvent()
+        {
+            if (DragAndDrop.visualMode == DragAndDropVisualMode.None || DragAndDrop.visualMode == DragAndDropVisualMode.Rejected)
+                return;
+
+            var source = DragAndDrop.GetGenericData(k_SourceDataIdentifier) as QueryBlock;
+            var target = DragAndDrop.GetGenericData(k_TargetDataIdentifier) as QueryBlock;
+            if (source == null || target == null)
+                return;
+
+            var sourceIndex = GetBlockIndex(source);
+            var targetIndex = GetBlockIndex(target);
+            var cursorPosX = source.drawRect.x;
+
+            if (sourceIndex < targetIndex)
+                cursorPosX = target.drawRect.x + target.width + 2f;
+            else if (sourceIndex > targetIndex)
+                cursorPosX = target.drawRect.x - 2f;
+
+            var cursorRect = new Rect(cursorPosX, target.drawRect.y, 1f, target.height);
+            GUI.DrawTexture(cursorRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, Color.white, 10f, 1f);
+        }
+
+        private void OnDragPerformEvent(Event evt)
+        {
+            DragAndDrop.AcceptDrag();
+
+            var source = DragAndDrop.GetGenericData(k_SourceDataIdentifier) as QueryBlock;
+            var target = DragAndDrop.GetGenericData(k_TargetDataIdentifier) as QueryBlock;
+
+            DropBlock(source, target);
+            evt.Use();
+        }
+
+        internal void DropBlock(QueryBlock source, QueryBlock target)
+        {
+            if (source == null || target == null)
+                return;
+
+            var targetIndex = GetBlockIndex(target);
+            blocks.Remove(source);
+            blocks.Insert(targetIndex, source);
+            Apply();
+        }
+
+        private void DragAndDropGUI()
+        {
+            var evt = Event.current;
+            if (!m_LayoutRect.Contains(evt.mousePosition) || blocks.Count == 0)
+            {
+                DragAndDrop.SetGenericData(k_TargetDataIdentifier, null);
+                return;
+            }
+
+            switch (evt.type)
+            {
+                case EventType.MouseDrag:
+                    OnMouseDragEvent(evt);
+                    break;
+                case EventType.DragUpdated:
+                    OnDragUpdatedEvent(evt);
+                    break;
+                case EventType.Repaint:
+                    OnRepaintEvent();
+                    break;
+                case EventType.DragPerform:
+                    OnDragPerformEvent(evt);
+                    break;
+            }
         }
 
         private void DrawBackground(in Event evt)
@@ -308,10 +493,10 @@ namespace UnityEditor.Search
                 var wordText = "";
                 for (int w = newBlocks.Count - 1; w >= 0; --w)
                 {
-                    var wordBlock = newBlocks[w] as QueryWordBlock;
-                    if (wordBlock == null)
+                    if (newBlocks[w].GetType() != typeof(QueryWordBlock))
                         break;
 
+                    var wordBlock = newBlocks[w] as QueryWordBlock;
                     if (!wordBlock.explicitQuotes && newBlocks.Remove(wordBlock))
                         wordText = (wordBlock.value + " " + wordText).Trim();
                 }
@@ -339,17 +524,17 @@ namespace UnityEditor.Search
             if (rootNode == null)
                 return null;
 
-            ParseNode(rootNode, newBlocks, exclude: false, @explicit: true);
+            ParseNode(rootNode, newBlocks, exclude: false);
 
             return newBlocks;
         }
 
-        private void ParseNode(in IQueryNode node, List<QueryBlock> blocks, bool exclude = false, bool @explicit = false)
+        private void ParseNode(in IQueryNode node, List<QueryBlock> blocks, bool exclude = false)
         {
             if (!node.leaf)
                 ParseNode(node.children[0], blocks, node.type == QueryNodeType.Not);
 
-            var newBlock = CreateBlock(node, @explicit);
+            var newBlock = CreateBlock(node);
             if (newBlock != null)
             {
                 if (exclude)
@@ -364,7 +549,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private QueryBlock CreateBlock(in IQueryNode node, bool @explicit = false)
+        private QueryBlock CreateBlock(in IQueryNode node)
         {
             if (node.type == QueryNodeType.Search && node is SearchNode sn)
                 return new QueryWordBlock(this, sn);
@@ -382,6 +567,9 @@ namespace UnityEditor.Search
                 node is NestedQueryNode nqn)
                 return new QueryWordBlock(this, nqn.rawNestedQueryStringView.ToString());
 
+            if (node.type == QueryNodeType.Toggle && node is ToggleNode tn)
+                return new QueryToggleBlock(this, tn.identifier);
+
             if (node.type == QueryNodeType.Aggregator &&
                 (node.parent == null || node.parent.type != QueryNodeType.FilterIn) &&
                 !node.leaf && node.children[0].type == QueryNodeType.NestedQuery &&
@@ -391,7 +579,7 @@ namespace UnityEditor.Search
             if (node.type == QueryNodeType.Or)
                 return new QueryAndOrBlock(this, $"or");
 
-            if (node.type == QueryNodeType.And && @explicit)
+            if (node.type == QueryNodeType.And && !string.IsNullOrEmpty(node.token.text))
                 return new QueryAndOrBlock(this, $"and");
 
             if (HasFlag(SearchFlags.Debug))
@@ -399,28 +587,33 @@ namespace UnityEditor.Search
             return null;
         }
 
-        public QueryBlock AddProposition(in SearchProposition searchProposition)
+        QueryBlock IQuerySource.AddProposition(in SearchProposition searchProposition) => AddProposition(searchProposition);
+        internal QueryBlock AddProposition(in SearchProposition searchProposition)
         {
             SetSelection(-1);
 
+            QueryBlock insertAt = EnumerateBlocks().FirstOrDefault(b => b.editor != null);
+
             if (searchProposition.data is SearchProvider provider)
-                return AddBlock(new QueryAreaBlock(this, provider));
+                return InsertBlock(insertAt, new QueryAreaBlock(this, provider));
             if (searchProposition.data is QueryBlock block)
-                return AddBlock(block);
+                return InsertBlock(insertAt, block);
 
             if (searchProposition.type != null && typeof(QueryListBlock).IsAssignableFrom(searchProposition.type))
             {
                 var newBlock = QueryListBlockAttribute.CreateBlock(searchProposition.type, this, searchProposition.data?.ToString());
-                return AddBlock(newBlock);
+                if (newBlock == null)
+                    return InsertBlock(insertAt, searchProposition.replacement);
+                return InsertBlock(insertAt, newBlock);
             }
 
             if (searchProposition.type != null && typeof(QueryBlock).IsAssignableFrom(searchProposition.type))
             {
                 var newBlock = (QueryBlock)Activator.CreateInstance(searchProposition.type, new object[] { this, searchProposition.data });
-                return AddBlock(newBlock);
+                return InsertBlock(insertAt, newBlock);
             }
 
-            return AddBlock(searchProposition.replacement);
+            return InsertBlock(insertAt, searchProposition.replacement);
         }
 
         public void Apply()
@@ -431,7 +624,8 @@ namespace UnityEditor.Search
             SetSearchText(queryString);
         }
 
-        public QueryBlock AddBlock(string text)
+        QueryBlock IQuerySource.AddBlock(string text) => AddBlock(text);
+        internal QueryBlock AddBlock(string text)
         {
             var newBlocks = Build(text);
             if (newBlocks == null || newBlocks.Count == 0)
@@ -442,14 +636,43 @@ namespace UnityEditor.Search
             return newBlocks.FirstOrDefault();
         }
 
-        public QueryBlock AddBlock(QueryBlock newBlock)
+        internal QueryBlock InsertBlock(QueryBlock insertAfter, string text)
         {
-            blocks.Add(newBlock);
+            var newBlocks = Build(text);
+            if (newBlocks == null || newBlocks.Count == 0)
+                return null;
+
+            foreach (var nb in newBlocks)
+                InsertBlock(insertAfter, nb);
+
+            return newBlocks.FirstOrDefault();
+        }
+
+        QueryBlock IQuerySource.AddBlock(QueryBlock newBlock) => AddBlock(newBlock);
+        internal QueryBlock AddBlock(QueryBlock newBlock)
+        {
+            return InsertBlock(null, newBlock);
+        }
+
+        internal QueryBlock InsertBlock(QueryBlock insertAfter, QueryBlock newBlock)
+        {
+            if (insertAfter == null)
+            {
+                blocks.Add(newBlock);
+            }
+            else
+            {
+                var insertAt = blocks.IndexOf(insertAfter);
+                if (insertAt < 0)
+                    insertAt = ~insertAt;
+                blocks.Insert(insertAt+1, newBlock);
+            }
             Apply();
             return newBlock;
         }
 
-        public void RemoveBlock(in QueryBlock block)
+        void IQuerySource.RemoveBlock(in QueryBlock block) => RemoveBlock(block);
+        internal void RemoveBlock(in QueryBlock block)
         {
             var currentIndex = currentBlock == block ? GetBlockIndex(block) : -1;
             blocks.Remove(block);
@@ -460,7 +683,7 @@ namespace UnityEditor.Search
             Apply();
         }
 
-        public void BlockActivated(in QueryBlock block)
+        void IQuerySource.BlockActivated(in QueryBlock block)
         {
             if (block == m_TextBlock)
                 SetSelection(-1);
@@ -480,6 +703,17 @@ namespace UnityEditor.Search
                 context.searchText = text;
         }
 
+        static bool HasCharacterModifier(in Event evt)
+        {
+            if (evt.modifiers == EventModifiers.None)
+                return false;
+
+            if (evt.modifiers == EventModifiers.FunctionKey)
+                return false;
+
+            return true;
+        }
+
         public bool HandleKeyEvent(in Event evt)
         {
             if (@readonly || context == null || evt.type != EventType.KeyDown)
@@ -491,6 +725,7 @@ namespace UnityEditor.Search
             var te = m_TextBlock?.GetSearchField().GetTextEditor();
             var cursorAtBeginning = te?.cursorIndex == 0;
             var cursorAtEnd = te?.cursorIndex == te?.text?.Length;
+            var controlPresed = evt.modifiers.HasAny(EventModifiers.Command) || evt.modifiers.HasAny(EventModifiers.Control);
 
             if (evt.keyCode == KeyCode.Home && cursorAtBeginning)
             {
@@ -525,7 +760,7 @@ namespace UnityEditor.Search
                     return true;
                 }
             }
-            else if (evt.keyCode == KeyCode.LeftArrow && cursorAtBeginning)
+            else if (evt.keyCode == KeyCode.LeftArrow && cursorAtBeginning && !HasCharacterModifier(evt))
             {
                 var currentIndex = GetBlockIndex(currentBlock);
                 var toSelectIndex = -1;
@@ -549,7 +784,7 @@ namespace UnityEditor.Search
                     return true;
                 }
             }
-            else if (evt.keyCode == KeyCode.RightArrow && cursorAtBeginning)
+            else if (evt.keyCode == KeyCode.RightArrow && cursorAtBeginning && !HasCharacterModifier(evt))
             {
                 var currentIndex = GetBlockIndex(currentBlock);
                 if (currentIndex != -1)
@@ -584,7 +819,7 @@ namespace UnityEditor.Search
                     return true;
                 }
             }
-            else if ((evt.modifiers.HasAny(EventModifiers.Command) || evt.modifiers.HasAny(EventModifiers.Control)) && evt.keyCode == KeyCode.D)
+            else if (controlPresed && evt.keyCode == KeyCode.D)
             {
                 var cb = currentBlock;
                 if (cb != null)
@@ -599,6 +834,18 @@ namespace UnityEditor.Search
                         evt.Use();
                         return true;
                     }
+                }
+            }
+            else if (m_TextBlock != null && controlPresed && evt.keyCode == KeyCode.Space)
+            {
+                var potentialBlocks = Build(m_TextBlock.ToString());
+                if (potentialBlocks != null && potentialBlocks.Count() > 0)
+                {
+                    foreach (var b in potentialBlocks)
+                        AddBlock(b);
+                    m_TextBlock.value = string.Empty;
+                    evt.Use();
+                    return true;
                 }
             }
             else

@@ -14,37 +14,46 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    interface IPropertyDatabaseView : IDisposable
+    public interface IPropertyDatabaseView : IDisposable
     {
-        bool Store(PropertyDatabaseRecord record);
-        bool TryLoad(PropertyDatabaseRecordKey recordKey, out object data);
-        bool TryLoad(PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data);
-        bool TryLoad(PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data);
+        public bool Store(string documentId, string propertyPath, object value);
+        public bool Store(ulong documentKey, Hash128 propertyHash, object value);
+        public bool Store(Hash128 propertyHash, object value);
+        public bool Store(in PropertyDatabaseRecordKey recordKey, object value);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data);
         bool TryLoad(ulong documentKey, out IEnumerable<object> data);
         bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records);
         void Invalidate(string documentId);
         void Invalidate(ulong documentKey);
-        void Invalidate(PropertyDatabaseRecordKey recordKey);
-        void Invalidate(uint documentKeyHiWord);
+        void Invalidate(in PropertyDatabaseRecordKey recordKey);
         void InvalidateMask(ulong documentKeyMask);
-        void InvalidateMask(uint documentKeyHiWordMask);
         IEnumerable<IPropertyDatabaseRecord> EnumerateAll();
         void Sync();
         void Clear();
+        public PropertyDatabaseRecordKey CreateRecordKey(string documentId, string propertyPath);
+        public PropertyDatabaseRecordKey CreateRecordKey(ulong documentKey, Hash128 propertyPathHash);
+        public PropertyDatabaseRecordKey CreateRecordKey(string propertyPath);
+        public PropertyDatabaseRecordKey CreateRecordKey(string documentId, Hash128 propertyHash);
+        public PropertyDatabaseRecordKey CreateRecordKey(Hash128 propertyHash);
+        public ulong CreateDocumentKey(string documentId);
+        public Hash128 CreatePropertyHash(string propertyPath);
+        TValue GetValueFromRecord<TValue>(IPropertyDatabaseRecordValue recordValue);
+        public bool IsPersistableType(Type type);
     }
 
-    class PropertyDatabase
+    public class PropertyDatabase
     {
         PropertyDatabaseVolatileMemoryStore m_LocalVolatileStore;
         PropertyDatabaseMemoryStore m_LocalStore;
         PropertyDatabaseFileStore m_FileStore;
         PropertyStringTable m_StringTable;
 
-        public static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0006) ^ PropertyStringTable.Version ^ ((InternalEditorUtility.GetUnityVersion().Major & 0xffff) << 16 | InternalEditorUtility.GetUnityVersion().Minor);
+        internal static readonly int version = ((0x50 << 24) | (0x44 << 16) | 0x0006) ^ PropertyStringTable.version ^ ((InternalEditorUtility.GetUnityVersion().Major & 0xffff) << 16 | InternalEditorUtility.GetUnityVersion().Minor);
 
         public string filePath { get; }
-        public string stringTableFilePath { get; }
-        public bool autoBackgroundUpdate { get; }
+        internal string stringTableFilePath { get; }
+        public bool autoFlush { get; }
 
         const double k_DefaultBackgroundUpdateDebounceInSeconds = 5.0;
         Delayer m_Debounce;
@@ -53,7 +62,7 @@ namespace UnityEditor.Search
             : this(filePath, false)
         {}
 
-        public PropertyDatabase(string filePath, bool autoBackgroundUpdate, double backgroundUpdateDebounceInSeconds = k_DefaultBackgroundUpdateDebounceInSeconds)
+        public PropertyDatabase(string filePath, bool autoFlush, double backgroundUpdateDebounceInSeconds = k_DefaultBackgroundUpdateDebounceInSeconds)
         {
             this.filePath = filePath;
             stringTableFilePath = GetStringTablePath(filePath);
@@ -66,9 +75,9 @@ namespace UnityEditor.Search
             // causes an assembly leak during the test Unity.IntegrationTests.Scripting.AssemblyReloadTest.AssemblyReloadDoesntLeakAssemblies
             // on MacOs. I haven't found out why exactly does the writing of a file causes an assembly to be held, so instead I deactivate
             // the automatic update during tests.
-            this.autoBackgroundUpdate = autoBackgroundUpdate && !Utils.IsRunningTests();
+            this.autoFlush = autoFlush && !Utils.IsRunningTests();
 
-            m_Debounce = Delayer.Debounce(_ => TriggerPropertyDatabaseBackgroundUpdate(), backgroundUpdateDebounceInSeconds);
+            m_Debounce = Delayer.Debounce(_ => TriggerBackgroundUpdate(), backgroundUpdateDebounceInSeconds);
         }
 
         public bool Store(string documentId, string propertyPath, object value)
@@ -89,33 +98,39 @@ namespace UnityEditor.Search
                 return view.Store(propertyHash, value);
         }
 
-        public bool Store(PropertyDatabaseRecordKey recordKey, object value)
+        public bool Store(in PropertyDatabaseRecordKey recordKey, object value)
         {
             using (var view = GetView())
                 return view.Store(recordKey, value);
         }
 
-        public bool Store(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue value)
+        internal bool Store(in PropertyDatabaseRecordKey recordKey, in PropertyDatabaseRecordValue value)
         {
-            using (var view = GetView())
+            using (var view = (PropertyDatabaseView)GetView())
                 return view.Store(recordKey, value);
         }
 
-        public bool Store(PropertyDatabaseRecord record)
+        internal bool Store(in PropertyDatabaseRecord record)
         {
-            using (var view = GetView())
+            using (var view = (PropertyDatabaseView)GetView())
                 return view.Store(record);
         }
 
-        public bool TryLoad(PropertyDatabaseRecordKey recordKey, out object value)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object value)
         {
             using (var view = GetView())
                 return view.TryLoad(recordKey, out value);
         }
 
-        public bool TryLoad(PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue value)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue value)
         {
             using (var view = GetView())
+                return view.TryLoad(recordKey, out value);
+        }
+
+        internal bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue value)
+        {
+            using (var view = (PropertyDatabaseView)GetView())
                 return view.TryLoad(recordKey, out value);
         }
 
@@ -143,13 +158,13 @@ namespace UnityEditor.Search
                 view.Invalidate(documentKey);
         }
 
-        public void Invalidate(PropertyDatabaseRecordKey recordKey)
+        public void Invalidate(in PropertyDatabaseRecordKey recordKey)
         {
             using (var view = GetView())
                 view.Invalidate(recordKey);
         }
 
-        public void Invalidate(uint documentKeyHiWord)
+        internal void Invalidate(uint documentKeyHiWord)
         {
             using (var view = GetView())
                 view.Invalidate(documentKeyHiWord);
@@ -161,7 +176,7 @@ namespace UnityEditor.Search
                 view.InvalidateMask(documentKeyMask);
         }
 
-        public void InvalidateMask(uint documentKeyHiWordMask)
+        internal void InvalidateMask(uint documentKeyHiWordMask)
         {
             using (var view = GetView())
                 view.InvalidateMask(documentKeyHiWordMask);
@@ -173,61 +188,61 @@ namespace UnityEditor.Search
                 view.Clear();
         }
 
-        public PropertyDatabaseRecord CreateRecord(string documentId, string propertyPath, object value)
+        internal PropertyDatabaseRecord CreateRecord(string documentId, string propertyPath, object value)
         {
             return CreateRecord(CreateDocumentKey(documentId), CreatePropertyHash(propertyPath), value);
         }
 
-        public PropertyDatabaseRecord CreateRecord(string documentId, string propertyPath, object value, PropertyStringTableView view)
+        internal PropertyDatabaseRecord CreateRecord(string documentId, string propertyPath, object value, PropertyStringTableView view)
         {
             return CreateRecord(CreateDocumentKey(documentId), CreatePropertyHash(propertyPath), value, view);
         }
 
-        public PropertyDatabaseRecord CreateRecord(ulong documentKey, Hash128 propertyPathHash, object value)
+        internal PropertyDatabaseRecord CreateRecord(ulong documentKey, Hash128 propertyPathHash, object value)
         {
             var key = CreateRecordKey(documentKey, propertyPathHash);
             return CreateRecord(key, value);
         }
 
-        public PropertyDatabaseRecord CreateRecord(ulong documentKey, Hash128 propertyPathHash, object value, PropertyStringTableView view)
+        internal PropertyDatabaseRecord CreateRecord(ulong documentKey, Hash128 propertyPathHash, object value, PropertyStringTableView view)
         {
             var key = CreateRecordKey(documentKey, propertyPathHash);
             return CreateRecord(key, value, view);
         }
 
-        public PropertyDatabaseRecord CreateRecord(string propertyPath, object value)
+        internal PropertyDatabaseRecord CreateRecord(string propertyPath, object value)
         {
             return CreateRecord(CreatePropertyHash(propertyPath), value);
         }
 
-        public PropertyDatabaseRecord CreateRecord(string propertyPath, object value, PropertyStringTableView view)
+        internal PropertyDatabaseRecord CreateRecord(string propertyPath, object value, PropertyStringTableView view)
         {
             return CreateRecord(CreatePropertyHash(propertyPath), value, view);
         }
 
-        public PropertyDatabaseRecord CreateRecord(Hash128 propertyPathHash, object value)
+        internal PropertyDatabaseRecord CreateRecord(Hash128 propertyPathHash, object value)
         {
             return CreateRecord(0, propertyPathHash, value);
         }
 
-        public PropertyDatabaseRecord CreateRecord(Hash128 propertyPathHash, object value, PropertyStringTableView view)
+        internal PropertyDatabaseRecord CreateRecord(Hash128 propertyPathHash, object value, PropertyStringTableView view)
         {
             return CreateRecord(0, propertyPathHash, value, view);
         }
 
-        public PropertyDatabaseRecord CreateRecord(PropertyDatabaseRecordKey recordKey, object value)
+        internal PropertyDatabaseRecord CreateRecord(in PropertyDatabaseRecordKey recordKey, object value)
         {
             var recordValue = CreateRecordValue(value);
             return CreateRecord(recordKey, recordValue);
         }
 
-        public PropertyDatabaseRecord CreateRecord(PropertyDatabaseRecordKey recordKey, object value, PropertyStringTableView view)
+        internal PropertyDatabaseRecord CreateRecord(in PropertyDatabaseRecordKey recordKey, object value, PropertyStringTableView view)
         {
             var recordValue = CreateRecordValue(value, view);
             return CreateRecord(recordKey, recordValue);
         }
 
-        public static PropertyDatabaseRecord CreateRecord(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue recordValue)
+        internal static PropertyDatabaseRecord CreateRecord(in PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue recordValue)
         {
             if (!IsSupportedPropertyType(recordValue.propertyType))
                 throw new ArgumentException($"Property type of {nameof(recordValue)} is not supported.");
@@ -269,27 +284,33 @@ namespace UnityEditor.Search
             return string.IsNullOrEmpty(documentId) ? 0UL : (ulong)documentId.GetHashCode();
         }
 
-        public PropertyDatabaseRecordValue CreateRecordValue(object value)
+        internal PropertyDatabaseRecordValue CreateRecordValue(object value)
         {
             using (var view = m_StringTable.GetView())
                 return CreateRecordValue(value, view);
         }
 
-        public PropertyDatabaseRecordValue CreateRecordValue(object value, PropertyStringTableView stringTableView)
+        internal PropertyDatabaseRecordValue CreateRecordValue(object value, PropertyStringTableView stringTableView)
         {
-            if (!IsSupportedValue(value))
+            if (!IsPersistableType(value.GetType()))
                 throw new ArgumentException($"Type \"{value.GetType()}\" is not supported.");
 
             return PropertyDatabaseSerializerManager.Serialize(value, stringTableView);
         }
 
-        public object GetObjectFromRecordValue(PropertyDatabaseRecordValue recordValue)
+        internal object GetObjectFromRecordValue(in PropertyDatabaseRecordValue recordValue)
         {
             using (var view = m_StringTable.GetView())
                 return GetObjectFromRecordValue(recordValue, view);
         }
 
-        public object GetObjectFromRecordValue(PropertyDatabaseRecordValue recordValue, PropertyStringTableView stringTableView)
+        public TValue GetValueFromRecord<TValue>(IPropertyDatabaseRecordValue recordValue)
+        {
+            using (var view = m_StringTable.GetView())
+                return GetValueFromRecord<TValue>(recordValue, view);
+        }
+
+        internal object GetObjectFromRecordValue(in PropertyDatabaseRecordValue recordValue, PropertyStringTableView stringTableView)
         {
             if (!IsSupportedPropertyType(recordValue.propertyType))
                 throw new ArgumentException($"Property type \"{recordValue.propertyType}\" of {nameof(recordValue)} is not supported.");
@@ -297,13 +318,13 @@ namespace UnityEditor.Search
             return PropertyDatabaseSerializerManager.Deserialize(recordValue, stringTableView);
         }
 
-        public object GetObjectFromRecordValue(IPropertyDatabaseRecordValue recordValue)
+        internal object GetObjectFromRecordValue(IPropertyDatabaseRecordValue recordValue)
         {
             using (var view = m_StringTable.GetView())
                 return GetObjectFromRecordValue(recordValue, view);
         }
 
-        public object GetObjectFromRecordValue(IPropertyDatabaseRecordValue recordValue, PropertyStringTableView stringTableView)
+        internal object GetObjectFromRecordValue(IPropertyDatabaseRecordValue recordValue, PropertyStringTableView stringTableView)
         {
             if (recordValue.type != PropertyDatabaseType.Volatile)
                 return GetObjectFromRecordValue((PropertyDatabaseRecordValue)recordValue, stringTableView);
@@ -312,25 +333,39 @@ namespace UnityEditor.Search
             return volatileRecordValue.value;
         }
 
-        public static bool IsSupportedValue(object value)
+        internal TValue GetValueFromRecord<TValue>(IPropertyDatabaseRecordValue recordValue, PropertyStringTableView stringTableView)
         {
-            var type = value.GetType();
+            if (recordValue.type != PropertyDatabaseType.Volatile)
+                return (TValue)GetObjectFromRecordValue((PropertyDatabaseRecordValue)recordValue, stringTableView);
+
+            var volatileRecordValue = (PropertyDatabaseVolatileRecordValue)recordValue;
+            return (TValue)volatileRecordValue.value;
+        }
+
+        public static bool IsPersistableType(Type type)
+        {
             return PropertyDatabaseSerializerManager.SerializerExists(type);
         }
 
-        public static bool IsSupportedPropertyType(byte propertyType)
+        internal static bool IsSupportedPropertyType(byte propertyType)
         {
             return PropertyDatabaseSerializerManager.DeserializerExists((PropertyDatabaseType)propertyType);
         }
 
-        public PropertyDatabaseView GetView(bool delayedSync = false)
+        public IPropertyDatabaseView GetView(bool delayedSync = false)
         {
             {
                 return new PropertyDatabaseView(this, m_LocalVolatileStore, m_LocalStore, m_FileStore, m_StringTable, delayedSync);
             }
         }
 
-        public Task TriggerPropertyDatabaseBackgroundUpdate()
+        public void Flush()
+        {
+            var task = TriggerBackgroundUpdate();
+            task.Wait();
+        }
+
+        internal Task TriggerBackgroundUpdate()
         {
             var task = Task.Run(() =>
             {
@@ -347,9 +382,9 @@ namespace UnityEditor.Search
             return task;
         }
 
-        public void StoresChanged()
+        internal void StoresChanged()
         {
-            if (!autoBackgroundUpdate)
+            if (!autoFlush)
                 return;
 
             lock (this)
@@ -436,7 +471,7 @@ namespace UnityEditor.Search
         internal PropertyStringTableView stringTableView => m_StringTableView;
         internal PropertyDatabase database => m_PropertyDatabase;
 
-        public PropertyDatabaseView(PropertyDatabase propertyDatabase, PropertyDatabaseVolatileMemoryStore volatileMemoryStore, PropertyDatabaseMemoryStore memoryStore, PropertyDatabaseFileStore fileStore, PropertyStringTable stringTable, bool delayedSync)
+        internal PropertyDatabaseView(PropertyDatabase propertyDatabase, PropertyDatabaseVolatileMemoryStore volatileMemoryStore, PropertyDatabaseMemoryStore memoryStore, PropertyDatabaseFileStore fileStore, PropertyStringTable stringTable, bool delayedSync)
         {
             m_PropertyDatabase = propertyDatabase;
             m_MemoryStore = memoryStore;
@@ -486,23 +521,23 @@ namespace UnityEditor.Search
             return Store(recordKey, value);
         }
 
-        public bool Store(PropertyDatabaseRecordKey recordKey, object value)
+        public bool Store(in PropertyDatabaseRecordKey recordKey, object value)
         {
             {
-                if (!IsSupportedValue(value))
+                if (!IsPersistableType(value.GetType()))
                     return m_VolatileMemoryStoreView.Store(recordKey, value, !m_DelayedSync);
                 var record = m_PropertyDatabase.CreateRecord(recordKey, value, m_StringTableView);
                 return Store(record);
             }
         }
 
-        public bool Store(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue value)
+        public bool Store(in PropertyDatabaseRecordKey recordKey, in PropertyDatabaseRecordValue value)
         {
             var record = CreateRecord(recordKey, value);
             return Store(record);
         }
 
-        public bool Store(PropertyDatabaseRecord record)
+        public bool Store(in PropertyDatabaseRecord record)
         {
             {
                 if (!record.recordValue.valid)
@@ -516,7 +551,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public bool TryLoad(PropertyDatabaseRecordKey recordKey, out object data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data)
         {
             {
                 data = null;
@@ -527,7 +562,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public bool TryLoad(PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data)
         {
             {
                 if (m_MemoryStoreView.TryLoad(recordKey, out data))
@@ -542,7 +577,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public bool TryLoad(PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data)
         {
             {
                 if (m_VolatileMemoryStoreView.TryLoad(recordKey, out data))
@@ -609,7 +644,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public void Invalidate(PropertyDatabaseRecordKey recordKey)
+        public void Invalidate(in PropertyDatabaseRecordKey recordKey)
         {
             {
                 m_VolatileMemoryStoreView.Invalidate(recordKey, !m_DelayedSync);
@@ -619,7 +654,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public void Invalidate(uint documentKeyHiWord)
+        internal void Invalidate(uint documentKeyHiWord)
         {
             {
                 m_VolatileMemoryStoreView.Invalidate(documentKeyHiWord, !m_DelayedSync);
@@ -639,7 +674,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public void InvalidateMask(uint documentKeyHiWordMask)
+        internal void InvalidateMask(uint documentKeyHiWordMask)
         {
             {
                 m_VolatileMemoryStoreView.InvalidateMask(documentKeyHiWordMask, !m_DelayedSync);
@@ -696,12 +731,12 @@ namespace UnityEditor.Search
             return m_PropertyDatabase.CreateRecord(propertyPathHash, value, m_StringTableView);
         }
 
-        public PropertyDatabaseRecord CreateRecord(PropertyDatabaseRecordKey recordKey, object value)
+        public PropertyDatabaseRecord CreateRecord(in PropertyDatabaseRecordKey recordKey, object value)
         {
             return m_PropertyDatabase.CreateRecord(recordKey, value, m_StringTableView);
         }
 
-        public PropertyDatabaseRecord CreateRecord(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue recordValue)
+        public PropertyDatabaseRecord CreateRecord(in PropertyDatabaseRecordKey recordKey, in PropertyDatabaseRecordValue recordValue)
         {
             return PropertyDatabase.CreateRecord(recordKey, recordValue);
         }
@@ -746,7 +781,7 @@ namespace UnityEditor.Search
             return m_PropertyDatabase.CreateRecordValue(value, m_StringTableView);
         }
 
-        public object GetObjectFromRecordValue(PropertyDatabaseRecordValue recordValue)
+        public object GetObjectFromRecordValue(in PropertyDatabaseRecordValue recordValue)
         {
             return m_PropertyDatabase.GetObjectFromRecordValue(recordValue, m_StringTableView);
         }
@@ -756,9 +791,14 @@ namespace UnityEditor.Search
             return m_PropertyDatabase.GetObjectFromRecordValue(recordValue, m_StringTableView);
         }
 
-        public bool IsSupportedValue(object value)
+        public TValue GetValueFromRecord<TValue>(IPropertyDatabaseRecordValue recordValue)
         {
-            return PropertyDatabase.IsSupportedValue(value);
+            return m_PropertyDatabase.GetValueFromRecord<TValue>(recordValue, m_StringTableView);
+        }
+
+        public bool IsPersistableType(Type type)
+        {
+            return PropertyDatabase.IsPersistableType(type);
         }
 
         public bool IsSupportedPropertyType(byte propertyType)
@@ -766,7 +806,7 @@ namespace UnityEditor.Search
             return PropertyDatabase.IsSupportedPropertyType(propertyType);
         }
 
-        public void MergeStores()
+        internal void MergeStores()
         {
             var newMemoryStore = new PropertyDatabaseMemoryStore();
             using (m_MemoryStore.LockUpgradeableRead())

@@ -77,21 +77,24 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
-
             EditorApplication.modifierKeysChanged += Repaint;
-
             get = this;
+            m_EventInterests.wantsLessLayoutEvents = true;
+            CreateContents();
+        }
 
-            m_MainToolbarVisual = (MainToolbarVisual)Activator.CreateInstance(EditorUIService.instance.GetDefaultToolbarType());
-
+        void CreateContents()
+        {
+            m_MainToolbarVisual = (MainToolbarVisual)Activator.CreateInstance(typeof(DefaultMainToolbar));
+            m_Root?.RemoveFromHierarchy();
             m_Root = CreateRoot();
-            if (windowBackend.visualTree is VisualElement visualTree)
+
+            if (windowBackend?.visualTree is VisualElement visualTree)
             {
                 visualTree.Add(m_Root);
                 m_Root.Add(m_MainToolbarVisual.root);
             }
 
-            m_EventInterests.wantsLessLayoutEvents = true;
             RepaintToolbar();
         }
 
@@ -126,9 +129,14 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
-            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             root.style.overflow = Overflow.Hidden;
             return root;
+        }
+
+        protected override void OnBackingScaleFactorChanged()
+        {
+            CreateContents();
         }
 
         internal static void RepaintToolbar()
@@ -150,7 +158,7 @@ namespace UnityEditor
         // @todo Remove when collab updates
         internal static void AddSubToolbar(SubToolbar subToolbar)
         {
-            EditorUIService.instance.AddSubToolbar(subToolbar);
+            MainToolbarImguiContainer.AddDeprecatedSubToolbar(subToolbar);
         }
 
         // Repaints all views, called from C++ when playmode entering is aborted

@@ -6,13 +6,26 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
 {
     internal class VisualElementFactoryRegistry
     {
         private static Dictionary<string, List<IUxmlFactory>> s_Factories;
+        private static Dictionary<string, List<IUxmlFactory>> s_MovedTypesFactories;
 
+        private static string GetMovedUIControlTypeName(Type type, MovedFromAttribute attr)
+        {
+            if (type == null)
+                return string.Empty;
+
+            MovedFromAttributeData data = attr.data;
+            var namespaceName = data.nameSpaceHasChanged ? data.nameSpace : VisualElement.GetOrCreateTypeData(type).typeNamespace;
+            var typeName = data.classHasChanged ? data.className : VisualElement.GetOrCreateTypeData(type).typeName;
+            var fullOldName = namespaceName + "." + typeName;
+            return fullOldName;
+        }
         internal static Dictionary<string, List<IUxmlFactory>> factories
         {
             get
@@ -20,6 +33,7 @@ namespace UnityEngine.UIElements
                 if (s_Factories == null)
                 {
                     s_Factories = new Dictionary<string, List<IUxmlFactory>>();
+                    s_MovedTypesFactories = new Dictionary<string, List<IUxmlFactory>>(50);
                     RegisterEngineFactories();
                     RegisterUserFactories();
                 }
@@ -46,12 +60,23 @@ namespace UnityEngine.UIElements
                 factoryList = new List<IUxmlFactory>();
                 factoryList.Add(factory);
                 factories.Add(factory.uxmlQualifiedName, factoryList);
+                Type uxmlType = factory.uxmlType;
+                var attr = uxmlType?.GetCustomAttribute<MovedFromAttribute>(false);
+                if (attr != null && typeof(VisualElement).IsAssignableFrom(uxmlType))
+                {
+                    string movedTypeName = GetMovedUIControlTypeName(uxmlType, attr);
+                    if (string.IsNullOrEmpty(movedTypeName) == false)
+                        s_MovedTypesFactories.Add(movedTypeName, factoryList);
+                }
             }
         }
 
         internal static bool TryGetValue(string fullTypeName, out List<IUxmlFactory> factoryList)
         {
-            return factories.TryGetValue(fullTypeName, out factoryList);
+            bool ret = factories.TryGetValue(fullTypeName, out factoryList);
+            if (ret == false)
+                ret = s_MovedTypesFactories.TryGetValue(fullTypeName, out factoryList);
+            return ret;
         }
 
         // Core UI Toolkit elements must be registered manually for both Editor and Player use cases.

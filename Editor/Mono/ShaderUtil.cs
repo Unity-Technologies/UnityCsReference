@@ -64,6 +64,7 @@ namespace UnityEditor
 
             public string SourceCode { get { return ShaderUtil.GetShaderPassSourceCode(SourceShader, SubshaderIndex, m_PassIndex); } }
             public string Name { get { return ShaderUtil.GetShaderPassName(SourceShader, SubshaderIndex, m_PassIndex); } }
+            public bool IsGrabPass { get { return ShaderUtil.IsGrabPass(SourceShader, SubshaderIndex, m_PassIndex); } }
 
             public UnityEngine.Rendering.ShaderTagId FindTagValue(UnityEngine.Rendering.ShaderTagId tagName)
             {
@@ -81,27 +82,51 @@ namespace UnityEditor
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget)
             {
+                return CompileVariant(shaderType, keywords, shaderCompilerPlatform, buildTarget, false);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, bool forExternalTool)
+            {
                 var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
-                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, forExternalTool);
             }
 
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier)
             {
+                return CompileVariant(shaderType, keywords, shaderCompilerPlatform, buildTarget, tier, false);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool forExternalTool)
+            {
                 var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, tier);
-                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier);
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier, forExternalTool);
             }
 
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords)
             {
-                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+                return CompileVariant(shaderType, keywords, shaderCompilerPlatform, buildTarget, platformKeywords, false);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, bool forExternalTool)
+            {
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, forExternalTool);
             }
 
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier)
             {
-                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier);
+                return CompileVariant(shaderType, keywords, shaderCompilerPlatform, buildTarget, platformKeywords, tier, false);
+            }
+
+            public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
+                ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier, bool forExternalTool)
+            {
+                return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, tier, forExternalTool);
             }
 
             public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,

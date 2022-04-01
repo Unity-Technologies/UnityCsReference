@@ -27,8 +27,6 @@ namespace UnityEditor
                 EditorGUI.EndDisabledGroup();
             }
 
-            serializedObject.ApplyModifiedProperties();
-
             FinalizeInspectorGUI();
         }
     }

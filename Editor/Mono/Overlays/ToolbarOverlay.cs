@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Toolbars;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays

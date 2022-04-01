@@ -11,9 +11,9 @@ namespace UnityEditor
     /// <summary>
     /// Provides a display for a <see cref="EditorGUI.ObjectField"/> and prompts the user to confirm the change.
     /// </summary>
-    internal static class RenderPipelineAssetSelector
+    public sealed partial class EditorGUI
     {
-        static class Styles
+        static class RenderPipelineAssetSelectorStyles
         {
             public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
 
@@ -23,34 +23,15 @@ namespace UnityEditor
             public static string cancelLabel => LocalizationDatabase.GetLocalizedString("Cancel");
         }
 
-        static void AskRenderPipelineChangeConfirmation(SerializedObject serializedObject, SerializedProperty serializedProperty, Object selectedRenderPipelineAsset)
+        static void PromptConfirmation(SerializedObject serializedObject, SerializedProperty serializedProperty, Object selectedRenderPipelineAsset)
         {
             if (selectedRenderPipelineAsset == serializedProperty.objectReferenceValue)
                 return;
 
-            if (EditorUtility.DisplayDialog(Styles.renderPipeChangedTitleBox, Styles.renderPipeChangedWarning, Styles.renderPipeChangedConfirmation, Styles.cancelLabel))
+            if (EditorUtility.DisplayDialog(RenderPipelineAssetSelectorStyles.renderPipeChangedTitleBox, RenderPipelineAssetSelectorStyles.renderPipeChangedWarning, RenderPipelineAssetSelectorStyles.renderPipeChangedConfirmation, RenderPipelineAssetSelectorStyles.cancelLabel))
             {
                 serializedProperty.objectReferenceValue = selectedRenderPipelineAsset;
                 serializedObject.ApplyModifiedProperties();
-            }
-
-            GUIUtility.ExitGUI();
-        }
-
-        static void ApplyChangeIfNeeded(SerializedObject serializedObject, SerializedProperty serializedProperty, Object selectedRenderPipelineAsset)
-        {
-            if (!ObjectSelector.isVisible)
-            {
-                AskRenderPipelineChangeConfirmation(serializedObject, serializedProperty, selectedRenderPipelineAsset);
-                return;
-            }
-
-            if (Event.current.type == EventType.ExecuteCommand &&
-                Event.current.commandName == ObjectSelector.ObjectSelectorClosedCommand)
-            {
-                AskRenderPipelineChangeConfirmation(serializedObject, serializedProperty, ObjectSelector.GetCurrentObject());
-                Event.current.Use();
-                GUIUtility.ExitGUI();
             }
         }
 
@@ -60,25 +41,50 @@ namespace UnityEditor
         /// <param name="content">The label.</param>
         /// <param name="serializedObject">The <see cref="SerializedObject"/> that holds the <see cref="SerializedProperty"/> with the new render pipeline asset.</param>
         /// <param name="serializedProperty">The <see cref="SerializedProperty"/> to modify with the new render pipeline asset.</param>
-        public static void Draw(GUIContent content, SerializedObject serializedObject, SerializedProperty serializedProperty)
+        internal static void RenderPipelineAssetField(GUIContent content, SerializedObject serializedObject, SerializedProperty serializedProperty)
         {
-            var selectedRenderPipelineAsset = EditorGUILayout.ObjectField(content, serializedProperty.objectReferenceValue, typeof(RenderPipelineAsset), false);
-            ApplyChangeIfNeeded(serializedObject, serializedProperty, selectedRenderPipelineAsset);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel(content);
+                RenderPipelineAssetField(serializedObject, serializedProperty);
+            }
         }
 
         /// <summary>
         /// Draws the object field and, if the user attempts to change the value, asks the user for confirmation.
         /// </summary>
-        /// <param name="serializedObject">TThe <see cref="SerializedObject"/> that holds the <see cref="SerializedProperty"/> with the new render pipeline asset.</param>
+        /// <param name="serializedObject">The <see cref="SerializedObject"/> that holds the <see cref="SerializedProperty"/> with the new render pipeline asset.</param>
         /// <param name="serializedProperty">The <see cref="SerializedProperty"/> to modify with the new render pipeline asset.</param>
-        public static void Draw(SerializedObject serializedObject, SerializedProperty serializedProperty)
+        internal static void RenderPipelineAssetField(SerializedObject serializedObject, SerializedProperty serializedProperty)
         {
             Rect renderLoopRect = EditorGUILayout.GetControlRect(true, EditorGUI.GetPropertyHeight(serializedProperty));
 
-            EditorGUI.BeginProperty(renderLoopRect, Styles.renderPipeLabel, serializedProperty);
+            EditorGUI.BeginProperty(renderLoopRect, RenderPipelineAssetSelectorStyles.renderPipeLabel, serializedProperty);
 
-            var selectedRenderPipelineAsset = EditorGUI.ObjectField(renderLoopRect, serializedProperty.objectReferenceValue, typeof(RenderPipelineAsset), false);
-            ApplyChangeIfNeeded(serializedObject, serializedProperty, selectedRenderPipelineAsset);
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, renderLoopRect);
+
+            var selectedRenderPipelineAsset = DoObjectField(
+                position: IndentedRect(renderLoopRect),
+                dropRect: IndentedRect(renderLoopRect),
+                id: id,
+                obj: serializedProperty.objectReferenceValue,
+                objBeingEdited: null,
+                objType: typeof(RenderPipelineAsset),
+                additionalType: null,
+                property: null,
+                validator: null,
+                allowSceneObjects: false,
+                style: EditorStyles.objectField,
+                onObjectSelectorClosed: obj =>
+                {
+                    if (!ObjectSelector.SelectionCanceled())
+                        PromptConfirmation(serializedObject, serializedProperty, obj);
+                });
+
+            if (!ObjectSelector.isVisible)
+            {
+                PromptConfirmation(serializedObject, serializedProperty, selectedRenderPipelineAsset);
+            }
 
             EditorGUI.EndProperty();
         }

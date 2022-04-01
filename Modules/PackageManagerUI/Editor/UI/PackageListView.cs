@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageListView> {}
 
+        private ResourceLoader m_ResourceLoader;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private AssetStoreCache m_AssetStoreCache;
@@ -21,6 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
+            m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
@@ -52,13 +54,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            onSelectionChange += SyncListViewSelectionToPageManager;
+            selectionChanged += SyncListViewSelectionToPageManager;
             m_PageManager.onSelectionChanged += SyncPageManagerSelectionToListView;
         }
 
         public void OnDisable()
         {
-            onSelectionChange -= SyncListViewSelectionToPageManager;
+            selectionChanged -= SyncListViewSelectionToPageManager;
             m_PageManager.onSelectionChanged -= SyncPageManagerSelectionToListView;
         }
 
@@ -114,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElement MakeItem()
         {
-            return new PackageItem(m_PageManager, m_SettingsProxy, m_PackageDatabase);
+            return new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy, m_PackageDatabase);
         }
 
         public PackageItem GetPackageItem(string packageUniqueId)

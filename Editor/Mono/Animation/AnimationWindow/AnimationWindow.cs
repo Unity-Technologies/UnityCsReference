@@ -224,7 +224,7 @@ namespace UnityEditor
 
             OnSelectionChange();
 
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
         }
 
         void OnDisable()
@@ -232,7 +232,7 @@ namespace UnityEditor
             s_AnimationWindows.Remove(this);
             m_AnimEditor.OnDisable();
 
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
         }
 
         void OnDestroy()
@@ -452,7 +452,7 @@ namespace UnityEditor
             return (selectedItem.GetRefreshHash() != currentSelection.GetRefreshHash());
         }
 
-        private void UndoRedoPerformed()
+        private void UndoRedoPerformed(in UndoRedoInfo info)
         {
             Repaint();
         }

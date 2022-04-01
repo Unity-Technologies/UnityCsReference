@@ -245,7 +245,7 @@ namespace UnityEditor.SceneTemplate
                 return false;
             }
 
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            if (!loadAdditively && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 return false;
             }

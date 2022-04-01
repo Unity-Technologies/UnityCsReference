@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageName = productDetail.GetString("packageName") ?? string.Empty;
             category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
-            publishNotes = productDetail.GetString("publishNotes") ?? string.Empty;
+            publishNotes = CleanUpHtml(productDetail.GetString("publishNotes") ?? string.Empty, false);
             firstPublishedDate = productDetail.GetDictionary("properties")?.GetString("firstPublishedDate");
 
             var versionInfo = productDetail.GetDictionary("version");
@@ -99,14 +99,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return new AssetStoreProductInfo(assetStoreUtils, productId, productDetail);
         }
 
-        internal static string CleanUpHtml(string source)
+        internal static string CleanUpHtml(string source, bool removeEndOfLine = true)
         {
             if (string.IsNullOrEmpty(source))
                 return source;
 
-            // first we remove all end of line, html tags will reformat properly
-            var result = source.Replace("\n", "");
-            result = result.Replace("\r", "");
+            var result = source;
+            if (removeEndOfLine)
+            {
+                // first we remove all end of line, html tags will reformat properly
+                result = result.Replace("\n", "");
+                result = result.Replace("\r", "");
+            }
 
             // then we add all \n from html tgs we want to support
             result = Regex.Replace(result, "</?br */?>", "\n", RegexOptions.IgnoreCase);
@@ -152,7 +156,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)
         {
-            int imageLimit = 3;
+            int imageLimit = 4;
             int imagesLoaded = 0;
 
             var result = new List<PackageImage>();
@@ -196,17 +200,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else if (type == "vimeo")
                     imageType = PackageImage.ImageType.Vimeo;
 
+                // for now we only use screenshot types
                 var imageUrl = image.GetString("imageUrl");
                 if (imageType == PackageImage.ImageType.Screenshot)
+                {
                     imageUrl = "http:" + imageUrl;
 
-                result.Add(new PackageImage
-                {
-                    type = imageType,
-                    thumbnailUrl = "http:" + thumbnailUrl,
-                    url = imageUrl
-                });
-                ++imagesLoaded;
+                    result.Add(new PackageImage
+                    {
+                        type = imageType,
+                        thumbnailUrl = "http:" + thumbnailUrl,
+                        url = imageUrl
+                    });
+                    ++imagesLoaded;
+                }
             }
             return result;
         }
@@ -222,11 +229,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var url = publisher.GetString("url");
                 if (!string.IsNullOrEmpty(url) && Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink("Publisher Website", url));
+                    result.Add(GetPackageLink(L10n.Tr("Publisher Website"), url, "viewPublisherWebsite"));
 
                 var supportUrl = publisher.GetString("supportUrl");
                 if (!string.IsNullOrEmpty(supportUrl) && Uri.IsWellFormedUriString(supportUrl, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink("Publisher Support", supportUrl));
+                    result.Add(GetPackageLink(L10n.Tr("Publisher Support"), supportUrl, "viewPublisherSupport"));
             }
             return result;
         }
@@ -236,7 +243,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
             var packagePath = $"/packages/p/{slug}";
 
-            return GetPackageLink("View in the Asset Store", packagePath);
+            return GetPackageLink(L10n.Tr("View in the Asset Store"), packagePath, "viewProductInAssetStore");
         }
 
         private List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
@@ -270,11 +277,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        private PackageLink GetPackageLink(string name, string url)
+        private PackageLink GetPackageLink(string name, string url, string analyticsEventName)
         {
             if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
                 url = m_AssetStoreUtils.assetStoreUrl + url;
-            return new PackageLink { name = name, url = url };
+            return new PackageLink { name = name, url = url, analyticsEventName = analyticsEventName};
         }
     }
 }

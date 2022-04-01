@@ -16,11 +16,21 @@ namespace UnityEditor.Search
     /// <summary>
     /// Makes a field to receive any object type.
     /// </summary>
-    class ObjectField : BaseField<Object>
+    public class ObjectField : BaseField<Object>
     {
-        public new class UxmlFactory : UxmlFactory<ObjectField, UxmlTraits> {}
+        [Obsolete("Use singleLineHeight instead. (UnityUpgradable) -> singleLineHeight", error: false)]
+        public static float kSingleLineHeight => singleLineHeight;
+        public static float singleLineHeight
+        {
+            get
+            {
+                return EditorGUI.kSingleLineHeight;
+            }
+        }
 
-        public new class UxmlTraits : BaseField<Object>.UxmlTraits
+        internal new class UxmlFactory : UxmlFactory<ObjectField, UxmlTraits> {}
+
+        internal new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
             UxmlTypeAttributeDescription<Object> m_ObjectType = new UxmlTypeAttributeDescription<Object> { name = "type" };
 
@@ -249,24 +259,24 @@ namespace UnityEditor.Search
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
-        public new static readonly string ussClassName = "unity-object-field";
+        internal new static readonly string ussClassName = "unity-object-field";
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
-        public new static readonly string labelUssClassName = ussClassName + "__label";
+        internal new static readonly string labelUssClassName = ussClassName + "__label";
         /// <summary>
         /// USS class name of input elements in elements of this type.
         /// </summary>
-        public new static readonly string inputUssClassName = ussClassName + "__input";
+        internal new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
         /// USS class name of object elements in elements of this type.
         /// </summary>
-        public static readonly string objectUssClassName = ussClassName + "__object";
+        internal static readonly string objectUssClassName = ussClassName + "__object";
         /// <summary>
         /// USS class name of selector elements in elements of this type.
         /// </summary>
-        public static readonly string selectorUssClassName = ussClassName + "__selector";
+        internal static readonly string selectorUssClassName = ussClassName + "__selector";
 
         /// <summary>
         /// Constructor.

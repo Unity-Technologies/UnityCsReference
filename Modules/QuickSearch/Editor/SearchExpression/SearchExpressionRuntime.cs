@@ -46,17 +46,17 @@ namespace UnityEditor.Search
         }
     }
 
-    readonly struct SearchExpressionRuntime
+    public readonly struct SearchExpressionRuntime
     {
         public readonly SearchContext search;
-        public readonly ExecutionState state;
+        internal readonly ExecutionState state;
         public readonly Stack<SearchItem> items;
         public readonly Stack<SearchExpressionContext> frames;
 
         public bool valid => frames != null && frames.Count > 0;
         public SearchExpressionContext current => frames.Peek();
 
-        public SearchExpressionRuntime(SearchContext searchContext, SearchExpressionExecutionFlags flags)
+        internal SearchExpressionRuntime(SearchContext searchContext, SearchExpressionExecutionFlags flags)
         {
             search = searchContext;
             frames = new Stack<SearchExpressionContext>();
@@ -80,7 +80,7 @@ namespace UnityEditor.Search
             return new PushPopScope<SearchExpressionContext>(frames);
         }
 
-        public IDisposable Push(SearchExpression searchExpression, IEnumerable<SearchExpression> args, SearchExpressionExecutionFlags flags)
+        internal IDisposable Push(SearchExpression searchExpression, IEnumerable<SearchExpression> args, SearchExpressionExecutionFlags flags)
         {
             flags |= frames.Peek().flags & SearchExpressionExecutionFlags.TransferedFlags;
             frames.Push(new SearchExpressionContext(this, searchExpression, args.ToArray(), flags));

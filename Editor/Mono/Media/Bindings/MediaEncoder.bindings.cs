@@ -44,7 +44,7 @@ namespace UnityEditor.Media
 
         public static explicit operator double(MediaRational r)
         {
-            return (r.denominator == 0) ? 0.0 : (r.numerator / r.denominator);
+            return (r.denominator == 0) ? 0.0 : ((double)r.numerator / r.denominator);
         }
 
         public MediaRational inverse

@@ -12,6 +12,7 @@ using System.Reflection;
 using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
 using UnityEditor.Profiling;
+using UnityEditor.Callbacks;
 
 namespace UnityEditor
 {
@@ -93,6 +94,58 @@ namespace UnityEditor
         // Override the order in which importers are processed.
         public virtual int GetPostprocessOrder() { return 0; }
 
+    }
+
+    class OnPostprocessAllAssetsCallbackCollection : OrderedCallbackCollection
+    {
+        public class MethodInfoCallback : Callback
+        {
+            public MethodInfo Method { get; }
+
+            public override Type classType => Method.DeclaringType;
+
+            public bool MethodDomainReload { get; }
+
+            public override string name => classType.FullName;
+
+            public MethodInfoCallback(MethodInfo method, bool methodDomainReload)
+            {
+                Method = method;
+                MethodDomainReload = methodDomainReload;
+            }
+
+            public override IEnumerable<T> GetCustomAttributes<T>() => Method.GetCustomAttributes<T>();
+        }
+
+        public override string name => "OnPostprocessAllAssets";
+
+        public override List<Callback> GetCallbacks()
+        {
+            var methodArgTypes = new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType() };
+            var methodDomainReloadParamArgTypes = new Type[] { methodArgTypes[0], methodArgTypes[1], methodArgTypes[2], methodArgTypes[3], typeof(bool) };
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
+            var callbacks = new List<Callback>();
+            foreach (var assetPostprocessorClass in TypeCache.GetTypesDerivedFrom<AssetPostprocessor>())
+            {
+                var method = assetPostprocessorClass.GetMethod("OnPostprocessAllAssets", flags, null, methodArgTypes, null);
+                if (method != null)
+                {
+                    callbacks.Add(new MethodInfoCallback(method, false));
+                }
+                else
+                {
+                    // OnPostprocessAllAssets with didDomainReload parameter
+                    method = assetPostprocessorClass.GetMethod("OnPostprocessAllAssets", flags, null, methodDomainReloadParamArgTypes, null);
+                    if (method != null)
+                    {
+                        callbacks.Add(new MethodInfoCallback(method, true));
+                    }
+                }
+            }
+
+            return callbacks;
+        }
     }
 
     internal class AssetPostprocessingInternal
@@ -189,6 +242,9 @@ namespace UnityEditor
         static Dictionary<Type, string[]> s_StaticPostprocessorMethodsByImporterType;
         static Dictionary<Type, string[]> s_DynamicPostprocessorMethodsByImporterType;
 
+        // Internal for debugging purposes. We can generate dependency graphs to help understand issues.
+        internal static OnPostprocessAllAssetsCallbackCollection s_OnPostprocessAllAssetsCallbacks = new OnPostprocessAllAssetsCallbackCollection();
+
         static AssetPostprocessingInternal()
         {
             s_StaticPostprocessorMethodsByImporterType = new Dictionary<Type, string[]>();
@@ -238,28 +294,23 @@ namespace UnityEditor
         static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets, bool didDomainReload)
         {
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
-
             object[] argsWithDidDomainReload = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets, didDomainReload};
-            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
-            {
-                const string methodName = "OnPostprocessAllAssets";
-                MethodInfo method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType() }, null);
+            var containsNoAssets = importedAssets.Length == 0 && addedAssets.Length == 0 && deletedAssets.Length == 0 && movedAssets.Length == 0 && movedFromPathAssets.Length == 0;
 
-                if (method != null)
+            foreach (OnPostprocessAllAssetsCallbackCollection.MethodInfoCallback assetPostProcessor in s_OnPostprocessAllAssetsCallbacks.sortedCallbacks)
+            {
+                if (assetPostProcessor.MethodDomainReload)
                 {
-                    if (importedAssets.Length != 0 || addedAssets.Length != 0 || deletedAssets.Length != 0 || movedAssets.Length != 0 || movedFromPathAssets.Length != 0)
-                        using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
-                            InvokeMethod(method, args);
+                    using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
+                        InvokeMethod(assetPostProcessor.Method, argsWithDidDomainReload);
                 }
                 else
                 {
-                    // OnPostprocessAllAssets with didDomainReload parameter
-                    method = assetPostprocessorClass.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(string).MakeArrayType(), typeof(bool)}, null);
-                    if (method != null)
-                    {
-                        using (new EditorPerformanceMarker($"{assetPostprocessorClass.Name}.{methodName}", assetPostprocessorClass).Auto())
-                            InvokeMethod(method, argsWithDidDomainReload);
-                    }
+                    if (containsNoAssets)
+                        continue;
+
+                    using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
+                        InvokeMethod(assetPostProcessor.Method, args);
                 }
             }
 

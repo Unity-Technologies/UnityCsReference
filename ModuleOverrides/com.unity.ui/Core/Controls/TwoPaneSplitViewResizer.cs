@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
         TwoPaneSplitView m_SplitView;
 
         int m_Direction;
-        TwoPaneSplitViewOrientation m_Orientation;
+        TwoPaneSplitViewOrientation orientation => m_SplitView.orientation;
 
         VisualElement fixedPane => m_SplitView.fixedPane;
         VisualElement flexedPane => m_SplitView.flexedPane;
@@ -20,10 +20,21 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                if (orientation == TwoPaneSplitViewOrientation.Horizontal)
                     return fixedPane.resolvedStyle.minWidth.value;
                 else
                     return fixedPane.resolvedStyle.minHeight.value;
+            }
+        }
+
+        float fixedPaneMargins
+        {
+            get
+            {
+                if (orientation == TwoPaneSplitViewOrientation.Horizontal)
+                    return fixedPane.resolvedStyle.marginLeft + fixedPane.resolvedStyle.marginRight;
+                else
+                    return fixedPane.resolvedStyle.marginTop + fixedPane.resolvedStyle.marginBottom;
             }
         }
 
@@ -31,16 +42,26 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                if (orientation == TwoPaneSplitViewOrientation.Horizontal)
                     return flexedPane.resolvedStyle.minWidth.value;
                 else
                     return flexedPane.resolvedStyle.minHeight.value;
             }
         }
 
-        public TwoPaneSplitViewResizer(TwoPaneSplitView splitView, int dir, TwoPaneSplitViewOrientation orientation)
+        float flexedPaneMargin
         {
-            m_Orientation = orientation;
+            get
+            {
+                if (orientation == TwoPaneSplitViewOrientation.Horizontal)
+                    return flexedPane.resolvedStyle.marginLeft + flexedPane.resolvedStyle.marginRight;
+                else
+                    return flexedPane.resolvedStyle.marginTop + flexedPane.resolvedStyle.marginBottom;
+            }
+        }
+
+        public TwoPaneSplitViewResizer(TwoPaneSplitView splitView, int dir)
+        {
             m_SplitView = splitView;
             m_Direction = dir;
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -63,7 +84,7 @@ namespace UnityEngine.UIElements
 
         public void ApplyDelta(float delta)
         {
-            float oldDimension = m_Orientation == TwoPaneSplitViewOrientation.Horizontal
+            float oldDimension = orientation == TwoPaneSplitViewOrientation.Horizontal
                 ? fixedPane.resolvedStyle.width
                 : fixedPane.resolvedStyle.height;
             float newDimension = oldDimension + delta;
@@ -71,28 +92,28 @@ namespace UnityEngine.UIElements
             if (newDimension < oldDimension && newDimension < fixedPaneMinDimension)
                 newDimension = fixedPaneMinDimension;
 
-            float maxDimension = m_Orientation == TwoPaneSplitViewOrientation.Horizontal
+            float maxDimension = orientation == TwoPaneSplitViewOrientation.Horizontal
                 ? m_SplitView.resolvedStyle.width
                 : m_SplitView.resolvedStyle.height;
-            maxDimension -= flexedPaneMinDimension;
+            maxDimension -= flexedPaneMinDimension + flexedPaneMargin + fixedPaneMargins;
             if (newDimension > oldDimension && newDimension > maxDimension)
                 newDimension = maxDimension;
 
-            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+            if (orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
                 fixedPane.style.width = newDimension;
                 if (m_SplitView.fixedPaneIndex == 0)
-                    target.style.left = newDimension;
+                    target.style.left = newDimension + fixedPaneMargins;
                 else
-                    target.style.left = m_SplitView.resolvedStyle.width - newDimension;
+                    target.style.left = m_SplitView.resolvedStyle.width - newDimension - fixedPaneMargins;
             }
             else
             {
                 fixedPane.style.height = newDimension;
                 if (m_SplitView.fixedPaneIndex == 0)
-                    target.style.top = newDimension;
+                    target.style.top = newDimension + fixedPaneMargins;
                 else
-                    target.style.top = m_SplitView.resolvedStyle.height - newDimension;
+                    target.style.top = m_SplitView.resolvedStyle.height - newDimension - fixedPaneMargins;
             }
             m_SplitView.fixedPaneDimension = newDimension;
         }
@@ -122,7 +143,7 @@ namespace UnityEngine.UIElements
 
             Vector2 diff = e.localPosition - m_Start;
             var mouseDiff = diff.x;
-            if (m_Orientation == TwoPaneSplitViewOrientation.Vertical)
+            if (orientation == TwoPaneSplitViewOrientation.Vertical)
                 mouseDiff = diff.y;
 
             var delta = m_Direction * mouseDiff;

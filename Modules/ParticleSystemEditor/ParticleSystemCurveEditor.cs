@@ -80,7 +80,7 @@ internal class ParticleSystemCurveEditor
     public void OnDisable()
     {
         m_CurveEditor.OnDisable();
-        Undo.undoRedoPerformed -= UndoRedoPerformed;
+        Undo.undoRedoEvent -= UndoRedoPerformed;
     }
 
     public void OnDestroy()
@@ -150,10 +150,10 @@ internal class ParticleSystemCurveEditor
         m_CurveEditor.SetShownVRangeInsideMargins(m_CurveEditorSettings.vRangeMin, m_CurveEditorSettings.hRangeMax);
         m_CurveEditor.ignoreScrollWheelUntilClicked = false;
 
-        Undo.undoRedoPerformed += UndoRedoPerformed;
+        Undo.undoRedoEvent += UndoRedoPerformed;
     }
 
-    void UndoRedoPerformed()
+    void UndoRedoPerformed(in UndoRedoInfo info)
     {
         ContentChanged();
     }

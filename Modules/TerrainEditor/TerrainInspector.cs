@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.AnimatedValues;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor.ShortcutManagement;
 using UnityEngine.TerrainTools;
@@ -187,6 +188,7 @@ namespace UnityEditor
             public readonly GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
             public readonly GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
             public readonly GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density", "The number of detail/grass objects in a given unit of area. The value can be set lower to reduce rendering overhead.");
+            public readonly GUIContent detailScatterMode = EditorGUIUtility.TrTextContent("Detail Scatter Mode", "The scatter mode type to be used while painting details. Coverage paints areas detail should be populated in based on their density setting, Instance Count paints the amount per sample.");
             public readonly GUIContent treeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "The distance (from camera) beyond which trees will be culled. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeCrossFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
@@ -976,6 +978,12 @@ namespace UnityEditor
                 {
                     SetCurrentPaintToolActive();
                 }
+
+                if (m_Terrain != null)
+                {
+                    // When switching tool reactivate all renderflags
+                    m_Terrain.editorRenderFlags = TerrainRenderFlags.All;
+                }
             }
         }
 
@@ -991,9 +999,11 @@ namespace UnityEditor
             }
         }
 
-        static Rect GetAspectRect(int elementCount, int approxSize, int extraLineHeight, out int itemsPerRow)
+        private static Rect GetAspectRect(int elementCount, int approxSize, int extraLineHeight, out int itemsPerRow)
         {
-            itemsPerRow = (int)Mathf.Ceil((EditorGUIUtility.currentViewWidth - 20) / approxSize);
+            // account for when currentViewWidth = 0
+            float editorWidth = EditorGUIUtility.currentViewWidth > 0f ? EditorGUIUtility.currentViewWidth : 240f;
+            itemsPerRow = Mathf.CeilToInt((editorWidth - 20) / approxSize);
             int yCount = (elementCount + itemsPerRow - 1) / itemsPerRow;
             Rect r1 = GUILayoutUtility.GetAspectRect(itemsPerRow / (float)yCount);
             Rect r2 = GUILayoutUtility.GetRect(10, extraLineHeight * yCount);
@@ -1395,6 +1405,7 @@ namespace UnityEditor
                 var treeBillboardDistance = EditorGUILayout.Slider(styles.treeBillboardDistance, m_Terrain.treeBillboardDistance, 5, 2000); // former string formatting: ""
                 var treeCrossFadeLength = EditorGUILayout.Slider(styles.treeCrossFadeLength, m_Terrain.treeCrossFadeLength, 0, 200); // former string formatting: ""
                 var treeMaximumFullLODCount = EditorGUILayout.IntSlider(styles.treeMaximumFullLODCount, m_Terrain.treeMaximumFullLODCount, 0, 10000);
+                var detailScatterMode = (DetailScatterMode)EditorGUILayout.EnumPopup(styles.detailScatterMode, m_Terrain.terrainData.detailScatterMode);
 
                 // Only do this check once per frame.
                 if (Event.current.type == EventType.Layout)
@@ -1427,6 +1438,23 @@ namespace UnityEditor
                     m_Terrain.treeBillboardDistance = treeBillboardDistance;
                     m_Terrain.treeCrossFadeLength = treeCrossFadeLength;
                     m_Terrain.treeMaximumFullLODCount = treeMaximumFullLODCount;
+
+                    if (m_Terrain.terrainData.detailScatterMode != detailScatterMode)
+                    {
+                        if (detailScatterMode == DetailScatterMode.CoverageMode)
+                        {
+                            ResampleDetailResolution(terrainData, terrainData.detailResolution, terrainData.detailResolutionPerPatch, detailScatterMode);
+                        }
+                        else if (EditorUtility.DisplayDialog(
+                            L10n.Tr("Change Detail Scatter Mode"),
+                            L10n.Tr("Changing detail scatter mode to \"Instance count\" will erase existing detail placements. This action is undoable. Do you wish to continue?"),
+                            L10n.Tr("Yes"),
+                            L10n.Tr("No"))
+                            )
+                        {
+                            m_Terrain.terrainData.SetDetailScatterMode(detailScatterMode);
+                        }
+                    }
 
                     MarkDirty(m_Terrain);
                 }
@@ -1824,7 +1852,7 @@ namespace UnityEditor
                 }
 
                 if (resolutionChanged || resolutionPerPatchChanged)
-                    ResizeDetailResolution(terrainData, detailResolution, detailResolutionPerPatch);
+                    ResampleDetailResolution(terrainData, detailResolution, detailResolutionPerPatch);
 
                 MarkTerrainDataDirty();
                 m_Terrain.Flush();
@@ -1866,22 +1894,71 @@ namespace UnityEditor
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        void ResizeDetailResolution(TerrainData terrainData, int resolution, int resolutionPerPatch)
+        void ResampleDetailResolution(TerrainData terrainData, int resolution, int resolutionPerPatch, DetailScatterMode? scatterMode = null)
         {
-            if (resolution == terrainData.detailResolution)
+            var layers = new List<byte[]>();
+            int originalResolution = terrainData.detailResolution;
+            int oldWidth = terrainData.detailWidth;
+            int oldHeight = terrainData.detailHeight;
+            // Store texture versions of outdated detail map
+            for (int i = 0; i < terrainData.detailPrototypes.Length; i++)
             {
-                var layers = new List<int[, ]>();
-                for (int i = 0; i < terrainData.detailPrototypes.Length; i++)
-                    layers.Add(terrainData.GetDetailLayer(0, 0, terrainData.detailWidth, terrainData.detailHeight, i));
-
-                terrainData.SetDetailResolution(resolution, resolutionPerPatch);
-
-                for (int i = 0; i < layers.Count; i++)
-                    terrainData.SetDetailLayer(0, 0, i, layers[i]);
+                byte[] detailArray = terrainData
+                    .GetDetailLayer(0, 0, oldWidth, oldHeight, i)
+                    .Cast<int>().Select<int, byte>(v =>
+                        terrainData.detailScatterMode == DetailScatterMode.InstanceCountMode
+                        ? (byte)(Math.Min(v * 16, 255))
+                        : (byte)v)
+                    .ToArray();
+                layers.Add(detailArray);
             }
-            else
+
+            // resize (and clear) detail maps
+            terrainData.SetDetailResolution(resolution, resolutionPerPatch);
+            if (scatterMode.HasValue)
+                terrainData.SetDetailScatterMode(scatterMode.Value);
+
+            for (int i = 0; i < layers.Count; i++)
             {
-                terrainData.SetDetailResolution(resolution, resolutionPerPatch);
+                Texture2D detailTexture = new Texture2D(oldWidth, oldHeight, TextureFormat.R8, false);
+                detailTexture.filterMode = FilterMode.Bilinear;
+                detailTexture.SetPixelData(layers[i], 0);
+                detailTexture.Apply(false);
+
+                int width = terrainData.detailWidth;
+                int height = terrainData.detailHeight;
+
+                // blit old detail map textures to target sized RT
+                RenderTexture rt = RenderTexture.GetTemporary(width, height);
+                rt.filterMode = FilterMode.Bilinear;
+                RenderTexture.active = rt;
+                Graphics.Blit(detailTexture, rt);
+                Texture2D resizedTex = new Texture2D(width, height);
+                resizedTex.ReadPixels(new Rect(0, 0, width, height), 0,0);
+                resizedTex.Apply();
+                RenderTexture.active = null;
+                RenderTexture.ReleaseTemporary(rt);
+
+                float resampleRatio = terrainData.detailScatterMode == DetailScatterMode.CoverageMode
+                ? 1.0f
+                : (float)originalResolution / resolution;
+                resampleRatio *= resampleRatio;
+
+                // Get pixel data from resulting blit and copy to detail maps
+                int[] values = resizedTex.GetPixels()
+                    .Select<Color, int>(c =>
+                    {
+                        int detailAmt = Mathf.CeilToInt(terrainData.maxDetailScatterPerRes * c.r);
+                        return Mathf.CeilToInt(detailAmt * resampleRatio);
+                    })
+                    .ToArray<int>();
+
+                var detailArray = new int[width, height];
+                Buffer.BlockCopy(values, 0, detailArray, 0, width * height * sizeof(int));
+                terrainData.SetDetailLayer(0, 0, i, detailArray);
+
+                DestroyImmediate(detailTexture);
+                DestroyImmediate(resizedTex);
             }
         }
 
@@ -2275,6 +2352,12 @@ namespace UnityEditor
 
         public void OnSceneGUICallback(SceneView sceneView)
         {
+            if (selectedTool == TerrainTool.None && m_PreviousSelectedTool != TerrainTool.None)
+            {
+                // if we switch the active scene tool while painting we still need to update the terrains. ( case 1394295 )
+                PaintContext.ApplyDelayedActions();
+            }
+
             Initialize();
 
             if (selectedTool == TerrainTool.None)

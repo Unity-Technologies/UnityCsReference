@@ -18,7 +18,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         // Characters that we consider valid whitespaces.
         public static readonly char[] k_ValidWhitespaces = { ' ', '\t' };
 
-        static Regex s_SplitAndKeep = new Regex("(\\|\\|)", RegexOptions.Compiled);
+        static Regex s_SplitAndKeep = null;
 
         public enum DefineConstraintStatus
         {
@@ -30,55 +30,60 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static bool IsDefineConstraintsCompatible(string[] defines, string[] defineConstraints)
         {
-            if (defines == null && defineConstraints == null || defineConstraints == null || defineConstraints.Length == 0)
+            return IsDefineConstraintsCompatible_Enumerable(defines.AsEnumerable<string>(), defineConstraints.AsEnumerable<string>());
+        }
+
+        // This is not called IsDefineConstraintsCompatible because the bindings generator does not support overloads
+        public static bool IsDefineConstraintsCompatible_Enumerable(IEnumerable<string> defines, IEnumerable<string> defineConstraints)
+        {
+            if (defines == null && defineConstraints == null || defineConstraints == null || !defineConstraints.Any())
             {
                 return true;
             }
 
-            GetDefineConstraintsCompatibility(defines, defineConstraints, out bool[] defineConstraintsValidity);
-
-            return defineConstraintsValidity.All(c => c);
-        }
-
-        static void GetDefineConstraintsCompatibility(string[] defines, string[] defineConstraints, out bool[] defineConstraintsValidity)
-        {
-            defineConstraintsValidity = new bool[defineConstraints.Length];
-
-            for (int i = 0; i < defineConstraints.Length; ++i)
+            foreach (var constraint in defineConstraints)
             {
-                defineConstraintsValidity[i] = GetDefineConstraintCompatibility(defines, defineConstraints[i]) == DefineConstraintStatus.Compatible;
+                if (GetDefineConstraintCompatibility(defines, constraint) != DefineConstraintStatus.Compatible)
+                {
+                    return false;
+                }
             }
+
+            return true;
         }
 
-        internal static DefineConstraintStatus GetDefineConstraintCompatibility(string[] defines, string defineConstraints)
+        internal static DefineConstraintStatus GetDefineConstraintCompatibility(IEnumerable<string> defines, string defineConstraints)
         {
             if (string.IsNullOrEmpty(defineConstraints))
             {
                 return DefineConstraintStatus.Invalid;
             }
 
+            if (s_SplitAndKeep == null)
+                s_SplitAndKeep = new Regex("(\\|\\|)", RegexOptions.Compiled);
+
             // Split by "||" (OR) and keep it in the resulting array
-            var splitDefines = s_SplitAndKeep.Split(defineConstraints);
+            var splitDefineConstraints = s_SplitAndKeep.Split(defineConstraints);
 
             // Trim what we consider valid space characters
-            for (var i = 0; i < splitDefines.Length; ++i)
+            for (var i = 0; i < splitDefineConstraints.Length; ++i)
             {
-                splitDefines[i] = splitDefines[i].Trim(k_ValidWhitespaces);
+                splitDefineConstraints[i] = splitDefineConstraints[i].Trim(k_ValidWhitespaces);
             }
 
             // Check for consecutive OR
-            for (var i = 0; i < splitDefines.Length; ++i)
+            for (var i = 0; i < splitDefineConstraints.Length; ++i)
             {
-                if (splitDefines[i] == Or && (i < splitDefines.Length - 1 && splitDefines[i + 1] == Or))
+                if (splitDefineConstraints[i] == Or && (i < splitDefineConstraints.Length - 1 && splitDefineConstraints[i + 1] == Or))
                 {
                     return DefineConstraintStatus.Invalid;
                 }
             }
 
-            var notExpectedDefines = new HashSet<string>(splitDefines.Where(x => x.StartsWith(Not, StringComparison.Ordinal) && x != Or).Select(x => x.Substring(1)));
-            var expectedDefines = new HashSet<string>(splitDefines.Where(x => !x.StartsWith(Not, StringComparison.Ordinal) && x != Or));
+            var notExpectedDefines = new HashSet<string>(splitDefineConstraints.Where(x => x.StartsWith(Not, StringComparison.Ordinal) && x != Or).Select(x => x.Substring(1)));
+            var expectedDefines = new HashSet<string>(splitDefineConstraints.Where(x => !x.StartsWith(Not, StringComparison.Ordinal) && x != Or));
 
-            if (defines == null)
+            if (defines == null || !defines.Any())
             {
                 if (expectedDefines.Count > 0)
                 {

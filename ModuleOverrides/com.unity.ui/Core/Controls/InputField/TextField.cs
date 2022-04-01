@@ -24,6 +24,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         public new class UxmlTraits : TextInputBaseField<string>.UxmlTraits
         {
+            // Using a static attribute here because we want to override the behaviour of an
+            // attribute from a base trait class, without the attribute appearing twice in the
+            // UI Builder.
+            static readonly UxmlStringAttributeDescription k_Value = new UxmlStringAttributeDescription
+            {
+                name = "value",
+                obsoleteNames = new [] { "text" }
+            };
+
             UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
 
             /// <summary>
@@ -37,6 +46,15 @@ namespace UnityEngine.UIElements
                 TextField field = ((TextField)ve);
                 field.multiline = m_Multiline.GetValueFromBag(bag, cc);
                 base.Init(ve, bag, cc);
+
+                // Re-defining the value to account for the "obsolete" text property.
+                // We are doing it here because TextField binds the value to the text and this
+                // is not the case in the base class.
+                var value = string.Empty;
+                if (k_Value.TryGetValueFromBag(bag, cc, ref value))
+                {
+                    field.SetValueWithoutNotify(value);
+                }
             }
         }
 
@@ -127,10 +145,13 @@ namespace UnityEngine.UIElements
         }
 
         [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent),
-                typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(NavigationMoveEvent))]
+                typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
+
+            if (textEdition.isReadOnly)
+                return;
 
             if (evt is KeyDownEvent kde)
             {
@@ -174,10 +195,10 @@ namespace UnityEngine.UIElements
                     value = text;
                 }
             }
-            // Prevent duplicated navigation events, since we're observing KeyDownEvents instead
+            // Prevent duplicated navigation events, since we're observing KeyDownEvents instead.
+            // NavigationMoveEvent is still allowed to go in and out at the TextField (parent) level.
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
-                     evt.eventTypeId == NavigationCancelEvent.TypeId() ||
-                     evt.eventTypeId == NavigationMoveEvent.TypeId())
+                     evt.eventTypeId == NavigationCancelEvent.TypeId())
             {
                 evt.StopPropagation();
                 evt.PreventDefault();
@@ -220,24 +241,17 @@ namespace UnityEngine.UIElements
                 get { return textEdition.multiline; }
                 set
                 {
-                    textEdition.multiline = value;
-                    if (!value)
-                        text = text.Replace("\n", "");
-                    SetTextAlign();
-                }
-            }
+                    if (textEdition.multiline == value)
+                        return;
 
-            private void SetTextAlign()
-            {
-                if (multiline)
-                {
-                    RemoveFromClassList(singleLineInputUssClassName);
-                    AddToClassList(multilineInputUssClassName);
-                }
-                else
-                {
-                    RemoveFromClassList(multilineInputUssClassName);
-                    AddToClassList(singleLineInputUssClassName);
+                    textEdition.multiline = value;
+                    if (value)
+                        SetMultiline();
+                    else
+                    {
+                        text = text.Replace("\n", "");
+                        SetSingleLine();
+                    }
                 }
             }
 

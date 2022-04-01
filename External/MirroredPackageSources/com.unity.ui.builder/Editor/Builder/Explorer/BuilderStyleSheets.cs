@@ -115,15 +115,15 @@ namespace Unity.UI.Builder
                 {
                     m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
                 });
-                
-                evt.PreventDefault();
-                evt.StopImmediatePropagation();
+
             }, TrickleDown.TrickleDown);
 
             m_NewSelectorTextInputField.RegisterCallback<BlurEvent>((evt) =>
             {
                 var input = evt.target as VisualElement;
                 var field = GetTextFieldParent(input);
+
+                HideTooltip();
                 if (m_ShouldRefocusSelectorFieldOnBlur)
                 {
                     field.schedule.Execute(PostEnterRefocus);
@@ -138,7 +138,6 @@ namespace Unity.UI.Builder
                     m_PseudoStatesMenu.SetEnabled(false);
                 }
 
-                HideTooltip();
             }, TrickleDown.TrickleDown);
 
             // Setup New USS Menu.
@@ -157,7 +156,7 @@ namespace Unity.UI.Builder
 
             RegisterCallback<GeometryChangedEvent>(e => AdjustPosition());
         }
-        
+
         TextField GetTextFieldParent(VisualElement ve)
         {
             return ve.GetFirstAncestorOfType<TextField>();

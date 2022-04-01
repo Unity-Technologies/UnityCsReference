@@ -9,7 +9,6 @@ using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 // The ParticleEffectUI displays one or more ParticleSystemUIs.
 
@@ -371,7 +370,7 @@ namespace UnityEditor
             return initializeRequired;
         }
 
-        internal void UndoRedoPerformed()
+        internal void UndoRedoPerformed(in UndoRedoInfo info)
         {
             Refresh();
             foreach (ParticleSystemUI e in m_Emitters)
@@ -383,7 +382,7 @@ namespace UnityEditor
                         moduleUI.CheckVisibilityState();
 
                         if (moduleUI.foldout)
-                            moduleUI.UndoRedoPerformed();
+                            moduleUI.UndoRedoPerformed(info);
                     }
                 }
             }
@@ -645,7 +644,7 @@ namespace UnityEditor
             else
                 EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
 
-            if (!EditorApplication.isPlaying)
+            if (!isPlayMode)
             {
                 ParticleSystemEditorUtils.previewLayers = EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.previewLayers, s_Texts.previewLayers);
                 ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, s_Texts.resimulation, EditorStyles.toggle);

@@ -81,6 +81,13 @@ namespace UnityEditor
             set;
         }
 
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        extern internal static void SetSelectionWithActiveObject(Object[] newSelection, Object activeObject);
+
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern internal static void SetSelectionWithActiveInstanceID(int[] newSelection, int activeObject);
+
         // Returns the active context object
         extern public static Object activeContext
         {

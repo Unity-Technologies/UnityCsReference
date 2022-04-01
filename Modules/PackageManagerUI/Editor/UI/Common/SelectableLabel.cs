@@ -6,21 +6,41 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class SelectableLabel : TextField
+    internal class SelectableLabel : Label
     {
         internal new class UxmlFactory : UxmlFactory<SelectableLabel, UxmlTraits>
         {
             public override VisualElement Create(IUxmlAttributes bag, CreationContext cc)
             {
                 var result = base.Create(bag, cc) as SelectableLabel;
-                result.isReadOnly = true;
+                result.SetAsSelectableAndElided();
                 return result;
             }
         }
 
         public SelectableLabel()
         {
-            isReadOnly = true;
+            SetAsSelectableAndElided();
+        }
+
+        public void SetAsSelectableAndElided()
+        {
+            selection.isSelectable = true;
+            focusable = true;
+            displayTooltipWhenElided = true;
+        }
+
+        public void SetValueWithoutNotify(string value)
+        {
+            text = value;
+        }
+
+        public bool multiline { get; set; }
+
+        public string value
+        {
+            get => text;
+            set => text = value;
         }
     }
 }

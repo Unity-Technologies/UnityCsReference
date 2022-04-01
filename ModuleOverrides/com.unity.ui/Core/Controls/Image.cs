@@ -225,7 +225,10 @@ namespace UnityEngine.UIElements
         {
             var result = Vector2.zero;
             if (sprite != null)
-                result = (Vector2)(sprite.bounds.size * sprite.pixelsPerUnit);
+            {
+                float scale = UIElementsUtility.PixelsPerUnitScaleForElement(this, sprite);
+                result = (Vector2)(sprite.bounds.size * sprite.pixelsPerUnit) * scale;
+            }
             return result;
         }
 

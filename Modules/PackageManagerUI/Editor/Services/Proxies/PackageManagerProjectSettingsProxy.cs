@@ -4,13 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    [ExcludeFromCodeCoverage]
     internal class PackageManagerProjectSettingsProxy
     {
         public event Action<bool> onEnablePreReleasePackagesChanged = delegate {};
-        public event Action<bool> onEnablePackageDependenciesChanged = delegate {};
         public event Action<bool> onAdvancedSettingsFoldoutChanged = delegate {};
         public event Action<bool> onScopedRegistriesSettingsFoldoutChanged = delegate {};
         public event Action<bool> onSeeAllVersionsChanged = delegate {};
@@ -27,12 +28,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get => PackageManagerProjectSettings.instance.enablePreReleasePackages;
             set => PackageManagerProjectSettings.instance.enablePreReleasePackages = value;
-        }
-
-        public virtual bool enablePackageDependencies
-        {
-            get => PackageManagerProjectSettings.instance.enablePackageDependencies;
-            set => PackageManagerProjectSettings.instance.enablePackageDependencies = value;
         }
 
         public virtual bool advancedSettingsExpanded
@@ -105,7 +100,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnEnable()
         {
             PackageManagerProjectSettings.instance.onEnablePreReleasePackagesChanged += OnEnablePreReleasePackagesChanged;
-            PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged += OnEnablePackageDependenciesChanged;
             PackageManagerProjectSettings.instance.onAdvancedSettingsFoldoutChanged += OnAdvancedSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onScopedRegistriesSettingsFoldoutChanged += OnScopedRegistriesSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
@@ -116,7 +110,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnDisable()
         {
             PackageManagerProjectSettings.instance.onEnablePreReleasePackagesChanged -= OnEnablePreReleasePackagesChanged;
-            PackageManagerProjectSettings.instance.onEnablePackageDependenciesChanged -= OnEnablePackageDependenciesChanged;
             PackageManagerProjectSettings.instance.onAdvancedSettingsFoldoutChanged -= OnAdvancedSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onScopedRegistriesSettingsFoldoutChanged -= OnScopedRegistriesSettingsFoldoutChanged;
             PackageManagerProjectSettings.instance.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
@@ -137,11 +130,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnEnablePreReleasePackagesChanged(bool enablePreReleasePackages)
         {
             onEnablePreReleasePackagesChanged?.Invoke(enablePreReleasePackages);
-        }
-
-        private void OnEnablePackageDependenciesChanged(bool enablePackageDependencies)
-        {
-            onEnablePackageDependenciesChanged?.Invoke(enablePackageDependencies);
         }
 
         private void OnAdvancedSettingsFoldoutChanged(bool advancedSettingsExpanded)

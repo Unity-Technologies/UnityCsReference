@@ -25,6 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         long lastSuccessTimestamp { get; }
         bool isOfflineMode { get; }
         bool isInProgress { get; }
+        bool isInPause { get; }
         bool isProgressVisible { get; }
 
         bool isProgressTrackable { get; }

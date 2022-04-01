@@ -775,9 +775,7 @@ namespace UnityEditorInternal
                         {
                             EditorCurveBinding? spriteBinding = CreateNewPptrDopeline(state.selection, typeof(Sprite));
                             if (spriteBinding != null)
-                            {
                                 DoSpriteDropAfterGeneratingNewDopeline(state.activeAnimationClip, spriteBinding);
-                            }
                         }
 
                         DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
@@ -794,8 +792,35 @@ namespace UnityEditorInternal
             // Create the new curve for our sprites
             AnimationWindowCurve newCurve = new AnimationWindowCurve(animationClip, (EditorCurveBinding)spriteBinding, typeof(Sprite));
 
-            // And finally perform the drop onto the curve
+            // Perform the drop onto the curve
             PerformDragAndDrop(newCurve, 0f);
+
+            // Assign the Sprite in the first keyframe to the SpriteRenderer's Sprite property
+            AssignSpriteToSpriteRenderer(newCurve);
+        }
+
+        private void AssignSpriteToSpriteRenderer(AnimationWindowCurve curve)
+        {
+            var rootGameObject = state.selection.rootGameObject;
+            if (rootGameObject == null)
+                return;
+
+            var hasValidCurve = curve.m_Keyframes.Count > 0 && curve.binding.type == typeof(SpriteRenderer);
+            if (!hasValidCurve)
+                return;
+
+            var spriteRenderer = AnimationUtility.GetAnimatedObject(rootGameObject, curve.binding) as SpriteRenderer;
+            var hasValidSpriteRenderer = spriteRenderer != null && spriteRenderer.sprite == null;
+            if (!hasValidSpriteRenderer)
+                return;
+
+            var keyframe = curve.m_Keyframes[0];
+            var sprite = keyframe.value as Sprite;
+            if (sprite != null)
+            {
+                Undo.RecordObject(spriteRenderer, "Add Sprite");
+                spriteRenderer.sprite = sprite;
+            }
         }
 
         private void HandleRectangleToolEvents()

@@ -98,10 +98,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         protected virtual void InitLabel()
         {
-            m_Label = new Label
-            {
-                pickingMode = PickingMode.Ignore
-            };
+            m_Label = new Label();
             visualInput.Add(m_Label);
         }
 

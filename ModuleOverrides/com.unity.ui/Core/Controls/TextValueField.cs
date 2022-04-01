@@ -181,6 +181,9 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
+            if (textEdition.isReadOnly)
+                return;
+
             bool hasChanged = false;
             if (evt.eventTypeId == KeyDownEvent.TypeId())
             {
@@ -196,12 +199,12 @@ namespace UnityEngine.UIElements
                     evt.StopPropagation();
                     evt.PreventDefault();
                 }
-                else if (!isReadOnly)
+                else
                 {
                     hasChanged = true;
                 }
             }
-            else if (!isReadOnly && evt.eventTypeId == ExecuteCommandEvent.TypeId())
+            else if (evt.eventTypeId == ExecuteCommandEvent.TypeId())
             {
                 ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
                 string cmdName = commandEvt.commandName;

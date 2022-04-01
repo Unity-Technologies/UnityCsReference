@@ -56,7 +56,7 @@ namespace UnityEditor.Search
 
         internal override Rect GetItemRect(in GUIContent content)
         {
-            return GUILayoutUtility.GetRect(host.window.position.width - 18f, SearchField.minSinglelineTextHeight + 2, lineStyle, GUILayout.ExpandWidth(true));
+            return GUILayoutUtility.GetRect(host.window.position.width - 18f, UI.SearchField.minSinglelineTextHeight + 2, lineStyle, GUILayout.ExpandWidth(true));
         }
 
         internal override Vector2 CalcItemSize(GUIContent content)
@@ -66,7 +66,7 @@ namespace UnityEditor.Search
 
         internal override float CalcItemHeight(GUIContent content, float width)
         {
-            return SearchField.minSinglelineTextHeight + 2;
+            return UI.SearchField.minSinglelineTextHeight + 2;
         }
 
         internal override void DrawLineSeparator()

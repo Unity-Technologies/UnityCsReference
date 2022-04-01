@@ -134,13 +134,13 @@ namespace UnityEditor.PackageManager.UI
                 }
                 catch (ResourceLoaderException)
                 {
-                    Debug.LogError(L10n.Tr("[Package Manager] Unable to load resource, window can't be displayed.)"));
+                    Debug.LogError(L10n.Tr("[Package Manager Window] Unable to load resource, window can't be displayed.)"));
                     return;
                 }
                 catch (TargetInvocationException e)
                 {
                     CheckInnerException<ResourceLoaderException>(e);
-                    Debug.LogError(L10n.Tr("[Package Manager] Unable to load resource, window can't be displayed.)"));
+                    Debug.LogError(L10n.Tr("[Package Manager Window] Unable to load resource, window can't be displayed.)"));
                     return;
                 }
             }
@@ -254,7 +254,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", filterAndSubPageToSelect);
         }
 
-        [UsedByNativeCode]
+        [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
         internal static void OnPackageManagerResolve()
         {
             var packageDatabase = ServicesContainer.instance.Resolve<Internal.PackageDatabase>();

@@ -85,6 +85,12 @@ namespace UnityEditor
                     return;
             }
 
+            // If there is an effector (we are using it here) and it's using its collider-mask and we're using overrides then we need to highlight that they are not used here.
+            if (effector != null && effector.useColliderMask && (collider.includeLayers != 0 || collider.excludeLayers != 0))
+            {
+                EditorGUILayout.HelpBox("This collider has Layer Overrides set but these are not used because the '" + effector.GetType().Name + "' component is using its Collider Mask option.", MessageType.Warning);
+            }
+
             // Handle collision/trigger effector preferences.
             if (effector.designedForNonTrigger && collider.isTrigger)
             {

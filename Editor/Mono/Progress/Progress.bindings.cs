@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -74,6 +75,15 @@ namespace UnityEditor
             LastResumeTimeChanged = 1 << 12,
             EndTimeChanged = 1 << 13,
             EverythingChanged = 0xffffffff
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeHeader("Editor/Src/Progress.h")]
+        [RequiredByNativeCode(GenerateProxy = true)]
+        internal struct ProgressIdAndUpdates
+        {
+            public int id;
+            public Updates updates;
         }
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true, Name = "Editor::Progress::Start")]
@@ -238,7 +248,7 @@ namespace UnityEditor
 
         public static void ShowDetails(bool shouldReposition = true)
         {
-            EditorUIService.instance.ProgressWindowShowDetails(shouldReposition);
+            ProgressWindow.ShowDetails(shouldReposition);
         }
 
         private static List<Item> s_ProgressItems = new List<Item>(8);
@@ -344,22 +354,23 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        private static void OnOperationsStateChanged(int[] ids, Updates[] progressUpdates)
+        private static void OnOperationsStateChanged(ReadOnlySpan<ProgressIdAndUpdates> progressUpdates)
         {
             if (!s_Initialized)
                 RestoreProgressItems();
-            if (ids.Length == 0) return;
+            if (progressUpdates.Length == 0) return;
 
-            var items = new Item[ids.Length];
+            var items = new Item[progressUpdates.Length];
 
-            for (var i = 0; i < ids.Length; ++i)
+            for (var i = 0; i < progressUpdates.Length; i++)
             {
-                var id = ids[i];
-                var item = GetProgressById(id);
+                ref readonly var update = ref progressUpdates[i];
+                var item = GetProgressById(update.id);
                 Assert.IsNotNull(item);
-                item.Dirty(progressUpdates[i]);
+                item.Dirty(update.updates);
                 items[i] = item;
             }
+
             s_ProgressDirty = true;
             s_RemainingTimeDirty = true;
 
@@ -465,6 +476,9 @@ namespace UnityEditor
             s_Initialized = false;
             s_ProgressDirty = true;
             s_RemainingTimeDirty = true;
+            s_Progress = 0f;
+            s_RemainingTime = TimeSpan.Zero;
+            s_LastRemainingTimeUpdate = DateTime.Now;
         }
     }
 

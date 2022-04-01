@@ -59,26 +59,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This element contains the elements that are shown or hidden when you toggle the <see cref="Foldout"/>.
         /// </summary>
-        public override VisualElement contentContainer
-        {
-            get
-            {
-                return m_Container;
-            }
-        }
+        public override VisualElement contentContainer => m_Container;
 
         /// <summary>
         /// This is the text of the toggle's label.
         /// </summary>
         public string text
         {
-            get
-            {
-                return m_Toggle.text;
-            }
+            get => m_Toggle.text;
             set
             {
                 m_Toggle.text = value;
+                m_Toggle.visualInput.Q(className: Toggle.textUssClassName)?.AddToClassList(textUssClassName);
             }
         }
 
@@ -91,10 +83,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool value
         {
-            get
-            {
-                return m_Value;
-            }
+            get => m_Value;
             set
             {
                 if (m_Value == value)
@@ -152,6 +141,32 @@ namespace UnityEngine.UIElements
         /// below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string contentUssClassName = ussClassName + "__content";
+        /// <summary>
+        /// The USS class name for the Label element in a Foldout.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the <see cref="VisualElement"/> that contains the <see cref="Toggle"/> input elements.
+        /// Any styling applied to this class affects every foldout container located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string inputUssClassName = ussClassName + "__input";
+        /// <summary>
+        /// The USS class name for the Label element in a Foldout.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the <see cref="VisualElement"/> that represents the checkmark of the
+        /// <see cref="Toggle"/> sub-element of every <see cref="Foldout"/>. Any styling applied to this class affects
+        /// every foldout container located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string checkmarkUssClassName = ussClassName + "__checkmark";
+        /// <summary>
+        /// The USS class name for the Label element in a Foldout.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the <see cref="Label"/> in the <see cref="Toggle"/> sub-element of every
+        /// <see cref="Foldout"/>. Any styling applied to this class affects every foldout container located beside, or
+        /// below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string textUssClassName = ussClassName + "__text";
 
         internal static readonly string toggleInspectorUssClassName = toggleUssClassName + "--inspector";
         internal static readonly string ussFoldoutDepthClassName = ussClassName + "--depth-";
@@ -186,6 +201,8 @@ namespace UnityEngine.UIElements
                 evt.StopPropagation();
             });
             m_Toggle.AddToClassList(toggleUssClassName);
+            m_Toggle.visualInput.AddToClassList(inputUssClassName);
+            m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(checkmarkUssClassName);
             hierarchy.Add(m_Toggle);
 
             m_Container = new VisualElement()

@@ -17,6 +17,8 @@ namespace UnityEditor.EditorTools
 
     public abstract class EditorTool : ScriptableObject, IEditor
     {
+        bool m_Active;
+
         [HideInInspector]
         [SerializeField]
         internal UnityObject[] m_Targets;
@@ -53,6 +55,27 @@ namespace UnityEditor.EditorTools
         public virtual bool gridSnapEnabled
         {
             get { return false; }
+        }
+
+        internal void Activate()
+        {
+            if(m_Active
+                // Prevent to reenable the tool if this is not the active one anymore
+                // Can happen when entering playmode due to the delayCall in EditorToolManager.OnEnable
+                || this != EditorToolManager.activeTool)
+                return;
+
+            OnActivated();
+            m_Active = true;
+        }
+
+        internal void Deactivate()
+        {
+            if(!m_Active)
+                return;
+
+            OnWillBeDeactivated();
+            m_Active = false;
         }
 
         public virtual void OnActivated() {}

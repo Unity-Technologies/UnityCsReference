@@ -39,6 +39,7 @@ namespace UnityEditor
             public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "SpriteRenderer's interaction with a Sprite Mask");
             public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
+            public static readonly GUIContent drawModeChange = EditorGUIUtility.TrTextContent("Draw mode Change");
         }
 
         private SerializedProperty m_FlipX;
@@ -89,7 +90,14 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledGroupScope(IsTextureless()))
             {
-                EditorGUILayout.PropertyField(m_DrawMode, Styles.drawModeLabel);
+                var showMixedValue = EditorGUI.showMixedValue;
+                if (m_DrawMode.hasMultipleDifferentValues)
+                    EditorGUI.showMixedValue = true;
+                SpriteDrawMode drawMode = (SpriteDrawMode)m_DrawMode.intValue;
+                drawMode = (SpriteDrawMode)EditorGUILayout.EnumPopup(Styles.drawModeLabel, drawMode);
+                SetDrawMode(drawMode);
+                EditorGUI.showMixedValue = showMixedValue;
+
                 m_ShowDrawMode.target = ShouldShowDrawMode();
                 if (EditorGUILayout.BeginFadeGroup(m_ShowDrawMode.faded))
                 {
@@ -137,6 +145,26 @@ namespace UnityEditor
             Other2DSettingsGUI();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        internal void SetDrawMode(SpriteDrawMode drawMode)
+        {
+            if (drawMode != (SpriteDrawMode)m_DrawMode.intValue)
+            {
+                foreach (var target in serializedObject.targetObjects)
+                {
+                    var sr = (SpriteRenderer)target;
+                    var t = sr.transform;
+                    Undo.RecordObjects(new UnityEngine.Object[] {sr, t}, Styles.drawModeChange.text);
+                    sr.drawMode = drawMode;
+                    foreach (var editor in ActiveEditorTracker.sharedTracker.activeEditors)
+                    {
+                        if(editor.target == t)
+                            editor.serializedObject.SetIsDifferentCacheDirty();
+                    }
+                }
+                serializedObject.SetIsDifferentCacheDirty();
+            }
         }
 
         void FloatFieldLabelAbove(GUIContent contentLabel, SerializedProperty sp)
@@ -217,7 +245,6 @@ namespace UnityEditor
             EditorGUI.indentLevel = oldIndent;
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObjects(targets, "Edit Constraints");
                 property.boolValue = toggle;
             }
 
@@ -241,20 +268,6 @@ namespace UnityEditor
 
         private bool IsMaterialTextureAtlasConflict()
         {
-            Material material = (target as SpriteRenderer).sharedMaterial;
-            if (material == null)
-                return false;
-            string tag = material.GetTag("CanUseSpriteAtlas", false);
-            if (tag.ToLower() == "false")
-            {
-                Sprite frame = m_Sprite.objectReferenceValue as Sprite;
-                TextureImporter ti = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(frame)) as TextureImporter;
-                if (ti != null && ti.spritePackingTag != null && ti.spritePackingTag.Length > 0)
-                {
-                    return true;
-                }
-            }
-
             return false;
         }
 

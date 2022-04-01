@@ -149,7 +149,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         internal static uint ConvertToUTF32(uint highSurrogate, uint lowSurrogate)
         {
-            return ((highSurrogate - UnicodeCodePoint.HIGH_SURROGATE_START) * 0x400) + ((lowSurrogate - UnicodeCodePoint.LOW_SURROGATE_START) + UnicodeCodePoint.UNICODE_PLANE01_START);
+            return ((highSurrogate - CodePoint.HIGH_SURROGATE_START) * 0x400) + ((lowSurrogate - CodePoint.LOW_SURROGATE_START) + CodePoint.UNICODE_PLANE01_START);
         }
 
         /// <summary>

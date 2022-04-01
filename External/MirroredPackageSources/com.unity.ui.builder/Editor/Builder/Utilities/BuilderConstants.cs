@@ -209,7 +209,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerInExplorerNewClassSelectorInfoMessage = "Add new selector...";
 
         // Code Preview Messages
-        public static readonly string CodePreviewTruncatedTextMessage = "The content is truncated because it is too long.";
+        public static readonly string CodePreviewTruncatedTextMessage = "The content is truncated because it is too long";
 
         //
         // Library
@@ -256,8 +256,6 @@ namespace Unity.UI.Builder
         public static readonly string CanvasContainerDarkStyleClassName = "unity-builder-canvas__container--dark";
         public static readonly string CanvasContainerLightStyleClassName = "unity-builder-canvas__container--light";
         public static readonly string CanvasContainerRuntimeStyleClassName = "unity-builder-canvas__container--runtime";
-        public static readonly string SpecialVisualElementInitialMinSizeName = "__unity-builder-canvas__special-visual-element-initial-size";
-        public static readonly string SpecialVisualElementInitialMinSizeClassName = "unity-builder-canvas__special-visual-element-initial-size";
 
         // Canvas Messages
         public static readonly string CannotManipulateResizedOrScaledItemMessage = "The selected item is rotated or scaled.\nTransforming it from the viewport is not properly supported yet.";
@@ -273,6 +271,11 @@ namespace Unity.UI.Builder
         public static readonly string ToolbarUnsavedFileSuffix = "*";
         public static readonly string ToolbarUnsavedFileDisplayText = "<unsaved file>";
         public static readonly string ToolbarUnsavedFileDisplayMessage = ToolbarUnsavedFileDisplayText + ToolbarUnsavedFileSuffix;
+
+        // Toolbar tooltips
+        public static readonly string ToolbarCanvasThemeMenuEmptyTooltip = "Preview theme list is empty.\n\nYou can create new themes or a default Runtime theme from the \"Assets/Create/UI Toolkit\" menu.";
+        public static readonly string ToolbarCanvasThemeMenuEditorTooltip = "Select a preview theme for the viewport.\n\nNote: List contains some themes available only with the Editor Extensions Authoring mode.";
+        public static readonly string ToolbarCanvasThemeMenuTooltip = "Select a preview theme for the viewport.";
 
         //
         // Undo/Redo
@@ -312,8 +315,11 @@ namespace Unity.UI.Builder
         public static readonly string SaveDialogChooseUssPathDialogTitle = "Choose USS File Location";
         public static readonly string SaveDialogSaveChangesPromptTitle = "UI Builder - Unsaved Changes Detected";
         public static readonly string SaveDialogSaveChangesPromptMessage = "Do you want to save changes you made?";
-        public static readonly string SaveDialogExternalChangesPromptTitle = "UI Builder - Document has been modified in an external editor";
-        public static readonly string SaveDialogExternalChangesPromptMessage = "Unsaved changes in the UI Builder will be lost.\nPlease avoid changing files externally while they are open in the Builder.";
+        public static readonly string SaveDialogExternalChangesPromptTitle = "The document, {0}, has been changed outside of the UI Builder";
+        public static readonly string SaveDialogExternalChangesPromptMessage =
+            "The UI Builder will now apply the changes made outside of the UI Builder. This overwrites any unsaved changes you made in the UI Builder.\n\n" +
+            "Note: To avoid conflicting changes, make sure to save any changes you make in the UI Builder before editing a file in an external editor or " +
+            "in a dedicated editor inside Unity (this includes resource files like Font and Sprite assets which have their own editor).";
         public static readonly string SaveDialogInvalidPathMessage = "Can only save in the 'Assets/' or 'Packages/' folders.";
         public static readonly string SaveDialogReplaceWithNewTemplateMessage = "Changes to your template affect this file. In order to replace this template, we need to save your current file.";
 
@@ -354,6 +360,7 @@ namespace Unity.UI.Builder
         public static readonly string TypeAttributeInvalidTypeMessage = "{0} attribute is an invalid type. Make sure to include assembly name.";
         public static readonly string TypeAttributeMustDeriveFromMessage = "{0} attribute type must derive from {1}";
         public static readonly string BuiltInAssetPathsNotSupportedMessage = "Built-in resource paths are not supported in USS.";
+        public static readonly string BuiltInAssetPathsNotSupportedMessageUxml = "Built-in resource paths are not supported in UXML.";
         public static readonly string DocumentMatchGameViewModeDisabled = "Match Game View mode disabled.";
 
         // Settings
@@ -376,7 +383,7 @@ namespace Unity.UI.Builder
         // UXML
         public static readonly string UxmlOpenTagSymbol = "<";
         public static readonly string UxmlCloseTagSymbol = ">";
-        public static readonly string UxmlEndTagSymbol = "/" + UxmlCloseTagSymbol;
+        public static readonly string UxmlEndTagSymbol = " /" + UxmlCloseTagSymbol;
         public static readonly string UxmlTemplateClassTag = "Template";
         public static readonly string UxmlNameAttr = "name";
         public static readonly string UxmlHeader = "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\"";

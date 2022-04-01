@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
@@ -39,10 +40,9 @@ namespace Unity.Collections
         [NativeSetClassTypeToNullOnSchedule]
         internal DisposeSentinel          m_DisposeSentinel;
 
-        // TODO: Once Burst supports internal/external functions in static initializers, this can become
-        //   static readonly int s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeArray<T>>();
-        // and InitStaticSafetyId() can be replaced with a call to AtomicSafetyHandle.SetStaticSafetyId();
+        // TODO: Use SharedStatic for burst compatible static id once we have typehash intrinsic for unity in burst 1.6.5 and 1.7.0
         static int                        s_staticSafetyId;
+
         [BurstDiscard]
         static void InitStaticSafetyId(ref AtomicSafetyHandle handle)
         {
@@ -78,23 +78,29 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        static void CheckAllocateArguments(int length, Allocator allocator, long totalSize)
+        static void CheckAllocateArguments(int length, Allocator allocator)
         {
             // Native allocation is only valid for Temp, Job and Persistent.
             if (allocator <= Allocator.None)
                 throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
+
+            // NativeArray constructor does not support custom allocator
+            if (allocator >= Allocator.FirstUserIndex)
+                throw new ArgumentException("Use CollectionHelper.CreateNativeArray for custom allocator", nameof(allocator));
+
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
-
-            IsUnmanagedAndThrow();
         }
 
         static void Allocate(int length, Allocator allocator, out NativeArray<T> array)
         {
             long totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
-            CheckAllocateArguments(length, allocator, totalSize);
+            CheckAllocateArguments(length, allocator);
 
             array = default(NativeArray<T>);
+
+            IsUnmanagedAndThrow();
+
             array.m_Buffer = UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<T>(), allocator);
             array.m_Length = length;
             array.m_AllocatorLabel = allocator;
@@ -103,6 +109,7 @@ namespace Unity.Collections
             array.m_MaxIndex = length - 1;
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
             InitStaticSafetyId(ref array.m_Safety);
+            InitNestedNativeContainer(array.m_Safety);
         }
 
         public int Length
@@ -115,13 +122,23 @@ namespace Unity.Collections
             }
         }
 
+        internal static void InitNestedNativeContainer(AtomicSafetyHandle handle)
+        {
+            if (UnsafeUtility.IsNativeContainerType<T>())
+            {
+                AtomicSafetyHandle.SetNestedContainer(handle, true);
+            }
+        }
+
+        // NativeArray is not constrained to unmanaged so it must be checked
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [BurstDiscard]
         internal static void IsUnmanagedAndThrow()
         {
-            if (!UnsafeUtility.IsValidNativeContainerElementType<T>())
+            if (!UnsafeUtility.IsUnmanaged<T>())
             {
                 throw new InvalidOperationException(
-                    $"{typeof(T)} used in NativeArray<{typeof(T)}> must be unmanaged (contain no managed types) and cannot itself be a native container type.");
+                    $"{typeof(T)} used in NativeArray<{typeof(T)}> must be unmanaged (contain no managed types).");
             }
         }
 
@@ -680,7 +697,7 @@ namespace Unity.Collections
         public NativeArray<T> GetSubArray(int start, int length)
         {
             CheckGetSubArrayArguments(start, length);
-            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.Invalid);
+            var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
             result.m_DisposeSentinel = null;
@@ -885,9 +902,8 @@ namespace Unity.Collections.LowLevel.Unsafe
             array.m_Safety = safety;
         }
 
-
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckConvertArguments<T>(int length, Allocator allocator) where T : struct
+        private static void CheckConvertArguments<T>(int length) where T : struct
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
@@ -899,7 +915,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// The caller is still the owner of the data.
         public static unsafe NativeArray<T> ConvertExistingDataToNativeArray<T>(void* dataPointer, int length, Allocator allocator) where T : struct
         {
-            CheckConvertArguments<T>(length, allocator);
+            CheckConvertArguments<T>(length);
 
             var newArray = new NativeArray<T>
             {

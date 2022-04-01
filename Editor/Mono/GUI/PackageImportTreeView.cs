@@ -21,7 +21,7 @@ namespace UnityEditor
         static readonly bool s_UseFoldouts = true;
         public enum EnabledState
         {
-            NotSet = -1,
+            Disabled = -1,
             None = 0,
             All = 1,
             Mixed = 2
@@ -71,6 +71,11 @@ namespace UnityEditor
                     RecursiveComputeEnabledStateForFolders(child as PackageImportTreeViewItem, done);
                 }
             }
+            else if (pitem.item.isFolder)
+            {
+                // since the folder is empty, we don't need to set the enabled check depending of it's children
+                done.Add(pitem);
+            }
 
             // Now do logic
             if (!done.Contains(pitem))
@@ -107,6 +112,10 @@ namespace UnityEditor
             if (pitem.item == null)
                 return true;
 
+            // item is disabled
+            if (pitem.enableState == EnabledState.Disabled)
+                return false;
+
             var item = pitem.item;
             // Its a package asset or its changed
             if (item.projectAsset || !(item.isFolder || item.assetChanged))
@@ -123,7 +132,8 @@ namespace UnityEditor
             if (!folder.hasChildren)
                 return EnabledState.None;
 
-            EnabledState amount = EnabledState.NotSet;
+            // item is disabled if none of its children can be considered for enabled check
+            EnabledState amount = EnabledState.Disabled;
 
             int i = 0;
             for (; i < folder.children.Count; ++i)
@@ -153,9 +163,6 @@ namespace UnityEditor
                     }
                 }
             }
-
-            if (amount == EnabledState.NotSet)
-                return EnabledState.None;
 
             return amount;
         }
@@ -345,6 +352,7 @@ namespace UnityEditor
                     selectionStyle.Draw(rowRect, false, false, true, focused);
 
                 bool validItem    = (item != null);
+                bool isDisabled   = (item != null) ? item.enabledStatus == (int)EnabledState.Disabled : false;
                 bool isFolder     = (item != null) ? item.isFolder     : true;
                 bool assetChanged = (item != null) ? item.assetChanged : false;
                 bool pathConflict = (item != null) ? item.pathConflict : false;
@@ -372,7 +380,7 @@ namespace UnityEditor
                     DoPreviewPopup(pitem, rowRect);
 
                     // 4. Warning about file/GUID clashing.
-                    if (repainting && validItem)
+                    if (!isDisabled && repainting && validItem)
                     {
                         if (pathConflict)
                         {
@@ -392,7 +400,7 @@ namespace UnityEditor
                     }
 
                     // 5. Optional badge ("New")
-                    if (repainting && validItem && !(exists || pathConflict))
+                    if (!isDisabled && repainting && validItem && !(exists || pathConflict))
                     {
                         // FIXME: Need to enable tooltips here.
                         Texture badge = Constants.badgeNew.image;
@@ -401,7 +409,7 @@ namespace UnityEditor
                     }
 
                     // 7. Show what stuff has changed
-                    if (repainting && validItem && (exists || pathConflict) && assetChanged)
+                    if (!isDisabled && repainting && validItem && (exists || pathConflict) && assetChanged)
                     {
                         if (PackageImportWizard.instance.IsProjectSettingStep)
                         {
@@ -429,9 +437,14 @@ namespace UnityEditor
                 if (setMixed)
                     style = EditorStyles.toggleMixed;
 
+                if (isFolder && (pitem.enableState == EnabledState.Disabled))
+                    GUI.enabled = false;
+
                 bool newEnabled =  GUI.Toggle(toggleRect, enabled, GUIContent.none, style);
                 if (newEnabled != enabled)
                     pitem.enableState = newEnabled ? EnabledState.All : EnabledState.None;
+
+                GUI.enabled = true;
             }
 
             void DoToggle(PackageImportTreeViewItem pitem, Rect toggleRect)

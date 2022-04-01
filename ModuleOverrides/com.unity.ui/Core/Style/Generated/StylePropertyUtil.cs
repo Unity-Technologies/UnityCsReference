@@ -96,6 +96,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-bottom", StylePropertyId.UnitySliceBottom},
             {"-unity-slice-left", StylePropertyId.UnitySliceLeft},
             {"-unity-slice-right", StylePropertyId.UnitySliceRight},
+            {"-unity-slice-scale", StylePropertyId.UnitySliceScale},
             {"-unity-slice-top", StylePropertyId.UnitySliceTop},
             {"-unity-text-align", StylePropertyId.UnityTextAlign},
             {"-unity-text-outline", StylePropertyId.UnityTextOutline},
@@ -186,6 +187,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.UnitySliceBottom, "-unity-slice-bottom"},
             {StylePropertyId.UnitySliceLeft, "-unity-slice-left"},
             {StylePropertyId.UnitySliceRight, "-unity-slice-right"},
+            {StylePropertyId.UnitySliceScale, "-unity-slice-scale"},
             {StylePropertyId.UnitySliceTop, "-unity-slice-top"},
             {StylePropertyId.UnityTextAlign, "-unity-text-align"},
             {StylePropertyId.UnityTextOutline, "-unity-text-outline"},
@@ -198,7 +200,24 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.WordSpacing, "word-spacing"}
         };
 
-        internal static readonly StylePropertyId[] s_AnimatableProperties = new StylePropertyId[]{StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceTop, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+        internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>()
+        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+
+        internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
+        {
+            {StylePropertyId.BackgroundColor, UsageHints.DynamicColor},
+            {StylePropertyId.BorderBottomColor, UsageHints.DynamicColor},
+            {StylePropertyId.BorderColor, UsageHints.DynamicColor},
+            {StylePropertyId.BorderLeftColor, UsageHints.DynamicColor},
+            {StylePropertyId.BorderRightColor, UsageHints.DynamicColor},
+            {StylePropertyId.BorderTopColor, UsageHints.DynamicColor},
+            {StylePropertyId.Color, UsageHints.DynamicColor},
+            {StylePropertyId.Rotate, UsageHints.DynamicTransform},
+            {StylePropertyId.Scale, UsageHints.DynamicTransform},
+            {StylePropertyId.TransformOrigin, UsageHints.DynamicTransform},
+            {StylePropertyId.Translate, UsageHints.DynamicTransform},
+            {StylePropertyId.UnityBackgroundImageTintColor, UsageHints.DynamicColor}
+        };
 
         public static bool TryGetEnumIntValue(StyleEnumType enumType, string value, out int intValue)
         {

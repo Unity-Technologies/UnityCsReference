@@ -286,6 +286,8 @@ namespace UnityEngine.UIElements
                 }
                 if (ownerObject != null)
                     UIElementsUtility.RemoveCachedPanel(ownerObject.GetInstanceID());
+
+                PointerDeviceState.RemovePanelData(this);
             }
             else
                 DisposeHelper.NotifyMissingDispose(this);
@@ -303,6 +305,7 @@ namespace UnityEngine.UIElements
 
         public abstract void UpdateAssetTrackers();
         public abstract void DirtyStyleSheets();
+        internal abstract void UpdateInlineStylesRecursively(VisualElement root = null);
 
         public bool enableAssetReload
         {
@@ -357,6 +360,8 @@ namespace UnityEngine.UIElements
         {
             get { return m_PixelsPerPoint * m_Scale; }
         }
+
+        public float referenceSpritePixelsPerUnit { get; set; } = 100.0f;
 
         // For backwards compatibility with debugger in 2020.1
         public PanelClearFlags clearFlags
@@ -966,6 +971,21 @@ namespace UnityEngine.UIElements
             return m_VisualTreeUpdater.visualTreeEditorUpdater.GetUpdater(phase);
         }
 
+        internal override void UpdateInlineStylesRecursively(VisualElement rootElement = null)
+        {
+            var root = rootElement ?? m_RootContainer;
+
+            if (root.visualTreeAssetSource?.inlineSheet?.rules.Length == 0)
+                return;
+
+            foreach (var element in root.Children())
+            {
+                if (element.visualTreeAssetSource?.inlineSheet != null && element.inlineStyleAccess?.inlineRule.rule != null)
+                    element.UpdateInlineRule(element.visualTreeAssetSource.inlineSheet, element.inlineStyleAccess.inlineRule.rule);
+
+                UpdateInlineStylesRecursively(element);
+            }
+        }
 
         static internal event Action<Panel> beforeAnyRepaint;
 
@@ -1063,6 +1083,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal int resolvedSortingIndex = 0;
+
         public event Action destroyed;
 
         protected BaseRuntimePanel(ScriptableObject ownerObject, EventDispatcher dispatcher = null)
@@ -1126,7 +1148,7 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            // if the renderTarget is not set, we simply render on whatever target is currently set
+            // if the targetTexture is not set, we simply render on whatever target is currently set
             if (targetTexture == null)
             {
                 // This is called after the camera(s) are done rendering, so the
@@ -1140,11 +1162,17 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var toBeRestoredTarget = RenderTexture.active;
+            var oldCam = Camera.current;
+            var oldRT = RenderTexture.active;
+
+            Camera.SetupCurrent(null);
             RenderTexture.active = targetTexture;
+
             GL.Viewport(new Rect(0, 0, targetTexture.width, targetTexture.height));
             base.Repaint(e);
-            RenderTexture.active = toBeRestoredTarget;
+
+            Camera.SetupCurrent(oldCam);
+            RenderTexture.active = oldRT;
         }
 
         internal static readonly Func<Vector2, Vector2> DefaultScreenToPanelSpace = (p) => (p);
@@ -1168,6 +1196,8 @@ namespace UnityEngine.UIElements
 
             Vector2 panelPrevPosition;
 
+            // We don't allow pointer events outside of a panel to be considered
+            // unless it is capturing the mouse (see SendPositionBasedEvent).
             if (!allowOutside)
             {
                 var panelRect = visualTree.layout;
@@ -1209,6 +1239,18 @@ namespace UnityEngine.UIElements
             {
                 ObjectListPool<IRuntimePanelComponent>.Release(components);
             }
+        }
+
+        internal void PointerLeavesPanel(int pointerId, Vector2 position)
+        {
+            ClearCachedElementUnderPointer(pointerId, null);
+            CommitElementUnderPointers();
+            PointerDeviceState.SavePointerPosition(pointerId, position, null, contextType);
+        }
+
+        internal void PointerEntersPanel(int pointerId, Vector2 position)
+        {
+            PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
         }
     }
 

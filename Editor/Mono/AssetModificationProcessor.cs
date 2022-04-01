@@ -97,7 +97,7 @@ namespace UnityEditor
 #pragma warning restore 0618
 
         [RequiredByNativeCode]
-        static void OnWillCreateAsset(string path)
+        internal static void OnWillCreateAsset(string path)
         {
             foreach (var assetModificationProcessorClass in AssetModificationProcessors)
             {

@@ -196,17 +196,12 @@ namespace Unity.UI.Builder
         {
             if (property.name == "cursor" && property.values.Length > 1 && !property.IsVariable())
             {
-                int i;
-                string propertyValueStr;
-                for (i = 0; i < property.values.Length - 1; i++)
+                for (var i = 0; i < property.values.Length; i++)
                 {
-                    propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
+                    var propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
                     sb.Append(" ");
                     sb.Append(propertyValueStr);
                 }
-                sb.Append(", ");
-                propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
-                sb.Append(propertyValueStr);
             }
             else
             {

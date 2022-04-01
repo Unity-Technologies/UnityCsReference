@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Net;
 
 namespace UnityEngine.UIElements
 {
@@ -142,8 +140,8 @@ namespace UnityEngine.UIElements
         {
             if (pointerId == PointerId.mousePointerId && m_PendingPointerCapture[pointerId] != handler && GUIUtility.hotControl != 0)
             {
-                Debug.LogWarning("Should not be capturing when there is a hotcontrol");
-                return;
+                // Note that this will release the mouse and call ProcessPointerCapture immediately
+                GUIUtility.hotControl = 0;
             }
 
             m_PendingPointerCapture[pointerId] = handler;

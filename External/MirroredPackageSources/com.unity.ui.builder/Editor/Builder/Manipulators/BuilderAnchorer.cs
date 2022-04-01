@@ -113,7 +113,7 @@ namespace Unity.UI.Builder
                 SetAnchorHandleState(primaryStyle, true);
 
                 m_Selection.NotifyOfStylingChange(this, changeList);
-                m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);
+                m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             }
             else if (oppositeIsSet)
             {
@@ -124,7 +124,7 @@ namespace Unity.UI.Builder
                 SetAnchorHandleState(primaryStyle, false);
 
                 m_Selection.NotifyOfStylingChange(this, changeList);
-                m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);
+                m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             }
         }
 

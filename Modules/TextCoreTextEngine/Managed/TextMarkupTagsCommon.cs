@@ -80,6 +80,15 @@ namespace UnityEngine.TextCore.Text
         ROTATE = -1000007783,               // <rotate>
         SLASH_ROTATE = -764695562,          // </rotate>
 
+        TABLE = 226476955,                  // <table>
+        SLASH_TABLE = -979118220,           // </table>
+        TH = 5862489,                       // <th>
+        SLASH_TH = 193346070,               // </th>
+        TR = 5862467,                       // <tr>
+        SLASH_TR = 193346060,               // </tr>
+        TD = 5862485,                       // <td>
+        SLASH_TD = 193346074,               // </td>
+
         LOWERCASE = -1506899689,            // <lowercase>
         SLASH_LOWERCASE = -1451284584,      // </lowercase>
         ALLCAPS = 218273952,                // <allcaps>
@@ -104,6 +113,8 @@ namespace UnityEngine.TextCore.Text
         HREF = 2535353,                 // <a href="url">text to be displayed.</a>
         ANGLE = 75347905,               // <i angle="40">Italic Slant Angle</i>
         PADDING = -2144568463,
+        FAMILYNAME = 704251153,
+        STYLENAME = -1207081936,
 
         // Named Colors
         RED = 91635,
@@ -117,6 +128,7 @@ namespace UnityEngine.TextCore.Text
 
         // Unicode Characters
         BR = 2256,                          // <br> Line Feed (LF) \u0A
+        CR = 2289,                          // <cr> Carriage Return (CR) \u000D
         ZWSP = 3288238,                     // <zwsp> Zero Width Space \u200B
         NBSP = 2869039,                     // <nbsp> Non Breaking Space \u00A0
         SHY = 92674,                        // <SHY> Soft Hyphen \u00AD
@@ -149,9 +161,11 @@ namespace UnityEngine.TextCore.Text
         FALSE = 85422813,
 
         INVALID = 1585415185,
+        NOTDEF = 612146780,             // .notdef
 
         NORMAL = -1183493901,           // <style="Normal">
         DEFAULT = -620974005,           // <font="Default">
+        REGULAR = 1291372090,
     }
 
     /// <summary>
@@ -175,7 +189,7 @@ namespace UnityEngine.TextCore.Text
     /// <summary>
     /// Commonly referenced Unicode characters in the text generation process.
     /// </summary>
-    internal static class UnicodeCodePoint
+    internal static class CodePoint
     {
         public const uint SPACE = 0x20;
         public const uint DOUBLE_QUOTE = 0x22;

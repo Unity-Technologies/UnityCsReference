@@ -27,6 +27,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_PackageDatabase.Install(versions);
+            // The current multi-select UI does not allow users to install non-recommended versions
+            // Should this change in the future, we'll need to update the analytics event accordingly.
+            PackageManagerWindowAnalytics.SendEvent("installNewRecommended", packageIds: versions.Select(v => v.uniqueId));
             return true;
         }
 
@@ -41,6 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var packageNameAndVersions = string.Join("\n\u2022 ",
                         customizedDependencies.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
 
+                    var title = string.Format(L10n.Tr("Installing {0}"), version.package.GetDescriptor());
                     var message = customizedDependencies.Length == 1 ?
                         string.Format(
                         L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
@@ -49,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
                         version.package.GetDescriptor(), packageNameAndVersions);
 
-                    var result = m_Application.DisplayDialogComplex(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
+                    var result = m_Application.DisplayDialogComplex("installPackageWithCustomizedDependencies", title, message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
                     if (result == 1) // Cancel
                         return false;
                     if (result == 0) // Install and reset

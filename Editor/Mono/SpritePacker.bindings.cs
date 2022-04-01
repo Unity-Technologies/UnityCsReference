@@ -73,25 +73,6 @@ namespace UnityEditor.Sprites
         [FreeFunction("SpritePacker::GetAlphaTexturesForAtlas")]
         public static extern Texture2D[] GetAlphaTexturesForAtlas(string atlasName);
 
-        [FreeFunction("SpritePacker::RebuildAtlasCacheIfNeededFromScript")]
-        internal static extern void RebuildAtlasCacheIfNeededInternal(BuildTarget target, bool displayProgressBar, Execution execution);
-
-        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
-        [FreeFunction("SpritePacker::RebuildAtlasCacheIfNeededFromScript")]
-        public static extern void RebuildAtlasCacheIfNeeded(BuildTarget target, bool displayProgressBar, Execution execution);
-
-        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
-        public static void RebuildAtlasCacheIfNeeded(BuildTarget target, bool displayProgressBar)
-        {
-            RebuildAtlasCacheIfNeeded(target, displayProgressBar, Execution.Normal);
-        }
-
-        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
-        public static void RebuildAtlasCacheIfNeeded(BuildTarget target)
-        {
-            RebuildAtlasCacheIfNeeded(target, false, Execution.Normal);
-        }
-
         public static void GetAtlasDataForSprite(Sprite sprite, out string atlasName, out Texture2D atlasTexture)
         {
             atlasName = Internal_GetAtlasNameForSprite(sprite);

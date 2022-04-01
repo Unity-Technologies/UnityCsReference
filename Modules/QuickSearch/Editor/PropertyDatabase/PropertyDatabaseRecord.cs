@@ -10,12 +10,12 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    interface IPropertyDatabaseRecordValue
+    public interface IPropertyDatabaseRecordValue
     {
         PropertyDatabaseType type { get; }
     }
 
-    interface IPropertyDatabaseRecord
+    public interface IPropertyDatabaseRecord
     {
         PropertyDatabaseRecordKey key { get; }
         IPropertyDatabaseRecordValue value { get; }
@@ -31,7 +31,7 @@ namespace UnityEditor.Search
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    readonly struct PropertyDatabaseRecordKey : IComparable<PropertyDatabaseRecordKey>, IEquatable<PropertyDatabaseRecordKey>
+    public readonly struct PropertyDatabaseRecordKey : IComparable<PropertyDatabaseRecordKey>, IEquatable<PropertyDatabaseRecordKey>
     {
         public readonly ulong documentKey;
         public readonly Hash128 propertyKey;
@@ -99,14 +99,14 @@ namespace UnityEditor.Search
             }
         }
 
-        public void ToBinary(BinaryWriter bw)
+        internal void ToBinary(BinaryWriter bw)
         {
             bw.Write(documentKey);
             bw.Write(propertyKey.u64_0);
             bw.Write(propertyKey.u64_1);
         }
 
-        public static PropertyDatabaseRecordKey FromBinary(BinaryReader br)
+        internal static PropertyDatabaseRecordKey FromBinary(BinaryReader br)
         {
             var documentKey = br.ReadUInt64();
             var u640 = br.ReadUInt64();
@@ -811,25 +811,25 @@ namespace UnityEditor.Search
 
         public static int size => PropertyDatabaseRecordKey.size + sizeof(byte) + PropertyDatabaseRecordValue.size;
 
-        public PropertyDatabaseRecord(ulong documentKey, Hash128 propertyKey, PropertyDatabaseRecordValue recordValue)
+        public PropertyDatabaseRecord(ulong documentKey, Hash128 propertyKey, in PropertyDatabaseRecordValue recordValue)
             : this(new PropertyDatabaseRecordKey(documentKey, propertyKey), recordValue)
         {}
 
-        public PropertyDatabaseRecord(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue recordValue)
+        public PropertyDatabaseRecord(in PropertyDatabaseRecordKey recordKey, in PropertyDatabaseRecordValue recordValue)
         {
             this.recordKey = recordKey;
             this.recordValue = recordValue;
             valid = 1;
         }
 
-        public PropertyDatabaseRecord(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue recordValue, bool valid)
+        public PropertyDatabaseRecord(in PropertyDatabaseRecordKey recordKey, in PropertyDatabaseRecordValue recordValue, bool valid)
         {
             this.recordKey = recordKey;
             this.recordValue = recordValue;
             this.valid = valid ? (byte)1 : (byte)0;
         }
 
-        public PropertyDatabaseRecord(PropertyDatabaseRecordKey recordKey, PropertyDatabaseRecordValue recordValue, byte valid)
+        public PropertyDatabaseRecord(in PropertyDatabaseRecordKey recordKey, in PropertyDatabaseRecordValue recordValue, byte valid)
         {
             this.recordKey = recordKey;
             this.recordValue = recordValue;

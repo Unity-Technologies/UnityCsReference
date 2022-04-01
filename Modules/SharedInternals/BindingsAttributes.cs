@@ -466,4 +466,26 @@ namespace UnityEngine.Bindings
         {
         }
     }
+
+
+    [VisibleToOtherModules]
+    interface IBindingsMarshalAsSpan
+    {
+        bool IsReadOnly { get; }
+        string SizeParameter { get; }
+    }
+
+    [VisibleToOtherModules]
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple =false, Inherited = false)]
+    class SpanAttribute : Attribute, IBindingsMarshalAsSpan
+    {
+        public bool IsReadOnly { get; }
+        public string SizeParameter { get; }
+
+        public SpanAttribute(string sizeParameter, bool isReadOnly = false)
+        {
+            SizeParameter = sizeParameter;
+            IsReadOnly = isReadOnly;
+        }
+    }
 }

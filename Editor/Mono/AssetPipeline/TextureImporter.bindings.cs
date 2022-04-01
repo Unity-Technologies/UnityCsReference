@@ -374,7 +374,8 @@ namespace UnityEditor
 
         public extern SecondarySpriteTexture[] secondarySpriteTextures { get; set; }
 
-        public extern string spritePackingTag { get; set; }
+        [Obsolete("Support for packing sprites through spritePackingTag has been removed. Please use SpriteAtlas instead.")]
+        public string spritePackingTag { get { return ""; } set { } }
 
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,
         // but has not been changed yet to minimize merge conflicts.

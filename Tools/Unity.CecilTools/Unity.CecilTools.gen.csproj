@@ -8,7 +8,6 @@
     <LangVersion>latest</LangVersion>
     <NoWarn>1071;1701</NoWarn>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <ResolveNuGetPackages>false</ResolveNuGetPackages>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CecilUtils.cs" />

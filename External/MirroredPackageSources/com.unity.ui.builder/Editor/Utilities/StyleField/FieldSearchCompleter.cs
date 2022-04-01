@@ -131,7 +131,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        public event Action<TData> onSelectionChange;
+        public event Action<TData> selectionChanged;
 
         public int itemHeight
         {
@@ -220,12 +220,12 @@ namespace Unity.UI.Builder
                             m_Popup.Add(detailsContent);
                         m_Builder.rootVisualElement.Add(m_Popup);
                         m_Popup.Hide();
-                        m_Popup.onElementChosen += (index) =>
+                        m_Popup.elementChosen += (index) =>
                         {
                             textField.value = GetTextFromData(results[index]);
                             textField.Q(TextField.textInputUssName).Blur();
                         };
-                        m_Popup.onSelectionChange += (index) => onSelectionChange?.Invoke(index != -1 ? results[index] : default(TData));
+                        m_Popup.selectionChanged += (index) => selectionChanged?.Invoke(index != -1 ? results[index] : default(TData));
                         UpdatePopup();
                     }
                 }
@@ -479,8 +479,8 @@ namespace Unity.UI.Builder
 
         Label m_ResultLabel;
 
-        public Action<int> onElementChosen;
-        public Action<int> onSelectionChange;
+        public Action<int> elementChosen;
+        public Action<int> selectionChanged;
 
         public ListView listView { get; private set; }
 
@@ -493,14 +493,14 @@ namespace Unity.UI.Builder
             sv.style.flexGrow = 0;
             sv.style.flexShrink = 1;
             listView.Q<ScrollView>().horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            listView.onItemsChosen += (obj) =>
+            listView.itemsChosen += (obj) =>
             {
-                onElementChosen?.Invoke(listView.selectedIndex);
+                elementChosen?.Invoke(listView.selectedIndex);
             };
 
-            listView.onSelectionChange += (obj) =>
+            listView.selectionChanged += (obj) =>
             {
-                onSelectionChange?.Invoke(listView.selectedIndex);
+                selectionChanged?.Invoke(listView.selectedIndex);
             };
 
             Add(listView);

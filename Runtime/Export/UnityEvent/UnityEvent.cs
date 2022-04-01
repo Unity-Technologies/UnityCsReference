@@ -450,7 +450,7 @@ namespace UnityEngine.Events
 
         public BaseInvokableCall GetRuntimeCall(UnityEventBase theEvent)
         {
-            if (m_CallState == UnityEventCallState.RuntimeOnly && !Application.isPlaying)
+            if (m_CallState == UnityEventCallState.RuntimeOnly && (target != null ? !Application.IsPlaying(target) : !Application.isPlaying))
                 return null;
             if (m_CallState == UnityEventCallState.Off || theEvent == null)
                 return null;

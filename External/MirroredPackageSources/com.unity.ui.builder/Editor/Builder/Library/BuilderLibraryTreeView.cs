@@ -40,7 +40,7 @@ namespace Unity.UI.Builder
             m_TreeView.SetRootItems(items);
             m_TreeView.makeItem = MakeItem;
             m_TreeView.bindItem = BindItem;
-            m_TreeView.onItemsChosen += OnItemsChosen;
+            m_TreeView.itemsChosen += OnItemsChosen;
             m_TreeView.Rebuild();
 
             m_TreeView.ExpandRootItems();
@@ -160,7 +160,7 @@ namespace Unity.UI.Builder
 
             // Set open button visibility.
             var openButton = element.Q<Button>(k_OpenButtonName);
-            openButton.userData = item;
+            openButton.userData = item.data;
             var enableTreeViewItemWithButton = builderItem.sourceAsset != null && builderItem.sourceAsset != m_PaneWindow.document.visualTreeAsset;
             element.EnableInClassList(k_TreeViewItemWithButtonClassName, enableTreeViewItemWithButton);
 

@@ -131,6 +131,18 @@ namespace UnityEditor.EditorTools
             return EditorToolManager.activeTool == tool;
         }
 
+        public static void RefreshAvailableTools()
+        {
+            foreach (var obj in SceneView.sceneViews)
+            {
+                if (!(obj is SceneView scene))
+                    continue;
+                var overlay = scene.overlayCanvas?.overlays.FirstOrDefault(x => x is TransformToolsOverlayToolBar);
+                if(overlay != null)
+                    overlay.RebuildContent();
+            }
+        }
+
         public static bool IsActiveContext(EditorToolContext context)
         {
             return EditorToolManager.activeToolContext == context;

@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var error in GetAllErrorsInPackageAndVersions())
                 {
                     ++numErrors;
-                    if (error.attribute == UIError.Attribute.IsWarning)
+                    if (error.HasAttribute(UIError.Attribute.IsWarning))
                         ++numWarnings;
                     else if (!error.HasAttribute(UIError.Attribute.IsClearable))
                         return PackageState.Error;

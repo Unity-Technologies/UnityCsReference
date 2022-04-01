@@ -37,9 +37,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             UnityEngine.Debug.LogException(exception);
         }
 
-        static void EmitExceptionsAsErrors(Exception[] exceptions)
+        static void EmitExceptionsAsErrors(IEnumerable<Exception> exceptions)
         {
-            if (exceptions == null || exceptions.Length == 0)
+            if (exceptions == null)
                 return;
 
             foreach (var exception in exceptions)
@@ -78,9 +78,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void SetAllScripts(string[] allScripts, string[] assemblyFilenames)
+        public static void SetAllScripts(string[] allScripts)
         {
-            Instance.SetAllScripts(allScripts, assemblyFilenames);
+            Instance.SetAllScripts(allScripts);
         }
 
         [RequiredByNativeCode]
@@ -199,6 +199,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static bool IsCompilationPending()
         {
             return Instance.IsScriptCompilationRequested();
+        }
+
+        [RequiredByNativeCode]
+        // Unlike IsCompiling, this will only return true if compilation has actually started (and not if compilation
+        // is requested but has not started yet). We are using this for the BuildPlayer check (to not allow starting
+        // a player build if script compilation is in progress). We do allow starting a player build if compilation is
+        // requested (with a warning), as a common flow used in user build scripts is "Change defines -> Build Player".
+        public static bool IsCompilationInProgress()
+        {
+            return Instance.IsCompilationTaskCompiling() || Instance.IsAnyAssemblyBuilderCompiling();
         }
 
         [RequiredByNativeCode]

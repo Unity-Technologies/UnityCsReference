@@ -3,9 +3,9 @@ using UnityEngine;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderPanner : MouseManipulator
+    internal class BuilderPanner : PointerManipulator
     {
-        private BuilderViewport m_Viewport;
+        private readonly BuilderViewport m_Viewport;
         private bool m_Panning;
         private int m_ActivatingButton;
 
@@ -19,19 +19,19 @@ namespace Unity.UI.Builder
 
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
         }
 
-        void OnMouseDown(MouseDownEvent evt)
+        void OnPointerDown(PointerDownEvent evt)
         {
             if (CanStartManipulation(evt))
             {
@@ -42,7 +42,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void OnMouseUp(MouseUpEvent evt)
+        void OnPointerUp(PointerUpEvent evt)
         {
             if (m_ActivatingButton != evt.button || !CanStopManipulation(evt))
                 return;
@@ -52,12 +52,13 @@ namespace Unity.UI.Builder
             evt.StopPropagation();
         }
 
-        void OnMouseMove(MouseMoveEvent evt)
+        void OnPointerMove(PointerMoveEvent evt)
         {
             if (!m_Panning)
                 return;
 
-            m_Viewport.contentOffset += evt.mouseDelta;
+            Vector2 deltaPosition = evt.deltaPosition;
+            m_Viewport.contentOffset += deltaPosition;
             evt.StopPropagation();
         }
     }

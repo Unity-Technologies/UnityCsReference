@@ -47,6 +47,23 @@ namespace UnityEditor.Build.Content
         public SerializedLocation rawData { get { return m_RawData; } }
     }
 
+    [Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ExternalFileReference
+    {
+        [NativeName("filePath")]
+        internal string m_filePath;
+        public string filePath { get { return m_filePath; } }
+
+        [NativeName("type")]
+        internal int m_type;
+        public int type { get { return m_type; } }
+
+        [NativeName("guid")]
+        internal GUID m_guid;
+        public GUID guid { get { return m_guid; } }
+    }
 
     [Serializable]
     [UsedByNativeCode]
@@ -68,5 +85,9 @@ namespace UnityEditor.Build.Content
         [NativeName("includedSerializeReferenceFQN")]
         internal String[] m_IncludedSerializeReferenceFQN;
         public ReadOnlyCollection<String> includedSerializeReferenceFQN { get { return Array.AsReadOnly(m_IncludedSerializeReferenceFQN); } }
+
+        [NativeName("externalFileReferences")]
+        internal ExternalFileReference[] m_ExternalFileReferences;
+        public ReadOnlyCollection<ExternalFileReference> externalFileReferences { get { return Array.AsReadOnly(m_ExternalFileReferences); } }
     }
 }

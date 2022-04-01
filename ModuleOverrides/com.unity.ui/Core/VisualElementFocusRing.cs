@@ -61,6 +61,9 @@ namespace UnityEngine.UIElements
 
         internal override void ApplyTo(FocusController focusController, Focusable f)
         {
+            // Unselect selected TextElement on pointer down.
+            focusController.selectedTextElement = null;
+
             f.Focus(); // Call Focus() virtual method when an element is clicked or otherwise focused explicitly.
         }
 

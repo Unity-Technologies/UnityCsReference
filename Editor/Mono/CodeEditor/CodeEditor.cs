@@ -31,7 +31,29 @@ namespace Unity.CodeEditor
         private Installation m_CurrentInstallation;
         internal const string SystemDefaultPath = "";
 
-        public IExternalCodeEditor CurrentCodeEditor => m_CurrentEditor;
+        public IExternalCodeEditor CurrentCodeEditor {
+            get
+            {
+                if(m_CurrentEditor == m_DefaultEditor && !IsCurrentEditorPathExplicitlySet)
+                {
+                    // try to resolve first found visual studio installation and enable it
+                    try
+                    {
+                        var vs = m_ExternalCodeEditors.FirstOrDefault(e => e.GetType().Name == "VisualStudioEditor");
+                        var installs = vs?.Installations;
+                        if (installs != null && installs.Length > 0)
+                        {
+                            SetCodeEditor(installs[0].Path);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        Debug.LogWarning($"Can't locate Visual Studio installation: {ex.Message}");
+                    }
+                }
+                return m_CurrentEditor;
+            }
+        }
         public Installation CurrentInstallation => m_CurrentInstallation;
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -39,6 +61,7 @@ namespace Unity.CodeEditor
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static string CurrentEditorInstallation => CurrentEditorPath;
         public static string CurrentEditorPath => EditorPrefs.GetString("kScriptsDefaultApp", "");
+        private static bool IsCurrentEditorPathExplicitlySet => EditorPrefs.HasKey("kScriptsDefaultApp");
 
         public static CodeEditor Editor { get; } = new CodeEditor();
 
@@ -191,7 +214,10 @@ namespace Unity.CodeEditor
             if (Editor.m_ExternalCodeEditors.Select(editor => editor.GetType()).Any(editorType => editorType == externalCodeEditor.GetType()))
                 return;
             Editor.m_ExternalCodeEditors.Add(externalCodeEditor);
-            CodeEditor.Editor.SetCodeEditor(Editor.m_CurrentInstallation.Path);
+            if (IsCurrentEditorPathExplicitlySet)
+            {
+                CodeEditor.Editor.SetCodeEditor(Editor.m_CurrentInstallation.Path);
+            }
         }
 
         public static void Unregister(IExternalCodeEditor externalCodeEditor)

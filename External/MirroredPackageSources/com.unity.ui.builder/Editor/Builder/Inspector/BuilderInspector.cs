@@ -25,14 +25,14 @@ namespace Unity.UI.Builder
         // HACK: So...we want to restore the scroll position of the inspector but
         // lots of events cause it to reset. For example, undo/redo will reset the
         // builder, select nothing, then restore the selection. While nothing is selected,
-        // the ScrolView will rightly reset the scroll position to 0 since it does not
+        // the ScrollView will rightly reset the scroll position to 0 since it does not
         // need a scroller just to display the "Nothing selected" message. Then, when
         // the selection is restored, the scroll position will still be zero.
         //
         // The solution here, which is definitely overkill, is to cache the previous
         // s_MaxCachedScrollPositions m_ScrollView.contentContainer.layout.heights
         // and their associated scroll positions. Then, when we detect a
-        // m_ScrollView.contenContainer GeometryChangeEvent, we look up our
+        // m_ScrollView.contentContainer GeometryChangeEvent, we look up our
         // cache and restore the correct scroll position for this particular content
         // height.
         [Serializable]
@@ -187,7 +187,7 @@ namespace Unity.UI.Builder
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
-            // The main issue is that we expande/collapse/display/hide different parts of the Inspector
+            // The main issue is that we expand/collapse/display/hide different parts of the Inspector
             // all the time so initially the ScrollView is empty and it restores the scroll position to zero.
             m_ScrollView = this.Q<ScrollView>("inspector-scroll-view");
             m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(OnScrollViewContentGeometryChange);
@@ -494,7 +494,10 @@ namespace Unity.UI.Builder
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
-            m_AttributesSection.Refresh();
+            if (changeType == BuilderHierarchyChangeType.Attributes)
+            {
+                m_AttributesSection.Refresh();
+            }
         }
 
         public void SelectionChanged()

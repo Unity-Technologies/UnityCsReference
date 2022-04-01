@@ -114,16 +114,19 @@ namespace UnityEngine
             return rgba == other.rgba;
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override string ToString()
         {
             return ToString(null, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format)
         {
             return ToString(format, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (formatProvider == null)

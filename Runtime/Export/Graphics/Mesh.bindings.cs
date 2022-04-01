@@ -147,6 +147,11 @@ namespace UnityEngine
         extern GraphicsBuffer GetVertexBufferImpl(int index);
         [FreeFunction(Name = "MeshScripting::GetIndexBufferPtr", HasExplicitThis = true, ThrowsException = true)]
         extern GraphicsBuffer GetIndexBufferImpl();
+        [FreeFunction(Name = "MeshScripting::GetBoneWeightBufferPtr", HasExplicitThis = true, ThrowsException = true)]
+        extern GraphicsBuffer GetBoneWeightBufferImpl(int bonesPerVertex);
+
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeBufferPtr", HasExplicitThis = true, ThrowsException = true)]
+        extern GraphicsBuffer GetBlendShapeBufferImpl(int layout);
 
         public extern GraphicsBuffer.Target vertexBufferTarget { get; set; }
         public extern GraphicsBuffer.Target indexBufferTarget { get; set; }
@@ -175,6 +180,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "AddBlendShapeFrameFromScript", HasExplicitThis = true, ThrowsException = true)]
         extern public void AddBlendShapeFrame(string shapeName, float frameWeight, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
+
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeOffset", HasExplicitThis = true)]
+        extern private BlendShape GetBlendShapeOffsetInternal(int index);
 
         // skinning
 
@@ -212,6 +220,9 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetAllBoneWeightsArraySize", HasExplicitThis = true)]
         extern private int GetAllBoneWeightsArraySize();
 
+        [NativeMethod("GetBoneWeightBufferDimension")]
+        extern int GetBoneWeightBufferLayoutInternal();
+
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "MeshScripting::GetAllBoneWeightsArray", HasExplicitThis = true)]
         extern private IntPtr GetAllBoneWeightsArray();
@@ -220,8 +231,19 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetBonesPerVertexArray", HasExplicitThis = true)]
         extern private IntPtr GetBonesPerVertexArray();
 
-        extern private int GetBindposeCount();
+        extern public int bindposeCount { get; }
         [NativeName("BindPosesFromScript")] extern public Matrix4x4[] bindposes { get; set; }
+
+        public unsafe NativeArray<Matrix4x4> GetBindposes()
+        {
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>((void*)GetBindposesArray(), bindposeCount, Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetReadOnlySafetyHandle(SafetyHandleIndex.BindposeArray));
+            return array;
+        }
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "MeshScripting::GetBindposesArray", HasExplicitThis = true)]
+        extern private IntPtr GetBindposesArray();
 
         [FreeFunction(Name = "MeshScripting::ExtractBoneWeightsIntoArray", HasExplicitThis = true)]
         extern private void GetBoneWeightsNonAllocImpl([Out] BoneWeight[] values);
@@ -234,6 +256,7 @@ namespace UnityEngine
             // Keep in sync with C++ Mesh::SafetyHandleIndex class
             BonesPerVertexArray,
             BonesWeightsArray,
+            BindposeArray,
         }
 
         [FreeFunction(Name = "MeshScripting::GetReadOnlySafetyHandle", HasExplicitThis = true)]

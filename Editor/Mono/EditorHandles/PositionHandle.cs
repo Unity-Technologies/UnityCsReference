@@ -9,8 +9,14 @@ namespace UnityEditor
 {
     public sealed partial class Handles
     {
-        internal struct PositionHandleIds
+        /// <summary>
+        /// Set of IDs corresponding to the handles of Handles.PositionHandle.
+        /// </summary>
+        public struct PositionHandleIds
         {
+            /// <summary>
+            /// Default set of IDs to pass to Handles.PositionHandle.
+            /// </summary>
             public static PositionHandleIds @default
             {
                 get
@@ -29,7 +35,7 @@ namespace UnityEditor
 
             public readonly int x, y, z, xy, yz, xz, xyz;
 
-            public int this[int index]
+            internal int this[int index]
             {
                 get
                 {
@@ -47,7 +53,7 @@ namespace UnityEditor
                 }
             }
 
-            public bool Has(int id)
+            internal bool Has(int id)
             {
                 return x == id
                     || y == id
@@ -58,7 +64,7 @@ namespace UnityEditor
                     || xyz == id;
             }
 
-            public PositionHandleIds(int x, int y, int z, int xy, int xz, int yz, int xyz)
+            internal PositionHandleIds(int x, int y, int z, int xy, int xz, int yz, int xyz)
             {
                 this.x = x;
                 this.y = y;

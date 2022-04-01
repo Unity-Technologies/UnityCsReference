@@ -280,17 +280,14 @@ namespace UnityEditor
             Graphics.DrawTexture(new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height), darkGreyBackground);
             Object.DestroyImmediate(darkGreyBackground);
 
-            if (!EditorApplication.isUpdating)
+            if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
             {
-                var oldProbe = RenderSettings.ambientProbe;
-                Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
-                if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
-                {
-                    // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
-                    RenderSettings.ambientProbe = oldProbe;
-                    RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
-                    RenderSettings.customReflectionTexture = defaultEnvTexture;
-                }
+                // User can set an ambientColor if they want to override the default black color
+                // Cannot grab the main scene light probe/color instead as this is sometimes run on a worker without access to the original probe/color.
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = ambientColor;
+                // Reflection mode should be set to the default (skybox) to stay consistent with the worker thread settings when the preview is created while saving
+                RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Skybox;
             }
         }
 

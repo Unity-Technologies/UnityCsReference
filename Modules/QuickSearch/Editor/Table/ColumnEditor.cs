@@ -18,7 +18,7 @@ namespace UnityEditor.Search
         public MultiColumnHeaderState.Column column { get; private set; }
         public Action<MultiColumnHeaderState.Column> editCallback { get; private set; }
 
-        internal static ColumnEditor ShowWindow(MultiColumnHeaderState.Column column, Action<MultiColumnHeaderState.Column> editCallback)
+        public static ColumnEditor ShowWindow(MultiColumnHeaderState.Column column, Action<MultiColumnHeaderState.Column> editCallback)
         {
             var w = GetWindowDontShow<ColumnEditor>();
             w.column = column;

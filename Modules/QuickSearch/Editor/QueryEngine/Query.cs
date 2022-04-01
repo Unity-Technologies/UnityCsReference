@@ -78,8 +78,8 @@ namespace UnityEditor.Search
 
         internal IQueryHandler<TData, TPayload> graphHandler { get; set; }
 
-        internal QueryGraph evaluationGraph { get; }
-        internal QueryGraph queryGraph { get; }
+        public QueryGraph evaluationGraph { get; }
+        public QueryGraph queryGraph { get; }
 
         internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
         {

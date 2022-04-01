@@ -24,13 +24,16 @@ namespace UnityEditor
             OptimizeReorderVertexBuffer(mesh);
         }
 
-        extern public static void SetMeshCompression(Mesh mesh, ModelImporterMeshCompression compression);
-        extern public static ModelImporterMeshCompression GetMeshCompression(Mesh mesh);
+        extern public static void SetMeshCompression([NotNull] Mesh mesh, ModelImporterMeshCompression compression);
+        extern public static ModelImporterMeshCompression GetMeshCompression([NotNull] Mesh mesh);
 
         [NativeName("SetPerTriangleUV2")]
         static extern bool SetPerTriangleUV2NoCheck(Mesh src, Vector2[] triUV);
         public static bool SetPerTriangleUV2(Mesh src, Vector2[] triUV)
         {
+            if (src == null)
+                throw new ArgumentNullException("src");
+
             if (triUV == null)
                 throw new ArgumentNullException("triUV");
 

@@ -45,6 +45,7 @@ namespace UnityEditor.UIElements.Debugger
         private EditorWindow m_WindowToDebug;
 
         private IPanelChoice m_SelectedPanel;
+        internal IPanelChoice selectedPanel => m_SelectedPanel;
         protected VisualElement m_Toolbar;
         protected ToolbarMenu m_PanelSelect;
         private List<IPanelChoice> m_PanelChoices;
@@ -138,7 +139,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             VisualElement root = null;
 
-            if (m_WindowToDebug is GameView)
+            if (m_WindowToDebug is PlayModeView)
             {
                 var runtimePanels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
                 if (runtimePanels != null && runtimePanels.Count > 0)
@@ -201,13 +202,7 @@ namespace UnityEditor.UIElements.Debugger
             PopulatePanelChoices(m_PanelChoices);
 
             var menu = m_PanelSelect.menu;
-            var menuItemsCount = menu.MenuItems().Count;
-
-            // Clear previous items
-            for (int i = 0; i < menuItemsCount; i++)
-            {
-                menu.RemoveItemAt(0);
-            }
+            menu.ClearItems();
 
             foreach (var panelChoice in m_PanelChoices)
             {

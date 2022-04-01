@@ -9,9 +9,8 @@ namespace UnityEngine.TextCore.Text
     struct TextVertex
     {
         public Vector3 position;
-        public Vector2 uv;
+        public Vector4 uv;
         public Vector2 uv2;
-        public Vector2 uv4;
         public Color32 color;
     }
 
@@ -23,8 +22,10 @@ namespace UnityEngine.TextCore.Text
         public char character; // Should be changed to an int to handle UTF 32
         public int index; // Index of the character in the input string.
         public TextElementType elementType;
+        public int stringLength;
 
         public TextElement textElement;
+        public Glyph alternativeGlyph;
         public FontAsset fontAsset;
         public SpriteAsset spriteAsset;
         public int spriteIndex;
@@ -51,14 +52,20 @@ namespace UnityEngine.TextCore.Text
         public float ascender;
         public float baseLine;
         public float descender;
+        internal float adjustedAscender;
+        internal float adjustedDescender;
+        internal float adjustedHorizontalAdvance;
 
         public float xAdvance;
         public float aspectRatio;
         public float scale;
         public Color32 color;
         public Color32 underlineColor;
+        public int underlineVertexIndex;
         public Color32 strikethroughColor;
+        public int strikethroughVertexIndex;
         public Color32 highlightColor;
+        public HighlightState highlightState;
         public FontStyles style;
         public bool isVisible;
     }

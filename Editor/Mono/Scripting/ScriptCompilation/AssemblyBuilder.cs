@@ -175,7 +175,7 @@ namespace UnityEditor.Compilation
             try
             {
                 buildFinished?.Invoke(assemblyPath, EditorCompilation.ConvertCompilerMessages(BeeScriptCompilation
-                    .ParseAllNodeResultsIntoCompilerMessages(result.NodeResults, EditorCompilationInterface.Instance)
+                    .ParseAllResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeResults, EditorCompilationInterface.Instance)
                     .SelectMany(a => a).ToArray()));
             }
             catch (Exception e)

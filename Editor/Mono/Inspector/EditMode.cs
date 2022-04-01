@@ -72,14 +72,8 @@ namespace UnityEditorInternal
             GridBox,
             GridSelect,
             GridMove,
-            ParticleSystemCollisionModulePlanesMove,
-            ParticleSystemCollisionModulePlanesRotate,
             LineRendererEdit,
             LineRendererCreate,
-            ParticleSystemShapeModuleGizmo,
-            ParticleSystemShapeModulePosition,
-            ParticleSystemShapeModuleRotation,
-            ParticleSystemShapeModuleScale
         }
 
         public static bool IsOwner(Editor editor)

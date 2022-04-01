@@ -43,7 +43,7 @@ namespace UnityEditor
         // Static methods
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace = ColorSpace.Gamma)
         {
-            Show(newGradient, hdr, ColorSpace.Gamma, null, GUIView.current);
+            Show(newGradient, hdr, colorSpace, null, GUIView.current);
         }
 
         public static void Show(Gradient newGradient, bool hdr, System.Action<Gradient> onGradientChanged)
@@ -53,7 +53,7 @@ namespace UnityEditor
 
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged)
         {
-            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged, null);
+            Show(newGradient, hdr, colorSpace, onGradientChanged, null);
         }
 
         private static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged, GUIView currentView)
@@ -81,7 +81,7 @@ namespace UnityEditor
                 s_GradientPicker.minSize = minSize;
                 s_GradientPicker.maxSize = maxSize;
                 s_GradientPicker.wantsMouseMove = true;
-                Undo.undoRedoPerformed += s_GradientPicker.OnUndoPerformed;
+                Undo.undoRedoEvent += s_GradientPicker.OnUndoPerformed;
             }
 
             s_GradientPicker.ShowAuxWindow(); // Use this if auto close on lost focus is wanted.
@@ -286,10 +286,10 @@ namespace UnityEditor
 
         private void UnregisterEvents()
         {
-            Undo.undoRedoPerformed -= this.OnUndoPerformed;
+            Undo.undoRedoEvent -= this.OnUndoPerformed;
         }
 
-        private void OnUndoPerformed()
+        private void OnUndoPerformed(in UndoRedoInfo info)
         {
             this.Init(this.m_Gradient, this.m_HDR, this.m_ColorSpace);
         }

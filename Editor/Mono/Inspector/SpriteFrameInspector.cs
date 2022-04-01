@@ -92,25 +92,37 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.borderLabel, Styles.multiValueText);
         }
 
-        public static Texture2D BuildPreviewTexture(Sprite sprite, Material spriteRendererMaterial, bool isPolygon)
+
+        public static Texture2D BuildPreviewTexture(Sprite sprite, Material spriteRendererMaterial, bool isPolygon, int width, int height)
         {
-            if (!ShaderUtil.hardwareSupportsRectRenderTexture)
+            return BuildPreviewTexture(sprite, spriteRendererMaterial, isPolygon, width, height, Color.white, Matrix4x4.identity);
+        }
+
+        public static Texture2D BuildPreviewTexture(Sprite sprite, Material spriteRendererMaterial, bool isPolygon, int width, int height, Color color, Matrix4x4 transform)
+        {
+            if (!ShaderUtil.hardwareSupportsRectRenderTexture || sprite == null)
             {
                 return null;
             }
 
-            float spriteWidth = sprite.rect.width;
-            float spriteHeight = sprite.rect.height;
+            var spriteWidth = sprite.rect.width;
+            var spriteHeight = sprite.rect.height;
 
-            int width = (int)spriteWidth;
-            int height = (int)spriteHeight;
             Texture2D texture = UnityEditor.Sprites.SpriteUtility.GetSpriteTexture(sprite, false);
 
             // only adjust the preview texture size if the sprite is not in polygon mode.
             // In polygon mode, we are looking at a 4x4 texture will detailed mesh. It's better to maximize the display of it.
             if (!isPolygon)
             {
-                PreviewHelpers.AdjustWidthAndHeightForStaticPreview((int)spriteWidth, (int)spriteHeight, ref width, ref height);
+                // Try to have a minimum of 64 pixels for width and height, unless requested width and height is smaller
+                var minWidth = Mathf.Min(64, width);
+                var minHeight = Mathf.Min(64, height);
+
+                PreviewHelpers.AdjustWidthAndHeightForStaticPreview((int) spriteWidth, (int) spriteHeight, ref width, ref height);
+
+                // Set minimum size for width and height to prevent small previews for small sprites
+                width = Mathf.Max(minWidth, width);
+                height = Mathf.Max(minHeight, height);
             }
 
             SavedRenderTargetState savedRTState = new SavedRenderTargetState();
@@ -182,21 +194,19 @@ namespace UnityEditor
 
             GL.PushMatrix();
             GL.LoadOrtho();
-            GL.Color(new Color(1, 1, 1, 1));
             GL.Begin(GL.TRIANGLES);
             for (int i = 0; i < triangles.Length; ++i)
             {
                 ushort index = triangles[i];
-                Vector2 vertex = vertices[index];
+                Vector3 vertex = vertices[index];
+                vertex = transform.MultiplyPoint(vertex);
                 Vector2 uv = uvs[index];
+                GL.Color(colors != null ? colors.Value[index] * color : color);
                 GL.TexCoord(new Vector3(uv.x, uv.y, 0));
-                if (colors != null)
-                    GL.Color(colors.Value[index]);
                 GL.Vertex3((vertex.x * pixelsToUnits + pivot.x) / spriteWidth, (vertex.y * pixelsToUnits + pivot.y) / spriteHeight, 0);
             }
             GL.End();
             GL.PopMatrix();
-
 
             if (spriteRendererMaterial != null)
             {
@@ -239,7 +249,7 @@ namespace UnityEditor
                 isPolygonSpriteAsset = textureImporter.spriteImportMode == SpriteImportMode.Polygon;
             }
 
-            return BuildPreviewTexture(sprite, null, isPolygonSpriteAsset);
+            return BuildPreviewTexture(sprite, null, isPolygonSpriteAsset, width, height);
         }
 
         public override bool HasPreviewGUI()
@@ -276,7 +286,7 @@ namespace UnityEditor
             Rect wantedRect = new Rect(r.x, r.y, frame.rect.width * zoomLevel, frame.rect.height * zoomLevel);
             wantedRect.center = r.center;
 
-            Texture2D previewTexture = BuildPreviewTexture(frame, spriteRendererMaterial, isPolygon);
+            Texture2D previewTexture = BuildPreviewTexture(frame, spriteRendererMaterial, isPolygon, (int) wantedRect.width, (int) wantedRect.height);
             EditorGUI.DrawTextureTransparent(wantedRect, previewTexture, ScaleMode.ScaleToFit);
 
             var border = frame.border;

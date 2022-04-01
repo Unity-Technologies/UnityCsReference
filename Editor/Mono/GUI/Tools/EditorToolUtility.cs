@@ -186,6 +186,22 @@ namespace UnityEditor.EditorTools
                 || tool == Tool.Transform;
         }
 
+        // In the current context, is this tool considered a built-in tool?
+        // Built-in tools are the first category of tools in the toolbar, and are always available while their parent
+        // context is active.
+        internal static bool IsBuiltinOverride(EditorTool tool)
+        {
+            if (tool == null)
+                return false;
+            if (IsManipulationTool(GetEnumWithEditorTool(tool)))
+                return true;
+            var type = tool.GetType();
+            foreach(var extra in EditorToolManager.activeToolContext.GetAdditionalToolTypes())
+                if (type == extra)
+                    return true;
+            return false;
+        }
+
         internal static bool IsComponentTool(Type type)
         {
             return s_ToolCache.GetTargetType(type) != null;

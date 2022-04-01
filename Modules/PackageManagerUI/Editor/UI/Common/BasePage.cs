@@ -159,30 +159,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_Selection.Select(s => GetVisualState(s)).Where(v => v != null);
         }
 
-        private void UpdateVisualStatesExpandableAndTriggerChangeEvent(int numOldSelections, int numNewSelections)
-        {
-            bool expandable;
-            if (numOldSelections == 1 && numNewSelections > 1)
-                expandable = false;
-            else if (numOldSelections > 1 && numNewSelections == 1)
-                expandable = true;
-            else
-                return;
-
-            var updatedVisualStates = new List<VisualState>();
-            foreach (var visualState in visualStates)
-            {
-                if (visualState.expandable != expandable)
-                {
-                    visualState.expandable = expandable;
-                    visualState.expanded &= expandable;
-                    updatedVisualStates.Add(visualState);
-                }
-            }
-            if (updatedVisualStates.Any())
-                TriggerOnVisualStateChange(updatedVisualStates);
-        }
-
         public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds)
         {
             var numOldSelections = m_Selection.Count;
@@ -190,7 +166,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             TriggerOnSelectionChanged();
-            UpdateVisualStatesExpandableAndTriggerChangeEvent(numOldSelections, m_Selection.Count);
             return true;
         }
 
@@ -201,7 +176,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             TriggerOnSelectionChanged();
-            UpdateVisualStatesExpandableAndTriggerChangeEvent(numOldSelections, m_Selection.Count);
             return true;
         }
 
@@ -212,16 +186,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             TriggerOnSelectionChanged();
-            UpdateVisualStatesExpandableAndTriggerChangeEvent(numOldSelections, m_Selection.Count);
             return true;
         }
-
-        public void SetExpanded(IPackage package, bool value)
-        {
-            SetExpanded(package?.uniqueId, value);
-        }
-
-        public abstract void SetExpanded(string packageUniqueId, bool value);
 
         public void SetSeeAllVersions(IPackage package, bool value)
         {

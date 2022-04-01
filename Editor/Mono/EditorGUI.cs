@@ -113,7 +113,7 @@ namespace UnityEditor
         internal static string kDoubleFieldFormatString = UINumericFieldsUtils.k_DoubleFieldFormatString;
         internal static string kIntFieldFormatString = UINumericFieldsUtils.k_IntFieldFormatString;
         internal static int ms_IndentLevel = 0;
-        private const float kIndentPerLevel = 15;
+        internal const float kIndentPerLevel = 15;
         internal const int kControlVerticalSpacingLegacy = 2;
         internal const int kDefaultSpacing = 6;
         internal static readonly SVC<float> kControlVerticalSpacing = new SVC<float>("--theme-control-vertical-spacing", 2.0f);
@@ -141,6 +141,8 @@ namespace UnityEditor
         private static readonly float[] s_Vector4Floats = {0, 0, 0, 0};
         private static readonly GUIContent[] s_XYZWLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z"), EditorGUIUtility.TextContent("W")};
 
+        private const float kQuaternionFloatPrecision = 1e-6f;
+
         private static readonly GUIContent[] s_WHLabels = {EditorGUIUtility.TextContent("W"), EditorGUIUtility.TextContent("H")};
 
         private static readonly GUIContent s_CenterLabel = EditorGUIUtility.TrTextContent("Center");
@@ -164,6 +166,9 @@ namespace UnityEditor
         internal static Color k_OverrideMarginColor = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.75f);
         internal static Color k_OverrideMarginColorSelected = new Color(239f / 255f, 239f / 255f, 239f / 239f, 1f);
         internal static Color k_OverrideMarginColorNotApplicable = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.35f);
+
+        internal static Color k_LiveModifiedMarginLightThemeColor = new Color(183f / 255f, 60f / 255f, 21f / 255f, 1f);
+        internal static Color k_LiveModifiedMarginDarkThemeColor = new Color(255f / 255f, 165f / 255f, 60f / 255f, 1f);
 
         private const int kInspTitlebarSpacing = 4;
         private static readonly GUIContent s_PropertyFieldTempContent = new GUIContent();
@@ -243,21 +248,20 @@ namespace UnityEditor
 
         internal static void ClearStacks()
         {
-            s_PropertyCount = 0;
             s_EnabledStack.Clear();
+            s_IsInsideListStack.Clear();
+            GUI.isInsideList = false;
             s_ChangedStack.Clear();
             s_PropertyStack.Clear();
+            MaterialProperty.ClearStack();
             ScriptAttributeUtility.s_DrawerStack.Clear();
             s_FoldoutHeaderGroupActive = 0;
         }
 
-        // Property counting is required by ReorderableList. Element rendering callbacks can change and use
-        // different number of properties to represent an element each frame. We need a way to be able to track
-        // if the property count changed from the last frame so we can recache those elements.
-        internal static int s_PropertyCount = 0;
         private static readonly Stack<PropertyGUIData> s_PropertyStack = new Stack<PropertyGUIData>();
 
         private static readonly Stack<bool> s_EnabledStack = new Stack<bool>();
+        private static readonly Stack<(bool insideList, int depth)> s_IsInsideListStack = new Stack<(bool insideList, int depth)>();
 
         // @TODO: API soon to be deprecated but still in a grace period; documentation states that users
         //        are encouraged to use EditorGUI.DisabledScope instead. Uncomment next line when appropriate.
@@ -314,6 +318,28 @@ namespace UnityEditor
             }
         }
 
+        internal class DisabledGuiViewInputScope : GUI.Scope
+        {
+            GUIView m_View;
+            bool m_WasDisabled;
+
+            public DisabledGuiViewInputScope(GUIView view, bool disabled)
+            {
+                m_View = view;
+                if (m_View != null)
+                {
+                    m_WasDisabled = view.disableInputEvents;
+                    m_View.disableInputEvents = disabled;
+                }
+            }
+
+            protected override void CloseScope()
+            {
+                if (m_View != null)
+                    m_View.disableInputEvents = m_WasDisabled;
+            }
+        }
+
         internal struct LabelHighlightScope : IDisposable
         {
             bool m_Disposed;
@@ -363,6 +389,28 @@ namespace UnityEditor
             // Stack might have been cleared with ClearStack(), check before pop.
             if (s_EnabledStack.Count > 0)
                 GUI.enabled = s_EnabledStack.Pop();
+        }
+
+        internal static void BeginIsInsideList(int depth)
+        {
+            s_IsInsideListStack.Push((GUI.isInsideList, depth));
+            GUI.isInsideList = true;
+        }
+
+        internal static int GetInsideListDepth()
+        {
+            if (s_IsInsideListStack.Count > 0)
+                return s_IsInsideListStack.Peek().depth;
+            return -1;
+        }
+
+        internal static void EndIsInsideList()
+        {
+            // Stack might have been cleared with ClearStack(), check before pop.
+            if (s_IsInsideListStack.Count > 0)
+                GUI.isInsideList = s_IsInsideListStack.Pop().insideList;
+            else
+                GUI.isInsideList = false;
         }
 
         private static readonly Stack<bool> s_ChangedStack = new Stack<bool>();
@@ -1604,7 +1652,7 @@ namespace UnityEditor
 
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.inspector, targetObjs, false);
+                        DragAndDrop.visualMode = DragAndDrop.DropOnInspectorWindow(targetObjs, false);
                         Event.current.Use();
                     }
                     break;
@@ -1612,7 +1660,7 @@ namespace UnityEditor
                 case EventType.DragPerform:
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.inspector, targetObjs, true);
+                        DragAndDrop.visualMode = DragAndDrop.DropOnInspectorWindow(targetObjs, true);
                         DragAndDrop.AcceptDrag();
                         Event.current.Use();
                     }
@@ -2939,37 +2987,33 @@ namespace UnityEditor
 
                         pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                         {
-                            // Reorderable
-                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
+                            var list = ReorderableList.GetReorderableListFromSerializedProperty(parentArrayProperty);
+
+                            // If we have a ReorderableList associated with this property lets use list selection array
+                            // and apply this action to all selected elements thus having better integration with
+                            // ReorderableLists multi-selection features
+                            if (list != null && list.selectedIndices.Count > 0)
                             {
-                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
-
-                                // If we have a ReorderableList associated with this property lets use list selection array
-                                // and apply this action to all selected elements thus having better integration with
-                                // ReorderableLists multi-selection features
-                                if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
+                                for (int i = list.selectedIndices.Count - 1; i >= 0; i--)
                                 {
-                                    for (int i = list.m_ReorderableList.selectedIndices.Count - 1; i >= 0; i--)
+                                    if (list.selectedIndices[i] >= parentArrayProperty.arraySize) continue;
+
+                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.selectedIndices[i]);
+                                    if (resolvedProperty != null)
                                     {
-                                        if (list.m_ReorderableList.selectedIndices[i] >= parentArrayProperty.arraySize) continue;
-
-                                        SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(list.m_ReorderableList.selectedIndices[i]);
-                                        if (resolvedProperty != null)
-                                        {
-                                            if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
-                                        }
-
-                                        for (int j = i; j < list.m_ReorderableList.selectedIndices.Count; j++)
-                                        {
-                                            list.m_ReorderableList.m_Selection[j]++;
-                                        }
+                                        if (!TargetChoiceHandler.DuplicateArrayElement(resolvedProperty)) continue;
                                     }
 
-                                    if (list.m_ReorderableList.onChangedCallback != null)
-                                        list.m_ReorderableList.onChangedCallback(list.m_ReorderableList);
-
-                                    ReorderableList.ClearExistingListCaches();
+                                    for (int j = i; j < list.selectedIndices.Count; j++)
+                                    {
+                                        list.m_Selection[j]++;
+                                    }
                                 }
+
+                                if (list.onChangedCallback != null)
+                                    list.onChangedCallback(list);
+
+                                ReorderableList.InvalidateExistingListCaches();
                             }
                             else // Non reorderable
                             {
@@ -2986,36 +3030,39 @@ namespace UnityEditor
                                     TargetChoiceHandler.DuplicateArrayElement(a);
                                 }
                             }
+
+                            if(list != null)
+                            {
+                                if (list.onChangedCallback != null) list.onChangedCallback(list);
+                                ReorderableList.InvalidateExistingListCaches();
+                            }
                             EditorGUIUtility.editingTextField = false;
                         }, propertyWithPath);
                         pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                         {
-                            // Reorderable
-                            if (PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)))
+                            var list = ReorderableList.GetReorderableListFromSerializedProperty(parentArrayProperty);
+
+                            // If we have a ReorderableList associated with this property lets use list selection array
+                            // and apply this action to all selected elements thus having better integration with
+                            // ReorderableLists multi-selection features
+                            if (list != null && list.selectedIndices.Count > 0)
                             {
-                                ReorderableListWrapper list = PropertyHandler.s_reorderableLists[ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty)];
-
-                                // If we have a ReorderableList associated with this property lets use list selection array
-                                // and apply this action to all selected elements thus having better integration with
-                                // ReorderableLists multi-selection features
-                                if (list != null && list.m_ReorderableList.selectedIndices.Count > 0)
+                                foreach (var selected in list.selectedIndices.Reverse<int>())
                                 {
-                                    foreach (var selected in list.m_ReorderableList.selectedIndices.Reverse<int>())
+                                    if (selected >= parentArrayProperty.arraySize) continue;
+
+                                    SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(selected);
+                                    if (resolvedProperty != null)
                                     {
-                                        if (selected >= parentArrayProperty.arraySize) continue;
-
-                                        SerializedProperty resolvedProperty = parentArrayProperty.GetArrayElementAtIndex(selected);
-                                        if (resolvedProperty != null)
-                                        {
-                                            if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
-                                        }
+                                        if (!TargetChoiceHandler.DeleteArrayElement(resolvedProperty)) continue;
                                     }
-
-                                    list.m_ReorderableList.m_Selection.Clear();
-                                    if (list.m_ReorderableList.onChangedCallback != null)
-                                        list.m_ReorderableList.onChangedCallback(list.m_ReorderableList);
-                                    ReorderableList.ClearExistingListCaches();
                                 }
+
+                                list.m_Selection.Clear();
+
+                                if (list.onChangedCallback != null)
+                                    list.onChangedCallback(list);
+                                ReorderableList.InvalidateExistingListCaches();
                             }
                             else // Non reorderable
                             {
@@ -3031,6 +3078,13 @@ namespace UnityEditor
                                 {
                                     TargetChoiceHandler.DeleteArrayElement(a);
                                 }
+                            }
+
+                            if(list != null)
+                            {
+                                list.m_Selection.Clear();
+                                if (list.onChangedCallback != null) list.onChangedCallback(list);
+                                ReorderableList.InvalidateExistingListCaches();
                             }
                             EditorGUIUtility.editingTextField = false;
                         }, propertyWithPath);
@@ -3996,7 +4050,7 @@ namespace UnityEditor
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             if (!enumData.serializable)
-                // this is the same message used in ScriptPopupMenus.cpp
+                // this is the same message used in SerializedPropertyEnumHelper.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
 
             var id = GUIUtility.GetControlID(s_EnumFlagsField, FocusType.Keyboard, position);
@@ -4019,7 +4073,7 @@ namespace UnityEditor
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
             if (!enumData.serializable)
-                // this is the same message used in ScriptPopupMenus.cpp
+                // this is the same message used in SerializedPropertyEnumHelper.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
 
             var id = GUIUtility.GetControlID(s_EnumFlagsField, FocusType.Keyboard, position);
@@ -4373,12 +4427,9 @@ namespace UnityEditor
         {
             GUIContent copy = label;
             Rect fullLabelRect = position;
-            // If SerializedProperty is passed, make sure to call begin and end for property
 
-            // Since we have two separate properties to handle, make sure fields are not overlaping each other
-            // If only localScale property has override, make sure constrainProportionsScale property is in the layer behind
-            if (proportionalScaleProperty != null && property.prefabOverride && !proportionalScale)
-                label = BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
+            if(proportionalScaleProperty != null)
+                BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
 
             if (property != null)
                 label = BeginPropertyInternal(position, label, property);
@@ -4392,34 +4443,19 @@ namespace UnityEditor
             float toggleOffset = toggleRect.width + kDefaultSpacing;
             toggleRect.x -= toggleOffset;
             toggle.x -= toggleOffset;
-            BeginChangeCheck();
             Styles.linkButton.alignment = TextAnchor.MiddleCenter;
 
-            if (proportionalScaleProperty != null)
-            {
-                // If proportional scaling is enabled, make sure to use full scale rect, to be able revert all axis and state at the same time,
-                // otherwise rect size should match label size
-                if (!property.prefabOverride && !proportionalScale)
-                    fullLabelRect.xMax = toggleRect.xMin;
+            // In case we have a background overlay, make sure Constrain proportions toggle won't be affected
+            Color currentColor = GUI.backgroundColor;
+            GUI.backgroundColor = Color.white;
 
-                // Make sure proportional scale property is used only if enabled, otherwise use localScale's one.
-                if (!property.prefabOverride || proportionalScale)
-                    label = BeginPropertyInternal(fullLabelRect, label, proportionalScale? proportionalScaleProperty : property);
+            bool previousProportionalScale = proportionalScale;
+            proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
 
-                BeginChangeCheck();
-                bool previousProportionalScale = proportionalScale;
-                proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
-                if (previousProportionalScale != proportionalScale)
-                    proportionalScaleProperty.boolValue = proportionalScale;
-                EndChangeCheck();
+            if (proportionalScaleProperty != null && previousProportionalScale != proportionalScale)
+                proportionalScaleProperty.boolValue = proportionalScale;
 
-                if (proportionalScale)
-                    EndProperty();
-            }
-            else
-            {
-                proportionalScale = GUI.Toggle(toggleRect, proportionalScale, toggleContent, Styles.linkButton);
-            }
+            GUI.backgroundColor = currentColor;
 
             position.x += toggle.x + kDefaultSpacing;
             position.width -= toggle.x + kDefaultSpacing;
@@ -4430,7 +4466,7 @@ namespace UnityEditor
             if (property != null)
                 EndProperty();
 
-            if (proportionalScaleProperty != null && property.prefabOverride && !proportionalScale)
+            if(proportionalScaleProperty != null)
                 EndProperty();
 
             return newValue;
@@ -4459,8 +4495,7 @@ namespace UnityEditor
                 valueAfterChangeCheck.z = s_Vector3Floats[2];
             }
 
-            return proportionalScale && valueAfterChangeCheck != value ?
-                ConstrainProportionsTransformScale.DoScaleProportions(valueAfterChangeCheck, value, initialScale, ref axisModified) : valueAfterChangeCheck;
+            return proportionalScale? ConstrainProportionsTransformScale.DoScaleProportions(valueAfterChangeCheck, value, ConstrainProportionsTransformScale.m_IsAnimationPreview? value : initialScale, ref axisModified) : valueAfterChangeCheck;
         }
 
         // Make an X, Y field - not public (use PropertyField instead)
@@ -4483,6 +4518,24 @@ namespace UnityEditor
             SerializedProperty cur = property.Copy();
             cur.Next(true);
             MultiPropertyFieldInternal(position, s_XYZLabels, cur, PropertyVisibility.All);
+        }
+
+        // Make an X, Y and Z field for Quaternions - not public (use PropertyField instead)
+        private static void QuaternionEulerField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            position.height = kSingleLineHeight;
+            Vector3 eulerValue = property.quaternionValue.eulerAngles;
+            s_Vector3Floats[0] = Mathf.Floor(eulerValue.x / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            s_Vector3Floats[1] = Mathf.Floor(eulerValue.y / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            s_Vector3Floats[2] = Mathf.Floor(eulerValue.z / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            BeginChangeCheck();
+            MultiFloatFieldInternal(position, s_XYZLabels, s_Vector3Floats);
+            if (EndChangeCheck())
+            {
+                property.quaternionValue = Quaternion.Euler(s_Vector3Floats[0], s_Vector3Floats[1], s_Vector3Floats[2]);
+            }
         }
 
         // Make an X, Y, Z and W field - not public (use PropertyField instead)
@@ -4927,8 +4980,11 @@ namespace UnityEditor
             bool hasMixedValues = mixedValues != 0;
             uint multiselectionLock = ConstrainProportionsTransformScale.GetMultiSelectionLockedFields(property?.serializedObject?.targetObjects);
 
-            if (initialValues == null)
+            if (initialValues == null || ConstrainProportionsTransformScale.m_IsAnimationPreview)
                 initialValues = values;
+
+            // In animation preview mode we scale using last valid value instead of initialScale, make sure we won't lock fields on Vector3.zero
+            bool forceEnableFields = ConstrainProportionsTransformScale.ShouldForceEnablePropertyFields(initialValues);
 
             bool mixedValueState = EditorGUI.showMixedValue;
 
@@ -4943,7 +4999,7 @@ namespace UnityEditor
                     if (locked)
                     {
                         // If initial field value is 0, it must be locked not to break proportions
-                        GUI.enabled = !Mathf.Approximately(initialValues[i], 0) && (property != null && property.serializedObject.targetObjectsCount > 1 ? !ConstrainProportionsTransformScale.IsBit(multiselectionLock, i) : true);
+                        GUI.enabled = forceEnableFields || !Mathf.Approximately(initialValues[i], 0) && (property != null && property.serializedObject.targetObjectsCount > 1 ? !ConstrainProportionsTransformScale.IsBit(multiselectionLock, i) : true);
                     }
                     else
                     {
@@ -6499,7 +6555,6 @@ namespace UnityEditor
         // Create a Property wrapper, useful for making regular GUI controls work with [[SerializedProperty]].
         internal static GUIContent BeginPropertyInternal(Rect totalPosition, GUIContent label, SerializedProperty property)
         {
-            s_PropertyCount++;
             if (s_PendingPropertyKeyboardHandling != null)
             {
                 DoPropertyFieldKeyboardHandling(s_PendingPropertyKeyboardHandling);
@@ -6558,6 +6613,15 @@ namespace UnityEditor
                 }
             }
 
+            var isLiveModified = property.isLiveModified;
+            EditorGUIUtility.SetBoldDefaultFont(isLiveModified);
+            if (Event.current.type == EventType.Repaint && isLiveModified)
+            {
+                Rect highlightRect = totalPosition;
+                highlightRect.xMin += EditorGUI.indent;
+                DrawLiveModifiedBackground(highlightRect, false);
+            }
+
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
 
             EditorGUIUtility.BeginPropertyCallback(totalPosition, property);
@@ -6596,7 +6660,7 @@ namespace UnityEditor
                         if (
                             (DrivenPropertyManagerInternal.IsDriving(driver, target, propertyPath))
                             ||
-                            ((target is Transform || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
+                            ((target is Transform || target is ParticleSystem || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
                         {
                             GUI.enabled = false;
                             if (isCollectingTooltips)
@@ -6699,6 +6763,18 @@ namespace UnityEditor
             position.x = EditorGUIUtility.leftMarginCoord - Mathf.Max(0f, GUIClip.topmostRect.xMin);
             position.width = 2;
             Graphics.DrawTexture(position, EditorGUIUtility.whiteTexture, new Rect(), 0, 0, 0, 0, color, guiTextureClipVerticallyMaterial);
+        }
+
+        internal static void DrawLiveModifiedBackground(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
+        {
+            if (fixupRectForHeadersAndBackgrounds)
+            {
+                // Tweaks to match the specifics of how the horizontal lines between components are drawn.
+                position.yMin += 2;
+                position.yMax += 1;
+            }
+
+            DrawMarginLineForRect(position, EditorGUIUtility.isProSkin? k_LiveModifiedMarginDarkThemeColor : k_LiveModifiedMarginLightThemeColor);
         }
 
         private static SerializedProperty s_PendingPropertyKeyboardHandling = null;
@@ -6955,7 +7031,7 @@ namespace UnityEditor
         }
 
         // This will return appriopriate material to use with the texture according to its usage mode
-        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool normals2Linear = false, bool useVTMaterialWhenPossible = true)
+        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool manualTex2Linear = false, bool useVTMaterialWhenPossible = true)
         {
             bool useVT = useVTMaterialWhenPossible && UseVTMaterial(t);
 
@@ -6970,14 +7046,20 @@ namespace UnityEditor
                 return lightmapDoubleLDRMaterial;
             else if (usage == TextureUsageMode.BakedLightmapFullHDR)
                 return lightmapFullHDRMaterial;
-            else if (usage == TextureUsageMode.NormalmapDXT5nm || (usage == TextureUsageMode.NormalmapPlain && format == TextureFormat.BC5))
+            else if (TextureUtil.IsNormalMapUsageMode(usage))
             {
                 var normalMat = useVT ? normalmapVTMaterial : normalmapMaterial;
-                normalMat.SetFloat("_ManualTex2Linear", normals2Linear ? 1.0f : 0.0f);
+                normalMat.SetFloat("_IsPlainNormalmap", usage == TextureUsageMode.NormalmapPlain && format != TextureFormat.BC5 ? 1.0f : 0.0f);
+                normalMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
                 return normalMat;
             }
             else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
-                return useVT ? alphaVTMaterial : alphaMaterial;
+            {
+                var alphaOnlyMat = useVT ? alphaVTMaterial : alphaMaterial;
+                alphaOnlyMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
+                return alphaOnlyMat;
+            }
+
             return defaultMat;
         }
 
@@ -7052,16 +7134,32 @@ namespace UnityEditor
         internal static void SetExpandedRecurse(SerializedProperty property, bool expanded)
         {
             SerializedProperty search = property.Copy();
-            search.isExpanded = expanded;
-
             int depth = search.depth;
-            while (search.NextVisible(true) && search.depth > depth)
+            HashSet<long> visited = null;
+            bool visitChild;
+            do
             {
-                if (search.hasVisibleChildren)
+                visitChild = true;
+                if (search.propertyType == SerializedPropertyType.ManagedReference)
+                {
+                    // Managed reference objects can form a cyclical graph, so need to track visited objects
+                    if (visited == null)
+                        visited = new HashSet<long>();
+
+                    long refId = search.managedReferenceId;
+                    if (!visited.Add(refId))
+                    {
+                        visitChild = false;
+                        continue;
+                    }
+                }
+
+                if (depth == search.depth || search.hasVisibleChildren)
                 {
                     search.isExpanded = expanded;
                 }
             }
+            while (search.NextVisible(visitChild) && search.depth > depth);
         }
 
         // Get the height needed for a ::ref::PropertyField control, not including its children and not taking custom PropertyDrawers into account.
@@ -7076,7 +7174,7 @@ namespace UnityEditor
         public static float GetPropertyHeight(SerializedPropertyType type, GUIContent label)
         {
             if (type == SerializedPropertyType.Vector3 || type == SerializedPropertyType.Vector2 || type == SerializedPropertyType.Vector4 ||
-                type == SerializedPropertyType.Vector3Int || type == SerializedPropertyType.Vector2Int)
+                type == SerializedPropertyType.Vector3Int || type == SerializedPropertyType.Vector2Int || type == SerializedPropertyType.Quaternion)
             {
                 return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight + kVerticalSpacingMultiField) +
                     kSingleLineHeight;
@@ -7399,6 +7497,10 @@ namespace UnityEditor
                         break;
                     }
                 }
+            }
+            else if (type == SerializedPropertyType.Quaternion)
+            {
+                QuaternionEulerField(position, property, label);
             }
             // Handle Foldout
             else
@@ -8606,6 +8708,7 @@ namespace UnityEditor
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new Dictionary<int, GUIContent[]>();
             static Dictionary<Type, bool> s_IsEnumTypeUsingFlagsAttribute = new Dictionary<Type, bool>();
             static Dictionary<Type, string[]> s_SerializedPropertyEnumDisplayNames = new Dictionary<Type, string[]>();
+            static Dictionary<Type, string[]> s_SerializedPropertyEnumNames = new Dictionary<Type, string[]>();
 
             internal static GUIContent[] GetEnumTypeLocalizedGUIContents(Type enumType, EnumData enumData)
             {
@@ -8652,11 +8755,31 @@ namespace UnityEditor
                 Type enumType;
                 ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
 
+                // For native properties, like Camera.m_ClearFlags, the enumType returned will be null.
+                // So we can't use it for the dict key below. Need to early out.
+                // Case: 1388694
+                if (enumType == null)
+                    return property.enumDisplayNames;
+
                 string[] result;
                 if (!s_SerializedPropertyEnumDisplayNames.TryGetValue(enumType, out result))
                 {
                     result = property.enumDisplayNames;
                     s_SerializedPropertyEnumDisplayNames.Add(enumType, result);
+                }
+                return result;
+            }
+
+            internal static string[] GetEnumNames(SerializedProperty property)
+            {
+                Type enumType;
+                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
+
+                string[] result;
+                if (!s_SerializedPropertyEnumNames.TryGetValue(enumType, out result))
+                {
+                    result = property.enumNames;
+                    s_SerializedPropertyEnumNames.Add(enumType, result);
                 }
                 return result;
             }
@@ -10944,6 +11067,7 @@ namespace UnityEditor
         {
             if (s_TabOnlyOne == null)
             {
+                // Keep in sync with Tests/EditModeAndPlayModeTests/PlayerSettings/Assets/Editor/PlayerSettingsApplicationIdentifierTests.cs.
                 s_TabOnlyOne = "Tab onlyOne";
                 s_TabFirst = "Tab first";
                 s_TabMiddle = "Tab middle";

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Text.RegularExpressions;
+using UnityEditorInternal;
 
 namespace UnityEditor.Search.Providers
 {
@@ -72,17 +73,71 @@ namespace UnityEditor.Search.Providers
             : base(gameObjects)
         {
             m_QueryEngine.AddFilter("active", IsActive);
+            m_QueryEngine.AddFilter("size", GetSize);
+            m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("layer", GetLayer);
             m_QueryEngine.AddFilter("tag", GetTag);
-            m_QueryEngine.AddFilter<string>("prefab", OnPrefabFilter, new[] { ":" });
+            m_QueryEngine.AddFilter<PrefabFilter>("prefab", OnPrefabFilter, new[] { ":" });
             m_QueryEngine.AddFilter<string>("i", OnAttributeFilter, new[] { "=", ":" });
             m_QueryEngine.AddFilter("p", OnPropertyFilter, s => s, StringComparison.OrdinalIgnoreCase);
             m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter);
-            m_QueryEngine.AddFilter("size", GetSize);
-            m_QueryEngine.AddFilter("components", GetComponentCount);
             m_QueryEngine.AddFilter("overlap", GetOverlapCount);
 
             m_QueryEngine.AddFiltersFromAttribute<SceneQueryEngineFilterAttribute, SceneQueryEngineParameterTransformerAttribute>();
+        }
+
+        public override void SetupQueryEnginePropositions()
+        {
+            var goIcon = Utils.LoadIcon("GameObject Icon");
+            m_QueryEngine.GetFilter("active")
+                .AddOrUpdatePropositionData(category: "GameObject", label: "Active", replacement: "active=true", help: "Search active objects", icon: goIcon, color: QueryColors.filter);
+            m_QueryEngine.GetFilter("size")
+                .AddOrUpdatePropositionData(category: "GameObject", label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon, color: QueryColors.filter);;
+            m_QueryEngine.GetFilter("components")
+                .AddOrUpdatePropositionData(category: "GameObject", label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon, color: QueryColors.filter);;;
+            m_QueryEngine.GetFilter("id")
+                .AddOrUpdatePropositionData(category: "GameObject", label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon, color: QueryColors.filter);
+            m_QueryEngine.GetFilter("path")
+                .AddOrUpdatePropositionData(category: "GameObject", label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon, color: QueryColors.filter);
+
+            var layerFilter = m_QueryEngine.GetFilter("layer")
+                .SetGlobalPropositionData(category: "Layers", icon: Utils.LoadIcon("GUILayer Icon"), color: QueryColors.typeIcon, type: typeof(QueryLayerBlock));
+            for (var i = 0; i < 32; ++i)
+            {
+                var layerName = InternalEditorUtility.GetLayerName(i);
+                if (!string.IsNullOrEmpty(layerName))
+                    layerFilter.AddOrUpdatePropositionData(label: ObjectNames.NicifyVariableName(layerName), data: layerName, replacement: $"<$layer:{i}, {layerName}$>");
+            }
+
+            var tagFilter = m_QueryEngine.GetFilter("tag")
+                .SetGlobalPropositionData(category: "Tags", icon: Utils.LoadIcon("AssetLabelIcon"), color: QueryColors.typeIcon);
+            foreach (var t in InternalEditorUtility.tags)
+            {
+                tagFilter.AddOrUpdatePropositionData(category: "Tags", label: ObjectNames.NicifyVariableName(t), replacement: "tag=" + SearchUtils.GetListMarkerReplacementText(t, InternalEditorUtility.tags, "AssetLabelIcon", QueryColors.typeIcon));
+            }
+
+            m_QueryEngine.GetFilter("prefab")
+                .AddPropositionsFromFilterType(icon: Utils.LoadIcon("Prefab Icon"), category: "Prefabs", priority: 0, type: typeof(QueryListMarkerBlock), color: QueryColors.typeIcon);
+
+            var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
+            m_QueryEngine.GetFilter("ref")
+                .AddOrUpdatePropositionData(category: "Reference", label:"Reference By Path (Object)", replacement:"ref=<$object:none,UnityEngine.Object$>", help: "Find all objects referencing a specific asset.", icon:sceneIcon, color: QueryColors.filter)
+                .AddOrUpdatePropositionData(category: "Reference", label:"Reference By Instance ID (Number)", replacement:"ref=1000", help: "Find all objects referencing a specific instance ID (Number).", icon: sceneIcon, color: QueryColors.filter)
+                .AddOrUpdatePropositionData(category: "Reference", label:"Reference By Asset Expression", replacement:"ref={p: }", help: "Find all objects referencing for a given asset search.", icon: sceneIcon, color: QueryColors.filter);
+
+            m_QueryEngine.AddPropositionsFromFilterAttributes<GameObject, SceneQueryEngineFilterAttribute>(category: "Custom Scene Filters", icon: sceneIcon, color: QueryColors.filter, propositionTransformation: proposition =>
+            {
+                return new SearchProposition(category: proposition.category,
+                    label: proposition.label,
+                    replacement: proposition.replacement,
+                    help: proposition.help,
+                    data: proposition.data,
+                    priority: proposition.priority,
+                    icon: proposition.icon,
+                    type: proposition.type,
+                    color: proposition.color,
+                    moveCursor: proposition.moveCursor);
+            });
         }
 
         private bool IsActive(GameObject go)
@@ -90,45 +145,38 @@ namespace UnityEditor.Search.Providers
             return go != null && go.activeInHierarchy;
         }
 
-        bool OnPrefabFilter(GameObject go, QueryFilterOperator op, string value)
+        static bool OnPrefabFilter(GameObject go, QueryFilterOperator op, PrefabFilter value)
         {
             if (!PrefabUtility.IsPartOfAnyPrefab(go))
                 return false;
 
-            if (value == "root")
-                return PrefabUtility.IsAnyPrefabInstanceRoot(go);
-
-            if (value == "instance")
-                return PrefabUtility.IsPartOfPrefabInstance(go);
-
-            if (value == "top")
-                return PrefabUtility.IsOutermostPrefabInstanceRoot(go);
-
-            if (value == "nonasset")
-                return PrefabUtility.IsPartOfNonAssetPrefabInstance(go);
-
-            if (value == "asset")
-                return PrefabUtility.IsPartOfPrefabAsset(go);
-
-            if (value == "any")
-                return PrefabUtility.IsPartOfAnyPrefab(go);
-
-            if (value == "model")
-                return PrefabUtility.IsPartOfModelPrefab(go);
-
-            if (value == "regular")
-                return PrefabUtility.IsPartOfRegularPrefab(go);
-
-            if (value == "variant")
-                return PrefabUtility.IsPartOfVariantPrefab(go);
-
-            if (value == "modified")
-                return PrefabUtility.HasPrefabInstanceAnyOverrides(go, false);
-
-            if (value == "altered")
-                return PrefabUtility.HasPrefabInstanceAnyOverrides(go, true);
-
-            return false;
+            switch (value)
+            {
+                case PrefabFilter.Root:
+                    return PrefabUtility.IsAnyPrefabInstanceRoot(go);
+                case PrefabFilter.Instance:
+                    return PrefabUtility.IsPartOfPrefabInstance(go);
+                case PrefabFilter.Top:
+                    return PrefabUtility.IsOutermostPrefabInstanceRoot(go);
+                case PrefabFilter.NonAsset:
+                    return PrefabUtility.IsPartOfNonAssetPrefabInstance(go);
+                case PrefabFilter.Asset:
+                    return PrefabUtility.IsPartOfPrefabAsset(go);
+                case PrefabFilter.Any:
+                    return PrefabUtility.IsPartOfAnyPrefab(go);
+                case PrefabFilter.Model:
+                    return PrefabUtility.IsPartOfModelPrefab(go);
+                case PrefabFilter.Regular:
+                    return PrefabUtility.IsPartOfRegularPrefab(go);
+                case PrefabFilter.Variant:
+                    return PrefabUtility.IsPartOfVariantPrefab(go);
+                case PrefabFilter.Modified:
+                    return PrefabUtility.HasPrefabInstanceAnyOverrides(go, false);
+                case PrefabFilter.Altered:
+                    return PrefabUtility.HasPrefabInstanceAnyOverrides(go, true);
+                default:
+                    return false;
+            }
         }
 
         string GetTag(GameObject go)

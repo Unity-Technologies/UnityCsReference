@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.UIElements.StyleSheets;
 using System;
 using System.IO;
 
@@ -383,7 +382,12 @@ namespace Unity.UI.Builder
         //
 
         public void OnPostProcessAsset(string assetPath)
-            => activeOpenUXMLFile.OnPostProcessAsset(assetPath);
+        {
+            activeOpenUXMLFile.OnPostProcessAsset(assetPath);
+            var builderWindow = Builder.ActiveWindow;
+            if (builderWindow != null)
+                builderWindow.toolbar?.InitCanvasTheme();
+        }
 
         //
         // Selection

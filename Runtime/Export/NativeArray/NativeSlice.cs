@@ -403,6 +403,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         public static void SetAtomicSafetyHandle<T>(ref NativeSlice<T> slice, AtomicSafetyHandle safety) where T : struct
         {
+            NativeArray<T>.InitNestedNativeContainer(safety);
             slice.m_Safety = safety;
         }
 

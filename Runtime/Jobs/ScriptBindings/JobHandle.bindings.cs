@@ -10,11 +10,14 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Unity.Jobs
 {
     [NativeType(Header = "Runtime/Jobs/ScriptBindings/JobsBindings.h")]
-    public struct JobHandle
+    public struct JobHandle : IEquatable<JobHandle>
     {
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr  jobGroup;
         internal int     version;
+        internal int     debugVersion;
+        [NativeDisableUnsafePtrRestriction]
+        internal IntPtr  debugInfo;
 
         public void Complete()
         {
@@ -103,6 +106,31 @@ namespace Unity.Jobs
 
         [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
         public static extern bool CheckFenceIsDependencyOrDidSyncFence(JobHandle jobHandle, JobHandle dependsOn);
+
+        public bool Equals(JobHandle other)
+        {
+            return jobGroup == other.jobGroup && version == other.version;
+        }
+
+        public override bool Equals(Object obj)
+        {
+            return obj is JobHandle && this == (JobHandle)obj;
+        }
+
+        public static bool operator ==(JobHandle a, JobHandle b)
+        {
+            return a.jobGroup == b.jobGroup && a.version == b.version;
+        }
+
+        public static bool operator !=(JobHandle a, JobHandle b)
+        {
+            return !(a == b);
+        }
+
+        public override int GetHashCode()
+        {
+            return jobGroup.GetHashCode() ^ (version.GetHashCode() * 1610612741);
+        }
     }
 }
 

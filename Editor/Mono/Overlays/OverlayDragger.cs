@@ -11,8 +11,6 @@ namespace UnityEditor.Overlays
 {
     sealed class OverlayDragger : MouseManipulator
     {
-        internal const string k_DragAreaHovered = "unity-overlay-drag-area-hovered";
-
         public static event Action<Overlay> dragStarted;
         public static event Action<Overlay> dragEnded;
 
@@ -27,9 +25,10 @@ namespace UnityEditor.Overlays
         Vector2 m_StartMousePosition;
         readonly Overlay m_Overlay;
         int m_InitialIndex;
+        OverlayContainerSection m_InitialSection;
 
         OverlayCanvas canvas => m_Overlay.canvas;
-        VisualElement floatingContainer => canvas.floatingContainer;
+        FloatingOverlayContainer floatingContainer => canvas.floatingContainer;
         VisualElement canvasRoot => canvas.rootVisualElement;
 
         public OverlayDragger(Overlay overlay)
@@ -43,10 +42,9 @@ namespace UnityEditor.Overlays
         protected override void RegisterCallbacksOnTarget()
         {
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
-            target.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -55,7 +53,7 @@ namespace UnityEditor.Overlays
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
-            target.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
         }
 
         OverlayDropZoneBase GetOverlayDropZone(Vector2 mousePosition, Overlay ignoreTarget)
@@ -109,34 +107,31 @@ namespace UnityEditor.Overlays
 
             m_InitialLayoutPosition = floatingContainer.WorldToLocal(m_Overlay.rootVisualElement.worldBound.position);
 
+            dragStarted?.Invoke(m_Overlay);
+
             //if docked, convert to floating
             if (!m_Overlay.floating)
             {
-                m_Overlay.container.stateLocked = true;
-                m_InitialIndex = m_Overlay.container.IndexOf(m_Overlay.rootVisualElement);
+                m_Overlay.container.GetOverlayIndex(m_Overlay, out m_InitialSection, out m_InitialIndex);
 
                 canvas.ShowOriginGhost(m_Overlay);
-                m_Overlay.floatingPosition = m_InitialLayoutPosition;
                 m_Overlay.Undock();
-            }
-            else
-            {
-                //make sure overlay is on top
-                m_Overlay.rootVisualElement.BringToFront();
+                m_Overlay.floatingPosition = m_InitialLayoutPosition;
+                m_Overlay.UpdateAbsolutePosition();
             }
 
+            m_Overlay.BringToFront();
+
             m_Active = true;
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.CaptureMouse();
             e.StopPropagation();
-            UpdateHovered(e.mousePosition);
 
             dragStarted?.Invoke(m_Overlay);
         }
 
         void OnMouseMove(MouseMoveEvent e)
         {
-            UpdateHovered(e.mousePosition);
-
             if (!m_Active)
                 return;
 
@@ -182,20 +177,11 @@ namespace UnityEditor.Overlays
             OnDragEnd(e.mousePosition);
         }
 
-        void OnMouseLeave(MouseLeaveEvent evt)
+        void OnPointerCaptureOut(PointerCaptureOutEvent evt)
         {
-            //No need to consider the event position in case of a mouse leave event
-            UpdateHovered(false);
-        }
-
-        void UpdateHovered(Vector2 mousePosition)
-        {
-            UpdateHovered(m_Active || IsInDraggableArea(mousePosition));
-        }
-
-        void UpdateHovered(bool hoverStatus)
-        {
-            m_Overlay.rootVisualElement.EnableInClassList(k_DragAreaHovered, hoverStatus);
+            if (!m_Active)
+                return;
+            CancelDrag(evt.originalMousePosition);
         }
 
         void OnKeyDown(KeyDownEvent evt)
@@ -222,8 +208,7 @@ namespace UnityEditor.Overlays
             }
             else
             {
-                m_Overlay.floating = false;
-                m_Overlay.container.Insert(m_InitialIndex, m_Overlay.rootVisualElement);
+                m_Overlay.DockAt(m_StartContainer, m_InitialSection, m_InitialIndex);
             }
 
             OnDragEnd(mousePosition);
@@ -236,8 +221,7 @@ namespace UnityEditor.Overlays
 
             canvas.HideOriginGhost();
             canvas.destinationMarker.SetTarget(null);
-            m_StartContainer.stateLocked = false;
-            UpdateHovered(mousePosition);
+            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
 
             dragEnded?.Invoke(m_Overlay);
         }

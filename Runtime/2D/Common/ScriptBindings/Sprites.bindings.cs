@@ -81,8 +81,8 @@ namespace UnityEngine
         [FreeFunction("SpritesBindings::CreateSpriteWithoutTextureScripting")]
         internal extern static Sprite CreateSpriteWithoutTextureScripting(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture);
 
-        [FreeFunction("SpritesBindings::CreateSprite")]
-        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape);
+        [FreeFunction("SpritesBindings::CreateSprite", ThrowsException = true)]
+        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, SecondarySpriteTexture[] secondaryTexture);
 
         public extern Bounds bounds
         {
@@ -106,6 +106,10 @@ namespace UnityEngine
 
         // Get Secondary Textures.
         internal extern Texture2D GetSecondaryTexture(int index);
+        // Get Secondary Texture count
+        public extern int GetSecondaryTextureCount();
+        [FreeFunction("SpritesBindings::GetSecondaryTextures", ThrowsException = true, HasExplicitThis = true)]
+        public extern int GetSecondaryTextures([NotNull] SecondarySpriteTexture[] secondaryTexture);
 
         // The number of pixels in one unit. Note: The C++ side still uses the name pixelsToUnits which is misleading,
         // but has not been changed yet to minimize merge conflicts.
@@ -161,8 +165,6 @@ namespace UnityEngine
         {
             get
             {
-                if (packed && (SpritePackingMode)packingMode != SpritePackingMode.Rectangle)
-                    return Rect.zero;
                 return GetTextureRect();
             }
         }
@@ -171,8 +173,6 @@ namespace UnityEngine
         {
             get
             {
-                if (packed && (SpritePackingMode)packingMode != SpritePackingMode.Rectangle)
-                    return Vector2.zero;
                 return GetTextureRectOffset();
             }
         }
@@ -267,6 +267,11 @@ namespace UnityEngine
 
         public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape)
         {
+            return Create(texture, rect, pivot, pixelsPerUnit, extrude, meshType, border, generateFallbackPhysicsShape, null);
+        }
+
+        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, SecondarySpriteTexture[] secondaryTextures)
+        {
             if (texture == null)
                 return null;
 
@@ -278,7 +283,16 @@ namespace UnityEngine
             if (pixelsPerUnit <= 0)
                 throw new ArgumentException("pixelsPerUnit must be set to a positive non-zero value.");
 
-            return CreateSprite(texture, rect, pivot, pixelsPerUnit, extrude, meshType, border, generateFallbackPhysicsShape);
+            if (secondaryTextures != null)
+            {
+                foreach(var st in secondaryTextures)
+                {
+                    if(st.texture == texture)
+                        throw new ArgumentException(string.Format("{0} is using source Texture as Secondary Texture.", st.name));
+                }
+            }
+            return CreateSprite(texture, rect, pivot, pixelsPerUnit, extrude, meshType, border, generateFallbackPhysicsShape, secondaryTextures);
+
         }
 
         public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border)

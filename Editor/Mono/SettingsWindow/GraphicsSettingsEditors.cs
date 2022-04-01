@@ -53,7 +53,6 @@ namespace UnityEditor
         {
             BuiltinShaderSettings m_Deferred;
             BuiltinShaderSettings m_DeferredReflections;
-            BuiltinShaderSettings m_LegacyDeferred;
             BuiltinShaderSettings m_ScreenSpaceShadows;
             BuiltinShaderSettings m_DepthNormals;
             BuiltinShaderSettings m_MotionVectors;
@@ -64,7 +63,6 @@ namespace UnityEditor
             {
                 public static GUIContent deferredString = EditorGUIUtility.TrTextContent("Deferred", "Shader used for Deferred Shading.");
                 public static GUIContent deferredReflString = EditorGUIUtility.TrTextContent("Deferred Reflections", "Shader used for Deferred reflection probes.");
-                public static GUIContent legacyDeferredString = EditorGUIUtility.TrTextContent("Legacy Deferred", "Shader used for Legacy (light prepass) Deferred Lighting.");
                 public static GUIContent screenShadowsString = EditorGUIUtility.TrTextContent("Screen Space Shadows", "Shader used for screen-space cascaded shadows.");
                 public static GUIContent depthNormalsString = EditorGUIUtility.TrTextContent("Depth Normals", "Shader used for depth and normals texture when enabled on a Camera.");
                 public static GUIContent motionVectorsString = EditorGUIUtility.TrTextContent("Motion Vectors", "Shader for generation of Motion Vectors when the rendering camera has renderMotionVectors set to true.");
@@ -76,7 +74,6 @@ namespace UnityEditor
             {
                 m_Deferred              = new BuiltinShaderSettings(Styles.deferredString, "m_Deferred", serializedObject);
                 m_DeferredReflections   = new BuiltinShaderSettings(Styles.deferredReflString, "m_DeferredReflections", serializedObject);
-                m_LegacyDeferred        = new BuiltinShaderSettings(Styles.legacyDeferredString, "m_LegacyDeferred", serializedObject);
                 m_ScreenSpaceShadows    = new BuiltinShaderSettings(Styles.screenShadowsString, "m_ScreenSpaceShadows", serializedObject);
                 m_DepthNormals          = new BuiltinShaderSettings(Styles.depthNormalsString, "m_DepthNormals", serializedObject);
                 m_MotionVectors         = new BuiltinShaderSettings(Styles.motionVectorsString, "m_MotionVectors", serializedObject);
@@ -97,7 +94,6 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                     ShaderUtil.ReloadAllShaders();
 
-                m_LegacyDeferred.DoGUI();
                 m_ScreenSpaceShadows.DoGUI();
                 m_DepthNormals.DoGUI();
                 m_MotionVectors.DoGUI();
@@ -446,9 +442,9 @@ namespace UnityEditor
                 { (int)ShaderQuality.Low, (int)ShaderQuality.Medium, (int)ShaderQuality.High };
 
                 public static readonly GUIContent[] renderingPathName =
-                { EditorGUIUtility.TrTextContent("Forward"), EditorGUIUtility.TrTextContent("Deferred"), EditorGUIUtility.TrTextContent("Legacy Vertex Lit"), EditorGUIUtility.TrTextContent("Legacy Deferred (light prepass)") };
+                { EditorGUIUtility.TrTextContent("Forward"), EditorGUIUtility.TrTextContent("Deferred"), EditorGUIUtility.TrTextContent("Legacy Vertex Lit") };
                 public static readonly int[] renderingPathValue =
-                { (int)RenderingPath.Forward, (int)RenderingPath.DeferredShading, (int)RenderingPath.VertexLit, (int)RenderingPath.DeferredLighting };
+                { (int)RenderingPath.Forward, (int)RenderingPath.DeferredShading, (int)RenderingPath.VertexLit };
 
                 public static readonly GUIContent[] hdrModeName =
                 { EditorGUIUtility.TrTextContent("FP16"), EditorGUIUtility.TrTextContent("R11G11B10") };
@@ -638,16 +634,16 @@ namespace UnityEditor
                 public static readonly GUIContent renderingSettings = EditorGUIUtility.TrTextContent("Rendering");
 
                 public static readonly GUIContent standardShaderQuality = EditorGUIUtility.TrTextContent("Standard Shader Quality");
-                public static readonly GUIContent reflectionProbeBoxProjection = EditorGUIUtility.TrTextContent("Reflection Probes Box Projection");
-                public static readonly GUIContent reflectionProbeBlending = EditorGUIUtility.TrTextContent("Reflection Probes Blending");
-                public static readonly GUIContent detailNormalMap = EditorGUIUtility.TrTextContent("Detail Normal Map");
+                public static readonly GUIContent reflectionProbeBoxProjection = EditorGUIUtility.TrTextContent("Reflection Probes Box Projection", "Enable projection for reflection UV mappings on Reflection Probes.");
+                public static readonly GUIContent reflectionProbeBlending = EditorGUIUtility.TrTextContent("Reflection Probes Blending", "Gradually fade out one probe's cubemap while fading in the other's as the reflective object passes from one zone to the other.");
+                public static readonly GUIContent detailNormalMap = EditorGUIUtility.TrTextContent("Detail Normal Map", "Enable Detail (secondary) Normal Map sampling for up-close viewing, if assigned.");
                 public static readonly GUIContent cascadedShadowMaps = EditorGUIUtility.TrTextContent("Cascaded Shadows");
-                public static readonly GUIContent prefer32BitShadowMaps = EditorGUIUtility.TrTextContent("Prefer 32-bit shadow maps");
+                public static readonly GUIContent prefer32BitShadowMaps = EditorGUIUtility.TrTextContent("Prefer 32-bit shadow maps", "Enable 32-bit float shadow map when you are targeting PS4 or platforms using DX11 or DX12.");
                 public static readonly GUIContent semitransparentShadows = EditorGUIUtility.TrTextContent("Enable Semitransparent Shadows");
-                public static readonly GUIContent enableLPPV = EditorGUIUtility.TrTextContent("Enable Light Probe Proxy Volume");
-                public static readonly GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path");
-                public static readonly GUIContent useHDR = EditorGUIUtility.TrTextContent("Use HDR");
-                public static readonly GUIContent hdrMode = EditorGUIUtility.TrTextContent("HDR Mode");
+                public static readonly GUIContent enableLPPV = EditorGUIUtility.TrTextContent("Enable Light Probe Proxy Volume", "Enable rendering a 3D grid of interpolated Light Probes inside a Bounding Volume.");
+                public static readonly GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path", "Choose how Unity should render graphics. Different rendering paths affect the performance of your game, and how lighting and shading are calculated.");
+                public static readonly GUIContent useHDR = EditorGUIUtility.TrTextContent("Use HDR", "Enable High Dynamic Range rendering for this tier.");
+                public static readonly GUIContent hdrMode = EditorGUIUtility.TrTextContent("HDR Mode", "Color render texture format for the HDR buffer to use when HDR is enabled.");
                 public static readonly GUIContent realtimeGICPUUsage = EditorGUIUtility.TrTextContent("Realtime Global Illumination CPU Usage", "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
             }
         }

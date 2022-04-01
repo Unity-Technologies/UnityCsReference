@@ -95,14 +95,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private bool m_FeatureDependenciesExpanded = false;
-        public virtual bool featureDependenciesExpanded
-        {
-            get => m_FeatureDependenciesExpanded;
-            set => m_FeatureDependenciesExpanded = value;
-        }
-
-        [SerializeField]
         private string m_SelectedFeatureDependency;
         public virtual string selectedFeatureDependency
         {
@@ -127,6 +119,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
+        private string m_SelectedPackageDetailsTabIdentifier;
+        public string selectedPackageDetailsTabIdentifier {
+            get =>  m_SelectedPackageDetailsTabIdentifier;
+            set => m_SelectedPackageDetailsTabIdentifier = value;
+        }
+
+        [SerializeField]
         private List<string> m_ExpandedDetailsExtensions = new List<string>();
         public virtual bool IsDetailsExtensionExpanded(string extensionTitle)
         {
@@ -143,6 +142,41 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ExpandedDetailsExtensions.Add(extensionTitle);
             else if (!value && index >= 0)
                 m_ExpandedDetailsExtensions.RemoveAt(index);
+        }
+
+        [SerializeField]
+        private string m_PackageDisplayedInVersionHistoryTab;
+        public virtual string packageDisplayedInVersionHistoryTab
+        {
+            get => m_PackageDisplayedInVersionHistoryTab;
+            set => m_PackageDisplayedInVersionHistoryTab = value;
+        }
+
+        [SerializeField]
+        private List<string> m_ExpandedVersionHistoryItems = new List<string>();
+        public virtual void SetVersionHistoryItemExpanded(string uniqueId, bool expanded)
+        {
+            if (string.IsNullOrEmpty(uniqueId))
+                return;
+
+            var index = m_ExpandedVersionHistoryItems.IndexOf(uniqueId);
+            if (expanded && index < 0)
+                m_ExpandedVersionHistoryItems.Add(uniqueId);
+            else if (!expanded && index >= 0)
+                m_ExpandedVersionHistoryItems.RemoveAt(index);
+        }
+
+        public virtual bool IsVersionHistoryItemExpanded(string uniqueId)
+        {
+            if (string.IsNullOrEmpty(uniqueId))
+                return false;
+
+            return m_ExpandedVersionHistoryItems.Contains(uniqueId);
+        }
+
+        public virtual void ClearExpandedVersionHistoryItems()
+        {
+            m_ExpandedVersionHistoryItems.Clear();
         }
     }
 }

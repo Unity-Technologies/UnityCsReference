@@ -111,11 +111,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static BeeDriver Make(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, string dagDirectory = null, bool useScriptUpdater = true)
         {
-            return Make(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory);
+            return Make(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, StdOutModeForScriptCompilation);
         }
 
-        public static BeeDriver Make(RunnableProgram buildProgram, string dagName,
-            string dagDirectory, bool useScriptUpdater, string projectDirectory, ProgressAPI progressAPI = null, RunnableProgram beeBackendProgram = null)
+        public const StdOutMode StdOutModeForScriptCompilation =
+            StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.LogStdOutOnFinish;
+        public const StdOutMode StdOutModeForPlayerBuilds =
+            StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.Stream;
+
+        public static BeeDriver Make(
+            RunnableProgram buildProgram,
+            string dagName,
+            string dagDirectory,
+            bool useScriptUpdater,
+            string projectDirectory,
+            StdOutMode stdoutMode,
+            ProgressAPI progressAPI = null,
+            RunnableProgram beeBackendProgram = null)
         {
             var sourceFileUpdaters = useScriptUpdater
                 ? new[] {new UnityScriptUpdater(projectDirectory)}
@@ -127,7 +139,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             RecreateDagDirectoryIfNeeded(dagDir);
             NPath profilerOutputFile = UnityBeeDriverProfilerSession.GetTraceEventsOutputForNewBeeDriver() ?? $"{dagDir}/fullprofile.json";
-            var result = new BeeDriver(buildProgram, beeBackendProgram ?? UnityBeeBackendProgram(), projectDirectory, dagName, dagDir.ToString(), sourceFileUpdaters, processSourceFileUpdatersResult, progressAPI ?? new UnityProgressAPI("Script Compilation"), profilerOutputFile: profilerOutputFile.ToString());
+            var result = new BeeDriver(buildProgram, beeBackendProgram ?? UnityBeeBackendProgram(stdoutMode), projectDirectory, dagName, dagDir.ToString(), sourceFileUpdaters, processSourceFileUpdatersResult, progressAPI ?? new UnityProgressAPI("Script Compilation"), profilerOutputFile: profilerOutputFile.ToString());
 
             result.DataForBuildProgram.Add(new ConfigurationData
             {
@@ -147,13 +159,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return result;
         }
 
-        internal static RunnableProgram UnityBeeBackendProgram()
+        internal static RunnableProgram UnityBeeBackendProgram(StdOutMode stdoutMode)
         {
             return new SystemProcessRunnableProgram(BeeBackendExecutable, alwaysEnvironmentVariables: new Dictionary<string, string>()
             {
                 { "BEE_CACHE_BEHAVIOUR", "_"},
                 { "CHROMETRACE_TIMEOFFSET","unixepoch"}
-            }, stdOutMode: StdOutMode.LogStdOutOnFinish | StdOutMode.LogStartArgumentsAndExitcode);
+            }, stdOutMode: stdoutMode);
         }
     }
 }

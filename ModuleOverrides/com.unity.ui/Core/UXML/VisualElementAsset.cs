@@ -98,6 +98,8 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private List<string> m_Properties;
 
+        int m_DirtyCount;
+
         public VisualElementAsset(string fullTypeName)
         {
             m_FullTypeName = fullTypeName;
@@ -138,6 +140,8 @@ namespace UnityEngine.UIElements
             if (m_Properties == null)
                 m_Properties = new List<string>();
 
+            m_DirtyCount++;
+
             for (int i = 0; i < m_Properties.Count - 1; i += 2)
             {
                 if (m_Properties[i] == propertyName)
@@ -171,5 +175,11 @@ namespace UnityEngine.UIElements
             value = null;
             return false;
         }
+
+        internal int GetPropertiesDirtyCount()
+        {
+            return m_DirtyCount;
+        }
+
     }
 }

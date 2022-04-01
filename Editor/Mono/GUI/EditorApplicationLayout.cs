@@ -134,11 +134,6 @@ namespace UnityEditor
                     playModeView.m_Parent.SetAsStartView();
                     playModeView.m_Parent.SetAsLastPlayModeView();
 
-                    if (playModeView.maximized)
-                    {
-                        playModeView.m_Parent.Focus();
-                    }
-
                     if (playModeView is IGameViewOnPlayMenuUser)
                     {
                         if (((IGameViewOnPlayMenuUser)playModeView).playFocused)
@@ -155,11 +150,13 @@ namespace UnityEditor
         {
             foreach (var playModeView in m_PlayModeViewList)
             {
-                if (playModeView != null && playModeView.enterPlayModeBehavior == PlayModeView.EnterPlayModeBehavior.PlayMaximized)
+                if (playModeView != null)
                 {
                     if (m_MaximizePending)
                         WindowLayout.MaximizePresent(playModeView);
 
+                    // All StartView references on all play mode views must be cleared before play mode starts. Otherwise it may cause issues
+                    // with input being routed to the correct game window. See case 1381985
                     playModeView.m_Parent.ClearStartView();
                 }
             }

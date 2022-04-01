@@ -99,6 +99,7 @@ namespace UnityEngine.UIElements
         public int unitySliceBottom => rareData.Read().unitySliceBottom;
         public int unitySliceLeft => rareData.Read().unitySliceLeft;
         public int unitySliceRight => rareData.Read().unitySliceRight;
+        public float unitySliceScale => rareData.Read().unitySliceScale;
         public int unitySliceTop => rareData.Read().unitySliceTop;
         public TextAnchor unityTextAlign => inheritedData.Read().unityTextAlign;
         public Color unityTextOutlineColor => inheritedData.Read().unityTextOutlineColor;
@@ -410,6 +411,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnitySliceRight:
                         rareData.Write().unitySliceRight = reader.ReadInt(0);
                         break;
+                    case StylePropertyId.UnitySliceScale:
+                        rareData.Write().unitySliceScale = reader.ReadFloat(0);
+                        break;
                     case StylePropertyId.UnitySliceTop:
                         rareData.Write().unitySliceTop = reader.ReadInt(0);
                         break;
@@ -639,6 +643,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnitySliceRight:
                     rareData.Write().unitySliceRight = (int)sv.number;
+                    break;
+                case StylePropertyId.UnitySliceScale:
+                    rareData.Write().unitySliceScale = sv.number;
                     break;
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = (int)sv.number;
@@ -935,6 +942,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceRight:
                     rareData.Write().unitySliceRight = other.rareData.Read().unitySliceRight;
                     break;
+                case StylePropertyId.UnitySliceScale:
+                    rareData.Write().unitySliceScale = other.rareData.Read().unitySliceScale;
+                    break;
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = other.rareData.Read().unitySliceTop;
                     break;
@@ -1141,6 +1151,10 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Opacity:
                     visualData.Write().opacity = newValue;
                     ve.IncrementVersion(VersionChangeType.Opacity);
+                    break;
+                case StylePropertyId.UnitySliceScale:
+                    rareData.Write().unitySliceScale = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.UnityTextOutlineWidth:
                     inheritedData.Write().unityTextOutlineWidth = newValue;
@@ -1471,7 +1485,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Scale:
                     transformData.Write().scale = newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Transform);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Scale' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1491,11 +1505,31 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.All:
                     return StartAnimationAllProperty(element, ref oldStyle, ref newStyle, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BackgroundColor:
-                    return element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldStyle.visualData.Read().backgroundColor, newStyle.visualData.Read().backgroundColor, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldStyle.visualData.Read().backgroundColor, newStyle.visualData.Read().backgroundColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.BackgroundImage:
                     return element.styleAnimation.Start(StylePropertyId.BackgroundImage, oldStyle.visualData.Read().backgroundImage, newStyle.visualData.Read().backgroundImage, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BorderBottomColor:
-                    return element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldStyle.visualData.Read().borderBottomColor, newStyle.visualData.Read().borderBottomColor, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldStyle.visualData.Read().borderBottomColor, newStyle.visualData.Read().borderBottomColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.BorderBottomLeftRadius:
                     return element.styleAnimation.Start(StylePropertyId.BorderBottomLeftRadius, oldStyle.visualData.Read().borderBottomLeftRadius, newStyle.visualData.Read().borderBottomLeftRadius, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BorderBottomRightRadius:
@@ -1509,11 +1543,27 @@ namespace UnityEngine.UIElements
                     result |= element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldStyle.visualData.Read().borderRightColor, newStyle.visualData.Read().borderRightColor, durationMs, delayMs, easingCurve);
                     result |= element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldStyle.visualData.Read().borderBottomColor, newStyle.visualData.Read().borderBottomColor, durationMs, delayMs, easingCurve);
                     result |= element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldStyle.visualData.Read().borderLeftColor, newStyle.visualData.Read().borderLeftColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
                     return result;
                 }
 
                 case StylePropertyId.BorderLeftColor:
-                    return element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldStyle.visualData.Read().borderLeftColor, newStyle.visualData.Read().borderLeftColor, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldStyle.visualData.Read().borderLeftColor, newStyle.visualData.Read().borderLeftColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.BorderLeftWidth:
                     return element.styleAnimation.Start(StylePropertyId.BorderLeftWidth, oldStyle.layoutData.Read().borderLeftWidth, newStyle.layoutData.Read().borderLeftWidth, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BorderRadius:
@@ -1527,11 +1577,31 @@ namespace UnityEngine.UIElements
                 }
 
                 case StylePropertyId.BorderRightColor:
-                    return element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldStyle.visualData.Read().borderRightColor, newStyle.visualData.Read().borderRightColor, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldStyle.visualData.Read().borderRightColor, newStyle.visualData.Read().borderRightColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.BorderRightWidth:
                     return element.styleAnimation.Start(StylePropertyId.BorderRightWidth, oldStyle.layoutData.Read().borderRightWidth, newStyle.layoutData.Read().borderRightWidth, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BorderTopColor:
-                    return element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldStyle.visualData.Read().borderTopColor, newStyle.visualData.Read().borderTopColor, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldStyle.visualData.Read().borderTopColor, newStyle.visualData.Read().borderTopColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.BorderTopLeftRadius:
                     return element.styleAnimation.Start(StylePropertyId.BorderTopLeftRadius, oldStyle.visualData.Read().borderTopLeftRadius, newStyle.visualData.Read().borderTopLeftRadius, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BorderTopRightRadius:
@@ -1551,7 +1621,17 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Bottom:
                     return element.styleAnimation.Start(StylePropertyId.Bottom, oldStyle.layoutData.Read().bottom, newStyle.layoutData.Read().bottom, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Color:
-                    return element.styleAnimation.Start(StylePropertyId.Color, oldStyle.inheritedData.Read().color, newStyle.inheritedData.Read().color, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.Color, oldStyle.inheritedData.Read().color, newStyle.inheritedData.Read().color, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.Display:
                     return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldStyle.layoutData.Read().display, (int)newStyle.layoutData.Read().display, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Flex:
@@ -1636,9 +1716,29 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Right:
                     return element.styleAnimation.Start(StylePropertyId.Right, oldStyle.layoutData.Read().right, newStyle.layoutData.Read().right, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Rotate:
-                    return element.styleAnimation.Start(StylePropertyId.Rotate, oldStyle.transformData.Read().rotate, newStyle.transformData.Read().rotate, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.Rotate, oldStyle.transformData.Read().rotate, newStyle.transformData.Read().rotate, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.Scale:
-                    return element.styleAnimation.Start(StylePropertyId.Scale, oldStyle.transformData.Read().scale, newStyle.transformData.Read().scale, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.Scale, oldStyle.transformData.Read().scale, newStyle.transformData.Read().scale, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.TextOverflow:
                     return element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)oldStyle.rareData.Read().textOverflow, (int)newStyle.rareData.Read().textOverflow, durationMs, delayMs, easingCurve);
                 case StylePropertyId.TextShadow:
@@ -1646,11 +1746,41 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Top:
                     return element.styleAnimation.Start(StylePropertyId.Top, oldStyle.layoutData.Read().top, newStyle.layoutData.Read().top, durationMs, delayMs, easingCurve);
                 case StylePropertyId.TransformOrigin:
-                    return element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldStyle.transformData.Read().transformOrigin, newStyle.transformData.Read().transformOrigin, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldStyle.transformData.Read().transformOrigin, newStyle.transformData.Read().transformOrigin, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.Translate:
-                    return element.styleAnimation.Start(StylePropertyId.Translate, oldStyle.transformData.Read().translate, newStyle.transformData.Read().translate, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.Translate, oldStyle.transformData.Read().translate, newStyle.transformData.Read().translate, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicTransform) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.UnityBackgroundImageTintColor:
-                    return element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldStyle.rareData.Read().unityBackgroundImageTintColor, newStyle.rareData.Read().unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
+                {
+                    var result = element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldStyle.rareData.Read().unityBackgroundImageTintColor, newStyle.rareData.Read().unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
+
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
+                }
+
                 case StylePropertyId.UnityBackgroundScaleMode:
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)oldStyle.rareData.Read().unityBackgroundScaleMode, (int)newStyle.rareData.Read().unityBackgroundScaleMode, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityFont:
@@ -1669,6 +1799,8 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceLeft, oldStyle.rareData.Read().unitySliceLeft, newStyle.rareData.Read().unitySliceLeft, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnitySliceRight:
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceRight, oldStyle.rareData.Read().unitySliceRight, newStyle.rareData.Read().unitySliceRight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnitySliceScale:
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceScale, oldStyle.rareData.Read().unitySliceScale, newStyle.rareData.Read().unitySliceScale, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnitySliceTop:
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldStyle.rareData.Read().unitySliceTop, newStyle.rareData.Read().unitySliceTop, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityTextAlign:
@@ -1703,13 +1835,21 @@ namespace UnityEngine.UIElements
         public static bool StartAnimationAllProperty(VisualElement element, ref ComputedStyle oldStyle, ref ComputedStyle newStyle, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             bool result = false;
+            UsageHints usageHints = UsageHints.None;
+
             if (!oldStyle.inheritedData.Equals(newStyle.inheritedData))
             {
                 ref readonly var oldData = ref oldStyle.inheritedData.Read();
                 ref readonly var newData = ref newStyle.inheritedData.Read();
                 if (oldData.color != newData.color)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.Color, oldData.color, newData.color, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.Color, oldData.color, newData.color, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.fontSize != newData.fontSize)
@@ -1959,7 +2099,13 @@ namespace UnityEngine.UIElements
 
                 if (oldData.unityBackgroundImageTintColor != newData.unityBackgroundImageTintColor)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldData.unityBackgroundImageTintColor, newData.unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldData.unityBackgroundImageTintColor, newData.unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.unityBackgroundScaleMode != newData.unityBackgroundScaleMode)
@@ -1987,6 +2133,11 @@ namespace UnityEngine.UIElements
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceRight, oldData.unitySliceRight, newData.unitySliceRight, durationMs, delayMs, easingCurve);
                 }
 
+                if (oldData.unitySliceScale != newData.unitySliceScale)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnitySliceScale, oldData.unitySliceScale, newData.unitySliceScale, durationMs, delayMs, easingCurve);
+                }
+
                 if (oldData.unitySliceTop != newData.unitySliceTop)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldData.unitySliceTop, newData.unitySliceTop, durationMs, delayMs, easingCurve);
@@ -2004,22 +2155,46 @@ namespace UnityEngine.UIElements
                 ref readonly var newData = ref newStyle.transformData.Read();
                 if (oldData.rotate != newData.rotate)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.Rotate, oldData.rotate, newData.rotate, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.Rotate, oldData.rotate, newData.rotate, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.scale != newData.scale)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.Scale, oldData.scale, newData.scale, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.Scale, oldData.scale, newData.scale, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.transformOrigin != newData.transformOrigin)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldData.transformOrigin, newData.transformOrigin, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldData.transformOrigin, newData.transformOrigin, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.translate != newData.translate)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.Translate, oldData.translate, newData.translate, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.Translate, oldData.translate, newData.translate, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicTransform;
+                    }
+
+                    result |= partialResult;
                 }
             }
 
@@ -2029,7 +2204,13 @@ namespace UnityEngine.UIElements
                 ref readonly var newData = ref newStyle.visualData.Read();
                 if (oldData.backgroundColor != newData.backgroundColor)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldData.backgroundColor, newData.backgroundColor, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldData.backgroundColor, newData.backgroundColor, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.backgroundImage != newData.backgroundImage)
@@ -2039,7 +2220,13 @@ namespace UnityEngine.UIElements
 
                 if (oldData.borderBottomColor != newData.borderBottomColor)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldData.borderBottomColor, newData.borderBottomColor, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldData.borderBottomColor, newData.borderBottomColor, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.borderBottomLeftRadius != newData.borderBottomLeftRadius)
@@ -2054,17 +2241,35 @@ namespace UnityEngine.UIElements
 
                 if (oldData.borderLeftColor != newData.borderLeftColor)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldData.borderLeftColor, newData.borderLeftColor, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldData.borderLeftColor, newData.borderLeftColor, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.borderRightColor != newData.borderRightColor)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldData.borderRightColor, newData.borderRightColor, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldData.borderRightColor, newData.borderRightColor, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.borderTopColor != newData.borderTopColor)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldData.borderTopColor, newData.borderTopColor, durationMs, delayMs, easingCurve);
+                    bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldData.borderTopColor, newData.borderTopColor, durationMs, delayMs, easingCurve);
+                    if (partialResult)
+                    {
+                        usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    result |= partialResult;
                 }
 
                 if (oldData.borderTopLeftRadius != newData.borderTopLeftRadius)
@@ -2086,6 +2291,11 @@ namespace UnityEngine.UIElements
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldData.overflow, (int)newData.overflow, durationMs, delayMs, easingCurve);
                 }
+            }
+
+            if (usageHints != UsageHints.None)
+            {
+                element.usageHints |= usageHints;
             }
 
             return result;
@@ -2122,7 +2332,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BackgroundColor:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundColor : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.BackgroundColor, computedStyle.visualData.Read().backgroundColor, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.BackgroundColor, computedStyle.visualData.Read().backgroundColor, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.BackgroundImage:
@@ -2134,7 +2350,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BorderBottomColor:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderBottomColor : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.BorderBottomColor, computedStyle.visualData.Read().borderBottomColor, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.BorderBottomColor, computedStyle.visualData.Read().borderBottomColor, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.BorderBottomLeftRadius:
@@ -2158,7 +2380,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BorderLeftColor:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderLeftColor : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.BorderLeftColor, computedStyle.visualData.Read().borderLeftColor, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.BorderLeftColor, computedStyle.visualData.Read().borderLeftColor, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.BorderLeftWidth:
@@ -2170,7 +2398,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BorderRightColor:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderRightColor : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.BorderRightColor, computedStyle.visualData.Read().borderRightColor, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.BorderRightColor, computedStyle.visualData.Read().borderRightColor, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.BorderRightWidth:
@@ -2182,7 +2416,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.BorderTopColor:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.borderTopColor : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.BorderTopColor, computedStyle.visualData.Read().borderTopColor, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.BorderTopColor, computedStyle.visualData.Read().borderTopColor, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.BorderTopLeftRadius:
@@ -2212,7 +2452,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Color:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.color : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.Color, computedStyle.inheritedData.Read().color, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.Color, computedStyle.inheritedData.Read().color, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.Display:
@@ -2394,7 +2640,13 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityBackgroundImageTintColor : sv.color;
-                    return element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, computedStyle.rareData.Read().unityBackgroundImageTintColor, to, durationMs, delayMs, easingCurve);
+                    bool result = element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, computedStyle.rareData.Read().unityBackgroundImageTintColor, to, durationMs, delayMs, easingCurve);
+                    if (result && (element.usageHints & UsageHints.DynamicColor) == 0)
+                    {
+                        element.usageHints |= UsageHints.DynamicColor;
+                    }
+
+                    return result;
                 }
 
                 case StylePropertyId.UnityBackgroundScaleMode:
@@ -2449,6 +2701,12 @@ namespace UnityEngine.UIElements
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceRight : (int)sv.number;
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceRight, computedStyle.rareData.Read().unitySliceRight, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnitySliceScale:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceScale : sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.UnitySliceScale, computedStyle.rareData.Read().unitySliceScale, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnitySliceTop:
@@ -2801,6 +3059,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnitySliceRight:
                     rareData.Write().unitySliceRight = InitialStyle.unitySliceRight;
+                    break;
+                case StylePropertyId.UnitySliceScale:
+                    rareData.Write().unitySliceScale = InitialStyle.unitySliceScale;
                     break;
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = InitialStyle.unitySliceTop;

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.UIElements;
+using UnityEditor.UIElements.Bindings;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -25,15 +26,10 @@ namespace UnityEditor
 
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
-            BaseCompositeField<Vector2, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
-            BaseCompositeField<Vector3, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
-            BaseCompositeField<Vector4, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
-            BaseCompositeField<Vector2Int, IntegerField, int>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
-            BaseCompositeField<Vector3Int, IntegerField, int>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
-            BaseCompositeField<Rect, FloatField, float>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
-            BaseCompositeField<RectInt, IntegerField, int>.s_SerializedPropertyBindCallback = EditorUIElementsBridge.RegisterSerializedPropertyBindCallback;
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
+            BindingExtensions.bindingImpl = new DefaultSerializedObjectBindingImplementation();
+            EditorWindowBackendManager.defaultWindowBackend = (model) => model is IEditorWindowModel ? new DefaultEditorWindowBackend() :  new DefaultWindowBackend();
         }
 
         static void OnBeginContainer(IMGUIContainer c)

@@ -684,7 +684,7 @@ namespace UnityEditor
             m_AudioGroupTree.EndNameEditing(true);
         }
 
-        public void OnUndoRedoPerformed()
+        public void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             ReloadTree();
             if (m_Controller != null)

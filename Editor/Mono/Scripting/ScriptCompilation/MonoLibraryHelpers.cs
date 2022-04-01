@@ -7,25 +7,22 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class MonoLibraryHelpers
     {
-        class CachedReferences
-        {
-            public ApiCompatibilityLevel ApiCompatibilityLevel;
-            public string[] References;
-        }
+        static Dictionary<ApiCompatibilityLevel, string[]> cachedApiCompatibilityLevelReferences = new Dictionary<ApiCompatibilityLevel, string[]>();
 
-        static CachedReferences cachedReferences;
-
+        [RequiredByNativeCode]
         public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel)
         {
             return GetCachedSystemLibraryReferences(apiCompatibilityLevel);
         }
 
-        static string[] FindReferencesInDirectories(this string[] references, string[] directories)
+
+        static string[] FindReferencesInDirectories(this IEnumerable<string> references, string[] directories)
         {
             return (
                 from reference in references
@@ -39,13 +36,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             // We cache the references because they are computed by getting files in directories on disk,
             // which is very slow.
-            if (cachedReferences != null && cachedReferences.ApiCompatibilityLevel == apiCompatibilityLevel)
+            if (cachedApiCompatibilityLevelReferences.TryGetValue(apiCompatibilityLevel, out var cachedReferences))
             {
-                return cachedReferences.References;
+                return cachedReferences;
             }
 
             var references = new List<string>();
-            var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
+
 
             if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
             {
@@ -53,26 +50,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
             {
-                references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
-                references.AddRange(GetNet46SystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
-
-                // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
-                // used later by the language compilers.
+                var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
+                var referenceFileNames = GetSystemReferences().Concat(GetNet46SystemReferences()).Concat(GetMonoProfileNetstandardFacadeReferences()).Distinct();
+                references.AddRange(referenceFileNames.FindReferencesInDirectories(monoAssemblyDirectories));
                 references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
             }
             else
             {
+                var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
                 references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
             }
 
-            cachedReferences = new CachedReferences
-            {
-                ApiCompatibilityLevel = apiCompatibilityLevel,
-                References = references.ToArray()
-            };
+            var apiCompatibilityLevelReference = references.ToArray();
+            cachedApiCompatibilityLevelReferences[apiCompatibilityLevel] = apiCompatibilityLevelReference;
 
-
-            return cachedReferences.References;
+            return apiCompatibilityLevelReference;
         }
 
         static string GetSystemReference(ApiCompatibilityLevel apiCompatibilityLevel)
@@ -156,6 +148,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "System.IO.Compression.dll",
                 "Microsoft.CSharp.dll",
                 "System.Data.dll",
+            };
+        }
+
+        static string[] GetMonoProfileNetstandardFacadeReferences()
+        {
+            return new[]
+            {
+                "mscorlib.dll",
+                "System.Core.dll",
+                "System.dll",
+                "System.Data.dll",
+                "System.Data.DataSetExtensions.dll",
+                "System.Drawing.dll",
+                "System.IO.Compression.dll",
+                "System.IO.Compression.FileSystem.dll",
+                "System.ComponentModel.Composition.dll",
+                "System.Net.Http.dll",
+                "System.Numerics.dll",
+                "System.Runtime.Serialization.dll",
+                "System.Transactions.dll",
+                "System.Xml.dll",
+                "System.Xml.Linq.dll",
             };
         }
     }

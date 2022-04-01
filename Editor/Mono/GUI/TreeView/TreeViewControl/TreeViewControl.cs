@@ -563,9 +563,13 @@ namespace UnityEditor.IMGUI.Controls
         // Used to reveal an item
         protected virtual IList<int> GetAncestors(int id)
         {
+            var item = FindItem(id);
+            if (item == null)
+                return new List<int>();
+
             // Default behavior assumes complete tree
             HashSet<int> parentsAbove = new HashSet<int>();
-            TreeViewUtility.GetParentsAboveItem(FindItem(id), parentsAbove);
+            TreeViewUtility.GetParentsAboveItem(item, parentsAbove);
             return parentsAbove.ToArray();
         }
 
@@ -583,10 +587,7 @@ namespace UnityEditor.IMGUI.Controls
             if (rootItem == null)
                 throw new InvalidOperationException("FindItem failed: root item has not been created yet");
 
-            var item = TreeViewUtility.FindItem(id, rootItem);
-            if (item == null)
-                throw new ArgumentException(string.Format("Could not find item with id: {0}. FindItem assumes complete tree is built. Most likely the item is not allocated because it is hidden under a collapsed item. Check if GetAncestors are overriden for the tree view.", id));
-            return item;
+            return TreeViewUtility.FindItem(id, rootItem);
         }
 
         // Selection

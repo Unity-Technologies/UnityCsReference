@@ -64,7 +64,8 @@ namespace Unity.IO.LowLevel.Unsafe
         Scripts,
         EntitiesScene,
         EntitiesStreamBinaryReader,
-        FileInfo
+        FileInfo,
+        ContentLoading
     }
 
     public enum ReadStatus

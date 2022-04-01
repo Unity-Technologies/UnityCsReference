@@ -153,11 +153,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool ContainsPointer(int pointerId)
+        {
+            var elementUnderPointer = elementPanel.GetTopElementUnderPointer(pointerId);
+            return this == elementUnderPointer || visualInput == elementUnderPointer;
+        }
+
         void ProcessPointerDown<T>(PointerEventBase<T> evt) where T : PointerEventBase<T>, new()
         {
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.originalMousePosition)))
+                if (ContainsPointer(evt.pointerId))
                 {
                     ShowMenu();
                     evt.StopPropagation();

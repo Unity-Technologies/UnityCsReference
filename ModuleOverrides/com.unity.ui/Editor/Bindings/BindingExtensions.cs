@@ -1848,11 +1848,15 @@ namespace UnityEditor.UIElements.Bindings
                 var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
                 field.choices = new List<string>(enumData.displayNames);
 
-                var propertyDisplayNames = EditorGUI.EnumNamesCache.GetEnumDisplayNames(property);
-                foreach (var fieldChoice in field.choices)
-                    displayIndexToEnumIndex.Add(Array.IndexOf(propertyDisplayNames, fieldChoice));
-                foreach (var propertyChoice in propertyDisplayNames)
-                    enumIndexToDisplayIndex.Add(field.choices.IndexOf(propertyChoice));
+                // The call to EditorGUI.EnumNamesCache.GetEnumNames returns an ordered version of the enum. We use the
+                // actual enum values, not the display names, in order to make sure we can compare them to the values in
+                // enumData.names, because the display names may actually be different (if the enum has the InspectorName
+                // attribute, for example).
+                var sortedEnumNames = EditorGUI.EnumNamesCache.GetEnumNames(property);
+                foreach (var enumName in enumData.names)
+                    displayIndexToEnumIndex.Add(Array.IndexOf(sortedEnumNames, enumName));
+                foreach (var sortedEnumName in sortedEnumNames)
+                    enumIndexToDisplayIndex.Add(Array.IndexOf(enumData.names, sortedEnumName));
             }
             else
             {

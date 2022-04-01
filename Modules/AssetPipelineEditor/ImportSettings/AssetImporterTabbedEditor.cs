@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 
@@ -49,9 +50,15 @@ namespace UnityEditor
             }
         }
 
+        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
         protected override void ResetValues()
         {
-            base.ResetValues();
+            DiscardChanges();
+        }
+
+        public override void DiscardChanges()
+        {
+            base.DiscardChanges();
 
             if (m_Tabs != null)
             {

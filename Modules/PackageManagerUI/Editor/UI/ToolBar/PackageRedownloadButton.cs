@@ -22,11 +22,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_PackageDatabase.Download(version.package);
             if (canDownload)
-            {
                 PackageManagerWindowAnalytics.SendEvent("startReDownload", version.packageUniqueId);
-                return true;
-            }
-            return false;
+            return canDownload;
         }
 
         protected override bool IsVisible(IPackageVersion version)
@@ -36,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
-            return localInfo?.canUpdate == false
+            return localInfo?.canUpdateOrDowngrade == false
                 && (operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible);
         }
 
@@ -57,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
             var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            return localInfo?.canUpdate == false && operation?.isInProgress == true;
+            return localInfo?.canUpdateOrDowngrade == false && operation?.isInProgress == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)

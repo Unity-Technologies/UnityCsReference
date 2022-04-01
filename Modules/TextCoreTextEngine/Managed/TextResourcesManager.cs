@@ -51,7 +51,8 @@ namespace UnityEngine.TextCore.Text
 
             public FontAssetRef(int nameHashCode, int familyNameHashCode, int styleNameHashCode, FontAsset fontAsset)
             {
-                this.nameHashCode = nameHashCode;
+                // Use familyNameHashCode for font assets created at runtime as these asset do not typically have a names.
+                this.nameHashCode = nameHashCode != 0 ? nameHashCode : familyNameHashCode;
                 this.familyNameHashCode = familyNameHashCode;
                 this.styleNameHashCode = styleNameHashCode;
                 this.familyNameAndStyleHashCode = (long)styleNameHashCode << 32 | (uint)familyNameHashCode;
@@ -127,15 +128,16 @@ namespace UnityEngine.TextCore.Text
         /// Remove font asset from resource manager.
         /// </summary>
         /// <param name="fontAsset">Font asset to be removed from the resource manager.</param>
-        internal static void RemoveFontAsset(FontAsset fontAsset)
+        public static void RemoveFontAsset(FontAsset fontAsset)
         {
-            //int hashCode = fontAsset.hashCode;
+            int instanceID = fontAsset.instanceID;
 
-            //if (s_FontAssetReferenceLookup.ContainsKey(hashCode))
-            //{
-            //    s_FontAssetReferenceLookup.Remove(hashCode);
-            //    s_FontAssetReferences.Remove(fontAsset);
-            //}
+            if (s_FontAssetReferences.TryGetValue(instanceID, out FontAssetRef reference))
+            {
+                s_FontAssetNameReferenceLookup.Remove(reference.nameHashCode);
+                s_FontAssetFamilyNameAndStyleReferenceLookup.Remove(reference.familyNameAndStyleHashCode);
+                s_FontAssetReferences.Remove(instanceID);
+            }
         }
 
         /// <summary>

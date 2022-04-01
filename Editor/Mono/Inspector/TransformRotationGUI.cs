@@ -96,6 +96,22 @@ namespace UnityEditor
                     EditorGUI.FloatField(nr, s_XYZLabels[i], ref m_EulerFloats[i]);
                     if (EditorGUI.EndChangeCheck() && m_EulerFloats[i].hasResult)
                         eulerChangedMask |= 1 << i;
+
+                    if (Event.current.type == EventType.ContextClick && nr.Contains(Event.current.mousePosition))
+                    {
+                        var childProperty = m_Rotation.Copy();
+                        childProperty.Next(true);
+                        int childPropertyIndex = i;
+                        while (childPropertyIndex > 0)
+                        {
+                            childProperty.Next(false);
+                            childPropertyIndex--;
+                        }
+
+                        EditorGUI.DoPropertyContextMenu(childProperty);
+                        Event.current.Use();
+                    }
+
                     nr.x += w + EditorGUI.kSpacingSubLabel;
                 }
                 EditorGUIUtility.labelWidth = prevWidth;

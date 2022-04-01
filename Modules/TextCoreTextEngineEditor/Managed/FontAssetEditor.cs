@@ -56,6 +56,7 @@ namespace UnityEditor.TextCore.Text
             public static bool fontWeightPanel = true;
             public static bool fallbackFontAssetPanel = true;
             public static bool glyphTablePanel = false;
+            public static bool ligatureSubstitutionTablePanel = false;
             public static bool characterTablePanel = false;
             public static bool fontFeatureTablePanel = false;
             public static bool MarkToBaseTablePanel = false;
@@ -125,17 +126,19 @@ namespace UnityEditor.TextCore.Text
 
         private int m_CurrentGlyphPage = 0;
         private int m_CurrentCharacterPage = 0;
+        private int m_CurrentLigaturePage = 0;
         private int m_CurrentKerningPage = 0;
         private int m_CurrentMarkToBasePage = 0;
         private int m_CurrentMarkToMarkPage = 0;
 
         private int m_SelectedGlyphRecord = -1;
         private int m_SelectedCharacterRecord = -1;
+        private int m_SelectedLigatureRecord = -1;
         private int m_SelectedAdjustmentRecord = -1;
         private int m_SelectedMarkToBaseRecord = -1;
         private int m_SelectedMarkToMarkRecord = -1;
 
-        enum RecordSelectionType { CharacterRecord, GlyphRecord, AdjustmentPairRecord, MarkToBaseRecord, MarkToMarkRecord }
+        enum RecordSelectionType { CharacterRecord, GlyphRecord, LigatureSubstitutionRecord, AdjustmentPairRecord, MarkToBaseRecord, MarkToMarkRecord }
 
         private string m_dstGlyphID;
         private string m_dstUnicode;
@@ -156,6 +159,9 @@ namespace UnityEditor.TextCore.Text
 
         private string m_GlyphSearchPattern;
         private List<int> m_GlyphSearchList;
+
+        private string m_LigatureTableSearchPattern;
+        private List<int> m_LigatureTableSearchList;
 
         private string m_CharacterSearchPattern;
         private List<int> m_CharacterSearchList;
@@ -208,6 +214,7 @@ namespace UnityEditor.TextCore.Text
         private FontFeatureTable m_FontFeatureTable;
         private SerializedProperty m_FontFeatureTable_prop;
         private SerializedProperty m_GlyphPairAdjustmentRecords_prop;
+        private SerializedProperty m_LigatureSubstitutionRecords_prop;
         private SerializedProperty m_MarkToBaseAdjustmentRecords_prop;
         private SerializedProperty m_MarkToMarkAdjustmentRecords_prop;
 
@@ -283,6 +290,7 @@ namespace UnityEditor.TextCore.Text
 
             m_FontFeatureTable_prop = serializedObject.FindProperty("m_FontFeatureTable");
             m_GlyphPairAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_GlyphPairAdjustmentRecords");
+            m_LigatureSubstitutionRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_LigatureSubstitutionRecords");
             m_MarkToBaseAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_MarkToBaseAdjustmentRecords");
             m_MarkToMarkAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_MarkToMarkAdjustmentRecords");
 
@@ -1127,6 +1135,181 @@ namespace UnityEditor.TextCore.Text
             }
             #endregion
 
+            #region LIGATURE
+            EditorGUIUtility.labelWidth = labelWidth;
+            EditorGUIUtility.fieldWidth = fieldWidth;
+            EditorGUI.indentLevel = 0;
+            rect = EditorGUILayout.GetControlRect(false, 24);
+
+            int ligatureSubstitutionRecordCount = m_fontAsset.fontFeatureTable.ligatureRecords.Count;
+
+            if (GUI.Button(rect, new GUIContent("<b>Ligature Table</b>   [" + ligatureSubstitutionRecordCount + "]" + (rect.width > 340 ? " Records" : ""), "List of Ligature substitution records."), TM_EditorStyles.sectionHeader))
+                UI_PanelState.ligatureSubstitutionTablePanel = !UI_PanelState.ligatureSubstitutionTablePanel;
+
+            GUI.Label(rect, (UI_PanelState.ligatureSubstitutionTablePanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
+
+            if (UI_PanelState.ligatureSubstitutionTablePanel)
+            {
+                int arraySize = m_LigatureSubstitutionRecords_prop.arraySize;
+                int itemsPerPage = 20;
+
+                // Display Mark Adjust Records Management Tools
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    // Search Bar implementation
+                    #region DISPLAY SEARCH BAR
+                    EditorGUILayout.BeginHorizontal();
+                    {
+                        EditorGUIUtility.labelWidth = 150f;
+                        EditorGUI.BeginChangeCheck();
+                        string searchPattern = EditorGUILayout.TextField("Ligature Search", m_LigatureTableSearchPattern, "SearchTextField");
+                        if (EditorGUI.EndChangeCheck() || m_isSearchDirty)
+                        {
+                            if (string.IsNullOrEmpty(searchPattern) == false)
+                            {
+                                m_LigatureTableSearchPattern = searchPattern;
+
+                                // Search Glyph Table for potential matches
+                                SearchLigatureTable(m_LigatureTableSearchPattern, ref m_LigatureTableSearchList);
+                            }
+                            else
+                                m_LigatureTableSearchPattern = null;
+
+                            m_isSearchDirty = false;
+                        }
+
+                        string styleName = string.IsNullOrEmpty(m_LigatureTableSearchPattern) ? "SearchCancelButtonEmpty" : "SearchCancelButton";
+                        if (GUILayout.Button(GUIContent.none, styleName))
+                        {
+                            GUIUtility.keyboardControl = 0;
+                            m_LigatureTableSearchPattern = string.Empty;
+                        }
+                    }
+                    EditorGUILayout.EndHorizontal();
+                    #endregion
+
+                    // Display Page Navigation
+                    if (!string.IsNullOrEmpty(m_LigatureTableSearchPattern))
+                        arraySize = m_LigatureTableSearchList.Count;
+
+                    DisplayPageNavigation(ref m_CurrentLigaturePage, arraySize, itemsPerPage);
+                }
+                EditorGUILayout.EndVertical();
+
+                if (arraySize > 0)
+                {
+                    // Display each GlyphInfo entry using the GlyphInfo property drawer.
+                    for (int i = itemsPerPage * m_CurrentLigaturePage; i < arraySize && i < itemsPerPage * (m_CurrentLigaturePage + 1); i++)
+                    {
+                        // Define the start of the selection region of the element.
+                        Rect elementStartRegion = GUILayoutUtility.GetRect(0f, 0f, GUILayout.ExpandWidth(true));
+
+                        int elementIndex = i;
+                        if (!string.IsNullOrEmpty(m_LigatureTableSearchPattern))
+                            elementIndex = m_LigatureTableSearchList[i];
+
+                        SerializedProperty ligaturePropertyRecord = m_LigatureSubstitutionRecords_prop.GetArrayElementAtIndex(elementIndex);
+
+                        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                        using (new EditorGUI.DisabledScope(i != m_SelectedLigatureRecord))
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUILayout.PropertyField(ligaturePropertyRecord, new GUIContent("Selectable"));
+
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                UpdateLigatureSubstitutionRecordLookup(ligaturePropertyRecord);
+                            }
+                        }
+
+                        EditorGUILayout.EndVertical();
+
+                        // Define the end of the selection region of the element.
+                        Rect elementEndRegion = GUILayoutUtility.GetRect(0f, 0f, GUILayout.ExpandWidth(true));
+
+                        // Check for Item selection
+                        Rect selectionArea = new Rect(elementStartRegion.x, elementStartRegion.y, elementEndRegion.width, elementEndRegion.y - elementStartRegion.y);
+                        if (DoSelectionCheck(selectionArea))
+                        {
+                            if (m_SelectedLigatureRecord == i)
+                            {
+                                m_SelectedLigatureRecord = -1;
+                            }
+                            else
+                            {
+                                m_SelectedLigatureRecord = i;
+                                GUIUtility.keyboardControl = 0;
+                            }
+                        }
+
+                        // Draw Selection Highlight and Kerning Pair Options
+                        if (m_SelectedLigatureRecord == i)
+                        {
+                            // Reset other selections
+                            ResetSelections(RecordSelectionType.LigatureSubstitutionRecord);
+
+                            TextCoreEditorUtilities.DrawBox(selectionArea, 2f, new Color32(40, 192, 255, 255));
+
+                            // Draw Glyph management options
+                            Rect controlRect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * 1f);
+                            float optionAreaWidth = controlRect.width;
+                            float btnWidth = optionAreaWidth / 4;
+
+                            Rect position = new Rect(controlRect.x + controlRect.width - btnWidth, controlRect.y, btnWidth, controlRect.height);
+
+                            // Move record up
+                            bool guiEnabled = GUI.enabled;
+                            if (m_SelectedLigatureRecord == 0) { GUI.enabled = false; }
+                            if (GUI.Button(new Rect(controlRect.x, controlRect.y, btnWidth, controlRect.height), "Up"))
+                            {
+                                SwapCharacterElements(m_LigatureSubstitutionRecords_prop, m_SelectedLigatureRecord, m_SelectedLigatureRecord - 1);
+                                serializedObject.ApplyModifiedProperties();
+                                m_SelectedLigatureRecord -= 1;
+                                isAssetDirty = true;
+                                m_isSearchDirty = true;
+                                m_fontAsset.InitializeLigatureSubstitutionLookupDictionary();
+                            }
+                            GUI.enabled = guiEnabled;
+
+                            // Move record down
+                            if (m_SelectedLigatureRecord == arraySize - 1) { GUI.enabled = false; }
+                            if (GUI.Button(new Rect(controlRect.x + btnWidth, controlRect.y, btnWidth, controlRect.height), "Down"))
+                            {
+                                SwapCharacterElements(m_LigatureSubstitutionRecords_prop, m_SelectedLigatureRecord, m_SelectedLigatureRecord + 1);
+                                serializedObject.ApplyModifiedProperties();
+                                m_SelectedLigatureRecord += 1;
+                                isAssetDirty = true;
+                                m_isSearchDirty = true;
+                                m_fontAsset.InitializeLigatureSubstitutionLookupDictionary();
+                            }
+                            GUI.enabled = guiEnabled;
+
+                            // Remove record
+                            GUI.enabled = true;
+                            if (GUI.Button(position, "Remove"))
+                            {
+                                GUIUtility.keyboardControl = 0;
+
+                                RemoveRecord(m_LigatureSubstitutionRecords_prop, m_SelectedLigatureRecord);
+
+                                isAssetDirty = true;
+                                m_SelectedLigatureRecord = -1;
+                                m_isSearchDirty = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                DisplayAddRemoveButtons(m_LigatureSubstitutionRecords_prop, m_SelectedLigatureRecord, ligatureSubstitutionRecordCount);
+
+                DisplayPageNavigation(ref m_CurrentLigaturePage, arraySize, itemsPerPage);
+
+                GUILayout.Space(5);
+            }
+            #endregion
+
             // FONT FEATURE TABLE
             #region Font Feature Table
             EditorGUIUtility.labelWidth = labelWidth;
@@ -1699,12 +1882,21 @@ namespace UnityEditor.TextCore.Text
             {
              case RecordSelectionType.CharacterRecord:
                  m_SelectedGlyphRecord = -1;
+                 m_SelectedLigatureRecord = -1;
                  m_SelectedAdjustmentRecord = -1;
                  m_SelectedMarkToBaseRecord = -1;
                  m_SelectedMarkToMarkRecord = -1;
                  break;
              case RecordSelectionType.GlyphRecord:
                  m_SelectedCharacterRecord = -1;
+                 m_SelectedLigatureRecord = -1;
+                 m_SelectedAdjustmentRecord = -1;
+                 m_SelectedMarkToBaseRecord = -1;
+                 m_SelectedMarkToMarkRecord = -1;
+                 break;
+             case RecordSelectionType.LigatureSubstitutionRecord:
+                 m_SelectedCharacterRecord = -1;
+                 m_SelectedGlyphRecord = -1;
                  m_SelectedAdjustmentRecord = -1;
                  m_SelectedMarkToBaseRecord = -1;
                  m_SelectedMarkToMarkRecord = -1;
@@ -1712,18 +1904,21 @@ namespace UnityEditor.TextCore.Text
              case RecordSelectionType.AdjustmentPairRecord:
                  m_SelectedCharacterRecord = -1;
                  m_SelectedGlyphRecord = -1;
+                 m_SelectedLigatureRecord = -1;
                  m_SelectedMarkToBaseRecord = -1;
                  m_SelectedMarkToMarkRecord = -1;
                  break;
              case RecordSelectionType.MarkToBaseRecord:
                  m_SelectedCharacterRecord = -1;
                  m_SelectedGlyphRecord = -1;
+                 m_SelectedLigatureRecord = -1;
                  m_SelectedAdjustmentRecord = -1;
                  m_SelectedMarkToMarkRecord = -1;
                  break;
              case RecordSelectionType.MarkToMarkRecord:
                  m_SelectedCharacterRecord = -1;
                  m_SelectedGlyphRecord = -1;
+                 m_SelectedLigatureRecord = -1;
                  m_SelectedAdjustmentRecord = -1;
                  m_SelectedMarkToBaseRecord = -1;
                  break;
@@ -2058,6 +2253,21 @@ namespace UnityEditor.TextCore.Text
             return false;
         }
 
+        private void UpdateLigatureSubstitutionRecordLookup(SerializedProperty property)
+        {
+            serializedObject.ApplyModifiedProperties();
+            m_fontAsset.InitializeLigatureSubstitutionLookupDictionary();
+            isAssetDirty = true;
+
+            /*LigatureSubstitutionRecord record = GetLigatureSubstitutionRecord(property);
+
+            uint firstComponentGlyphIndex = record.componentGlyphIDs[0];
+
+            // Lookup dictionary entry and update it
+            if (m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.ContainsKey(firstComponentGlyphIndex))
+                m_FontFeatureTable.m_LigatureSubstitutionRecordLookup[firstComponentGlyphIndex] = record;*/
+        }
+
         private void UpdatePairAdjustmentRecordLookup(SerializedProperty property)
         {
             GlyphPairAdjustmentRecord pairAdjustmentRecord = GetGlyphPairAdjustmentRecord(property);
@@ -2093,6 +2303,23 @@ namespace UnityEditor.TextCore.Text
             //pairAdjustmentRecord.featureLookupFlags = flagValue == -1 ? FontFeatureLookupFlags.IgnoreLigatures | FontFeatureLookupFlags.IgnoreSpacingAdjustments : (FontFeatureLookupFlags) flagValue;
 
             return pairAdjustmentRecord;
+        }
+
+        void SwapCharacterElements(SerializedProperty property, int selectedIndex, int newIndex)
+        {
+            property.MoveArrayElement(selectedIndex, newIndex);
+        }
+
+        void RemoveRecord(SerializedProperty property, int index)
+        {
+            if (index > property.arraySize)
+                return;
+
+            property.DeleteArrayElementAtIndex(index);
+
+            serializedObject.ApplyModifiedProperties();
+
+            m_fontAsset.ReadFontAssetDefinition();
         }
 
         GlyphValueRecord GetValueRecord(SerializedProperty property)
@@ -2310,6 +2537,45 @@ namespace UnityEditor.TextCore.Text
                 // Check for potential match against decimal id
                 //if (id.ToString().Contains(searchPattern))
                 //    searchResults.Add(i);
+            }
+        }
+
+        void SearchLigatureTable(string searchPattern, ref List<int> searchResults)
+        {
+            if (searchResults == null) searchResults = new List<int>();
+
+            searchResults.Clear();
+
+            // Lookup glyph index of potential characters contained in the search pattern.
+            uint firstGlyphIndex = 0;
+            Character firstCharacterSearch;
+
+            if (searchPattern.Length > 0 && m_fontAsset.characterLookupTable.TryGetValue(searchPattern[0], out firstCharacterSearch))
+                firstGlyphIndex = firstCharacterSearch.glyphIndex;
+
+            uint secondGlyphIndex = 0;
+            Character secondCharacterSearch;
+
+            if (searchPattern.Length > 1 && m_fontAsset.characterLookupTable.TryGetValue(searchPattern[1], out secondCharacterSearch))
+                secondGlyphIndex = secondCharacterSearch.glyphIndex;
+
+            int arraySize = m_MarkToBaseAdjustmentRecords_prop.arraySize;
+
+            for (int i = 0; i < arraySize; i++)
+            {
+                SerializedProperty record = m_MarkToBaseAdjustmentRecords_prop.GetArrayElementAtIndex(i);
+
+                int baseGlyphIndex = record.FindPropertyRelative("m_BaseGlyphID").intValue;
+                int markGlyphIndex = record.FindPropertyRelative("m_MarkGlyphID").intValue;
+
+                if (firstGlyphIndex == baseGlyphIndex && secondGlyphIndex == markGlyphIndex)
+                    searchResults.Add(i);
+                else if (searchPattern.Length == 1 && (firstGlyphIndex == baseGlyphIndex || firstGlyphIndex == markGlyphIndex))
+                    searchResults.Add(i);
+                else if (baseGlyphIndex.ToString().Contains(searchPattern))
+                    searchResults.Add(i);
+                else if (markGlyphIndex.ToString().Contains(searchPattern))
+                    searchResults.Add(i);
             }
         }
 

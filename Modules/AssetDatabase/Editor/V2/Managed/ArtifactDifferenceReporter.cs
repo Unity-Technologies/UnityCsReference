@@ -87,8 +87,8 @@ namespace UnityEditor
 
         private List<ArtifactInfoDifference> m_AllDiffs;
 
-        public static string kGlobal_artifactFormatVersion = "Global/artifactFormatVersion"; //Manual check
-        public static string kGlobal_allImporterVersion = "Global/allImporterVersion"; //Manual check
+        public static string kGlobal_artifactFormatVersion = "Global/artifactFormatVersion";
+        public static string kGlobal_allImporterVersion = "Global/allImporterVersion";
         public static string kImportParameter_ImporterType = "ImportParameter/ImporterType";
         public static string kImporterRegister_ImporterVersion = "ImporterRegistry/ImporterVersion";
         public static string kImporterRegistry_PostProcessorVersionHash = "ImporterRegistry/PostProcessorVersionHash";
@@ -98,12 +98,12 @@ namespace UnityEditor
         public static string kSourceAsset_MetaFileHash = "SourceAsset/MetaFileHash";
         public static string kArtifact_HashOfContent = "Artifact/HashOfContent";
         public static string kArtifact_HashOfGuidsOfChildren = "SourceAsset/HashOfGuidsOfChildren";
-        public static string kArtifact_FileIdOfMainObject = "Artifact/Property"; //Manual check
+        public static string kArtifact_FileIdOfMainObject = "Artifact/Property";
         public static string kImportParameter_Platform = "ImportParameter/Platform";
         public static string kEnvironment_TextureImportCompression = "Environment/TextureImportCompression";
         public static string kEnvironment_ColorSpace = "Environment/ColorSpace";
         public static string kEnvironment_GraphicsAPIMask = "Environment/GraphicsAPIMask";
-        public static string kEnvironment_ScriptingRuntimeVersion = "Environment/ScriptingRuntimeVersion"; //Manual check
+        public static string kEnvironment_ScriptingRuntimeVersion = "Environment/ScriptingRuntimeVersion";
         public static string kEnvironment_CustomDependency = "Environment/CustomDependency";
         public static string kImportParameter_PlatformGroup = "ImportParameter/BuildTargetPlatformGroup";
         public static string kIndeterministicImporter = "ImporterRegistry/IndeterministicImporter";
@@ -221,12 +221,15 @@ namespace UnityEditor
 
         private static void ArtifactFileIdOfMainObjectModified(ref ArtifactInfoDifference diff, List<string> msgsList)
         {
+            //The propertyName is special, in the sense that
+            //the key contains both the name (i.e. "Artifact/Property" and a value "SomeProperty")
+            //so we split it in order to report it in a more legible way
             var propertyName = diff.key.Split('/')[2];
             if (diff.diffType == DiffType.Modified)
             {
                 var oldVersion = diff.oldDependencies[diff.key].value;
                 var newVersion = diff.newDependencies[diff.key].value;
-                var assetName = GetAssetName(diff.newArtifactInfo);
+                var assetName = GetAssetName(diff.newDependencies);
                 diff.message = $"the property '{propertyName}' was changed from '{oldVersion}' to '{newVersion}', which is registered as a dependency of '{assetName}'";
                 msgsList.Add(diff.message);
             }
@@ -251,9 +254,18 @@ namespace UnityEditor
                 diff.message = $"the Global Importer version value was changed from '{oldVersion}' to '{newVersion}'";
                 msgsList.Add(diff.message);
             }
-            else
+            else if(diff.diffType == DiffType.Added)
             {
-                Debug.LogError($"{kGlobal_allImporterVersion} cannot be added or removed as a dependency");
+                var assetName = GetAssetName(diff.newDependencies);
+                var addedValue = diff.newDependencies[diff.key].value;
+                diff.message = $"a dependency on the Global AllImporter Version with value {addedValue} was added to {assetName}";
+                msgsList.Add(diff.message);
+            }
+            else if(diff.diffType == DiffType.Removed)
+            {
+                var assetName = GetAssetName(diff.oldDependencies);
+                diff.message = $"a dependency on the Global AllImporter Version was removed from {assetName}";
+                msgsList.Add(diff.message);
             }
         }
 
@@ -266,9 +278,18 @@ namespace UnityEditor
                 diff.message = $"the global artifact format version changed from '{oldVersion}' to '{newVersion}'";
                 msgsList.Add(diff.message);
             }
-            else
+            else if(diff.diffType == DiffType.Added)
             {
-                Debug.LogError($"{kGlobal_artifactFormatVersion} cannot be added or removed as a dependency");
+                var assetName = GetAssetName(diff.newDependencies);
+                var addedValue = diff.newDependencies[diff.key].value;
+                diff.message = $"a dependency on the Global Artifact Format Version with value {addedValue} was added to {assetName}";
+                msgsList.Add(diff.message);
+            }
+            else if(diff.diffType == DiffType.Removed)
+            {
+                var assetName = GetAssetName(diff.oldDependencies);
+                diff.message = $"a dependency on the Global Artifact Format Version was removed from {assetName}";
+                msgsList.Add(diff.message);
             }
         }
 
@@ -289,7 +310,7 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var removedVersion = diff.newDependencies[diff.key].value;
+                var removedVersion = diff.oldDependencies[diff.key].value;
                 diff.message = $"a dependency on the selected Scripting Runtime Version '{removedVersion}' was removed";
                 msgsList.Add(diff.message);
             }

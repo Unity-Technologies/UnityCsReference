@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_PageManager.SetPackagesUserUnlockedState(versions.Select(v => v.packageUniqueId), true);
+            PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: versions.Select(v => v.packageUniqueId));
             return true;
         }
 

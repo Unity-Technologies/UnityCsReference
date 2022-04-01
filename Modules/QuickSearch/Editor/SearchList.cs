@@ -132,8 +132,7 @@ namespace UnityEditor.Search
         {
             return Fetch().Where(item =>
             {
-                if (context.options.HasAny(SearchFlags.Synchronous))
-                    Dispatcher.ProcessOne();
+                context.Tick();
                 return item != null;
             }).Select(item => selector(item));
         }
@@ -209,9 +208,8 @@ namespace UnityEditor.Search
 
             while (context.searchInProgress)
             {
-                if (context.options.HasAny(SearchFlags.Synchronous))
-                    Dispatcher.ProcessOne();
-                yield return null;
+                if (context.Tick())
+                    yield return null;
             }
 
             var it = GetEnumerator();
@@ -798,9 +796,8 @@ namespace UnityEditor.Search
                 }
                 else
                 {
-                    if (context.options.HasAny(SearchFlags.Synchronous))
-                        Dispatcher.ProcessOne();
-                    yield return null; // Wait for more items...
+                    if (context.Tick())
+                        yield return null; // Wait for more items...
                 }
             }
 

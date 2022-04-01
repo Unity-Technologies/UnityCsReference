@@ -28,13 +28,13 @@ namespace UnityEngine.Rendering
             SetBufferData(buffer, data);
         }
 
-        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData(*)", false)]
+        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData<T>(*)", false)]
         public void SetComputeBufferData<T>(ComputeBuffer buffer, List<T> data) where T : struct
         {
             SetBufferData(buffer, data);
         }
 
-        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData(*)", false)]
+        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData<T>(*)", false)]
         public void SetComputeBufferData<T>(ComputeBuffer buffer, NativeArray<T> data) where T : struct
         {
             SetBufferData(buffer, data);
@@ -46,13 +46,13 @@ namespace UnityEngine.Rendering
             SetBufferData(buffer, data, managedBufferStartIndex, graphicsBufferStartIndex, count);
         }
 
-        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData(*)", false)]
+        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData<T>(*)", false)]
         public void SetComputeBufferData<T>(ComputeBuffer buffer, List<T> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
         {
             SetBufferData(buffer, data, managedBufferStartIndex, graphicsBufferStartIndex, count);
         }
 
-        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData(*)", false)]
+        [Obsolete("CommandBuffer.SetComputeBufferData has been deprecated. Use SetBufferData instead (UnityUpgradable) -> SetBufferData<T>(*)", false)]
         public void SetComputeBufferData<T>(ComputeBuffer buffer, NativeArray<T> data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count) where T : struct
         {
             SetBufferData(buffer, data, nativeBufferStartIndex, graphicsBufferStartIndex, count);

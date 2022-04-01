@@ -190,6 +190,7 @@ namespace UnityEngine
     public sealed partial class TrailRenderer : Renderer
     {
         extern public float time                { get; set; }
+        extern internal float previewTimeScale  { get; set; }
         extern public float startWidth          { get; set; }
         extern public float endWidth            { get; set; }
         extern public float widthMultiplier     { get; set; }

@@ -80,9 +80,18 @@ namespace UnityEngine.Rendering
             return m_Ptr;
         }
 
-        extern private unsafe RendererUtils.RendererList CreateRendererList_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, IntPtr tagValues, IntPtr stateBlocks, int stateCount);
+        extern private unsafe RendererList CreateRendererList_Internal(IntPtr cullResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, IntPtr tagValues, IntPtr stateBlocks, int stateCount);
+        extern private unsafe RendererList CreateShadowRendererList_Internal(IntPtr shadowDrawinSettings);
+
+        internal enum SkyboxXRMode //keep in sync with SkyboxRendererListXRMode (ScriptableDrawRenderers.h)
+        {
+            Off,
+            Enabled,
+            LegacySinglePass
+        }
+        extern private unsafe RendererList CreateSkyboxRendererList_Internal([NotNull("NullExceptionObject")] Camera camera, int mode, Matrix4x4 proj, Matrix4x4 view, Matrix4x4 projR, Matrix4x4 viewR);
 
         extern private unsafe void PrepareRendererListsAsync_Internal(object rendererLists);
-        extern private RendererUtils.RendererListStatus QueryRendererListStatus_Internal(RendererUtils.RendererList handle);
+        extern private RendererListStatus QueryRendererListStatus_Internal(RendererList handle);
     }
 }

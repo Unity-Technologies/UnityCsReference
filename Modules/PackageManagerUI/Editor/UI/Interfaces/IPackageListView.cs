@@ -15,8 +15,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         void OnListRebuild(IPage page);
         void OnListUpdate(ListUpdateArgs args);
         void OnFilterTabChanged(PackageFilterTab filterTab);
-        void OnSeeAllPackageVersionsChanged(bool value);
-
         void OnKeyDownShortcut(KeyDownEvent evt);
     }
 }

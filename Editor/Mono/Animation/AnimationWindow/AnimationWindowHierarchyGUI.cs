@@ -330,13 +330,10 @@ namespace UnityEditorInternal
 
                 // We do valuefields for dopelines that only have single curve
                 AnimationWindowCurve curve = curves[0];
-                object objectValue = CurveBindingUtility.GetCurrentValue(state, curve);
-                int intValue = 0;
+                object value = CurveBindingUtility.GetCurrentValue(state, curve);
 
-                if (objectValue is float)
+                if (!curve.isPPtrCurve)
                 {
-                    float value = (float)objectValue;
-
                     Rect valueFieldDragRect = new Rect(rect.xMax - k_ValueFieldOffsetFromRightSide - k_ValueFieldDragWidth, rect.y, k_ValueFieldDragWidth, rect.height);
                     Rect valueFieldRect = new Rect(rect.xMax - k_ValueFieldOffsetFromRightSide, rect.y, k_ValueFieldWidth, rect.height);
 
@@ -347,7 +344,7 @@ namespace UnityEditorInternal
 
                     if (curve.valueType == typeof(bool))
                     {
-                        value = GUI.Toggle(valueFieldRect, m_HierarchyItemValueControlIDs[row], value != 0, GUIContent.none, EditorStyles.toggle) ? 1 : 0;
+                        value = GUI.Toggle(valueFieldRect, m_HierarchyItemValueControlIDs[row], (float)value != 0, GUIContent.none, EditorStyles.toggle) ? 1f : 0f;
                     }
                     else
                     {
@@ -366,12 +363,11 @@ namespace UnityEditorInternal
 
                         if (curve.isDiscreteCurve)
                         {
-                            intValue =  UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertFloatToDiscreteInt(value);
-                            intValue = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor,
+                            value = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor,
                                 valueFieldRect,
                                 valueFieldDragRect,
                                 id,
-                                intValue,
+                                (int)value,
                                 EditorGUI.kIntFieldFormatString,
                                 m_AnimationSelectionTextField,
                                 true,
@@ -388,7 +384,7 @@ namespace UnityEditorInternal
                                 valueFieldRect,
                                 valueFieldDragRect,
                                 id,
-                                value,
+                                (float)value,
                                 "g5",
                                 m_AnimationSelectionTextField,
                                 true);
@@ -397,32 +393,18 @@ namespace UnityEditorInternal
                                 GUI.changed = true;
                                 Event.current.Use();
                             }
+
+                            if (float.IsInfinity((float)value) || float.IsNaN((float)value))
+                                value = 0f;
                         }
                     }
-
-                    if (float.IsInfinity(value) || float.IsNaN(value))
-                        value = 0;
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         string undoLabel = "Edit Key";
 
                         AnimationKeyTime newAnimationKeyTime = AnimationKeyTime.Time(state.currentTime, curve.clip.frameRate);
-
-                        AnimationWindowKeyframe existingKeyframe = null;
-                        foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
-                        {
-                            if (Mathf.Approximately(keyframe.time, state.currentTime))
-                                existingKeyframe = keyframe;
-                        }
-
-                        if (curve.isDiscreteCurve)
-                            value = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat(intValue);
-
-                        if (existingKeyframe == null)
-                            AnimationWindowUtility.AddKeyframeToCurve(curve, value, curve.valueType, newAnimationKeyTime);
-                        else
-                            existingKeyframe.value = value;
+                        AnimationWindowUtility.AddKeyframeToCurve(curve, value, curve.valueType, newAnimationKeyTime);
 
                         state.SaveCurve(curve.clip, curve, undoLabel);
                         curvesChanged = true;
@@ -431,7 +413,13 @@ namespace UnityEditorInternal
             }
 
             if (curvesChanged)
+            {
+                //Fix for case 1382193: Stop recording any candidates if a property value field is modified
+                if (AnimationMode.IsRecordingCandidates())
+                    state.ClearCandidates();
+
                 state.ResampleAnimation();
+            }
         }
 
         private bool DoTreeViewButton(int id, Rect position, GUIContent content, GUIStyle style)

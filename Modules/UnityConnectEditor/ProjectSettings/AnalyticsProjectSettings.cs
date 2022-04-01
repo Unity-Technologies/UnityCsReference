@@ -18,7 +18,7 @@ namespace UnityEditor.Connect
     {
         //Resources
         const string k_ServiceName = "Analytics";
-        const string k_ProjectSettingsPath = "Project/Services/Analytics";
+        const string k_ProjectSettingsPath = "Project/Services/Legacy Analytics";
 
         const string k_AnalyticsServicesTemplatePath = "UXML/ServicesWindow/AnalyticsProjectSettings.uxml";
 
@@ -74,22 +74,6 @@ namespace UnityEditor.Connect
         {
             SettingsProvider projectSettings = null;
 
-            if (ShouldShowBuiltInProjectSettings(AnalyticsService.instance))
-            {
-                projectSettings = new AnalyticsProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
-                    {
-                        L10n.Tr(k_KeywordAnalytics),
-                        L10n.Tr(k_KeywordInsights),
-                        L10n.Tr(k_KeywordEvents),
-                        L10n.Tr(k_KeywordMonetization),
-                        L10n.Tr(k_KeywordDashboard),
-                        L10n.Tr(k_KeywordValidator),
-                    });
-            }
-            else if (ShouldShowFallbackProjectSettings(AnalyticsService.instance))
-            {
-                projectSettings = new FallbackProjectSettings(AnalyticsService.instance, SettingsScope.Project);
-            }
 
             return projectSettings;
         }

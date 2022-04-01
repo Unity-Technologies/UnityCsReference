@@ -71,8 +71,8 @@ namespace UnityEditor.TextCore.Text
                 window.LoadFontCreationSettings(fontAsset.fontAssetCreationEditorSettings);
 
                 // Override settings to inject character list from font asset
-                window.m_CharacterSetSelectionMode = 6;
-                window.m_CharacterSequence = TextCoreEditorUtilities.GetUnicodeCharacterSequence(FontAsset.GetCharactersArray(fontAsset));
+                // window.m_CharacterSetSelectionMode = 6;
+                // window.m_CharacterSequence = TextCoreEditorUtilities.GetUnicodeCharacterSequence(FontAsset.GetCharactersArray(fontAsset));
 
 
                 window.m_ReferencedFontAsset = fontAsset;
@@ -688,7 +688,7 @@ namespace UnityEditor.TextCore.Text
                     m_IsFontAtlasInvalid = true;
                 }
 
-                m_IncludeFontFeatures = EditorGUILayout.Toggle("Get Kerning Pairs", m_IncludeFontFeatures);
+                m_IncludeFontFeatures = EditorGUILayout.Toggle("Get Font Features", m_IncludeFontFeatures);
 
                 EditorGUILayout.Space();
             }
@@ -848,7 +848,7 @@ namespace UnityEditor.TextCore.Text
                                     m_PointSize = (maxPointSize + minPointSize) / 2;
 
                                     bool optimumPointSizeFound = false;
-                                    for (int iteration = 0; iteration < 15 && optimumPointSizeFound == false; iteration++)
+                                    for (int iteration = 0; iteration < 15 && optimumPointSizeFound == false && m_PointSize > 0; iteration++)
                                     {
                                         m_AtlasGenerationProgressLabel = "Packing glyphs - Pass (" + iteration + ")";
 
@@ -1435,7 +1435,7 @@ namespace UnityEditor.TextCore.Text
 
                 // Get and Add Kerning Pairs to Font Asset
                 if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetKerningTable();
+                    fontAsset.fontFeatureTable = GetAllFontFeatures();
 
 
                 // Add Font Atlas as Sub-Asset
@@ -1481,7 +1481,7 @@ namespace UnityEditor.TextCore.Text
 
                 // Get and Add Kerning Pairs to Font Asset
                 if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetKerningTable();
+                    fontAsset.fontFeatureTable = GetAllFontFeatures();
 
                 // Destroy Assets that will be replaced.
                 if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0)
@@ -1611,7 +1611,7 @@ namespace UnityEditor.TextCore.Text
 
                 // Get and Add Kerning Pairs to Font Asset
                 if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetKerningTable();
+                    fontAsset.fontFeatureTable = GetAllFontFeatures();
 
                 // Add Font Atlas as Sub-Asset
                 fontAsset.atlasTextures = new Texture2D[] { m_FontAtlasTexture };
@@ -1667,7 +1667,7 @@ namespace UnityEditor.TextCore.Text
                 // Get and Add Kerning Pairs to Font Asset
                 // TODO: Check and preserve existing adjustment pairs.
                 if (m_IncludeFontFeatures)
-                    fontAsset.fontFeatureTable = GetKerningTable();
+                    fontAsset.fontFeatureTable = GetAllFontFeatures();
 
                 // Destroy Assets that will be replaced.
                 if (fontAsset.atlasTextures != null && fontAsset.atlasTextures.Length > 0)
@@ -1786,6 +1786,7 @@ namespace UnityEditor.TextCore.Text
         {
             m_SourceFont = AssetDatabase.LoadAssetAtPath<Font>(AssetDatabase.GUIDToAssetPath(settings.sourceFontFileGUID));
             m_SourceFontFaceIndex = settings.faceIndex;
+            m_SourceFontFaces = GetFontFaces();
             m_PointSizeSamplingMode  = settings.pointSizeSamplingMode;
             m_PointSize = settings.pointSize;
             m_Padding = settings.padding;
@@ -1910,15 +1911,29 @@ namespace UnityEditor.TextCore.Text
             }
         }
 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <returns></returns>
+        FontFeatureTable GetAllFontFeatures()
+        {
+            FontFeatureTable fontFeatureTable = new FontFeatureTable();
+
+            PopulateGlyphAdjustmentTable(fontFeatureTable);
+
+
+            return fontFeatureTable;
+        }
+
         // Get Kerning Pairs
-        public FontFeatureTable GetKerningTable()
+        void PopulateGlyphAdjustmentTable(FontFeatureTable fontFeatureTable)
         {
             GlyphPairAdjustmentRecord[] adjustmentRecords = FontEngine.GetGlyphPairAdjustmentTable(m_AvailableGlyphsToAdd.ToArray());
 
             if (adjustmentRecords == null)
-                return null;
+                return;
 
-            FontFeatureTable fontFeatureTable = new FontFeatureTable();
+            // FontFeatureTable fontFeatureTable = new FontFeatureTable();
 
             for (int i = 0; i < adjustmentRecords.Length && adjustmentRecords[i].firstAdjustmentRecord.glyphIndex != 0; i++)
             {
@@ -1926,8 +1941,7 @@ namespace UnityEditor.TextCore.Text
             }
 
             fontFeatureTable.SortGlyphPairAdjustmentRecords();
-
-            return fontFeatureTable;
         }
+
     }
 }

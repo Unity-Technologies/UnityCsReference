@@ -10,6 +10,8 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
+    internal delegate IWindowBackend GetDefaultWindowBackendFunction(IWindowModel model);
+
     internal interface IWindowModel
     {
         Vector2 size { get; }
@@ -68,6 +70,8 @@ namespace UnityEditor
     }
     internal static class EditorWindowBackendManager
     {
+        internal static GetDefaultWindowBackendFunction defaultWindowBackend { get; set; }
+
         private static List<IEditorWindowBackendSystem> sRegisteredSystems = new List<IEditorWindowBackendSystem>();
 
         static internal void RegisterWindowSystem(IEditorWindowBackendSystem system)
@@ -113,7 +117,7 @@ namespace UnityEditor
                 }
             }
 
-            return EditorUIService.instance.GetDefaultWindowBackend(model);
+            return defaultWindowBackend?.Invoke(model);
         }
     }
 }

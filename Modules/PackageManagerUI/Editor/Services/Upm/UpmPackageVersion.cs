@@ -40,17 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsUnityPackage;
-        public override bool isUnityPackage
-        {
-            get
-            {
-                if (HasTag(PackageTag.Bundled))
-                    return true;
-                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom))
-                    return false;
-                return m_IsUnityPackage;
-            }
-        }
+        public override bool isUnityPackage => m_IsUnityPackage;
 
         public bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
         public bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
@@ -137,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Author = this.isUnityPackage ? k_UnityAuthor : m_PackageInfo.author?.name ?? string.Empty;
 
             if (HasTag(PackageTag.BuiltIn))
-                m_Description = UpmPackageDocs.SplitBuiltinDescription(this)[0];
+                m_Description = UpmPackageDocs.FetchBuiltinDescription(this);
 
             if (m_IsFullyFetched)
             {
@@ -260,7 +250,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ProcessSignatureErrors(PackageInfo info)
         {
             // Setup the initial value for errors
-            m_Errors = hasEntitlementsError ? new List<UIError> {UIError.k_EntitlementError} : info.errors.Select(error => new UIError((UIErrorCode)error.errorCode, error.message)).ToList();
+            m_Errors = hasEntitlementsError ? new List<UIError> {UIError.k_EntitlementError} : info.errors.Select(error => new UIError(error)).ToList();
 
             if (info.signature.status == SignatureStatus.Invalid)
             {

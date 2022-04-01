@@ -104,11 +104,11 @@ namespace UnityEditor
                     {
                         if (setting.isOverridden)
                         {
-                            audioImporter.SetOverrideSampleSettings(setting.platform.ToString(), setting.settings);
+                            audioImporter.SetOverrideSampleSettings(setting.platform, setting.settings);
                         }
-                        else if (audioImporter.ContainsSampleSettingsOverride(setting.platform.ToString()))
+                        else if (audioImporter.ContainsSampleSettingsOverride(setting.platform))
                         {
-                            audioImporter.ClearSampleSettingOverride(setting.platform.ToString());
+                            audioImporter.ClearSampleSettingOverride(setting.platform);
                         }
                     }
                 }

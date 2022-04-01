@@ -5,15 +5,16 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
-using UnityEngine;
-using UnityEngine.Experimental;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Profiling;
+using Unity.Profiling;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace UnityEngine.Rendering
 {
@@ -520,7 +521,7 @@ namespace UnityEngine.Rendering
         extern private void Internal_DrawRenderer([NotNull] Renderer renderer, Material material, int submeshIndex, int shaderPass);
 
         [NativeMethod("AddDrawRendererList")]
-        extern private void Internal_DrawRendererList(RendererUtils.RendererList rendererList);
+        extern private void Internal_DrawRendererList(RendererList rendererList);
 
         private void Internal_DrawRenderer(Renderer renderer, Material material, int submeshIndex)
         {
@@ -879,6 +880,21 @@ namespace UnityEngine.Rendering
         extern private void BeginSample_CustomSampler([NotNull] CustomSampler sampler);
         [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_CustomSampler", HasExplicitThis = true)]
         extern private void EndSample_CustomSampler([NotNull] CustomSampler sampler);
+
+        [Pure]
+        [MethodImpl(256)]
+        [Conditional("ENABLE_PROFILER")]
+        public void BeginSample(ProfilerMarker marker) { BeginSample_ProfilerMarker(marker.Handle); }
+
+        [Pure]
+        [MethodImpl(256)]
+        [Conditional("ENABLE_PROFILER")]
+        public void EndSample(ProfilerMarker marker) { EndSample_ProfilerMarker(marker.Handle); }
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::BeginSample_ProfilerMarker", HasExplicitThis = true, ThrowsException = true)]
+        extern private void BeginSample_ProfilerMarker(IntPtr markerHandle);
+        [FreeFunction("RenderingCommandBuffer_Bindings::EndSample_ProfilerMarker", HasExplicitThis = true, ThrowsException = true)]
+        extern private void EndSample_ProfilerMarker(IntPtr markerHandle);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::IssuePluginEventAndDataInternal", HasExplicitThis = true)]
         extern private void IssuePluginEventAndDataInternal(IntPtr callback, int eventID, IntPtr data);

@@ -46,6 +46,14 @@ namespace UnityEngine.UIElements
                 case ExecuteCommandEvent ece:
                     OnExecuteCommandEvent(ece);
                     break;
+
+                // Prevent duplicated navigation events, since we're observing KeyDownEvents instead
+                case NavigationSubmitEvent _:
+                case NavigationCancelEvent _:
+                case NavigationMoveEvent _:
+                    evt.StopPropagation();
+                    evt.PreventDefault();
+                    break;
             }
         }
 
@@ -66,12 +74,6 @@ namespace UnityEngine.UIElements
                 return;
 
             m_Changed = false;
-
-            if (evt.keyCode == KeyCode.Escape)
-            {
-                textElement.edition.RestoreValueAndText();
-                textElement.parent.Focus();
-            }
 
             evt.GetEquivalentImguiEvent(m_ImguiEvent);
             if (editingUtilities.HandleKeyEvent(m_ImguiEvent, false))
@@ -145,8 +147,8 @@ namespace UnityEngine.UIElements
                 editingUtilities.SetImeWindowPosition(new Vector2(textElement.worldBound.x, textElement.worldBound.y));
 
             var fullText = editingUtilities.GeneratePreviewString(textElement.enableRichText);
-            fullText = textElement.edition.CullString(fullText);
-            textElement.edition.UpdateText(fullText);
+            editingUtilities.text = textElement.edition.CullString(fullText);
+            textElement.edition.UpdateText(editingUtilities.text);
 
             if (imeEnabled)
             {

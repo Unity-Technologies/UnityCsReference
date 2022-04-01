@@ -195,8 +195,7 @@ namespace UnityEditor
                     s_MainWindow = this;
 
                 // Fit window to screen - needs to be done after bringing the window live
-                position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
-                rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
+                FitWindowToScreen(useMousePos);
 
                 rootView.Reflow();
 
@@ -211,6 +210,13 @@ namespace UnityEditor
                 DestroyImmediate(this, true);
                 throw;
             }
+        }
+
+        internal void FitWindowToScreen(bool useMousePos)
+        {
+            position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
+            if (rootView)
+                rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
         }
 
         public void OnEnable()
@@ -284,7 +290,7 @@ namespace UnityEditor
             return true;
         }
 
-        private static bool PrivateRequestClose(List<EditorWindow> allUnsaved)
+        internal static bool PrivateRequestClose(List<EditorWindow> allUnsaved)
         {
             Debug.Assert(allUnsaved.Count > 0);
 

@@ -1624,6 +1624,9 @@ namespace UnityEditor
             if (Selection.gameObjects.Length > 1)
                 return;
 
+            if (!IsMeshValid())
+                return;
+
             s_Inspector = this;
 
             if (Event.current.type == EventType.Repaint)
@@ -1657,6 +1660,9 @@ namespace UnityEditor
         {
             // Multi-editing in scene not supported
             if (Selection.gameObjects.Length > 1)
+                return;
+
+            if (!IsMeshValid())
                 return;
 
             s_Inspector = this;
@@ -1949,7 +1955,8 @@ namespace UnityEditor
 
             public override void OnGUI()
             {
-                s_Inspector.ConstraintEditing();
+                if(s_Inspector != null)
+                    s_Inspector.ConstraintEditing();
             }
         }
 

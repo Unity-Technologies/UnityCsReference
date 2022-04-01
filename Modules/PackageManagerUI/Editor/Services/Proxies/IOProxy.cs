@@ -5,12 +5,14 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     using NiceIO;
 
+    [ExcludeFromCodeCoverage]
     internal class IOProxy
     {
         // Need to re-create this method since Unity's FileUtil equivalent (with overwrite) is internal only.

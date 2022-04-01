@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -16,12 +17,93 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the link in the description text.
         internal const string k_BuiltinPackageDocsUrlKey = "Scripting API: ";
 
-        public static string[] SplitBuiltinDescription(UpmPackageVersion version)
+        public static string[] FetchUrlsFromDescription(UpmPackageVersion version)
         {
-            if (string.IsNullOrEmpty(version?.packageInfo?.description))
-                return new string[] { string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), version.displayName) };
-            else
-                return version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
+            List<string> urls = new List<string>();
+
+            var descriptionSlitWithUrl = version.packageInfo.description.Split(new[] { $"{k_BuiltinPackageDocsUrlKey}https://docs.unity3d.com/" }, StringSplitOptions.None);
+            if (descriptionSlitWithUrl.Length > 1)
+                urls.Add($"https://docs.unity3d.com/{applicationProxy.shortUnityVersion}/Documentation/" + descriptionSlitWithUrl[1]);
+
+            var descriptionSlitWithoutUrl = version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            if (descriptionSlitWithoutUrl.Length > 1)
+                urls.Add(descriptionSlitWithoutUrl[1]);
+
+            return urls.ToArray();
+        }
+
+        public static string FetchBuiltinDescription(UpmPackageVersion version)
+        {
+            return string.IsNullOrEmpty(version?.packageInfo?.description) ?
+                string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), version.displayName) :
+                version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None)[0];
+        }
+
+        public static void HandleInvalidOrUnreachableOnlineUrl(string onlineUrl,  string offlineDocPath, string docType, string analyticsEvent, IPackageVersion version, IPackage package, ApplicationProxy applicationProxy)
+        {
+            if (!string.IsNullOrEmpty(offlineDocPath))
+            {
+                applicationProxy.RevealInFinder(offlineDocPath);
+
+                PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}OnDisk", version?.uniqueId);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(onlineUrl))
+            {
+                // With the current `UpmPackageDocs.GetDocumentationUrl` implementation,
+                // We'll get invalid url links for non-unity packages on unity3d.com
+                // We want to avoiding opening these kinds of links to avoid confusion.
+                if (!UpmClient.IsUnityUrl(onlineUrl) || package.Is(PackageType.Unity) || version.packageUniqueId.StartsWith("com.unity."))
+                {
+                    applicationProxy.OpenURL(onlineUrl);
+
+                    PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}UnreachableOrInvalidUrl", version?.uniqueId);
+                    return;
+                }
+            }
+
+            PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}NotFound", version?.uniqueId);
+
+            Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}."), docType, package.GetDescriptor()));
+        }
+
+        public static void OpenWebUrl(string onlineUrl, IPackageVersion version, ApplicationProxy applicationProxy, string analyticsEvent, Action errorCallback)
+        {
+            var request = UnityWebRequest.Head(onlineUrl);
+            try
+            {
+                var operation = request.SendWebRequest();
+                operation.completed += (op) =>
+                {
+                    if (request.responseCode >= 200 && request.responseCode < 300)
+                    {
+                        applicationProxy.OpenURL(onlineUrl);
+                        PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}ValidUrl", version?.uniqueId);
+                    }
+                    else
+                        errorCallback?.Invoke();
+                };
+            }
+            catch (InvalidOperationException e)
+            {
+                if (e.Message != "Insecure connection not allowed")
+                    throw e;
+            }
+        }
+
+        public static void ViewUrl(string onlineUrl, string offlineDocPath, string docType, string analyticsEvent, IPackageVersion version, IPackage package, ApplicationProxy applicationProxy)
+        {
+            if (!string.IsNullOrEmpty(onlineUrl) && applicationProxy.isInternetReachable)
+            {
+                OpenWebUrl(onlineUrl, version, applicationProxy, analyticsEvent, () =>
+                {
+                    HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent, version, package, applicationProxy);
+                });
+                return;
+            }
+            HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent, version, package, applicationProxy);
         }
 
         public static string GetOfflineDocumentation(IOProxy IOProxy, IPackageVersion version)
@@ -47,22 +129,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static string GetDocumentationUrl(IPackageVersion version)
+        public static string[] GetDocumentationUrl(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
             if (upmVersion == null)
-                return string.Empty;
+                return new string[] { };
 
             if (!string.IsNullOrEmpty(upmVersion.documentationUrl))
-                return upmVersion.documentationUrl;
+                return new string[] { upmVersion.documentationUrl };
 
             if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
-            {
-                var split = SplitBuiltinDescription(upmVersion);
-                if (split.Length > 1)
-                    return split[1];
-            }
-            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html";
+                return FetchUrlsFromDescription(upmVersion);
+
+            return new string[] { $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html" };
+        }
+
+        public static string GetQuickStartUrl(IPackageVersion version, UpmCache upmCache)
+        {
+            var upmReserved = upmCache.ParseUpmReserved(version?.packageInfo);
+            return upmReserved?.GetString("quickstart") ?? string.Empty;
         }
 
         public static string GetChangelogUrl(IPackageVersion version)

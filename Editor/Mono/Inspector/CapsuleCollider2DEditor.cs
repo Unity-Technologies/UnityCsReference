@@ -35,8 +35,6 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Size);
             EditorGUILayout.PropertyField(m_Direction);
 
-            serializedObject.ApplyModifiedProperties();
-
             FinalizeInspectorGUI();
         }
     }

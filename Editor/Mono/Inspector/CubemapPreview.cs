@@ -14,6 +14,7 @@ namespace UnityEditor
         static readonly int s_ShaderIntensity = Shader.PropertyToID("_Intensity");
         static readonly int s_ShaderIsNormalMap = Shader.PropertyToID("_IsNormalMap");
         static readonly int s_ShaderExposure = Shader.PropertyToID("_Exposure");
+        static readonly int s_ColorspaceIsGamma = Shader.PropertyToID("_ColorspaceIsGamma");
 
         private enum PreviewType
         {
@@ -181,18 +182,10 @@ namespace UnityEditor
             m_Material.SetFloat(s_ShaderIntensity, m_Intensity);
             m_Material.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1.0f : 0.0f);
             m_Material.SetFloat(s_ShaderExposure, exposure);
-
-            if (PlayerSettings.colorSpace == ColorSpace.Linear)
-            {
-                m_Material.SetInt("_ColorspaceIsGamma", 0);
-            }
-            else
-            {
-                m_Material.SetInt("_ColorspaceIsGamma", 1);
-            }
+            m_Material.SetInt(s_ColorspaceIsGamma, PlayerSettings.colorSpace == ColorSpace.Linear ? 0 : 1);
 
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, m_Material, 0);
-            m_PreviewUtility.Render();
+            m_PreviewUtility.Render(Unsupported.useScriptableRenderPipeline);
         }
     }
 }

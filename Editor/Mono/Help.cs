@@ -36,6 +36,7 @@ namespace UnityEditor
             "https://docs-redirects.unity.com"
         };
 
+        internal static string k_AlphaReleaseNotesUrlBase = "https://unity3d.com/unity/alpha/";
         internal static string k_BetaReleaseNotesUrlBase = "https://unity3d.com/unity/beta/";
         internal static string k_ReleaseNotesUrlBase = "https://unity3d.com/unity/whats-new/";
 
@@ -340,16 +341,15 @@ namespace UnityEditor
         [UnityEngine.Scripting.RequiredByNativeCode]
         internal static void OpenReleaseNotes()
         {
-            var version = InternalEditorUtility.GetUnityVersion();
-            var releaseNotesUrl = GetReleaseNotesUrl(InternalEditorUtility.IsUnityBeta(), InternalEditorUtility.GetUnityVersionDigits(), InternalEditorUtility.GetUnityDisplayVersion());
+            var releaseNotesUrl = GetReleaseNotesUrl(InternalEditorUtility.GetUnityVersionDigits(), InternalEditorUtility.GetUnityDisplayVersion());
             Application.OpenURL(releaseNotesUrl);
         }
 
-        internal static string GetReleaseNotesUrl(bool isBeta, string digitsOnlyVersion, string displayVersion)
+        internal static string GetReleaseNotesUrl(string digitsOnlyVersion, string displayVersion)
         {
             var url = "http://unity3d.com/whatsnew.html";
-
-            if (isBeta)
+            var isUnreleased = displayVersion.Contains("a") || displayVersion.Contains("b");
+            if (isUnreleased)
             {
                 var displayVersionWithBuildNumber = new Regex(@"(\d+\.\d+\.[a-z0-9]+)\.\d+");
                 var m = displayVersionWithBuildNumber.Match(displayVersion);
@@ -357,7 +357,15 @@ namespace UnityEditor
                 {
                     displayVersion = m.Groups[1].Value;
                 }
-                url = $"{k_BetaReleaseNotesUrlBase}{displayVersion}";
+
+                if (displayVersion.Contains("a"))
+                {
+                    url = $"{k_AlphaReleaseNotesUrlBase}{displayVersion}";
+                }
+                else
+                {
+                    url = $"{k_BetaReleaseNotesUrlBase}{displayVersion}";
+                }
             }
             else
             {

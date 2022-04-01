@@ -172,8 +172,11 @@ namespace UnityEditor
 
             SetMipLevelDefaultForVT();
 
-            if (m_Texture3DPreview == null) m_Texture3DPreview = CreateInstance<Texture3DPreview>();
-            m_Texture3DPreview.Texture = target as Texture;
+            m_Texture3DPreview = CreateInstance<Texture3DPreview>();
+            if (IsTexture3D())
+            {
+                m_Texture3DPreview.Texture = target as Texture;
+            }
             m_Texture3DPreview.OnEnable();
         }
 
@@ -231,7 +234,7 @@ namespace UnityEditor
             RestoreLastTextureMipLevels();
 
             m_CubemapPreview.OnDisable();
-            m_Texture3DPreview.OnDisable();
+            DestroyImmediate(m_Texture3DPreview);
         }
 
         public override bool RequiresConstantRepaint()
@@ -895,7 +898,7 @@ namespace UnityEditor
                 {
                     Sprite sprite = subAssets[0] as Sprite;
                     if (sprite)
-                        return SpriteInspector.BuildPreviewTexture(sprite, null, true);
+                        return SpriteInspector.BuildPreviewTexture(sprite, null, true, width, height);
                 }
                 else
                     return null;

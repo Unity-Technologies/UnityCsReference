@@ -18,9 +18,6 @@ namespace UnityEditor.Connect
         public override string packageName { get; }
 
         public override string editorGamePackageName { get; } = "com.unity.purchasing.udp";
-        public override bool canShowFallbackProjectSettings { get; } = true;
-        public override bool canShowBuiltInProjectSettings { get; } = false;
-        public override string minimumEditorGamePackageVersion { get; } = "1.0.0";
 
         public override Notification.Topic notificationTopic => Notification.Topic.UDPService;
         static readonly UDPService k_Instance;

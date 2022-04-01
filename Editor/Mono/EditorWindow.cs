@@ -1132,6 +1132,13 @@ namespace UnityEditor
                 m_Parent.SetDisplayViewSize(displayId, targetSize);
         }
 
+        internal Vector2 GetDisplayViewSize(int displayId)
+        {
+            if (m_Parent != null)
+               return m_Parent.GetDisplayViewSize(displayId);
+            return new Vector2(640, 480);
+        }
+
         internal void SetPlayModeView(bool value)
         {
             m_IsPlayModeView = value;
@@ -1297,7 +1304,7 @@ namespace UnityEditor
                 renderHints = RenderHints.ClipWithScissors
             };
             root.pseudoStates |= PseudoStates.Root;
-            EditorUIService.instance.AddDefaultEditorStyleSheets(root);
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
             root.style.overflow = UnityEngine.UIElements.Overflow.Hidden;
             return root;
         }
@@ -1326,7 +1333,6 @@ namespace UnityEditor
                 }
             }
         }
-
 
         [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.BackQuote)]
         static void ToggleAllOverlays(ShortcutArguments args)
@@ -1365,6 +1371,15 @@ namespace UnityEditor
             match = null;
             return false;
         }
+
+        internal void OnBackingScaleFactorChangedInternal()
+        {
+            if(overlayCanvas != null)
+                overlayCanvas.Rebuild();
+            OnBackingScaleFactorChanged();
+        }
+
+        protected virtual void OnBackingScaleFactorChanged() { }
     }
 
     [AttributeUsage(AttributeTargets.Class)]

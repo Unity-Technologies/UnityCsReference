@@ -43,6 +43,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class CallbackEventHandler : IEventHandler
     {
+        // IMGUIContainers are special snowflakes that need custom treatment regarding events.
+        // This enables early outs in some dispatching strategies.
+        internal bool isIMGUIContainer = false;
+
         EventCallbackRegistry m_CallbackRegistry;
 
         /// <summary>
@@ -230,6 +234,10 @@ namespace UnityEngine.UIElements
                     {
                         m_CallbackRegistry?.InvokeCallbacks(evt, evt.propagationPhase);
                     }
+                    if (isIMGUIContainer && !evt.isPropagationStopped)
+                    {
+                        ((IMGUIContainer) this).ProcessEvent(evt);
+                    }
                     break;
                 }
 
@@ -243,6 +251,10 @@ namespace UnityEngine.UIElements
                     if (!evt.isPropagationStopped)
                     {
                         m_CallbackRegistry?.InvokeCallbacks(evt, PropagationPhase.BubbleUp);
+                    }
+                    if (isIMGUIContainer && !evt.isPropagationStopped)
+                    {
+                        ((IMGUIContainer) this).ProcessEvent(evt);
                     }
                 }
                 break;

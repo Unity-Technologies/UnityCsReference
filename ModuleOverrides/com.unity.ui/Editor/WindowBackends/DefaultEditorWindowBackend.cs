@@ -354,8 +354,15 @@ namespace UnityEditor.UIElements
 
         protected void Invoke(string methodName)
         {
-            MethodInfo mi = GetPaneMethod(methodName, editorWindowModel.window);
-            mi?.Invoke(editorWindowModel.window, null);
+            try
+            {
+                MethodInfo mi = GetPaneMethod(methodName, editorWindowModel.window);
+                mi?.Invoke(editorWindowModel.window, null);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         protected MethodInfo GetPaneMethod(string methodName, object obj)

@@ -95,8 +95,8 @@ namespace UnityEditor
 
             m_IsWaitingForDelay = false;
 
-            Undo.undoRedoPerformed -= UndoRedoWasPerformed;
-            Undo.undoRedoPerformed += UndoRedoWasPerformed;
+            Undo.undoRedoEvent -= UndoRedoWasPerformed;
+            Undo.undoRedoEvent += UndoRedoWasPerformed;
         }
 
         public void EndRename(bool acceptChanges)
@@ -105,7 +105,7 @@ namespace UnityEditor
             if (!m_IsRenaming)
                 return;
 
-            Undo.undoRedoPerformed -= UndoRedoWasPerformed;
+            Undo.undoRedoEvent -= UndoRedoWasPerformed;
             EditorApplication.update -= BeginRenameInternalCallback;
 
             RemoveMessage();
@@ -137,12 +137,12 @@ namespace UnityEditor
             m_UserData = 0;
             m_IsWaitingForDelay = false;
             m_OriginalEventType = EventType.Ignore;
-            Undo.undoRedoPerformed -= UndoRedoWasPerformed;
+            Undo.undoRedoEvent -= UndoRedoWasPerformed;
 
             // m_IsRenamingFilename = false; // Only clear temp data used for renaming not state that we want to persist
         }
 
-        void UndoRedoWasPerformed()
+        void UndoRedoWasPerformed(in UndoRedoInfo info)
         {
             // If undo/redo was performed then close the rename overlay as it does not support undo/redo
             // We need to delay the EndRename until next OnGUI as clients poll the state of the rename overlay state there

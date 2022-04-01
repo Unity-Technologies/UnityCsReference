@@ -15,7 +15,7 @@ namespace UnityEditor
     /// The point editor uses this to make callbacks to your editor so no assumptions about your data structure is made.
     internal interface IEditablePoint
     {
-        /// Get the world-space position of a specifc point
+        /// Get the world-space position of a specific point
         Vector3 GetPosition(int idx);
         /// Set the world-space position of a specific point
         void SetPosition(int idx, Vector3 position);

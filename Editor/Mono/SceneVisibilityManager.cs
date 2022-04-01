@@ -57,7 +57,7 @@ namespace UnityEditor
         [InitializeOnLoadMethod]
         private static void Initialize()
         {
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             EditorSceneManager.newSceneCreated += EditorSceneManagerOnNewSceneCreated;
             EditorSceneManager.sceneSaving += EditorSceneManagerOnSceneSaving;
             EditorSceneManager.sceneSaved += EditorSceneManagerOnSceneSaved;
@@ -150,7 +150,7 @@ namespace UnityEditor
             SceneVisibilityState.ClearScene(scene);
         }
 
-        private static void UndoRedoPerformed()
+        private static void UndoRedoPerformed(in UndoRedoInfo info)
         {
             SceneVisibilityState.ForceDataUpdate();
         }
@@ -680,46 +680,16 @@ namespace UnityEditor
         [Shortcut("Scene Picking/Toggle Picking On Selection And Descendants", typeof(ShortcutContext), KeyCode.L)]
         private static void ToggleSelectionAndDescendantsPicking()
         {
-            bool shouldDisablePicking = true;
-            foreach (var gameObject in Selection.gameObjects)
-            {
-                if (!instance.IsPickingDisabled(gameObject))
-                {
-                    break;
-                }
-
-                shouldDisablePicking = false;
-            }
-
-            instance.m_SelectedScenes.Clear();
-
-            if (shouldDisablePicking)
-            {
-                SceneHierarchyWindow.lastInteractedHierarchyWindow.GetSelectedScenes(instance.m_SelectedScenes);
-
-                foreach (var scene in instance.m_SelectedScenes)
-                {
-                    if (!instance.IsPickingDisabled(scene))
-                        break;
-
-                    shouldDisablePicking = false;
-                }
-            }
-
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection And Descendants Picking");
-            SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, true);
-
-            foreach (var scene in instance.m_SelectedScenes)
-            {
-                if (shouldDisablePicking)
-                    instance.DisablePicking(scene);
-                else
-                    instance.EnablePicking(scene);
-            }
+            ToggleSelectionPicking(true);
         }
 
         [Shortcut("Scene Picking/Toggle Picking On Selection")]
         internal static void ToggleSelectionPickable()
+        {
+            ToggleSelectionPicking(false);
+        }
+
+        private static void ToggleSelectionPicking(bool includeChildren)
         {
             bool shouldDisablePicking = true;
             foreach (var gameObject in Selection.gameObjects)
@@ -732,7 +702,6 @@ namespace UnityEditor
                 shouldDisablePicking = false;
             }
 
-
             instance.m_SelectedScenes.Clear();
 
             if (shouldDisablePicking)
@@ -748,9 +717,9 @@ namespace UnityEditor
                 }
             }
 
-            Undo.RecordObject(SceneVisibilityState.GetInstance(), "Toggle Selection Pickable");
-            SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, false);
-
+            var undoName = includeChildren ? "Toggle Selection And Descendants Picking" : "Toggle Selection Pickable";
+            Undo.RecordObject(SceneVisibilityState.GetInstance(), undoName);
+            SceneVisibilityState.SetGameObjectsPickingDisabled(Selection.gameObjects, shouldDisablePicking, includeChildren);
 
             foreach (var scene in instance.m_SelectedScenes)
             {
@@ -759,7 +728,10 @@ namespace UnityEditor
                 else
                     instance.EnablePicking(scene);
             }
+
+            EditorApplication.RepaintHierarchyWindow();
         }
+
 
         [Shortcut("Scene Visibility/Exit Isolation")]
         private static void ExitIsolationShortcut()

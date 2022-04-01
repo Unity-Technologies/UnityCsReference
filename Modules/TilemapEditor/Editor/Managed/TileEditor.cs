@@ -44,7 +44,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            DoTilePreview(tile.sprite, tile.color, Matrix4x4.identity);
+            DoTilePreview(tile.sprite, tile.color, tile.transform);
 
             serializedObject.Update();
 
@@ -129,7 +129,7 @@ namespace UnityEditor
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
         {
-            return SpriteUtility.RenderStaticPreview(tile.sprite, tile.color, width, height);
+            return SpriteUtility.RenderStaticPreview(tile.sprite, tile.color, width, height, tile.transform);
         }
     }
 }

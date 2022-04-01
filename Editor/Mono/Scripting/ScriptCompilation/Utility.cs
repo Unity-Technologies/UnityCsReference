@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -138,6 +139,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return path.Substring(indexOfSlash, indexOfDot - indexOfSlash);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPathSeparator(char character)
+        {
+            return character == '/' || character == '\\';
         }
     }
 }

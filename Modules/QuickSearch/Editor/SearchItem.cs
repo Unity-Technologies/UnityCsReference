@@ -98,7 +98,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Used to map value to a search item
         /// </summary>
-        internal object value { get => m_Value ?? id; set => m_Value = value; }
+        public object value { get => m_Value ?? id; set => m_Value = value; }
         private object m_Value = null;
 
         /// <summary>
@@ -120,17 +120,31 @@ namespace UnityEditor.Search
             actions = new List<SearchAction> { new SearchAction("select", "select", null, null, (SearchItem item) => {}) }
         };
 
+        [Obsolete("Use SearchItem.clear instead. (UnityUpgradable) -> clear", error: false)]
+        public static readonly SearchItem none;
+
         /// <summary>
         /// A search item representing none, usually used to clear the selection.
         /// </summary>
-        public static readonly SearchItem none = new SearchItem(Guid.NewGuid().ToString())
+        private static SearchItem s_ClearItem;
+        public static SearchItem clear
         {
-            label = "None",
-            description = "Clear the current value",
-            score = int.MinValue,
-            thumbnail = Icons.clear,
-            provider = defaultProvider
-        };
+            get
+            {
+                if (s_ClearItem == null)
+                {
+                    s_ClearItem = new SearchItem(Guid.NewGuid().ToString())
+                    {
+                        label = "None",
+                        description = "Clear the current value",
+                        score = int.MinValue,
+                        thumbnail = Icons.clear,
+                        provider = defaultProvider
+                    };
+                }
+                return s_ClearItem;
+            }
+        }
 
         /// <summary>
         /// Construct a search item. Minimally a search item need to have a unique id for a given search query.
@@ -457,79 +471,29 @@ namespace UnityEditor.Search
             }
         }
 
-        internal readonly struct Field : IEquatable<Field>
-        {
-            public readonly string name;
-            public readonly string alias;
-            public readonly object value;
-
-            public string label => alias ?? name;
-
-            public Field(string name)
-            {
-                this.name = name;
-                this.alias = null;
-                this.value = null;
-            }
-
-            public Field(string name, object value)
-            {
-                this.name = name;
-                this.alias = null;
-                this.value = value;
-            }
-
-            public Field(string name, string alias, object value)
-            {
-                this.name = name;
-                this.alias = alias;
-                this.value = value;
-            }
-
-            public override string ToString() => $"{name}[{label}]={value}";
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return name.GetHashCode();
-                }
-            }
-
-            public override bool Equals(object other)
-            {
-                return other is SearchIndexEntry l && Equals(l);
-            }
-
-            public bool Equals(Field other)
-            {
-                return string.Equals(name, other.name, StringComparison.Ordinal);
-            }
-        }
-
-        private Dictionary<string, Field> m_Fields;
-        internal void SetField(string name, object value)
+        private Dictionary<string, SearchField> m_Fields;
+        public void SetField(string name, object value)
         {
             SetField(name, null, value);
         }
 
-        internal void SetField(string name, string alias, object value)
+        public void SetField(string name, string alias, object value)
         {
             if (m_Fields == null)
-                m_Fields = new Dictionary<string, Field>();
+                m_Fields = new Dictionary<string, SearchField>();
 
-            var f = new Field(name, alias, value);
+            var f = new SearchField(name, alias, value);
             m_Fields[name] = f;
         }
 
-        internal bool RemoveField(string name)
+        public bool RemoveField(string name)
         {
             if (m_Fields == null)
                 return false;
             return m_Fields.Remove(name);
         }
 
-        internal bool TryGetField(string name, out Field field)
+        public bool TryGetField(string name, out SearchField field)
         {
             if (m_Fields != null && m_Fields.TryGetValue(name, out field))
                 return true;
@@ -537,16 +501,16 @@ namespace UnityEditor.Search
             return false;
         }
 
-        internal bool TryGetValue(string name, out Field field)
+        public bool TryGetValue(string name, out SearchField field)
         {
             return TryGetValue(name, null, out field);
         }
 
-        internal bool TryGetValue(string name, SearchContext context, out Field field)
+        public bool TryGetValue(string name, SearchContext context, out SearchField field)
         {
             if (name == null)
             {
-                field = new Field(name, m_Value);
+                field = new SearchField(name, m_Value);
                 return true;
             }
 
@@ -555,61 +519,116 @@ namespace UnityEditor.Search
 
             if (string.Equals("id", name, StringComparison.Ordinal))
             {
-                field = new Field(name, id);
+                field = new SearchField(name, id);
                 return true;
             }
             if (string.Equals("value", name, StringComparison.Ordinal))
             {
-                field = new Field(name, m_Value);
+                field = new SearchField(name, m_Value);
                 return true;
             }
             if (string.Equals("label", name, StringComparison.OrdinalIgnoreCase))
             {
                 options |= SearchItemOptions.Compacted;
-                field = new Field(name, GetLabel(context ?? this.context, true));
+                field = new SearchField(name, GetLabel(context ?? this.context, true));
                 options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
             }
             if (string.Equals("description", name, StringComparison.OrdinalIgnoreCase))
             {
                 options |= SearchItemOptions.Compacted;
-                field = new Field(name, GetDescription(context ?? this.context, true));
+                field = new SearchField(name, GetDescription(context ?? this.context, true));
                 options &= ~SearchItemOptions.Compacted;
                 return field.value != null;
+            }
+            if (string.Equals("score", name, StringComparison.Ordinal))
+            {
+                field = new SearchField(name, score);
+                return true;
             }
 
             field = default;
             return false;
         }
 
-        internal object GetValue(string name = null, SearchContext context = null)
+        public object GetValue(string name = null, SearchContext context = null)
         {
             if (TryGetValue(name, context, out var field))
                 return field.value;
             return null;
         }
 
-        internal object this[string name] => GetValue(name);
+        public object this[string name] => GetValue(name);
 
-        internal int GetFieldCount()
+        public int GetFieldCount()
         {
             if (m_Fields == null)
                 return 0;
             return m_Fields.Count;
         }
 
-        internal string[] GetFieldNames()
+        public string[] GetFieldNames()
         {
             if (m_Fields == null)
                 return new string[0];
             return m_Fields.Keys.ToArray();
         }
 
-        internal IEnumerable<Field> GetFields()
+        public IEnumerable<SearchField> GetFields()
         {
             if (m_Fields == null)
-                return Enumerable.Empty<Field>();
+                return Enumerable.Empty<SearchField>();
             return m_Fields.Values;
+        }
+    }
+
+    public readonly struct SearchField : IEquatable<SearchField>
+    {
+        public readonly string name;
+        public readonly string alias;
+        public readonly object value;
+
+        public string label => alias ?? name;
+
+        public SearchField(string name)
+        {
+            this.name = name;
+            this.alias = null;
+            this.value = null;
+        }
+
+        public SearchField(string name, object value)
+        {
+            this.name = name;
+            this.alias = null;
+            this.value = value;
+        }
+
+        public SearchField(string name, string alias, object value)
+        {
+            this.name = name;
+            this.alias = alias;
+            this.value = value;
+        }
+
+        public override string ToString() => $"{name}[{label}]={value}";
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return name.GetHashCode();
+            }
+        }
+
+        public override bool Equals(object other)
+        {
+            return other is SearchIndexEntry l && Equals(l);
+        }
+
+        public bool Equals(SearchField other)
+        {
+            return string.Equals(name, other.name, StringComparison.Ordinal);
         }
     }
 }

@@ -32,5 +32,7 @@ namespace UnityEngine.UIElements
 
         public extern static void RegisterPlayerloopCallback();
         public extern static void UnregisterPlayerloopCallback();
+
+        public extern static void VisualElementCreation();
     }
 }

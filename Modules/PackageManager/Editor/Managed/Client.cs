@@ -114,7 +114,14 @@ namespace UnityEditor.PackageManager
         internal static GetCacheRootRequest GetCacheRoot()
         {
             long operationId;
-            var status = GetCacheRoot(out operationId);
+            var status = GetCacheRoot(out operationId, ConfigSource.Unknown);
+            return new GetCacheRootRequest(operationId, status);
+        }
+
+        internal static GetCacheRootRequest GetDefaultCacheRoot()
+        {
+            long operationId;
+            var status = GetCacheRoot(out operationId, ConfigSource.Default);
             return new GetCacheRootRequest(operationId, status);
         }
 
@@ -149,9 +156,6 @@ namespace UnityEditor.PackageManager
         {
             if (string.IsNullOrWhiteSpace(packageIdOrName))
                 throw new ArgumentException("Package id or name cannot be null, empty or whitespace", nameof(packageIdOrName));
-
-            if (string.IsNullOrWhiteSpace(packageIdOrName))
-                throw new ArgumentNullException(nameof(packageIdOrName));
 
             long operationId;
             var status = GetPackageInfo(out operationId, packageIdOrName, offlineMode);

@@ -45,7 +45,7 @@ namespace UnityEditor.AddComponent
         {
             CloseAllOpenWindows<AddComponentWindow>();
             var window = CreateInstance<AddComponentWindow>();
-            window.dataSource = new AddComponentDataSource(s_State);
+            window.dataSource = new AddComponentDataSource(s_State, gos);
             window.gui = new AddComponentGUI(window.dataSource, window.OnCreateNewScript);
             window.state = s_State;
             window.m_GameObjects = gos;

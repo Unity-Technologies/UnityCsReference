@@ -210,6 +210,25 @@ namespace UnityEditor
             File.Copy(NiceWinPath(from), NiceWinPath(to), overwrite);
         }
 
+
+        internal static bool ReadFileContentBinary(string assetPath, out byte[] fileContent, out string errorMessage)
+        {
+            fileContent = null;
+            errorMessage = null;
+            string absolutePath = FileUtil.PathToAbsolutePath(assetPath);
+            try
+            {
+                fileContent = File.ReadAllBytes(absolutePath);
+            }
+            catch (Exception e)
+            {
+                fileContent = null;
+                errorMessage = e.Message;
+            }
+
+            return fileContent != null;
+        }
+
         internal static string NiceWinPath(string unityPath)
         {
             // IO functions do not like mixing of \ and / slashes, esp. for windows network paths (\\path)

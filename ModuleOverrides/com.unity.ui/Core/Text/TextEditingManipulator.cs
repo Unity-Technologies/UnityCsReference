@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
         public TextEditingManipulator(TextElement textElement)
         {
             m_TextElement = textElement;
-            editingUtilities = new TextEditingUtilities(textElement.m_SelectingManipulator.m_SelectingUtilities, textElement.uitkTextHandle.textHandle);
+            editingUtilities = new TextEditingUtilities(textElement.selectingManipulator.m_SelectingUtilities, textElement.uitkTextHandle.textHandle);
             InitTextEditorEventHandler();
         }
 
@@ -63,6 +63,8 @@ namespace UnityEngine.UIElements
         void OnFocusInEvent(FocusInEvent evt)
         {
             m_TextElement.edition.SaveValueAndText();
+            // Update the selectedTextElement when an InputField takes focus.
+            m_TextElement.focusController.selectedTextElement = m_TextElement;
 
             // When this input field receives focus, make sure the correct text editor is initialized
             // (i.e. hardware keyboard or touchscreen keyboard).
@@ -91,6 +93,8 @@ namespace UnityEngine.UIElements
         void OnFocusOutEvent(FocusOutEvent evt)
         {
             m_HardwareKeyboardPoller?.Pause();
+
+            editingUtilities.OnBlur();
         }
     }
 }

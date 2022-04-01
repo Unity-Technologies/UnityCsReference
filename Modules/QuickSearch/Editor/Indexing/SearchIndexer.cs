@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -39,7 +40,8 @@ namespace UnityEditor.Search
         // 22- Discard long string properties and add support for hash128 while indexing
         // 23- Improve keyword type encoding
         // 24- Optimize asset path indexing in size
-        internal const int version = 0x024;
+        // 25- Fix SearchDocument concurrency
+        internal const int version = 0x025;
 
         public enum Type : byte
         {
@@ -221,7 +223,7 @@ namespace UnityEditor.Search
     }
 
     [Flags]
-    enum SearchDocumentFlags
+    public enum SearchDocumentFlags
     {
         None = 0,
         Asset = 1 << 0,
@@ -348,7 +350,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Time indicating when the index was saved
         /// </summary>
-        internal long timestamp => m_Timestamp;
+        public long timestamp => m_Timestamp;
 
         /// <summary>
         /// Returns how many keywords the index contains.
@@ -395,10 +397,11 @@ namespace UnityEditor.Search
         private Thread m_IndexerThread;
         private volatile bool m_IndexReady = false;
         private volatile bool m_RebuildFilters = true;
+        [ThreadStatic] internal bool m_DoFuzzyMatch;
 
         private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions {validateFilters = true, skipNestedQueries = true};
         private QueryEngine<SearchResult> m_QueryEngine;
-        private Dictionary<string, Query<SearchResult, object>> m_QueryPool;
+        private ConcurrentDictionary<string, Query<SearchResult, object>> m_QueryPool;
 
         private readonly Dictionary<RangeSet, IndexRange> m_FixedRanges;
         private SearchResultCollection m_AllDocumentIndexes;
@@ -408,7 +411,7 @@ namespace UnityEditor.Search
         private readonly List<SearchIndexEntry> m_BatchIndexes;
 
         // Final documents and entries when the index is ready.
-        private List<SearchDocument> m_Documents;
+        private ConcurrentDictionary<int, SearchDocument> m_Documents;
         private Stack<int> m_UnusedDocumentIndexes;
         private SearchIndexEntry[] m_Indexes;
         private HashSet<string> m_Keywords;
@@ -435,7 +438,7 @@ namespace UnityEditor.Search
             skipEntryHandler = e => false;
 
             m_Keywords = new HashSet<string>();
-            m_Documents = new List<SearchDocument>();
+            m_Documents = new ConcurrentDictionary<int, SearchDocument>();
             m_UnusedDocumentIndexes = new Stack<int>();
             m_IndexByDocuments = new Dictionary<string, int>();
             m_Indexes = new SearchIndexEntry[0];
@@ -448,17 +451,20 @@ namespace UnityEditor.Search
 
         private Query<SearchResult, object> BuildQuery(string searchQuery)
         {
-            if (m_QueryEngine == null)
+            lock (this)
             {
-                m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
-                m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
-                m_QueryPool = new Dictionary<string, Query<SearchResult, object>>();
-            }
+                if (m_QueryEngine == null)
+                {
+                    m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
+                    m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
+                    m_QueryPool = new ConcurrentDictionary<string, Query<SearchResult, object>>();
+                }
 
-            if (m_RebuildFilters)
-            {
-                AddFilters();
-                m_RebuildFilters = false;
+                if (m_RebuildFilters)
+                {
+                    AddFilters();
+                    m_RebuildFilters = false;
+                }
             }
 
             Query<SearchResult, object> query;
@@ -659,6 +665,7 @@ namespace UnityEditor.Search
                     context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
                 return Enumerable.Empty<SearchResult>();
             }
+            m_DoFuzzyMatch = parsedQuery.HasToggle("fuzzy");
             return parsedQuery.Apply(null).Take(patternMatchLimit);
         }
 
@@ -775,9 +782,9 @@ namespace UnityEditor.Search
             st.UnionWith(m_IndexByDocuments.Keys);
             st.UnionWith(m_MetaInfo.Keys);
             st.UnionWith(m_MetaInfo.Values);
-            st.UnionWith(m_Documents.Select(d => d.id));
-            st.UnionWith(m_Documents.Select(d => d.m_Name));
-            st.UnionWith(m_Documents.Select(d => d.m_Source));
+            st.UnionWith(m_Documents.Select(d => d.Value.id));
+            st.UnionWith(m_Documents.Select(d => d.Value.m_Name));
+            st.UnionWith(m_Documents.Select(d => d.Value.m_Source));
             st.UnionWith(m_Keywords);
 
             using (var indexWriter = new BinaryWriter(stream))
@@ -794,13 +801,14 @@ namespace UnityEditor.Search
                 indexWriter.Write(m_Documents.Count);
                 foreach (var doc in m_Documents)
                 {
-                    indexWriter.Write(doc.valid);
-                    if (doc.valid)
+                    indexWriter.Write(doc.Key);
+                    indexWriter.Write(doc.Value.valid);
+                    if (doc.Value.valid)
                     {
-                        st.Write(indexWriter, doc.id);
-                        st.Write(indexWriter, doc.m_Name);
-                        st.Write(indexWriter, doc.m_Source);
-                        indexWriter.Write((int)doc.flags);
+                        st.Write(indexWriter, doc.Value.id);
+                        st.Write(indexWriter, doc.Value.m_Name);
+                        st.Write(indexWriter, doc.Value.m_Source);
+                        indexWriter.Write((int)doc.Value.flags);
                     }
                 }
 
@@ -812,7 +820,7 @@ namespace UnityEditor.Search
                     indexWriter.Write(kvp.Value.ToString());
                 }
 
-                // Metainfo
+                // Meta info
                 indexWriter.Write(m_MetaInfo.Count);
                 foreach (var kvp in m_MetaInfo)
                 {
@@ -886,9 +894,10 @@ namespace UnityEditor.Search
 
                 // Documents
                 var elementCount = indexReader.ReadInt32();
-                var documents = new SearchDocument[elementCount];
+                var documents = new ConcurrentDictionary<int, SearchDocument>();
                 for (int i = 0; i < elementCount; ++i)
                 {
+                    var index = indexReader.ReadInt32();
                     var valid = indexReader.ReadBoolean();
                     if (!valid)
                         continue;
@@ -897,7 +906,7 @@ namespace UnityEditor.Search
                     var docName = st.Read(indexReader);
                     var docSource = st.Read(indexReader);
                     var docFlags = (SearchDocumentFlags)indexReader.ReadInt32();
-                    documents[i] = new SearchDocument(docId, string.IsNullOrEmpty(docName) ? null : docName, string.IsNullOrEmpty(docSource) ? null : docSource, int.MaxValue, docFlags);
+                    documents[index] = new SearchDocument(docId, string.IsNullOrEmpty(docName) ? null : docName, string.IsNullOrEmpty(docSource) ? null : docSource, int.MaxValue, docFlags);
                 }
 
                 // Hashes (m_SourceDocuments)
@@ -910,7 +919,7 @@ namespace UnityEditor.Search
                     hashes[key] = hash;
                 }
 
-                // Metainfos
+                // Meta infos
                 elementCount = indexReader.ReadInt32();
                 var metainfos = new Dictionary<string, string>();
                 for (int i = 0; i < elementCount; ++i)
@@ -1007,7 +1016,7 @@ namespace UnityEditor.Search
                 }
             });
             t.Start();
-            return t.ThreadState != System.Threading.ThreadState.Unstarted;
+            return t.ThreadState != ThreadState.Unstarted;
         }
 
         internal bool LoadBytes(byte[] bytes)
@@ -1041,7 +1050,12 @@ namespace UnityEditor.Search
         {
             if (m_IndexByDocuments.TryGetValue(id, out var di))
                 return di;
-            return m_Documents.FindIndex(d => d.valid && d.id.Equals(id, StringComparison.Ordinal));
+            foreach (var d in m_Documents)
+            {
+                if (d.Value.valid && d.Value.id.Equals(id, StringComparison.Ordinal))
+                    return d.Key;
+            }
+            return -1;
         }
 
         private int FindDocumentIndex(SearchDocument doc)
@@ -1082,7 +1096,7 @@ namespace UnityEditor.Search
 
                     progress(i++);
 
-                    int[] updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d)).ToArray();
+                    int[] updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d.Value)).ToArray();
                     for (int sourceIndex = 0; sourceIndex < updatedDocIndexes.Length; ++sourceIndex)
                     {
                         var sourceDoc = other.m_Documents[sourceIndex];
@@ -1131,7 +1145,7 @@ namespace UnityEditor.Search
             }
         }
 
-        internal void Merge(string[] removeDocuments, SearchIndexer other, int baseScore = 0,
+        public void Merge(string[] removeDocuments, SearchIndexer other, int baseScore = 0,
             Action<int, SearchIndexer, int> documentIndexing = null)
         {
             int[] updatedDocIndexes = null;
@@ -1139,7 +1153,7 @@ namespace UnityEditor.Search
 
             lock (this)
             {
-                updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d)).ToArray();
+                updatedDocIndexes = other.m_Documents.Select(d => FindDocumentIndex(d.Value)).ToArray();
 
                 var removeDocIndexes = new HashSet<int>(removeDocuments.Concat(other.m_SourceDocuments.Keys).SelectMany(FindDocumentIndexesByPath));
                 if (removeDocIndexes.Count > 0)
@@ -1264,7 +1278,7 @@ namespace UnityEditor.Search
         }
 
         internal IEnumerable<string> GetKeywords() { lock (this) return m_Keywords; }
-        internal IEnumerable<SearchDocument> GetDocuments(bool ignoreNulls = false) { lock (this) return ignoreNulls ? m_Documents.Where(d => d.valid) : m_Documents; }
+        internal IEnumerable<SearchDocument> GetDocuments(bool ignoreNulls = false) { lock (this) return ignoreNulls ? m_Documents.Values.Where(d => d.valid) : m_Documents.Values; }
 
         /// <summary>
         /// Return a search document by its index.
@@ -1273,12 +1287,11 @@ namespace UnityEditor.Search
         /// <returns>Indexed search document</returns>
         public SearchDocument GetDocument(int index)
         {
-            lock (this)
-            {
-                if (index < 0 || index >= m_Documents.Count)
-                    return default;
-                return m_Documents[index];
-            }
+            if (index < 0 || index >= m_Documents.Count)
+                return default;
+            if (m_Documents.TryGetValue(index, out var doc))
+                return doc;
+            return default;
         }
 
         internal bool TryGetHash(string id, out Hash128 hash)
@@ -1310,7 +1323,7 @@ namespace UnityEditor.Search
             return AddDocument(document, null, null, checkIfExists, SearchDocumentFlags.None);
         }
 
-        internal int AddDocument(string document, string name, string source, bool checkIfExists, SearchDocumentFlags flags)
+        public int AddDocument(string document, string name, string source, bool checkIfExists, SearchDocumentFlags flags)
         {
             // Reformat entry to have them all uniformed.
             if (skipEntryHandler(document))
@@ -1336,7 +1349,10 @@ namespace UnityEditor.Search
                     m_Documents[newIndex] = newDocument;
                 }
                 else
-                    m_Documents.Add(newDocument);
+                {
+                    while (!m_Documents.TryAdd(newIndex, newDocument))
+                        newIndex = m_Documents.Count;
+                }
                 m_IndexByDocuments[document] = newIndex;
                 return newIndex;
             }
@@ -1497,7 +1513,7 @@ namespace UnityEditor.Search
             Finish(bytes => threadCompletedCallback?.Invoke(), null, saveBytes: false);
         }
 
-        internal void Finish(Action threadCompletedCallback, string[] removedDocuments)
+        public void Finish(Action threadCompletedCallback, string[] removedDocuments)
         {
             Finish(bytes => threadCompletedCallback?.Invoke(), removedDocuments, saveBytes: false);
         }
@@ -1512,7 +1528,7 @@ namespace UnityEditor.Search
             Finish(threadCompletedCallback, removedDocuments, saveBytes: true);
         }
 
-        internal void Finish(Action<byte[]> threadCompletedCallback, string[] removedDocuments, bool saveBytes)
+        public void Finish(Action<byte[]> threadCompletedCallback, string[] removedDocuments, bool saveBytes)
         {
             m_IndexerThread = new Thread(() =>
             {
@@ -1546,7 +1562,7 @@ namespace UnityEditor.Search
             m_IndexerThread.Start();
         }
 
-        internal void Finish(string[] removedDocuments)
+        public void Finish(string[] removedDocuments)
         {
             lock (this)
             {
@@ -1659,7 +1675,7 @@ namespace UnityEditor.Search
             }
 
             IEnumerable<SearchResult> matches = null;
-            if (!String.IsNullOrEmpty(name))
+            if (!string.IsNullOrEmpty(name))
             {
                 name = name.ToLowerInvariant();
 
@@ -1862,9 +1878,9 @@ namespace UnityEditor.Search
                 yield return le;
         }
 
-        private void ApplyIndexes(IEnumerable<SearchDocument> documents, SearchIndexEntry[] entries, Dictionary<string, Hash128> hashes, Dictionary<string, string> metainfos)
+        private void ApplyIndexes(ConcurrentDictionary<int, SearchDocument> documents, SearchIndexEntry[] entries, Dictionary<string, Hash128> hashes, Dictionary<string, string> metainfos)
         {
-            m_Documents = documents.ToList();
+            m_Documents = documents;
             m_SourceDocuments = hashes;
             m_MetaInfo = metainfos;
             m_Indexes = entries;

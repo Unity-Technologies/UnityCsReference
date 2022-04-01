@@ -365,7 +365,7 @@ namespace UnityEditorInternal
         {
             hideFlags = HideFlags.HideAndDontSave;
             AnimationUtility.onCurveWasModified += CurveWasModified;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
 
             // NoOps...
@@ -381,7 +381,7 @@ namespace UnityEditorInternal
         public void OnDisable()
         {
             AnimationUtility.onCurveWasModified -= CurveWasModified;
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
             AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
 
             m_ControlInterface.OnDisable();
@@ -434,7 +434,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public void UndoRedoPerformed()
+        public void UndoRedoPerformed(in UndoRedoInfo info)
         {
             refresh = RefreshType.Everything;
             controlInterface.ResampleAnimation();
@@ -577,6 +577,12 @@ namespace UnityEditorInternal
             controlInterface.ResampleAnimation();
         }
 
+        public void UpdateCurvesDisplayName()
+        {
+            if (hierarchyData != null)
+                hierarchyData.UpdateSerializeReferenceCurvesArrayNiceDisplayName();
+        }
+
         public void StopPreview()
         {
             controlInterface.StopPreview();
@@ -612,6 +618,11 @@ namespace UnityEditorInternal
         public void ResampleAnimation()
         {
             controlInterface.ResampleAnimation();
+        }
+
+        public void ClearCandidates()
+        {
+            controlInterface.ClearCandidates();
         }
 
         public bool ShouldShowCurve(AnimationWindowCurve curve)
@@ -844,7 +855,7 @@ namespace UnityEditorInternal
                     {
                         AnimationWindowKeyframe key = keys[0];
                         float time = key.time;
-                        float val = key.isPPtrCurve ? 0.0f : (float)key.value;
+                        float val = key.isPPtrCurve || key.isDiscreteCurve ? 0.0f : (float)key.value;
 
                         Bounds bounds = new Bounds(new Vector2(time, val), Vector2.zero);
 
@@ -853,7 +864,7 @@ namespace UnityEditorInternal
                             key = keys[i];
 
                             time = key.time;
-                            val = key.isPPtrCurve ? 0.0f : (float)key.value;
+                            val = key.isPPtrCurve || key.isDiscreteCurve ? 0.0f : (float)key.value;
 
                             bounds.Encapsulate(new Vector2(time, val));
                         }
@@ -1050,7 +1061,7 @@ namespace UnityEditorInternal
                     if (snapshot.curve.animationIsEditable)
                     {
                         // Transform time value.
-                        Vector3 v = new Vector3(liveEditKey.keySnapshot.time, liveEditKey.keySnapshot.isPPtrCurve ? 0f : (float)liveEditKey.keySnapshot.value, 0f);
+                        Vector3 v = new Vector3(liveEditKey.keySnapshot.time, liveEditKey.keySnapshot.isPPtrCurve || liveEditKey.keySnapshot.isDiscreteCurve ? 0f : (float)liveEditKey.keySnapshot.value, 0f);
                         v = matrix.MultiplyPoint3x4(v);
 
                         liveEditKey.key.time = Mathf.Max((snapToFrame) ? SnapToFrame(v.x, snapshot.curve.clip.frameRate) : v.x, 0f);
@@ -1071,7 +1082,7 @@ namespace UnityEditorInternal
                             liveEditKey.key.outWeight = liveEditKey.keySnapshot.inWeight;
                         }
 
-                        if (!liveEditKey.key.isPPtrCurve)
+                        if (!liveEditKey.key.isPPtrCurve && !liveEditKey.key.isDiscreteCurve)
                         {
                             liveEditKey.key.value = v.y;
 

@@ -57,6 +57,9 @@ namespace UnityEditor
         extern internal static bool HasPrefabInstanceUnusedOverrides_Internal(GameObject gameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static int GetPrefabInstanceUnusedRemovedComponentCount_Internal(GameObject gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static string TryGetCurrentPropertyPathFromOldPropertyPath_Internal(GameObject gameObject, Object target, string propertyPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
@@ -110,11 +113,15 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
+        extern private static MergeStatus GetMergeStatus(GameObject componentOrGameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
         extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern public static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots(GameObject instanceRoot, PrefabUnpackMode unpackMode);
+        extern private static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots_internal(GameObject instanceRoot, PrefabUnpackMode unpackMode);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -363,6 +370,12 @@ namespace UnityEditor
         extern internal static bool CheckIfAddingPrefabWouldResultInCyclicNesting(Object prefabAssetThatIsAddedTo, Object prefabAssetThatWillBeAdded);
 
         [FreeFunction]
+        extern internal static bool WasCreatedAsPrefabInstancePlaceholderObject(Object componentOrGameObject);
+
+        [FreeFunction]
         extern internal static void ShowCyclicNestingWarningDialog();
+
+        [NativeMethod("PrefabUtilityBindings::GetVariantParentGUID_Internal", IsFreeFunction = true, ThrowsException = true)]
+        extern internal static string GetVariantParentGUID(int instanceID);
     }
 }

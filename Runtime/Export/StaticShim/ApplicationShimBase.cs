@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
 using UnityEngine.Events;
 
 namespace UnityEngine
@@ -193,6 +194,8 @@ namespace UnityEngine
         {
             UnityEngine.Application.Unload();
         }
+
+        public virtual CancellationToken CancellationToken => UnityEngine.Application.CancellationToken;
     }
 }
 

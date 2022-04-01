@@ -207,7 +207,14 @@ class ExposedReferencePropertyDrawer : BaseExposedPropertyDrawer
         ExposedPropertyMode mode,
         IExposedPropertyTable exposedPropertyTable)
     {
-        var typeOfExposedReference = fieldInfo.FieldType.GetGenericArguments()[0];
+        var propertyType = fieldInfo.FieldType;
+
+        if (propertyType.IsArrayOrList())
+        {
+            propertyType = propertyType.GetArrayOrListElementType();
+        }
+
+        var typeOfExposedReference = propertyType.GetGenericArguments()[0];
 
         EditorGUI.BeginChangeCheck();
         var newValue = EditorGUI.ObjectField(position, currentReferenceValue, typeOfExposedReference, exposedPropertyTable != null);

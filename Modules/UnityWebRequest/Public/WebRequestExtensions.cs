@@ -154,21 +154,35 @@ namespace UnityEngine.Networking
             return request;
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("UnityWebRequest.Post with only a string data is obsolete. Use UnityWebRequest.Post with content type argument or UnityWebRequest.PostWwwForm instead (UnityUpgradable) -> [UnityEngine] UnityWebRequest.PostWwwForm(*)", false)]
         public static UnityWebRequest Post(string uri, string postData)
         {
-            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
-            SetupPost(request, postData);
-            return request;
+            return PostWwwForm(uri, postData);
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("UnityWebRequest.Post with only a string data is obsolete. Use UnityWebRequest.Post with content type argument or UnityWebRequest.PostWwwForm instead (UnityUpgradable) -> [UnityEngine] UnityWebRequest.PostWwwForm(*)", false)]
         public static UnityWebRequest Post(Uri uri, string postData)
         {
+            return PostWwwForm(uri, postData);
+        }
+
+        public static UnityWebRequest PostWwwForm(string uri, string form)
+        {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
-            SetupPost(request, postData);
+            SetupPostWwwForm(request, form);
             return request;
         }
 
-        private static void SetupPost(UnityWebRequest request, string postData)
+        public static UnityWebRequest PostWwwForm(Uri uri, string form)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPostWwwForm(request, form);
+            return request;
+        }
+
+        private static void SetupPostWwwForm(UnityWebRequest request, string postData)
         {
             request.downloadHandler = new DownloadHandlerBuffer();
             if (string.IsNullOrEmpty(postData))
@@ -178,6 +192,33 @@ namespace UnityEngine.Networking
             payload = System.Text.Encoding.UTF8.GetBytes(urlencoded);
             request.uploadHandler = new UploadHandlerRaw(payload);
             request.uploadHandler.contentType = "application/x-www-form-urlencoded";
+        }
+
+        public static UnityWebRequest Post(string uri, string postData, string contentType)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, postData, contentType);
+            return request;
+        }
+
+        public static UnityWebRequest Post(Uri uri, string postData, string contentType)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, postData, contentType);
+            return request;
+        }
+
+        private static void SetupPost(UnityWebRequest request, string postData, string contentType)
+        {
+            request.downloadHandler = new DownloadHandlerBuffer();
+            if (string.IsNullOrEmpty(postData))
+            {
+                request.SetRequestHeader("Content-Type", contentType);
+                return;  // no data to send, nothing more to setup
+            }
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(postData);
+            request.uploadHandler = new UploadHandlerRaw(payload);
+            request.uploadHandler.contentType = contentType;
         }
 
         // Provides a shim for sending a multipart form as declared by the legacy WWWForm class.

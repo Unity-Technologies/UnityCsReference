@@ -113,7 +113,7 @@ namespace UnityEditor.Search
             int indexToSelect = AddSearchDatabases(SearchSettings.showPackageIndexes);
 
             m_ListViewIndexSettings = new ListViewIndexSettings(m_IndexSettings, MakeIndexItem, BindIndexItem, CreateNewIndexSettingMenu, DeleteIndexSetting, this, false, 40) { name = "IndexListView" };
-            m_ListViewIndexSettings.ListView.onSelectionChange += OnSelectedIndexChanged;
+            m_ListViewIndexSettings.ListView.selectionChanged += OnSelectedIndexChanged;
 
             m_IndexDetailsElement = new VisualElement() { name = "Details" };
             SearchDatabase.indexLoaded += OnIndexLoaded;
@@ -231,14 +231,14 @@ namespace UnityEditor.Search
 
         internal void OnDisable()
         {
-            m_ListViewIndexSettings.ListView.onSelectionChange -= OnSelectedIndexChanged;
+            m_ListViewIndexSettings.ListView.selectionChanged -= OnSelectedIndexChanged;
 
             SearchDatabase.indexLoaded -= OnIndexLoaded;
 
             if (m_DocumentsListView != null)
-                m_DocumentsListView.onSelectionChange -= PingAsset;
+                m_DocumentsListView.selectionChanged -= PingAsset;
             if (m_DependenciesListView != null)
-                m_DependenciesListView.onSelectionChange -= PingAsset;
+                m_DependenciesListView.selectionChanged -= PingAsset;
         }
 
         private void OnSizeChange(GeometryChangedEvent evt)
@@ -376,12 +376,12 @@ namespace UnityEditor.Search
 
             m_DependenciesListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DependenciesListView.itemsSource[i]); } };
             m_DependenciesListView.AddToClassList("PreviewListView");
-            m_DependenciesListView.onSelectionChange += PingAsset;
+            m_DependenciesListView.selectionChanged += PingAsset;
             m_SavedIndexData.Add(m_DependenciesListView);
 
             m_DocumentsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DocumentsListView.itemsSource[i]); } };
             m_DocumentsListView.AddToClassList("PreviewListView");
-            m_DocumentsListView.onSelectionChange += PingAsset;
+            m_DocumentsListView.selectionChanged += PingAsset;
             m_SavedIndexData.Add(m_DocumentsListView);
 
             m_KeywordsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_KeywordsListView.itemsSource[i]); } };
@@ -1024,9 +1024,9 @@ namespace UnityEditor.Search
             if (selectedIndex != m_PreviousSelectedIndex)
             {
                 if (m_DependenciesListView != null)
-                    m_DependenciesListView.onSelectionChange -= PingAsset;
+                    m_DependenciesListView.selectionChanged -= PingAsset;
                 if (m_DocumentsListView != null)
-                    m_DocumentsListView.onSelectionChange -= PingAsset;
+                    m_DocumentsListView.selectionChanged -= PingAsset;
                 m_IndexDetailsElement.Clear();
 
                 if (obj.Any())

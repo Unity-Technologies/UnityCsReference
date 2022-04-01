@@ -77,7 +77,13 @@ namespace UnityEditor
             get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool()); }
             set
             {
-                EditorToolManager.activeTool = EditorToolUtility.GetEditorToolWithEnum(value);
+                var tool = EditorToolUtility.GetEditorToolWithEnum(value);
+
+                //In case the new tool is leading to an incorrect tool type, return and leave the current tool as it is.
+                if(value != Tool.None && tool is NoneTool)
+                    return;
+
+                EditorToolManager.activeTool = tool;
                 ShortcutManager.RegisterTag(value);
             }
         }
@@ -406,7 +412,7 @@ namespace UnityEditor
             visibleLayers = layerSettings.visibleLayersValue;
             lockedLayers = layerSettings.lockedLayersValue;
             Selection.selectionChanged += OnSelectionChange;
-            Undo.undoRedoPerformed += OnSelectionChange;
+            Undo.undoRedoEvent += OnUndoRedo;
 
             EditorToolManager.activeToolChanged += (previous, active) =>
             {
@@ -422,7 +428,7 @@ namespace UnityEditor
         void OnDisable()
         {
             Selection.selectionChanged -= OnSelectionChange;
-            Undo.undoRedoPerformed -= OnSelectionChange;
+            Undo.undoRedoEvent -= OnUndoRedo;
         }
 
         internal static void OnSelectionChange()
@@ -430,6 +436,11 @@ namespace UnityEditor
             ResetGlobalHandleRotation();
             InvalidateHandlePosition();
             localHandleOffset = Vector3.zero;
+        }
+
+        internal static void OnUndoRedo(in UndoRedoInfo info)
+        {
+            OnSelectionChange();
         }
 
         internal static void ResetGlobalHandleRotation()

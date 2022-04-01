@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 
+[assembly: InternalsVisibleTo("Unity.Services.CloudDiagnostics")]
+[assembly: InternalsVisibleTo("Unity.Services.CloudDiagnostics.Tests")]
 namespace UnityEngine.CrashReportHandler
 {
     [NativeHeader("Modules/CrashReporting/Public/CrashReporter.h")]
@@ -20,6 +23,9 @@ namespace UnityEngine.CrashReportHandler
 
         [NativeThrows]
         public static extern UInt32 logBufferSize { get; set; }
+
+        [NativeThrows]
+        internal static extern string installationIdentifier { get; set; }
 
         [NativeThrows]
         public static extern string GetUserMetadata(string key);

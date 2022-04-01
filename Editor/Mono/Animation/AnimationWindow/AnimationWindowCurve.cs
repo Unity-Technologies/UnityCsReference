@@ -28,6 +28,7 @@ namespace UnityEditorInternal
         public EditorCurveBinding binding { get { return m_Binding;  } }
         public bool isPPtrCurve { get { return m_Binding.isPPtrCurve; } }
         public bool isDiscreteCurve { get { return m_Binding.isDiscreteCurve; } }
+        public bool isSerializeReferenceCurve{ get {return m_Binding.isSerializeReferenceCurve;}}
         public bool isPhantom { get { return m_Binding.isPhantom; } }
         public string propertyName { get { return m_Binding.propertyName; } }
         public string path { get { return m_Binding.path; } }
@@ -44,6 +45,18 @@ namespace UnityEditorInternal
         public bool clipIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.clipIsEditable : true; } }
         public bool animationIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.animationIsEditable : true; } }
         public int selectionID { get { return m_SelectionBinding != null ? m_SelectionBinding.id : 0; } }
+
+        private object defaultValue
+        {
+            get
+            {
+                if (isPPtrCurve)
+                    return null;
+                if (isDiscreteCurve)
+                    return 0;
+                return 0f;
+            }
+        }
 
         public AnimationWindowSelectionItem selectionBinding { get { return m_SelectionBinding; } set { m_SelectionBinding = value; } }
 
@@ -228,7 +241,7 @@ namespace UnityEditorInternal
         public object Evaluate(float time)
         {
             if (m_Keyframes.Count == 0)
-                return isPPtrCurve ? null : (object)0f;
+                return defaultValue;
 
             AnimationWindowKeyframe firstKey = m_Keyframes[0];
             if (time <= firstKey.time)
@@ -243,9 +256,9 @@ namespace UnityEditorInternal
             {
                 AnimationWindowKeyframe nextKey = m_Keyframes[i];
 
-                if (key.time < time && nextKey.time >= time)
+                if (key.time <= time && nextKey.time > time)
                 {
-                    if (isPPtrCurve)
+                    if (isPPtrCurve || isDiscreteCurve)
                     {
                         return key.value;
                     }
@@ -266,7 +279,7 @@ namespace UnityEditorInternal
             }
 
             // Shouldn't happen...
-            return isPPtrCurve ? null : (object)0f;
+            return defaultValue;
         }
 
         public void AddKeyframe(AnimationWindowKeyframe key, AnimationKeyTime keyTime)

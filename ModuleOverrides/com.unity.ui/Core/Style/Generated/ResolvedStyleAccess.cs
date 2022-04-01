@@ -84,6 +84,7 @@ namespace UnityEngine.UIElements
         int IResolvedStyle.unitySliceBottom => computedStyle.unitySliceBottom;
         int IResolvedStyle.unitySliceLeft => computedStyle.unitySliceLeft;
         int IResolvedStyle.unitySliceRight => computedStyle.unitySliceRight;
+        float IResolvedStyle.unitySliceScale => computedStyle.unitySliceScale;
         int IResolvedStyle.unitySliceTop => computedStyle.unitySliceTop;
         TextAnchor IResolvedStyle.unityTextAlign => computedStyle.unityTextAlign;
         Color IResolvedStyle.unityTextOutlineColor => computedStyle.unityTextOutlineColor;

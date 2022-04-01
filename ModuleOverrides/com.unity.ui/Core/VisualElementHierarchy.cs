@@ -406,6 +406,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public struct Hierarchy
         {
+            private const string k_InvalidHierarchyChangeMsg = "Cannot modify VisualElement hierarchy during layout calculation";
             private readonly VisualElement m_Owner;
 
             /// <summary>
@@ -446,6 +447,9 @@ namespace UnityEngine.UIElements
                 if (child == m_Owner)
                     throw new ArgumentException("Cannot insert element as its own child");
 
+                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
+                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+
                 child.RemoveFromHierarchy();
 
                 if (ReferenceEquals(m_Owner.m_Children, s_EmptyList))
@@ -484,7 +488,7 @@ namespace UnityEngine.UIElements
                     throw new ArgumentException("Cannot remove null child");
 
                 if (child.hierarchy.parent != m_Owner)
-                    throw new ArgumentException("This visualElement is not my child");
+                    throw new ArgumentException("This VisualElement is not my child");
 
                 int index = m_Owner.m_Children.IndexOf(child);
                 RemoveAt(index);
@@ -495,6 +499,9 @@ namespace UnityEngine.UIElements
             /// </summary>
             public void RemoveAt(int index)
             {
+                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
+                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+
                 if (index < 0 || index >= childCount)
                     throw new ArgumentOutOfRangeException("Index out of range: " + index);
 
@@ -514,7 +521,8 @@ namespace UnityEngine.UIElements
                 {
                     ReleaseChildList();
 
-                    m_Owner.AssignMeasureFunction();
+                    if (m_Owner.requireMeasureFunction)
+                        m_Owner.AssignMeasureFunction();
                 }
 
                 // Child is detached from the panel, notify using the panel directly.
@@ -527,6 +535,9 @@ namespace UnityEngine.UIElements
             /// </summary>
             public void Clear()
             {
+                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
+                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+
                 if (childCount > 0)
                 {
                     // Copy children to a temporary list because removing child elements from
@@ -537,7 +548,8 @@ namespace UnityEngine.UIElements
                     ReleaseChildList();
                     m_Owner.yogaNode.Clear();
 
-                    m_Owner.AssignMeasureFunction();
+                    if (m_Owner.requireMeasureFunction)
+                        m_Owner.AssignMeasureFunction();
 
                     foreach (VisualElement e in elements)
                     {
@@ -628,6 +640,9 @@ namespace UnityEngine.UIElements
 
             private void MoveChildElement(VisualElement child, int currentIndex, int nextIndex)
             {
+                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
+                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+
                 child.InvokeHierarchyChanged(HierarchyChangeType.Remove);
                 RemoveChildAtIndex(currentIndex);
                 PutChildAtIndex(child, nextIndex);
@@ -708,6 +723,9 @@ namespace UnityEngine.UIElements
             /// <param name="comp">Sorting criteria.</param>
             public void Sort(Comparison<VisualElement> comp)
             {
+                if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
+                    throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
+
                 if (childCount > 1)
                 {
                     m_Owner.m_Children.Sort(comp);

@@ -51,7 +51,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected bool m_OfflineMode = false;
         public bool isOfflineMode { get { return m_OfflineMode; } }
 
+        [SerializeField]
+        protected bool m_LogErrorInConsole = false;
+        public bool logErrorInConsole { get => m_LogErrorInConsole; set => m_LogErrorInConsole = value; }
+
         public abstract bool isInProgress { get; }
+
+        public bool isInPause => false;
 
         public bool isProgressVisible => false;
 
@@ -59,7 +65,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public float progressPercentage => 0;
 
-        public UIError error { get; protected set; }        // Keep last error
+        // Each type of operation can have an operation specific human readable error message.
+        // This message should be user friendly and not as technical as the error we receive from the UPM Client.
+        protected virtual string operationErrorMessage => string.Empty;
 
         public abstract RefreshOptions refreshOptions { get; }
 
@@ -108,13 +116,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             else if (m_Timestamp == 0)
                 m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
 
-            error = null;
-
             if (!m_ApplicationProxy.isUpmRunning)
             {
                 EditorApplication.delayCall += () =>
                 {
-                    OnError(new UIError(UIErrorCode.UpmError, "UPM server is not running"));
+                    OnError(new UIError(UIErrorCode.UpmError, L10n.Tr("UPM server is not running")));
                     Cancel();
                 };
                 return;
@@ -148,7 +154,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (m_Request.Status == StatusCode.Success)
                     OnSuccess();
                 else if (m_Request.Status >= StatusCode.Failure)
-                    OnError(new UIError((UIErrorCode)m_Request.Error.errorCode, m_Request.Error.message, UIError.Attribute.IsDetailInConsole));
+                    OnError(new UIError(m_Request.Error));
                 else
                     Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unsupported progress state {0}."), m_Request.Status));
                 OnFinalize();
@@ -163,12 +169,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnError(UIError error)
         {
-            this.error = error;
-            var message = L10n.Tr("Cannot perform upm operation");
-            message += string.IsNullOrEmpty(error.message) ? "." : $": {error.message} [{error.errorCode}].";
-
-            Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {message}");
+            if (logErrorInConsole && !error.HasAttribute(UIError.Attribute.IsDetailInConsole))
+            {
+                var consoleErrorMessage = operationErrorMessage ?? string.Empty;
+                if (error.operationErrorCode >= 500 && error.operationErrorCode < 600)
+                {
+                    if (!string.IsNullOrEmpty(consoleErrorMessage))
+                        consoleErrorMessage += " ";
+                    consoleErrorMessage += L10n.Tr("An error occurred, likely on the server. Please try again later.");
+                }
+                if (!string.IsNullOrEmpty(error.message))
+                    consoleErrorMessage += !string.IsNullOrEmpty(consoleErrorMessage) ? $"\n{error.message}" : error.message;
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}"), consoleErrorMessage));
+                error.attribute |= UIError.Attribute.IsDetailInConsole;
+            }
             onOperationError?.Invoke(this, error);
+
+            PackageManagerOperationErrorAnalytics.SendEvent(GetType().Name, error);
         }
 
         private void OnSuccess()

@@ -280,7 +280,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if ((config.status == ConfigStatus.Success || config.status == ConfigStatus.ReadOnly) && IsAnyDownloadInProgressOrPause())
             {
                 if (!m_Application.isBatchMode)
-                    m_Application.DisplayDialog(L10n.Tr("Package Manager"),
+                    m_Application.DisplayDialog("assetCacheLocationChanged",
+                        L10n.Tr("Assets Cache location changed"),
                         L10n.Tr("The Assets Cache location has been changed, all current downloads will be aborted."),
                         L10n.Tr("Ok"));
 

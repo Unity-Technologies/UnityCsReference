@@ -44,7 +44,7 @@ namespace UnityEditor
             m_HandleEdge = false;
         }
 
-        private void UndoRedoPerformed()
+        private void UndoRedoPerformed(in UndoRedoInfo info)
         {
             if (m_ActiveCollider != null)
             {
@@ -56,7 +56,7 @@ namespace UnityEditor
 
         public void StartEditing(Collider2D collider)
         {
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
 
             Reset();
 
@@ -88,7 +88,7 @@ namespace UnityEditor
             PolygonEditor.StopEditing();
             m_ActiveCollider = null;
 
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
         }
 
         public void OnSceneGUI()

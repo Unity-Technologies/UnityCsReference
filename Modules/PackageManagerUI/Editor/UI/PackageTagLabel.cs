@@ -11,33 +11,60 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal new class UxmlFactory : UxmlFactory<PackageTagLabel, UxmlTraits> {}
         internal new class UxmlTraits : TextElement.UxmlTraits {}
 
-        private PackageTagLabel(string text, string tooltipText, PackageTag tag = PackageTag.None)
-            : base(text)
-        {
-            AddToClassList(tag.ToString());
-            tooltip = tooltipText;
-        }
+        private PackageTag m_Tag;
+        public PackageTag tag => m_Tag;
 
-        public PackageTagLabel()
+        public void Refresh(IPackageVersion version, bool isVersionItem = false)
         {
+            if (m_Tag != PackageTag.None)
+                RemoveFromClassList(m_Tag.ToString());
+
+            text = string.Empty;
+            tooltip = string.Empty;
+            m_Tag = PackageTag.None;
+
+            if (version != null)
+            {
+                if (version.HasTag(PackageTag.Custom))
+                {
+                    text = L10n.Tr("Custom");
+                    m_Tag = PackageTag.Custom;
+                }
+                else if (version.HasTag(PackageTag.PreRelease))
+                {
+                    text = L10n.Tr("Pre");
+                    tooltip = L10n.Tr("Pre-release");
+                    m_Tag = PackageTag.PreRelease;
+                }
+                else if (isVersionItem && version.HasTag(PackageTag.Release))
+                {
+                    text = L10n.Tr("R");
+                    tooltip = L10n.Tr("Release");
+                    m_Tag = PackageTag.Release;
+                }
+                else if (version.HasTag(PackageTag.Experimental))
+                {
+                    text = L10n.Tr("Exp");
+                    tooltip = L10n.Tr("Experimental");
+                    m_Tag = PackageTag.Experimental;
+                }
+                else if (version.HasTag(PackageTag.ReleaseCandidate))
+                {
+                    text = L10n.Tr("RC");
+                    tooltip = L10n.Tr("Release Candidate");
+                    m_Tag = PackageTag.ReleaseCandidate;
+                }
+            }
+
+            if (m_Tag != PackageTag.None)
+                AddToClassList(m_Tag.ToString());
         }
 
         public static PackageTagLabel CreateTagLabel(IPackageVersion version, bool isVersionItem = false)
         {
-            if (version != null)
-            {
-                if (version.HasTag(PackageTag.Custom))
-                    return new PackageTagLabel(L10n.Tr("Custom"), string.Empty, PackageTag.Custom);
-                if (version.HasTag(PackageTag.PreRelease))
-                    return new PackageTagLabel(L10n.Tr("Pre"), L10n.Tr("Pre-release"), PackageTag.PreRelease);
-                if (isVersionItem && version.HasTag(PackageTag.Release))
-                    return new PackageTagLabel(L10n.Tr("R"), L10n.Tr("Release"), PackageTag.Release);
-                if (version.HasTag(PackageTag.Experimental))
-                    return new PackageTagLabel(L10n.Tr("Exp"), L10n.Tr("Experimental"), PackageTag.Experimental);
-                if (version.HasTag(PackageTag.ReleaseCandidate))
-                    return new PackageTagLabel(L10n.Tr("RC"), L10n.Tr("Release Candidate"), PackageTag.ReleaseCandidate);
-            }
-            return null;
+            var tagLabel = new PackageTagLabel();
+            tagLabel.Refresh(version, isVersionItem);
+            return tagLabel.m_Tag != PackageTag.None ? tagLabel : null;
         }
     }
 }

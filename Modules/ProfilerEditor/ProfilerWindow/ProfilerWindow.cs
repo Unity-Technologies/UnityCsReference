@@ -154,8 +154,7 @@ namespace UnityEditor
         // This is used by our performance tests to prevent the Profiler window from automatically repainting whilst profiling so we can control the repaints more precisely.
         internal bool IgnoreRepaintAllProfilerWindowsTick { get; set; }
 
-        // Used by ProfilerEditorTests/ProfilerAreaReferenceCounterTests through reflection.
-        ProfilerAreaReferenceCounter m_AreaReferenceCounter;
+        internal ProfilerCategoryActivator m_CategoryActivator;
 
         ProfilerMemoryRecordMode m_CurrentCallstackRecordMode = ProfilerMemoryRecordMode.None;
         [SerializeField]
@@ -394,7 +393,8 @@ namespace UnityEditor
             m_AllModules = InitializeAllModules(existingModules);
 
             m_AttachProfilerState = PlayerConnectionGUIUtility.GetConnectionState(this, OnTargetedEditorConnectionChanged, IsEditorConnectionTargeted, OnConnectedToPlayer) as IConnectionStateInternal;
-            m_AreaReferenceCounter = new ProfilerAreaReferenceCounter();
+            m_CategoryActivator = new ProfilerCategoryActivator();
+
             m_ActiveNativePlatformSupportModuleName = EditorUtility.GetActiveNativePlatformSupportModuleName();
         }
 
@@ -615,9 +615,6 @@ namespace UnityEditor
             {
                 SetCurrentFrameDontPause(FrameDataView.invalidOrCurrentFrameIndex);
                 m_CurrentFrameEnabled = true;
-#pragma warning disable CS0618
-                NetworkDetailStats.m_NetworkOperations.Clear();
-#pragma warning restore
             }
 
             foreach (var module in m_AllModules)
@@ -1060,9 +1057,6 @@ namespace UnityEditor
                     SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
                     if (ProfilerUserSettings.rememberLastRecordState)
                         EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
-#pragma warning disable CS0618
-                    NetworkDetailStats.m_NetworkOperations.Clear();
-#pragma warning restore
                 }
             }
         }
@@ -1692,22 +1686,14 @@ namespace UnityEditor
             return doApply;
         }
 
-        internal void SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse)
+        internal void SetCategoriesInUse(IEnumerable<string> categoryNames, bool inUse)
         {
             if (inUse)
-            {
-                foreach (var area in areas)
-                {
-                    m_AreaReferenceCounter.IncrementArea(area);
-                }
-            }
+                foreach (var categoryName in categoryNames)
+                    m_CategoryActivator.RetainCategory(categoryName);
             else
-            {
-                foreach (var area in areas)
-                {
-                    m_AreaReferenceCounter.DecrementArea(area);
-                }
-            }
+                foreach (var categoryName in categoryNames)
+                    m_CategoryActivator.ReleaseCategory(categoryName);
         }
 
         /// <summary>
@@ -1862,7 +1848,6 @@ namespace UnityEditor
         ProfilerProperty IProfilerWindowController.CreateProperty() => CreateProperty();
         ProfilerProperty IProfilerWindowController.CreateProperty(int sortType) => CreateProperty(sortType);
         void IProfilerWindowController.CloseModule(ProfilerModule module) => CloseModule(module);
-        void IProfilerWindowController.SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse) => SetAreasInUse(areas, inUse);
 
         // This type is kept to avoid "Missing Type" exceptions when deserializing the window layout (a bug). Delete this type once fix for this (https://fogbugz.unity3d.com/f/cases/1273439/) has landed.
         [Serializable] internal class ProfilerWindowControllerProxy {}

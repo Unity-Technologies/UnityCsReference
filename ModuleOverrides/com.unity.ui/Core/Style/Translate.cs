@@ -22,6 +22,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Create a Translate data with two Lengths for the x and y axis.
+        /// </summary>
+        public Translate(Length x, Length y) : this(x, y, 0)
+        { }
+
+        /// <summary>
         /// Returns the value of a Translate object with no translation applied.
         /// </summary>
         public static Translate None()

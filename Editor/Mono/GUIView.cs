@@ -155,9 +155,7 @@ namespace UnityEditor
             set
             {
                 if (m_WindowBackend != null)
-                {
                     m_WindowBackend.OnDestroy(this);
-                }
 
                 m_WindowBackend = value;
                 m_WindowBackend?.OnCreate(this);
@@ -194,6 +192,8 @@ namespace UnityEditor
         // Without leaving this in here for MonoBehaviour::DoGUI(), GetMethod(MonoScriptCache::kGUI) will return null.
         // In that case, commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
         protected virtual void OnGUI() {}
+
+        protected virtual void OnBackingScaleFactorChanged() { }
 
         protected override void SetPosition(Rect newPos)
         {

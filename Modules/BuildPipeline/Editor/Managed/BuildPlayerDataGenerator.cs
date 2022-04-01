@@ -35,10 +35,10 @@ namespace UnityEditor.Build.Player
         {
             var unityAssembliesInternal =
                 EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget);
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
             var systemReferenceDirectories =
                 MonoLibraryHelpers.GetSystemReferenceDirectories(
-                    PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup));
+                    PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget));
 
             var searchPaths = unityAssembliesInternal.Select(x => Path.GetDirectoryName(x.Path))
                 .Distinct().ToList();

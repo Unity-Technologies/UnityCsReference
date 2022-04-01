@@ -124,6 +124,12 @@ namespace UnityEngine.Animations
         public Vector3 GetLocalScale(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetLocalScaleInternal(ref stream); }
         public void SetLocalScale(AnimationStream stream, Vector3 scale) { CheckIsValidAndResolve(ref stream); SetLocalScaleInternal(ref stream, scale); }
 
+        public Matrix4x4 GetLocalToParentMatrix(AnimationStream stream)
+        {
+            CheckIsValidAndResolve(ref stream);
+            return GetLocalToParentMatrixInternal(ref stream);
+        }
+
         public bool GetPositionReadMask(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetPositionReadMaskInternal(ref stream); }
         public bool GetRotationReadMask(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetRotationReadMaskInternal(ref stream); }
         public bool GetScaleReadMask(AnimationStream stream) { CheckIsValidAndResolve(ref stream); return GetScaleReadMaskInternal(ref stream); }
@@ -144,6 +150,12 @@ namespace UnityEngine.Animations
         {
             CheckIsValidAndResolve(ref stream);
             GetGlobalTRInternal(ref stream, out position, out rotation);
+        }
+
+        public Matrix4x4 GetLocalToWorldMatrix(AnimationStream stream)
+        {
+            CheckIsValidAndResolve(ref stream);
+            return GetLocalToWorldMatrixInternal(ref stream);
         }
 
         public void SetGlobalTR(AnimationStream stream, Vector3 position, Quaternion rotation, bool useMask)
@@ -185,6 +197,9 @@ namespace UnityEngine.Animations
         [NativeMethod(Name = "TransformStreamHandleBindings::SetLocalScaleInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
         private extern void SetLocalScaleInternal(ref AnimationStream stream, Vector3 scale);
 
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetLocalToParentMatrixInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern Matrix4x4 GetLocalToParentMatrixInternal(ref AnimationStream stream);
+
         [NativeMethod(Name = "TransformStreamHandleBindings::GetPositionReadMaskInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
         private extern bool GetPositionReadMaskInternal(ref AnimationStream stream);
 
@@ -202,6 +217,9 @@ namespace UnityEngine.Animations
 
         [NativeMethod(Name = "TransformStreamHandleBindings::GetGlobalTRInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
         private extern void GetGlobalTRInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation);
+
+        [NativeMethod(Name = "TransformStreamHandleBindings::GetLocalToWorldMatrixInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern Matrix4x4 GetLocalToWorldMatrixInternal(ref AnimationStream stream);
 
         [NativeMethod(Name = "TransformStreamHandleBindings::SetGlobalTRInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
         private extern void SetGlobalTRInternal(ref AnimationStream stream, Vector3 position, Quaternion rotation, bool useMask);
@@ -466,10 +484,22 @@ namespace UnityEngine.Animations
             GetLocalTRSInternal(ref stream, out position, out rotation, out scale);
         }
 
+        public Matrix4x4 GetLocalToParentMatrix(AnimationStream stream)
+        {
+            CheckIsValid(ref stream);
+            return GetLocalToParentMatrixInternal(ref stream);
+        }
+
         public void GetGlobalTR(AnimationStream stream, out Vector3 position, out Quaternion rotation)
         {
             CheckIsValid(ref stream);
             GetGlobalTRInternal(ref stream, out position, out rotation);
+        }
+
+        public Matrix4x4 GetLocalToWorldMatrix(AnimationStream stream)
+        {
+            CheckIsValid(ref stream);
+            return GetLocalToWorldMatrixInternal(ref stream);
         }
 
         [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
@@ -496,8 +526,14 @@ namespace UnityEngine.Animations
         [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalTRSInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern void GetLocalTRSInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation, out Vector3 scale);
 
+        [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalToParentMatrixInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern Matrix4x4 GetLocalToParentMatrixInternal(ref AnimationStream stream);
+
         [NativeMethod(Name = "TransformSceneHandleBindings::GetGlobalTRInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern void GetGlobalTRInternal(ref AnimationStream stream, out Vector3 position, out Quaternion rotation);
+
+        [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalToWorldMatrixInternal", IsFreeFunction = true, HasExplicitThis = true, IsThreadSafe = true)]
+        private extern Matrix4x4 GetLocalToWorldMatrixInternal(ref AnimationStream stream);
     }
 
     [MovedFrom("UnityEngine.Experimental.Animations")]

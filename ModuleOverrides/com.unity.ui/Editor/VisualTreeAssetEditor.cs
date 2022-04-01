@@ -22,6 +22,9 @@ namespace UnityEditor.UIElements
         //Currently just uses a fixed size texture to minimize lag/jitter as we are not integrated in the update loop. (instead of the real preview size)
         private Vector2Int m_TextureSize = new Vector2Int(512, 512);
 
+        // Used in tests
+        internal Panel panel => m_Panel;
+
         protected void OnEnable()
         {
             m_FileTypeIcon = EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
@@ -34,6 +37,11 @@ namespace UnityEditor.UIElements
             EditorApplication.update -= Update;
             if (m_Panel != null)
             {
+                if (m_Tree != null)
+                {
+                    m_Tree.RemoveFromHierarchy();
+                    m_Tree = null;
+                }
                 m_Panel.Dispose();
                 m_Panel = null;
             }
@@ -147,7 +155,8 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private bool UpdatePreviewTexture(int width, int height)
+        // Also used in tests
+        internal bool UpdatePreviewTexture(int width, int height)
         {
             var vta = target as VisualTreeAsset;
             bool dirty = false;

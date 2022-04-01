@@ -15,12 +15,24 @@ namespace UnityEngine.TextCore.Text
     struct MeshInfo
     {
         static readonly Color32 k_DefaultColor = new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
+        static readonly Vector3 k_DefaultNormal = new Vector3(0.0f, 0.0f, -1f);
+        static readonly Vector4 k_DefaultTangent = new Vector4(-1f, 0.0f, 0.0f, 1f);
+        static readonly Bounds k_DefaultBounds = new Bounds();
 
+        public Mesh mesh;
         public int vertexCount;
 
         public Vector3[] vertices;
+        public Vector3[] normals;
+        public Vector4[] tangents;
 
-        public Vector2[] uvs0;
+        /// <summary>
+        /// UV0 contains the following information
+        /// X, Y are the UV coordinates of the glyph in the atlas texture.
+        /// Z is the texture index in the texture atlas array
+        /// W is the SDF Scale where a negative value represents bold text
+        /// </summary>
+        public Vector4[] uvs0;
         public Vector2[] uvs2;
         public Color32[] colors32;
         public int[] triangles;
@@ -44,10 +56,13 @@ namespace UnityEngine.TextCore.Text
             vertexCount = 0;
 
             vertices = new Vector3[sizeX4];
-            uvs0 = new Vector2[sizeX4];
+            uvs0 = new Vector4[sizeX4];
             uvs2 = new Vector2[sizeX4];
             colors32 = new Color32[sizeX4];
 
+            mesh = new Mesh();
+            normals = new Vector3[sizeX4];
+            tangents = new Vector4[sizeX4];
             triangles = new int[sizeX6];
 
             int indexX6 = 0;
@@ -60,6 +75,8 @@ namespace UnityEngine.TextCore.Text
                     uvs0[indexX4 + i] = Vector2.zero;
                     uvs2[indexX4 + i] = Vector2.zero;
                     colors32[indexX4 + i] = k_DefaultColor;
+                    normals[indexX4 + i] = k_DefaultNormal;
+                    tangents[indexX4 + i] = k_DefaultTangent;
                 }
 
                 triangles[indexX6 + 0] = indexX4 + 0;
@@ -72,6 +89,81 @@ namespace UnityEngine.TextCore.Text
                 indexX4 += 4;
                 indexX6 += 6;
             }
+
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.tangents = tangents;
+            mesh.triangles = triangles;
+            mesh.bounds = k_DefaultBounds;
+            material = null;
+        }
+
+        /// <summary>
+        /// Function to pre-allocate vertex attributes for a mesh of size X.
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="size"></param>
+        public MeshInfo(Mesh mesh, int size)
+        {
+            // Clear existing mesh data
+            if (mesh == null)
+                mesh = new Mesh();
+            else
+                mesh.Clear();
+
+            this.mesh = mesh;
+
+            // Limit the mesh to less than 65535 vertices which is the limit for Unity's Mesh.
+            size = Mathf.Min(size, 16383);
+
+            int sizeX4 = size * 4;
+            int sizeX6 = size * 6;
+
+            vertexCount = 0;
+
+            vertices = new Vector3[sizeX4];
+            uvs0 = new Vector4[sizeX4];
+            uvs2 = new Vector2[sizeX4];
+            //this.uvs4 = new Vector2[sizeX4]; // SDF scale data
+            colors32 = new Color32[sizeX4];
+
+            normals = new Vector3[sizeX4];
+            tangents = new Vector4[sizeX4];
+            triangles = new int[sizeX6];
+
+            int index_X6 = 0;
+            int index_X4 = 0;
+            while (index_X4 / 4 < size)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    vertices[index_X4 + i] = Vector3.zero;
+                    uvs0[index_X4 + i] = Vector2.zero;
+                    uvs2[index_X4 + i] = Vector2.zero;
+                    //this.uvs4[index_X4 + i] = Vector2.zero;
+                    colors32[index_X4 + i] = k_DefaultColor;
+                    normals[index_X4 + i] = k_DefaultNormal;
+                    tangents[index_X4 + i] = k_DefaultTangent;
+                }
+
+                triangles[index_X6 + 0] = index_X4 + 0;
+                triangles[index_X6 + 1] = index_X4 + 1;
+                triangles[index_X6 + 2] = index_X4 + 2;
+                triangles[index_X6 + 3] = index_X4 + 2;
+                triangles[index_X6 + 4] = index_X4 + 3;
+                triangles[index_X6 + 5] = index_X4 + 0;
+
+                index_X4 += 4;
+                index_X6 += 6;
+            }
+
+            // Pre-assign base vertex attributes.
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.tangents = tangents;
+            mesh.triangles = triangles;
+            mesh.bounds = k_DefaultBounds;
+            material = null;
         }
 
         /// <summary>
@@ -132,6 +224,21 @@ namespace UnityEngine.TextCore.Text
 
             if (length > 0)
                 Array.Clear(vertices, vertexCount, length);
+        }
+
+        /// <summary>
+        /// Function used to mark unused vertices as degenerate an upload resulting data to the mesh.
+        /// </summary>
+        /// <param name="startIndex"></param>
+        public void ClearUnusedVertices(int startIndex, bool updateMesh)
+        {
+            int length = this.vertices.Length - startIndex;
+
+            if (length > 0)
+                Array.Clear(this.vertices, startIndex, length);
+
+            if (updateMesh && mesh != null)
+                this.mesh.vertices = this.vertices;
         }
 
         /// <summary>
@@ -196,7 +303,7 @@ namespace UnityEngine.TextCore.Text
             vertices[srcIndex + 3] = vertex;
 
             //Swap UVs0
-            Vector2 uvs;
+            Vector4 uvs;
             uvs = uvs0[dstIndex + 0];
             uvs0[dstIndex + 0] = uvs0[srcIndex + 0];
             uvs0[srcIndex + 0] = uvs;

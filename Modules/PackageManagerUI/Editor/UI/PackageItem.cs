@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -13,7 +12,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Note that the height here is only the height of the main item (i.e, version list is not expanded)
         internal const int k_MainItemHeight = 25;
         private const string k_SelectedClassName = "selected";
-        private const string k_ExpandedClassName = "expanded";
 
         private string m_CurrentStateClass;
 
@@ -43,25 +41,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        internal IEnumerable<PackageVersionItem> versionItems => m_VersionList?.Children().Cast<PackageVersionItem>() ?? Enumerable.Empty<PackageVersionItem>();
-
         internal bool isLocked => m_LockedIcon?.visible ?? false;
-        internal bool isExpanded => m_ArrowExpander?.value ?? false;
         internal bool isDependency => !package?.versions.installed?.isDirectDependency ?? false;
 
-        private PageManager m_PageManager;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private PackageDatabase m_PackageDatabase;
-        private void ResolveDependencies(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
+        private readonly ResourceLoader m_ResourceLoader;
+        private readonly PageManager m_PageManager;
+        private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private readonly PackageDatabase m_PackageDatabase;
+
+        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
+            m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
             m_PackageDatabase = packageDatabase;
-        }
-
-        public PackageItem(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
-        {
-            ResolveDependencies(pageManager, settingsProxy, packageDatabase);
         }
 
         public void SetPackageAndVisualState(IPackage package, VisualState state)
@@ -73,7 +66,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 BuildMainItem(isFeature);
             }
 
-            UpdateExpanderUI(false);
             SetPackage(package);
             UpdateVisualState(state);
         }
@@ -88,10 +80,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LeftContainer = new VisualElement {name = "leftContainer", classList = {"left"}};
             m_MainItem.Add(m_LeftContainer);
 
-            m_ArrowExpander = new Toggle {name = "arrowExpander", classList = {"expander"}};
-            m_ArrowExpander.RegisterValueChangedCallback(ToggleExpansion);
+            m_DependencyIcon = new Label { name = "dependencyIcon" };
+            m_DependencyIcon.tooltip = "Installed as dependency";
+            m_LeftContainer.Add(m_DependencyIcon);
+
             m_LockedIcon = new Label { name = "lockedIcon" };
-            m_LeftContainer.Add(m_ArrowExpander);
             m_LeftContainer.Add(m_LockedIcon);
 
             m_ExpanderHidden = new Label {name = "expanderHidden", classList = {"expanderHidden"}};
@@ -139,21 +132,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_InfoStateIcon = new VisualElement { name = "versionState" };
                 m_StateContainer.Add(m_InfoStateIcon);
             }
-
-            m_VersionsContainer = null;
-        }
-
-        private void BuildVersions()
-        {
-            m_VersionsContainer = new VisualElement {name = "versionsContainer"};
-            Add(m_VersionsContainer);
-
-            m_VersionList = new ScrollView {name = "versionList"};
-            m_VersionsContainer.Add(m_VersionList);
-
-            m_SeeAllVersionsLabel = new Label(L10n.Tr("See other versions")) {name = "seeAllVersions"};
-            m_SeeAllVersionsLabel.OnLeftClick(SeeAllVersionsClick);
-            m_VersionsContainer.Add(m_SeeAllVersionsLabel);
         }
 
         public void UpdateVisualState(VisualState newVisualState)
@@ -176,34 +154,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_NumPackagesInFeature != null)
                 m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
 
-            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature | PackageType.AssetStore) && (newVisualState?.expandable ?? true);
-            UIUtils.SetElementDisplay(m_ArrowExpander, expandable);
-            UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable && !visualState.isLocked);
+            UIUtils.SetElementDisplay(m_ExpanderHidden, !visualState.isLocked);
 
             var showVersionLabel = !package.Is(PackageType.BuiltIn | PackageType.Feature);
             UIUtils.SetElementDisplay(m_VersionLabel, showVersionLabel);
 
             UIUtils.SetElementDisplay(m_LockedIcon, false);
+            UIUtils.SetElementDisplay(m_DependencyIcon, false);
 
-            if (!expandable && UIUtils.IsElementVisible(m_VersionsContainer))
-                UpdateExpanderUI(false);
-            else
-                UpdateExpanderUI(visualState.expanded);
-
-            UpdateLockedUI(visualState.isLocked, expandable);
-
-            var showVersionList = !targetVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
-            UIUtils.SetElementDisplay(m_VersionList, showVersionList);
+            UpdateLockedUI(visualState.isLocked);
+            UpdateDependencyUI(visualState.isLocked);
 
             var version = selectedVersion;
             if (version != null && version != targetVersion)
                 visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(version);
 
             RefreshState();
-
-            if (showVersionList)
-                RefreshVersions();
-
             RefreshSelection();
             RefreshTags();
             RefreshEntitlement();
@@ -271,44 +237,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void RefreshVersions()
-        {
-            if (!m_ArrowExpander.value)
-                return;
-
-            m_VersionList.Clear();
-
-            var seeAllVersions = visualState?.seeAllVersions ?? false;
-            var keyVersions = package.versions.key.ToList();
-            var allVersions = package.versions.ToList();
-
-            var versions = seeAllVersions ? allVersions : keyVersions;
-
-            for (var i = versions.Count - 1; i >= 0; i--)
-            {
-                var multipleVersionsVisible = versions.Count > 1;
-                var isLatestVersion = i == versions.Count - 1;
-                m_VersionList.Add(new PackageVersionItem(package, versions[i], multipleVersionsVisible, isLatestVersion));
-            }
-
-            var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count
-                && (package.Is(PackageType.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
-            UIUtils.SetElementDisplay(m_SeeAllVersionsLabel, seeAllVersionsLabelVisible);
-
-            // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible
-            var maxNumberOfItemBeforeScrollbar = 6;
-            m_VersionList.EnableInClassList("hasScrollBar", versions.Count > maxNumberOfItemBeforeScrollbar);
-        }
-
         public void RefreshSelection()
         {
             var enable = selectedVersion != null;
             EnableInClassList(k_SelectedClassName, enable);
             m_MainItem.EnableInClassList(k_SelectedClassName, enable);
-
-            if (UIUtils.IsElementVisible(m_VersionList))
-                foreach (var versionItem in versionItems)
-                    versionItem.EnableInClassList(k_SelectedClassName, selectedVersion == versionItem.targetVersion);
         }
 
         private void RefreshTags()
@@ -341,36 +274,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.ToggleSelected(package?.uniqueId, true);
         }
 
-        private void ToggleExpansion(ChangeEvent<bool> evt)
+        internal void UpdateLockedUI(bool showLock)
         {
-            SetExpanded(evt.newValue);
+            UIUtils.SetElementDisplay(m_LockedIcon, showLock);
         }
 
-        internal void SetExpanded(bool value)
+        internal void UpdateDependencyUI(bool showLock)
         {
-            if (!UIUtils.IsElementVisible(m_ArrowExpander))
+            if (targetVersion == null)
                 return;
 
-            m_PageManager.SetExpanded(package, value);
-        }
+            var showDependencyIcon = targetVersion.isInstalled &&
+                                     !targetVersion.isDirectDependency &&
+                                     !targetVersion.HasTag(PackageTag.Feature) &&
+                                     !showLock;
 
-        internal void UpdateLockedUI(bool showLock, bool expandable)
-        {
-            UIUtils.SetElementDisplay(m_ArrowExpander, !showLock && expandable);
-            UIUtils.SetElementDisplay(m_LockedIcon, showLock);
-
-            if (showLock && UIUtils.IsElementVisible(m_VersionsContainer))
-                UIUtils.SetElementDisplay(m_VersionsContainer, false);
-        }
-
-        internal void UpdateExpanderUI(bool expanded)
-        {
-            m_MainItem.EnableInClassList(k_ExpandedClassName, expanded);
-            m_ArrowExpander.SetValueWithoutNotify(expanded);
-
-            if (expanded && m_VersionsContainer == null)
-                BuildVersions();
-            UIUtils.SetElementDisplay(m_VersionsContainer, expanded);
+            UIUtils.SetElementDisplay(m_DependencyIcon, showDependencyIcon);
+            if (showDependencyIcon)
+                UIUtils.SetElementDisplay(m_ExpanderHidden, false);
         }
 
         private void SeeAllVersionsClick()
@@ -399,7 +320,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private Label m_NameLabel;
-        private Label m_SeeAllVersionsLabel;
         private VisualElement m_TagContainer;
         private VisualElement m_MainItem;
         private VisualElement m_StateIcon;
@@ -408,11 +328,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label m_EntitlementLabel;
         private Label m_VersionLabel;
         private LoadingSpinner m_Spinner;
-        private Toggle m_ArrowExpander;
         private Label m_LockedIcon;
+        private Label m_DependencyIcon;
         private Label m_ExpanderHidden;
-        private VisualElement m_VersionsContainer;
-        private ScrollView m_VersionList;
         private VisualElement m_LeftContainer;
         private VisualElement m_RightContainer;
         private Label m_NumPackagesInFeature;

@@ -10,7 +10,8 @@ namespace UnityEditor.DeviceSimulation
     internal enum ResolutionScalingMode
     {
         Disabled = 0,
-        FixedDpi = 1
+        FixedDpi = 1,
+        Letterboxed = 2
     }
 
     internal enum SimulationState{ Enabled, Disabled }
@@ -57,7 +58,7 @@ namespace UnityEditor.DeviceSimulation
             return orientation;
         }
 
-        public static bool IsLandscape(ScreenOrientation orientation)
+        public static bool IsLandscape(this ScreenOrientation orientation)
         {
             if (orientation == ScreenOrientation.LandscapeLeft || orientation == ScreenOrientation.LandscapeRight)
                 return true;

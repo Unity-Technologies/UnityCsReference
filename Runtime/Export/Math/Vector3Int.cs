@@ -235,16 +235,19 @@ namespace UnityEngine
             return x.GetHashCode() ^ (yHash << 4) ^ (yHash >> 28) ^ (zHash >> 4) ^ (zHash << 28);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override string ToString()
         {
             return ToString(null, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format)
         {
             return ToString(format, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (formatProvider == null)

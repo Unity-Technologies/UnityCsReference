@@ -164,6 +164,11 @@ namespace UnityEditor.AssetImporters
                 throw new ArgumentNullException("dependency", "Cannot add custom dependency on an empty custom dependency.");
             }
 
+            if (string.CompareOrdinal(dependency,"srp/default-shader") == 0 && assetPath.EndsWith(".shader", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception($"A shader '{assetPath}' cannot depend on the 'srp/default-shader' custom dependency because this operation is unsupported.");
+            }
+
             DependsOnCustomDependencyInternal(dependency);
         }
 

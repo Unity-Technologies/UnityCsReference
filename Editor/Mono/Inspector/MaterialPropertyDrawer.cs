@@ -300,6 +300,8 @@ namespace UnityEditor
                 return;
             }
 
+            MaterialEditor.BeginProperty(position, prop);
+
             if (prop.type != MaterialProperty.PropType.Int)
             {
                 EditorGUI.BeginChangeCheck();
@@ -328,6 +330,8 @@ namespace UnityEditor
                     SetKeyword(prop, value);
                 }
             }
+
+            MaterialEditor.EndProperty();
         }
 
         public override void Apply(MaterialProperty prop)
@@ -504,6 +508,8 @@ namespace UnityEditor
                 return;
             }
 
+            MaterialEditor.BeginProperty(position, prop);
+
             if (prop.type != MaterialProperty.PropType.Int)
             {
                 EditorGUI.BeginChangeCheck();
@@ -532,6 +538,8 @@ namespace UnityEditor
                     SetKeyword(prop, value);
                 }
             }
+
+            MaterialEditor.EndProperty();
         }
 
         public override void Apply(MaterialProperty prop)
@@ -607,6 +615,11 @@ namespace UnityEditor
                 values[i] = (int)vals[i];
         }
 
+        static bool IsPropertyTypeSuitable(MaterialProperty prop)
+        {
+            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range || prop.type == MaterialProperty.PropType.Int;
+        }
+
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
         {
             if (prop.type != MaterialProperty.PropType.Float && prop.type != MaterialProperty.PropType.Range && prop.type != MaterialProperty.PropType.Int)
@@ -618,6 +631,16 @@ namespace UnityEditor
 
         public override void OnGUI(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
+            if (!IsPropertyTypeSuitable(prop))
+            {
+                GUIContent c = EditorGUIUtility.TempContent("Enum used on a non-float property: " + prop.name,
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                EditorGUI.LabelField(position, c, EditorStyles.helpBox);
+                return;
+            }
+
+            MaterialEditor.BeginProperty(position, prop);
+
             if (prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range)
             {
                 EditorGUI.BeginChangeCheck();
@@ -642,7 +665,7 @@ namespace UnityEditor
                     prop.floatValue = (float)values[selIndex];
                 }
             }
-            else if (prop.type == MaterialProperty.PropType.Int)
+            else
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = prop.hasMixedValue;
@@ -666,12 +689,8 @@ namespace UnityEditor
                     prop.intValue = values[selIndex];
                 }
             }
-            else
-            {
-                GUIContent c = EditorGUIUtility.TempContent("Enum used on a non-float property: " + prop.name,
-                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-                EditorGUI.LabelField(position, c, EditorStyles.helpBox);
-            }
+
+            MaterialEditor.EndProperty();
         }
     }
 

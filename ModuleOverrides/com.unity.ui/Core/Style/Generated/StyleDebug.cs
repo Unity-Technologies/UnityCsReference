@@ -157,6 +157,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.unitySliceLeft;
                 case StylePropertyId.UnitySliceRight:
                     return computedStyle.unitySliceRight;
+                case StylePropertyId.UnitySliceScale:
+                    return computedStyle.unitySliceScale;
                 case StylePropertyId.UnitySliceTop:
                     return computedStyle.unitySliceTop;
                 case StylePropertyId.UnityTextAlign:
@@ -323,6 +325,8 @@ namespace UnityEngine.UIElements
                     return typeof(int);
                 case StylePropertyId.UnitySliceRight:
                     return typeof(int);
+                case StylePropertyId.UnitySliceScale:
+                    return typeof(float);
                 case StylePropertyId.UnitySliceTop:
                     return typeof(int);
                 case StylePropertyId.UnityTextAlign:
@@ -344,6 +348,28 @@ namespace UnityEngine.UIElements
                 default:
                 {
                     Debug.LogAssertion($"Cannot get computed style type for property id {id}");
+                    return null;
+                }
+            }
+        }
+
+        public static Type GetShorthandStyleType(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BorderColor:
+                    return typeof(Color);
+                case StylePropertyId.BorderRadius:
+                    return typeof(Length);
+                case StylePropertyId.BorderWidth:
+                    return typeof(float);
+                case StylePropertyId.Margin:
+                    return typeof(Length);
+                case StylePropertyId.Padding:
+                    return typeof(Length);
+                default:
+                {
+                    Debug.LogAssertion($"Cannot get shorthand style type for property id {id}");
                     return null;
                 }
             }
@@ -489,6 +515,8 @@ namespace UnityEngine.UIElements
                     return style.unitySliceLeft;
                 case StylePropertyId.UnitySliceRight:
                     return style.unitySliceRight;
+                case StylePropertyId.UnitySliceScale:
+                    return style.unitySliceScale;
                 case StylePropertyId.UnitySliceTop:
                     return style.unitySliceTop;
                 case StylePropertyId.UnityTextAlign:
@@ -723,6 +751,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceRight:
                     style.unitySliceRight = (StyleInt)value;
                     break;
+                case StylePropertyId.UnitySliceScale:
+                    style.unitySliceScale = (StyleFloat)value;
+                    break;
                 case StylePropertyId.UnitySliceTop:
                     style.unitySliceTop = (StyleInt)value;
                     break;
@@ -896,6 +927,8 @@ namespace UnityEngine.UIElements
                     return (StyleInt)(int)value;
                 case StylePropertyId.UnitySliceRight:
                     return (StyleInt)(int)value;
+                case StylePropertyId.UnitySliceScale:
+                    return (StyleFloat)(float)value;
                 case StylePropertyId.UnitySliceTop:
                     return (StyleInt)(int)value;
                 case StylePropertyId.UnityTextAlign:
@@ -1062,6 +1095,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleInt);
                 case StylePropertyId.UnitySliceRight:
                     return typeof(StyleInt);
+                case StylePropertyId.UnitySliceScale:
+                    return typeof(StyleFloat);
                 case StylePropertyId.UnitySliceTop:
                     return typeof(StyleInt);
                 case StylePropertyId.UnityTextAlign:

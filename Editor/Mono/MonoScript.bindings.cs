@@ -50,9 +50,9 @@ namespace UnityEditor
             Init_Internal(this);
         }
 
-        internal void Init(string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript)
+        internal void Init(string className, string nameSpace, string assemblyName, bool isEditorScript)
         {
-            Init(this, scriptContents, className, nameSpace, assemblyName, isEditorScript);
+            Init(this, className, nameSpace, assemblyName, isEditorScript);
         }
 
         [FreeFunction("MonoScript_Init_Internal")]
@@ -60,7 +60,7 @@ namespace UnityEditor
 
         // *undocumented*
         [FreeFunction("MonoScript_Init")]
-        private static extern void Init([NotNull("NullExceptionObject")] MonoScript self, string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript);
+        private static extern void Init([NotNull("NullExceptionObject")] MonoScript self, string className, string nameSpace, string assemblyName, bool isEditorScript);
 
         // *undocumented*
         [NativeName("GetAssemblyName")]

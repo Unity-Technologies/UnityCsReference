@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
+using NiceIO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Player;
@@ -109,6 +110,10 @@ namespace UnityEditorInternal
                     return true;
                 case BuildTarget.WebGL:
                     targetPlatform = "webgl";
+                    targetArch = "";
+                    return true;
+                case BuildTarget.EmbeddedLinux:
+                    targetPlatform = "embeddedlinux";
                     targetArch = "";
                     return true;
             }
@@ -212,7 +217,7 @@ namespace UnityEditorInternal
                             host = $"{_hostPlatform}-{_hostArch}";
                             break;
                     }
-                    string target = $"{targetPlatform}-{targetArch}";
+                    string target = String.IsNullOrEmpty(targetArch) ? targetPlatform : $"{targetPlatform}-{targetArch}";
                     return host == target ? target : $"{host}-{target}";
                 }
             }
@@ -275,21 +280,21 @@ namespace UnityEditorInternal
 
         internal static IL2CPPBuilder RunIl2Cpp(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry)
         {
-            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
+            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(platformProvider.namedBuildTarget));
             builder.Run();
             return builder;
         }
 
         internal static IL2CPPBuilder RunIl2Cpp(string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry)
         {
-            var builder = new IL2CPPBuilder(stagingAreaData, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
+            var builder = new IL2CPPBuilder(stagingAreaData, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(platformProvider.namedBuildTarget));
             builder.Run();
             return builder;
         }
 
         internal static IL2CPPBuilder RunCompileAndLink(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, string il2cppBuildCacheSource)
         {
-            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
+            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(platformProvider.namedBuildTarget));
             builder.RunCompileAndLink(il2cppBuildCacheSource);
             return builder;
         }
@@ -338,18 +343,18 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static bool UseIl2CppCodegenWithMonoBackend(BuildTargetGroup targetGroup)
+        internal static bool UseIl2CppCodegenWithMonoBackend(NamedBuildTarget namedBuildTarget)
         {
             return EditorApplication.useLibmonoBackendForIl2cpp &&
-                PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
+                PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP;
         }
 
-        internal static bool EnableIL2CPPDebugger(IIl2CppPlatformProvider provider, BuildTargetGroup targetGroup)
+        internal static bool EnableIL2CPPDebugger(IIl2CppPlatformProvider provider)
         {
             if (!provider.allowDebugging || !provider.development)
                 return false;
 
-            switch (PlayerSettings.GetApiCompatibilityLevel(targetGroup))
+            switch (PlayerSettings.GetApiCompatibilityLevel(provider.namedBuildTarget))
             {
                 case ApiCompatibilityLevel.NET_Unity_4_8:
                 case ApiCompatibilityLevel.NET_Standard:
@@ -360,10 +365,9 @@ namespace UnityEditorInternal
             }
         }
 
-        internal static string[] GetBuilderDefinedDefines(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        internal static string[] GetBuilderDefinedDefines(BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel, bool enableIl2CppDebugger)
         {
             List<string> defines = new List<string>();
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
 
             switch (apiCompatibilityLevel)
             {
@@ -381,8 +385,6 @@ namespace UnityEditorInternal
                     throw new InvalidOperationException($"IL2CPP doesn't support building with {apiCompatibilityLevel} API compatibility level!");
             }
 
-
-            var target = il2cppPlatformProvider.target;
             if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64 ||
                 target == BuildTarget.XboxOne || target == BuildTarget.WSAPlayer)
             {
@@ -398,7 +400,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+            if (enableIl2CppDebugger)
                 defines.Add("IL2CPP_MONO_DEBUGGER=1");
 
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))
@@ -424,21 +426,21 @@ namespace UnityEditorInternal
             return defines.ToArray();
         }
 
-        internal static string[] GetDebuggerIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        internal static string[] GetDebuggerIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider)
         {
             var arguments = new List<string>();
 
-            if (EnableIL2CPPDebugger(il2cppPlatformProvider, buildTargetGroup))
+            if (EnableIL2CPPDebugger(il2cppPlatformProvider))
                 arguments.Add("--enable-debugger");
 
             return arguments.ToArray();
         }
 
-        internal static string[] GetBuildingIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider, BuildTargetGroup buildTargetGroup)
+        internal static string[] GetBuildingIL2CPPArguments(IIl2CppPlatformProvider il2cppPlatformProvider)
         {
             // When changing this function, don't forget to change GetBuilderDefinedDefines!
             var arguments = new List<string>();
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(il2cppPlatformProvider.namedBuildTarget);
 
             if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", il2cppPlatformProvider.target))
             {
@@ -467,42 +469,113 @@ namespace UnityEditorInternal
 
         internal static string GetIl2CppFolder()
         {
+            return GetIl2CppFolder(out var _);
+        }
+
+        internal static bool UsingDevelopmentBuild()
+        {
+            GetIl2CppFolder(out var isDevelopmentLocation);
+            return isDevelopmentLocation;
+        }
+
+        static string GetIl2CppFolder(out bool isDevelopmentLocation)
+        {
             var pathOverride = System.Environment.GetEnvironmentVariable("UNITY_IL2CPP_PATH");
             if (!string.IsNullOrEmpty(pathOverride))
+            {
+                isDevelopmentLocation = true;
                 return pathOverride;
+            }
 
             pathOverride = Debug.GetDiagnosticSwitch("VMIl2CppPath").value as string;
             if (!string.IsNullOrEmpty(pathOverride))
+            {
+                isDevelopmentLocation = true;
                 return pathOverride;
+            }
 
+            isDevelopmentLocation = false;
             return Path.GetFullPath(Path.Combine(
                 EditorApplication.applicationContentsPath,
                 "il2cpp"));
         }
 
-        internal static string GetIl2CppBeeSettingsFolder()
+        static string GetBCLExtensionsFolder()
         {
-            return $"{GetIl2CppFolder()}/build/BeeSettings/offline";
+            var il2CppFolder = GetIl2CppFolder(out var isDevelopmentLocation);
+            if (isDevelopmentLocation)
+                return Path.Combine(il2CppFolder, "build", "tests", "BCLExtensions", "net471");
+
+            return Paths.Combine(il2CppFolder, "BCLExtensions");
         }
 
-        internal static string GetExePath(string executableFileName)
+        internal static IEnumerable<string> GetBCLExtensionLibraries()
+        {
+            var bclExtensionsFolder = GetBCLExtensionsFolder();
+            return new string[]
+            {
+                Path.Combine(bclExtensionsFolder, "System.Runtime.WindowsRuntime.dll"),
+                Path.Combine(bclExtensionsFolder, "System.Runtime.WindowsRuntime.UI.Xaml.dll"),
+            };
+        }
+
+        internal static string GetExePath(string toolName)
         {
             var platform = Application.platform;
-            var deployDirectory = $"{IL2CPPUtils.GetIl2CppFolder()}/build/deploy";
-            var il2cppPath = $"{deployDirectory}/{executableFileName}{(platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
-            if (!File.Exists(il2cppPath))
-                il2cppPath = $"{deployDirectory}/{ExpectedTargetFrameworkDirectoryNameWhenUsingCustomBuild(platform)}/{BinaryDirectoryForPlatform(platform)}/{executableFileName}{(platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
-            return il2cppPath;
-        }
+            var il2CppFolder = GetIl2CppFolder(out var isDevelopmentLocation);
+            var expectedToolExecutableName = $"{toolName}{(platform == RuntimePlatform.WindowsEditor ? ".exe" : "")}";
 
-        internal static string GetTundraFolder()
-        {
-            return $"{GetIl2CppFolder()}/external/bee/tundra";
-        }
+            if (isDevelopmentLocation)
+            {
+                // Locating the correct development build to use is a little tricky.  Complications come from
+                // 1) We don't know if the Debug or Release build is desired.  To overcome this we will pick whichever was modified most recently
+                // 2) We don't know if the published or non-published build is desired.  Again, we'll use whichever was modified most recently
+                // 3) Published builds for all platforms may or may not be built.  We need to make sure not to pick a build for a different platform
 
-        internal static string GetReapiCacheClientFolder()
-        {
-            return $"{GetIl2CppFolder()}/external/bee/reapi-cache-client";
+                // Note that this logic will intentionally avoid checking for an expected TFM.  This is a dev build.  Using w/e is newest is probably
+                // the most robust and maintainable approach.
+
+                var toolBinDirectory = Path.Combine(il2CppFolder, toolName, "bin").ToNPath();
+                var candidates = toolBinDirectory.Files($"*{expectedToolExecutableName}", recurse: true)
+                    .OrderByDescending(f => f.GetLastWriteTimeUtc())
+                    .ToArray();
+
+                if (candidates.Length == 0)
+                    throw new InvalidOperationException($"{toolName} does not appear to be built in {il2CppFolder}");
+
+                var expectedPublishDirectoryName = BinaryDirectoryForPlatform(platform).ToNPath();
+
+                foreach (var candidate in candidates)
+                {
+                    // Examples :
+                    // 1)   il2cpp/bin/Release/<tfm>/il2cpp.exe
+                    // 2)   il2cpp/bin/Debug/<tfm>/il2cpp.exe
+                    if (candidate.Parent.Parent.Parent.FileName == "bin")
+                    {
+                        // Found a non-published build
+                        return candidate.ToString();
+                    }
+
+                    // Examples :
+                    // 1)   il2cpp/bin/Release/<tfm>/<platform dir>/publish/il2cpp.exe
+                    // 2)   il2cpp/bin/Debug/<tfm>/<platform dir>/publish/il2cpp.exe
+                    if (candidate.Parent.FileName == "publish" && candidate.Parent.Parent.FileName == expectedPublishDirectoryName)
+                    {
+                        // found a published build
+                        return candidate.ToString();
+                    }
+
+                    // There is a 3rd path structure that we will ignore
+                    // Examples :
+                    // 1)   il2cpp/bin/Release/<tfm>/<platform dir>/il2cpp.exe
+                    // 2)   il2cpp/bin/Debug/<tfm>/<platform dir>/il2cpp.exe
+                }
+
+                throw new InvalidOperationException($"Could not determine which of the {candidates.Length} of {toolName} to use.  The expected TFM or expected directory layout may have changed and this logic may need to be updated");
+            }
+
+            var deployDirectory = $"{il2CppFolder}/build/deploy";
+            return $"{deployDirectory}/{expectedToolExecutableName}";
         }
 
         internal static string GetAdditionalArguments()
@@ -538,14 +611,6 @@ namespace UnityEditorInternal
             if (platform == RuntimePlatform.OSXEditor && arch == "arm64")
                 return "osx-arm64";
             return "osx-x64";
-        }
-
-        private static string ExpectedTargetFrameworkDirectoryNameWhenUsingCustomBuild(RuntimePlatform platform)
-        {
-            var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
-            if (platform == RuntimePlatform.OSXEditor && arch == "arm64")
-                return "net6.0";
-            return "net5.0";
         }
     }
 
@@ -611,9 +676,7 @@ namespace UnityEditorInternal
             // Make all assemblies in Staging/Managed writable for stripping.
             ClearReadOnlyFlagOnAllFilesNonRecursively(managedDir);
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-
-            var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+            var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(m_PlatformProvider.namedBuildTarget);
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
@@ -667,23 +730,22 @@ namespace UnityEditorInternal
                 Directory.CreateDirectory(buildCacheDirectory);
 
                 var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputRelativeDirectory(buildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
-                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
+                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(m_PlatformProvider.namedBuildTarget);
                 var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
                 var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
                 if (!string.IsNullOrEmpty(additionalArgs))
                     arguments.Add(additionalArgs);
 
-                foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
+                foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider))
                 {
                     if (!arguments.Contains(buildingArgument))
                         arguments.Add(buildingArgument);
                 }
 
                 arguments.Add($"--generatedcppdir={CommandLineFormatter.PrepareFileName(GetCppOutputDirectory(il2cppBuildCacheSource))}");
-                arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), m_PlatformProvider.target)}\"");
-                arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
+                arguments.Add($"--dotnetprofile=\"{IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(m_PlatformProvider.namedBuildTarget), m_PlatformProvider.target)}\"");
+                arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
 
                 RunIl2CppWithArguments(arguments, setupStartInfo);
@@ -729,12 +791,10 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(m_PlatformProvider.namedBuildTarget);
             arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(apiCompatibilityLevel, m_PlatformProvider.target)));
 
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
-            var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
+            var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(m_PlatformProvider.namedBuildTarget);
             if (il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize)
                 arguments.Add("--generics-option=EnableFullSharing");
 
@@ -742,7 +802,7 @@ namespace UnityEditorInternal
             if (il2CppNativeCodeBuilder != null)
             {
                 var buildCacheNativeOutputFile = Path.Combine(GetNativeOutputRelativeDirectory(m_PlatformProvider.il2cppBuildCacheDirectory), m_PlatformProvider.nativeLibraryFileName);
-                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
+                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(m_PlatformProvider.namedBuildTarget);
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, buildCacheNativeOutputFile, m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
@@ -755,8 +815,8 @@ namespace UnityEditorInternal
             foreach (var additionalCppFile in Directory.GetFiles(GetAdditionalCppFilesDirectory(m_PlatformProvider.il2cppBuildCacheDirectory)))
                 arguments.Add($"--additional-cpp={CommandLineFormatter.PrepareFileName(GetShortPathName(Path.GetFullPath(additionalCppFile)))}");
 
-            arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider, buildTargetGroup));
-            foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider, buildTargetGroup))
+            arguments.AddRange(IL2CPPUtils.GetDebuggerIL2CPPArguments(m_PlatformProvider));
+            foreach (var buildingArgument in IL2CPPUtils.GetBuildingIL2CPPArguments(m_PlatformProvider))
             {
                 if (!arguments.Contains(buildingArgument))
                     arguments.Add(buildingArgument);
@@ -818,7 +878,7 @@ namespace UnityEditorInternal
             arguments.Add("--convert-in-graph");
 
             var args = arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
-            Console.WriteLine("Invoking il2cpp with arguments: " + args);
+            UnityLogWriter.WriteStringToUnityLog($"Invoking il2cpp with arguments: {args}\n");
             Runner.RunNetCoreProgram(GetIl2CppExe(), args, m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, setupStartInfo);
 
             // Copy IL2CPP outputs to StagingArea
@@ -845,37 +905,12 @@ namespace UnityEditorInternal
         {
             return IL2CPPUtils.GetExePath("il2cpp");
         }
-
-        private string GetIl2CppTundraExe()
-        {
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                return $"{IL2CPPUtils.GetTundraFolder()}/tundra-mac-x64/tundra2";
-            if (Application.platform == RuntimePlatform.LinuxEditor)
-                return $"{IL2CPPUtils.GetTundraFolder()}/tundra-linux-x64/tundra2";
-
-            return $"{IL2CPPUtils.GetTundraFolder()}/tundra-win-x64/tundra2.exe";
-        }
-
-        private string GetIl2CppReapiCacheClientExe()
-        {
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                return $"{IL2CPPUtils.GetReapiCacheClientFolder()}/tundra-mac-x64/tundra2";
-            if (Application.platform == RuntimePlatform.LinuxEditor)
-                return $"{IL2CPPUtils.GetReapiCacheClientFolder()}/tundra-linux-x64/tundra2";
-
-            return $"{IL2CPPUtils.GetReapiCacheClientFolder()}/tundra-win-x64/tundra2.exe";
-        }
-
-        private string GetMonoBleedingEdgeExe()
-        {
-            var path = Path.Combine(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), "bin");
-            return Path.Combine(path, "mono");
-        }
     }
 
     internal interface IIl2CppPlatformProvider
     {
         BuildTarget target { get; }
+        NamedBuildTarget namedBuildTarget { get; }
         bool emitNullChecks { get; }
         bool enableStackTraces { get; }
         bool enableArrayBoundsCheck { get; }
@@ -907,12 +942,15 @@ namespace UnityEditorInternal
                                           string baselibLibraryDirectory)
         {
             this.target = target;
+            this.namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
             this.libraryFolder = libraryFolder;
             this.buildReport = buildReport;
             _baselibLibraryDirectory = baselibLibraryDirectory;
         }
 
         public virtual BuildTarget target { get; private set; }
+
+        public virtual NamedBuildTarget namedBuildTarget { get; private set; }
 
         public virtual string libraryFolder { get; private set; }
 

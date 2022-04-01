@@ -131,6 +131,7 @@ namespace UnityEditorInternal
         private AnimationClipPlayable m_CandidateClipPlayable;
         private AnimationClipPlayable m_DefaultPosePlayable;
         private bool m_UsesPostProcessComponents = false;
+        HashSet<Object> m_ObjectsModifiedDuringAnimationMode = new HashSet<Object>();
 
         private static ProfilerMarker s_ResampleAnimationMarker = new ProfilerMarker("AnimationWindowControl.ResampleAnimation");
 
@@ -417,13 +418,21 @@ namespace UnityEditorInternal
             AnimationMode.StartAnimationMode(GetAnimationModeDriver());
             AnimationPropertyContextualMenu.Instance.SetResponder(this);
             Undo.postprocessModifications += PostprocessAnimationRecordingModifications;
+            PrefabUtility.allowRecordingPrefabPropertyOverridesFor += AllowRecordingPrefabPropertyOverridesFor;
             DestroyGraph();
             CreateCandidateClip();
+
+            //If a hierarchy was created and array reorder happen in the inspector prior
+            //to the preview being started we will need to ensure that the display name
+            //reflects the binding path on an array element.
+            state.UpdateCurvesDisplayName();
 
             IAnimationWindowPreview[] previewComponents = FetchPostProcessComponents();
             m_UsesPostProcessComponents = previewComponents != null && previewComponents.Length > 0;
             if (previewComponents != null)
             {
+                // Animation preview affects inspector values, so make sure we ignore constrain proportions
+                ConstrainProportionsTransformScale.m_IsAnimationPreview = true;
                 foreach (var component in previewComponents)
                 {
                     component.StartPreview();
@@ -435,8 +444,14 @@ namespace UnityEditorInternal
 
         public override void StopPreview()
         {
+            if (previewing)
+                OnExitingAnimationMode();
+
             StopPlayback();
             StopRecording();
+
+            ConstrainProportionsTransformScale.m_IsAnimationPreview = false;
+
             ClearCandidates();
             DestroyGraph();
             DestroyCandidateClip();
@@ -471,8 +486,6 @@ namespace UnityEditorInternal
 
                 m_UsesPostProcessComponents = false;
             }
-
-            Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
         }
 
         public override bool canRecord
@@ -757,12 +770,55 @@ namespace UnityEditorInternal
             return m_CandidateDriver;
         }
 
+        private bool AllowRecordingPrefabPropertyOverridesFor(UnityEngine.Object componentOrGameObject)
+        {
+            if (componentOrGameObject == null)
+                throw new ArgumentNullException(nameof(componentOrGameObject));
+
+            GameObject inputGameObject = null;
+            if (componentOrGameObject is Component)
+            {
+                inputGameObject = ((Component)componentOrGameObject).gameObject;
+            }
+            else if (componentOrGameObject is GameObject)
+            {
+                inputGameObject = (GameObject)componentOrGameObject;
+            }
+            else
+            {
+                return true;
+            }
+
+            var rootOfAnimation = state.activeRootGameObject;
+            if (rootOfAnimation == null)
+                return true;
+
+            // If the input object is a child of the current root of animation then disallow recording of prefab property overrides
+            // since the input object is currently being setup for animation recording
+            return inputGameObject.transform.IsChildOf(rootOfAnimation.transform) == false;
+        }
+
+        void OnExitingAnimationMode()
+        {
+            Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
+            PrefabUtility.allowRecordingPrefabPropertyOverridesFor -= AllowRecordingPrefabPropertyOverridesFor;
+
+            // Ensures Prefab instance overrides are recorded for properties that was changed while in AnimationMode
+            foreach (var obj in m_ObjectsModifiedDuringAnimationMode)
+            {
+                if (obj != null)
+                    EditorUtility.SetDirty(obj);
+            }
+
+            m_ObjectsModifiedDuringAnimationMode.Clear();
+        }
+
         private UndoPropertyModification[] PostprocessAnimationRecordingModifications(UndoPropertyModification[] modifications)
         {
-            //Fix for case 751009: The animationMode can be changed outside the AnimationWindow, and this callback needs to be unregistered.
+            //Fix for case 751009: The animationMode can be changed outside the AnimationWindow, and callbacks needs to be unregistered.
             if (!AnimationMode.InAnimationMode(GetAnimationModeDriver()))
             {
-                Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
+                OnExitingAnimationMode();
                 return modifications;
             }
 
@@ -771,11 +827,40 @@ namespace UnityEditorInternal
             else if (previewing)
                 modifications = RegisterCandidates(modifications);
 
+            RefreshDisplayNamesOnArrayTopologicalChange(modifications);
+
             // Only resample when playable graph has been customized with post process nodes.
             if (m_UsesPostProcessComponents)
                 ResampleAnimation(ResampleFlags.None);
 
+            foreach (var mod in modifications)
+            {
+                m_ObjectsModifiedDuringAnimationMode.Add(mod.currentValue.target);
+            }
+
             return modifications;
+        }
+
+        private void RefreshDisplayNamesOnArrayTopologicalChange(UndoPropertyModification[] modifications)
+        {
+            if (modifications.Length >= 2)
+            {
+                if (modifications[0].currentValue.propertyPath.EndsWith("]") &&
+                    modifications[0].currentValue.propertyPath.Contains(".Array.data[") &&
+                    modifications[1].currentValue.propertyPath.EndsWith("]") &&
+                    modifications[1].currentValue.propertyPath.Contains(".Array.data["))
+                {
+                    //Array reordering might affect curves display name
+                    state.UpdateCurvesDisplayName();
+                }
+                else if (modifications[0].currentValue.propertyPath.EndsWith(".Array.size") &&
+                         Convert.ToInt64(modifications[0].currentValue.value) <
+                         Convert.ToInt64(modifications[0].previousValue.value))
+                {
+                    //Array shrinking might affect curves display name
+                    state.UpdateCurvesDisplayName();
+                }
+            }
         }
 
         private UndoPropertyModification[] ProcessAutoKey(UndoPropertyModification[] modifications)

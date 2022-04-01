@@ -178,8 +178,14 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private UIElementsDebuggerImpl m_DebuggerImpl;
 
+        // Used in tests.
+        internal UIElementsDebuggerImpl debuggerImpl => m_DebuggerImpl;
+
         [SerializeField]
         private DebuggerContext m_DebuggerContext;
+
+        // Used in tests.
+        internal DebuggerContext debuggerContext => m_DebuggerContext;
 
         [MenuItem(k_WindowPath, false, 3010, false)]
         private static void OpenUIElementsDebugger()
@@ -546,18 +552,13 @@ namespace UnityEditor.UIElements.Debugger
             if (panel == null)
                 return false;
 
-            if (((BaseVisualElementPanel)panel).ownerObject is HostView hostView && hostView.actualView is GameView)
+            if (((BaseVisualElementPanel)panel).ownerObject is HostView hostView && hostView.actualView is PlayModeView playModeView)
             {
-                var innerArea = panel.GetRootVisualElement();
-                var gameViewPadding =
-                    (innerArea.parent.contentRect.height - innerArea.contentRect.height) * Vector2.up +
-                    innerArea.layout.position; // Measured to: gameViewPadding = new Vector2(1, 40)
-
                 // Send event to runtime panels from closest to deepest
                 var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
                 for (var i = panels.Count - 1; i >= 0; i--)
                 {
-                    if (SendEventToRuntimePanel((BaseRuntimePanel)panels[i], evtBase, gameViewPadding))
+                    if (SendEventToRuntimePanel((BaseRuntimePanel)panels[i], evtBase, playModeView.viewPadding, playModeView.viewMouseScale))
                         return true;
                 }
 
@@ -707,7 +708,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private bool SendEventToRuntimePanel(BaseRuntimePanel runtimePanel, EventBase ev, Vector2 gameViewPadding)
+        private bool SendEventToRuntimePanel(BaseRuntimePanel runtimePanel, EventBase ev, Vector2 gameViewPadding, float gameMouseScale)
         {
             if (ev.imguiEvent == null)
                 return false;
@@ -715,10 +716,12 @@ namespace UnityEditor.UIElements.Debugger
             if (!runtimePanel.ScreenToPanel(ev.imguiEvent.mousePosition - gameViewPadding, ev.imguiEvent.delta, out var panelPosition, out _))
                 return false;
 
-            if (runtimePanel.Pick(panelPosition) == null)
+            var mousePosition = panelPosition * gameMouseScale;
+
+            if (runtimePanel.Pick(mousePosition) == null)
                 return false;
 
-            using (EventBase evt = UIElementsRuntimeUtility.CreateEvent(new Event(ev.imguiEvent) { mousePosition = panelPosition }))
+            using (EventBase evt = UIElementsRuntimeUtility.CreateEvent(new Event(ev.imguiEvent) { mousePosition = mousePosition}))
             {
                 runtimePanel.visualTree.SendEvent(evt);
             }

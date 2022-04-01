@@ -28,7 +28,7 @@ namespace UnityEditor.IMGUI.Controls
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType);
             if (!enumData.serializable)
-                // this is the same message used in ScriptPopupMenus.cpp
+                // this is the same message used in SerializedPropertyEnumHelper.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
 
             m_Mask = EnumDataUtility.EnumFlagsToInt(enumData, enumFlags);

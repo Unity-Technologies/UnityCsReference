@@ -88,6 +88,17 @@ namespace UnityEngine.UIElements
             visualInput.AddToClassList(inputUssClassName);
         }
 
+        /// <inheritdoc />
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, float startValue)
+        {
+            double sensitivity = NumericFieldDraggerUtility.CalculateFloatDragSensitivity(startValue, lowValue, highValue);
+            float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+            double v = value;
+
+            v += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
+            value = (float)v;
+        }
+
         internal override float SliderLerpUnclamped(float a, float b, float interpolant)
         {
             var newValue = Mathf.LerpUnclamped(a, b, interpolant);

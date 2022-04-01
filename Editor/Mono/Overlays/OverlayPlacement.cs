@@ -68,21 +68,84 @@ namespace UnityEditor.Overlays
 
         void OnFloatingChanged(bool floating)
         {
-            RebuildContent();
-
             if (floating)
                 UpdateAbsolutePosition();
 
-            container?.UpdateIsVisibleInContainer(this);
             floatingChanged?.Invoke(floating);
+        }
+
+        internal bool DockAt(OverlayContainer container, OverlayContainerSection section)
+        {
+            return DockAt(container, section, container.GetSectionCount(section));
+        }
+
+        internal bool DockAt(OverlayContainer container, OverlayContainerSection section, int index)
+        {
+            //If the overlay is staying in the same container
+            if (container.GetOverlayIndex(this, out var originSection, out var originIndex))
+            {
+                if (originSection == section && originIndex == index)
+                    return true;
+
+                //If the overlay was before the index, removing it will change the size of the container
+                if (originSection == section && originIndex < index)
+                    --index;
+            }
+
+            this.container?.RemoveOverlay(this);
+
+            this.container = container;
+            this.container.InsertOverlay(this, section, index);
+
+            floating = container is FloatingOverlayContainer;
+
+            RebuildContent();
+
+            return true;
+        }
+
+        internal bool DockBefore(Overlay target)
+        {
+            if (target.container == null)
+                throw new ArgumentException("Target overlay has an invalid container", nameof(target));
+
+            var container = target.container;
+            container.GetOverlayIndex(target, out var section, out var index);
+            return DockAt(container, section, index);
+        }
+
+        internal bool DockAfter(Overlay target)
+        {
+            if (target.container == null)
+                throw new ArgumentException("Target overlay has an invalid container", nameof(target));
+
+            var container = target.container;
+            container.GetOverlayIndex(target, out var section, out var index);
+            return DockAt(container, section, index + 1);
         }
 
         public void Undock()
         {
             if (floating)
                 return;
-            canvas.floatingContainer.Add(rootVisualElement);
-            floating = true;
+
+            DockAt(canvas.floatingContainer, OverlayContainerSection.BeforeSpacer, canvas.floatingContainer.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+        }
+
+        internal void BringToFront()
+        {
+            if (!(container is FloatingOverlayContainer))
+                return;
+
+            DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+        }
+
+        internal void SetSnappingOffset(Vector2 snapOffset, Vector2 snapOffsetDelta)
+        {
+            m_FloatingSnapOffset = snapOffset;
+            m_SnapOffsetDelta = snapOffsetDelta;
+            UpdateAbsolutePosition();
+            floatingPositionChanged?.Invoke(floatingPosition);
         }
 
         Vector2 SnapToFloatingPosition(SnapCorner corner, Vector2 snapPosition)
@@ -186,6 +249,10 @@ namespace UnityEditor.Overlays
 
         void UpdateSnapping(Vector2 position)
         {
+            //Protect against an update to the position while the canvas hasn't had its first geometry pass
+            if (float.IsNaN(position.x) || float.IsNaN(position.y))
+                return;
+
             if (m_LockAnchor)
             {
                 //Anchor and position are locked, we only update the offsetDelta

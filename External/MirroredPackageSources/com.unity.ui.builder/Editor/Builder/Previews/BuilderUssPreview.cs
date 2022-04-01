@@ -13,13 +13,25 @@ namespace Unity.UI.Builder
             m_Selection = selection;
         }
 
-        protected override void OnAttachToPanelDefaultAction()
+        protected override void RefreshPreview()
         {
-            base.OnAttachToPanelDefaultAction();
-            RefreshUSS();
+            SetText(GetTargetStylesheet()?.GenerateUSS() ?? string.Empty);
         }
 
-        void RefreshUSS()
+        protected override void RefreshHeader()
+        {
+            var styleSheet = GetTargetStylesheet();
+            if (styleSheet != null)
+            {
+                SetTargetAsset(styleSheet, document.hasUnsavedChanges);
+            }
+            else
+            {
+                SetTargetAsset(null, false);
+            }
+        }
+
+        StyleSheet GetTargetStylesheet()
         {
             if (hasDocument && document.firstStyleSheet != null)
             {
@@ -34,29 +46,29 @@ namespace Unity.UI.Builder
                         styleSheet = selectedElement.GetClosestStyleSheet();
                 }
 
-                SetText(styleSheet.GenerateUSS());
-                SetTargetAsset(styleSheet, document.hasUnsavedChanges);
+                return styleSheet;
             }
-            else
-            {
-                SetText(string.Empty);
-                SetTargetAsset(null, false);
-            }
+
+            return null;
         }
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
-            RefreshUSS();
+            RefreshHeader();
         }
 
         public void SelectionChanged()
         {
-            RefreshUSS();
+            RefreshHeader();
+            RefreshPreviewIfVisible();
         }
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
         {
-            RefreshUSS();
+            if (changeType == BuilderStylingChangeType.Default)
+            {
+                RefreshPreviewIfVisible();
+            }
         }
 
         protected override string previewAssetExtension => BuilderConstants.UssExtension;
