@@ -546,6 +546,17 @@ namespace UnityEditor
             return contextMenus[menuId] as IList;
         }
 
+        internal static bool HasDynamicLayout(int modeIndex = -1)
+        {
+            var layoutData = GetModeDataSection(modeIndex == -1 ? currentIndex : modeIndex, ModeDescriptor.LayoutKey) as JSONObject;
+            return layoutData != null;
+        }
+
+        internal static JSONObject GetDynamicLayout(int modeIndex = -1)
+        {
+            return GetModeDataSection(modeIndex == -1 ? currentIndex : modeIndex, ModeDescriptor.LayoutKey) as JSONObject;
+        }
+
         private static void BuildContextMenu(IList menus, string menuId, GenericMenu contextMenu, string prefix = "")
         {
             if (menus == null)
@@ -644,7 +655,11 @@ namespace UnityEditor
 
             if (HasCapability(ModeCapability.LayoutSwitching, true))
             {
-                WindowLayout.SaveCurrentLayoutPerMode(GetModeId(args.prevIndex));
+                var dynamicLayout = GetDynamicLayout(args.prevIndex);
+                if (dynamicLayout == null || Convert.ToBoolean(dynamicLayout["restore_saved_layout"]))
+                {
+                    WindowLayout.SaveCurrentLayoutPerMode(GetModeId(args.prevIndex));
+                }
 
                 try
                 {

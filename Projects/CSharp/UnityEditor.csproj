@@ -4963,6 +4963,9 @@
     <Compile Include="..\..\Modules\DiagnosticsEditor\DiagnosticsPreferences.cs">
       <Link>Modules\DiagnosticsEditor\DiagnosticsPreferences.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GenericRemoteEditor\Public\GenericRemote.bindings.cs">
+      <Link>Modules\GenericRemoteEditor\Public\GenericRemote.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\AssemblyInfo.cs">
       <Link>Modules\GraphViewEditor\AssemblyInfo.cs</Link>
     </Compile>

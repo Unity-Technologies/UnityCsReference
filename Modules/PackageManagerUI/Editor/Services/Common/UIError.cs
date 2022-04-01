@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UIError : Error
     {
-        private static readonly string k_EntitlementErrorMessage = L10n.Tr("This package is not available to use because there is no license registered for your user. Please sign in with a licensed account. If the problem persists, please contact your administrator.");
+        private static readonly string k_EntitlementErrorMessage = L10n.Tr("This package is not available to use because there is no license registered for your user. If you believe you have permission to use this package, refresh your license in the license management window of Unity Hub. Otherwise, contact your administrator.");
         public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.Forbidden, k_EntitlementErrorMessage, Attribute.IsDetailInConsole);
         public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.Forbidden, k_EntitlementErrorMessage, Attribute.IsDetailInConsole | Attribute.IsWarning);
 

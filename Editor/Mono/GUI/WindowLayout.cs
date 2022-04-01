@@ -68,6 +68,10 @@ namespace UnityEditor
             }
         }
 
+        const string tabsLayoutKey = "tabs";
+        const string verticalLayoutKey = "vertical";
+        const string horizontalLayoutKey = "horizontal";
+
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
         internal static string layoutResourcesPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts");
@@ -87,15 +91,15 @@ namespace UnityEditor
         public static void LoadCurrentModeLayout(bool keepMainWindow)
         {
             InitializeLayoutPreferencesFolder();
-
-            var layoutData = ModeService.GetModeDataSection(ModeDescriptor.LayoutKey) as JSONObject;
-            if (layoutData == null)
+            var dynamicLayout = ModeService.GetDynamicLayout();
+            if (dynamicLayout == null)
                 LoadProjectLayout(keepMainWindow);
             else
             {
+
                 var projectLayoutExists = File.Exists(ProjectLayoutPath);
-                if ((projectLayoutExists && Convert.ToBoolean(layoutData["restore_saved_layout"]))
-                    || !LoadModeDynamicLayout(keepMainWindow, layoutData))
+                if ((projectLayoutExists && Convert.ToBoolean(dynamicLayout["restore_saved_layout"]))
+                    || !LoadModeDynamicLayout(keepMainWindow, dynamicLayout))
                     LoadProjectLayout(keepMainWindow);
             }
         }
@@ -129,12 +133,16 @@ namespace UnityEditor
         {
             if (!viewInfo.used)
                 return null;
+
             View view = null;
             if (viewInfo.isContainer)
             {
-                bool useTabs = viewInfo.extendedData.Contains("tabs") && Convert.ToBoolean(viewInfo.extendedData["tabs"]);
-                bool useSplitter = viewInfo.extendedData.Contains("vertical") || viewInfo.extendedData.Contains("horizontal");
-                bool isVertical = viewInfo.extendedData.Contains("vertical") && Convert.ToBoolean(viewInfo.extendedData["vertical"]);
+                bool useTabs = viewInfo.extendedData.Contains(tabsLayoutKey) && Convert.ToBoolean(viewInfo.extendedData[tabsLayoutKey]);
+                bool useSplitter = viewInfo.extendedData.Contains(verticalLayoutKey) || viewInfo.extendedData.Contains(horizontalLayoutKey);
+                bool isVertical = viewInfo.extendedData.Contains(verticalLayoutKey) && Convert.ToBoolean(viewInfo.extendedData[verticalLayoutKey]);
+
+                if (useTabs && useSplitter)
+                    Debug.LogWarning($"{ModeService.currentId} defines both tabs and splitter (horizontal or vertical) layouts.\n You can only define one to true (i.e. tabs = true) in the editor mode file.");
 
                 if (useSplitter)
                 {
@@ -163,9 +171,9 @@ namespace UnityEditor
 
                     var cw = useTabs ? width : (isVertical ? width : width * lvi.size);
                     var ch = useTabs ? height : (isVertical ? height * lvi.size : height);
-                    if (useTabs)
+                    if (useTabs && view is DockArea da)
                     {
-                        (view as DockArea).AddTab((EditorWindow)ScriptableObject.CreateInstance(lvi.type));
+                        da.AddTab((EditorWindow)ScriptableObject.CreateInstance(lvi.type));
                     }
                     else
                     {
@@ -308,15 +316,16 @@ namespace UnityEditor
             if (viewData is string)
             {
                 viewInfo.className = Convert.ToString(viewData);
-                viewInfo.used = !String.IsNullOrEmpty(viewInfo.className);
+                viewInfo.used = !string.IsNullOrEmpty(viewInfo.className);
                 if (!viewInfo.used)
                     return true;
             }
-            else if (viewData is IDictionary)
+            else if (viewData is JSONObject viewExpandedData)
             {
-                var viewExpandedData = viewData as IDictionary;
-
-                if (viewExpandedData.Contains("children") || viewExpandedData.Contains("vertical") || viewExpandedData.Contains("horizontal") || viewExpandedData.Contains("tabs"))
+                if (viewExpandedData.Contains("children")
+                    || viewExpandedData.Contains(verticalLayoutKey)
+                    || viewExpandedData.Contains(horizontalLayoutKey)
+                    || viewExpandedData.Contains(tabsLayoutKey))
                 {
                     viewInfo.isContainer = true;
                     viewInfo.className = string.Empty;
@@ -366,7 +375,10 @@ namespace UnityEditor
             {
                 var currentLayoutPath = GetCurrentLayoutPath();
                 if (EnsureDirectoryCreated(ProjectLayoutPath))
+                {
+                    Console.WriteLine($"[LAYOUT] LoadProjectLayout: Copying Project Current Layout: {ProjectLayoutPath} from {currentLayoutPath}");
                     FileUtil.CopyFileOrDirectory(currentLayoutPath, ProjectLayoutPath);
+                }
             }
 
             Debug.Assert(File.Exists(ProjectLayoutPath));
@@ -421,6 +433,7 @@ namespace UnityEditor
 
             if (!Directory.Exists(layoutsModePreferencesPath))
             {
+                Console.WriteLine($"[LAYOUT] {layoutsModePreferencesPath} does not exist. Copying base layouts.");
                 // Make sure we have a valid default mode folder initialized with the proper default layouts.
                 if (layoutsDefaultModePreferencesPath == layoutsModePreferencesPath)
                 {
@@ -451,7 +464,7 @@ namespace UnityEditor
                     // No mode default layout, use the editor_resources Default:
                     defaultModeLayoutPath = Path.Combine(layoutResourcesPath, kDefaultLayoutName);
                 }
-
+                Console.WriteLine($"[LAYOUT] Copying {defaultModeLayoutPath} to {defaultLayoutPath}");
                 // If not copy our default file to the preferences folder
                 FileUtil.CopyFileOrDirectory(defaultModeLayoutPath, defaultLayoutPath);
             }
@@ -565,7 +578,9 @@ namespace UnityEditor
             {
                 if (win.m_Parent == null)
                 {
-                    Debug.LogError("Invalid editor window " + win.GetType());
+                    Debug.LogErrorFormat(
+                        "Invalid editor window of type: {0}, title: {1}",
+                        win.GetType(), win.titleContent.text);
                 }
             }
         }
@@ -1267,7 +1282,10 @@ namespace UnityEditor
             FileUtil.DeleteFileOrDirectory(ProjectLayoutPath);
 
             if (EnsureDirectoryCreated(ProjectLayoutPath))
+            {
+                Console.WriteLine($"[LAYOUT] LoadDefaultLayout: Copying Project Current Layout: {ProjectLayoutPath} from {GetDefaultLayoutPath()}");
                 FileUtil.CopyFileOrDirectory(GetDefaultLayoutPath(), ProjectLayoutPath);
+            }
             Debug.Assert(File.Exists(ProjectLayoutPath));
 
             LoadWindowLayout(ProjectLayoutPath, true);

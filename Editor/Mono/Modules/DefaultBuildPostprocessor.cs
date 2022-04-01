@@ -73,14 +73,8 @@ namespace UnityEditor.Modules
             config.Set("wait-for-native-debugger", "0");
             if (config.Get("player-connection-debug") == "1")
             {
-                if (EditorUserBuildSettings.waitForManagedDebugger)
-                {
-                    config.Set("wait-for-managed-debugger", "1");
-                }
-                else
-                {
-                    config.Set("wait-for-managed-debugger", "0");
-                }
+                config.Set("wait-for-managed-debugger", EditorUserBuildSettings.waitForManagedDebugger ? "1" : "0");
+                config.Set("managed-debugger-fixed-port", EditorUserBuildSettings.managedDebuggerFixedPort.ToString());
             }
 
             config.Set("hdr-display-enabled", PlayerSettings.useHDRDisplay ? "1" : "0");

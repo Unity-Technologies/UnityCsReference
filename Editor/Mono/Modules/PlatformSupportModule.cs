@@ -303,6 +303,8 @@ namespace UnityEditor.Modules
         // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
         bool ShouldDrawWaitForManagedDebugger();
 
+        bool ShouldDrawManagedDebuggerFixedPort();
+
         // Grays out managed debugger options
         bool ShouldDisableManagedDebuggerCheckboxes();
 

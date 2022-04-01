@@ -292,6 +292,8 @@ namespace UnityEngine.UIElements
             public int rightSlice;
             public int bottomSlice;
 
+            public float sliceScale;
+
             // Cached sprite geometry, which is expensive to evaluate.
             internal Rect spriteGeomRect;
 

@@ -84,6 +84,7 @@ namespace UnityEditor
         UnityObject m_ObjectBeingEdited;
         SerializedProperty m_EditedProperty;
 
+        bool m_SelectionCancelled;
         int m_LastSelectedInstanceId = 0;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
@@ -433,6 +434,7 @@ namespace UnityEditor
             m_AllowedIDs = allowedInstanceIDs;
             m_ObjectBeingEdited = objectBeingEdited;
             m_LastSelectedInstanceId = obj?.GetInstanceID() ?? 0;
+            m_SelectionCancelled = false;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
             m_OnObjectSelectorUpdated = onObjectSelectedUpdated;
@@ -518,6 +520,7 @@ namespace UnityEditor
                         // Undo changes we have done in the ObjectSelector
                         Undo.RevertAllDownToGroup(m_ModalUndoGroup);
                         m_LastSelectedInstanceId = 0;
+                        m_SelectionCancelled = true;
                     }
                     else
                     {
@@ -632,6 +635,11 @@ namespace UnityEditor
 
                 FilterSettingsChanged();
             }
+        }
+
+        public static bool SelectionCanceled()
+        {
+            return ObjectSelector.get.m_SelectionCancelled;
         }
 
         public static UnityObject GetCurrentObject()
@@ -963,6 +971,7 @@ namespace UnityEditor
             m_ListArea?.InitSelection(new int[0]);
             m_ObjectTreeWithSearch.Clear();
             m_LastSelectedInstanceId = 0;
+            m_SelectionCancelled = true;
             m_EditedProperty = null;
 
             SendEvent(ObjectSelectorCanceledCommand, false);

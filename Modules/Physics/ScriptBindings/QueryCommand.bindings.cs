@@ -22,6 +22,17 @@ namespace UnityEngine
             this.distance = distance;
             this.layerMask = layerMask;
             this.maxHits = maxHits;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public RaycastCommand(PhysicsScene physicsScene, Vector3 from, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers, int maxHits = 1)
+        {
+            this.from = from;
+            this.direction = direction;
+            this.distance = distance;
+            this.layerMask = layerMask;
+            this.maxHits = maxHits;
+            this.physicsScene = physicsScene;
         }
 
         public Vector3 from { get; set; }
@@ -29,6 +40,7 @@ namespace UnityEngine
         public float distance { get; set; }
         public int layerMask { get; set; }
         public int maxHits { get; set; }
+        public PhysicsScene physicsScene { get; set; }
 
         public unsafe static JobHandle ScheduleBatch(NativeArray<RaycastCommand> commands, NativeArray<RaycastHit> results, int minCommandsPerJob, JobHandle dependsOn = new JobHandle())
         {
@@ -46,7 +58,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public struct SpherecastCommand
     {
-        public SpherecastCommand(Vector3 origin,  float radius, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
+        public SpherecastCommand(Vector3 origin, float radius, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
         {
             this.origin = origin;
             this.direction = direction;
@@ -54,6 +66,18 @@ namespace UnityEngine
             this.distance = distance;
             this.layerMask = layerMask;
             maxHits = 1;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public SpherecastCommand(PhysicsScene physicsScene, Vector3 origin,  float radius, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
+        {
+            this.origin = origin;
+            this.direction = direction;
+            this.radius = radius;
+            this.distance = distance;
+            this.layerMask = layerMask;
+            maxHits = 1;
+            this.physicsScene = physicsScene;
         }
 
         public Vector3 origin { get; set; }
@@ -62,6 +86,7 @@ namespace UnityEngine
         public float distance { get; set; }
         public int layerMask { get; set; }
         internal int maxHits { get; set; }
+        public PhysicsScene physicsScene { get; set; }
 
         public unsafe static JobHandle ScheduleBatch(NativeArray<SpherecastCommand> commands, NativeArray<RaycastHit> results, int minCommandsPerJob, JobHandle dependsOn = new JobHandle())
         {
@@ -79,7 +104,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public struct CapsulecastCommand
     {
-        public  CapsulecastCommand(Vector3 p1, Vector3 p2, float radius, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
+        public CapsulecastCommand(Vector3 p1, Vector3 p2, float radius, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
         {
             this.point1 = p1;
             this.point2 = p2;
@@ -88,6 +113,19 @@ namespace UnityEngine
             this.distance = distance;
             this.layerMask = layerMask;
             maxHits = 1;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public CapsulecastCommand(PhysicsScene physicsScene, Vector3 p1, Vector3 p2, float radius, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
+        {
+            this.point1 = p1;
+            this.point2 = p2;
+            this.direction = direction;
+            this.radius = radius;
+            this.distance = distance;
+            this.layerMask = layerMask;
+            maxHits = 1;
+            this.physicsScene = physicsScene;
         }
 
         public Vector3 point1 { get; set; }
@@ -97,6 +135,7 @@ namespace UnityEngine
         public float distance { get; set; }
         public int layerMask { get; set; }
         internal int maxHits {get; set; }
+        public PhysicsScene physicsScene { get; set; }
 
         public unsafe static JobHandle ScheduleBatch(NativeArray<CapsulecastCommand> commands, NativeArray<RaycastHit> results, int minCommandsPerJob, JobHandle dependsOn = new JobHandle())
         {
@@ -114,7 +153,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public struct BoxcastCommand
     {
-        public  BoxcastCommand(Vector3 center, Vector3 halfExtents, Quaternion orientation, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
+        public BoxcastCommand(Vector3 center, Vector3 halfExtents, Quaternion orientation, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
         {
             this.center = center;
             this.halfExtents = halfExtents;
@@ -123,6 +162,19 @@ namespace UnityEngine
             this.distance = distance;
             this.layerMask = layerMask;
             maxHits = 1;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public BoxcastCommand(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, Vector3 direction, float distance = float.MaxValue, int layerMask = Physics.DefaultRaycastLayers)
+        {
+            this.center = center;
+            this.halfExtents = halfExtents;
+            this.orientation = orientation;
+            this.direction = direction;
+            this.distance = distance;
+            this.layerMask = layerMask;
+            maxHits = 1;
+            this.physicsScene = physicsScene;
         }
 
         public Vector3 center { get; set; }
@@ -132,6 +184,7 @@ namespace UnityEngine
         public float distance { get; set; }
         public int layerMask { get; set; }
         internal int maxHits {get; set; }
+        public PhysicsScene physicsScene { get; set; }
 
         public unsafe static JobHandle ScheduleBatch(NativeArray<BoxcastCommand> commands, NativeArray<RaycastHit> results, int minCommandsPerJob, JobHandle dependsOn = new JobHandle())
         {

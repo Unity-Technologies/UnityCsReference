@@ -505,6 +505,17 @@ namespace UnityEngine.UIElements
             return panel;
         }
 
+        internal static float PixelsPerUnitScaleForElement(VisualElement ve, Sprite sprite)
+        {
+            if (ve == null || sprite == null)
+                return 1.0f;
+
+            const float referencePixelsPerUnit = 100.0f;
+            float pixelsPerUnit = sprite.pixelsPerUnit;
+            pixelsPerUnit = Mathf.Max(0.01f, pixelsPerUnit);
+            return referencePixelsPerUnit / pixelsPerUnit;
+        }
+
         internal static int m_InMemoryAssetsVersion { get; private set; } = 0;
 
         internal static void InMemoryAssetsHaveBeenChanged()
