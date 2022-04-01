@@ -161,7 +161,17 @@ namespace UnityEditor
             return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, style);
         }
 
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, Action<Object> onObjectSelectorClosed, Action<Object> onObjectSelectedUpdated = null)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton, onObjectSelectorClosed, onObjectSelectedUpdated);
+        }
+
         static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton);
+        }
+
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle, Action<Object> onObjectSelectorClosed = null, Action<Object> onObjectSelectedUpdated = null)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -272,9 +282,9 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
                                 var types = additionalType == null ? new Type[] {objType} : new Type[] { objType, additionalType };
                                 if (property != null)
-                                    ObjectSelector.get.Show(types, property, allowSceneObjects);
+                                    ObjectSelector.get.Show(types, property, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated);
                                 else
-                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects);
+                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated);
                                 ObjectSelector.get.objectSelectorID = id;
 
                                 evt.Use();

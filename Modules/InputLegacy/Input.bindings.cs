@@ -483,5 +483,7 @@ namespace UnityEngine
                 return events;
             }
         }
+
+        internal extern static bool CheckDisabled();
     }
 }

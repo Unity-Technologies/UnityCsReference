@@ -885,7 +885,7 @@ namespace UnityEngine
         extern static public float defaultMaxAngularSpeed { get; set; }
         extern static public bool improvedPatchFriction { get; set; }
 
-        [NativeProperty("DefaultPhysicsSceneHandle")]
+        [NativeProperty("DefaultPhysicsSceneHandle", true, TargetType.Function, true)]
         extern public static PhysicsScene defaultPhysicsScene { get; }
 
         extern public static void IgnoreCollision([NotNull("NullExceptionObject")] Collider collider1, [NotNull("NullExceptionObject")] Collider collider2, [DefaultValue("true")] bool ignore);

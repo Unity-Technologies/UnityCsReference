@@ -545,7 +545,10 @@ namespace UnityEditor
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
 
-            RenderPipelineAssetSelector.Draw(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
+            EditorGUI.RenderPipelineAssetField(Content.kRenderPipelineObject, m_QualitySettings, customRenderPipeline);
+            if (!usingSRP && customRenderPipeline.objectReferenceValue != null)
+                EditorGUILayout.HelpBox("Missing a Scriptable Render Pipeline in Graphics: \"Scriptable Render Pipeline Settings\" to use Scriptable Render Pipeline from Quality: \"Custom Render Pipeline\".", MessageType.Warning);
+
             if (!usingSRP)
                 EditorGUILayout.PropertyField(pixelLightCountProperty);
 

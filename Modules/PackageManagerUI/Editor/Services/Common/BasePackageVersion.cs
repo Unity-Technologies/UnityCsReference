@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Experimental.Licensing;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -56,18 +57,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return (m_Tag & tag) != 0;
         }
 
-        public bool hasEntitlements => entitlements != null && entitlements.licenseType != EntitlementLicenseType.Public;
+        public bool hasEntitlements => entitlements != null && (entitlements.licenseType != EntitlementLicenseType.Public || entitlements.status == EntitlementStatus.NotGranted || entitlements.status == EntitlementStatus.Granted);
 
         public bool hasEntitlementsError
         {
             get
             {
-                if (!hasEntitlements || !entitlements.isAllowed)
-                    return false;
+                if (!hasEntitlements || entitlements.isAllowed)
+                    return packageInfo?.errors.Any(error =>
+                        error.errorCode == ErrorCode.Forbidden ||
+                        error.message.IndexOf(k_NoSubscriptionErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0) ?? false;
 
-                return packageInfo?.errors.Any(error =>
-                    error.errorCode == ErrorCode.Forbidden ||
-                    error.message.IndexOf(k_NoSubscriptionErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0) ?? false;
+                return true;
             }
         }
 

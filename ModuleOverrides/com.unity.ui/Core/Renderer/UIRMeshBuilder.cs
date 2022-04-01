@@ -272,12 +272,18 @@ namespace UnityEngine.UIElements.UIR
             float rightSlice = Mathf.Max(0.0f, rectParams.rightSlice);
             float bottomSlice = Mathf.Max(0.0f, rectParams.bottomSlice);
             float topSlice = Mathf.Max(0.0f, rectParams.topSlice);
+            float sliceScale = Mathf.Max(0.01f, rectParams.sliceScale);
 
             // Clamp UVs in the [0,1] range
             float uvLeftSlice = Mathf.Clamp(leftSlice * uConversion, 0.0f, 1.0f);
             float uvRightSlice = Mathf.Clamp(rightSlice * uConversion, 0.0f, 1.0f);
             float uvBottomSlice = Mathf.Clamp(bottomSlice * vConversion, 0.0f, 1.0f);
             float uvTopslice = Mathf.Clamp(topSlice * vConversion, 0.0f, 1.0f);
+
+            leftSlice *= rectParams.sliceScale;
+            rightSlice *= rectParams.sliceScale;
+            bottomSlice *= rectParams.sliceScale;
+            topSlice *= rectParams.sliceScale;
 
             k_TexCoordSlicesX[0] = rectParams.uv.min.x;
             k_TexCoordSlicesX[1] = rectParams.uv.min.x + uvLeftSlice;

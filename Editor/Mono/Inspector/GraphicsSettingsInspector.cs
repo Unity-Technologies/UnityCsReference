@@ -137,7 +137,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             GUILayout.Label(Styles.renderPipeSettings, EditorStyles.boldLabel);
-            RenderPipelineAssetSelector.Draw(serializedObject, m_ScriptableRenderLoop);
+            EditorGUI.RenderPipelineAssetField(serializedObject, m_ScriptableRenderLoop);
             EditorGUILayout.Space();
 
             bool usingSRP = GraphicsSettings.currentRenderPipeline != null;

@@ -333,6 +333,7 @@ namespace UnityEditor
     public partial class EditorUserBuildSettings : Object
     {
         private const string kSettingWaitForManagedDebugger = "WaitForManagedDebugger";
+        private const string kSettingManagedDebuggerFixedPort = "ManagedDebuggerFixedPort";
         private EditorUserBuildSettings() {}
 
         internal static extern AppleBuildAndRunType appleBuildAndRunType { get; set; }
@@ -931,6 +932,25 @@ namespace UnityEditor
             set
             {
                 SetPlatformSettings("Editor", kSettingWaitForManagedDebugger, value.ToString().ToLower());
+            }
+        }
+
+        public static int managedDebuggerFixedPort
+        {
+            get
+            {
+                if (Int32.TryParse(GetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort), out int value)) {
+                    if (0 < value && value <= 65535)
+                    {
+                        return value;
+                    }
+                }
+                return 0;
+            }
+
+            set
+            {
+                SetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort, value.ToString().ToLower());
             }
         }
     }
