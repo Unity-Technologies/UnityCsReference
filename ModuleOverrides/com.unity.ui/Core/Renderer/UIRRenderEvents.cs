@@ -83,14 +83,26 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         static Vector4 GetClipRectIDClipInfo(VisualElement ve)
         {
+            Rect rect;
+
             Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID));
             if (ve.renderChainData.groupTransformAncestor == null)
-                return UIRUtility.ToVector4(ve.worldClip);
+                rect = ve.worldClip;
+            else
+            {
+                rect = ve.worldClipMinusGroup;
+                // Subtract the transform of the group transform ancestor
+                VisualElement.TransformAlignedRect(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref rect);
+            }
 
-            Rect rect = ve.worldClipMinusGroup;
-            // Subtract the transform of the group transform ancestor
-            VisualElement.TransformAlignedRect(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref rect);
-            return UIRUtility.ToVector4(rect);
+            // See ComputeRelativeClipRectCoords in the shader for details on this computation
+            Vector2 min = rect.min;
+            Vector2 max = rect.max;
+            Vector2 diff = max - min;
+            Vector2 mul = new Vector2(1 / (diff.x + 0.0001f), 1 / (diff.y + 0.0001f));
+            Vector2 a = 2 * mul;
+            Vector2 b = -(min + max) * mul;
+            return new Vector4(a.x, a.y, b.x, b.y);
         }
 
         internal static uint DepthFirstOnChildAdded(RenderChain renderChain, VisualElement parent, VisualElement ve, int index, bool resetState)

@@ -177,7 +177,7 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Vector4 identityTransformRow0Value = identityTransformValue.GetRow(0);
         internal static readonly Vector4 identityTransformRow1Value = identityTransformValue.GetRow(1);
         internal static readonly Vector4 identityTransformRow2Value = identityTransformValue.GetRow(2);
-        internal static readonly Vector4 infiniteClipRectValue = new Vector4(-float.MaxValue, -float.MaxValue, float.MaxValue, float.MaxValue);
+        internal static readonly Vector4 infiniteClipRectValue = new Vector4(0, 0, 0, 0);
         internal static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
         internal static readonly Vector4 clearColorValue = new Vector4(0, 0, 0, 0);
         internal static readonly TextCoreSettings defaultTextCoreSettingsValue = new TextCoreSettings() {

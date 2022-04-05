@@ -52,9 +52,11 @@ namespace Unity.TinyProfiling
                 if (!externalFile.FileExists())
                     continue;
 
-                using (var stream = File.OpenRead(externalFile.ToString(SlashMode.Native)))
+                // Important: need to read this file as text mode, to avoid copying byte-order-marks.
+                using (var stream = File.OpenText(externalFile.ToString(SlashMode.Native)))
                 {
-                    stream.CopyTo(textWriter.BaseStream);
+                    while (!stream.EndOfStream)
+                        textWriter.WriteLine(stream.ReadLine());
                 }
             }
         }
