@@ -134,6 +134,14 @@ namespace UnityEngine.Tilemaps
             return tiles;
         }
 
+        [FreeFunction(Name = "TilemapBindings::GetTileAssetsBlockNonAlloc", HasExplicitThis = true)]
+        internal extern int GetTileAssetsBlockNonAlloc(Vector3Int startPosition, Vector3Int endPosition, Object[] tiles);
+
+        public int GetTilesBlockNonAlloc(BoundsInt bounds, TileBase[] tiles)
+        {
+            return GetTileAssetsBlockNonAlloc(bounds.min, bounds.size, tiles);
+        }
+
         public extern int GetTilesRangeCount(Vector3Int startPosition, Vector3Int endPosition);
 
         [FreeFunction(Name = "TilemapBindings::GetTileAssetsRangeNonAlloc", HasExplicitThis = true)]

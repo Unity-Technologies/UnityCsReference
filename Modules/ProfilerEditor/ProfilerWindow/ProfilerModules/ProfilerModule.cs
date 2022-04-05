@@ -221,6 +221,9 @@ namespace Unity.Profiling.Editor
         // Legacy modules override this to specify their default order in the menu.
         private protected virtual int defaultOrderIndex => k_UndefinedOrderIndex;
 
+        // For ProfilerModuleBase to access private property.
+        private protected string[] GetAutoEnabledCategoryNames => AutoEnabledCategoryNames;
+
         internal virtual void OnEnable()
         {
             BuildChartIfNecessary();
@@ -319,8 +322,7 @@ namespace Unity.Profiling.Editor
 
         private protected virtual void ApplyActiveState()
         {
-            var areas = GetProfilerAreas();
-            ProfilerWindow.SetAreasInUse(areas, active);
+            ProfilerWindow.SetCategoriesInUse(AutoEnabledCategoryNames, active);
         }
 
         private protected virtual bool ReadActiveState()
@@ -331,28 +333,6 @@ namespace Unity.Profiling.Editor
         private protected virtual void SaveActiveState()
         {
             EditorPrefs.SetBool(activeStatePreferenceKey, active);
-        }
-
-        // TODO ProfilerModule should replace ProfilerArea with ProfilerCategory completely.
-        private protected HashSet<ProfilerArea> GetProfilerAreas()
-        {
-            var areas = new HashSet<ProfilerArea>();
-            foreach (var categoryInUse in AutoEnabledCategoryNames)
-            {
-                var categoryAreas = ProfilerAreaReferenceCounterUtility.ProfilerCategoryNameToAreas(categoryInUse);
-                foreach (var area in categoryAreas)
-                {
-                    areas.Add(area);
-                }
-            }
-
-            // Legacy modules can define ProfilerArea-based stats instead of counters. In that case, explicitly add the area.
-            if ((uint)area != Profiler.invalidProfilerArea)
-            {
-                areas.Add(area);
-            }
-
-            return areas;
         }
 
         private protected virtual ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)

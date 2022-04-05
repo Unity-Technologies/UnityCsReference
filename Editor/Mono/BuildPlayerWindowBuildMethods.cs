@@ -170,7 +170,7 @@ namespace UnityEditor
                 bool locationPathExistedBeforeBuild = System.IO.Directory.Exists(options.locationPathName);
                 // Trigger build.
                 // Note: report will be null, if delayToAfterScriptReload = true
-                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath(), options.targetGroup, options.target, options.subtarget, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
+                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, options.assetBundleManifestPath, options.targetGroup, options.target, options.subtarget, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
 
                 if (report != null
                 )
@@ -308,7 +308,7 @@ namespace UnityEditor
                 options.subtarget = subtarget;
                 options.targetGroup = buildTargetGroup;
                 options.locationPathName = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-                options.assetBundleManifestPath = null;
+                options.assetBundleManifestPath = PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
 
                 // Build a list of scenes that are enabled
                 ArrayList scenesList = new ArrayList();

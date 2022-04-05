@@ -44,7 +44,6 @@ namespace UnityEditorInternal
 
         void CloseModule(ProfilerModule module);
 
-        void SetAreasInUse(IEnumerable<ProfilerArea> areas, bool inUse);
         void Repaint();
     }
 }

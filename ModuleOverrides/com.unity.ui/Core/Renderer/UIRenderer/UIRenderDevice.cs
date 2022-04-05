@@ -84,7 +84,6 @@ namespace UnityEngine.UIElements.UIR
         private List<List<AllocToUpdate>> m_Updates;
         private UInt32[] m_Fences;
         private MaterialPropertyBlock m_StandardMatProps; // Properties that are constant throughout the evaluation of the commands
-        private MaterialPropertyBlock m_CommonMatProps; // Uniform Clip Rect
         private uint m_FrameIndex;
         private uint m_NextUpdateID = 1; // For the current frame only, 0 is not an accepted value here
         private DrawStatistics m_DrawStats;
@@ -100,12 +99,11 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_FontTexPropID = Shader.PropertyToID("_FontTex");
         static readonly int s_FontTexSDFScaleID = Shader.PropertyToID("_FontTexSDFScale");
-        static readonly int s_PixelClipInvViewPropID = Shader.PropertyToID("_PixelClipInvView");
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
-        static readonly int s_ScreenClipRectPropID = Shader.PropertyToID("_ScreenClipRect");
         static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
         static readonly int s_ClipRectsPropID = Shader.PropertyToID("_ClipRects");
+        static readonly int s_ClipSpaceParamsID = Shader.PropertyToID("_ClipSpaceParams");
 
         static ProfilerMarker s_MarkerAllocate = new ProfilerMarker("UIR.Allocate");
         static ProfilerMarker s_MarkerFree = new ProfilerMarker("UIR.Free");
@@ -297,7 +295,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_Fences = new uint[(int)k_MaxQueuedFrameCount];
             m_StandardMatProps = new MaterialPropertyBlock();
-            m_CommonMatProps = new MaterialPropertyBlock();
             m_DefaultStencilState = Utility.CreateStencilState(new StencilState
             {
                 enabled = true,
@@ -637,23 +634,14 @@ namespace UnityEngine.UIElements.UIR
 
         }
 
-        static void Set1PixelSizeParameter(DrawParams drawParams, MaterialPropertyBlock props)
+        static Vector4 GetClipSpaceParams()
         {
-            Vector4 _PixelClipInvView = new Vector4();
-
-            // Size of 1 pixel in clip space
             RectInt viewport = Utility.GetActiveViewport();
-            _PixelClipInvView.x = 2.0f / viewport.width;
-            _PixelClipInvView.y = 2.0f / viewport.height;
-
-            // Pixel density in group space
-            Matrix4x4 matProj = Utility.GetUnityProjectionMatrix();
-            Matrix4x4 matVPInv = (matProj * drawParams.view.Peek().transform).inverse;
-            Vector3 v = matVPInv.MultiplyVector(new Vector3(_PixelClipInvView.x, _PixelClipInvView.y));
-            _PixelClipInvView.z = 1 / (Mathf.Abs(v.x) + UIRUtility.k_Epsilon);
-            _PixelClipInvView.w = 1 / (Mathf.Abs(v.y) + UIRUtility.k_Epsilon);
-
-            props.SetVector(s_PixelClipInvViewPropID, _PixelClipInvView);
+            return new Vector4(
+                viewport.width * 0.5f,
+                viewport.height * 0.5f,
+                2f / viewport.width,
+                2f / viewport.height);
         }
 
         public void OnFrameRenderingBegin()
@@ -766,9 +754,6 @@ namespace UnityEngine.UIElements.UIR
                     st.mustApplyStencil = true;
                 }
 
-                if (st.mustApplyCommonBlock && m_CommonMatProps != null)
-                    Utility.SetPropertyBlock(m_CommonMatProps);
-
                 if (st.mustApplyStateBlock)
                     Utility.SetPropertyBlock(st.stateMatProps);
 
@@ -813,10 +798,8 @@ namespace UnityEngine.UIElements.UIR
                     UIR.Utility.SetVectorArray<Transform3x4>(m_StandardMatProps, s_TransformsPropID, transforms);
                 if (clipRects.Length > 0)
                     UIR.Utility.SetVectorArray<Vector4>(m_StandardMatProps, s_ClipRectsPropID, clipRects);
-                Set1PixelSizeParameter(drawParams, m_CommonMatProps);
-                m_CommonMatProps.SetVector(s_ScreenClipRectPropID, drawParams.view.Peek().clipRect);
+                m_StandardMatProps.SetVector(s_ClipSpaceParamsID, GetClipSpaceParams());
                 Utility.SetPropertyBlock(m_StandardMatProps);
-                Utility.SetPropertyBlock(m_CommonMatProps);
             }
 
             int rangesCount = 1024; // Must be powers of two. TODO: Can be estimated better from the render chain command count
@@ -996,16 +979,6 @@ namespace UnityEngine.UIElements.UIR
                                 drawParams.defaultMaterial.Add(defaultMat);
                                 defaultMat = head.state.material;
                             }
-                        }
-                    }
-
-                    if (head.type == CommandType.PushView || head.type == CommandType.PopView)
-                    {
-                        if (m_CommonMatProps != null)
-                        {
-                            Set1PixelSizeParameter(drawParams, m_CommonMatProps);
-                            m_CommonMatProps.SetVector(s_ScreenClipRectPropID, drawParams.view.Peek().clipRect);
-                            Utility.SetPropertyBlock(m_CommonMatProps);
                         }
                     }
                 } // If kick ranges

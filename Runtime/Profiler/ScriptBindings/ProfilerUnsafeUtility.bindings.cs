@@ -65,6 +65,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public const ushort CategoryFileIO = 25;
         public const ushort CategoryInput = 30;
         public const ushort CategoryVirtualTexturing = 31;
+        internal const ushort CategoryGPU = 32;
         internal const ushort CategoryAny = 0xFFFF;
 
         [ThreadSafe]

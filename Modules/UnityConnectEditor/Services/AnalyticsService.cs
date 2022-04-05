@@ -57,6 +57,32 @@ namespace UnityEditor.Connect
             return AnalyticsSettings.enabled;
         }
 
+        protected override void OnServiceFlagRequestCompleted(AsyncOperation asyncOperation)
+        {
+            UnityWebRequest req =  ((UnityWebRequestAsyncOperation)asyncOperation).webRequest;
+            if(req != null && req.responseCode == 200)
+            {
+                var jsonParser = new JSONParser(req.downloadHandler.text);
+                try
+                {
+                    var json = jsonParser.Parse();
+                    var descriptions = json.AsDict()["service_flags_descriptions"];
+                    if(!descriptions.IsNull())
+                    {
+                        var analytics = descriptions.AsDict()["analytics"];
+                        if(!analytics.IsNull())
+                        {
+                            Debug.LogError(analytics.AsString());
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+            base.OnServiceFlagRequestCompleted(asyncOperation);
+        }
+
         protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
             if (AnalyticsSettings.enabled != enable)
