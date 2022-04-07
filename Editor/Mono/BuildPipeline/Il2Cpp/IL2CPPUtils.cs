@@ -818,7 +818,7 @@ namespace UnityEditorInternal
             }
 
             var beeArgs = $"--no-colors --prebuiltbuildprogram={EscapeSpacesInPath(GetIl2CppBeeBuildProgramExe())}";
-            Console.WriteLine("Invoking il2cpp (via bee.exe) with arguments: " + args);
+            UnityLogWriter.WriteStringToUnityLog($"Invoking il2cpp (via bee.exe) with arguments: {args}\n");
             Runner.RunManagedProgram(GetIl2CppBeeExe(), beeArgs, m_PlatformProvider.il2cppBuildCacheDirectory, il2cppOutputParser, SetupTundraAndStartInfo);
 
             // Copy IL2CPP outputs to StagingArea

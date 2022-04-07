@@ -656,7 +656,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
             var isClippingWithScissors = ve.renderChainData.clipMethod == ClipMethod.Scissor;
-            if ((IsElementSelfHidden(ve) && !isClippingWithStencil && !isClippingWithScissors) || ve.renderChainData.isHierarchyHidden)
+            var isGroup = (ve.renderHints & RenderHints.GroupTransform) != 0; // Groups need to push view and scissors
+            if ((IsElementSelfHidden(ve) && !isClippingWithStencil && !isClippingWithScissors && !isGroup) || ve.renderChainData.isHierarchyHidden)
             {
                 if (ve.renderChainData.data != null)
                 {

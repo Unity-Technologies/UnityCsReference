@@ -2123,7 +2123,6 @@ namespace UnityEditor
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
 
                 EditorGUILayout.PropertyField(m_OverrideDefaultApplicationIdentifier, EditorGUIUtility.TrTextContent("Override Default Bundle Identifier"));
-                string defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
 
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
@@ -2131,7 +2130,7 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.IndentLevelScope())
                         {
-                            PlayerSettingsEditor.ShowApplicationIdentifierUI(m_ApplicationIdentifier, BuildTargetGroup.Standalone, m_OverrideDefaultApplicationIdentifier.boolValue, defaultIdentifier, "Bundle Identifier", "'CFBundleIdentifier'");
+                            ShowApplicationIdentifierUI(BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'");
                         }
                     }
                 }
@@ -2178,17 +2177,33 @@ namespace UnityEditor
             return SettingsContent.applicationIdentifierError;
         }
 
-        internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
+        internal void ShowApplicationIdentifierUI(BuildTargetGroup targetGroup, string label, string tooltip)
         {
+            var overrideDefaultID = m_OverrideDefaultApplicationIdentifier.boolValue;
+            var defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
             var oldIdentifier = "";
-            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
+            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultIdentifier, targetGroup);
             var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
             var warningMessage = SettingsContent.applicationIdentifierWarning.text;
             var errorMessage = GetApplicationIdentifierError(targetGroup).text;
 
-            if (!prop.serializedObject.isEditingMultipleObjects)
+            string GetSanitizedApplicationIdentifier()
             {
-                prop.TryGetMapEntry(buildTargetGroup, out var entry);
+                var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+
+                if (currentIdentifier != oldIdentifier) {
+                    if (!overrideDefaultID && !PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
+                        Debug.LogError(errorMessage);
+                    else if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
+                        Debug.LogWarning(warningMessage);
+                }
+
+                return sanitizedIdentifier;
+            }
+
+            if (!m_ApplicationIdentifier.serializedObject.isEditingMultipleObjects)
+            {
+                m_ApplicationIdentifier.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                     oldIdentifier = entry.FindPropertyRelative("second").stringValue;
@@ -2198,7 +2213,7 @@ namespace UnityEditor
                     if (overrideDefaultID)
                         currentIdentifier = oldIdentifier;
                     else
-                        prop.SetMapValue(buildTargetGroup, currentIdentifier);
+                        m_ApplicationIdentifier.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
 
                 EditorGUILayout.BeginVertical();
@@ -2206,19 +2221,21 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(!overrideDefaultID))
                 {
-                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+                    currentIdentifier = GetSanitizedApplicationIdentifier();
                     currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    prop.SetMapValue(buildTargetGroup, currentIdentifier);
+                    currentIdentifier = GetSanitizedApplicationIdentifier();
+                    m_ApplicationIdentifier.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
 
-                if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
+                if (currentIdentifier == "com.Company.ProductName" || currentIdentifier == "com.unity3d.player")
+                    EditorGUILayout.HelpBox("Don't forget to set the Application Identifier.", MessageType.Warning);
+                else if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
                     EditorGUILayout.HelpBox(errorMessage, MessageType.Error);
-                else if (!overrideDefaultID && currentIdentifier != defaultID)
+                else if (!overrideDefaultID && currentIdentifier != defaultIdentifier)
                     EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
 
                 EditorGUILayout.EndVertical();

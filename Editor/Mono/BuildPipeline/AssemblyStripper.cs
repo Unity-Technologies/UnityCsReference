@@ -155,7 +155,7 @@ namespace UnityEditorInternal
             var argString = args.Aggregate((buff, s) => buff + " " + s);
             var responseFile = Path.Combine(workingDirectory, "response.rsp");
             File.WriteAllText(responseFile, argString);
-            Console.WriteLine("Invoking UnityLinker with response file. response.rsp contents: " + argString);
+            UnityLogWriter.WriteStringToUnityLog($"Invoking UnityLinker with response file. response.rsp contents: {argString}\n");
             Runner.RunNetCoreProgram(linkerPath, $"@{CommandLineFormatter.PrepareFileName(responseFile)}", workingDirectory, null, null);
 
             @out = "";
