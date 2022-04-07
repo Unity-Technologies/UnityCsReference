@@ -178,6 +178,7 @@ namespace UnityEditor.Build.Content
             return WriteSerializedFile_Internal(outputFolder, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.bundleInfo);
         }
 
+        [NativeThrows]
         static extern WriteResult WriteSerializedFile_Internal(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, AssetBundleInfo bundleInfo);
 
         public static WriteResult WriteSceneSerializedFile(string outputFolder, WriteSceneParameters parameters)
@@ -194,6 +195,7 @@ namespace UnityEditor.Build.Content
             return WriteSceneSerializedFile_Internal(outputFolder, parameters.scenePath, parameters.writeCommand, parameters.settings, parameters.globalUsage, parameters.usageSet, parameters.referenceMap, parameters.preloadInfo, parameters.sceneBundleInfo);
         }
 
+        [NativeThrows]
         static extern WriteResult WriteSceneSerializedFile_Internal(string outputFolder, string scenePath, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
 
         public static WriteResult WriteGameManagersSerializedFile(string outputFolder, WriteManagerParameters parameters)

@@ -946,7 +946,7 @@ namespace UnityEditorInternal
                         int currentControlCount = GUIUtility.s_ControlCount - initialControlCount;
                         if (i < m_PropertyCache.Length && Event.current.type == EventType.Repaint && m_PropertyCache[i].controlCount != currentControlCount || m_ScheduleGUIChanged)
                         {
-                            GUI.changed = true;
+                            GUIView.current?.Repaint();
                             InvalidateCache();
                             m_PropertyCache[i].controlCount = currentControlCount;
                             m_ScheduleGUIChanged = false;

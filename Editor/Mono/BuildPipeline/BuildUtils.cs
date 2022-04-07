@@ -107,7 +107,7 @@ namespace UnityEditorInternal
                 p.WaitForExit();
 
                 stopwatch.Stop();
-                Console.WriteLine("{0} exited after {1} ms.", exe, stopwatch.ElapsedMilliseconds);
+                UnityLogWriter.WriteStringToUnityLog($"{exe} exited after {stopwatch.ElapsedMilliseconds} ms.\n");
 
                 var messages = new List<CompilerMessage>();
                 if (parser != null)
