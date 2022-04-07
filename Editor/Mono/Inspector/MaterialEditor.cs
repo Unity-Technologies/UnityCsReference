@@ -3032,15 +3032,17 @@ namespace UnityEditor
             materialForContextMenu = null;
 
             menu.AddItem(new GUIContent("Create Variant for Renderer"), false, () => {
-                var variant = new Material(material) { name = material.name + " Variant", parent = material };
 
                 var directory = "Assets/Materials";
                 var assetPath = AssetDatabase.GetAssetPath(material);
+                var assetName = Path.GetFileNameWithoutExtension(assetPath) + " Variant";
                 var package = PackageManager.PackageInfo.FindForAssetPath(assetPath);
                 if (package == null || package.source == PackageManager.PackageSource.Local)
                     directory = Path.GetDirectoryName(assetPath);
+
+                var path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(directory, assetName + ".mat"));
+                var variant = new Material(material) { name = assetName, parent = material };
                 Directory.CreateDirectory(directory);
-                var path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(directory, variant.name + ".mat"));
                 AssetDatabase.CreateAsset(variant, path);
 
                 foreach (var renderer in renderers)

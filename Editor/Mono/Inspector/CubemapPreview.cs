@@ -192,7 +192,7 @@ namespace UnityEditor
             }
 
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, m_Material, 0);
-            m_PreviewUtility.Render();
+            m_PreviewUtility.Render(Unsupported.useScriptableRenderPipeline);
         }
     }
 }

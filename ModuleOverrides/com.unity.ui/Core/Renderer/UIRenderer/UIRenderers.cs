@@ -44,12 +44,6 @@ namespace UnityEngine.UIElements.UIR
         PushDefaultMaterial, PopDefaultMaterial,
     }
 
-    internal struct ViewTransform
-    {
-        internal Matrix4x4 transform;
-        internal Vector4 clipRect;
-    }
-
     internal class DrawParams
     {
         internal static readonly Rect k_UnlimitedRect = new Rect(-100000, -100000, 200000, 200000);
@@ -59,14 +53,14 @@ namespace UnityEngine.UIElements.UIR
         public void Reset()
         {
             view.Clear();
-            view.Push(new ViewTransform { transform = Matrix4x4.identity, clipRect = UIRUtility.ToVector4(k_FullNormalizedRect) });
+            view.Push(Matrix4x4.identity);
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
             renderTexture.Clear();
             defaultMaterial.Clear();
         }
 
-        internal readonly Stack<ViewTransform> view = new Stack<ViewTransform>(8);
+        internal readonly Stack<Matrix4x4> view = new Stack<Matrix4x4>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
 
         // Using list instead of stack to allow access to all elements in previson for the blit of any RT into any RT.
@@ -148,7 +142,7 @@ namespace UnityEngine.UIElements.UIR
 
                     Camera.SetupCurrent(oldCamera);
                     RenderTexture.active = oldRT;
-                    GL.modelview = drawParams.view.Peek().transform;
+                    GL.modelview = drawParams.view.Peek();
                     GL.LoadProjectionMatrix(oldProjection);
 
                     if (hasScissor)
@@ -158,33 +152,50 @@ namespace UnityEngine.UIElements.UIR
                     break;
                 }
                 case CommandType.PushView:
+                {
+                    // Transform
+                    drawParams.view.Push(owner.worldTransform);
+                    GL.modelview = owner.worldTransform;
+                    // Scissors
                     var parent = owner.hierarchy.parent;
-                    Vector4 clipRect;
+                    Rect clipRect;
                     if (parent != null)
-                        clipRect = RectToClipSpace(parent.worldClip);
+                        clipRect = parent.worldClip;
                     else
-                        clipRect = UIRUtility.ToVector4(DrawParams.k_FullNormalizedRect);
-                    var vt = new ViewTransform() { transform = owner.worldTransform, clipRect = clipRect };
-                    drawParams.view.Push(vt);
-                    GL.modelview = vt.transform;
+                        clipRect = DrawParams.k_FullNormalizedRect;
+                    drawParams.scissor.Push(clipRect);
+                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(clipRect, pixelsPerPoint));
                     break;
+                }
                 case CommandType.PopView:
+                {
+                    // Transform
                     drawParams.view.Pop();
-                    GL.modelview = drawParams.view.Peek().transform;
-                    break;
-                case CommandType.PushScissor:
-                    Rect elemRect = CombineScissorRects(owner.worldClip, drawParams.scissor.Peek());
-                    drawParams.scissor.Push(elemRect);
-                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
-                    break;
-                case CommandType.PopScissor:
+                    GL.modelview = drawParams.view.Peek();
+                    // Scissors
                     drawParams.scissor.Pop();
                     Rect prevRect = drawParams.scissor.Peek();
                     if (prevRect.x == DrawParams.k_UnlimitedRect.x)
                         Utility.DisableScissor();
                     else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
                     break;
-
+                }
+                case CommandType.PushScissor:
+                {
+                    Rect elemRect = CombineScissorRects(owner.worldClip, drawParams.scissor.Peek());
+                    drawParams.scissor.Push(elemRect);
+                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
+                    break;
+                }
+                case CommandType.PopScissor:
+                {
+                    drawParams.scissor.Pop();
+                    Rect prevRect = drawParams.scissor.Peek();
+                    if (prevRect.x == DrawParams.k_UnlimitedRect.x)
+                        Utility.DisableScissor();
+                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
+                    break;
+                }
                 case CommandType.PushRenderTexture:
                 {
                     RectInt viewport = Utility.GetActiveViewport();
