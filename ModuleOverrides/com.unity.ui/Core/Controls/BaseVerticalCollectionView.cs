@@ -1455,7 +1455,7 @@ namespace UnityEngine.UIElements
             // and set it back in Setup().
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
-                m_VirtualizationController.OnFocus(evt.leafTarget as VisualElement);
+                m_VirtualizationController?.OnFocus(evt.leafTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {

@@ -152,6 +152,11 @@ namespace UnityEngine.UIElements
             {
                 UIElementsRuntimeUtility.DisposeRuntimePanel(m_Settings);
             }
+
+            internal void MarkPotentiallyEmpty()
+            {
+                UIElementsRuntimeUtility.MarkPotentiallyEmpty(m_Settings);
+            }
         }
 
 
@@ -475,6 +480,7 @@ namespace UnityEngine.UIElements
         private Rect m_TargetRect;
         private float m_ResolvedScale; // panel scaling factor (pixels <-> points)
 
+        internal int m_EmptyPanelCounter = 0;
         private PanelSettings()
         {
             m_PanelAccess = new RuntimePanelAccess(this);
@@ -513,6 +519,11 @@ namespace UnityEngine.UIElements
         }
 
         private void OnDisable()
+        {
+            m_PanelAccess.DisposePanel();
+        }
+
+        internal void DisposePanel()
         {
             m_PanelAccess.DisposePanel();
         }
@@ -705,10 +716,7 @@ namespace UnityEngine.UIElements
             m_AttachedUIDocumentsList.RemoveFromListAndFromVisualTree(uiDocument);
 
             if (m_AttachedUIDocumentsList.m_AttachedUIDocuments.Count == 0)
-            {
-                // No references to the panel, we can dispose it and it'll be recreated if it's used again.
-                m_PanelAccess.DisposePanel();
-            }
+                m_PanelAccess.MarkPotentiallyEmpty();
         }
 
         private float m_OldReferenceDpi;

@@ -36,6 +36,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasLifecycleVersion => false;
 
+        public IPackageVersion GetUpdateTarget(IPackageVersion version)
+        {
+            return recommended;
+        }
+
         public PlaceholderVersionList(PlaceholderPackageVersion version)
         {
             m_Versions = new[] { version };

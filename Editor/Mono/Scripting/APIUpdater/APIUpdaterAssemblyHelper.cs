@@ -48,13 +48,7 @@ namespace UnityEditor.Scripting
             return assemblyUpdaterProcess.ExitCode;
         }
 
-        static string AssemblyUpdaterPath()
-        {
-            var unescapedAssemblyUpdaterPath = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
-            return Application.platform == RuntimePlatform.WindowsEditor
-                ? CommandLineFormatter.EscapeCharsWindows(unescapedAssemblyUpdaterPath)
-                : CommandLineFormatter.EscapeCharsQuote(unescapedAssemblyUpdaterPath);
-        }
+        static string AssemblyUpdaterPath() => EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/AssemblyUpdater.exe";
 
         internal static string ArgumentsForUpdateAssembly(string assemblyPath, string tempOutputPath, IEnumerable<string> updateConfigSourcePaths)
         {

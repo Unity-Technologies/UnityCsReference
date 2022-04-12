@@ -92,8 +92,7 @@ namespace Unity.UI.Builder
         {
             standardControlsTree = GenerateControlsItemsTree();
             standardControlsTreeNoEditor = new List<TreeViewItem>();
-            var controlsItemsTree = GenerateControlsItemsTree();
-            foreach (var item in controlsItemsTree)
+            foreach (var item in standardControlsTree)
             {
                 var builderLibraryTreeItem = item.data;
                 if (builderLibraryTreeItem.isEditorOnly)

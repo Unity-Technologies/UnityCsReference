@@ -328,11 +328,8 @@ namespace UnityEngine.UIElements
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
-            if (viewController != null)
-            {
-                viewController.RebuildTree();
-                RefreshItems();
-            }
+            viewController?.RebuildTree();
+            RefreshItems();
         }
 
         private void OnScrollViewKeyDown(KeyDownEvent evt)

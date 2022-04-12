@@ -14,13 +14,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_UpdateToButtonTextFormat = L10n.Tr("Update to {0}");
         private static readonly string k_UpdatingToButtonTextFormat = L10n.Tr("Updating to {0}");
 
-        internal static IPackageVersion GetTargetVersion(IPackageVersion version)
-        {
-            if (version?.isInstalled == true && version != version.package.versions.recommended)
-                return version.package.versions.latest ?? version;
-            return version;
-        }
-
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
@@ -37,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.Install(versions.Select(v => GetTargetVersion(v)));
+            m_PackageDatabase.Install(versions.Select(v => v?.package?.versions.GetUpdateTarget(v)));
             // The current multi-select UI does not allow users to install non-recommended versions
             // Should this change in the future, we'll need to update the analytics event accordingly.
             PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", packageIds: versions.Select(v => v.uniqueId));
@@ -46,8 +39,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            var installedVersion = version.package.versions.installed;
-            var targetVersion = GetTargetVersion(version);
+            var versionsList = version?.package?.versions;
+            var installedVersion = versionsList?.installed;
+            var targetVersion = versionsList?.GetUpdateTarget(version);
             if (installedVersion != null && !installedVersion.isDirectDependency && installedVersion != targetVersion)
             {
                 var featureSetDependents = m_PackageDatabase.GetFeatureDependents(installedVersion);
@@ -112,12 +106,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            var installed = version?.package.versions.installed;
-            var targetVersion = GetTargetVersion(version);
+            var versionsList = version?.package?.versions;
+            var installed = versionsList?.installed;
+            var targetVersion = versionsList?.GetUpdateTarget(version);
             return installed?.HasTag(PackageTag.VersionLocked) == false
                 && targetVersion?.HasTag(PackageTag.Installable) == true
                 && installed != targetVersion
                 && !version.IsRequestedButOverriddenVersion
+                && (version.isDirectDependency || version != installed)
                 && !version.HasTag(PackageTag.Local)
                 && m_PageManager.GetVisualState(version.package)?.isLocked != true;
         }
@@ -135,10 +131,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_PageManager.GetSelection().Count > 1)
                 return isInProgress ? k_MultiSelectUpdatingButtonText : k_MultiSelectUpdateButtonText;
 
-            return string.Format(isInProgress ? k_UpdatingToButtonTextFormat : k_UpdateToButtonTextFormat, GetTargetVersion(version).version);
+            return string.Format(isInProgress ? k_UpdatingToButtonTextFormat : k_UpdateToButtonTextFormat,
+                version?.package?.versions.GetUpdateTarget(version).version);
         }
 
-        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsInstallInProgress(GetTargetVersion(version));
+        protected override bool IsInProgress(IPackageVersion v) => m_PackageDatabase.IsInstallInProgress(v.package.versions.GetUpdateTarget(v));
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
