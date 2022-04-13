@@ -153,7 +153,8 @@ namespace UnityEditor.PackageManager.UI
 
         public IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
 
-        public bool isFromScopedRegistry => m_PackageInfo?.registry?.isDefault == false;
+        public bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
+        public bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
 
         public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion version, string displayName, bool isUnityPackage)
         {
