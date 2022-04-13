@@ -188,6 +188,21 @@ namespace UnityEditor
             return platformGroup;
         }
 
+        internal static event Action<string> analyticsSent;
+
+        [RequiredByNativeCode]
+        private static void VideoClipImporterInvokeAnalyticsSentCallback_Internal(string analytics)
+        {
+            if (analyticsSent != null)
+                analyticsSent(analytics);
+        }
+
+        [RequiredByNativeCode]
+        private static bool VideoClipImporterAnalyticsEventHandlerAttached_Internal()
+        {
+            return analyticsSent != null;
+        }
+
         [NativeName("ClearTargetSettings")]
         internal extern void Internal_ClearTargetSettings(BuildTargetGroup group);
 

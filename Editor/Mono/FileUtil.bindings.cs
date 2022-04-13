@@ -17,8 +17,16 @@ namespace UnityEditor
     public partial class FileUtil
     {
         // Deletes a file or a directory given a path.
-        [FreeFunction]
-        public static extern bool DeleteFileOrDirectory(string path);
+        public static bool DeleteFileOrDirectory(string path)
+        {
+            if (path == null) throw new ArgumentNullException("path");
+            if (path == string.Empty) throw new ArgumentException("path", "The path cannot be empty.");
+
+            return DeleteFileOrDirectoryInternal(path);
+        }
+
+        [FreeFunction("DeleteFileOrDirectory")]
+        private static extern bool DeleteFileOrDirectoryInternal(string path);
 
         [FreeFunction("IsPathCreated")]
         private static extern bool PathExists(string path);

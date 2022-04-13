@@ -115,6 +115,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
 
             EditorGUILayout.PropertyField(m_ColorFormat, styles.colorFormat);
+            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat((GraphicsFormat)m_ColorFormat.intValue);
 
             if (compatibleFormat != format)
             {
@@ -131,8 +132,6 @@ namespace UnityEditor
 
             if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
                 EditorGUILayout.PropertyField(m_DepthFormat, styles.depthBuffer);
-
-            m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat(format);
 
             using (new EditorGUI.DisabledScope(isTexture3D))
             {
