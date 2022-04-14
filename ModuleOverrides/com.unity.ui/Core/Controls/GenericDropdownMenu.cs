@@ -132,12 +132,17 @@ namespace UnityEngine.UIElements
             m_ScrollView.UnregisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
-        void Hide()
+        void Hide(bool giveFocusBack = false)
         {
             m_MenuContainer.RemoveFromHierarchy();
 
             if (m_TargetElement != null)
+            {
                 m_TargetElement.pseudoStates ^= PseudoStates.Active;
+                if (giveFocusBack)
+                    m_TargetElement.Focus();
+            }
+
             m_TargetElement = null;
         }
 
@@ -185,7 +190,7 @@ namespace UnityEngine.UIElements
             switch (op)
             {
                 case KeyboardNavigationOperation.Cancel:
-                    Hide();
+                    Hide(true);
                     return true;
                 case KeyboardNavigationOperation.Submit:
                     var item = m_Items[selectedIndex];
@@ -195,7 +200,7 @@ namespace UnityEngine.UIElements
                         item.actionUserData?.Invoke(item.element.userData);
                     }
 
-                    Hide();
+                    Hide(true);
                     return true;
                 case KeyboardNavigationOperation.Previous:
                     UpdateSelectionUp(selectedIndex < 0 ? m_Items.Count - 1 : selectedIndex - 1);
@@ -253,7 +258,7 @@ namespace UnityEngine.UIElements
                 item.action?.Invoke();
                 item.actionUserData?.Invoke(item.element.userData);
 
-                Hide();
+                Hide(true);
             }
 
             if (evt.pointerId != PointerId.mousePointerId)
@@ -279,7 +284,7 @@ namespace UnityEngine.UIElements
 
         void OnParentResized(GeometryChangedEvent evt)
         {
-            Hide();
+            Hide(true);
         }
 
         void UpdateSelection(VisualElement target)
@@ -478,6 +483,9 @@ namespace UnityEngine.UIElements
             m_MenuContainer.style.top = m_PanelRootVisualContainer.layout.y;
             m_MenuContainer.style.width = m_PanelRootVisualContainer.layout.width;
             m_MenuContainer.style.height = m_PanelRootVisualContainer.layout.height;
+            m_MenuContainer.style.fontSize = m_TargetElement.computedStyle.fontSize;
+            m_MenuContainer.style.unityFont = m_TargetElement.computedStyle.unityFont;
+            m_MenuContainer.style.unityFontDefinition = m_TargetElement.computedStyle.unityFontDefinition;
 
             var local = m_PanelRootVisualContainer.WorldToLocal(position);
             m_OuterContainer.style.left = local.x - m_PanelRootVisualContainer.layout.x;

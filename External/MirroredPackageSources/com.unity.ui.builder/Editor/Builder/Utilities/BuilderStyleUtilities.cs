@@ -1,5 +1,6 @@
 using UnityEngine.UIElements;
 using System;
+using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -15,6 +16,13 @@ namespace Unity.UI.Builder
             styleRule = vta.GetOrCreateInlineStyleRule(vea);
         }
 
+        static void GetInlineStyleSheetAndRule(VisualTreeAsset vta, VisualElementAsset vea,
+            out StyleSheet styleSheet, out StyleRule styleRule)
+        {
+            styleSheet = vta.GetOrCreateInlineStyleSheet();
+            styleRule = vta.GetOrCreateInlineStyleRule(vea);
+        }
+
         static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName)
         {
             var styleProperty = styleSheet.FindLastProperty(styleRule, styleName);
@@ -26,21 +34,48 @@ namespace Unity.UI.Builder
 
         // Inline StyleSheet Value Setters
 
-        static public void SetInlineStyleValue(VisualTreeAsset vta, VisualElement element, string styleName, float value)
+        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElement element, string styleName, float value)
         {
             GetInlineStyleSheetAndRule(vta, element, out StyleSheet styleSheet, out StyleRule styleRule);
-            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
+            SetStyleSheetRuleValueAsDimension(styleSheet, styleRule, styleName, value);
+            element?.UpdateInlineRule(styleSheet, styleRule);
         }
 
-        static public void SetInlineStyleValue(VisualTreeAsset vta, VisualElement element, string styleName, Enum value)
+        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, float value)
+        {
+            GetInlineStyleSheetAndRule(vta, vea, out StyleSheet styleSheet, out StyleRule styleRule);
+            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
+            element?.UpdateInlineRule(styleSheet, styleRule);
+        }
+
+        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElement element, string styleName, Enum value)
         {
             GetInlineStyleSheetAndRule(vta, element, out StyleSheet styleSheet, out StyleRule styleRule);
             SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
+            element?.UpdateInlineRule(styleSheet, styleRule);
+        }
+
+        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, Color value)
+        {
+            GetInlineStyleSheetAndRule(vta, vea, out StyleSheet styleSheet, out StyleRule styleRule);
+            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
+            element?.UpdateInlineRule(styleSheet, styleRule);
         }
 
         // StyleSheet Value Setters
 
-        static public void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value)
+        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value)
+        {
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
+            var isNewValue = styleProperty.values.Length == 0;
+
+            if (isNewValue)
+                styleSheet.AddValue(styleProperty, value);
+            else // TODO: Assume only one value.
+                styleSheet.SetValue(styleProperty.values[0], value);
+        }
+
+        static void SetStyleSheetRuleValueAsDimension(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
             var isNewValue = styleProperty.values.Length == 0;
@@ -50,7 +85,7 @@ namespace Unity.UI.Builder
             // it here as a dimension to create final proper uss.
             if (!isNewValue && styleProperty.values[0].valueType != StyleValueType.Dimension)
             {
-                styleProperty.values = new StyleValueHandle[0];
+                styleProperty.values = Array.Empty<StyleValueHandle>();
                 isNewValue = true;
             }
 
@@ -64,17 +99,34 @@ namespace Unity.UI.Builder
                 styleSheet.SetValue(styleProperty.values[0], dimension);
         }
 
-        static public void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, Enum value)
+        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, Enum value)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
             var isNewValue = styleProperty.values.Length == 0;
 
             if (!isNewValue && styleProperty.IsVariable())
             {
-                styleProperty.values = new StyleValueHandle[0];
+                styleProperty.values = Array.Empty<StyleValueHandle>();
                 isNewValue = true;
             }
 
+            if (isNewValue)
+                styleSheet.AddValue(styleProperty, value);
+            else // TODO: Assume only one value.
+                styleSheet.SetValue(styleProperty.values[0], value);
+        }
+
+        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, Color value)
+        {
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
+            var isNewValue = styleProperty.values.Length == 0;
+            
+            if (!isNewValue && styleProperty.IsVariable())
+            {
+                styleProperty.values = Array.Empty<StyleValueHandle>();
+                isNewValue = true;
+            }
+            
             if (isNewValue)
                 styleSheet.AddValue(styleProperty, value);
             else // TODO: Assume only one value.

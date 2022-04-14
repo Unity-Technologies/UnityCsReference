@@ -134,6 +134,7 @@ namespace UnityEngine.UIElements
                 if (e.button == (int)MouseButton.LeftMouse)
                     e.StopPropagation();
             });
+            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
         }
 
         void OnPointerDownEvent(PointerDownEvent evt)
@@ -153,11 +154,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool ContainsPointer(int pointerId)
+        {
+            var elementUnderPointer = elementPanel.GetTopElementUnderPointer(pointerId);
+            return this == elementUnderPointer || visualInput == elementUnderPointer;
+        }
+
         void ProcessPointerDown<T>(PointerEventBase<T> evt) where T : PointerEventBase<T>, new()
         {
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.originalMousePosition)))
+                if (ContainsPointer(evt.pointerId))
                 {
                     ShowMenu();
                     evt.StopPropagation();
@@ -165,27 +172,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [EventInterest(typeof(KeyDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        void OnNavigationSubmit(NavigationSubmitEvent evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            KeyDownEvent kde = (evt as KeyDownEvent);
-            if (kde != null)
-            {
-                if ((kde.keyCode == KeyCode.Space) ||
-                    (kde.keyCode == KeyCode.KeypadEnter) ||
-                    (kde.keyCode == KeyCode.Return))
-                {
-                    ShowMenu();
-                    evt.StopPropagation();
-                }
-            }
+            ShowMenu();
+            evt.StopPropagation();
         }
 
         private void ShowMenu()

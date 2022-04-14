@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using UnityEditor.Connect;
 using UnityEditor.Utils;
@@ -128,7 +129,8 @@ namespace UnityEditor.CrashReporting
             }
             else if (Application.platform == RuntimePlatform.OSXEditor)
             {
-                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "macosx", "usymtool");
+                string usymtoolFileName = RuntimeInformation.ProcessArchitecture.ToString().ToLower() == "arm64" ? "usymtoolarm64" :"usymtool";
+                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "macosx", usymtoolFileName);
                 config.LzmaPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "lzma");
                 config.LogFilePath = Paths.Combine(Environment.GetEnvironmentVariable("HOME"), "Library", "Logs", "Unity", "symbol_upload.log");
             }

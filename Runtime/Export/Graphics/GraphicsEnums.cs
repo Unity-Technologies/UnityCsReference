@@ -14,7 +14,7 @@ namespace UnityEngine
         UsePlayerSettings = -1,
         VertexLit = 0,
         Forward = 1,
-        DeferredLighting = 2,
+        [Obsolete("DeferredLighting has been removed. Use DeferredShading, Forward or HDRP/URP instead.", false)] DeferredLighting = 2,
         DeferredShading = 3
     }
 
@@ -238,6 +238,7 @@ namespace UnityEngine
     }
     public enum SkinWeights
     {
+        None = 0,
         OneBone = 1,
         TwoBones = 2,
         FourBones = 4,
@@ -283,16 +284,13 @@ namespace UnityEngine
 
     public enum ScreenOrientation
     {
-        [System.Obsolete("Enum member Unknown has been deprecated.", false)]
-        Unknown = 0,
-        [System.Obsolete("Use LandscapeLeft instead (UnityUpgradable) -> LandscapeLeft", true)]
-        Landscape = 3,
-
         Portrait = 1,
         PortraitUpsideDown = 2,
         LandscapeLeft = 3,
         LandscapeRight = 4,
         AutoRotation = 5,
+        [System.Obsolete("Enum member Unknown has been deprecated.", false)] Unknown = 0,
+        [System.Obsolete("Use LandscapeLeft instead (UnityUpgradable) -> LandscapeLeft", true)] Landscape = 3,
     }
 
     public enum FilterMode
@@ -549,6 +547,15 @@ namespace UnityEngine
         Supported = 1 << 0,
         RuntimeSwitchable = 1 << 1,
         AutomaticTonemapping = 1 << 2
+    }
+
+    namespace Rendering
+    {
+        public enum BlendShapeBufferLayout
+        {
+            PerShape,
+            PerVertex,
+        }
     }
 
     namespace Experimental
@@ -818,6 +825,16 @@ namespace UnityEngine
         BakedEmissive = 1 << 1,
         EmissiveIsBlack = 1 << 2,
         AnyEmissive = RealtimeEmissive | BakedEmissive
+    }
+
+    // Match MaterialSerializedProperty on C++ side
+    internal enum MaterialSerializedProperty
+    {
+        None = 0,
+        LightmapFlags = 1 << 1,
+        EnableInstancingVariants = 1 << 2,
+        DoubleSidedGI = 1 << 3,
+        CustomRenderQueue = 1 << 4,
     }
 
     // Match the enums from LightProbeProxyVolume class on C++ side
@@ -1236,10 +1253,9 @@ namespace UnityEngine.Rendering
         Depth = 3,      // camera's depth texture
         DepthNormals = 4,   // camera's depth+normals texture
         ResolvedDepth = 5, // resolved depth buffer from deferred
-        //SeparatePassDepth = 6, // "separate pass workaround" depth buffer from deferred
-        PrepassNormalsSpec = 7,
-        PrepassLight = 8,
-        PrepassLightSpec = 9,
+        [Obsolete("Deferred Lighting has been removed, so PrepassNormalsSpec built-in render texture type is never used now.", false)] PrepassNormalsSpec = 7,
+        [Obsolete("Deferred Lighting has been removed, so PrepassLight built-in render texture type is never used now.", false)] PrepassLight = 8,
+        [Obsolete("Deferred Lighting has been removed, so PrepassLightSpec built-in render texture type is never used now.", false)] PrepassLightSpec = 9,
         GBuffer0 = 10,
         GBuffer1 = 11,
         GBuffer2 = 12,
@@ -1259,15 +1275,15 @@ namespace UnityEngine.Rendering
         Vertex = 1,
         VertexLM = 2,
 
-        [System.Obsolete("VertexLMRGBM PassType is obsolete. Please use VertexLM PassType together with DecodeLightmap shader function.")]
+        [Obsolete("VertexLMRGBM PassType is obsolete. Please use VertexLM PassType together with DecodeLightmap shader function.")]
         VertexLMRGBM = 3,
 
         ForwardBase = 4,
         ForwardAdd = 5,
-        LightPrePassBase = 6,
-        LightPrePassFinal = 7,
+        [Obsolete("Deferred Lighting was removed, so LightPrePassBase pass type is never used anymore.")] LightPrePassBase = 6,
+        [Obsolete("Deferred Lighting was removed, so LightPrePassFinal pass type is never used anymore.")] LightPrePassFinal = 7,
         ShadowCaster = 8,
-        // ShadowCollector = 9 -- not needed starting with 5.0
+        // ShadowCollector = 9 -- removed in Unity 5.0
         Deferred = 10,
         Meta = 11,
         MotionVectors = 12,
@@ -1326,8 +1342,8 @@ namespace UnityEngine.Rendering
         XboxOneD3D12 = 23,
         GameCoreXboxOne = 24,
         [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
-        GameCoreScarlett = 25,
-        GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
+        GameCoreScarlett = -1,
+        GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally _NOT_ set to the same as GameCoreScarlett
         PlayStation5 = 26,
         PlayStation5NGGC = 27
     }
@@ -1800,7 +1816,7 @@ namespace UnityEngine.Rendering
     {
         DeferredShading = 0,
         DeferredReflections = 1,
-        LegacyDeferredLighting = 2,
+        [System.Obsolete("LegacyDeferredLighting has been removed.", false)] LegacyDeferredLighting = 2,
         ScreenSpaceShadows = 3,
         DepthNormals = 4,
         MotionVectors = 5,
@@ -1822,7 +1838,7 @@ namespace UnityEngine.Rendering
     {
         UNITY_NO_DXT5nm,
         UNITY_NO_RGBM,
-        UNITY_USE_NATIVE_HDR,
+        [Obsolete("Shaders unconditionally support HDR decoding.")] UNITY_USE_NATIVE_HDR,
         UNITY_ENABLE_REFLECTION_BUFFERS,
         UNITY_FRAMEBUFFER_FETCH_AVAILABLE,
         UNITY_ENABLE_NATIVE_SHADOW_LOOKUPS,
@@ -1901,6 +1917,12 @@ namespace UnityEngine.Rendering
         High = 75,
         Unlimited = 100
     }
+
+    public enum LightProbeOutsideHullStrategy // Defines behaviour of a Light Probe lit Renderer placed outside of the bounds of the Light Probe tetrahedral hull.
+    {
+        kLightProbeSearchTetrahedralHull,   // Slow path, search the tetrahedral hull to find the closest Light Probe.
+        kLightProbeUseAmbientProbe,         // Fast path, don't spend time searching the hull to find the closest probe, use the global Ambient Probe.
+    };
 
     //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
     public enum ComputeQueueType

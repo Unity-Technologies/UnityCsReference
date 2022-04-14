@@ -60,7 +60,7 @@ namespace UnityEditor
 
         internal void OnDisable()
         {
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoEvent;
             s_LastClosedTime = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
         }
 
@@ -85,7 +85,7 @@ namespace UnityEditor
             }
         }
 
-        void OnUndoRedoPerformed()
+        void OnUndoRedoEvent(in UndoRedoInfo undo)
         {
             m_UndoRedoPerformed = true;
             Repaint();
@@ -130,7 +130,7 @@ namespace UnityEditor
             if (s_Instance == null)
             {
                 this.titleContent = EditorGUIUtility.TrTextContentWithIcon("Undo History", "UnityEditor.HistoryWindow");
-                Undo.undoRedoPerformed += OnUndoRedoPerformed;
+                Undo.undoRedoEvent += OnUndoRedoEvent;
 
                 //root of the editorwindow
                 VisualElement root = rootVisualElement;
@@ -176,7 +176,7 @@ namespace UnityEditor
                 m_HistoryListView.itemsSource = m_History;
                 m_HistoryListView.RefreshItems();
 
-                m_HistoryListView.onSelectionChange += OnUndoSelectionChange;
+                m_HistoryListView.selectionChanged += OnUndoSelectionChange;
 
                 m_LastUndos.Clear();
 

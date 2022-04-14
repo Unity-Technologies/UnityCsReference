@@ -12,6 +12,16 @@ namespace UnityEditor.UIElements.Debugger
 {
     internal class DebuggerTreeView : VisualElement
     {
+        internal const string itemContentName = "unity-treeview-item-content";
+        internal const string labelContainerUssClassName = "unity-debugger-tree-item-label-cont";
+        internal const string itemLabelUssClassName = "unity-debugger-tree-item-label";
+        internal const string itemTypeUssClassName = "unity-debugger-tree-item-type";
+        internal const string itemNameUssClassName = "unity-debugger-tree-item-name";
+        internal const string itemNameLabelUssClassName = "unity-debugger-tree-item-name-label";
+        internal const string itemClassListUssClassName = "unity-debugger-tree-item-classlist";
+        internal const string itemClassListLabelUssClassName = "unity-debugger-tree-item-classlist-label";
+        internal const string debuggerHighlightUssClassName = "unity-debugger-highlight";
+
         public bool hierarchyHasChanged { get; set; }
 
         public IList<TreeViewItemData<VisualElement>> treeRootItems => m_TreeRootItems;
@@ -89,37 +99,37 @@ namespace UnityEditor.UIElements.Debugger
             element.userData = target;
 
             var labelCont = new VisualElement();
-            labelCont.AddToClassList("unity-debugger-tree-item-label-cont");
+            labelCont.AddToClassList(labelContainerUssClassName);
             element.Add(labelCont);
 
             var label = new Label(target.typeName);
-            label.AddToClassList("unity-debugger-tree-item-label");
-            label.AddToClassList("unity-debugger-tree-item-type");
+            label.AddToClassList(itemLabelUssClassName);
+            label.AddToClassList(itemTypeUssClassName);
             labelCont.Add(label);
 
             if (!string.IsNullOrEmpty(target.name))
             {
                 var nameLabelCont = new VisualElement();
-                nameLabelCont.AddToClassList("unity-debugger-tree-item-label-cont");
+                nameLabelCont.AddToClassList(labelContainerUssClassName);
                 element.Add(nameLabelCont);
 
                 var nameLabel = new Label("#" + target.name);
-                nameLabel.AddToClassList("unity-debugger-tree-item-label");
-                nameLabel.AddToClassList("unity-debugger-tree-item-name");
-                nameLabel.AddToClassList("unity-debugger-tree-item-name-label");
+                nameLabel.AddToClassList(itemLabelUssClassName);
+                nameLabel.AddToClassList(itemNameUssClassName);
+                nameLabel.AddToClassList(itemNameLabelUssClassName);
                 nameLabelCont.Add(nameLabel);
             }
 
             foreach (var ussClass in target.GetClasses())
             {
                 var classLabelCont = new VisualElement();
-                classLabelCont.AddToClassList("unity-debugger-tree-item-label-cont");
+                classLabelCont.AddToClassList(labelContainerUssClassName);
                 element.Add(classLabelCont);
 
                 var classLabel = new Label("." + ussClass);
-                classLabel.AddToClassList("unity-debugger-tree-item-label");
-                classLabel.AddToClassList("unity-debugger-tree-item-classlist");
-                classLabel.AddToClassList("unity-debugger-tree-item-classlist-label");
+                classLabel.AddToClassList(itemLabelUssClassName);
+                classLabel.AddToClassList(itemClassListUssClassName);
+                classLabel.AddToClassList(itemClassListLabelUssClassName);
                 classLabelCont.Add(classLabel);
             }
         }
@@ -164,7 +174,7 @@ namespace UnityEditor.UIElements.Debugger
             Func<VisualElement> makeItem = () =>
             {
                 var element = new VisualElement();
-                element.name = "unity-treeview-item-content";
+                element.name = itemContentName;
                 element.RegisterCallback<MouseEnterEvent>((e) =>
                 {
                     HighlightItemInTargetWindow(e.target as VisualElement);
@@ -184,7 +194,7 @@ namespace UnityEditor.UIElements.Debugger
             m_TreeView.fixedItemHeight = 20;
             m_TreeView.style.flexGrow = 1;
             m_TreeView.horizontalScrollingEnabled = true;
-            m_TreeView.onSelectedIndicesChange += items =>
+            m_TreeView.selectedIndicesChanged += items =>
             {
                 if (m_SelectElementCallback == null)
                     return;
@@ -207,7 +217,7 @@ namespace UnityEditor.UIElements.Debugger
             m_SearchBar.ClearSearch();
         }
 
-        private static bool FindElement(IEnumerable<TreeViewItemData<VisualElement>> list, VisualElement element, out TreeViewItemData<VisualElement> itemData)
+        internal static bool FindElement(IEnumerable<TreeViewItemData<VisualElement>> list, VisualElement element, out TreeViewItemData<VisualElement> itemData)
         {
             if (list == null)
             {
@@ -253,44 +263,48 @@ namespace UnityEditor.UIElements.Debugger
                 return;
 
             m_TreeView.SetSelectionById(item.id);
+            m_TreeView.ScrollToItemById(item.id);
 
             if (string.IsNullOrEmpty(query))
                 return;
 
-            var selected = m_TreeView.Q(className: "unity-list-view__item--selected");
-            if (selected == null || searchHighlight == SearchHighlight.None)
-                return;
-
-            var content = selected.Q("unity-treeview-item-content");
-            var labelContainers = content.Query(classes: "unity-debugger-tree-item-label-cont").ToList();
-            foreach (var labelContainer in labelContainers)
+            schedule.Execute(() =>
             {
-                var label = labelContainer.Q<Label>();
+                var selected = m_TreeView.Q(className: BaseVerticalCollectionView.itemSelectedVariantUssClassName);
+                if (selected == null || searchHighlight == SearchHighlight.None)
+                    return;
 
-                if (label.ClassListContains("unity-debugger-tree-item-type") && searchHighlight != SearchHighlight.Type)
-                    continue;
+                var content = selected.Q(itemContentName);
+                var labelContainers = content.Query(classes: labelContainerUssClassName).ToList();
+                foreach (var labelContainer in labelContainers)
+                {
+                    var label = labelContainer.Q<Label>();
 
-                if (label.ClassListContains("unity-debugger-tree-item-name") && searchHighlight != SearchHighlight.Name)
-                    continue;
+                    if (label.ClassListContains(itemTypeUssClassName) && searchHighlight != SearchHighlight.Type)
+                        continue;
 
-                if (label.ClassListContains("unity-debugger-tree-item-classlist") && searchHighlight != SearchHighlight.Class)
-                    continue;
+                    if (label.ClassListContains(itemNameUssClassName) && searchHighlight != SearchHighlight.Name)
+                        continue;
 
-                var text = label.text;
-                var indexOf = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
-                if (indexOf < 0)
-                    continue;
+                    if (label.ClassListContains(itemClassListUssClassName) && searchHighlight != SearchHighlight.Class)
+                        continue;
 
-                var highlight = new VisualElement();
-                m_SearchResultsHightlights.Add(highlight);
-                highlight.AddToClassList("unity-debugger-highlight");
-                int letterSize = 8;
-                highlight.style.width = query.Length * letterSize;
-                highlight.style.left = indexOf * letterSize;
-                labelContainer.Insert(0, highlight);
+                    var text = label.text;
+                    var indexOf = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
+                    if (indexOf < 0)
+                        continue;
 
-                break;
-            }
+                    var highlight = new VisualElement();
+                    m_SearchResultsHightlights.Add(highlight);
+                    highlight.AddToClassList(debuggerHighlightUssClassName);
+                    var letterSize = 8.4f;
+                    highlight.style.width = query.Length * letterSize;
+                    highlight.style.left = indexOf * letterSize;
+                    labelContainer.Insert(0, highlight);
+
+                    break;
+                }
+            });
         }
 
         private void AddTreeItemsForElement(IList<TreeViewItemData<VisualElement>> items, VisualElement ve, ref int nextId)

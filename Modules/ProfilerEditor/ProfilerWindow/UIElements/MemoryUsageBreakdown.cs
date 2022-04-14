@@ -209,7 +209,7 @@ namespace Unity.Profiling.Editor
 
             if (ShowUnknown || !m_Normalized)
             {
-                var percentage = knownBytes / (float)totalBarByteAmount * 100;
+                var percentage = totalBarByteAmount > 0 ? knownBytes / (float)totalBarByteAmount * 100 : 100;
                 m_Content.style.width = new Length(Mathf.RoundToInt(percentage), LengthUnit.Percent);
             }
             else
@@ -220,7 +220,7 @@ namespace Unity.Profiling.Editor
                 UIElementsHelper.SetVisibility(m_UnknownBar, ShowUnknown);
             if (ShowUnknown)
             {
-                var percentage = unknownSize / (float)totalBarByteAmount * 100;
+                var percentage = totalBarByteAmount > 0 ? unknownSize / (float)totalBarByteAmount * 100 : 100;
                 m_UnknownBar.style.width = new Length(Mathf.RoundToInt(percentage), LengthUnit.Percent);
 
                 m_UnknownBar.tooltip = MemoryUsageBreakdownElement.BuildTooltipText(HeaderText, UnknownName, (ulong)TotalBytes, unknownSize);

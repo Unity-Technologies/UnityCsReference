@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Bee.BeeDriver;
 using NiceIO;
@@ -22,6 +23,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     internal static class BeeScriptCompilation
     {
         internal static string ExecutableExtension => Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "";
+        private static string projectPath = Path.GetDirectoryName(Application.dataPath);
 
         public static void AddScriptCompilationData(BeeDriver beeDriver,
             EditorCompilation editorCompilation,
@@ -35,14 +37,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Need to call AssemblyDataFrom before calling CompilationPipeline.GetScriptAssemblies,
             // as that acts on the same ScriptAssemblies, and modifies them with different build settings.
             var cachedAssemblies = AssemblyDataFrom(assemblies);
-
-            AssemblyData[] codeGenAssemblies;
-            using (new ProfilerMarker("GetScriptAssembliesForCodeGen").Auto())
-            {
-                codeGenAssemblies = buildingForEditor
-                    ? null
-                    : AssemblyDataFrom(CodeGenAssemblies(CompilationPipeline.GetScriptAssemblies(editorCompilation, AssembliesType.Editor, extraScriptingDefines)));
-            }
 
             var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
             var dotNetSdkRoslynPath = EditorApplication.applicationContentsPath + $"/DotNetSdkRoslyn";
@@ -68,7 +62,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var precompileAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
-                buildingForEditor,
+                options,
                 BuildPipeline.GetBuildTargetGroup(buildTarget),
                 buildTarget,
                 extraScriptingDefines);
@@ -92,7 +86,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 DotnetRoslynPath = dotNetSdkRoslynPath,
                 MovedFromExtractorPath = movedFromExtractorPath,
                 Assemblies = cachedAssemblies,
-                CodegenAssemblies = codeGenAssemblies,
                 Debug = debug,
                 BuildTarget = buildTarget.ToString(),
                 Localization = localization,
@@ -103,14 +96,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray()
             });
         }
-
-        private static ScriptAssembly[] CodeGenAssemblies(ScriptAssembly[] assemblies) =>
-            assemblies
-                .Where(assembly => UnityCodeGenHelpers.IsCodeGen(FileUtil.GetPathWithoutExtension(assembly.Filename)))
-                .SelectMany(assembly => assembly.AllRecursiveScripAssemblyReferencesIncludingSelf())
-                .Distinct()
-                .OrderBy(a => a.Filename)
-                .ToArray();
 
         private static AssemblyData[] AssemblyDataFrom(ScriptAssembly[] assemblies)
         {
@@ -127,6 +112,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Array.Sort(a.Files, StringComparer.InvariantCulture);
             var references = a.ScriptAssemblyReferences.Select(r => Array.IndexOf(allAssemblies, r)).ToArray();
             Array.Sort(references);
+
             return new AssemblyData
             {
                 Name = new NPath(a.Filename).FileNameWithoutExtension,
@@ -138,13 +124,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 RuleSet = a.CompilerOptions.RoslynAnalyzerRulesetPath,
                 LanguageVersion = a.CompilerOptions.LanguageVersion,
                 Analyzers = a.CompilerOptions.RoslynAnalyzerDllPaths,
+                AdditionalFiles = a.CompilerOptions.RoslynAdditionalFilePaths,
+                AnalyzerConfigPath = a.CompilerOptions.AnalyzerConfigPath,
                 UseDeterministicCompilation = a.CompilerOptions.UseDeterministicCompilation,
                 SuppressCompilerWarnings = (a.Flags & AssemblyFlags.SuppressCompilerWarnings) != 0,
                 Asmdef = a.AsmDefPath,
                 CustomCompilerOptions = a.CompilerOptions.AdditionalCompilerArguments,
                 BclDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(a.CompilerOptions.ApiCompatibilityLevel),
                 DebugIndex = index,
-                SkipCodeGen = a.SkipCodeGen
+                SkipCodeGen = a.SkipCodeGen,
+                Path = projectPath,
+            };
+        }
+
+        private static CompilerMessage AsCompilerMessage(BeeDriverResult.Message message)
+        {
+            return new CompilerMessage
+            {
+                message = message.Text,
+                type = message.Kind == BeeDriverResult.MessageKind.Error
+                    ? CompilerMessageType.Error
+                    : CompilerMessageType.Warning,
             };
         }
 
@@ -153,24 +153,33 @@ namespace UnityEditor.Scripting.ScriptCompilation
         /// We return them as an array of arrays, so on the caller side you're still able to map a compilermessage to the noderesult where it originated from,
         /// which we need when invoking per assembly compilation callbacks.
         /// </summary>
-        public static CompilerMessage[][] ParseAllNodeResultsIntoCompilerMessages(NodeResult[] nodeResults, EditorCompilation editorCompilation)
+        public static CompilerMessage[][] ParseAllResultsIntoCompilerMessages(BeeDriverResult.Message[] beeDriverMessages, NodeResult[] nodeResults, EditorCompilation editorCompilation)
         {
-            var result = new CompilerMessage[nodeResults.Length][];
+            // If there's any messages from the bee driver, we add one additional array to the result which contains all of the driver messages converted and augmented like the nodes messages arrays.
+            bool hasBeeDriverMessages = beeDriverMessages.Length > 0;
+            var result = new CompilerMessage[nodeResults.Length + (hasBeeDriverMessages ? 1 : 0)][];
 
-            int totalErrors = 0;
+            int resultIndex = 0;
+            if (hasBeeDriverMessages)
+            {
+                result[resultIndex] = beeDriverMessages.Select(AsCompilerMessage).ToArray();
+                ++resultIndex;
+            }
             for (int i = 0; i != nodeResults.Length; i++)
             {
-                var compilerMessages = ParseCompilerOutput(nodeResults[i]);
+                result[resultIndex] = ParseCompilerOutput(nodeResults[i]);
+                ++resultIndex;
+            }
 
-                //To be more kind to performance issues in situations where there are thousands of compiler messages, we're going to assume
-                //that after the first 10 compiler error messages, we get very little benefit from augmenting the rest with higher quality unity specific messaging.
-                if (totalErrors < 10)
-                {
-                    UnitySpecificCompilerMessages.AugmentMessagesInCompilationErrorsWithUnitySpecificAdvice(compilerMessages, editorCompilation);
-                    totalErrors += compilerMessages.Count(m => m.type == CompilerMessageType.Error);
-                }
-
-                result[i] = compilerMessages;
+            //To be more kind to performance issues in situations where there are thousands of compiler messages, we're going to assume
+            //that after the first 10 compiler error messages, we get very little benefit from augmenting the rest with higher quality unity specific messaging.
+            int totalErrors = 0;
+            int nextResultToAugment = 0;
+            while (totalErrors < 10 && nextResultToAugment < result.Length)
+            {
+                UnitySpecificCompilerMessages.AugmentMessagesInCompilationErrorsWithUnitySpecificAdvice(result[nextResultToAugment], editorCompilation);
+                totalErrors += result[nextResultToAugment].Count(m => m.type == CompilerMessageType.Error);
+                ++nextResultToAugment;
             }
 
             return result;

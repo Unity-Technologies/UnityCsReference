@@ -23,5 +23,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingWithRoslynAnalysis = 1 << 10,
         BuildingWithoutScriptUpdater = 1 << 11,
         BuildingExtractTypeDB = 1 << 12,
+        BuildingSkipCompile = 1 << 13,
     }
 }

@@ -7,21 +7,21 @@ using System.Collections.Concurrent;
 
 namespace UnityEditor.Search
 {
-    static class Dispatcher
+    public static class Dispatcher
     {
         readonly struct Task
         {
             readonly Action handler;
-            readonly double delay;
+            readonly double delayInSeconds;
             readonly long timestamp;
 
             public bool valid => handler != null;
-            public bool expired => delay == 0d || TimeSpan.FromTicks(DateTime.UtcNow.Ticks - timestamp).TotalSeconds >= delay;
+            public bool expired => delayInSeconds == 0d || TimeSpan.FromTicks(DateTime.UtcNow.Ticks - timestamp).TotalSeconds >= delayInSeconds;
 
-            public Task(in Action handler, in double delay)
+            public Task(in Action handler, in double delayInSeconds)
             {
                 this.handler = handler;
-                this.delay = delay;
+                this.delayInSeconds = delayInSeconds;
                 timestamp = DateTime.UtcNow.Ticks;
             }
 
@@ -46,9 +46,9 @@ namespace UnityEditor.Search
             Enqueue(action, 0.0d);
         }
 
-        public static void Enqueue(Action action, double delay)
+        public static void Enqueue(Action action, double delayInSeconds)
         {
-            Enqueue(new Task(action, delay));
+            Enqueue(new Task(action, delayInSeconds));
         }
 
         private static void Enqueue(in Task task)
@@ -81,6 +81,11 @@ namespace UnityEditor.Search
             while (s_ExecutionQueue.TryDequeue(out var task) && task.valid)
                 if (!Process(task))
                     break;
+        }
+
+        public static Action CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
+        {
+            return Utils.CallDelayed(callback, seconds);
         }
     }
 }

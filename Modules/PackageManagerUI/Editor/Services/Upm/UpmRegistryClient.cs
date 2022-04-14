@@ -128,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 getRegistriesOperation.Cancel();
             getRegistriesOperation.GetRegistries();
             getRegistriesOperation.onProcessResult += OnProcessGetRegistriesResult;
-            getRegistriesOperation.onOperationError += (op, error) => Debug.LogError(error);
+            getRegistriesOperation.logErrorInConsole = true;
         }
 
         private void OnProcessGetRegistriesResult(GetRegistriesRequest request)

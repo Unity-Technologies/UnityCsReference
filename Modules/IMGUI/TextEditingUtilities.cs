@@ -34,6 +34,11 @@ namespace UnityEngine
         bool m_IsCompositionActive;
         bool m_UpdateImeWindowPosition;
 
+        internal bool revealCursor
+        {
+            get { return m_TextSelectingUtility.revealCursor; }
+            set { m_TextSelectingUtility.revealCursor = value; }
+        }
         private int cursorIndex
         {
             get { return m_TextSelectingUtility.cursorIndex; }
@@ -146,7 +151,7 @@ namespace UnityEngine
 
         bool PerformOperation(TextEditOp operation, bool textIsReadOnly)
         {
-            m_TextSelectingUtility.revealCursor = true;
+            revealCursor = true;
 
             switch (operation)
             {
@@ -557,6 +562,12 @@ namespace UnityEngine
             // This probably won't happen, but just in case...
             value = value.Replace('\r', ' ');
             return value;
+        }
+
+        internal void OnBlur()
+        {
+            revealCursor = false;
+            m_TextSelectingUtility.SelectNone();
         }
     }
 }

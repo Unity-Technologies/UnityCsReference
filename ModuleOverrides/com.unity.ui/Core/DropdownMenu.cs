@@ -320,6 +320,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Clear the all items from the menu.
+        /// </summary>
+        public void ClearItems()
+        {
+            m_MenuItems.Clear();
+        }
+
+        /// <summary>
         /// Update the status of all items by calling their status callback and remove the separators in excess. This is called just before displaying the menu.
         /// </summary>
         public void PrepareForDisplay(EventBase e)

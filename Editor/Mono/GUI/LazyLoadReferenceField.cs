@@ -35,10 +35,10 @@ namespace UnityEditor
         {
             ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var fieldType);
 
-            var objectField = EditorUIService.instance.CreateObjectField();
+            var objectField = new UnityEditor.UIElements.ObjectField(property.displayName);
             var genericType = fieldType.GetGenericArguments()[0];
-
-            EditorUIService.instance.SetObjectField(objectField, property.objectReferenceValue, genericType, property.displayName);
+            objectField.objectType = genericType;
+            objectField.value = property.objectReferenceValue;
             objectField.bindingPath = property.propertyPath;
 
             return objectField;

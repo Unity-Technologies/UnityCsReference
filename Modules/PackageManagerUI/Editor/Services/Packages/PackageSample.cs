@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager.UI
                 }
                 catch (IOException e)
                 {
-                    Debug.Log($"[Package Manager] Cannot determine if sample {displayName} is imported: {e.Message}");
+                    Debug.Log($"[Package Manager Window] Cannot determine if sample {displayName} is imported: {e.Message}");
                     return false;
                 }
             }
@@ -135,11 +135,16 @@ namespace UnityEditor.PackageManager.UI
                         string.IsNullOrEmpty(displayName) ? string.Empty : IOUtils.SanitizeFileName(displayName)
                     );
                     return new Sample(ioProxy, assetDatabaseProxy, displayName, description, resolvedSamplePath, importPath, interactiveImport);
-                }) ?? Enumerable.Empty<Sample>();
+                }).ToArray() ?? Enumerable.Empty<Sample>();
             }
             catch (IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot find samples for package {package.displayName}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot find samples for package {package.displayName}: {e}");
+                return Enumerable.Empty<Sample>();
+            }
+            catch (InvalidCastException e)
+            {
+                Debug.Log($"[Package Manager Window] Invalid sample data for package {package.displayName}: {e}");
                 return Enumerable.Empty<Sample>();
             }
             catch (Exception)
@@ -214,7 +219,7 @@ namespace UnityEditor.PackageManager.UI
             }
             catch (IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot import sample {displayName}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot import sample {displayName}: {e.Message}");
                 return false;
             }
         }
@@ -246,7 +251,7 @@ namespace UnityEditor.PackageManager.UI
                         }
                         catch (IOException e)
                         {
-                            Debug.Log($"[Package Manager] Cannot get previous import for sample {displayName}: {e.Message}");
+                            Debug.Log($"[Package Manager Window] Cannot get previous import for sample {displayName}: {e.Message}");
                         }
                     }
                 }
@@ -272,7 +277,7 @@ namespace UnityEditor.PackageManager.UI
                     }
                     catch (IOException e)
                     {
-                        Debug.Log($"[Package Manager] Cannot determine sample {displayName} size: {e.Message}");
+                        Debug.Log($"[Package Manager Window] Cannot determine sample {displayName} size: {e.Message}");
                         m_Size = "- KB";
                     }
                 }

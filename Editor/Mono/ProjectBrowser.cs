@@ -836,27 +836,28 @@ namespace UnityEditor
                 m_ListArea.EndRename(true);
         }
 
-        string[] GetTypesDisplayNames()
+        Dictionary<string, string[]> GetTypesDisplayNames()
         {
-            return new[]
+            return new Dictionary<string, string[]>
             {
-                "AnimationClip",
-                "AudioClip",
-                "AudioMixer",
-                "ComputeShader",
-                "Font",
-                "GUISkin",
-                "Material",
-                "Mesh",
-                "Model",
-                "PhysicMaterial",
-                "Prefab",
-                "Scene",
-                "Script",
-                "Shader",
-                "Sprite",
-                "Texture",
-                "VideoClip",
+                { "Animation Clip", new [] { "AnimationClip" } },
+                { "Audio Clip", new [] { "AudioClip"} },
+                { "Audio Mixer", new [] { "AudioMixer" } },
+                { "Compute Shader", new [] { "ComputeShader" } },
+                { "Font", new [] { "Font" } },
+                { "GUI Skin", new [] { "GUISkin" } },
+                { "Material", new [] { "Material" } },
+                { "Mesh", new [] { "Mesh" } },
+                { "Model", new [] { "Model" } },
+                { "Physic Material", new [] { "PhysicMaterial" } },
+                { "Prefab", new [] { "Prefab" } },
+                { "Scene", new [] { "Scene"} },
+                { "Script", new [] { "Script" } },
+                { "Shader", new [] { "Shader" } },
+                { "Sprite", new [] { "Sprite" } },
+                { "Texture", new [] { "Texture" } },
+                { "Video Clip", new [] { "VideoClip" } },
+                { "Visual Effect Asset", new [] { "VisualEffectAsset", "VisualEffectSubgraph" } },
 
                 // "Texture2D",
                 // "RenderTexture",
@@ -877,7 +878,7 @@ namespace UnityEditor
 
             // Toggle clicked element
             element.selected = !element.selected;
-            string[] selectedDisplayNames = (from item in m_ObjectTypes.m_ListElements where item.selected select item.text).ToArray();
+            string[] selectedDisplayNames = m_ObjectTypes.m_ListElements.Where(x => x.selected).SelectMany(x => x.types).ToArray();
 
             m_SearchFilter.classNames = selectedDisplayNames;
             m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
@@ -917,13 +918,12 @@ namespace UnityEditor
             m_ObjectTypes.m_OnSelectCallback = TypeListCallback;
             m_ObjectTypes.m_SortAlphabetically = false;
             m_ObjectTypes.m_MaxCount = 0;
-            string[] types = GetTypesDisplayNames();
-            for (int i = 0; i < types.Length; ++i)
+            var types = GetTypesDisplayNames();
+            foreach (var keyPair in types)
             {
-                PopupList.ListElement element = m_ObjectTypes.NewOrMatchingElement(types[i]);
-                if (i == 0)
-                    element.selected = true;
+                m_ObjectTypes.AddElement(keyPair.Key, keyPair.Value);
             }
+            m_ObjectTypes.m_ListElements[0].selected = true;
         }
 
         void SetupAssetLabelList()
@@ -1199,6 +1199,11 @@ namespace UnityEditor
                 Selection.activeObject = null;
             }
 
+            if (Selection.instanceIDs != m_ListArea.GetSelection())
+            {
+                m_ListArea.InitSelection(Selection.instanceIDs);
+            }
+
             m_FocusSearchField = false;
 
             if (Event.current.button == 1 && Event.current.type == EventType.MouseDown)
@@ -1349,9 +1354,15 @@ namespace UnityEditor
         {
             SetAsLastInteractedProjectBrowser();
 
-            Selection.activeObject = null;
             if (selectedTreeViewInstanceIDs.Length > 0)
-                Selection.instanceIDs = selectedTreeViewInstanceIDs;
+                Selection.SetSelectionWithActiveInstanceID(selectedTreeViewInstanceIDs, selectedTreeViewInstanceIDs[0]);
+            else
+                Selection.activeInstanceID = 0;
+
+            // The selection could be cancelled if an Inspector with hasUnsavedChanges is opened.
+            // In that case, let's update the tree so the highlight is set back to the actual selection.
+            if(Selection.instanceIDs != selectedTreeViewInstanceIDs)
+                m_AssetTree.SetSelection(Selection.instanceIDs, true);
 
             RefreshSelectedPath();
             SetSearchFoldersFromCurrentSelection();
@@ -1896,8 +1907,6 @@ namespace UnityEditor
         {
             if (!m_SearchFilter.IsSearching())
                 return k_ToolbarHeight;
-            if (SearchService.ProjectSearch.HasEngineOverride())
-                return 0f;
             return m_SearchFilter.GetState() == SearchFilter.State.EmptySearchFilter ? 0f : k_ToolbarHeight;
         }
 
@@ -2079,8 +2088,9 @@ namespace UnityEditor
                     {
                         GUIUtility.hotControl = 0;
 
-                        // Only show menu if there are instances selected
-                        if (Selection.instanceIDs.Length > 0)
+                        // In safe mode non-scripts assets aren't selectable and therefore if you context click a non-script
+                        // asset, then a context menu shouldn't be displayed.
+                        if (!EditorUtility.isInSafeMode || Selection.instanceIDs.Length > 0)
                         {
                             // Context click in list area
                             EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
@@ -2568,9 +2578,6 @@ namespace UnityEditor
 
         void SearchAreaBar()
         {
-            if (SearchService.ProjectSearch.HasEngineOverride())
-                return;
-
             // Background
             GUI.Label(m_ListHeaderRect, GUIContent.none, s_Styles.topBarBg);
 
@@ -2814,6 +2821,8 @@ namespace UnityEditor
 
         public void FrameObject(int instanceID, bool ping)
         {
+            m_LockTracker.StopPingIcon();
+
             bool canFrame = CanFrameAsset(instanceID);
             if (!canFrame)
             {
@@ -2833,7 +2842,19 @@ namespace UnityEditor
                 }
             }
 
-            bool frame = !m_LockTracker.isLocked && (ping || canFrame);
+            bool frame = ping || canFrame;
+            if (frame && m_LockTracker.isLocked)
+            {
+                frame = false;
+
+                // If the item is visible then we can ping it however if it requires revealing then we can not and should indicate why(locked project view).
+                if ((m_ViewMode == ViewMode.TwoColumns && !m_ListArea.IsShowing(instanceID)) || (m_ViewMode == ViewMode.OneColumn && m_AssetTree.data.GetRow(instanceID) == -1))
+                {
+                    Repaint();
+                    m_LockTracker.PingIcon();
+                }
+            }
+
             FrameObjectPrivate(instanceID, frame, ping);
             if (s_LastInteractedProjectBrowser == this)
             {
@@ -3038,7 +3059,8 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            m_LockTracker.ShowButton(r, s_Styles.lockButton);
+            if (m_LockTracker.ShowButton(r, s_Styles.lockButton))
+                Repaint();
         }
 
         internal bool SelectionIsFavorite()

@@ -456,6 +456,9 @@ namespace Unity.UI.Builder
                 m_DocumentBeingSavedExplicitly = false;
             }
 
+            // Reorder document after reimporting
+            VisualTreeAssetUtilities.ReOrderDocument(m_VisualTreeAsset);
+
             // Check if any USS assets have changed reload them.
             foreach (var openUSSFile in savedUSSFiles)
                 needsFullRefresh |= openUSSFile.PostSaveToDiskChecksAndFixes();
@@ -580,8 +583,10 @@ namespace Unity.UI.Builder
                 // what just happened. Adding the ability to save unsaved changes
                 // after a file has been modified externally will require some
                 // major changes to the document flow.
+                var promptTitle = string.Format(BuilderConstants.SaveDialogExternalChangesPromptTitle,
+                    m_Document.uxmlPath);
                 BuilderDialogsUtility.DisplayDialog(
-                    BuilderConstants.SaveDialogExternalChangesPromptTitle,
+                    promptTitle,
                     BuilderConstants.SaveDialogExternalChangesPromptMessage);
 
                 return true;
@@ -688,7 +693,10 @@ namespace Unity.UI.Builder
                 return;
 
             var newVisualTreeAsset = m_VisualTreeAsset;
-            if (assetPath == uxmlOldPath)
+            var isCurrentDocumentBeingProcessed = assetPath == uxmlOldPath;
+            var wasCurrentDocumentRenamed = uxmlPath == assetPath && assetPath != uxmlOldPath;
+
+            if (isCurrentDocumentBeingProcessed || wasCurrentDocumentRenamed)
             {
                 newVisualTreeAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(assetPath);
             }
@@ -888,15 +896,6 @@ namespace Unity.UI.Builder
         internal void ResetCanvasDocumentRootElementStyleSheets(VisualElement documentRootElement)
         {
             documentRootElement.styleSheets.Clear();
-
-            // Load stylesheets specific to the document element.
-            var documentSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocument.uss");
-            var documentThemeSheet = EditorGUIUtility.isProSkin
-                ? BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocumentDark.uss")
-                : BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Viewport/BuilderDocumentLight.uss");
-
-            documentRootElement.styleSheets.Add(documentSheet);
-            documentRootElement.styleSheets.Add(documentThemeSheet);
 
             // Restore the active theme stylesheet
             if (documentRootElement.HasProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName))

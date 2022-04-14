@@ -88,20 +88,12 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(searchQuery) || searchQuery.Length < 2)
                 return Enumerable.Empty<SearchDocument>();
 
-            var tokens = searchQuery.ToLowerInvariant().Split(' ').ToArray();
-            var args = tokens.Where(t => t.Length > 1 && t[0] == '+').ToArray();
-            if (args.Contains("+packages"))
-            {
-                options |= FindOptions.Packages;
-                searchQuery = searchQuery.Replace("+packages", "");
-            }
-
-            return Search(searchQuery, GetRoots(options), context, provider, options);
+            return Search(searchQuery, null, context, provider, options);
         }
 
         public static IEnumerable<SearchDocument> Search(string searchQuery, IEnumerable<string> roots, SearchContext context, SearchProvider provider, FindOptions options)
         {
-            var query = s_QueryEngine.Parse(searchQuery, new FindFilesQueryFactory(args =>
+            var query = s_QueryEngine.ParseQuery(searchQuery, new FindFilesQueryFactory(args =>
             {
                 {
                     if (args.op == SearchIndexOperator.None)
@@ -131,6 +123,12 @@ namespace UnityEditor.Search.Providers
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
                 yield break;
             }
+
+            if (query.HasToggle("packages"))
+            {
+                options |= FindOptions.Packages;
+            }
+            roots = roots ?? GetRoots(options);
 
             var results = new ConcurrentBag<SearchDocument>();
             var searchTask = Task.Run(() =>
@@ -358,6 +356,7 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchProposition> FetchQueryBuilderPropositions()
         {
+            yield return new SearchProposition(category: "Find", "Search Packages", "+packages", color: QueryColors.toggle);
             yield return new SearchProposition(category: "Find", "File with Spaces", @"\s+", color: QueryColors.word);
             yield return new SearchProposition(category: "Find", "Numeric Files", @"\d+\.\w+$", color: QueryColors.word);
         }

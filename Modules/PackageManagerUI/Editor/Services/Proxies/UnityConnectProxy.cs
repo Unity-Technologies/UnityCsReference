@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using UnityEditor.Connect;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
+    [ExcludeFromCodeCoverage]
     internal class UnityConnectProxy
     {
         [SerializeField]

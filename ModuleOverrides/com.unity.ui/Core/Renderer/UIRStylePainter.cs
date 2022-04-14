@@ -406,7 +406,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // Draw solid color background
                 var rectParams = new MeshGenerationContextUtils.RectangleParams
                 {
-                    rect = GUIUtility.AlignRectToDevice(currentElement.rect),
+                    rect = currentElement.rect,
                     color = style.backgroundColor,
                     colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.backgroundColorID),
                     playmodeTintColor = currentElement.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
@@ -440,11 +440,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // Draw background image (be it from a texture or a vector image)
                 var rectParams = new MeshGenerationContextUtils.RectangleParams();
+                float sliceScale = visualElement.resolvedStyle.unitySliceScale;
 
                 if (background.texture != null)
                 {
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(
-                        GUIUtility.AlignRectToDevice(currentElement.rect),
+                        currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.texture,
                         style.unityBackgroundScaleMode,
@@ -453,17 +454,19 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 else if (background.sprite != null)
                 {
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(
-                        GUIUtility.AlignRectToDevice(currentElement.rect),
+                        currentElement.rect,
                         background.sprite,
                         style.unityBackgroundScaleMode,
                         currentElement.panel.contextType,
                         radiusParams.HasRadius(Tessellation.kEpsilon),
                         ref slices);
+
+                    sliceScale *= UIElementsUtility.PixelsPerUnitScaleForElement(visualElement, background.sprite);
                 }
                 else if (background.renderTexture != null)
                 {
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(
-                        GUIUtility.AlignRectToDevice(currentElement.rect),
+                        currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.renderTexture,
                         style.unityBackgroundScaleMode,
@@ -472,7 +475,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 else if (background.vectorImage != null)
                 {
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(
-                        GUIUtility.AlignRectToDevice(currentElement.rect),
+                        currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.vectorImage,
                         style.unityBackgroundScaleMode,
@@ -490,6 +493,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     rectParams.topSlice = Mathf.RoundToInt(slices.y);
                     rectParams.rightSlice = Mathf.RoundToInt(slices.z);
                     rectParams.bottomSlice = Mathf.RoundToInt(slices.w);
+
+                    rectParams.sliceScale = sliceScale;
                 }
 
                 rectParams.color = style.unityBackgroundImageTintColor;
@@ -513,7 +518,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     var borderParams = new MeshGenerationContextUtils.BorderParams
                     {
-                        rect = GUIUtility.AlignRectToDevice(currentElement.rect),
+                        rect = currentElement.rect,
                         leftColor = style.borderLeftColor,
                         topColor = style.borderTopColor,
                         rightColor = style.borderRightColor,
@@ -748,7 +753,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             var rp = new MeshGenerationContextUtils.RectangleParams()
             {
-                rect = GUIUtility.AlignRectToDevice(currentElement.rect),
+                rect = currentElement.rect,
                 color = Color.white,
 
                 // Adjust the radius of the inner masking shape

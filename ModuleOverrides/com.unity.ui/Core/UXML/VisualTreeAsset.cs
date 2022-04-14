@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -45,6 +44,7 @@ namespace UnityEngine.UIElements
         {
             int n = m_VisualElementAssets?.Count ?? 0;
             n += m_TemplateAssets?.Count ?? 0;
+            n += m_UxmlObjectEntries?.Count ?? 0;
             return n;
         }
 
@@ -115,6 +115,26 @@ namespace UnityEngine.UIElements
             {
                 this.parentId = parentId;
                 this.uxmlObjectAssets = uxmlObjectAssets;
+            }
+        }
+
+        [Serializable]
+        struct AssetEntry
+        {
+            [SerializeField] public string path;
+            [SerializeField] public string typeFullName;
+            [SerializeField] public Object asset;
+
+            Type m_CachedType;
+            public Type type => m_CachedType ??= Type.GetType(typeFullName);
+
+            public AssetEntry(string path, Type type, Object asset)
+            {
+                this.path = path;
+                this.typeFullName = type.AssemblyQualifiedName;
+                this.asset = asset;
+
+                m_CachedType = type;
             }
         }
 
@@ -268,6 +288,40 @@ namespace UnityEngine.UIElements
 
                     return uxmlObjects;
                 }
+            }
+
+            return null;
+        }
+
+        [SerializeField]
+        List<AssetEntry> m_AssetEntries;
+
+        internal bool AssetEntryExists(string path, Type type)
+        {
+            if (m_AssetEntries == null)
+                return false;
+
+            foreach (var entry in m_AssetEntries)
+            {
+                if (entry.path == path && entry.type == type)
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal void RegisterAssetEntry(string path, Type type, Object asset)
+        {
+            m_AssetEntries ??= new List<AssetEntry>();
+            m_AssetEntries.Add(new AssetEntry(path, type, asset));
+        }
+
+        internal T GetAsset<T>(string path) where T : Object
+        {
+            foreach (var entry in m_AssetEntries)
+            {
+                if (entry.path.Equals(path) && entry.type == typeof(T))
+                    return entry.asset as T;
             }
 
             return null;
@@ -721,37 +775,6 @@ namespace UnityEngine.UIElements
                         return CreateError();
                     }
                 }
-                else if (asset.fullTypeName == "UnityEditor.UIElements.ProgressBar" || asset.fullTypeName.StartsWith("UnityEditor.UIElements.EnumField"))
-                {
-                    string runtimeTypeName = asset.fullTypeName.Replace("UnityEditor", "UnityEngine");
-                    if (!VisualElementFactoryRegistry.TryGetValue(runtimeTypeName, out factoryList))
-                    {
-                        return CreateError();
-                    }
-                }
-                // TODO: Do it differently (UIE-814).
-                else if (asset.fullTypeName == "UnityEditor.UIElements.FloatField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.DoubleField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.EnumField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.Hash128Field"
-                         || asset.fullTypeName == "UnityEditor.UIElements.IntegerField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.LongField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.RectField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.Vector2Field"
-                         || asset.fullTypeName == "UnityEditor.UIElements.RectIntField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.Vector3Field"
-                         || asset.fullTypeName == "UnityEditor.UIElements.Vector4Field"
-                         || asset.fullTypeName == "UnityEditor.UIElements.Vector2IntField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.Vector3IntField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.BoundsField"
-                         || asset.fullTypeName == "UnityEditor.UIElements.BoundsIntField")
-                {
-                    string runtimeTypeName = asset.fullTypeName.Replace("UnityEditor", "UnityEngine");
-                    if (!VisualElementFactoryRegistry.TryGetValue(runtimeTypeName, out factoryList))
-                    {
-                        return CreateError();
-                    }
-                }
                 else if (asset.fullTypeName == UxmlRootElementFactory.k_ElementName)
                 {
                     // Support UXML without namespace for backward compatibility.
@@ -794,7 +817,9 @@ namespace UnityEngine.UIElements
             if (asset.classes != null)
             {
                 for (int i = 0; i < asset.classes.Length; i++)
+                {
                     element.AddToClassList(asset.classes[i]);
+                }
             }
         }
 
@@ -803,7 +828,9 @@ namespace UnityEngine.UIElements
             if (asset.hasStylesheetPaths)
             {
                 for (int i = 0; i < asset.stylesheetPaths.Count; i++)
+                {
                     element.AddStyleSheetPath(asset.stylesheetPaths[i]);
+                }
             }
 
             if (asset.hasStylesheets)
@@ -825,6 +852,18 @@ namespace UnityEngine.UIElements
         {
             get { return m_ContentHash; }
             set { m_ContentHash = value; }
+        }
+
+        // Used for Live Reload.
+        internal int GetAttributePropertiesDirtyCount()
+        {
+            var dirtyCount = 0;
+            foreach (var vea in visualElementAssets)
+            {
+                dirtyCount += vea.GetPropertiesDirtyCount();
+            }
+
+            return dirtyCount;
         }
 
         internal void ExtractUsedUxmlQualifiedNames(HashSet<string> names)

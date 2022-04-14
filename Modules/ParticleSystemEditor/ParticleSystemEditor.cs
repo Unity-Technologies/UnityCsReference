@@ -29,7 +29,6 @@ namespace UnityEditor
 
         ShortcutContext m_ShortcutContext = new ShortcutContext { active = true };
 
-
         public static GUIContent playBackTitle
         {
             get
@@ -64,7 +63,7 @@ namespace UnityEditor
             EditorApplication.hierarchyChanged += HierarchyOrProjectWindowWasChanged;
             EditorApplication.projectChanged += HierarchyOrProjectWindowWasChanged;
             SceneView.duringSceneGui += OnSceneViewGUI;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
 
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
@@ -74,7 +73,7 @@ namespace UnityEditor
             SceneView.duringSceneGui -= OnSceneViewGUI;
             EditorApplication.projectChanged -= HierarchyOrProjectWindowWasChanged;
             EditorApplication.hierarchyChanged -= HierarchyOrProjectWindowWasChanged;
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
 
             if (m_ParticleEffectUI != null)
             {
@@ -99,11 +98,11 @@ namespace UnityEditor
             return false;
         }
 
-        void UndoRedoPerformed()
+        void UndoRedoPerformed(in UndoRedoInfo info)
         {
             Init(true);
             if (m_ParticleEffectUI != null)
-                m_ParticleEffectUI.UndoRedoPerformed();
+                m_ParticleEffectUI.UndoRedoPerformed(info);
         }
 
         private void Init(bool forceInit)

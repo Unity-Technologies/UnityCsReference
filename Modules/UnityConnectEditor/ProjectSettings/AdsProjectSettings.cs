@@ -64,14 +64,6 @@ namespace UnityEditor.Connect
         {
             SettingsProvider projectSettings = null;
 
-            if (ShouldShowBuiltInProjectSettings(AdsService.instance))
-            {
-                projectSettings = new AdsProjectSettings(AdsService.instance.projectSettingsPath, SettingsScope.Project);
-            }
-            else if (ShouldShowFallbackProjectSettings(AdsService.instance))
-            {
-                projectSettings = new FallbackProjectSettings(AdsService.instance, SettingsScope.Project);
-            }
 
             return projectSettings;
         }

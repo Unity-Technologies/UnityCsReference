@@ -130,6 +130,9 @@ namespace UnityEditor
 
                 var artifactKey = new ArtifactKey(new GUID(guidString));
                 var artifactID = AssetDatabaseExperimental.LookupArtifact(artifactKey);
+                // The artifactID can be invalid if we are in the middle of an AssetDatabase.Refresh.
+                if (!artifactID.isValid)
+                    return false;
                 AssetDatabaseExperimental.GetArtifactPaths(artifactID, out var paths);
                 if (paths.Length != 1)
                 {

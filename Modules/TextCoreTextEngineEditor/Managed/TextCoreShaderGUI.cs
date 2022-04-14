@@ -122,7 +122,12 @@ namespace UnityEditor.TextCore.Text
         static TextCoreShaderGUI()
         {
             // Keep track of how many undo/redo events happened.
-            Undo.undoRedoPerformed += () => s_UndoRedoCount += 1;
+            Undo.undoRedoEvent += OnUndoRedo;
+        }
+
+        private static void OnUndoRedo(in UndoRedoInfo info)
+        {
+            s_UndoRedoCount += 1;
         }
 
         bool m_IsNewGUI = true;

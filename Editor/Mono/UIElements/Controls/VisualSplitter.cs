@@ -60,6 +60,7 @@ namespace UnityEditor.UIElements
                     }
                     m_AffectedElements = visualSplitter.GetAffectedVisualElements();
 
+                    var shouldUseEvent = false;
                     for (int i = 0; i < m_AffectedElements.Count - 1; ++i)
                     {
                         VisualElement visualElement = m_AffectedElements[i];
@@ -80,11 +81,15 @@ namespace UnityEditor.UIElements
                                 m_ActiveVisualElementIndex = i;
                                 m_NextVisualElementIndex = i + 1;
                             }
-
-                            m_Active = true;
-                            target.CaptureMouse();
-                            e.StopPropagation();
+                            shouldUseEvent = true;
                         }
+                    }
+                    if (shouldUseEvent)
+                    {
+                        m_Active = true;
+                        target.CaptureMouse();
+                        e.StopPropagation();
+                        e.PreventDefault();
                     }
                 }
             }

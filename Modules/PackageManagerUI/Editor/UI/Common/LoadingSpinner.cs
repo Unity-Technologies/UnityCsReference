@@ -16,10 +16,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool started { get; private set; }
 
         private const int k_RotationSpeed = 360; // Euler degrees per second
-        private int m_Rotation;
-        private double m_LastRotationTime;
+        private const double k_PaintInterval = 0.125f; // Time interval to repaint
+        static private int s_Rotation;
+        static private double s_LastRotationTime;
         private static readonly List<LoadingSpinner> s_CurrentSpinners = new List<LoadingSpinner>();
-
         public LoadingSpinner()
         {
             started = false;
@@ -29,22 +29,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             var innerElement = new VisualElement();
             innerElement.AddToClassList("image");
             Add(innerElement);
+            style.transformOrigin = new TransformOrigin(0, 0, 0);
         }
 
         private static void UpdateProgress()
         {
-            foreach (var spinner in s_CurrentSpinners)
+            var currentTime = EditorApplication.timeSinceStartup;
+            var deltaTime = currentTime - s_LastRotationTime;
+            if (deltaTime >= k_PaintInterval)
             {
-                var currentTime = EditorApplication.timeSinceStartup;
-                var deltaTime = currentTime - spinner.m_LastRotationTime;
-
-                spinner.style.transformOrigin = new TransformOrigin(0, 0, 0);
-                spinner.transform.rotation = Quaternion.Euler(0, 0, spinner.m_Rotation);
-                spinner.m_Rotation += (int)(k_RotationSpeed * deltaTime);
-                spinner.m_Rotation %= 360;
-                if (spinner.m_Rotation < 0) spinner.m_Rotation += 360;
-
-                spinner.m_LastRotationTime = currentTime;
+                var q = Quaternion.Euler(0, 0, s_Rotation);
+                foreach (var spinner in s_CurrentSpinners)
+                    spinner.transform.rotation = q;
+                s_Rotation += (int)(k_RotationSpeed * deltaTime);
+                s_Rotation %= 360;
+                if (s_Rotation < 0) s_Rotation += 360;
+                s_LastRotationTime = currentTime;
             }
         }
 
@@ -53,8 +53,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (started)
                 return;
 
-            m_Rotation = 0;
-            m_LastRotationTime = EditorApplication.timeSinceStartup;
+            s_Rotation = 0;
+
+            // we remove k_PaintInterval from timeSinceStartup to make sure we start the animation the first time
+            s_LastRotationTime = EditorApplication.timeSinceStartup - k_PaintInterval;
 
             started = true;
             UIUtils.SetElementDisplay(this, true);

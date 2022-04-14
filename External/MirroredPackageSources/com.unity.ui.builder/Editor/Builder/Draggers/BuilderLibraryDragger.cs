@@ -94,8 +94,6 @@ namespace Unity.UI.Builder
 
             m_DragPreviewLastParent = pickedElement;
 
-            m_DragPreviewLastParent.HideMinSizeSpecialElement();
-
             FixElementSizeAndPosition(m_DragPreviewLastParent);
 
             var item =
@@ -123,8 +121,6 @@ namespace Unity.UI.Builder
                 if (!BuilderAssetUtilities.ValidateAsset(item.sourceAsset, item.sourceAssetPath))
                     return;
             }
-
-            destination.RemoveMinSizeSpecialElement();
 
             // Determine if it applies and use Absolute Island insertion.
             if (BuilderProjectSettings.enableAbsolutePositionPlacement && pane == DestinationPane.Viewport && m_DragPreviewLastParent == documentRootElement && index < 0)
@@ -223,7 +219,6 @@ namespace Unity.UI.Builder
             if (m_DragPreviewLastParent != null)
             {
                 UnfixElementSizeAndPosition(m_DragPreviewLastParent);
-                m_DragPreviewLastParent.UnhideMinSizeSpecialElement();
                 m_DragPreviewLastParent = null;
             }
 

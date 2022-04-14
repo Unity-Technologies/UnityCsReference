@@ -213,6 +213,11 @@ namespace UnityEngine
                 throw new ArgumentException($"The total size of the graphics buffer ({bufferSize} bytes) exceeds the maximum buffer size. Maximum supported buffer size: {maxBufferSize} bytes.");
             }
 
+            if((usageFlags & UsageFlags.LockBufferForWrite) != 0 && (target & Target.CopyDestination) != 0)
+            {
+                throw new ArgumentException("Attempting to create a LockBufferForWrite capable buffer that can be copied into. LockBufferForWrite buffers are read-only on the GPU.");
+            }
+
             m_Ptr = InitBuffer(target, usageFlags, count, stride);
 
         }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Bee.BeeDriver;
@@ -119,8 +120,8 @@ namespace UnityEditor.Modules
 
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            var strippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+            var namedBuildTarget = GetNamedBuildTarget(args);
+            var strippingLevel = PlayerSettings.GetManagedStrippingLevel(namedBuildTarget);
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
@@ -162,7 +163,7 @@ namespace UnityEditor.Modules
                         .ToArray(),
                     Runtime = GetUseIl2Cpp(args) ? "il2cpp" : "mono",
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
-                        PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                        PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                     Ruleset = strippingLevel switch
                     {
                         ManagedStrippingLevel.Minimal => "Minimal",
@@ -173,7 +174,7 @@ namespace UnityEditor.Modules
                     },
                     AdditionalArgs = additionalArgs.ToArray(),
                     ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
-                    AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
+                    AllowDebugging = GetAllowDebugging(args),
                     PerformEngineStripping = PlayerSettings.stripEngineCode,
                 };
             }
@@ -185,13 +186,52 @@ namespace UnityEditor.Modules
 
         protected virtual string Il2CppBuildConfigurationNameFor(BuildPostProcessArgs args)
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup));
+            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(GetNamedBuildTarget(args)));
         }
 
         protected virtual IEnumerable<string> AdditionalIl2CppArgsFor(BuildPostProcessArgs args)
         {
             yield break;
+        }
+
+        IEnumerable<string> SplitArgs(string args)
+        {
+            int startIndex = 0;
+            bool inQuotes = false;
+            int i = 0;
+            for (; i < args.Length; i++)
+            {
+                if (args[i] == '"')
+                    inQuotes = !inQuotes;
+                if (args[i] == ' ' && !inQuotes)
+                {
+                    if (i - startIndex > 0)
+                        yield return args.Substring(startIndex, i - startIndex);
+                    startIndex = i + 1;
+                }
+            }
+            if (i - startIndex > 0)
+                yield return args.Substring(startIndex, i - startIndex);
+        }
+
+        protected virtual string Il2CppSysrootPathFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
+        protected virtual string Il2CppToolchainPathFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
+        protected virtual string Il2CppCompilerFlagsFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
+        protected virtual string Il2CppLinkerFlagsFor(BuildPostProcessArgs args)
+        {
+            return null;
         }
 
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
@@ -203,27 +243,34 @@ namespace UnityEditor.Modules
 
             var diagArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs").value as string;
             if (!string.IsNullOrEmpty(diagArgs))
-                additionalArgs.Add(diagArgs.Trim('\''));
+                additionalArgs.AddRange(SplitArgs(diagArgs.Trim('\'')));
 
             var playerSettingsArgs = PlayerSettings.GetAdditionalIl2CppArgs();
             if (!string.IsNullOrEmpty(playerSettingsArgs))
-                additionalArgs.Add(playerSettingsArgs);
+                additionalArgs.AddRange(SplitArgs(playerSettingsArgs));
+
+            var sysrootPath = Il2CppSysrootPathFor(args);
+            var toolchainPath = Il2CppToolchainPathFor(args);
+            var compilerFlags = Il2CppCompilerFlagsFor(args);
+            var linkerFlags = Il2CppLinkerFlagsFor(args);
 
             if (CrashReportingSettings.enabled)
                 additionalArgs.Add("--emit-source-mapping");
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
-            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+            var namedBuildTarget = GetNamedBuildTarget(args);
+            var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
             var il2cppCodeGeneration = PlayerSettings.GetIl2CppCodeGeneration(namedBuildTarget);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
+            var allowDebugging = GetAllowDebugging(args);
+
             return new Il2CppConfig
             {
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
                     IsBuildOptionSet(args.report.summary.options,
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
-                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup), args.target),
+                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
+                Defines = string.Join(";", IL2CPPUtils.GetBuilderDefinedDefines(args.target, apiCompatibilityLevel, allowDebugging)),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
@@ -237,7 +284,11 @@ namespace UnityEditor.Modules
                     .Select(imp => imp.assetPath)
                     .ToArray(),
                 AdditionalArgs = additionalArgs.ToArray(),
-                AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
+                AllowDebugging = allowDebugging,
+                CompilerFlags = compilerFlags,
+                LinkerFlags = linkerFlags,
+                SysRootPath = sysrootPath,
+                ToolChainPath = toolchainPath,
             };
         }
 
@@ -258,7 +309,7 @@ namespace UnityEditor.Modules
             CompanyName = args.companyName,
             ProductName = Paths.MakeValidFileName(args.productName),
             PlayerPackage = args.playerPackage,
-            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(args.target)),
+            ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(GetNamedBuildTarget(args)),
             InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
             GenerateIdeProject = GetCreateSolution(args),
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
@@ -307,12 +358,22 @@ namespace UnityEditor.Modules
         private SystemProcessRunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
             var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
+            NPath buildPipelineFolder = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline";
+            NPath beePlatformFolder = $"{args.playerPackage}/Bee";
+            var searchPaths = $"{beePlatformFolder}{Path.PathSeparator}";
+            if (IL2CPPUtils.UsingDevelopmentBuild())
+            {
+                NPath il2cppPath = IL2CPPUtils.GetExePath("il2cpp").ToNPath().Parent;
+                searchPaths = $"{il2cppPath}{Path.PathSeparator}";
+            }
+
             return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
                 new[]
                 {
                     buildProgramAssembly.InQuotes(SlashMode.Native),
-                    $"\"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline\""
-                });
+                    $"\"{searchPaths}{buildPipelineFolder}\""
+                },
+                new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }});
         }
 
         class PlayerBuildProgressAPI : ProgressAPI
@@ -371,11 +432,11 @@ namespace UnityEditor.Modules
             return null;
         }
 
-        void SetupBeeDriver(BuildPostProcessArgs args)
+        void SetupBeeDriver(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
             progressAPI = new PlayerBuildProgressAPI($"Building {args.productName}");
-            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, "", progressAPI, BeeBackendProgram(args));
+            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, "", ilpp, UnityBeeDriver.StdOutModeForPlayerBuilds, progressAPI, BeeBackendProgram(args));
 
             foreach (var o in GetDataForBuildProgramFor(args))
             {
@@ -473,13 +534,29 @@ namespace UnityEditor.Modules
             if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                 EditorCompilation.CleanCache();
 
+            if (Unsupported.IsDeveloperBuild())
+            {
+                NPath editorGitRevisionFile = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/gitrevision.txt";
+                NPath playerGitRevisionFile = $"{BuildPipeline.GetPlaybackEngineDirectory(target, options)}/Bee/gitrevision.txt";
+                if (editorGitRevisionFile.Exists() && playerGitRevisionFile.Exists())
+                {
+                    string editorGitRevision = editorGitRevisionFile.ReadAllText();
+                    string playerGitRevision = playerGitRevisionFile.ReadAllText();
+                    if (editorGitRevision != playerGitRevision)
+                        return $"The Bee libraries used in the editor come from a different revision, than the ones used for the player. Please rebuild both editor and player when making changes to Bee player build libraries. (editor: '{editorGitRevision}', player: '{playerGitRevision}')";
+                }
+            }
+
             return base.PrepareForBuild(options, target);
         }
 
         protected virtual void CleanBuildOutput(BuildPostProcessArgs args)
         {
-            new NPath(args.installPath).DeleteIfExists(DeleteMode.Soft);
-            new NPath(GetIl2CppDataBackupFolderName(args)).DeleteIfExists(DeleteMode.Soft);
+            if (!GetInstallingIntoBuildsFolder(args))
+            {
+                new NPath(args.installPath).DeleteIfExists(DeleteMode.Soft);
+                new NPath(GetIl2CppDataBackupFolderName(args)).DeleteIfExists(DeleteMode.Soft);
+            }
         }
 
         public override void PostProcess(BuildPostProcessArgs args)
@@ -491,7 +568,7 @@ namespace UnityEditor.Modules
 
                 var buildStep = args.report.BeginBuildStep("Setup incremental player build");
 
-                SetupBeeDriver(args);
+                SetupBeeDriver(args, new ILPostProcessingProgram());
                 args.report.EndBuildStep(buildStep);
 
                 // Remove any previous file entries in the build report.
@@ -552,7 +629,7 @@ namespace UnityEditor.Modules
         {
             base.PostProcessCompletedBuild(args);
 
-            if (PlayerSettings.GetManagedStrippingLevel(BuildPipeline.GetBuildTargetGroup(args.target)) == ManagedStrippingLevel.Disabled)
+            if (PlayerSettings.GetManagedStrippingLevel(GetNamedBuildTarget(args)) == ManagedStrippingLevel.Disabled)
                 return;
 
             var strippingInfo = GetStrippingInfoFromBuild(args);
@@ -576,6 +653,19 @@ namespace UnityEditor.Modules
             return !string.Equals(cpu, "None", StringComparison.OrdinalIgnoreCase);
         }
 
+        protected NamedBuildTarget GetNamedBuildTarget(BuildPostProcessArgs args)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(args.target);
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone)
+            {
+                return (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server
+                    ? NamedBuildTarget.Server : NamedBuildTarget.Standalone;
+            }
+
+            return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+        }
+
         protected bool GetDevelopment(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.Development);
 
@@ -586,6 +676,13 @@ namespace UnityEditor.Modules
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);
 
         protected virtual bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
-            PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(args.target)) == ScriptingImplementation.IL2CPP;
+            PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.IL2CPP;
+
+        protected virtual bool GetAllowDebugging(BuildPostProcessArgs args) => (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
+
+        #pragma warning disable 618
+        protected virtual bool GetUseCoreCLR(BuildPostProcessArgs args) =>
+            PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.CoreCLR;
+
     }
 }

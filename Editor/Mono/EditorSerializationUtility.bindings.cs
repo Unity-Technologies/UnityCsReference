@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.Bindings;
 using UnityObject = UnityEngine.Object;
 using RefId = System.Int64;
@@ -51,49 +53,33 @@ namespace UnityEditor
     public sealed class SerializationUtility
     {
         // Must match the same declarations in "Runtime/Serialize/ReferenceId.h"
+        [System.Obsolete("Use Serialization.ManagedReferenceUtility.RefIdUnknown instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.RefIdUnknown", false)]
         public const RefId RefIdUnknown = -1;
+        [System.Obsolete("Use Serialization.ManagedReferenceUtility.RefIdNull instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.RefIdNull", false)]
         public const RefId RefIdNull = -2;
 
-        [NativeMethod("SetManagedReferenceIdForObject")]
-        static extern bool SetManagedReferenceIdForObjectInternal(UnityObject obj, object scriptObj, RefId refId);
-
+        [System.Obsolete("Use Serialization.ManagedReferenceUtility.SetManagedReferenceIdForObject instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.SetManagedReferenceIdForObject(*)", false)]
         public static bool SetManagedReferenceIdForObject(UnityObject obj, object scriptObj, RefId refId)
         {
-            if (scriptObj == null)
-                return refId == RefIdNull; // There is no need to explicitly register RefIdNull
-
-            var valueType = scriptObj.GetType();
-            if (valueType == typeof(UnityObject) || valueType.IsSubclassOf(typeof(UnityObject)))
-            {
-                throw new System.InvalidOperationException(
-                    $"Cannot assign an object deriving from UnityEngine.Object to a managed reference. This is not supported.");
-            }
-
-            return SetManagedReferenceIdForObjectInternal(obj, scriptObj, refId);
+            return ManagedReferenceUtility.SetManagedReferenceIdForObject(obj, scriptObj, refId);
         }
 
-        [NativeMethod("GetManagedReferenceIdForObject")]
-        static extern RefId GetManagedReferenceIdForObjectInternal(UnityObject obj, object scriptObj);
-
+        [System.Obsolete("Use Serialization.ManagedReferenceUtility::GetManagedReferenceIdForObject instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.GetManagedReferenceIdForObject(*)", false)]
         public static  RefId GetManagedReferenceIdForObject(UnityObject obj, object scriptObj)
         {
-            return GetManagedReferenceIdForObjectInternal(obj, scriptObj);
+            return ManagedReferenceUtility.GetManagedReferenceIdForObject(obj, scriptObj);
         }
 
-        [NativeMethod("GetManagedReference")]
-        static extern object GetManagedReferenceInternal(UnityObject obj, RefId id);
-
+        [System.Obsolete("Use Serialization.ManagedReferenceUtility::GetManagedReference instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.GetManagedReference(*)", false)]
         public static object GetManagedReference(UnityObject obj, RefId id)
         {
-            return GetManagedReferenceInternal(obj, id);
+            return ManagedReferenceUtility.GetManagedReference(obj, id);
         }
 
-        [NativeMethod("GetManagedReferenceIds")]
-        static extern RefId[] GetManagedReferenceIdsForObjectInternal(UnityObject obj);
-
+        [System.Obsolete("Use Serialization.ManagedReferenceUtility::GetManagedReferencesIds instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Serialization.ManagedReferenceUtility.GetManagedReferenceIds(*)", false)]
         public static RefId[] GetManagedReferenceIds(UnityObject obj)
         {
-            return GetManagedReferenceIdsForObjectInternal(obj);
+            return ManagedReferenceUtility.GetManagedReferenceIds(obj);
         }
 
         [NativeMethod("HasManagedReferencesWithMissingTypes")]

@@ -510,12 +510,6 @@ namespace UnityEditorInternal
                 {
                     if (state.currentFrame != 0)
                     {
-                        // case 1373924
-                        // In the case of a new curve, we also have to convert the previousValue to float for a discrete int
-                        if(binding.isDiscreteCurve)
-                        {
-                            previousValue = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat((int)previousValue);
-                        }
                         AnimationWindowUtility.AddKeyframeToCurve(curve, previousValue, type, AnimationKeyTime.Frame(0, clip.frameRate));
                     }
                 }

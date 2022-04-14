@@ -16,6 +16,9 @@ namespace UnityEditor
     {
         Player = 0,
         Server = 1,
+        // *undocumented*
+        [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
+        NoSubtarget = -1,
     }
 
     namespace Build
@@ -304,12 +307,28 @@ namespace UnityEditor
         internal bool triggerGraphicsDebuggersConfigUpdate;
     }
 
+    // *undocumented*
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum SwitchRomCompressionType
+    {
+        None = 0,
+        Lz4 = 1,
+    }
+
+
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum EmbeddedLinuxArchitecture
     {
+        [UnityEngine.InspectorName("Arm64")]
         Arm64 = 0,
+
+        [UnityEngine.InspectorName("Arm32")]
         Arm32 = 1,
+
+        [UnityEngine.InspectorName("X64")]
         X64 = 2,
+
+        [UnityEngine.InspectorName("X86")]
         X86 = 3,
     }
 
@@ -318,6 +337,7 @@ namespace UnityEditor
     public partial class EditorUserBuildSettings : Object
     {
         private const string kSettingWaitForManagedDebugger = "WaitForManagedDebugger";
+        private const string kSettingManagedDebuggerFixedPort = "ManagedDebuggerFixedPort";
         private EditorUserBuildSettings() {}
 
         internal static extern AppleBuildAndRunType appleBuildAndRunType { get; set; }
@@ -346,6 +366,13 @@ namespace UnityEditor
             [NativeMethod("SetSelectedEmbeddedLinuxArchitecture")]
             set;
         }
+
+        // Embedded Linux remote device information
+        public static extern bool remoteDeviceInfo { get; set; }
+        public static extern string remoteDeviceAddress { get; set; }
+        public static extern string remoteDeviceUsername { get; set; }
+        public static extern string remoteDeviceExports { get; set; }
+        public static extern string pathOnRemoteDevice { get; set; }
 
         // The currently selected target for a standalone build.
         public static extern BuildTarget selectedStandaloneTarget
@@ -684,10 +711,10 @@ namespace UnityEditor
         public static extern bool development { get; set; }
 
         [Obsolete("Use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead.", true)]
-        public static Build.Il2CppCodeGeneration il2CppCodeGeneratione
+        public static Build.Il2CppCodeGeneration il2CppCodeGeneration
         {
             get { return Build.Il2CppCodeGeneration.OptimizeSpeed; }
-            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneratione is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead." ); }
+            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneration is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead." ); }
         }
 
         [Obsolete("Building with pre-built Engine option is no longer supported.", true)]
@@ -758,6 +785,45 @@ namespace UnityEditor
             set;
         }
 
+        public static extern bool switchEnableRomCompression
+        {
+            [NativeMethod("GetEnableRomCompressionForSwitch")]
+            get;
+            [NativeMethod("SetEnableRomCompressionForSwitch")]
+            set;
+        }
+
+        public static extern bool switchSaveADF
+        {
+            [NativeMethod("GetSaveADFForSwitch")]
+            get;
+            [NativeMethod("SetSaveADFForSwitch")]
+            set;
+        }
+
+        public static extern SwitchRomCompressionType switchRomCompressionType
+        {
+            [NativeMethod("GetRomCompressionTypeForSwitch")]
+            get;
+            [NativeMethod("SetRomCompressionTypeForSwitch")]
+            set;
+        }
+
+        public static extern int switchRomCompressionLevel
+        {
+            [NativeMethod("GetRomCompressionLevelForSwitch")]
+            get;
+            [NativeMethod("SetRomCompressionLevelForSwitch")]
+            set;
+        }
+
+        public static extern string switchRomCompressionConfig
+        {
+            [NativeMethod("GetRomCompressionConfigForSwitch")]
+            get;
+            [NativeMethod("SetRomCompressionConfigForSwitch")]
+            set;
+        }
 
         // Enable linkage of NVN Graphics Debugger for Nintendo Switch.
         public static extern bool switchNVNGraphicsDebugger
@@ -875,6 +941,25 @@ namespace UnityEditor
             set
             {
                 SetPlatformSettings("Editor", kSettingWaitForManagedDebugger, value.ToString().ToLower());
+            }
+        }
+
+        public static int managedDebuggerFixedPort
+        {
+            get
+            {
+                if (Int32.TryParse(GetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort), out int value)) {
+                    if (0 < value && value <= 65535)
+                    {
+                        return value;
+                    }
+                }
+                return 0;
+            }
+
+            set
+            {
+                SetPlatformSettings("Editor", kSettingManagedDebuggerFixedPort, value.ToString().ToLower());
             }
         }
     }

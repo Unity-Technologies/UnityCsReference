@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Unity.Burst;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -70,34 +71,47 @@ namespace Unity.Collections.LowLevel.Unsafe
             return GetReasonForTypeNonBlittableImpl(t, t.Name);
         }
 
-        internal struct IsUnmanagedCache<T>
+        // Since burst would fail to compile managed types anyway, we can default to unmanaged and
+        // conditionally mark as managed in managed code paths
+        // These flags must be kept in sync with kScriptingTypeXXX flags in Scripting.cpp
+        const int kIsManaged = 0x01;
+        const int kIsNativeContainer = 0x02;
+
+        // Supports burst compatible invocation
+        internal struct TypeFlagsCache<T>
         {
-            internal static int value; // 0 == unknown, -1 false, 1 true
+            internal static readonly int flags;
+
+            static TypeFlagsCache()
+            {
+                Init(ref flags);
+            }
+
+            [BurstDiscard]
+            static void Init(ref int flags)
+            {
+                flags = GetScriptingTypeFlags(typeof(T));
+            }
         }
 
         public static bool IsUnmanaged<T>()
         {
-            int value = IsUnmanagedCache<T>.value;
-            if (value == 1)  // most common case
-                return true;
-            if (value == 0)
-                IsUnmanagedCache<T>.value = value = IsUnmanaged(typeof(T)) ? 1 : -1;
-            return value == 1;
+            return (TypeFlagsCache<T>.flags & kIsManaged) == 0;
         }
 
-        internal struct IsValidNativeContainerElementTypeCache<T>
+        public static bool IsNativeContainerType<T>()
         {
-            internal static int value; // 0 == unknown, -1 false, 1 true
+            return (TypeFlagsCache<T>.flags & kIsNativeContainer) != 0;
         }
 
+        // Keeping this to support Collections pre-2.0 and user defined containers. To support nested native containers,
+        // code will need switched to
+        // - checking IsUnmanaged (if constrained to struct instead of unmanaged)
+        // - checking IsNativeContainer
+        // - properly set up safety handles
         public static bool IsValidNativeContainerElementType<T>()
         {
-            int value = IsValidNativeContainerElementTypeCache<T>.value;
-            if (value == -1)  // most common case
-                return false;
-            if (value == 0)
-                IsValidNativeContainerElementTypeCache<T>.value = value = IsValidNativeContainerElementType(typeof(T)) ? 1 : -1;
-            return value == 1;
+            return TypeFlagsCache<T>.flags == 0;  // not managed, not a container
         }
 
         [StructLayout(LayoutKind.Sequential)]

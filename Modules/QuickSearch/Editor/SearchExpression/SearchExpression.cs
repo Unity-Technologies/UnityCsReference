@@ -3,13 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 
 namespace UnityEditor.Search
 {
     [Flags]
-    enum SearchExpressionType
+    public enum SearchExpressionType
     {
         Nil = 0,
 
@@ -36,13 +37,15 @@ namespace UnityEditor.Search
         AnyExpression = Literal | Iterable | Selector
     }
 
-    enum SearchExpressionKeyword
+    public enum SearchExpressionKeyword
     {
-        asc,
-        desc,
-        any,
-        all,
-        none
+        None,
+        Asc,
+        Desc,
+        Any,
+        All,
+        Keep,
+        Sort
     }
 
     static class SearchExpressionTypeExtensions
@@ -70,7 +73,7 @@ namespace UnityEditor.Search
         }
     }
 
-    class SearchExpression
+    public class SearchExpression
     {
         public string name => evaluator.name ?? outerText.ToString();
 
@@ -81,10 +84,10 @@ namespace UnityEditor.Search
         public readonly StringView alias;
 
         // Evaluation fields
-        public readonly SearchExpressionEvaluator evaluator;
+        internal readonly SearchExpressionEvaluator evaluator;
         public readonly SearchExpression[] parameters;
 
-        public SearchExpression(SearchExpressionType types,
+        internal SearchExpression(SearchExpressionType types,
                                 StringView outerText, StringView innerText, StringView alias,
                                 SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
         {
@@ -96,47 +99,47 @@ namespace UnityEditor.Search
             this.evaluator = evaluator;
         }
 
-        public SearchExpression(SearchExpressionType types, StringView text)
-            : this(types, text, StringView.Null, StringView.Null, default, null)
+        internal SearchExpression(SearchExpressionType types, StringView text)
+            : this(types, text, StringView.nil, StringView.nil, default, null)
         {
         }
 
-        public SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText)
-            : this(types, outerText, innerText, StringView.Null, default, null)
+        internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText)
+            : this(types, outerText, innerText, StringView.nil, default, null)
         {
         }
 
-        public SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator)
-            : this(types, outerText, innerText, StringView.Null, evaluator, null)
+        internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator)
+            : this(types, outerText, innerText, StringView.nil, evaluator, null)
         {
         }
 
-        public SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
-            : this(types, outerText, innerText, StringView.Null, evaluator, parameters)
+        internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
+            : this(types, outerText, innerText, StringView.nil, evaluator, parameters)
         {
         }
 
-        public SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, StringView alias, SearchExpressionEvaluator evaluator)
+        internal SearchExpression(SearchExpressionType types, StringView outerText, StringView innerText, StringView alias, SearchExpressionEvaluator evaluator)
             : this(types, outerText, innerText, alias, evaluator, null)
         {
         }
 
-        public SearchExpression(SearchExpressionType types, StringView text, SearchExpressionEvaluator evaluator)
-            : this(types, text, text, StringView.Null, evaluator, null)
+        internal SearchExpression(SearchExpressionType types, StringView text, SearchExpressionEvaluator evaluator)
+            : this(types, text, text, StringView.nil, evaluator, null)
         {
         }
 
-        public SearchExpression(SearchExpressionType types, StringView text, SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
-            : this(types, text, text, StringView.Null, evaluator, parameters)
+        internal SearchExpression(SearchExpressionType types, StringView text, SearchExpressionEvaluator evaluator, SearchExpression[] parameters)
+            : this(types, text, text, StringView.nil, evaluator, parameters)
         {
         }
 
-        public SearchExpression(SearchExpression ex, SearchExpressionType types, StringView outerText, StringView innerText)
+        internal SearchExpression(SearchExpression ex, SearchExpressionType types, StringView outerText, StringView innerText)
             : this(types, outerText, innerText, ex.alias, ex.evaluator, ex.parameters)
         {
         }
 
-        public SearchExpression(SearchExpression ex, StringView newAlias)
+        internal SearchExpression(SearchExpression ex, StringView newAlias)
             : this(ex.types, ex.outerText, ex.innerText, newAlias, ex.evaluator, ex.parameters)
         {
         }
@@ -166,23 +169,22 @@ namespace UnityEditor.Search
             return defaultValue;
         }
 
-        public static SearchExpression Parse(SearchExpressionParserArgs args)
+        public bool IsKeyword(SearchExpressionKeyword keyword)
         {
-            return ParserManager.Parse(args);
+            return innerText.Equals(keyword.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
-        public static SearchExpression Parse(string text, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
+        public IEnumerable<SearchItem> Execute(SearchContext searchContext)
         {
-            var searchContext = SearchService.CreateContext(text);
-            return Parse(searchContext, options);
+            return Execute(searchContext, SearchExpressionExecutionFlags.Root);
         }
 
-        public static SearchExpression Parse(SearchContext context, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
+        public IEnumerable<SearchItem> Execute(SearchExpressionContext c)
         {
-            return ParserManager.Parse(new SearchExpressionParserArgs(context.searchText.GetStringView(), context, options));
+            return Execute(c, SearchExpressionExecutionFlags.None);
         }
 
-        public IEnumerable<SearchItem> Execute(SearchContext searchContext, SearchExpressionExecutionFlags executionFlags = SearchExpressionExecutionFlags.Root)
+        internal IEnumerable<SearchItem> Execute(SearchContext searchContext, SearchExpressionExecutionFlags executionFlags)
         {
             var runtime = new SearchExpressionRuntime(searchContext, executionFlags);
             if (executionFlags.HasFlag(SearchExpressionExecutionFlags.ThreadedEvaluation))
@@ -190,25 +192,41 @@ namespace UnityEditor.Search
             return Execute(runtime.current, executionFlags);
         }
 
-        public IEnumerable<SearchItem> Execute(SearchExpressionContext c, SearchExpressionExecutionFlags flags = SearchExpressionExecutionFlags.None)
+        internal IEnumerable<SearchItem> Execute(SearchExpressionContext c, SearchExpressionExecutionFlags executionFlags)
         {
             if (!evaluator.valid || evaluator.execute == null)
                 c.ThrowError("Invalid expression evaluator");
             try
             {
                 if (!evaluator.hints.HasFlag(SearchExpressionEvaluationHints.ThreadNotSupported))
-                    return Evaluate(c, flags);
+                    return Evaluate(c, executionFlags);
 
                 // We cannot only return the IEnumerable of the evaluator, as the iteration itself needs to be
                 // done on the main thread. If we return the IEnumerable itself, we will unroll the items and call the evaluator
                 // in the evaluation thread.
-                return TaskEvaluatorManager.EvaluateMainThreadUnroll(() => Evaluate(c, flags));
+                return TaskEvaluatorManager.EvaluateMainThreadUnroll(() => Evaluate(c, executionFlags));
             }
             catch (SearchExpressionEvaluatorException ex)
             {
                 ExceptionDispatchInfo.Capture(ex).Throw();
                 return null; // To stop visual studio complaining about not all code path return a value
             }
+        }
+
+        internal static SearchExpression Parse(SearchExpressionParserArgs args)
+        {
+            return ParserManager.Parse(args);
+        }
+
+        internal static SearchExpression Parse(string text, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
+        {
+            var searchContext = SearchService.CreateContext(text);
+            return Parse(searchContext, options);
+        }
+
+        internal static SearchExpression Parse(SearchContext context, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
+        {
+            return ParserManager.Parse(new SearchExpressionParserArgs(context.searchText.GetStringView(), context, options));
         }
 
         private IEnumerable<SearchItem> Evaluate(SearchExpressionContext c, SearchExpressionExecutionFlags flags)
@@ -285,17 +303,165 @@ namespace UnityEditor.Search
             }
         }
 
-        public SearchExpression Apply(string functionName, params SearchExpression[] args)
+        internal SearchExpression Apply(string functionName, params SearchExpression[] args)
         {
             var see = EvaluatorManager.GetEvaluatorByNameDuringParsing(functionName, innerText);
             var seeArgs = new List<SearchExpression> { this };
             seeArgs.AddRange(args);
-            return new SearchExpression(SearchExpressionType.Function, StringView.Null, innerText, alias, see, seeArgs.ToArray());
+            return new SearchExpression(SearchExpressionType.Function, StringView.nil, innerText, alias, see, seeArgs.ToArray());
         }
 
-        public bool IsKeyword(SearchExpressionKeyword keyword)
+        public static bool TryConvertToDouble(SearchItem item, out double value, string selector = null)
         {
-            return innerText.Equals(keyword.ToString(), StringComparison.OrdinalIgnoreCase);
+            value = double.NaN;
+            object itemValue = SelectorManager.SelectValue(item, null, selector);
+            if (itemValue == null)
+                return false;
+            return Utils.TryGetNumber(itemValue, out value);
         }
+
+        public static string CreateId()
+        {
+            return Guid.NewGuid().ToString("N");
+        }
+
+        public static SearchItem CreateItem(string label, object value, string description)
+        {
+            return SearchServiceProvider.CreateItem(CreateId(), label, description, value);
+        }
+
+        public static SearchItem CreateItem(string value, string label = null)
+        {
+            return CreateItem(label, value, value.ToString());
+        }
+
+        public static SearchItem CreateItem(double value, string label = null)
+        {
+            return CreateItem(label, value, null);
+        }
+
+        public static SearchItem CreateItem(int value, string label = null)
+        {
+            return CreateItem((double)value, label);
+        }
+
+        internal static SearchItem CreateItem(bool booleanValue, string label = null)
+        {
+            return CreateItem(label, booleanValue, booleanValue.ToString().ToLowerInvariant());
+        }
+
+        public static bool GetFormatString(SearchExpression expr, out string formatStr)
+        {
+            formatStr = null;
+            if (expr.types.HasFlag(SearchExpressionType.Text))
+            {
+                formatStr = expr.innerText.ToString();
+                return true;
+            }
+
+            if (expr.types.HasFlag(SearchExpressionType.Selector))
+            {
+                formatStr = expr.outerText.ToString();
+                return true;
+            }
+
+            return false;
+        }
+
+        public static string FormatItem(SearchContext ctx, SearchItem item, string formatString)
+        {
+            if (formatString == null)
+            {
+                var value = SelectorManager.SelectValue(item, ctx, null);
+                return value == null ? "null" : value.ToString();
+            }
+            return ParserUtils.ReplaceSelectorInExpr(formatString, (selector, cleanedSelector) =>
+            {
+                var value = SelectorManager.SelectValue(item, ctx, cleanedSelector);
+                return value == null ? "<no value>" : value.ToString();
+            });
+        }
+
+        public static IEnumerable<SearchItem> ProcessValues<T>(IEnumerable<SearchItem> items, string outputValueFieldName, Func<SearchItem, T> processHandler)
+        {
+            var selectedItems = new List<SearchItem>(items);
+            return TaskEvaluatorManager.EvaluateMainThread<SearchItem>((yielder) =>
+            {
+                foreach (var item in selectedItems)
+                {
+                    var selectedValue = processHandler(item);
+                    if (selectedValue == null)
+                        continue;
+
+                    if (outputValueFieldName == null)
+                        item.value = selectedValue;
+                    else
+                        item.SetField(outputValueFieldName, selectedValue);
+
+                    yielder(item);
+                }
+            });
+        }
+
+        public static bool IsTrue(SearchItem item)
+        {
+            var value = false;
+            if (item.value != null)
+            {
+                if (item.value is string argValue)
+                {
+                    value = argValue != "";
+                }
+                else if (item.value is bool itemValue)
+                {
+                    value = itemValue;
+                }
+                else if (item.value is int i)
+                {
+                    value = i != 0;
+                }
+                else if (item.value is double d)
+                {
+                    value = d != 0.0;
+                }
+                else if (item.value is float f)
+                {
+                    value = f != 0.0f;
+                }
+            }
+            return value;
+        }
+
+        public static bool Check(SearchExpression e, SearchExpressionContext c)
+        {
+            var result = e.Execute(c);
+            var count = result.Count();
+            if (count == 0)
+                return false;
+            if (count == 1)
+                return IsTrue(result.First());
+            return true;
+        }
+
+        internal static SearchExpression CreateStreamExpression(SearchExpression currentStream, string name = "<streamexpr>")
+        {
+            var exp = new SearchExpression(SearchExpressionType.Function, name.GetStringView(),
+                new SearchExpressionEvaluator("StreamEvaluator", context => currentStream.Execute(context), SearchExpressionEvaluationHints.Default));
+            return exp;
+        }
+
+        internal static SearchItem CreateSearchExpressionItem(string queryString, string alias = null)
+        {
+            var queryView = queryString.GetStringView();
+            return CreateSearchExpressionItem(new SearchExpression(
+                SearchExpressionType.QueryString, queryView, queryView, alias.GetStringView(),
+                EvaluatorManager.GetConstantEvaluatorByName("query")));
+        }
+
+        internal static SearchItem CreateSearchExpressionItem(SearchExpression expr)
+        {
+            return new SearchItem("") { data = expr };
+        }
+
     }
 }

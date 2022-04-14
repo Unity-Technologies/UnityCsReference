@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager
         [SerializeField]
         [NativeName("all")]
         private string[] m_All;
+
         [SerializeField]
         [NativeName("compatible")]
         private string[] m_Compatible;
@@ -29,21 +30,28 @@ namespace UnityEditor.PackageManager
         [NativeName("verified")]
         private string m_Verified;
 
+        [SerializeField]
+        [NativeName("deprecated")]
+        private string[] m_Deprecated;
+
         private VersionsInfo() {}
 
         internal VersionsInfo(
             IEnumerable<string> all,
             IEnumerable<string> compatible,
-            string verified)
+            string verified,
+            IEnumerable<string> deprecated)
         {
             m_All = (all ?? new string[] {}).ToArray();
             m_Compatible = (compatible ?? new string[] {}).ToArray();
             m_Verified = verified ?? string.Empty;
+            m_Deprecated = (deprecated ?? new string[] {}).ToArray();
         }
 
         public string[] all { get { return m_All; } }
         public string[] compatible { get { return m_Compatible; } }
         public string verified { get { return m_Verified; } }
+        public string[] deprecated { get { return m_Deprecated; } }
 
         [Obsolete("'recommended' is obsolete; use 'verified' instead. (UnityUpgradable) -> verified", false)]
         public string recommended { get { return m_Verified; } }

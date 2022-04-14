@@ -36,15 +36,71 @@ namespace UnityEditor
             repaintAllSettingsWindow?.Invoke();
         }
 
+        internal static IEnumerable<SettingsProvider> FilterAndWarnAgainstDuplicates(IEnumerable<SettingsProvider> settingsProviders, SettingsScope scope)
+        {
+            Dictionary<string, int> settingPaths = new Dictionary<string, int>();
+            foreach (var provider in settingsProviders)
+            {
+                if (provider.scope != scope)
+                {
+                    yield return provider;
+                    continue;
+                }
+
+                if (settingPaths.ContainsKey(provider.settingsPath))
+                {
+                    settingPaths[provider.settingsPath] += 1;
+                    continue;
+                }
+                else
+                {
+                    settingPaths.Add(provider.settingsPath, 1);
+                    yield return provider;
+                }
+            }
+
+            foreach (var settingPath in settingPaths)
+            {
+                if (settingPath.Value > 1)
+                    Debug.LogWarning($"There are {settingPath.Value} settings providers with the same name {settingPath.Key} in {scope} scope.");
+            }
+        }
+
         internal static event Action settingsProviderChanged;
         internal static SettingsProvider[] FetchSettingsProviders()
         {
-            return
+            var settingsProviders =
                 FetchSettingProviderFromAttribute()
                     .Concat(FetchSettingProvidersFromAttribute())
                     .Concat(FetchPreferenceItems())
-                    .Where(provider => provider != null)
-                    .ToArray();
+                    .Where(provider => provider != null);
+
+            settingsProviders = FilterAndWarnAgainstDuplicates(settingsProviders, SettingsScope.Project);
+            return FilterAndWarnAgainstDuplicates(settingsProviders, SettingsScope.User).ToArray();
+        }
+
+        internal static SettingsProvider[] FetchSettingsProviders(SettingsScope scope)
+        {
+            var settingsProviders =
+                FetchSettingProviderFromAttribute()
+                    .Concat(FetchSettingProvidersFromAttribute())
+                    .Concat(FetchPreferenceItems())
+                    .Where(provider => provider != null && provider.scope == scope);
+
+            return FilterAndWarnAgainstDuplicates(settingsProviders, scope).ToArray();
+        }
+
+        public static bool Exists(string settingsPath)
+        {
+            var settingsProviders = FetchSettingsProviders();
+
+            foreach (var provider in settingsProviders)
+            {
+                if (settingsPath.Equals(provider.settingsPath, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
         }
 
         internal static EditorWindow OpenUserPreferenceWindow()

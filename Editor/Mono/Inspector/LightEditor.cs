@@ -487,48 +487,26 @@ namespace UnityEditor
                 }
             }
 
-            Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
+            static Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
             {
-                LightType lightTypeInfo = (LightType)lightType.intValue;
-                Object assetTexture = null;
-                foreach (Object assetObject in references)
+                // Accept RenderTextures of correct dimension
+                Texture validated = (RenderTexture)EditorGUI.ValidateObjectFieldAssignment(references, typeof(RenderTexture), property, options);
+                if (validated != null)
                 {
-                    if (assetObject is Texture texture)
-                    {
-                        if (assetTexture == null)
-                        {
-                            assetTexture = texture;
-                        }
-
-                        switch (lightTypeInfo)
-                        {
-                            case LightType.Spot:
-                            case LightType.Directional:
-                                if (texture is Texture2D)
-                                    return assetObject;
-                                break;
-
-                            case LightType.Point:
-                                if (texture is Cubemap)
-                                    return assetObject;
-                                break;
-
-                            default:
-                                if (texture is Texture)
-                                    return assetObject;
-                                break;
-                        }
-                    }
+                    if (objType == typeof(Texture2D) && validated.dimension != TextureDimension.Tex2D)
+                        validated = null;
+                    else if (objType == typeof(Texture3D) && validated.dimension != TextureDimension.Tex3D)
+                        validated = null;
+                    else if (objType == typeof(Cubemap) && validated.dimension != TextureDimension.Cube)
+                        validated = null;
                 }
-
-                if (assetTexture != null && typeof(RenderTexture).IsAssignableFrom(assetTexture.GetType()))
-                {
-                    return assetTexture;
-                }
-                return null;
+                // Accept regular textures
+                if (validated == null)
+                    validated = (Texture)EditorGUI.ValidateObjectFieldAssignment(references, objType, property, options);
+                return validated;
             }
 
-            void TexturePropertyBody(Rect position, SerializedProperty prop, LightType cookieLightType)
+            static void TexturePropertyBody(Rect position, SerializedProperty prop, LightType cookieLightType)
             {
                 EditorGUI.BeginChangeCheck();
                 int controlID = GUIUtility.GetControlID(12354, FocusType.Keyboard, position);
@@ -538,6 +516,8 @@ namespace UnityEditor
                 {
                     case LightType.Spot:
                     case LightType.Directional:
+                    case LightType.Rectangle:
+                    case LightType.Disc:
                         type = typeof(Texture2D);
                         break;
 

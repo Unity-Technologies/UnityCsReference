@@ -211,6 +211,11 @@ namespace UnityEditor.UIAutomation
             return m_Model.FindElementsByNamedControl(controlName);
         }
 
+        public IEnumerable<IAutomatedUIElement> FindElementsByGUIContentText(string text)
+        {
+            return m_Model.FindElementsByGUIContentText(text);
+        }
+
         public IAutomatedUIElement nextSibling
         {
             get { return m_Model.nextSibling; }
@@ -227,7 +232,6 @@ namespace UnityEditor.UIAutomation
 
         private AutomatedIMElement[] m_Elements;
         private AutomatedIMElement m_Root;
-
 
         public void Update()
         {
@@ -345,6 +349,11 @@ namespace UnityEditor.UIAutomation
             return m_Root.FindElementsByNamedControl(controlName);
         }
 
+        public IEnumerable<IAutomatedUIElement> FindElementsByGUIContentText(string text)
+        {
+            return m_Root.FindElementsByGUIContentText(text);
+        }
+
         public IAutomatedUIElement nextSibling
         {
             get { return m_Root.nextSibling; }
@@ -363,6 +372,9 @@ namespace UnityEditor.UIAutomation
         IEnumerable<IAutomatedUIElement> FindElementsByGUIStyle(GUIStyle style);
         IEnumerable<IAutomatedUIElement> FindElementsByGUIContent(GUIContent guiContent);
         IEnumerable<IAutomatedUIElement> FindElementsByNamedControl(string controlName);
+        /// <summary>Work-around for finding UI elements for which we do not have a recognizable GUIContent.
+        /// Searches children elements recursively for recognizable text from GUIContents.</summary>
+        IEnumerable<IAutomatedUIElement> FindElementsByGUIContentText(string text);
         IAutomatedUIElement nextSibling { get; }
     }
 
@@ -496,6 +508,26 @@ namespace UnityEditor.UIAutomation
         public IEnumerable<IAutomatedUIElement> FindElementsByNamedControl(string controlName)
         {
             return FindElements(element => element.controlName == controlName);
+        }
+
+        public IEnumerable<IAutomatedUIElement> FindElementsByGUIContentText(string text)
+        {
+            foreach (IAutomatedUIElement matchingElement in FindElementsByGUIContentTextRecursive(children, text))
+                yield return matchingElement;
+        }
+
+        private static IEnumerable<IAutomatedUIElement> FindElementsByGUIContentTextRecursive(IEnumerable<IAutomatedUIElement> elements, string text)
+        {
+            if (elements == null)
+                yield break;
+            foreach (IAutomatedUIElement childElement in elements)
+            {
+                if (childElement.guiContent?.text?.Equals(text) ?? false)
+                    yield return childElement;
+
+                foreach (IAutomatedUIElement matchingSiblingElement in FindElementsByGUIContentTextRecursive(childElement.children, text))
+                    yield return matchingSiblingElement;
+            }
         }
 
         private static string NullOrEmptyToNull(string input)

@@ -514,10 +514,17 @@ namespace UnityEditor
                 // Open requested scene if any
                 if (!string.IsNullOrEmpty(lastOpenedScene))
                 {
-                    if (EditorSceneManager.CanOpenScene())
-                        EditorSceneManager.OpenScene(lastOpenedScene, OpenSceneMode.Single);
-                    else
-                        InstantiateDefaultScene();
+                    try
+                    {
+                        if (EditorSceneManager.CanOpenScene())
+                            EditorSceneManager.OpenScene(lastOpenedScene, OpenSceneMode.Single);
+                        else
+                            InstantiateDefaultScene();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"Error while opening specified scene \"{lastOpenedScene}\":\n {e.Message}");
+                    }
 
                     // Regardless of the operation outcome, reset last opened scene so that we don't
                     // force it next time around

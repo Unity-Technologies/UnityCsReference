@@ -266,6 +266,18 @@ namespace UnityEditorInternal
                 keyframe.curve = curve;
                 curve.AddKeyframe(keyframe, time);
             }
+            else if (curve.isDiscreteCurve)
+            {
+                Keyframe tempKey = new Keyframe(time.time, 0f);
+                AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
+                AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
+                AnimationUtility.SetKeyBroken(ref tempKey, true);
+
+                keyframe = new AnimationWindowKeyframe(curve, tempKey);
+                keyframe.value = Convert.ToInt32(value);
+
+                curve.AddKeyframe(keyframe, time);
+            }
             else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
             {
                 Keyframe tempKey = new Keyframe(time.time, (float)value);
@@ -281,11 +293,9 @@ namespace UnityEditorInternal
                     // Create temporary curve to get proper tangents
                     AnimationCurve animationCurve = curve.ToAnimationCurve();
 
-
-
                     if (animationCurve.length <= 1)
                     {
-                        TangentMode tangentMode = curve.isDiscreteCurve ? TangentMode.Constant : TangentMode.Linear;
+                        TangentMode tangentMode = TangentMode.Linear;
                         AnimationUtility.SetKeyLeftTangentMode(ref tempKey, tangentMode);
                         AnimationUtility.SetKeyRightTangentMode(ref tempKey, tangentMode);
                     }
@@ -460,14 +470,17 @@ namespace UnityEditorInternal
         {
             if (curveBinding.isPPtrCurve)
             {
-                Object value;
-                AnimationUtility.GetObjectReferenceValue(rootGameObject, curveBinding, out value);
+                AnimationUtility.GetObjectReferenceValue(rootGameObject, curveBinding, out var value);
+                return value;
+            }
+            else if (curveBinding.isDiscreteCurve)
+            {
+                AnimationUtility.GetDiscreteIntValue(rootGameObject, curveBinding, out var value);
                 return value;
             }
             else
             {
-                float value;
-                AnimationUtility.GetFloatValue(rootGameObject, curveBinding, out value);
+                AnimationUtility.GetFloatValue(rootGameObject, curveBinding, out var value);
                 return value;
             }
         }
@@ -617,7 +630,7 @@ namespace UnityEditorInternal
                             var modification = new PropertyModification();
 
                             modification.target = targetObjects[j];
-                            modification.propertyPath = singleProperty.propertyPath;
+                            modification.propertyPath = (singleProperty.isReferencingAManagedReferenceField ? singleProperty.managedReferencePropertyPath : singleProperty.propertyPath);
                             modification.value = value;
                             modification.objectReference = objectReference;
                             modifications.Add(modification);
@@ -635,6 +648,8 @@ namespace UnityEditorInternal
                             value = propertyIter.floatValue.ToString(CultureInfo.InvariantCulture);
                         else if (isInt)
                             value = propertyIter.intValue.ToString();
+                        else if (isEnum)
+                                value = propertyIter.enumValueIndex.ToString();
                         else // if (isBool)
                             value = propertyIter.boolValue ? "1" : "0";
 
@@ -643,7 +658,7 @@ namespace UnityEditorInternal
                             var modification = new PropertyModification();
 
                             modification.target = targetObjects[j];
-                            modification.propertyPath = propertyIter.propertyPath;
+                            modification.propertyPath = (propertyIter.isReferencingAManagedReferenceField ? propertyIter.managedReferencePropertyPath : propertyIter.propertyPath);
                             modification.value = value;
                             modification.objectReference = objectReference;
                             modifications.Add(modification);
@@ -747,6 +762,8 @@ namespace UnityEditorInternal
             propertyName = propertyName.Replace("localEulerAnglesRaw", k_RotationDisplayName);
             propertyName = propertyName.Replace("localEulerAngles", k_RotationDisplayName);
             propertyName = propertyName.Replace("m_Materials.Array.data", k_MaterialReferenceDisplayName);
+            if (propertyName.StartsWith("managedReferences["))
+                propertyName = propertyName.Remove(0, propertyName.IndexOf('.')+1);
 
             propertyName = ObjectNames.NicifyVariableName(propertyName);
             propertyName = propertyName.Replace("m_", "");
@@ -766,12 +783,57 @@ namespace UnityEditorInternal
             return true;
         }
 
+        public static string GetNicePropertyDisplayName(EditorCurveBinding curveBinding, SerializedObject so)
+        {
+            if (curveBinding.isSerializeReferenceCurve)
+            {
+                if (so != null)
+                {
+                    var displayName = curveBinding.propertyName;
+                    var sp = so.FindFirstPropertyFromManagedReferencePath(displayName);
+                    if (sp != null)
+                        displayName = AnimationWindowUtility.GetPropertyDisplayName(AnimationWindowUtility.GetPropertyGroupName(sp.propertyPath));
+                    if (displayName != "")
+                        return displayName;
+                }
+                else
+                {
+                    return ObjectNames.NicifyVariableName(curveBinding.type.Name) + "." + curveBinding.propertyName;
+                }
+
+            }
+
+            return AnimationWindowUtility.GetNicePropertyDisplayName(curveBinding.type, AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName));
+        }
+
         public static string GetNicePropertyDisplayName(Type animatableObjectType, string propertyName)
         {
             if (ShouldPrefixWithTypeName(animatableObjectType, propertyName))
                 return ObjectNames.NicifyVariableName(animatableObjectType.Name) + "." + GetPropertyDisplayName(propertyName);
             else
                 return GetPropertyDisplayName(propertyName);
+        }
+
+        public static string GetNicePropertyGroupDisplayName(EditorCurveBinding curveBinding, SerializedObject so)
+        {
+            if (curveBinding.isSerializeReferenceCurve )
+            {
+                if (so != null)
+                {
+                    var displayName = curveBinding.propertyName;
+                    var sp = so.FindFirstPropertyFromManagedReferencePath(displayName);
+                    if (sp != null)
+                        displayName = AnimationWindowUtility.GetPropertyDisplayName(AnimationWindowUtility.GetPropertyGroupName(sp.propertyPath));
+                    if (displayName != "")
+                        return displayName;
+                }
+                else
+                {
+                    return ObjectNames.NicifyVariableName(curveBinding.type.Name) + "." + curveBinding.propertyName;
+                }
+            }
+
+            return NicifyPropertyGroupName(curveBinding.type, AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName));
         }
 
         public static string GetNicePropertyGroupDisplayName(Type animatableObjectType, string propertyGroupName)

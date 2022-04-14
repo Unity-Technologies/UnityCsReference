@@ -226,6 +226,8 @@ namespace UnityEditor
                 var sceneHeaderItem = dataSource.sceneHeaderItems.FirstOrDefault(p => p.scene == firstItem.scene);
                 if (sceneHeaderItem != null)
                 {
+                    rect.y = Mathf.Round(rect.y); // Fix vertical render jittering due to fractional scroll values by rounding to nearest whole pixel
+
                     bool selected = m_TreeView.IsItemDragSelectedOrSelected(sceneHeaderItem);
                     bool focused = m_TreeView.HasFocus();
                     bool boldFont = sceneHeaderItem.scene == SceneManager.GetActiveScene();
@@ -237,6 +239,10 @@ namespace UnityEditor
                     m_TreeView.HandleUnusedMouseEventsForItem(rect, sceneHeaderItem, firstRow);
 
                     HandleStickyHeaderContextClick(rect, sceneHeaderItem);
+
+                    float indent = GetContentIndent(sceneHeaderItem);
+                    Rect indentedRect = new Rect(rect.x + indent, rect.y, rect.width - indent, rect.height);
+                    UserCallbackRowGUI(sceneHeaderItem.id, indentedRect);
                 }
             }
         }
@@ -417,6 +423,19 @@ namespace UnityEditor
 
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
             SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
+        }
+
+        internal static void UserCallbackRowGUI(int itemID, Rect rect)
+        {
+            if (EditorApplication.hierarchyWindowItemOnGUI != null)
+            {
+                // Adjust rect for the right aligned column for the prefab isolation button
+                rect.xMax -=
+                    GameObjectStyles.rightArrow.fixedWidth +
+                    GameObjectStyles.rightArrow.margin.horizontal;
+
+                EditorApplication.hierarchyWindowItemOnGUI(itemID, rect);
+            }
         }
 
         private void HandlePrefabInstanceOverrideStatus(GameObjectTreeViewItem goItem, Rect rect, bool selected, bool focused)

@@ -13,12 +13,14 @@ namespace UnityEditor.AddComponent
     {
         private static readonly string kSearchHeader = L10n.Tr("Search");
         AdvancedDropdownState m_State;
+        UnityEngine.GameObject[] m_Targets;
 
         internal static readonly string kScriptHeader = "Component/Scripts/";
 
-        public AddComponentDataSource(AdvancedDropdownState state)
+        public AddComponentDataSource(AdvancedDropdownState state, UnityEngine.GameObject[] targets)
         {
             m_State = state;
+            m_Targets = targets;
         }
 
         protected override AdvancedDropdownItem FetchData()
@@ -37,7 +39,7 @@ namespace UnityEditor.AddComponent
         {
             m_SearchableElements = new List<AdvancedDropdownItem>();
             AdvancedDropdownItem root = new ComponentDropdownItem("ROOT");
-            List<MenuItemData> menuItems = GetSortedMenuItems();
+            List<MenuItemData> menuItems = GetSortedMenuItems(m_Targets);
 
             Dictionary<string, int> pathHashCodeMap = new Dictionary<string, int>();
 
@@ -86,7 +88,7 @@ namespace UnityEditor.AddComponent
             return root;
         }
 
-        static List<MenuItemData> GetSortedMenuItems()
+        static List<MenuItemData> GetSortedMenuItems(UnityEngine.GameObject[] targets)
         {
             var menus = Unsupported.GetSubmenus("Component");
             var commands = Unsupported.GetSubmenusCommands("Component");
@@ -94,6 +96,8 @@ namespace UnityEditor.AddComponent
             var menuItems = new List<MenuItemData>(menus.Length);
             var legacyMenuItems = new List<MenuItemData>(menus.Length);
             const string kLegacyString = "legacy";
+
+            var hasFilterOverride = ModeService.HasExecuteHandler("inspector_filter_component");
 
             for (var i = 0; i < menus.Length; i++)
             {
@@ -106,13 +110,16 @@ namespace UnityEditor.AddComponent
                     isLegacy = isLegacy
                 };
 
-                if (isLegacy)
+                if (!hasFilterOverride || ModeService.Execute("inspector_filter_component", targets, menuPath))
                 {
-                    legacyMenuItems.Add(item);
-                }
-                else
-                {
-                    menuItems.Add(item);
+                    if (isLegacy)
+                    {
+                        legacyMenuItems.Add(item);
+                    }
+                    else
+                    {
+                        menuItems.Add(item);
+                    }
                 }
             }
 

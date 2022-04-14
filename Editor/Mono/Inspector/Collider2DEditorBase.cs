@@ -21,12 +21,14 @@ namespace UnityEditor
 
         private SerializedProperty m_Density;
         private readonly AnimBool m_ShowDensity = new AnimBool();
+        private readonly AnimBool m_ShowLayerOverrides = new AnimBool();
         private readonly AnimBool m_ShowInfo = new AnimBool();
         private readonly AnimBool m_ShowContacts = new AnimBool();
         Vector2 m_ContactScrollPosition;
 
         static ContactPoint2D[] m_Contacts = new ContactPoint2D[100];
 
+        private SavedBool m_ShowLayerOverridesFoldout;
         private SavedBool m_ShowInfoFoldout;
         private bool m_RequiresConstantRepaint;
 
@@ -36,6 +38,11 @@ namespace UnityEditor
         private SerializedProperty m_UsedByComposite;
         private SerializedProperty m_Offset;
         protected SerializedProperty m_AutoTiling;
+        private SerializedProperty m_LayerOverridePriority;
+        private SerializedProperty m_IncludeLayers;
+        private SerializedProperty m_ExcludeLayers;
+        private SerializedProperty m_ForceSendLayers;
+        private SerializedProperty m_ForceReceiveLayers;
 
         private readonly AnimBool m_ShowCompositeRedundants = new AnimBool();
 
@@ -48,8 +55,12 @@ namespace UnityEditor
             m_ShowDensity.value = ShouldShowDensity();
             m_ShowDensity.valueChanged.AddListener(Repaint);
 
+            m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
+            m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
+            m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
+
             m_ShowInfo.valueChanged.AddListener(Repaint);
-            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowFoldout", false);
+            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowInfoFoldout", false);
             m_ShowInfo.value = m_ShowInfoFoldout.value;
             m_ShowContacts.valueChanged.AddListener(Repaint);
             m_ContactScrollPosition = Vector2.zero;
@@ -60,6 +71,11 @@ namespace UnityEditor
             m_UsedByComposite = serializedObject.FindProperty("m_UsedByComposite");
             m_Offset = serializedObject.FindProperty("m_Offset");
             m_AutoTiling = serializedObject.FindProperty("m_AutoTiling");
+            m_LayerOverridePriority = serializedObject.FindProperty("m_LayerOverridePriority");
+            m_IncludeLayers = serializedObject.FindProperty("m_IncludeLayers");
+            m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
+            m_ForceSendLayers = serializedObject.FindProperty("m_ForceSendLayers");
+            m_ForceReceiveLayers = serializedObject.FindProperty("m_ForceReceiveLayers");
 
             m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
             m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
@@ -70,6 +86,7 @@ namespace UnityEditor
         public override void OnDisable()
         {
             m_ShowDensity.valueChanged.RemoveListener(Repaint);
+            m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
             m_ShowInfo.valueChanged.RemoveListener(Repaint);
             m_ShowContacts.valueChanged.RemoveListener(Repaint);
             m_ShowCompositeRedundants.valueChanged.RemoveListener(Repaint);
@@ -87,7 +104,6 @@ namespace UnityEditor
                 if (EditorGUILayout.BeginFadeGroup(m_ShowDensity.faded))
                     EditorGUILayout.PropertyField(m_Density);
                 EditorGUILayout.EndFadeGroup();
-
 
                 EditorGUILayout.PropertyField(m_Material);
                 EditorGUILayout.PropertyField(m_IsTrigger);
@@ -107,6 +123,7 @@ namespace UnityEditor
 
         public void FinalizeInspectorGUI()
         {
+            ShowLayerOverridesProperties();
             ShowColliderInfoProperties();
 
             // Check for collider error state.
@@ -122,6 +139,31 @@ namespace UnityEditor
 
             // Check for effector warnings.
             Effector2DEditor.CheckEffectorWarnings(target as Collider2D);
+
+            EndColliderInspector();
+        }
+
+        private void ShowLayerOverridesProperties()
+        {
+            // Show Layer Overrides.
+            m_ShowLayerOverridesFoldout.value = m_ShowLayerOverrides.target = EditorGUILayout.Foldout(m_ShowLayerOverrides.target, "Layer Overrides", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowLayerOverrides.faded))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_LayerOverridePriority);
+                EditorGUILayout.PropertyField(m_IncludeLayers);
+                EditorGUILayout.PropertyField(m_ExcludeLayers);
+
+                // Only show force send/receive if we're not dealing with triggers.
+                if (targets.Count(x => (x as Collider2D).isTrigger) == 0)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.PropertyField(m_ForceSendLayers);
+                    EditorGUILayout.PropertyField(m_ForceReceiveLayers);
+                }
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
         }
 
         private void ShowColliderInfoProperties()
@@ -231,7 +273,7 @@ namespace UnityEditor
             }
         }
 
-        protected void BeginColliderInspector()
+        protected void BeginEditColliderInspector()
         {
             serializedObject.Update();
             using (new EditorGUI.DisabledScope(targets.Length > 1))

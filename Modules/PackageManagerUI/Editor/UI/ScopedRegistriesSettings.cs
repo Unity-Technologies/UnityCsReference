@@ -76,8 +76,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
             m_UpmRegistryClient.onRegistryOperationError += OnRegistryOperationError;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
 
             // on domain reload, it's not guaranteed that the settings have
             //  reloaded the draft object yet- need to wait and do this when
@@ -93,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void OnUndoRedoPerformed()
+        private void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             if (EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
             {
@@ -153,12 +153,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (AnyPackageInstalledFromRegistry(draft.original.name))
                 {
                     message = L10n.Tr("There are packages in your project that are from this scoped registry, please remove them before removing the scoped registry.");
-                    EditorUtility.DisplayDialog(L10n.Tr("Cannot delete scoped registry"), message, L10n.Tr("Ok"));
+                    m_ApplicationProxy.DisplayDialog("cannotDeleteScopedRegistry", L10n.Tr("Cannot delete scoped registry"), message, L10n.Tr("Ok"));
                     return;
                 }
 
                 message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?");
-                var deleteRegistry = m_ApplicationProxy.isBatchMode || EditorUtility.DisplayDialog(L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                var deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistry", L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Ok"), L10n.Tr("Cancel"));
 
                 if (deleteRegistry)
                 {
@@ -203,7 +203,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ApplyChanges()
         {
             if (draft.isUrlOrScopesUpdated && AnyPackageInstalledFromRegistry(draft.original.name) &&
-                !EditorUtility.DisplayDialog(L10n.Tr("Updating a scoped registry"),
+                !m_ApplicationProxy.DisplayDialog("updateScopedRegistry",
+                    L10n.Tr("Updating a scoped registry"),
                     L10n.Tr("There are packages in your project that are from this scoped registry, updating the URL or the scopes could result in errors in your project. Are you sure you want to continue?"),
                     L10n.Tr("Ok"), L10n.Tr("Cancel")))
                 return;
@@ -311,7 +312,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!draft.hasUnsavedChanges)
                 return true;
 
-            var discardChanges = m_ApplicationProxy.isBatchMode || EditorUtility.DisplayDialog(L10n.Tr("Discard unsaved changes"),
+            var discardChanges = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("discardUnsavedRegistryChanges", L10n.Tr("Discard unsaved changes"),
                 L10n.Tr("You have unsaved changes which would be lost if you continue this operation. Do you want to continue and discard unsaved changes?"),
                 L10n.Tr("Continue"), L10n.Tr("Cancel"));
 

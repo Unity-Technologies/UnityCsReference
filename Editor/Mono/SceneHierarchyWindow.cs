@@ -87,6 +87,12 @@ namespace UnityEditor
             PrefabUtility.prefabInstanceModificationCacheCleared -= OnPrefabInstanceModificationCacheCleared;
         }
 
+        internal override void ClickedSearchField()
+        {
+            // End renaming any GameObjects (case 1078881)
+            m_SceneHierarchy.treeView.EndNameEditing(true);
+        }
+
         void OnDestroy()
         {
             // Set another existing hierarchy as last interacted if available
@@ -322,13 +328,13 @@ namespace UnityEditor
         [MenuItem("Edit/Paste As Child %#V", false, 103)]
         static void PasteAsChild()
         {
-            CutCopyPasteUtility.PasteGOAsChild();
+            ClipboardUtility.PasteGOAsChild();
         }
 
         [MenuItem("Edit/Paste As Child %#V", true, 103)]
         static bool ValidatePasteAsChild()
         {
-            return CutCopyPasteUtility.CanPasteAsChild();
+            return ClipboardUtility.CanPasteAsChild();
         }
 
         internal static SceneHierarchyWindow GetSceneHierarchyWindowToFocusForNewGameObjects()

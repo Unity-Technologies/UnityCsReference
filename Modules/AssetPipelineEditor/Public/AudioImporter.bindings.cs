@@ -65,6 +65,12 @@ namespace UnityEditor
                 Internal_ContainsSampleSettingsOverride(platformGroup) :
                 false;
         }
+        public bool ContainsSampleSettingsOverride(BuildTargetGroup platformGroup)
+        {
+            return ValidatePlatform(platformGroup, "AudioImporter.ContainsSampleSettingsOverride") ?
+                Internal_ContainsSampleSettingsOverride(platformGroup) :
+                false;
+        }
 
         [NativeName("ContainsSampleSettingsOverride")]
         internal extern bool Internal_ContainsSampleSettingsOverride(BuildTargetGroup platformGroup);
@@ -72,6 +78,12 @@ namespace UnityEditor
         public AudioImporterSampleSettings GetOverrideSampleSettings(string platform)
         {
             return ValidatePlatform(platform, "AudioImporter.GetOverrideSampleSettings", out BuildTargetGroup platformGroup) ?
+                Internal_GetOverrideSampleSettings(platformGroup) :
+                defaultSampleSettings;
+        }
+        public AudioImporterSampleSettings GetOverrideSampleSettings(BuildTargetGroup platformGroup)
+        {
+            return ValidatePlatform(platformGroup, "AudioImporter.GetOverrideSampleSettings") ?
                 Internal_GetOverrideSampleSettings(platformGroup) :
                 defaultSampleSettings;
         }
@@ -85,6 +97,13 @@ namespace UnityEditor
                 Internal_SetOverrideSampleSettings(platformGroup, settings) :
                 false;
         }
+        public bool SetOverrideSampleSettings(BuildTargetGroup platformGroup, AudioImporterSampleSettings settings)
+        {
+            return ValidatePlatform(platformGroup, "AudioImporter.SetOverrideSampleSettings") ?
+                Internal_SetOverrideSampleSettings(platformGroup, settings) :
+                false;
+        }
+
 
         [NativeName("SetSampleSettingsForPlatform")]
         internal extern bool Internal_SetOverrideSampleSettings(BuildTargetGroup platformGroup, AudioImporterSampleSettings settings);
@@ -95,19 +114,30 @@ namespace UnityEditor
                 Internal_ClearSampleSettingOverride(platformGroup) :
                 false;
         }
-
-        private static bool ValidatePlatform(string platform, string methodName, out BuildTargetGroup group)
+        public bool ClearSampleSettingOverride(BuildTargetGroup platformGroup)
         {
-            group = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (group != BuildTargetGroup.Unknown)
+            return ValidatePlatform(platformGroup, "AudioImporter.ClearSampleSettingOverride") ?
+                Internal_ClearSampleSettingOverride(platformGroup) :
+                false;
+        }
+
+        private static bool ValidatePlatform(string platformName, string methodName, out BuildTargetGroup group)
+        {
+            group = BuildPipeline.GetBuildTargetGroupByName(platformName);
+            return ValidatePlatform(group, methodName);
+        }
+
+        private static bool ValidatePlatform(BuildTargetGroup platformGroup, string methodName)
+        {
+            if (platformGroup != BuildTargetGroup.Unknown)
                 return true;
 
-            Debug.LogErrorFormat("Unknown platform passed to {0} ({1})", methodName, platform);
+            Debug.LogErrorFormat("Unknown platform passed to {0} ({1})", methodName, platformGroup);
             return false;
         }
 
         [NativeName("ClearSampleSettingOverride")]
-        internal extern bool Internal_ClearSampleSettingOverride(BuildTargetGroup platform);
+        internal extern bool Internal_ClearSampleSettingOverride(BuildTargetGroup platformGroup);
 
         // Force this clip to mono?
         public extern bool forceToMono { get; set; }

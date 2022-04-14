@@ -69,7 +69,7 @@ namespace UnityEditor
 
         public void OnEnable(ConstraintStyleBase style)
         {
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
 
             m_SourceList = new ReorderableList(serializedObject, sources, sources.editable, true, sources.editable, sources.editable);
             m_SourceList.drawElementCallback += DrawElementCallback;
@@ -87,10 +87,10 @@ namespace UnityEditor
 
         public void OnDisable()
         {
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
         }
 
-        internal void OnUndoRedoPerformed()
+        internal void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             // must call UserUpdateOffset to allow the offsets to be updated by the Undo system, otherwise the constraint can override them
             foreach (var t in targets)

@@ -80,7 +80,11 @@ namespace UnityEditor.Search
             set => description = value;
         }
 
-        public Texture2D thumbnail => icon;
+        public Texture2D thumbnail
+        {
+            get => icon;
+            set => icon = value;
+        }
         public string filePath => AssetDatabase.GetAssetPath(this);
 
         private string m_GUID;
@@ -101,11 +105,8 @@ namespace UnityEditor.Search
 
         [Multiline]
         public string description;
-
         public List<string> providerIds;
-
         public SearchViewState viewState;
-
         public Texture2D icon;
 
         [SerializeField] private bool m_IsSearchTemplate;
@@ -161,6 +162,11 @@ namespace UnityEditor.Search
                 while (savedQueriesItr.MoveNext())
                     yield return savedQueriesItr.Current.pptrValue as SearchQueryAsset;
             }
+        }
+
+        public string GetName()
+        {
+            return name;
         }
 
         public static SearchQueryAsset Create(SearchContext context, string description = null)
@@ -227,18 +233,6 @@ namespace UnityEditor.Search
             return savedQueries.Where(query => query && (query.providerIds.Count == 0 || query.providerIds.Any(id => context.IsEnabled(id))));
         }
 
-        public static IEnumerable<SearchItem> GetAllSearchQueryItems(SearchContext context)
-        {
-            var icon = Utils.FindTextureForType(typeof(SearchQueryAsset));
-            var queryProvider = SearchService.GetProvider(Providers.Query.type);
-            return GetFilteredSearchQueries(context).Select(query =>
-            {
-                var id = GlobalObjectId.GetGlobalObjectIdSlow(query).ToString();
-                var description = string.IsNullOrEmpty(query.description) ? $"{query.text}" : $"{query.description} ({query.text})";
-                return queryProvider.CreateItem(context, id, query.name, description, icon, query);
-            }).OrderBy(item => item.label);
-        }
-
         public static void ResetSearchQueryItems()
         {
             s_SavedQueries = null;
@@ -265,7 +259,7 @@ namespace UnityEditor.Search
 
         public SearchQuery ToSearchQuery()
         {
-            var viewState = GetResultViewState();
+            var viewState = GetViewState();
             return new SearchQuery(viewState, viewState.tableConfig);
         }
 
@@ -293,9 +287,14 @@ namespace UnityEditor.Search
             return GetProviders().Select(p => p.type).Distinct();
         }
 
-        public SearchViewState GetResultViewState()
+        public SearchViewState GetViewState()
         {
             return viewState;
+        }
+
+        public SearchTable GetSearchTable()
+        {
+            return viewState?.tableConfig;
         }
     }
 }

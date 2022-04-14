@@ -41,7 +41,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            BeginColliderInspector();
+            BeginEditColliderInspector();
             GUILayout.Space(5);
             base.OnInspectorGUI();
 
@@ -71,8 +71,6 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_AdjacentEndPoint);
             }
             EditorGUILayout.EndFadeGroup();
-
-            EndColliderInspector();
 
             FinalizeInspectorGUI();
         }

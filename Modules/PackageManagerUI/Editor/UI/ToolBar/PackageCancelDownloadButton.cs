@@ -11,15 +11,23 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageDatabase m_PackageDatabase;
-        public PackageCancelDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase)
+        private bool m_IsIconButton;
+        public PackageCancelDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase, bool isIconButton = false)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
+            m_IsIconButton = isIconButton;
+            if (isIconButton)
+            {
+                element.AddToClassList("cancelIcon");
+                element.AddToClassList("icon");
+            }
         }
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_PackageDatabase.AbortDownload(versions.Select(v => v.package));
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", packageIds: versions.Select(v => v.packageUniqueId));
             return true;
         }
 
@@ -42,8 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
-            var resumeRequsted = operation?.state == DownloadState.ResumeRequested;
-            yield return new ButtonDisableCondition(resumeRequsted,
+            var resumeRequested = operation?.state == DownloadState.ResumeRequested;
+            yield return new ButtonDisableCondition(resumeRequested,
                 L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed."));
         }
 
@@ -52,10 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Format(L10n.Tr("Click to cancel the download of this {0}."), version.package.GetDescriptor());
         }
 
-        protected override string GetText(IPackageVersion version, bool isInProgress)
-        {
-            return L10n.Tr("Cancel");
-        }
+        protected override string GetText(IPackageVersion version, bool isInProgress) => m_IsIconButton ? string.Empty : L10n.Tr("Cancel");
 
         protected override bool IsInProgress(IPackageVersion version) => false;
     }

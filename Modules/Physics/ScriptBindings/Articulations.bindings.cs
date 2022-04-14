@@ -161,7 +161,7 @@ namespace UnityEngine
 
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
     [NativeClass("Unity::ArticulationBody")]
-    public class ArticulationBody : Behaviour
+    public partial class ArticulationBody : Behaviour
     {
         extern public ArticulationJointType jointType { get; set; }
         extern public Vector3 anchorPosition { get; set; }
@@ -170,18 +170,6 @@ namespace UnityEngine
         extern public Quaternion parentAnchorRotation { get; set; }
         extern public bool isRoot { get; }
 
-        [Obsolete("computeParentAnchor has been renamed to matchAnchors (UnityUpgradable) -> matchAnchors")]
-        public bool computeParentAnchor
-        {
-            get
-            {
-                return matchAnchors;
-            }
-            set
-            {
-                matchAnchors = value;
-            }
-        }
         extern public bool matchAnchors { get; set; }
 
         extern public ArticulationDofLock linearLockX { get; set; }
@@ -247,8 +235,10 @@ namespace UnityEngine
         extern public Vector3 angularVelocity { get; set; }
 
         extern public float mass { get; set; }
+        extern public bool automaticCenterOfMass { get; set; }
         extern public Vector3 centerOfMass { get; set; }
         extern public Vector3 worldCenterOfMass { get; }
+        extern public bool automaticInertiaTensor { get; set; }
         extern public Vector3 inertiaTensor { get; set; }
         extern public Quaternion inertiaTensorRotation { get; set; }
         extern public void ResetCenterOfMass();
@@ -269,7 +259,9 @@ namespace UnityEngine
 
         extern public ArticulationReducedSpace jointPosition { get; set; }
         extern public ArticulationReducedSpace jointVelocity { get; set; }
-        extern public ArticulationReducedSpace jointAcceleration { get; set; }
+        extern public ArticulationReducedSpace jointAcceleration { get;
+        [Obsolete("Setting joint accelerations is not supported in forward kinematics. To have inverse dynamics take acceleration into account, use GetJointForcesForAcceleration instead", true)]
+        set; }
         extern public ArticulationReducedSpace jointForce { get; set; }
         extern public ArticulationReducedSpace driveForce { get; }
 
@@ -289,7 +281,6 @@ namespace UnityEngine
         extern public int GetJointVelocities(List<float> velocities);
         extern public void SetJointVelocities(List<float> velocities);
         extern public int GetJointAccelerations(List<float> accelerations);
-        extern public void SetJointAccelerations(List<float> accelerations);
         extern public int GetJointForces(List<float> forces);
         extern public void SetJointForces(List<float> forces);
         extern public ArticulationReducedSpace GetJointForcesForAcceleration(ArticulationReducedSpace acceleration);

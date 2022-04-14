@@ -92,6 +92,11 @@ namespace Unity.Collections.LowLevel.Unsafe
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
         public static extern bool GetAllowReadOrWriteAccess(AtomicSafetyHandle handle);
 
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
+        public static extern void SetNestedContainer(AtomicSafetyHandle handle, bool isNestedContainer);
+
+        [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
+        public static extern bool GetNestedContainer(AtomicSafetyHandle handle);
 
         // Performs CheckWriteAndThrow and then bumps the secondary version.
         // This allows for example a NativeArray that becomes invalid if the Length of a List

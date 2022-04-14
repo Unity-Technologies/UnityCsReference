@@ -36,26 +36,12 @@ namespace UnityEngine.UIElements
             this.AddManipulator(m_Clickable = new Clickable(OnClickEvent));
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         private void OnNavigationSubmit(NavigationSubmitEvent evt)
         {
             ToggleValue();
             evt.StopPropagation();
-        }
-
-        private void OnKeyDown(KeyDownEvent evt)
-        {
-            if (panel?.contextType != ContextType.Editor)
-                return;
-
-            // KeyCodes are hardcoded in the Editor, but in runtime we should use the more versatile NavigationSubmit.
-            if (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.Space)
-            {
-                ToggleValue();
-                evt.StopPropagation();
-            }
         }
 
         private string m_OriginalText;
@@ -98,10 +84,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         protected virtual void InitLabel()
         {
-            m_Label = new Label
-            {
-                pickingMode = PickingMode.Ignore
-            };
+            m_Label = new Label();
             visualInput.Add(m_Label);
         }
 

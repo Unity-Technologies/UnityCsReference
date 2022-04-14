@@ -95,8 +95,8 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_AllCountersTreeView.bindItem = BindTreeViewItem;
             m_AllCountersTreeView.viewDataKey = k_AllCountersTreeViewDataKey;
             m_AllCountersTreeView.selectionType = SelectionType.Multiple;
-            m_AllCountersTreeView.onSelectedIndicesChange += OnTreeViewSelectionChanged;
-            m_AllCountersTreeView.onItemsChosen += OnTreeViewSelectionChosen;
+            m_AllCountersTreeView.selectedIndicesChanged += OnTreeViewSelectionChanged;
+            m_AllCountersTreeView.itemsChosen += OnTreeViewSelectionChosen;
             m_AllCountersAddSelectedButton.text = LocalizationDatabase.GetLocalizedString("Add Selected");
             m_AllCountersAddSelectedButton.clicked += AddSelectedTreeViewCountersToModule;
 

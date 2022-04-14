@@ -94,6 +94,7 @@ namespace UnityEditor.UIElements.Samples
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("HelpBox", HelpBoxSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Object Field", ObjectFieldSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("List View", ListViewSnippet.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tree View", TreeViewSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Numeric Fields", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Integer", IntegerFieldSnippet.Create)),
@@ -178,7 +179,7 @@ namespace UnityEditor.UIElements.Samples
             treeView.SetRootItems(items);
             treeView.makeItem = makeItem;
             treeView.bindItem = bindItem;
-            treeView.onSelectedIndicesChange += onSelectionChanged;
+            treeView.selectedIndicesChanged += onSelectionChanged;
             treeView.Rebuild();
 
             // Force TreeView to call onSelectionChanged when it restores its own selection from view data.

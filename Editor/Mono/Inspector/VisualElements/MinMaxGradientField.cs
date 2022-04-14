@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,6 +12,8 @@ namespace UnityEditor.UIElements
 {
     internal class MinMaxGradientField : BaseField<ParticleSystem.MinMaxGradient>
     {
+        public new class UxmlFactory : UxmlFactory<MinMaxGradientField> { }
+
         public new static readonly string ussClassName = "unity-min-max-gradient-field";
         public static readonly string visualInputUssClass = ussClassName + "__visual-input";
         public static readonly string dropdownFieldUssClass = ussClassName + "__dropdown-field";
@@ -28,56 +31,86 @@ namespace UnityEditor.UIElements
             L10n.Tr("Random Color")
         };
 
-        VisualElement m_ColorMin;
-        VisualElement m_ColorMax;
-        VisualElement m_GradientMin;
-        VisualElement m_GradientMax;
-        VisualElement m_ModeDropdown;
+        PropertyField m_ColorMin;
+        PropertyField m_ColorMax;
+        PropertyField m_GradientMin;
+        PropertyField m_GradientMax;
+        DropdownField m_ModeDropdown;
         VisualElement m_GradientsContainer;
-        VisualElement m_MixedValueTypeLabel;
+        Label m_MixedValueTypeLabel;
 
         public MinMaxGradientField()
             : this(null, null) { }
 
         public MinMaxGradientField(MinMaxGradientPropertyDrawer.PropertyData propertyData, string label) : base(label, null)
         {
-            m_ColorMin = EditorUIService.instance.CreatePropertyField(propertyData.colorMin, "");
-            m_ColorMin.AddToClassList(colorFieldUssClass);
-            m_ColorMax = EditorUIService.instance.CreatePropertyField(propertyData.colorMax, "");
-            m_ColorMax.AddToClassList(colorFieldUssClass);
-            m_GradientMin = EditorUIService.instance.CreatePropertyField(propertyData.gradientMin, "");
-            m_GradientMax = EditorUIService.instance.CreatePropertyField(propertyData.gradientMax, "");
-            m_ModeDropdown = EditorUIService.instance.CreateDropdownField(stringModes, () => propertyData.mode.intValue);
-            m_ModeDropdown.AddToClassList(dropdownFieldUssClass);
-            m_MixedValueTypeLabel = new Label("\u2014");
-            m_MixedValueTypeLabel.AddToClassList(multipleValuesLabelUssClass);
-
-            var dropdownInput = m_ModeDropdown.Q<VisualElement>(null, "unity-popup-field__input");
-            dropdownInput.AddToClassList(dropdownInputUssClass);
-
-            m_GradientsContainer = new VisualElement();
-            m_GradientsContainer.AddToClassList(gradientContainerUssClass);
-            m_GradientsContainer.Add(m_GradientMin);
-            m_GradientsContainer.Add(m_GradientMax);
-
-            visualInput.AddToClassList(visualInputUssClass);
-            visualInput.Add(m_ColorMin);
-            visualInput.Add(m_ColorMax);
-            visualInput.Add(m_GradientsContainer);
-            visualInput.Add(m_MixedValueTypeLabel);
-            visualInput.Add(m_ModeDropdown);
-
-            m_ModeDropdown.RegisterCallback<ChangeEvent<string>>(e =>
+            if (propertyData != null)
             {
-                var index = Array.IndexOf(stringModes, e.newValue);
-                var mode = (MinMaxGradientState)index;
+                m_ColorMin = new PropertyField(propertyData.colorMin, "");
+                m_ColorMin.AddToClassList(colorFieldUssClass);
+                m_ColorMax = new PropertyField(propertyData.colorMax, "");
+                m_ColorMax.AddToClassList(colorFieldUssClass);
+                m_GradientMin = new PropertyField(propertyData.gradientMin, "");
+                m_GradientMax = new PropertyField(propertyData.gradientMax, "");
+                m_ModeDropdown = new DropdownField
+                {
+                    choices = stringModes.ToList()
+                };
+                m_ModeDropdown.createMenuCallback = () =>
+                {
+                    var osMenu = new GenericOSMenu();
 
-                propertyData.mode.intValue = index;
-                propertyData.mode.serializedObject.ApplyModifiedProperties();
+                    for (int i = 0; i < stringModes.Length; i++)
+                    {
+                        var option = stringModes[i];
+                        var isValueSelected = propertyData.mode.intValue == i;
+
+                        osMenu.AddItem(option, isValueSelected, () =>
+                        {
+                            m_ModeDropdown.value = option;
+                        });
+                    }
+
+                    return osMenu;
+                };
+                m_ModeDropdown.formatSelectedValueCallback = (value) =>
+                {
+                    // Don't show label for this dropdown
+                    return "";
+                };
+
+                m_ModeDropdown.index = propertyData.mode.intValue;
+                m_ModeDropdown.AddToClassList(dropdownFieldUssClass);
+                m_MixedValueTypeLabel = new Label("\u2014");
+                m_MixedValueTypeLabel.AddToClassList(multipleValuesLabelUssClass);
+
+                var dropdownInput = m_ModeDropdown.Q<VisualElement>(null, "unity-popup-field__input");
+                dropdownInput.AddToClassList(dropdownInputUssClass);
+
+                m_GradientsContainer = new VisualElement();
+                m_GradientsContainer.AddToClassList(gradientContainerUssClass);
+                m_GradientsContainer.Add(m_GradientMin);
+                m_GradientsContainer.Add(m_GradientMax);
+
+                visualInput.AddToClassList(visualInputUssClass);
+                visualInput.Add(m_ColorMin);
+                visualInput.Add(m_ColorMax);
+                visualInput.Add(m_GradientsContainer);
+                visualInput.Add(m_MixedValueTypeLabel);
+                visualInput.Add(m_ModeDropdown);
+
+                m_ModeDropdown.RegisterCallback<ChangeEvent<string>>(e =>
+                {
+                    var index = Array.IndexOf(stringModes, e.newValue);
+                    var mode = (MinMaxGradientState)index;
+
+                    propertyData.mode.intValue = index;
+                    propertyData.mode.serializedObject.ApplyModifiedProperties();
+                    UpdateFieldsDisplay(propertyData.mode);
+                });
+
                 UpdateFieldsDisplay(propertyData.mode);
-            });
-
-            UpdateFieldsDisplay(propertyData.mode);
+            }
         }
 
         private void UpdateFieldsDisplay(SerializedProperty mode)

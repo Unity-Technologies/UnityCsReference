@@ -662,12 +662,6 @@ namespace UnityEditor
                 }
             }
 
-            internal void DrawItem(Rect itemRect, ExtraItem extraItem)
-            {
-                GUI.Label(itemRect, GUIContent.none, Styles.iconAreaBg);
-                DrawItem(itemRect, null, extraItem, false);
-            }
-
             void DrawItem(Rect position, FilteredHierarchy.FilterResult filterItem, BuiltinResource builtinResource, bool isFolderBrowsing)
             {
                 System.Diagnostics.Debug.Assert((filterItem != null && builtinResource == null) ||
@@ -1426,7 +1420,7 @@ namespace UnityEditor
 
             public DragAndDropVisualMode DoDrag(int dragToInstanceID, bool perform)
             {
-                return DragAndDrop.Drop(DragAndDropWindowTarget.projectBrowser, dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
+                return DragAndDrop.DropOnProjectBrowserWindow(dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
             }
 
             static internal int GetControlIDFromInstanceID(int instanceID)

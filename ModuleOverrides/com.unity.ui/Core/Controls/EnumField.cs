@@ -26,13 +26,14 @@ namespace UnityEngine.UIElements
             }
 
             string specifiedValue = null;
-            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.IsDefined(resEnumType, specifiedValue))
+            object resEnumValueObject = null;
+            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.TryParse(resEnumType, specifiedValue, false, out resEnumValueObject))
             {
                 Debug.LogErrorFormat("EnumField: Could not parse value of '{0}', because it isn't defined in the {1} enum.", specifiedValue, resEnumType.FullName);
                 return false;
             }
 
-            resEnumValue = specifiedValue != null ? (Enum)Enum.Parse(resEnumType, specifiedValue) : (Enum)Enum.ToObject(resEnumType, 0);
+            resEnumValue = specifiedValue != null && resEnumValueObject != null ? (Enum)resEnumValueObject : (Enum)Enum.ToObject(resEnumType, 0);
             resIncludeObsoleteValues = includeObsoleteValues.GetValueFromBag(bag, cc);
 
             return true;
@@ -84,6 +85,12 @@ namespace UnityEngine.UIElements
                     enumField.m_EnumType = resEnumType;
                     if (enumField.m_EnumType != null)
                         enumField.PopulateDataFromType(enumField.m_EnumType);
+                    enumField.value = null;
+                }
+                else
+                {
+                    var enumField = (EnumField)ve;
+                    enumField.m_EnumType = null;
                     enumField.value = null;
                 }
             }
@@ -180,6 +187,7 @@ namespace UnityEngine.UIElements
                 if (e.button == (int)MouseButton.LeftMouse)
                     e.StopPropagation();
             });
+            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
         }
 
         /// <summary>
@@ -254,11 +262,17 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool ContainsPointer(int pointerId)
+        {
+            var elementUnderPointer = elementPanel.GetTopElementUnderPointer(pointerId);
+            return this == elementUnderPointer || visualInput == elementUnderPointer;
+        }
+
         void ProcessPointerDown<T>(PointerEventBase<T> evt) where T : PointerEventBase<T>, new()
         {
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.originalMousePosition)))
+                if (ContainsPointer(evt.pointerId))
                 {
                     ShowMenu();
                     evt.StopPropagation();
@@ -266,27 +280,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [EventInterest(typeof(KeyDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        void OnNavigationSubmit(NavigationSubmitEvent evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            KeyDownEvent kde = (evt as KeyDownEvent);
-            if (kde != null)
-            {
-                if ((kde.keyCode == KeyCode.Space) ||
-                    (kde.keyCode == KeyCode.KeypadEnter) ||
-                    (kde.keyCode == KeyCode.Return))
-                {
-                    ShowMenu();
-                    evt.StopPropagation();
-                }
-            }
+            ShowMenu();
+            evt.StopPropagation();
         }
 
         private void ShowMenu()

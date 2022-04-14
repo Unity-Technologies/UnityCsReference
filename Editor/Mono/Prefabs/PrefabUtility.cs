@@ -14,6 +14,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.VersionControl;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -77,6 +78,15 @@ namespace UnityEditor
         ConnectToPrefab = 1,
         // Replaces the prefab using name based lookup in the transform hierarchy.
         ReplaceNameBased = 2,
+    }
+
+    // This must match C++ MergeStatus
+    internal enum MergeStatus
+    {
+        NotMerged,                       // Initial state, before trying to merge
+        NormalMerge,                     // Prefab source was found and merged successfully
+        MergedAsMissing,                 // Prefab source was missing and the Prefab couldn't be merged
+        MergedAsMissingWithSceneBackup   // Prefab source was missing, but Prefab data was found in the scene file - no merging was done
     }
 
     internal delegate void AddApplyMenuItemDelegate(GUIContent menuItem, Object sourceObject, Object instanceOrAssetObject);
@@ -924,6 +934,20 @@ namespace UnityEditor
             }
         }
 
+        static bool DidComponentOrderChange(Component[] originalComponentOrder, Component[] newComponentOrder)
+        {
+            if (originalComponentOrder.Length != newComponentOrder.Length)
+                return true;
+
+            for (int i = 0; i < originalComponentOrder.Length; ++i)
+            {
+                if (originalComponentOrder[i] != newComponentOrder[i])
+                    return true;
+            }
+
+            return false;
+        }
+
         public static void ApplyAddedComponent(Component component, string assetPath, InteractionMode action)
         {
             DateTime startTime = DateTime.UtcNow;
@@ -941,6 +965,8 @@ namespace UnityEditor
                 GameObject prefabSourceGameObject = GetCorrespondingObjectFromSourceAtPath(component.gameObject, assetPath);
                 if (prefabSourceGameObject == null)
                     return;
+
+                var originalComponentOrder = component.gameObject.GetComponents<Component>();
 
                 var actionName = "Apply Added Component";
                 if (action == InteractionMode.UserAction)
@@ -973,6 +999,13 @@ namespace UnityEditor
                     {
                         PrefabUtility.ApplyAddedComponent(coupledComponent, prefabSourceGameObject);
                         Undo.RegisterCreatedObjectUndo(GetCorrespondingObjectFromOriginalSource(coupledComponent), actionName);
+                    }
+
+                    var postApplyComponentOrder = component.gameObject.GetComponents<Component>();
+                    bool orderChanged = DidComponentOrderChange(originalComponentOrder, postApplyComponentOrder);
+                    if (orderChanged)
+                    {
+                        EditorUtility.DisplayDialog(L10n.Tr("Notice!"), L10n.Tr("Some component(s) changed position because of other added components in the variant/nesting chain."), L10n.Tr("OK"));
                     }
                 }
             }
@@ -1034,10 +1067,14 @@ namespace UnityEditor
                     Undo.DestroyObjectImmediate(coupledComponent);
             }
             else
-                Object.DestroyImmediate(component);
+                Object.DestroyImmediate(component, true);
 
-            // Remerge the prefab instance to make any suppressed components show up if no longer suppressed
-            PrefabUtility.MergePrefabInstance_internal(prefabInstanceGameObject);
+            // Remerge the Prefab instance to make any suppressed components show up if no longer suppressed
+            // For the Prefab assets this is not necessary because they will be remerged by the importer when saved
+            if (!PrefabUtility.IsPartOfPrefabAsset(prefabInstanceGameObject))
+            {
+                PrefabUtility.MergePrefabInstance_internal(prefabInstanceGameObject);
+            }
         }
 
         private static bool IsPrefabInstanceObjectOf(Object instance, Object source)
@@ -1067,9 +1104,9 @@ namespace UnityEditor
             PrefabUtility.SetRemovedComponents(prefabInstanceObject, filteredRemovedComponents);
         }
 
-        // We can't use the same pattern of identifyiong the prefab asset via assetPath only,
+        // We can't use the same pattern of identifying the prefab asset via assetPath only,
         // since when the component is removed in the instance, the only way to identify which component it is,
-        // is via the corresponding component on the asset. Additionally supplying an assetPath would be redundant.
+        // is via the corresponding component on the asset. We find it by matching FileIds. Additionally supplying an assetPath would be redundant.
         public static void ApplyRemovedComponent(GameObject instanceGameObject, Component assetComponent, InteractionMode action)
         {
             DateTime startTime = DateTime.UtcNow;
@@ -1095,20 +1132,51 @@ namespace UnityEditor
                     EditorUtility.DisplayDialog(L10n.Tr("Can't apply removed component"), error, L10n.Tr("OK"));
                     return;
                 }
-
-                var coupledAssetComponent = assetComponent.GetCoupledComponent();
-
-                Undo.DestroyObjectUndoable(assetComponent, actionName);
-                // Undo.DestroyObjectUndoable saves prefab asset internally.
-
-                if (coupledAssetComponent != null)
-                    Undo.DestroyObjectUndoable(coupledAssetComponent, actionName);
             }
-            else
+
+            string assetPath = AssetDatabase.GetAssetPath(assetComponent);
+            GameObject assetRoot = GetRootGameObject(assetComponent);
+
+            Component coupledAssetComponent = null;
+            byte[] originalFileContent = null;
+            if (action == InteractionMode.UserAction)
             {
-                GameObject prefabAsset = assetComponent.transform.root.gameObject;
-                Object.DestroyImmediate(assetComponent, true);
-                SavePrefabAsset(prefabAsset);
+                coupledAssetComponent = assetComponent.GetCoupledComponent();
+                if(!FileUtil.ReadFileContentBinary(assetPath, out originalFileContent, out string errorMessage))
+                    Debug.LogError($"No undo was registered when removing {assetComponent.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
+            }
+
+            using (var scope = new EditPrefabContentsScope(assetPath))
+            {
+                //Search components in file that matches the FileIds of componentInAsset
+                void DeleteCorrespondingComponent(Component componentInAsset)
+                {
+                    var assetComponentId = Unsupported.GetFileIDHint(componentInAsset);
+                    var componentsOfTypeInAsset = scope.prefabContentsRoot.GetComponentsInChildren(componentInAsset.GetType(), true);
+
+                    foreach (var component in componentsOfTypeInAsset)
+                    {
+                        if (Unsupported.GetOrGenerateFileIDHint(component) == assetComponentId)
+                        {
+                            Object.DestroyImmediate(component);
+                            return;
+                        }
+                    }
+                    Debug.LogError($"Component {componentInAsset} could not be found and deleted from corresponding asset.");
+                }
+
+                DeleteCorrespondingComponent(assetComponent);
+                if (coupledAssetComponent != null)
+                    DeleteCorrespondingComponent(coupledAssetComponent);
+            }
+
+            if (action == InteractionMode.UserAction && originalFileContent != null)
+            {
+                var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
+                if (FileUtil.ReadFileContentBinary(assetPath, out byte[] newFileContent, out string errorMessage))
+                    Undo.RegisterFileChangeUndo(guid, originalFileContent, newFileContent);
+                else
+                    Debug.LogError($"No undo was registered when removing {assetComponent.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
             }
 
             var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
@@ -1581,8 +1649,15 @@ namespace UnityEditor
             if (EditorUtility.IsPersistent(instanceRoot))
                 throw new ArgumentException("Can't save persistent object as a Prefab asset");
 
-            if (IsPrefabAssetMissing(instanceRoot))
-                throw new ArgumentException("Can't save Prefab instance with missing asset as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+            if (IsPartOfNonAssetPrefabInstance(instanceRoot))
+            {
+                // A PrefabInstance with missing asset can be correctly restored only if CorrespondingObjects info is available
+                // CorrespondingObject info is available when a PrefabInstance with missing asset was merged before deleting the asset (kNormalMerge) or when it has a scene backup (kMergedAsMissingWithSceneBackup)
+                var mergeStatus = GetMergeStatus(instanceRoot);
+                var hasCorrespondingSourceObjectInfo = mergeStatus == MergeStatus.NormalMerge || mergeStatus == MergeStatus.MergedAsMissingWithSceneBackup;
+                if (IsPrefabAssetMissing(instanceRoot) && !hasCorrespondingSourceObjectInfo)
+                    throw new ArgumentException("Can't save Prefab instance with missing asset and scene backup as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+            }
 
             var actualInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
             if (actualInstanceRoot)
@@ -1942,6 +2017,12 @@ namespace UnityEditor
             Apply
         }
 
+        [RequiredByNativeCode]
+        internal static bool PromptAndCheckoutPrefabIfNeeded_Internal(string[] assetPaths, SaveVerb saveVerb)
+        {
+            return PromptAndCheckoutPrefabIfNeeded(assetPaths, saveVerb);
+        }
+
         internal static bool PromptAndCheckoutPrefabIfNeeded(string assetPath, SaveVerb saveVerb)
         {
             return PromptAndCheckoutPrefabIfNeeded(new string[] { assetPath }, saveVerb);
@@ -1981,8 +2062,14 @@ namespace UnityEditor
             return result;
         }
 
+        public static event Action<GameObject, PrefabUnpackMode> prefabInstanceUnpacking;
+        public static event Action<GameObject, PrefabUnpackMode> prefabInstanceUnpacked;
+
         public static void UnpackPrefabInstance(GameObject instanceRoot, PrefabUnpackMode unpackMode, InteractionMode action)
         {
+            if (instanceRoot == null)
+                throw new ArgumentNullException(nameof(instanceRoot));
+
             if (!IsPartOfNonAssetPrefabInstance(instanceRoot))
                 throw new ArgumentException("UnpackPrefabInstance must be called with a Prefab instance.");
 
@@ -2007,8 +2094,23 @@ namespace UnityEditor
             {
                 UnpackPrefabInstanceAndReturnNewOutermostRoots(instanceRoot, unpackMode);
             }
+        }
 
-            prefabInstanceUnpacked?.Invoke(instanceRoot);
+        public static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots(GameObject instanceRoot, PrefabUnpackMode unpackMode)
+        {
+            if (instanceRoot == null)
+                throw new ArgumentNullException(nameof(instanceRoot));
+
+            prefabInstanceUnpacking?.Invoke(instanceRoot, unpackMode);
+
+            // The user can delete the instance in the prefabInstanceUnpacking callback
+            if (instanceRoot == null)
+                throw new InvalidOperationException($"The input '{nameof(instanceRoot)}' was destroyed in the prefabInstanceUnpacking callback");
+
+            var newRoots = UnpackPrefabInstanceAndReturnNewOutermostRoots_internal(instanceRoot, unpackMode);
+            prefabInstanceUnpacked?.Invoke(instanceRoot, unpackMode);
+
+            return newRoots;
         }
 
         public static void UnpackAllInstancesOfPrefab(GameObject prefabRoot, PrefabUnpackMode unpackMode, InteractionMode action)
@@ -2020,7 +2122,8 @@ namespace UnityEditor
             }
         }
 
-        static internal event Action<GameObject> prefabInstanceUnpacked;
+
+
 
         internal static bool HasInvalidComponent(Object gameObjectOrComponent)
         {
@@ -2627,16 +2730,18 @@ namespace UnityEditor
 
         internal readonly struct InstanceOverridesInfo
         {
-            public InstanceOverridesInfo(GameObject prefabInstance, PropertyModification[] usedMods, PropertyModification[] unusedMods)
+            public InstanceOverridesInfo(GameObject prefabInstance, PropertyModification[] usedMods, PropertyModification[] unusedMods, int unusedRemovedComponentCount)
             {
                 this.instance = prefabInstance;
                 this.usedMods = usedMods;
                 this.unusedMods = unusedMods;
+                this.unusedRemovedComponentCount = unusedRemovedComponentCount;
             }
 
             public GameObject instance { get; }
             public PropertyModification[] usedMods { get; }
             public PropertyModification[] unusedMods { get; }
+            public int unusedRemovedComponentCount { get; }
         }
 
         internal static bool HavePrefabInstancesUnusedOverrides(GameObject[] gameObjects)
@@ -2664,11 +2769,13 @@ namespace UnityEditor
 
             foreach (GameObject go in selectedGameObjects)
             {
-                var outerMostPrefabInstance = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+                var outerMostInstance = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+                if (outerMostInstance == null)
+                    continue;
 
-                if (PrefabUtility.HasPrefabInstanceNonDefaultOverrides_CachedForUI(outerMostPrefabInstance) || PrefabUtility.HasPrefabInstanceUnusedOverrides(outerMostPrefabInstance))
+                if (PrefabUtility.HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(outerMostInstance))
                 {
-                    InstanceOverridesInfo instancePropMods = GetPrefabInstanceOverridesInfo(outerMostPrefabInstance);
+                    InstanceOverridesInfo instancePropMods = GetPrefabInstanceOverridesInfo(outerMostInstance);
                     allInstanceMods.Add(instancePropMods);
                 }
             }
@@ -2730,7 +2837,9 @@ namespace UnityEditor
                 }
             }
 
-            return new InstanceOverridesInfo(selectedGameObject, validModifications.ToArray(), invalidModifications.ToArray());
+            int unusedRemovedComponentCount = GetPrefabInstanceUnusedRemovedComponentCount_Internal(selectedGameObject);
+
+            return new InstanceOverridesInfo(selectedGameObject, validModifications.ToArray(), invalidModifications.ToArray(), unusedRemovedComponentCount);
         }
 
         internal static bool DoRemovePrefabInstanceUnusedOverridesDialog(InstanceOverridesInfo[] instanceOverridesInfos)
@@ -2768,11 +2877,11 @@ namespace UnityEditor
             {
                 foreach (PrefabUtility.InstanceOverridesInfo instanceMods in instanceOverridesInfos)
                 {
-                    if (!instanceMods.unusedMods.Any())
+                    if (!instanceMods.unusedMods.Any() && instanceMods.unusedRemovedComponentCount == 0)
                         continue;
 
                     affectedInstanceCount++;
-                    unusedOverridesCount += instanceMods.unusedMods.Length;
+                    unusedOverridesCount += instanceMods.unusedMods.Length + instanceMods.unusedRemovedComponentCount;
                     usedOverridesCount += instanceMods.usedMods.Length;
                     currInstanceWithUnusedMods = instanceMods;
                 }
@@ -2797,7 +2906,7 @@ namespace UnityEditor
             }
             else// Single selection
             {
-                unusedOverridesCount = currInstanceWithUnusedMods.unusedMods.Length;
+                unusedOverridesCount = currInstanceWithUnusedMods.unusedMods.Length + currInstanceWithUnusedMods.unusedRemovedComponentCount;
                 usedOverridesCount = currInstanceWithUnusedMods.usedMods.Length;
                 if (unusedOverridesCount > 0)
                 {
@@ -2829,30 +2938,50 @@ namespace UnityEditor
 
         internal static void RemovePrefabInstanceUnusedOverrides(InstanceOverridesInfo[] instanceOverridesInfos)
         {
+            bool updatedEditorLog = false;
+
             foreach (InstanceOverridesInfo ipmods in instanceOverridesInfos)
-                PrefabUtility.RemovePrefabInstanceUnusedOverrides(ipmods);
+                updatedEditorLog |= PrefabUtility.RemovePrefabInstanceUnusedOverrides(ipmods);
+
+            if (updatedEditorLog)
+                System.Console.WriteLine("");
         }
 
-        private static void RemovePrefabInstanceUnusedOverrides(InstanceOverridesInfo iovInfo)
+        private static bool RemovePrefabInstanceUnusedOverrides(InstanceOverridesInfo iovInfo)
         {
-            if (iovInfo.unusedMods.Any())
+            if (iovInfo.instance == null)
+                throw new ArgumentNullException(nameof(iovInfo), "InstanceOverridesInfo.instance was null");
+            else if (iovInfo.unusedMods == null)
+                throw new ArgumentNullException(nameof(iovInfo), "InstanceOverridesInfo.unusedMods was null");
+            else if (iovInfo.usedMods == null)
+                throw new ArgumentNullException(nameof(iovInfo), "InstanceOverridesInfo.usedMods was null");
+
+            bool updatedEditorLog = false;
+            if (iovInfo.unusedMods.Any() || iovInfo.unusedRemovedComponentCount > 0)
             {
                 Undo.RegisterCompleteObjectUndo(iovInfo.instance, "Remove unused overrides");
 
-                SetPropertyModifications(iovInfo.instance, iovInfo.usedMods);
-                PrefabUtility.LogRemovedOverrides(iovInfo.instance, iovInfo.unusedMods);
+                if (iovInfo.unusedMods.Any())
+                {
+                    SetPropertyModifications(iovInfo.instance, iovInfo.usedMods);
+                    updatedEditorLog |= PrefabUtility.LogRemovedPropertyOverrides(iovInfo.instance, iovInfo.unusedMods);
+                }
 
-                PrefabUtility.RemoveRemovedComponentOverridesWhichAreNull(iovInfo.instance);
+                if (iovInfo.unusedRemovedComponentCount > 0)
+                {
+                    PrefabUtility.RemoveRemovedComponentOverridesWhichAreNull(iovInfo.instance);
+                    updatedEditorLog |= PrefabUtility.LogRemovedUnusedRemovedComponents(iovInfo.instance, iovInfo.unusedRemovedComponentCount);
+                }
             }
+            return updatedEditorLog;
         }
 
-        internal static void LogRemovedOverrides(GameObject instance, PropertyModification[] mods)
+        internal static bool LogRemovedPropertyOverrides(GameObject instance, PropertyModification[] mods)
         {
             if (mods.Length == 0)
-                return;
+                return false;
 
             System.Text.StringBuilder info = new System.Text.StringBuilder();
-            info.AppendLine("");
 
             if (mods.Length > 1)
                 info.AppendLine("Removed " + mods.Length + " unused overrides from instance '" + instance.name + "':");
@@ -2867,8 +2996,45 @@ namespace UnityEditor
                     info.AppendLine("   '" + mod.propertyPath + "' refers to a non-existent property.");
             }
 
-            System.Console.WriteLine(info.ToString(), instance);
+            System.Console.Write(info.ToString(), instance);
+            return true;
         }
+
+        internal static bool LogRemovedUnusedRemovedComponents(GameObject instance, int unusedRemovedComponentCount)
+        {
+            if (unusedRemovedComponentCount == 0)
+                return false;
+
+            System.Text.StringBuilder info = new System.Text.StringBuilder();
+
+            if (unusedRemovedComponentCount > 1)
+                info.AppendLine("Removed " + unusedRemovedComponentCount + " unused removed components from instance '" + instance.name + "'");
+            else
+                info.AppendLine("Removed 1 unused removed component from instance '" + instance.name + "'");
+
+            System.Console.Write(info.ToString(), instance);
+
+            return true;
+        }
+
+        internal static event Func<UnityEngine.Object, bool> allowRecordingPrefabPropertyOverridesFor;
+
+
+        [RequiredByNativeCode]
+        static bool AllowRecordingPrefabPropertyOverridesFor(UnityEngine.Object componentOrGameObject)
+        {
+            if (allowRecordingPrefabPropertyOverridesFor == null)
+                return true;
+
+            foreach (Func<UnityEngine.Object, bool> deleg in allowRecordingPrefabPropertyOverridesFor.GetInvocationList())
+            {
+                if (deleg(componentOrGameObject) == false)
+                    return false;
+            }
+
+            return true;
+        }
+
 
         internal static class Analytics
         {

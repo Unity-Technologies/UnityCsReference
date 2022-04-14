@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -146,6 +147,18 @@ namespace Unity.UI.Builder
                         PostAttributeValueChange(uiField, uiField.value.ToString()));
                     fieldElement = uiField;
                 }
+                else if (attribute.name.Equals("value") && currentVisualElement is EnumFlagsField enumFlagsField)
+                {
+                    var uiField = new EnumFlagsField("Value");
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    if (null != enumFlagsField.value)
+                        uiField.Init(enumFlagsField.value, enumFlagsField.includeObsoleteValues);
+                    else
+                        uiField.SetValueWithoutNotify(null);
+                    uiField.RegisterValueChangedCallback(evt =>
+                        PostAttributeValueChange(uiField, uiField.value.ToString()));
+                    fieldElement = uiField;
+                }
                 else if (attribute.name.Equals("value") && currentVisualElement is TagField tagField)
                 {
                     var uiField = new TagField("Value");
@@ -231,6 +244,14 @@ namespace Unity.UI.Builder
                 uiField.RegisterValueChangedCallback(OnAttributeValueChange);
                 fieldElement = uiField;
             }
+            else if (attributeType.IsGenericType && 
+                attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>))
+            {
+                var assetType = attributeType.GetGenericArguments()[0];
+                var uiField = new ObjectField(fieldLabel) { objectType = assetType };
+                uiField.RegisterValueChangedCallback(OnAssetAttributeValueChange);
+                fieldElement = uiField;
+            }
             else if (attributeType.IsGenericType &&
                      !attributeType.GetGenericArguments()[0].IsEnum &&
                      attributeType.GetGenericArguments()[0] is Type)
@@ -294,7 +315,7 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    // Create and initialize the EnumField.
+                    // Create and initialize the EnumFlagsField.
                     var uiField = new EnumFlagsField(fieldLabel);
                     uiField.Init(defaultEnumValue);
 
@@ -402,6 +423,20 @@ namespace Unity.UI.Builder
                     }
                 }
 
+                else if (currentVisualElement is EnumFlagsField defaultEnumFlagsField &&
+                    attribute.name == "value")
+                {
+                    if (defaultEnumFlagsField.type == null)
+                    {
+                        fieldElement.SetEnabled(false);
+                    }
+                    else
+                    {
+                        ((EnumFlagsField)fieldElement).PopulateDataFromType(defaultEnumFlagsField.type);
+                        fieldElement.SetEnabled(true);
+                    }
+                }
+
                 return;
             }
 
@@ -441,6 +476,18 @@ namespace Unity.UI.Builder
             {
                 inputLayerMaskField.SetValueWithoutNotify(layerMaskField.value);
             }
+            else if (attribute is UxmlStringAttributeDescription &&
+                attribute.name == "value" &&
+                currentVisualElement is EnumFlagsField enumFlagsField
+                && fieldElement is EnumFlagsField inputEnumFlagsField)
+            {
+                var hasValue = enumFlagsField.value != null;
+                if (hasValue)
+                    inputEnumFlagsField.Init(enumFlagsField.value, enumFlagsField.includeObsoleteValues);
+                else
+                    inputEnumFlagsField.SetValueWithoutNotify(null);
+                inputEnumFlagsField.SetEnabled(hasValue);
+            }
             else if (attribute is UxmlStringAttributeDescription && fieldElement is TextField)
             {
                 (fieldElement as TextField).SetValueWithoutNotify(GetAttributeStringValue(veValueAbstract));
@@ -471,6 +518,12 @@ namespace Unity.UI.Builder
             else if (attribute is UxmlColorAttributeDescription && fieldElement is ColorField)
             {
                 (fieldElement as ColorField).SetValueWithoutNotify((Color)veValueAbstract);
+            }
+            else if (attributeType.IsGenericType && 
+                attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>) && 
+                fieldElement is ObjectField)
+            {
+                (fieldElement as ObjectField).SetValueWithoutNotify((UnityEngine.Object)veValueAbstract);
             }
             else if (attributeType.IsGenericType &&
                      !attributeType.GetGenericArguments()[0].IsEnum &&
@@ -608,6 +661,15 @@ namespace Unity.UI.Builder
             {
                 var a = attribute as UxmlStringAttributeDescription;
                 var f = fieldElement as EnumField;
+                if (null == f.type)
+                    f.SetValueWithoutNotify(null);
+                else
+                    f.SetValueWithoutNotify((Enum)Enum.ToObject(f.type, 0));
+            }
+            else if (attribute is UxmlStringAttributeDescription && fieldElement is EnumFlagsField &&
+                     currentVisualElement is EnumFlagsField)
+            {
+                var f = fieldElement as EnumFlagsField;
                 if (null == f.type)
                     f.SetValueWithoutNotify(null);
                 else
@@ -803,6 +865,13 @@ namespace Unity.UI.Builder
                 var valueField = root.Query<EnumField>().Where(f => f.label == "Value").First();
                 UnsetAttributeProperty(valueField);
             }
+            if (currentVisualElement is EnumFlagsField && fieldElement.bindingPath == "type")
+            {
+                // If the current value is not defined in the new enum type, we need to clear the property because
+                // it will otherwise throw an exception.
+                var valueField = root.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
+                UnsetAttributeProperty(valueField);
+            }
         }
 
         void UnsetAttributeProperty(BindableElement fieldElement)
@@ -905,6 +974,13 @@ namespace Unity.UI.Builder
                 var valueField = root.Query<EnumField>().Where(f => f.label == "Value").First();
                 UnsetAttributeProperty(valueField);
             }
+            else if (currentVisualElement is EnumFlagsField)
+            {
+                // If the current value is not defined in the new enum type, we need to clear the property because
+                // it will otherwise throw an exception.
+                var valueField = root.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
+                UnsetAttributeProperty(valueField);
+            }
 
             field.value = fullTypeName;
             PostAttributeValueChange(field, fullTypeName);
@@ -960,6 +1036,29 @@ namespace Unity.UI.Builder
         {
             var field = evt.target as ColorField;
             PostAttributeValueChange(field, "#" + ColorUtility.ToHtmlStringRGBA(evt.newValue));
+        }
+
+        void OnAssetAttributeValueChange(ChangeEvent<UnityEngine.Object> evt)
+        {
+            var field = evt.target as ObjectField;
+
+            var assetPath = AssetDatabase.GetAssetPath(evt.newValue);
+            if (BuilderAssetUtilities.IsBuiltinPath(assetPath))
+            {
+                Builder.ShowWarning(BuilderConstants.BuiltInAssetPathsNotSupportedMessageUxml);
+
+                // Revert the change.
+                field.SetValueWithoutNotify(evt.previousValue);
+                return;
+            }
+
+            var vta = m_Inspector.visualTreeAsset;
+            var uri = URIHelpers.MakeAssetUri(evt.newValue);
+
+            if (!string.IsNullOrEmpty(uri) && !vta.AssetEntryExists(uri, field.objectType))
+                vta.RegisterAssetEntry(uri, field.objectType, evt.newValue);
+
+            PostAttributeValueChange(field, uri);
         }
 
         void OnAttributeValueChange(ChangeEvent<Enum> evt)
@@ -1058,7 +1157,7 @@ namespace Unity.UI.Builder
             if (traits == null)
                 return;
 
-            var context = new CreationContext();
+            var context = new CreationContext(null, null, m_Inspector.visualTreeAsset, currentVisualElement);
             var vea = currentVisualElement.GetVisualElementAsset();
 
             try

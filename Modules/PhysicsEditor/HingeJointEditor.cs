@@ -10,14 +10,16 @@ namespace UnityEditor
     [CustomEditor(typeof(HingeJoint)), CanEditMultipleObjects]
     class HingeJointEditor : JointEditor<HingeJoint>
     {
-        static readonly GUIContent s_WarningMessage = EditorGUIUtility.TrTextContent("Min and max limits must be within the range [-180, 180].");
+        static readonly GUIContent s_WarningMessage = EditorGUIUtility.TrTextContent("Min and max limits must be within the range ");
         SerializedProperty m_MinLimit;
         SerializedProperty m_MaxLimit;
+        SerializedProperty m_ExtendedLimits;
 
         void OnEnable()
         {
             m_MinLimit = serializedObject.FindProperty("m_Limits.min");
             m_MaxLimit = serializedObject.FindProperty("m_Limits.max");
+            m_ExtendedLimits = serializedObject.FindProperty("m_ExtendedLimits");
         }
 
         public override void OnInspectorGUI()
@@ -26,9 +28,10 @@ namespace UnityEditor
 
             float min = m_MinLimit.floatValue;
             float max = m_MaxLimit.floatValue;
+            float maxAngle = m_ExtendedLimits.boolValue ? 360f : 180f;
 
-            if (min < -180f || min > 180f || max < -180f || max > 180f)
-                EditorGUILayout.HelpBox(s_WarningMessage.text, MessageType.Warning);
+            if (min < -maxAngle || min > maxAngle || max < -maxAngle || max > maxAngle)
+                EditorGUILayout.HelpBox(s_WarningMessage.text + $"[-{maxAngle}, {maxAngle}]", MessageType.Warning);
         }
     }
 

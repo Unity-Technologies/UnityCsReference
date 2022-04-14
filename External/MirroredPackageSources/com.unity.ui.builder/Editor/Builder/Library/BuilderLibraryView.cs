@@ -93,13 +93,8 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.AddElementToAsset(
                     m_PaneWindow.document, newElement, item.makeElementAssetCallback);
 
-            // TODO: ListView bug. Does not refresh selection pseudo states after a
-            // call to Refresh().
-            m_Selection.NotifyOfHierarchyChange();
-            schedule.Execute(() =>
-            {
-                m_Selection.Select(null, newElement);
-            }).ExecuteLater(200);
+            m_Selection.NotifyOfHierarchyChange(); 
+            m_Selection.Select(null, newElement); 
         }
 
         void OnItemMouseEnter(MouseEnterEvent evt)

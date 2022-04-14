@@ -119,7 +119,7 @@ namespace UnityEditor.TerrainTools
 
         public static int GetMaxDetailInstances(TerrainData terrainData)
         {
-            return terrainData.detailResolutionPerPatch * terrainData.detailResolutionPerPatch * TerrainData.maxDetailsPerRes;
+            return terrainData.detailResolutionPerPatch * terrainData.detailResolutionPerPatch * terrainData.maxDetailScatterPerRes;
         }
     }
 
@@ -156,7 +156,10 @@ namespace UnityEditor.TerrainTools
             }
             set
             {
-                m_DetailsStrength = Mathf.Clamp01(Mathf.Round(value * TerrainData.maxDetailsPerRes) / TerrainData.maxDetailsPerRes);
+                m_DetailsStrength = m_TargetTerrain == null || m_TargetTerrain.terrainData == null ?
+                    value :
+                    Mathf.Clamp01(Mathf.Round(value * m_TargetTerrain.terrainData.maxDetailScatterPerRes) / m_TargetTerrain.terrainData.maxDetailScatterPerRes);
+
             }
         }
 
@@ -259,8 +262,8 @@ namespace UnityEditor.TerrainTools
                                 int yBrushOffset = (ymin + y) - (yCenter - intRadius + intFraction);
                                 float opa = detailOpacity * m_BrushRep.GetStrengthInt(xBrushOffset, yBrushOffset);
 
-                                float targetValue = Mathf.Lerp(alphamap[y, x], targetStrength * TerrainData.maxDetailsPerRes, opa);
-                                alphamap[y, x] = Mathf.Min(Mathf.RoundToInt(targetValue - .5f + Random.value), TerrainData.maxDetailsPerRes);
+                                float targetValue = Mathf.Lerp(alphamap[y, x], targetStrength * terrainData.maxDetailScatterPerRes, opa);
+                                alphamap[y, x] = Mathf.Min(Mathf.RoundToInt(targetValue - .5f + Random.value), terrainData.maxDetailScatterPerRes);
                             }
                         }
 

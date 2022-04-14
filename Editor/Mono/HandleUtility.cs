@@ -924,6 +924,25 @@ namespace UnityEditor
             return Internal_PickRectObjects(cam, rect, selectPrefabRootsOnly, allowGizmos);
         }
 
+        public static bool FindNearestVertex(Vector2 guiPoint, out Vector3 vertex, out GameObject gameObject)
+        {
+            return FindNearestVertex(guiPoint, null, ignoreRaySnapObjects, out vertex, out gameObject);
+        }
+
+        public static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, out Vector3 vertex, out GameObject gameObject)
+        {
+            return FindNearestVertex(guiPoint, objectsToSearch, ignoreRaySnapObjects, out vertex, out gameObject);
+        }
+
+        public static bool FindNearestVertex(Vector2 guiPoint, Transform[] objectsToSearch, Transform[] objectsToIgnore, out Vector3 vertex, out GameObject gameObject)
+        {
+            Camera cam = Camera.current;
+            var screenPoint = EditorGUIUtility.PointsToPixels(guiPoint);
+            screenPoint.y = cam.pixelRect.yMax - screenPoint.y;
+            gameObject = Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex, out bool found);
+            return found;
+        }
+
         public static bool FindNearestVertex(Vector2 guiPoint, out Vector3 vertex)
         {
             return FindNearestVertex(guiPoint, null, ignoreRaySnapObjects, out vertex);
@@ -939,7 +958,8 @@ namespace UnityEditor
             Camera cam = Camera.current;
             var screenPoint = EditorGUIUtility.PointsToPixels(guiPoint);
             screenPoint.y = cam.pixelRect.yMax - screenPoint.y;
-            return Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex);
+            Internal_FindNearestVertex(cam, screenPoint, objectsToSearch, objectsToIgnore, out vertex, out bool found);
+            return found;
         }
 
         // Until `pickGameObjectCustomPasses` can handle sorting priority correctly, we need a way to override the
@@ -1567,71 +1587,78 @@ namespace UnityEditor
                 return;
             }
 
-            var childCount = 0;
             var parentIndex = 0;
-            var childIndex = 0;
             parentRendererIDs = new int[renderers.Length];
 
             foreach (var renderer in renderers)
-            {
-                childCount += renderer.transform.hierarchyCount;
                 parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
-            }
 
-            childRendererIDs = new int[childCount];
+            var tempChildRendererIDs = new HashSet<int>();
             foreach (var renderer in renderers)
             {
                 var children = renderer.GetComponentsInChildren<Renderer>();
                 for (int i = 1; i < children.Length; i++)
                 {
                     var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id))
-                        childRendererIDs[childIndex++] = id;
+                    if (!HasMatchingInstanceID(parentRendererIDs, id, parentIndex))
+                        tempChildRendererIDs.Add(id);
                 }
             }
+
+            childRendererIDs = tempChildRendererIDs.ToArray();
         }
 
-        internal static void FilterRendererIDs(GameObject[] gameObjects, out int[] parentRendererIDs, out int[] childRendererIDs)
+        internal static void FilterInstanceIDs(GameObject[] gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs)
         {
             if (gameObjects == null)
             {
                 Debug.LogWarning("The GameObject array is null. Handles.DrawOutline will not be rendered.");
-                parentRendererIDs = new int[0];
-                childRendererIDs = new int[0];
+                parentInstanceIDs = new int[0];
+                childInstanceIDs = new int[0];
                 return;
             }
 
-            var childCount = 0;
-            var parentIndex = 0;
-            var childIndex = 0;
-            parentRendererIDs = new int[gameObjects.Length];
-
+            var tempParentInstanceIDs = new HashSet<int>();
             foreach (var go in gameObjects)
             {
-                childCount += go.transform.hierarchyCount;
                 if (go.TryGetComponent(out Renderer renderer))
-                    parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
+                    tempParentInstanceIDs.Add(renderer.GetInstanceID());
+                else if (go.TryGetComponent(out Terrain terrain))
+                    tempParentInstanceIDs.Add(terrain.GetInstanceID());
             }
 
-            childRendererIDs = new int[childCount];
+            var tempChildInstanceIDs = new HashSet<int>();
             foreach (var go in gameObjects)
             {
-                var children = go.GetComponentsInChildren<Renderer>();
-                for (int i = 1; i < children.Length; i++)
+                var childRenderers = go.GetComponentsInChildren<Renderer>();
+                for (int i = 0; i < childRenderers.Length; i++)
                 {
-                    var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id))
-                        childRendererIDs[childIndex++] = id;
+                    var id = childRenderers[i].GetInstanceID();
+                    if (!tempParentInstanceIDs.Contains(id))
+                        tempChildInstanceIDs.Add(id);
+                }
+
+                var childTerrains = go.GetComponentsInChildren<Terrain>();
+                for (int i = 0; i < childTerrains.Length; i++)
+                {
+                    var id = childTerrains[i].GetInstanceID();
+                    if (!tempParentInstanceIDs.Contains(id))
+                        tempChildInstanceIDs.Add(id);
                 }
             }
+
+            parentInstanceIDs = tempParentInstanceIDs.ToArray();
+            childInstanceIDs = tempChildInstanceIDs.ToArray();
         }
 
-        static bool HasMatchingInstanceID(int[] ids, int id)
+        static bool HasMatchingInstanceID(int[] ids, int id, int cutoff)
         {
             for (int i = 0; i < ids.Length; i++)
             {
                 if (ids[i] == id)
                     return true;
+                if (i > cutoff)
+                    return false;
             }
             return false;
         }

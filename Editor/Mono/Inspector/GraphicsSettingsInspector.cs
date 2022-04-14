@@ -29,6 +29,17 @@ namespace UnityEditor
             public static readonly GUIContent shaderStrippingSettings = EditorGUIUtility.TrTextContent("Shader Stripping");
             public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TrTextContent("Shader Loading");
             public static readonly GUIContent logWhenShaderIsCompiled = EditorGUIUtility.TrTextContent("Log Shader Compilation", "When enabled, the player will print shader information each time a shader is being compiled (development and debug mode only).");
+            public static readonly GUIContent lightProbeOutsideHullStrategy = EditorGUIUtility.TrTextContent("Renderer Light Probe Selection", "Finding the Light Probes closest to a Renderer positioned outside of the tetrahedral Light Probe hull can be very expensive in terms of CPU cycles. Use this option to configure if Unity should spend time searching the hull to find the closest probe, or if it should use the global Ambient Probe instead.");
+            public static readonly int[] lightProbeOutsideHullStrategyValues =
+            {
+                (int)LightProbeOutsideHullStrategy.kLightProbeSearchTetrahedralHull,
+                (int)LightProbeOutsideHullStrategy.kLightProbeUseAmbientProbe
+            };
+            public static readonly GUIContent[] lightProbeOutsideHullStrategyStrings =
+            {
+                EditorGUIUtility.TrTextContent("Find closest Light Probe"),
+                EditorGUIUtility.TrTextContent("Use Ambient Probe"),
+            };
             public static readonly GUIContent cameraSettings = EditorGUIUtility.TrTextContent("Camera Settings");
             public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline Settings", "This defines the default render pipeline, which Unity uses when there is no override for a given quality level.");
             public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
@@ -44,6 +55,7 @@ namespace UnityEditor
         SerializedProperty m_TransparencySortAxis;
         SerializedProperty m_ScriptableRenderLoop;
         SerializedProperty m_LogWhenShaderIsCompiled;
+        SerializedProperty m_LightProbeOutsideHullStrategy;
 
         Object graphicsSettings
         {
@@ -86,6 +98,7 @@ namespace UnityEditor
             m_TransparencySortAxis = serializedObject.FindProperty("m_TransparencySortAxis");
             m_ScriptableRenderLoop = serializedObject.FindProperty("m_CustomRenderPipeline");
             m_LogWhenShaderIsCompiled = serializedObject.FindProperty("m_LogWhenShaderIsCompiled");
+            m_LightProbeOutsideHullStrategy = serializedObject.FindProperty("m_LightProbeOutsideHullStrategy");
             tierSettingsAnimator = new AnimatedValues.AnimBool(showTierSettingsUI, Repaint);
         }
 
@@ -137,7 +150,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             GUILayout.Label(Styles.renderPipeSettings, EditorStyles.boldLabel);
-            RenderPipelineAssetSelector.Draw(serializedObject, m_ScriptableRenderLoop);
+            EditorGUI.RenderPipelineAssetField(serializedObject, m_ScriptableRenderLoop);
             EditorGUILayout.Space();
 
             bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
@@ -182,6 +195,8 @@ namespace UnityEditor
             EditorGUILayout.Space();
             GUILayout.Label(Styles.shaderPreloadSettings, EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(m_LogWhenShaderIsCompiled, Styles.logWhenShaderIsCompiled);
+            EditorGUILayout.IntPopup(m_LightProbeOutsideHullStrategy, Styles.lightProbeOutsideHullStrategyStrings, Styles.lightProbeOutsideHullStrategyValues, Styles.lightProbeOutsideHullStrategy);
+
             shaderPreloadEditor.OnInspectorGUI();
 
             serializedObject.ApplyModifiedProperties();

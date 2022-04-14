@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -13,9 +14,153 @@ using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using Unity.Collections;
+using Unity.Jobs;
 
 namespace UnityEngine
 {
+    [NativeContainer]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Camera/RenderLoops/LightProbeContext.h")]
+    [StaticAccessor("LightProbeContextWrapper", StaticAccessorType.DoubleColon)]
+    public struct LightProbesQuery : IDisposable
+    {
+        [NativeDisableUnsafePtrRestriction]
+        internal IntPtr m_LightProbeContextWrapper;
+
+        internal Allocator m_AllocatorLabel;
+
+        internal AtomicSafetyHandle m_Safety;
+        [NativeSetClassTypeToNullOnSchedule]
+        internal DisposeSentinel m_DisposeSentinel;
+
+        public LightProbesQuery(Allocator allocator)
+        {
+            m_LightProbeContextWrapper = Create();
+
+            m_AllocatorLabel = allocator;
+
+            DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);
+        }
+
+        public void Dispose()
+        {
+            if (m_LightProbeContextWrapper == IntPtr.Zero)
+            {
+                throw new ObjectDisposedException("The LightProbesQuery is already disposed.");
+            }
+
+            if (m_AllocatorLabel == Allocator.Invalid)
+            {
+                throw new InvalidOperationException("The LightProbesQuery can not be Disposed because it was not allocated with a valid allocator.");
+            }
+
+            if (m_AllocatorLabel > Allocator.None)
+            {
+                DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+                Destroy(m_LightProbeContextWrapper);
+                m_AllocatorLabel = Allocator.Invalid;
+            }
+            m_LightProbeContextWrapper = IntPtr.Zero;
+        }
+
+        [NativeContainer]
+        internal unsafe struct LightProbesQueryDispose
+        {
+            [NativeDisableUnsafePtrRestriction]
+            internal IntPtr    m_LightProbeContextWrapper;
+
+            internal AtomicSafetyHandle m_Safety;
+
+            public void Dispose()
+            {
+                Destroy(m_LightProbeContextWrapper);
+            }
+        }
+
+        internal struct LightProbesQueryDisposeJob : IJob
+        {
+            internal LightProbesQueryDispose Data;
+
+            public void Execute()
+            {
+                Data.Dispose();
+            }
+        }
+
+        public JobHandle Dispose(JobHandle inputDeps)
+        {
+            if (m_AllocatorLabel == Allocator.Invalid)
+            {
+                throw new InvalidOperationException("The LightProbesQuery can not be Disposed because it was not allocated with a valid allocator.");
+            }
+
+            if (m_LightProbeContextWrapper == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("The LightProbesQuery is already disposed.");
+            }
+
+            if (m_AllocatorLabel > Allocator.None)
+            {
+                // [DeallocateOnJobCompletion] is not supported on the m_LightProbeContextWrapper,
+                // but we want the deallocation to happen on a thread. DisposeSentinel needs to be cleared on main thread.
+                // AtomicSafetyHandle can be destroyed after the job was scheduled (Job scheduling
+                // will check that no jobs are writing to the container).
+                DisposeSentinel.Clear(ref m_DisposeSentinel);
+
+                var jobHandle = new LightProbesQueryDisposeJob { Data = new LightProbesQueryDispose { m_LightProbeContextWrapper = m_LightProbeContextWrapper, m_Safety = m_Safety } }.Schedule(inputDeps);
+
+                AtomicSafetyHandle.Release(m_Safety);
+                m_AllocatorLabel = Allocator.Invalid;
+                m_LightProbeContextWrapper = IntPtr.Zero;
+                return jobHandle;
+            }
+
+            m_LightProbeContextWrapper = IntPtr.Zero;
+            return inputDeps;
+        }
+
+        public bool IsCreated
+        {
+            get { return m_LightProbeContextWrapper != IntPtr.Zero; }
+        }
+
+        static extern IntPtr Create();
+
+        [ThreadSafe]
+        static extern void Destroy(IntPtr lightProbeContextWrapper);
+
+        public void CalculateInterpolatedLightAndOcclusionProbe(Vector3 position, ref int tetrahedronIndex, out SphericalHarmonicsL2 lightProbe, out Vector4 occlusionProbe)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            CalculateInterpolatedLightAndOcclusionProbe(m_LightProbeContextWrapper, position, ref tetrahedronIndex, out lightProbe, out occlusionProbe);
+        }
+
+        public void CalculateInterpolatedLightAndOcclusionProbes(NativeArray<Vector3> positions, NativeArray<int> tetrahedronIndices, NativeArray<SphericalHarmonicsL2> lightProbes, NativeArray<Vector4> occlusionProbes)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            if (positions == null)
+                throw new ArgumentException("positions", "Argument positions has not been specified");
+            if (tetrahedronIndices == null || tetrahedronIndices.Length < positions.Length)
+                throw new ArgumentException("tetrahedronIndices", "Argument tetrahedronIndices is null or has fewer elements than positions.");
+            else if (lightProbes == null || lightProbes.Length < positions.Length)
+                throw new ArgumentException("lightProbes", "Argument lightProbes is null or has fewer elements than positions.");
+            else if (occlusionProbes == null || occlusionProbes.Length < positions.Length)
+                throw new ArgumentException("occlusionProbes", "Argument occlusionProbes is null or has fewer elements than positions.");
+
+            unsafe
+            {
+                CalculateInterpolatedLightAndOcclusionProbes(m_LightProbeContextWrapper, (IntPtr)positions.GetUnsafeReadOnlyPtr(), (IntPtr)tetrahedronIndices.GetUnsafeReadOnlyPtr(), (IntPtr)lightProbes.GetUnsafePtr(), (IntPtr)occlusionProbes.GetUnsafePtr(), positions.Length);
+            }
+        }
+
+        [ThreadSafe]
+        static extern void CalculateInterpolatedLightAndOcclusionProbe(IntPtr lightProbeContextWrapper, Vector3 position, ref int tetrahedronIndex, out SphericalHarmonicsL2 lightProbe, out Vector4 occlusionProbe);
+
+        [ThreadSafe]
+        static extern void CalculateInterpolatedLightAndOcclusionProbes(IntPtr lightProbeContextWrapper, IntPtr positions, IntPtr tetrahedronIndices, IntPtr lightProbes, IntPtr occlusionProbes, int count);
+    }
+
     internal enum EnabledOrientation
     {
         kAutorotateToPortrait           = 1,
@@ -382,7 +527,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
     public partial class Graphics
     {
-        [FreeFunction("GraphicsScripting::GetMaxDrawMeshInstanceCount")] extern private static int Internal_GetMaxDrawMeshInstanceCount();
+        [FreeFunction("GraphicsScripting::GetMaxDrawMeshInstanceCount", IsThreadSafe = true)] extern private static int Internal_GetMaxDrawMeshInstanceCount();
         internal static readonly int kMaxDrawMeshInstanceCount = Internal_GetMaxDrawMeshInstanceCount();
 
         [FreeFunction] extern private static ColorGamut GetActiveColorGamut();
@@ -767,6 +912,14 @@ namespace UnityEngine
     public sealed partial class LightProbes : Object
     {
         private LightProbes() {}
+
+        public static event Action lightProbesUpdated;
+        [RequiredByNativeCode]
+        private static void Internal_CallLightProbesUpdatedFunction()
+        {
+            if (lightProbesUpdated != null)
+                lightProbesUpdated();
+        }
 
         public static event Action tetrahedralizationCompleted;
         [RequiredByNativeCode]

@@ -17,6 +17,7 @@ using Object = UnityEngine.Object;
 namespace Unity.Profiling
 {
     [UsedByNativeCode]
+    [IgnoredByDeepProfiler]
     [StructLayout(LayoutKind.Sequential)]
     public struct ProfilerMarker
     {
@@ -93,6 +94,7 @@ namespace Unity.Profiling
         }
 
         [UsedByNativeCode]
+        [IgnoredByDeepProfiler]
         public struct AutoScope : IDisposable
         {
             [NativeDisableUnsafePtrRestriction]

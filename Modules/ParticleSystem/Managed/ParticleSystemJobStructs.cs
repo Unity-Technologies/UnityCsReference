@@ -7,6 +7,8 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs.LowLevel.Unsafe;
+using Unity.Burst;
+using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 
 namespace UnityEngine.ParticleSystemJobs
 {
@@ -169,13 +171,13 @@ namespace UnityEngine.ParticleSystemJobs
 
     internal struct ParticleSystemJobStruct<T> where T : struct, IJobParticleSystem
     {
-        public static IntPtr jobReflectionData;
+        public static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ParticleSystemJobStruct<T>>();
 
-        public static IntPtr Initialize()
+        [BurstDiscard]
+        public static void Initialize()
         {
-            if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
-            return jobReflectionData;
+            if (jobReflectionData.Data == IntPtr.Zero)
+                jobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
         }
 
         public delegate void ExecuteJobFunction(ref T data, IntPtr listDataPtr, IntPtr unusedPtr, ref JobRanges ranges, int jobIndex);
@@ -195,13 +197,13 @@ namespace UnityEngine.ParticleSystemJobs
 
     internal struct ParticleSystemParallelForJobStruct<T> where T : struct, IJobParticleSystemParallelFor
     {
-        public static IntPtr jobReflectionData;
+        public static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ParticleSystemParallelForJobStruct<T>>();
 
-        public static IntPtr Initialize()
+        [BurstDiscard]
+        public static void Initialize()
         {
-            if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
-            return jobReflectionData;
+            if (jobReflectionData.Data == IntPtr.Zero)
+                jobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
         }
 
         public delegate void ExecuteJobFunction(ref T data, IntPtr listDataPtr, IntPtr bufferRangePatchData, ref JobRanges ranges, int jobIndex);
@@ -233,13 +235,13 @@ namespace UnityEngine.ParticleSystemJobs
 
     internal struct ParticleSystemParallelForBatchJobStruct<T> where T : struct, IJobParticleSystemParallelForBatch
     {
-        public static IntPtr jobReflectionData;
+        public static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ParticleSystemParallelForBatchJobStruct<T>>();
 
-        public static IntPtr Initialize()
+        [BurstDiscard]
+        public static void Initialize()
         {
-            if (jobReflectionData == IntPtr.Zero)
-                jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
-            return jobReflectionData;
+            if (jobReflectionData.Data == IntPtr.Zero)
+                jobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
         }
 
         public delegate void ExecuteJobFunction(ref T data, IntPtr listDataPtr, IntPtr bufferRangePatchData, ref JobRanges ranges, int jobIndex);

@@ -34,6 +34,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasLifecycleVersion => false;
 
+        public IPackageVersion GetUpdateTarget(IPackageVersion version)
+        {
+            return recommended;
+        }
+
         public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
         {
             ResolveDependencies(assetStoreUtils, ioProxy);

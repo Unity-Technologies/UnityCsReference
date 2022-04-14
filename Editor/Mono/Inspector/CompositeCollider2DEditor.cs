@@ -87,8 +87,6 @@ namespace UnityEditor
                 (x as CompositeCollider2D).attachedRigidbody.bodyType == RigidbodyType2D.Dynamic) > 0)
                 EditorGUILayout.HelpBox("Outline geometry is composed of edges and will not preserve the original collider's center-of-mass or rotational inertia.  The CompositeCollider2D is attached to a Dynamic Rigidbody2D so you may need to explicitly set these if they are required.", MessageType.Info);
 
-            serializedObject.ApplyModifiedProperties();
-
             FinalizeInspectorGUI();
         }
     }

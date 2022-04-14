@@ -53,8 +53,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AnchorWindow = anchorWindow;
 
             packageNameField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            packageNameField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            packageVersionField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            packageNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
             m_PackageNamePlaceholder = new TextFieldPlaceholder(packageNameField, L10n.Tr("Name"));
             m_PackageVersionPlaceholder = new TextFieldPlaceholder(packageVersionField, L10n.Tr("Version (optional)"));
@@ -71,9 +71,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
 
             if (string.IsNullOrEmpty(errorInfoBox.text) || packageNameField.ClassListContains("error"))
-                packageNameField.visualInput.Focus();
+                packageNameField.Focus();
             else
-                packageVersionField.visualInput.Focus();
+                packageVersionField.Focus();
             submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageNameField.value));
         }
 
@@ -83,8 +83,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageVersionPlaceholder.OnDisable();
 
             packageNameField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            packageNameField.visualInput.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            packageVersionField.visualInput.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            packageNameField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            packageVersionField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
             if (m_ExtraFetchOperation != null)
             {

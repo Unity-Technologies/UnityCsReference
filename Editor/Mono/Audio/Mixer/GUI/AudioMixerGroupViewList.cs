@@ -38,7 +38,7 @@ namespace UnityEditor
             RecreateListControl();
         }
 
-        public void OnUndoRedoPerformed()
+        public void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             RecreateListControl();
         }

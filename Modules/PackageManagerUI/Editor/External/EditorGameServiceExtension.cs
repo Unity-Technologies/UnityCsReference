@@ -34,23 +34,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         const string k_ProjectGuid = "ProjectGuid";
         const string k_PageContentType = "packages and features";
         internal const string k_ServicesConfigPath = "Resources/services.json";
-
-        internal const int k_ToolsPriority = 100;
         internal const int k_ServicesPriority = 200;
 
         internal static Dictionary<string, int> groupIndexes = new Dictionary<string, int>();
         static Dictionary<string, string> s_GroupMap = new Dictionary<string, string>();
         internal static ICloudProjectSettings cloudProjectSettings = new CloudProjectSettings();
-
-        internal static bool FilterToolsPackage(IPackage package)
-        {
-            return package?.Is(PackageType.Unity) == true && !FilterServicesPackage(package);
-        }
-
-        internal static string GetToolsPackageGroupName(IPackage package)
-        {
-            return package?.Is(PackageType.Feature) == true ? L10n.Tr("Features") : L10n.Tr("Packages");
-        }
 
         internal static bool FilterServicesPackage(IPackage package)
         {
@@ -91,10 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var pageManager = ServicesContainer.instance.Resolve<PageManager>();
 
-            pageManager.AddSubPage(PackageFilterTab.UnityRegistry, "tools", L10n.Tr("Tools"), L10n.Tr(k_PageContentType), k_ToolsPriority, FilterToolsPackage, GetToolsPackageGroupName);
             pageManager.AddSubPage(PackageFilterTab.UnityRegistry, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority,  FilterServicesPackage, GetServicesPackageGroupName, CompareGroup);
-
-            pageManager.AddSubPage(PackageFilterTab.InProject, "tools", L10n.Tr("Tools"), L10n.Tr(k_PageContentType), k_ToolsPriority, FilterToolsPackage, GetToolsPackageGroupName);
             pageManager.AddSubPage(PackageFilterTab.InProject, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority, FilterServicesPackage, GetServicesPackageGroupName, CompareGroup);
 
             m_ConfigureButton = args.window.AddPackageActionButton();

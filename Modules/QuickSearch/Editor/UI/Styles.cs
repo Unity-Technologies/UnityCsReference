@@ -51,6 +51,13 @@ namespace UnityEditor.Search
             margin = new RectOffset(0, 0, 0, 0)
         };
 
+        public static readonly GUIStyle topBorder = new GUIStyle("grey_border")
+        {
+            name = "quick-search-top-border",
+            padding = new RectOffset(0, 0, 0, 0),
+            margin = new RectOffset(0, 0, 0, 0)
+        };
+
         public static readonly GUIStyle autoCompleteBackground = new GUIStyle("grey_border")
         {
             name = "quick-search-auto-complete-background",
@@ -94,7 +101,7 @@ namespace UnityEditor.Search
             padding = new RectOffset(2, 1, 1, 1)
         };
 
-        public static readonly GUIStyle itemGridBackground1 = new GUIStyle(itemBackground1) { fixedHeight = 0, };
+        public static readonly GUIStyle itemGridBackground1 = new GUIStyle(itemBackground1) { fixedHeight = 0 };
         public static readonly GUIStyle itemGridBackground2 = new GUIStyle(itemBackground2) { fixedHeight = 0 };
 
         public static readonly GUIStyle preview = new GUIStyle
@@ -336,8 +343,9 @@ namespace UnityEditor.Search
         {
             name = "quick-search-search-field-placeholder",
             fontSize = k_SearchFieldFontSize,
-            padding = new RectOffset(0, 0, 0, 0),
-            alignment = TextAnchor.MiddleCenter,
+            fontStyle = FontStyle.Italic,
+            padding = new RectOffset(14, 0, 0, 0),
+            alignment = TextAnchor.MiddleLeft,
             normal = clear,
             focused = clear,
             hover = clear,
@@ -408,7 +416,7 @@ namespace UnityEditor.Search
         public static readonly GUIContent searchTipsSync = EditorGUIUtility.TrTextContentWithIcon("Enable sync to keep other Editor search fields populated ", EditorGUIUtility.LoadIcon("QuickSearch/SyncSearch On"));
         public static readonly GUIContent saveSearchesIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon"));
         public static readonly GUIContent openSaveSearchesIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Open Saved Searches Panel (F3)", Utils.LoadIcon("UnityEditor/Search/SearchQueryAsset Icon"));
-        public static readonly GUIContent queryBuilderIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Toggle Query Builder Mode (F1)", Utils.LoadIcon("Assembly Icon"));
+        public static readonly GUIContent queryBuilderIconContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Toggle Query Builder Mode (F1)", Utils.LoadIcon("VisualQueryBuilder"));
 
         public static readonly GUIContent[] searchTipIcons =
         {
@@ -448,7 +456,7 @@ namespace UnityEditor.Search
 
         public static readonly GUIStyle toolbarButton = new GUIStyle("IconButton")
         {
-            margin = new RectOffset(4, 4, (int)SearchField.textTopBottomPadding, (int)SearchField.textTopBottomPadding),
+            margin = new RectOffset(4, 4, (int)UI.SearchField.textTopBottomPadding, (int)UI.SearchField.textTopBottomPadding),
             padding = new RectOffset(0, 0, 0, 0),
             fixedWidth = 24f,
             fixedHeight = 24f,
@@ -737,6 +745,7 @@ namespace UnityEditor.Search
         public static readonly Color type;
         public static readonly Color typeIcon;
         public static readonly Color word;
+        public static readonly Color toggle;
         public static readonly Color combine;
         public static readonly Color expression;
         public static readonly Color textureBackgroundColor = new Color(0.2f, 0.2f, 0.25f, 0.95f);
@@ -750,6 +759,7 @@ namespace UnityEditor.Search
             ColorUtility.TryParseHtmlString("#74CBEE", out area);
             ColorUtility.TryParseHtmlString("#78CAB6", out filter);
             ColorUtility.TryParseHtmlString("#A38CD0", out property);
+            ColorUtility.TryParseHtmlString("#FF6A00", out toggle);
             ColorUtility.TryParseHtmlString("#EBD05F", out type);
             ColorUtility.TryParseHtmlString("#EBD05F", out typeIcon);
             ColorUtility.TryParseHtmlString("#739CEB", out word);

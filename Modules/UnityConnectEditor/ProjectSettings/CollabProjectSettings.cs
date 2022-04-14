@@ -56,14 +56,6 @@ namespace UnityEditor.Connect
         {
             SettingsProvider projectSettings = null;
 
-            if (ShouldShowBuiltInProjectSettings(CollabService.instance))
-            {
-                projectSettings = new CollabProjectSettings(CollabService.instance.projectSettingsPath, SettingsScope.Project);
-            }
-            else if (ShouldShowFallbackProjectSettings(CollabService.instance))
-            {
-                projectSettings = new FallbackProjectSettings(CollabService.instance, SettingsScope.Project);
-            }
 
             return projectSettings;
         }

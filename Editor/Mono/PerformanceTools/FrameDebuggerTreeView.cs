@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Globalization;
 using UnityEditor.IMGUI.Controls;
+using Object = UnityEngine.Object;
 
 
 namespace UnityEditorInternal
@@ -14,29 +15,36 @@ namespace UnityEditorInternal
     internal class FrameDebuggerTreeView
     {
         internal readonly TreeViewController m_TreeView;
-        internal FDTreeViewDataSource m_DataSource;
+        internal FrameDebuggerTreeViewDataSource m_DataSource;
         private readonly FrameDebuggerWindow m_FrameDebugger;
 
         public FrameDebuggerTreeView(FrameDebuggerEvent[] frameEvents, TreeViewState treeViewState, FrameDebuggerWindow window, Rect startRect)
         {
             m_FrameDebugger = window;
             m_TreeView = new TreeViewController(window, treeViewState);
-            m_DataSource = new FDTreeViewDataSource(m_TreeView, frameEvents);
-            var gui = new FDTreeViewGUI(m_TreeView);
+            m_DataSource = new FrameDebuggerTreeViewDataSource(m_TreeView, frameEvents);
+            var gui = new FrameDebuggerTreeViewGUI(m_TreeView);
             m_TreeView.Init(startRect, m_DataSource, gui, null);
             m_TreeView.ReloadData();
             m_TreeView.selectionChangedCallback += SelectionChanged;
+            m_TreeView.itemSingleClickedCallback += ItemSingleClicked;
+            m_TreeView.itemDoubleClickedCallback += PingFrameEventObject;
+        }
+
+        void ItemSingleClicked(int selectedID)
+        {
+            if (Event.current.type == EventType.MouseDown && EditorGUI.actionKey)
+                PingFrameEventObject(selectedID);
         }
 
         void SelectionChanged(int[] selectedIDs)
         {
             if (selectedIDs.Length < 1)
                 return;
+
             int id = selectedIDs[0];
             int eventIndex = id;
-
-            if (PopupWindowWithoutFocus.IsVisible())
-                PopupWindowWithoutFocus.Hide();
+            FrameDebuggerTreeViewItem originalItem = null;
 
             // For tree hierarchy nodes, their IDs are not the frame event indices;
             // fetch the ID from the node itself in that case.
@@ -47,14 +55,25 @@ namespace UnityEditorInternal
             // so that rendered state corresponds to "everything up to and including this whole sub-tree".
             if (eventIndex <= 0)
             {
-                var item = m_TreeView.FindItem(id) as FDTreeViewItem;
+                originalItem = m_TreeView.FindItem(id) as FrameDebuggerTreeViewItem;
+                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(id) as FrameDebuggerTreeViewItem;
                 if (item != null)
                     eventIndex = item.m_EventIndex;
+
+                // If still has no valid ID, do nothing.
+                if (eventIndex <= 0)
+                    return;
             }
-            // If still has no valid ID, do nothing.
-            if (eventIndex <= 0)
-                return;
-            m_FrameDebugger.ChangeFrameEventLimit(eventIndex);
+
+            m_FrameDebugger.ChangeFrameEventLimit(eventIndex, originalItem);
+        }
+
+        private void PingFrameEventObject(int selectedID)
+        {
+            Object obj = FrameDebuggerUtility.GetFrameEventObject(selectedID - 1);
+            if (obj != null)
+                EditorGUIUtility.PingObject(obj);
+            m_FrameDebugger.DrawSearchField(string.Empty);
         }
 
         public void SelectFrameEventIndex(int eventIndex)
@@ -66,7 +85,7 @@ namespace UnityEditorInternal
             int[] selection = m_TreeView.GetSelection();
             if (selection.Length > 0)
             {
-                var item = m_TreeView.FindItem(selection[0]) as FDTreeViewItem;
+                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
                 if (item != null && eventIndex == item.m_EventIndex)
                     return;
             }
@@ -74,9 +93,9 @@ namespace UnityEditorInternal
             m_TreeView.SetSelection(new[] { eventIndex }, true);
         }
 
-        public void OnGUI(Rect rect)
+        public void DrawTree(Rect rect)
         {
-            var keyboardControlID = GUIUtility.GetControlID(FocusType.Keyboard);
+            int keyboardControlID = GUIUtility.GetControlID(FocusType.Keyboard);
             m_TreeView.OnGUI(rect, keyboardControlID);
         }
 
@@ -84,12 +103,13 @@ namespace UnityEditorInternal
         // ID is different for leaf nodes (actual frame events) vs hierarchy nodes (parent profiler nodes):
         // - leaf node IDs are frame event indices (always > 0).
         // - hierarchy node IDs are always negative; to get frame event index we want we need to lookup the node and get it from m_EventIndex.
-        private class FDTreeViewItem : TreeViewItem
+        public class FrameDebuggerTreeViewItem : TreeViewItem
         {
             public FrameDebuggerEvent m_FrameEvent;
             public int m_ChildEventCount;
             public int m_EventIndex;
-            public FDTreeViewItem(int id, int depth, FDTreeViewItem parent, string displayName)
+
+            public FrameDebuggerTreeViewItem(int id, int depth, FrameDebuggerTreeViewItem parent, string displayName)
                 : base(id, depth, parent, displayName)
             {
                 m_EventIndex = id;
@@ -97,12 +117,11 @@ namespace UnityEditorInternal
         }
 
         // GUI for TreeView
-
-        private class FDTreeViewGUI : TreeViewGUI
+        private class FrameDebuggerTreeViewGUI : TreeViewGUI
         {
-            const float kSmallMargin = 4;
+            private const float kSmallMargin = 4;
 
-            public FDTreeViewGUI(TreeViewController treeView)
+            public FrameDebuggerTreeViewGUI(TreeViewController treeView)
                 : base(treeView)
             {
             }
@@ -112,45 +131,62 @@ namespace UnityEditorInternal
                 return null;
             }
 
+            private int childCounter = 0;
+
             protected override void OnContentGUI(Rect rect, int row, TreeViewItem itemRaw, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
             {
                 if (Event.current.type != EventType.Repaint)
+                {
                     return;
+                }
 
-                var item = (FDTreeViewItem)itemRaw;
+                FrameDebuggerTreeViewItem item = (FrameDebuggerTreeViewItem)itemRaw;
+                string text;
+                GUIContent tempContent;
+                GUIStyle style;
+
+                bool isParent = (item.hasChildren);
+                FontStyle fontStyle = (isParent) ? FontStyle.Bold : FontStyle.Normal;
+                childCounter = (isParent) ? 1 : (childCounter + 1);
+
+                // Draw background
+                style = FrameDebuggerStyles.Tree.rowText;
+                tempContent = EditorGUIUtility.TempContent("");
+                style.Draw(rect, tempContent, false, false, false, false);
 
                 // indent
                 float indent = GetContentIndent(item);
                 rect.x += indent;
                 rect.width -= indent;
 
-                string text;
-                GUIContent gc;
-                GUIStyle style;
-
                 // child event count
-                if (item.m_ChildEventCount > 0)
+                if (isParent)
                 {
+                    text = item.m_ChildEventCount.ToString(CultureInfo.InvariantCulture);
+                    tempContent = EditorGUIUtility.TempContent(text);
+
+                    style = FrameDebuggerStyles.Tree.rowTextRight;
+                    style.fontStyle = fontStyle;
+
                     Rect r = rect;
                     r.width -= kSmallMargin;
-                    text = item.m_ChildEventCount.ToString(CultureInfo.InvariantCulture);
-                    gc = EditorGUIUtility.TempContent(text);
-                    style = FrameDebuggerWindow.styles.rowTextRight;
-                    style.Draw(r, gc, false, false, false, false);
+                    style.Draw(r, tempContent, false, false, false, false);
+
                     // reduce width of available space for the name, so that it does not overlap event count
-                    rect.width -= style.CalcSize(gc).x + kSmallMargin * 2;
+                    rect.width -= style.CalcSize(tempContent).x + kSmallMargin * 2;
                 }
 
+                style = FrameDebuggerStyles.Tree.rowText;
+                style.fontStyle = fontStyle;
+
                 // draw event name
-                if (item.id <= 0)
-                    text = item.displayName; // hierarchy item
-                else
-                    text = FrameDebuggerWindow.s_FrameEventTypeNames[(int)item.m_FrameEvent.type] + item.displayName; // leaf event
+                text = item.displayName;
+
                 if (string.IsNullOrEmpty(text))
-                    text = "<unknown scope>";
-                gc = EditorGUIUtility.TempContent(text);
-                style = FrameDebuggerWindow.styles.rowText;
-                style.Draw(rect, gc, false, false, false, selected && focused);
+                    text = FrameDebuggerStyles.Tree.k_UnknownScopeString;
+
+                tempContent = EditorGUIUtility.TempContent(text);
+                style.Draw(rect, tempContent, false, false, false, selected && focused);
             }
 
             protected override void RenameEnded()
@@ -160,12 +196,11 @@ namespace UnityEditorInternal
 
         // Data source for TreeView
 
-        internal class FDTreeViewDataSource : TreeViewDataSource
+        internal class FrameDebuggerTreeViewDataSource : TreeViewDataSource
         {
             private FrameDebuggerEvent[] m_FrameEvents;
 
-            public FDTreeViewDataSource(TreeViewController treeView, FrameDebuggerEvent[] frameEvents)
-                : base(treeView)
+            public FrameDebuggerTreeViewDataSource(TreeViewController treeView, FrameDebuggerEvent[] frameEvents) : base(treeView)
             {
                 m_FrameEvents = frameEvents;
                 rootIsCollapsable = false;
@@ -174,7 +209,7 @@ namespace UnityEditorInternal
 
             public void SetEvents(FrameDebuggerEvent[] frameEvents)
             {
-                var wasEmpty = m_FrameEvents == null || m_FrameEvents.Length < 1;
+                bool wasEmpty = m_FrameEvents == null || m_FrameEvents.Length < 1;
 
                 m_FrameEvents = frameEvents;
                 m_NeedRefreshRows = true;
@@ -183,16 +218,7 @@ namespace UnityEditorInternal
                 // Only expand whole events tree if it was empty before.
                 // If we already had something in there, we want to preserve user's expanded items.
                 if (wasEmpty)
-                {
-                    SetExpanded(m_RootItem, true);
-
-                    // Expand root's children only
-                    foreach (var treeViewItem in m_RootItem.children)
-                    {
-                        if (treeViewItem != null)
-                            SetExpanded(treeViewItem, true);
-                    }
-                }
+                    SetExpandedWithChildren(m_RootItem, true);
             }
 
             public override bool IsRenamingItemAllowed(TreeViewItem item)
@@ -206,92 +232,95 @@ namespace UnityEditorInternal
             }
 
             // Used while building the tree data source; represents current tree hierarchy level
-            private class FDTreeHierarchyLevel
+            private class FrameDebuggerTreeHierarchyLevel
             {
-                internal readonly FDTreeViewItem item;
+                internal readonly FrameDebuggerTreeViewItem item;
                 internal readonly List<TreeViewItem> children;
-                internal FDTreeHierarchyLevel(int depth, int id, string name, FDTreeViewItem parent)
+                internal FrameDebuggerTreeHierarchyLevel(int depth, int id, string name, FrameDebuggerTreeViewItem parent)
                 {
-                    item = new FDTreeViewItem(id, depth, parent, name);
+                    item = new FrameDebuggerTreeViewItem(id, depth, parent, name);
                     children = new List<TreeViewItem>();
                 }
             }
-            private static void CloseLastHierarchyLevel(List<FDTreeHierarchyLevel> eventStack, int prevFrameEventIndex)
+
+            private static void CloseLastHierarchyLevel(List<FrameDebuggerTreeHierarchyLevel> eventStack, int prevFrameEventIndex)
             {
                 var idx = eventStack.Count - 1;
                 eventStack[idx].item.children = eventStack[idx].children;
                 eventStack[idx].item.m_EventIndex = prevFrameEventIndex;
-                if (eventStack[idx].item.parent != null)
-                    ((FDTreeViewItem)eventStack[idx].item.parent).m_ChildEventCount += eventStack[idx].item.m_ChildEventCount;
-                eventStack.RemoveAt(idx);
-            }
 
-            static bool IsHiddenEventType(FrameEventType et)
-            {
-                return et == FrameEventType.BeginSubpass;
+                if (eventStack[idx].item.parent != null)
+                    ((FrameDebuggerTreeViewItem)eventStack[idx].item.parent).m_ChildEventCount += eventStack[idx].item.m_ChildEventCount;
+
+                eventStack.RemoveAt(idx);
             }
 
             public override void FetchData()
             {
-                var rootLevel = new FDTreeHierarchyLevel(0, 0, string.Empty, null);
+                FrameDebuggerTreeHierarchyLevel rootLevel = new FrameDebuggerTreeHierarchyLevel(0, 0, string.Empty, null);
 
                 // Hierarchy levels of a tree being built
-                var eventStack = new List<FDTreeHierarchyLevel>();
+                List<FrameDebuggerTreeHierarchyLevel> eventStack = new List<FrameDebuggerTreeHierarchyLevel>();
                 eventStack.Add(rootLevel);
 
                 int hierarchyIDCounter = -1;
-                for (var i = 0; i < m_FrameEvents.Length; ++i)
+                for (int i = 0; i < m_FrameEvents.Length; ++i)
                 {
                     // This will be a slash-delimited string, e.g. Foo/Bar/Baz.
                     // Add "/" in front to account for the single (invisible) root item
                     // that the TreeView always has.
                     string context = "/" + (FrameDebuggerUtility.GetFrameEventInfoName(i) ?? string.Empty);
                     string[] names = context.Split('/');
+
                     // find matching hierarchy level
                     int level = 0;
                     while (level < eventStack.Count && level < names.Length)
                     {
                         if (names[level] != eventStack[level].item.displayName)
                             break;
+
                         ++level;
                     }
+
                     // close all the further levels from previous events in the stack
                     while (eventStack.Count > 0 && eventStack.Count > level)
-                    {
                         CloseLastHierarchyLevel(eventStack, i);
-                    }
 
-                    if (m_FrameEvents[i].type == FrameEventType.HierarchyLevelBreak)
+                    if (FrameDebuggerHelper.IsAHierarchyLevelBreakEvent(m_FrameEvents[i].type))
                         continue;
 
                     // add all further levels for current event
-                    for (var j = level; j < names.Length; ++j)
+                    for (int j = level; j < names.Length; ++j)
                     {
                         var parent = eventStack[eventStack.Count - 1];
-                        var newLevel = new FDTreeHierarchyLevel(eventStack.Count - 1, --hierarchyIDCounter, names[j], parent.item);
+                        var newLevel = new FrameDebuggerTreeHierarchyLevel(eventStack.Count - 1, --hierarchyIDCounter, names[j], parent.item);
                         parent.children.Add(newLevel.item);
                         eventStack.Add(newLevel);
                     }
 
-                    if (IsHiddenEventType(m_FrameEvents[i].type))
+                    if (FrameDebuggerHelper.IsAHiddenEvent(m_FrameEvents[i].type))
                         continue;
 
                     // add leaf event to current level
                     var eventObj = FrameDebuggerUtility.GetFrameEventObject(i);
                     var displayName = string.Empty;
+
                     if (eventObj)
                         displayName = " " + eventObj.name;
-                    FDTreeHierarchyLevel parentEvent = eventStack[eventStack.Count - 1];
-                    var leafEventID = i + 1;
-                    var item = new FDTreeViewItem(leafEventID, eventStack.Count - 1, parentEvent.item, displayName);
+                    else
+                        displayName = FrameDebuggerStyles.frameEventTypeNames[(int)m_FrameEvents[i].type];
+
+                    FrameDebuggerTreeHierarchyLevel parentEvent = eventStack[eventStack.Count - 1];
+                    int leafEventID = i + 1;
+                    FrameDebuggerTreeViewItem item = new FrameDebuggerTreeViewItem(leafEventID, eventStack.Count - 1, parentEvent.item, displayName);
                     item.m_FrameEvent = m_FrameEvents[i];
                     parentEvent.children.Add(item);
                     ++parentEvent.item.m_ChildEventCount;
                 }
+
                 while (eventStack.Count > 0)
-                {
                     CloseLastHierarchyLevel(eventStack, m_FrameEvents.Length);
-                }
+
                 m_RootItem = rootLevel.item;
             }
         }

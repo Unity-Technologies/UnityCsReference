@@ -234,18 +234,18 @@ namespace UnityEditor
             }
             m_windowSize = Mathf.Clamp(m_windowSize, 100, Screen.currentResolution.width * 0.95f);
 
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
         }
 
         public override void OnClose()
         {
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
             Event.current?.Use();
             MaskFieldGUI.DestroyMaskCallBackInfo();
             base.OnClose();
         }
 
-        void OnUndoRedoPerformed()
+        void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             editorWindow.Close();
         }
@@ -368,16 +368,16 @@ namespace UnityEditor
             }
 
             GetMultiSelectionValues(m_SerializedProperty, out m_SelectionMaskValues, out m_SelectionMatch, m_OptionCount);
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
         }
 
         public override void OnClose()
         {
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
             base.OnClose();
         }
 
-        void OnUndoRedoPerformed()
+        void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             editorWindow.Close();
         }

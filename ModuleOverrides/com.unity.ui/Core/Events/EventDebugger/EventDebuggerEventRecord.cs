@@ -65,6 +65,12 @@ namespace UnityEngine.UIElements
         [field: SerializeField]
         public string commandName { get; private set; }
 
+        // Navigation events specific
+        [field: SerializeField]
+        public NavigationDeviceType deviceType { get; private set; }
+        [field: SerializeField]
+        public NavigationMoveEvent.Direction navigationDirection { get; private set; }
+
         void Init(EventBase evt)
         {
             var type = evt.GetType();
@@ -137,6 +143,16 @@ namespace UnityEngine.UIElements
             if (commandEvent != null)
             {
                 commandName = commandEvent.commandName;
+            }
+
+            INavigationEvent navigationEvent = evt as INavigationEvent;
+            if (navigationEvent != null)
+            {
+                deviceType = navigationEvent.deviceType;
+                if (evt is NavigationMoveEvent nme)
+                {
+                    navigationDirection = nme.direction;
+                }
             }
         }
 

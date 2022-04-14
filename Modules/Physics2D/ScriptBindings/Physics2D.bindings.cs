@@ -2379,6 +2379,21 @@ namespace UnityEngine
         EqualLimits = 3,
     }
 
+    public enum JointBreakAction2D
+    {
+        // Ignore any joint break.
+        Ignore = 0,
+
+        // Perform a callback only for a joint break.
+        CallbackOnly = 1,
+
+        // Disable the Joint for a joint break.
+        Disable = 2,
+
+        // Destroy the joint for a joint break.
+        Destroy = 3,
+    }
+
     // Selects source and targets to be used by an Effector2D.
     public enum EffectorSelection2D
     {
@@ -3599,6 +3614,18 @@ namespace UnityEngine
         // Gets a count of the colliders attached to this rigidbody.
         extern public int attachedColliderCount { get; }
 
+        // Gets/Sets the total user-applied force added to this body since the last simulation step.
+        extern public Vector2 totalForce { get; set; }
+
+        // Gets/Sets the total user-applied torque added to this body since the last simulation step.
+        extern public float totalTorque { get; set; }
+
+        // Get/Set the Exclude Layers,
+        extern public LayerMask excludeLayers { get; set; }
+
+        // Get/Set the Include Layers,
+        extern public LayerMask includeLayers { get; set; }
+
         // Get whether any attached collider(s) are currently touching a specific collider or not.
         extern public bool IsTouching([NotNull][Writable] Collider2D collider);
 
@@ -3891,6 +3918,21 @@ namespace UnityEngine
             [NativeMethod("SetMaterial")]
             set;
         }
+
+        // Get/Set the Layer Override Priority.
+        extern public int layerOverridePriority { get; set; }
+
+        // Get/Set the Exclude Layers,
+        extern public LayerMask excludeLayers { get; set; }
+
+        // Get/Set the Include Layers,
+        extern public LayerMask includeLayers { get; set; }
+
+        // Get/Set the Force Send Layers.
+        extern public LayerMask forceSendLayers { get; set; }
+
+        // Get/Set the Force Receive Layers.
+        extern public LayerMask forceReceiveLayers { get; set; }
 
         // Gets the effective friction used by the collider.
         extern public float friction { get; }
@@ -4541,6 +4583,9 @@ namespace UnityEngine
 
         // The magnitude of the torque required to break the joint.
         extern public float breakTorque { get; set; }
+
+        // The action required when the joint breaks.
+        extern public JointBreakAction2D breakAction { get; set; }
 
         // Get the reaction force using the fixed time-step (Unit is Newtons).
         extern public Vector2 reactionForce {[NativeMethod("GetReactionForceFixedTime")] get; }

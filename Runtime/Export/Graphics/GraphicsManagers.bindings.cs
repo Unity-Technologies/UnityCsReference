@@ -93,6 +93,7 @@ namespace UnityEngine
 
         extern public static int   masterTextureLimit    { get; set; }
         extern public static int   maximumLODLevel       { get; set; }
+        extern public static bool  enableLODCrossFade    { get; set; }
         extern public static int   particleRaycastBudget { get; set; }
         extern public static bool  softParticles         { get; set; }
         extern public static bool  softVegetation        { get; set; }

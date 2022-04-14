@@ -65,18 +65,40 @@ namespace UnityEditor
         ImportDelayed = 1 << 1
     }
 
+    // keep in sync with AssetDatabasePreventExecutionChecks in AssetDatabasePreventExecution.h
     internal enum AssetDatabasePreventExecution
     {
         kNoAssetDatabaseRestriction = 0,
-        kImporting = 1 << 0,
-        kImportingAsset = 1 << 1,
+        kImportingAsset = 1 << 0,
+        kImportingInWorkerProcess = 1 << 1,
         kPreventCustomDependencyChanges = 1 << 2,
         kGatheringDependenciesFromSourceFile = 1 << 3,
-        kPreventForceReserializeAssets = 1 << 4
+        kPreventForceReserializeAssets = 1 << 4,
+        kDomainBackup = 1 << 5,
     }
 
     public struct CacheServerConnectionChangedParameters
     {
+    }
+
+    [RequiredByNativeCode]
+    internal class AssetDatabaseLoadOperationHelper
+    {
+        // When the load operation completes this is invoked to hold the result so that it doesn't
+        // get garbage collected
+        [RequiredByNativeCode]
+        public static void SetAssetDatabaseLoadObjectResult(AssetDatabaseLoadOperation op, UnityEngine.Object result)
+        {
+            op.m_Result = result;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode]
+    public class AssetDatabaseLoadOperation : AsyncOperation
+    {
+        internal Object m_Result;
+        public UnityEngine.Object LoadedObject { get { return m_Result; } }
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
@@ -145,9 +167,13 @@ namespace UnityEditor
         extern public static string GenerateUniqueAssetPath(string path);
 
         [FreeFunction("AssetDatabase::StartAssetImporting")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Error)]
         extern public static void StartAssetEditing();
 
         [FreeFunction("AssetDatabase::StopAssetImporting")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Error)]
         extern public static void StopAssetEditing();
 
         [FreeFunction("AssetDatabase::UnloadAllFileStreams")]
@@ -228,6 +254,7 @@ namespace UnityEditor
         [NativeThrows]
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
         extern public static Object LoadAssetAtPath(string assetPath, Type type);
 
         public static T LoadAssetAtPath<T>(string assetPath) where T : Object
@@ -261,6 +288,9 @@ namespace UnityEditor
         public static void RefreshDelayed() {}
 
         [uei.ExcludeFromDocs] public static void Refresh() { Refresh(ImportAssetOptions.Default); }
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Error)]
         extern public static void Refresh([uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
 
         [FreeFunction("::CanOpenAssetInEditor")]
@@ -342,6 +372,8 @@ namespace UnityEditor
         extern internal static Hash128 GetSourceAssetMetaFileHash(string guid);
 
         [FreeFunction("AssetDatabase::SaveAssets")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Error)]
         extern public static void SaveAssets();
 
         [FreeFunction("AssetDatabase::SaveAssetIfDirty")]
@@ -676,6 +708,10 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::RemoveObjectFromAsset")]
         extern public static void RemoveObjectFromAsset([NotNull] Object objectToRemove);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Cannot call AssetDatabase.LoadObjectAsync during the gathering of import dependencies.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, "Cannot use AssetDatabase.LoadObjectAsync while assets are importing.")]
+        extern public static AssetDatabaseLoadOperation LoadObjectAsync(string assetPath, long localId);
+
         [FreeFunction("AssetDatabase::GUIDFromExistingAssetPath")]
         extern internal static GUID GUIDFromExistingAssetPath(string path);
 
@@ -846,6 +882,47 @@ namespace UnityEditor
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
         public extern static bool IsAssetImportWorkerProcess();
+
+        [FreeFunction("AssetDatabase::GetImporterType")]
+        public extern static Type GetImporterType(GUID guid);
+
+        [FreeFunction("AssetDatabase::GetImporterTypes")]
+        private static extern unsafe Type[] GetImporterTypes_Internal([Span("guidsLength", isReadOnly: true)]GUID* guids, int guidsLength);
+
+        private static unsafe Type[] GetImporterTypesUnsafe_Internal(ReadOnlySpan<GUID> guids)
+        {
+            fixed (GUID* guidsPtr = guids)
+            {
+                return GetImporterTypes_Internal(guidsPtr, guids.Length);
+            }
+        }
+
+        public static Type[] GetImporterTypes(ReadOnlySpan<GUID> guids)
+        {
+            return GetImporterTypesUnsafe_Internal(guids);
+        }
+
+        //Since extern method overloads are not supported
+        //this is the name we pick, but users end up being able
+        //to call either of the overloads
+        [FreeFunction("AssetDatabase::GetImporterTypesAtPaths")]
+        private static extern Type[] GetImporterTypesAtPaths(string[] paths);
+
+        public static Type GetImporterType(string assetPath)
+        {
+            return GetImporterTypeAtPath(assetPath);
+        }
+
+        //Since extern method overloads are not supported
+        //this is the name we pick, but users end up being able
+        //to call either of the overloads
+        [FreeFunction("AssetDatabase::GetImporterTypeAtPath")]
+        private static extern Type GetImporterTypeAtPath(string assetPath);
+
+        public static Type[] GetImporterTypes(string[] paths)
+        {
+            return GetImporterTypesAtPaths(paths);
+        }
 
         [RequiredByNativeCode]
         static string[] OnSourceAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)

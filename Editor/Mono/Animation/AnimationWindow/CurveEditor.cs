@@ -652,13 +652,13 @@ namespace UnityEditor
         public void OnEnable()
         {
             // Only add callback once.
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
         }
 
         public void OnDisable()
         {
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
 
             if (m_PointRenderer != null)
                 m_PointRenderer.FlushCache();
@@ -672,7 +672,7 @@ namespace UnityEditor
                 ScriptableObject.DestroyImmediate(m_Selection);
         }
 
-        void UndoRedoPerformed()
+        void UndoRedoPerformed(in UndoRedoInfo info)
         {
             if (settings.undoRedoSelection)
                 InvalidateSelectionBounds();

@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot determine local path for {packageUniqueId}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot determine local path for {packageUniqueId}: {e.Message}");
                 m_IsAvailableOnDisk = false;
             }
         }

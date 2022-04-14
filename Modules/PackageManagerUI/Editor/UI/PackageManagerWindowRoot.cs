@@ -102,8 +102,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreCachePathProxy.onConfigChanged += OnAssetStoreCacheConfigChange;
 
-            PackageManagerWindowAnalytics.Setup();
-
             EditorApplication.focusChanged += OnFocusChanged;
             m_Selection.onSelectionChanged += RefreshSelectedInInspectorClass;
 

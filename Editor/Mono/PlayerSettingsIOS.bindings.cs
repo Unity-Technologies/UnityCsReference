@@ -108,6 +108,7 @@ namespace UnityEditor
         BluetoothPeripheral = 1 << 6,
         Fetch = 1 << 7,
         RemoteNotification = 1 << 8,
+        Processing = 1 << 9,
     }
 
     public enum iOSLaunchScreenImageType

@@ -61,6 +61,9 @@ namespace UnityEngine.UIElements
 
         internal override void ApplyTo(FocusController focusController, Focusable f)
         {
+            // Unselect selected TextElement on pointer down.
+            focusController.selectedTextElement = null;
+
             f.Focus(); // Call Focus() virtual method when an element is clicked or otherwise focused explicitly.
         }
 
@@ -346,37 +349,22 @@ namespace UnityEngine.UIElements
                     return VisualElementFocusChangeTarget.GetPooled(target);
             }
 
-            if (currentFocusable is IMGUIContainer && e.imguiEvent != null)
+            if (currentFocusable is IMGUIContainer)
             {
                 // Let IMGUIContainer manage the focus change.
                 return FocusChangeDirection.none;
             }
 
-            return GetKeyDownFocusChangeDirection(e);
-        }
-
-        internal static FocusChangeDirection GetKeyDownFocusChangeDirection(EventBase e)
-        {
-            if (e.eventTypeId == KeyDownEvent.TypeId())
+            if (e.eventTypeId == NavigationMoveEvent.TypeId())
             {
-                KeyDownEvent kde = e as KeyDownEvent;
+                // If navigation event was sent to an element that doesn't have the focus, ignore it.
+                // This is helpful in cases where a control reacts to KeyDown and moves the focus away, in which case
+                // any further equivalent navigation events should not move the focus again.
 
-                // Important: using KeyDownEvent.character for focus prevents a TextField bug.
-                // IMGUI sends KeyDownEvent with keyCode != None, then it sends another one with character != '\0'.
-                // If we use keyCode instead of character, TextField will receive focus on the first KeyDownEvent,
-                // then text will become selected and, in the case of multiline, the KeyDownEvent with character = '\t'
-                // will immediately overwrite the text with a single Tab string.
-                if (kde.character == (char)25 || kde.character == '\t')
-                {
-                    if (kde.modifiers == EventModifiers.Shift)
-                    {
-                        return VisualElementFocusChangeDirection.left;
-                    }
-                    if (kde.modifiers == EventModifiers.None)
-                    {
-                        return VisualElementFocusChangeDirection.right;
-                    }
-                }
+                var direction = ((NavigationMoveEvent) e).direction;
+                return direction == NavigationMoveEvent.Direction.Next ? VisualElementFocusChangeDirection.right :
+                    direction == NavigationMoveEvent.Direction.Previous ? VisualElementFocusChangeDirection.left :
+                    FocusChangeDirection.none;
             }
 
             return FocusChangeDirection.none;

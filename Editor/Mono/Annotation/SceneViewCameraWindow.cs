@@ -42,6 +42,8 @@ namespace UnityEditor
         GUIContent m_SceneCameraLabel = EditorGUIUtility.TrTextContent("Scene Camera");
         GUIContent m_NavigationLabel = EditorGUIUtility.TrTextContent("Navigation");
 
+        readonly string k_ClippingPlaneWarning = L10n.Tr("Using extreme values between the near and far planes may cause rendering issues. In general, to get better precision move the Near plane as far as possible.");
+
         const int kFieldCount = 13;
         const int kWindowWidth = 290;
         const int kContentPadding = 4;
@@ -132,6 +134,8 @@ namespace UnityEditor
                     EditorGUI.s_NearAndFarLabels[1], ref near, ref far,
                     EditorGUI.kNearFarLabelsWidth);
                 settings.SetClipPlanes(near, far);
+                if(far/near > 10000000 || near < 0.0001f)
+                    EditorGUILayout.HelpBox(k_ClippingPlaneWarning,MessageType.Warning);
             }
 
             settings.occlusionCulling = EditorGUILayout.Toggle(m_OcclusionCulling, settings.occlusionCulling);

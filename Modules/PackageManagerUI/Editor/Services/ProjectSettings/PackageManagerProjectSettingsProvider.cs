@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (EditorUtility.DisplayDialog(L10n.Tr("Package Manager"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (m_ApplicationProxy.DisplayDialog("showPreReleasePackages", L10n.Tr("Show pre-release packages"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;
@@ -110,20 +110,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                         }
                     }
                     enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.enablePreReleasePackages);
-                });
-
-                enablePackageDependencies.SetValueWithoutNotify(m_SettingsProxy.enablePackageDependencies);
-                enablePackageDependencies.RegisterValueChangedCallback(changeEvent =>
-                {
-                    enablePackageDependencies.SetValueWithoutNotify(changeEvent.newValue);
-                    var newValue = changeEvent.newValue;
-
-                    if (newValue != m_SettingsProxy.enablePackageDependencies)
-                    {
-                        m_SettingsProxy.enablePackageDependencies = newValue;
-                        m_SettingsProxy.Save();
-                        PackageManagerWindowAnalytics.SendEvent("toggleDependencies");
-                    }
                 });
 
                 UIUtils.SetElementDisplay(seeAllPackageVersions, Unsupported.IsDeveloperBuild());
@@ -174,7 +160,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private HelpBox preReleaseInfoBox { get { return cache.Get<HelpBox>("preReleaseInfoBox"); } }
         private Toggle enablePreReleasePackages { get { return rootVisualElement.Q<Toggle>("enablePreReleasePackages"); } }
-        private Toggle enablePackageDependencies { get { return rootVisualElement.Q<Toggle>("enableDependencies"); } }
         private Foldout advancedSettingsFoldout { get { return rootVisualElement.Q<Foldout>("advancedSettingsFoldout"); } }
         private Foldout scopedRegistriesSettingsFoldout { get { return rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout"); } }
         private Toggle seeAllPackageVersions { get { return rootVisualElement.Q<Toggle>("seeAllVersions"); } }

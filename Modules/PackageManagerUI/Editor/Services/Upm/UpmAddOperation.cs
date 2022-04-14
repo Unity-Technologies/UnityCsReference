@@ -24,6 +24,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
+        protected override string operationErrorMessage
+        {
+            get
+            {
+                var packageId = string.IsNullOrEmpty(this.packageId) ? specialUniqueId : this.packageId;
+                return string.Format(L10n.Tr("Error adding package: {0}."), packageId);
+            }
+        }
+
         public void Add(string packageId, string packageUniqueId = null)
         {
             m_PackageId = packageId;

@@ -67,6 +67,10 @@ namespace Unity.Profiling
         /// </summary>
         public static ProfilerCategory Physics => new ProfilerCategory(ProfilerUnsafeUtility.CategoryPhysics);
         /// <summary>
+        /// A ProfilerMarker that belongs to the Physics 2D system.
+        /// </summary>
+        public static ProfilerCategory Physics2D => new ProfilerCategory(ProfilerUnsafeUtility.CategoryPhysics2D);
+        /// <summary>
         /// A ProfilerMarker that belongs to the Animation system.
         /// </summary>
         public static ProfilerCategory Animation => new ProfilerCategory(ProfilerUnsafeUtility.CategoryAnimation);
@@ -124,6 +128,11 @@ namespace Unity.Profiling
         public static ProfilerCategory Internal => new ProfilerCategory(ProfilerUnsafeUtility.CategoryInternal);
 
         internal static ProfilerCategory Any => new ProfilerCategory(ProfilerUnsafeUtility.CategoryAny);
+
+        /// <summary>
+        /// GPU category.
+        /// </summary>
+        internal static ProfilerCategory GPU => new ProfilerCategory(ProfilerUnsafeUtility.CategoryGPU);
 
         /// <summary>
         /// Utility operator that simplifies usage of the ProfilerCategory with ProfilerUnsafeUtility.

@@ -55,13 +55,13 @@ namespace UnityEditor
             m_Editor.SetShownVRangeInsideMargins(0.0f, 1.0f);
             m_Editor.ignoreScrollWheelUntilClicked = true;
 
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
         }
 
         public void OnDisable()
         {
             m_Editor.OnDisable();
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
         }
 
         private CurveWrapper GetCurveWrapper(AnimationCurve curve)
@@ -93,7 +93,7 @@ namespace UnityEditor
             m_Refresh = true;
         }
 
-        private void UndoRedoPerformed()
+        private void UndoRedoPerformed(in UndoRedoInfo info)
         {
             m_Refresh = true;
         }

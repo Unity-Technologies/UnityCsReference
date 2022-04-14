@@ -77,6 +77,7 @@ namespace UnityEditorInternal
 
             AnimationWindowCurve[] curves = state.allCurves.ToArray();
             AnimationWindowHierarchyNode parentNode = (AnimationWindowHierarchyNode)m_RootItem;
+            SerializedObject so = null;
 
             for (int i = 0; i < curves.Length; i++)
             {
@@ -86,6 +87,13 @@ namespace UnityEditorInternal
                     continue;
 
                 AnimationWindowCurve nextCurve = i < curves.Length - 1 ? curves[i + 1] : null;
+
+                if (curve.isSerializeReferenceCurve && state.activeRootGameObject != null)
+                {
+                    var animatedObject = AnimationUtility.GetAnimatedObject(state.activeRootGameObject, curve.binding);
+                    if (animatedObject != null && (so == null || so.targetObject != animatedObject))
+                        so = new SerializedObject(animatedObject);
+                }
 
                 singlePropertyCurves.Add(curve);
 
@@ -97,9 +105,9 @@ namespace UnityEditorInternal
                 if (i == curves.Length - 1 || !areSameGroup || !areSamePathAndType)
                 {
                     if (singlePropertyCurves.Count > 1)
-                        nodes.Add(AddPropertyGroupToHierarchy(singlePropertyCurves.ToArray(), parentNode));
+                        nodes.Add(AddPropertyGroupToHierarchy(singlePropertyCurves.ToArray(), parentNode, so));
                     else
-                        nodes.Add(AddPropertyToHierarchy(singlePropertyCurves[0], parentNode));
+                        nodes.Add(AddPropertyToHierarchy(singlePropertyCurves[0], parentNode, so));
                     singlePropertyCurves.Clear();
                 }
             }
@@ -107,12 +115,12 @@ namespace UnityEditorInternal
             return nodes;
         }
 
-        private AnimationWindowHierarchyPropertyGroupNode AddPropertyGroupToHierarchy(AnimationWindowCurve[] curves, AnimationWindowHierarchyNode parentNode)
+        private AnimationWindowHierarchyPropertyGroupNode AddPropertyGroupToHierarchy(AnimationWindowCurve[] curves, AnimationWindowHierarchyNode parentNode, SerializedObject so)
         {
             List<AnimationWindowHierarchyNode> childNodes = new List<AnimationWindowHierarchyNode>();
 
             System.Type animatableObjectType = curves[0].type;
-            AnimationWindowHierarchyPropertyGroupNode node = new AnimationWindowHierarchyPropertyGroupNode(animatableObjectType, 0, AnimationWindowUtility.GetPropertyGroupName(curves[0].propertyName), curves[0].path, parentNode);
+            AnimationWindowHierarchyPropertyGroupNode node = new AnimationWindowHierarchyPropertyGroupNode(animatableObjectType, 0, AnimationWindowUtility.GetPropertyGroupName(curves[0].propertyName), curves[0].path, parentNode, AnimationWindowUtility.GetNicePropertyGroupDisplayName(curves[0].binding, so));
 
             node.icon = GetIcon(curves[0].binding);
 
@@ -121,7 +129,7 @@ namespace UnityEditorInternal
 
             foreach (AnimationWindowCurve curve in curves)
             {
-                AnimationWindowHierarchyPropertyNode childNode = AddPropertyToHierarchy(curve, node);
+                AnimationWindowHierarchyPropertyNode childNode = AddPropertyToHierarchy(curve, node, so);
                 // For child nodes we do not want to display the type in front (It is already shown by the group node)
                 childNode.displayName = AnimationWindowUtility.GetPropertyDisplayName(childNode.propertyName);
                 childNodes.Add(childNode);
@@ -131,9 +139,9 @@ namespace UnityEditorInternal
             return node;
         }
 
-        private AnimationWindowHierarchyPropertyNode AddPropertyToHierarchy(AnimationWindowCurve curve, AnimationWindowHierarchyNode parentNode)
+        private AnimationWindowHierarchyPropertyNode AddPropertyToHierarchy(AnimationWindowCurve curve, AnimationWindowHierarchyNode parentNode, SerializedObject so)
         {
-            AnimationWindowHierarchyPropertyNode node = new AnimationWindowHierarchyPropertyNode(curve.type, 0, curve.propertyName, curve.path, parentNode, curve.binding, curve.isPPtrCurve);
+            AnimationWindowHierarchyPropertyNode node = new AnimationWindowHierarchyPropertyNode(curve.type, 0, curve.propertyName, curve.path, parentNode, curve.binding, curve.isPPtrCurve, AnimationWindowUtility.GetNicePropertyDisplayName(curve.binding, so));
 
             if (parentNode.icon != null)
                 node.icon = parentNode.icon;
@@ -154,6 +162,34 @@ namespace UnityEditorInternal
                     return AssetPreview.GetMiniThumbnail(animatedObject);
             }
             return AssetPreview.GetMiniTypeThumbnail(curveBinding.type);
+        }
+
+        public void UpdateSerializeReferenceCurvesArrayNiceDisplayName()
+        {
+            if (state.activeRootGameObject == null)
+                return;
+
+            //This is required in the case that there might have been a topological change
+            //leading to a different display name(topological path)
+            SerializedObject so = null;
+            foreach (AnimationWindowHierarchyNode hierarchyNode in GetRows())
+            {
+                if (hierarchyNode.curves != null)
+                {
+                    foreach (var curve in hierarchyNode.curves)
+                    {
+                        if (curve.isSerializeReferenceCurve && hierarchyNode.displayName.Contains(".Array.data["))
+                        {
+                            var animatedObject = AnimationUtility.GetAnimatedObject(state.activeRootGameObject, curve.binding);
+                            if (animatedObject != null && (so == null || so.targetObject != animatedObject))
+                                so = new SerializedObject(animatedObject);
+
+                            hierarchyNode.displayName = AnimationWindowUtility.GetNicePropertyDisplayName(curve.binding, so);
+                        }
+                    }
+                }
+            }
+
         }
 
         public void UpdateData()

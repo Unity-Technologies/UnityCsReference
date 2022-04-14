@@ -10,56 +10,44 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageReleaseDetailsItem : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageReleaseDetailsItem> {}
-
-        private ResourceLoader m_ResourceLoader;
-        private void ResolveDependencies()
+        public PackageReleaseDetailsItem(string versionString, DateTime? publishedDate, bool isCurrent = false, string releaseNotes = "")
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
+            AddToClassList("release");
+
+            var versionAndReleaseContainer = new VisualElement { name = "versionAndReleaseContainer" };
+            Add(versionAndReleaseContainer);
+
+            versionAndReleaseContainer.Add(new SelectableLabel
+            {
+                name = "version",
+                focusable = true,
+                text = versionString
+            });
+
+            versionAndReleaseContainer.Add(new Label
+            {
+                name = "current",
+                text = isCurrent ? L10n.Tr("Current") : string.Empty
+            });
+
+            versionAndReleaseContainer.Add(new SelectableLabel
+            {
+                name = "releaseDate",
+                focusable = true,
+                text = publishedDate?.ToString(L10n.Tr("MMMM dd, yyyy"), CultureInfo.CreateSpecificCulture("en-US")) != null ?
+                    string.Format(L10n.Tr("released on {0}"), publishedDate?.ToString(L10n.Tr("MMMM dd, yyyy"), CultureInfo.CreateSpecificCulture("en-US"))) :
+                    string.Empty
+            });
+
+            if (string.IsNullOrEmpty(releaseNotes))
+                return;
+
+            Add(new SelectableLabel
+            {
+                name = "releaseNotes",
+                focusable = true,
+                text = releaseNotes
+            });
         }
-
-        public PackageReleaseDetailsItem()
-        {
-            ResolveDependencies();
-
-            var root = m_ResourceLoader.GetTemplate("PackageReleaseDetailsItem.uxml");
-            Add(root);
-            cache = new VisualElementCache(root);
-        }
-
-        public PackageReleaseDetailsItem(string versionString, DateTime? publishedDate, string releaseNotes) : this()
-        {
-            var releaseDateString = publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
-
-            versionAndReleaseDateLabel.SetValueWithoutNotify(versionString + (releaseDateString != null ? $" - released on {releaseDateString}" : string.Empty));
-
-            releaseNotesLabel.SetValueWithoutNotify(releaseNotes);
-
-            lessButton.clicked += OnLessButtonClicked;
-            moreButton.clicked += OnMoreButtonClicked;
-
-            UIUtils.SetElementDisplay(releaseNotesContainer, false);
-            UIUtils.SetElementDisplay(moreButton, !string.IsNullOrEmpty(releaseNotes));
-        }
-
-        public void OnLessButtonClicked()
-        {
-            UIUtils.SetElementDisplay(releaseNotesContainer, false);
-            UIUtils.SetElementDisplay(moreButton, true);
-        }
-
-        public void OnMoreButtonClicked()
-        {
-            UIUtils.SetElementDisplay(releaseNotesContainer, true);
-            UIUtils.SetElementDisplay(moreButton, false);
-        }
-
-        private VisualElementCache cache { get; set; }
-        private SelectableLabel versionAndReleaseDateLabel { get { return cache.Get<SelectableLabel>("versionAndReleaseDate"); } }
-        private VisualElement releaseNotesContainer { get { return cache.Get<VisualElement>("releaseNotesContainer"); } }
-        private SelectableLabel releaseNotesLabel { get { return cache.Get<SelectableLabel>("releaseNotes"); } }
-        private Button moreButton { get { return cache.Get<Button>("releaseDetailMore"); } }
-        private Button lessButton { get { return cache.Get<Button>("releaseDetailLess"); } }
     }
 }

@@ -2,18 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using UnityEditor.Profiling;
 using System.Linq;
+using System.Reflection;
 using UnityEditor.Overlays;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
-using UnityEditor.UIElements;
 using UnityEditorInternal;
-using Directory = UnityEditor.ShortcutManagement.Directory;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -26,6 +24,31 @@ namespace UnityEditor
             public static readonly GUIStyle overlay = "dockareaoverlay";
             public static readonly GUIStyle paneOptions = "PaneOptions";
             public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
+
+            public static class DataModes
+            {
+                public const float switchButtonWidth = 16.0f;
+
+                static readonly Texture2D k_AuthoringModeIcon = EditorGUIUtility.LoadIcon("DataMode.Authoring");
+                static readonly Texture2D k_MixedModeIcon = EditorGUIUtility.LoadIcon("DataMode.Mixed");
+                static readonly Texture2D k_RuntimeModeIcon = EditorGUIUtility.LoadIcon("DataMode.Runtime");
+
+                public static readonly GUIContent authoringModeContent = EditorGUIUtility.TrIconContent(k_AuthoringModeIcon, "Data Mode: Authoring");
+                public static readonly GUIContent mixedModeContent = EditorGUIUtility.TrIconContent(k_MixedModeIcon, "Data Mode: Mixed");
+                public static readonly GUIContent runtimeModeContent = EditorGUIUtility.TrIconContent(k_RuntimeModeIcon, "Data Mode: Runtime");
+
+                // Use an empty style to avoid the hover effect of normal buttons
+                public static readonly GUIStyle switchStyle = new GUIStyle();
+
+                public static readonly Dictionary<DataMode, GUIContent> dataModeNameLabels =
+                    new Dictionary<DataMode, GUIContent>
+                    {
+                        { DataMode.Disabled,  EditorGUIUtility.TrTextContent("Disabled")       },
+                        { DataMode.Authoring, EditorGUIUtility.TrTextContent("Authoring Mode") },
+                        { DataMode.Mixed,     EditorGUIUtility.TrTextContent("Mixed Mode")     },
+                        { DataMode.Runtime,   EditorGUIUtility.TrTextContent("Runtime Mode")   }
+                    };
+            }
 
             static Styles()
             {
@@ -307,6 +330,12 @@ namespace UnityEditor
             Repaint();
         }
 
+        protected override void OnBackingScaleFactorChanged()
+        {
+            if (m_ActualView != null)
+                m_ActualView.OnBackingScaleFactorChangedInternal();
+        }
+
         protected override void OnDestroy()
         {
             if (m_ActualView)
@@ -526,6 +555,9 @@ namespace UnityEditor
                 EditorApplication.update += m_ActualView.CheckForWindowRepaint;
             }
 
+            if (m_ActualView is IDataModeHandlerAndDispatcher dataModesDispatcher)
+                dataModesDispatcher.dataModeChanged += OnViewDataModeChanged;
+
             if (sendEvents)
             {
                 try
@@ -561,6 +593,9 @@ namespace UnityEditor
             {
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
             }
+
+            if (m_ActualView is IDataModeHandlerAndDispatcher dataModesDispatcher)
+                dataModesDispatcher.dataModeChanged -= OnViewDataModeChanged;
 
             if (clearActualView)
             {
@@ -640,7 +675,12 @@ namespace UnityEditor
         {
             float extraWidth = 0;
 
-            if (m_ShowButton != null) extraWidth += ContainerWindow.kButtonWidth;
+            // Generally reserved for the lock icon
+            if (m_ShowButton != null)
+                extraWidth += ContainerWindow.kButtonWidth;
+
+            if (ShouldDrawDataModesSwitch())
+                extraWidth += Styles.DataModes.switchButtonWidth + k_iconMargin;
 
             foreach (var item in windowActions)
             {
@@ -663,9 +703,50 @@ namespace UnityEditor
                     leftOffset -= paneMenu.width + k_iconMargin;
             }
 
-            // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon
+            // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon)
             if (m_ShowButton != null)
                 m_ShowButton.Invoke(new Rect(leftOffset, topOffset, ContainerWindow.kButtonWidth, ContainerWindow.kButtonHeight));
+
+            // Note: We are assuming the value returned by ShouldDrawDataModesSwitch() hasn't changed since
+            // it was called from GetExtraButtonsWidth(); if GetExtraButtonsWidth() was called at all, that is.
+            if (ShouldDrawDataModesSwitch())
+            {
+                // This cast is guaranteed to work by ShouldDrawDataModesSwitch()
+                var dataModesClient = (IDataModeHandler) m_ActualView;
+                var switchContent = default(GUIContent);
+
+                switch (dataModesClient.dataMode)
+                {
+                    case DataMode.Authoring:
+                    {
+                        switchContent = Styles.DataModes.authoringModeContent;
+                        break;
+                    }
+                    case DataMode.Mixed:
+                    {
+                        switchContent = Styles.DataModes.mixedModeContent;
+                        break;
+                    }
+                    case DataMode.Runtime:
+                    {
+                        switchContent = Styles.DataModes.runtimeModeContent;
+                        break;
+                    }
+                }
+
+                // Last chance to bail in case something weird happened
+                if (switchContent != default)
+                {
+                    leftOffset -= Styles.DataModes.switchButtonWidth + k_iconMargin;
+                    var switchRect = new Rect(leftOffset, topOffset, Styles.DataModes.switchButtonWidth, ContainerWindow.kButtonHeight);
+
+                    if (EditorGUI.Button(switchRect, switchContent, Styles.DataModes.switchStyle))
+                    {
+                        dataModesClient.SwitchToNextDataMode();
+                        RefreshAfterDataModeChange();
+                    }
+                }
+            }
 
             foreach (var item in windowActions)
             {
@@ -687,6 +768,39 @@ namespace UnityEditor
             }
         }
 
+        bool ShouldDrawDataModesSwitch()
+        {
+            return m_ActualView is IDataModeHandler dataModesHandler
+                   && dataModesHandler.dataMode != DataMode.Disabled
+                   // We don't want to show this switch if there are not
+                   // at least 2 modes supported at the current moment.
+                   && dataModesHandler.supportedDataModes.Count > 1;
+        }
+
+        void SelectDataMode(object dataMode)
+        {
+            if (!(m_ActualView is IDataModeHandler dataModesHandler))
+                return; // Something very weird has happened...
+
+            if (dataMode is DataMode mode && dataModesHandler.IsDataModeSupported(mode))
+                dataModesHandler.SwitchToDataMode(mode);
+            else
+                dataModesHandler.SwitchToDefaultDataMode();
+        }
+
+        void OnViewDataModeChanged(DataMode newMode)
+        {
+            // Current implementation doesn't need to know the new data mode, but once
+            // we switch this to UITK (soon), knowing the new mode will be very useful.
+            RefreshAfterDataModeChange();
+        }
+
+        void RefreshAfterDataModeChange()
+        {
+            m_ActualView.Repaint();
+            RepaintImmediately();
+        }
+
         private static WindowAction[] FetchWindowActionFromAttribute()
         {
             var methods = AttributeHelper.GetMethodsWithAttribute<WindowActionAttribute>();
@@ -705,10 +819,23 @@ namespace UnityEditor
             }).OrderBy(a => a.priority).ToArray();
         }
 
+        private static void FlushView(EditorWindow view)
+        {
+            if (view == null)
+                return;
+
+            int totalFrames = Math.Max(2, QualitySettings.maxQueuedFrames);
+            for (int i = 0; i < totalFrames; ++i)
+                view.RepaintImmediately();
+        }
+
         public void PopupGenericMenu(EditorWindow view, Rect pos)
         {
             if (!showGenericMenu)
                 return;
+
+            FlushView(view);
+
             GenericMenu menu = new GenericMenu();
 
             IHasCustomMenu menuProvider = view as IHasCustomMenu;
@@ -748,7 +875,7 @@ namespace UnityEditor
 
         private void Inspect(object userData)
         {
-            Selection.activeObject = (UnityEngine.Object)userData;
+            Selection.activeObject = (Object)userData;
         }
 
         internal void Reload(object userData)
@@ -785,7 +912,29 @@ namespace UnityEditor
                     win.Show();
             }
 
-            System.IO.File.Delete(saveWindowPath);
+            File.Delete(saveWindowPath);
+        }
+
+        readonly List<DataMode> m_DataModeSanitizationCache = new List<DataMode>(3); // Number of modes, minus `Disabled`
+
+        static void SanitizeSupportedDataModesList(IReadOnlyList<DataMode> originalList, List<DataMode> sanitizedList)
+        {
+            sanitizedList.Clear();
+
+            foreach (var mode in originalList)
+            {
+                if (mode == DataMode.Disabled)
+                    continue; // Never list `DataMode.Disabled`
+
+                if (sanitizedList.Contains(mode))
+                    continue; // Prevent duplicate entries
+
+                sanitizedList.Add(mode);
+            }
+
+            // Ensure we are displaying the data modes in a predefined order, regardless of
+            // the order in which the user defined their list.
+            sanitizedList.Sort();
         }
 
         protected virtual void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow window)
@@ -793,15 +942,36 @@ namespace UnityEditor
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
 
-            if (window is ISupportsOverlays)
+            if (window is IDataModeHandler dataModesHandler && dataModesHandler.dataMode != DataMode.Disabled)
             {
-                OverlayPresetManager.GenerateMenu(menu, "Overlays/Presets/", window);
-                foreach (var overlay in window.overlayCanvas.overlays)
+                SanitizeSupportedDataModesList(dataModesHandler.supportedDataModes, m_DataModeSanitizationCache);
+
+                // Don't show anything if only one mode is supported
+                if (m_DataModeSanitizationCache.Count > 1)
                 {
-                    if (overlay.userControlledVisibility)
-                        menu.AddItem(new GUIContent($"Overlays/{overlay.displayName}"), overlay.displayed,
-                            o => ((Overlay)o).displayed = !((Overlay)o).displayed, overlay);
+                    foreach (var mode in m_DataModeSanitizationCache)
+                    {
+                        menu.AddItem(Styles.DataModes.dataModeNameLabels[mode],
+                            dataModesHandler.dataMode == mode,
+                            SelectDataMode,
+                            mode);
+                    }
+
+                    menu.AddSeparator("");
                 }
+            }
+
+            if(window is ISupportsOverlays)
+            {
+                var binding = ShortcutManager.instance.GetShortcutBinding("Overlays/Show Overlay Menu");
+                var visibleMenu = window.overlayCanvas.menuVisible;
+                menu.AddItem(EditorGUIUtility.TrTextContent($"Overlay Menu _{binding}"),
+                    visibleMenu,
+                    () =>
+                    {
+                        window.overlayCanvas.localMousePosition = Vector2.negativeInfinity;
+                        window.overlayCanvas.menuVisible = !visibleMenu;
+                    });
             }
 
             if (window && Unsupported.IsDeveloperMode())

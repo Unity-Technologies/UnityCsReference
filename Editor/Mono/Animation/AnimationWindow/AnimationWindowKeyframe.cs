@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor;
 
@@ -104,7 +105,16 @@ namespace UnityEditorInternal
         public AnimationWindowKeyframe(AnimationWindowCurve curve, Keyframe key)
         {
             this.time = key.time;
-            this.value = key.value;
+
+            if (curve.isDiscreteCurve)
+            {
+                this.value = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertFloatToDiscreteInt(key.value);
+            }
+            else
+            {
+                this.value = key.value;
+            }
+
             this.curve = curve;
             this.m_InTangent = key.inTangent;
             this.m_OutTangent = key.outTangent;
@@ -151,7 +161,20 @@ namespace UnityEditorInternal
 
         public Keyframe ToKeyframe()
         {
-            var keyframe = new Keyframe(time, (float)value, inTangent, outTangent);
+            float floatValue;
+            if (curve.isDiscreteCurve)
+            {
+                // case 1395978
+                // Negative int values converted to float create NaN values. Limiting discrete int values to only positive values
+                // until we rewrite the animation backend with dedicated int curves.
+                floatValue = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat(Math.Max((int)value, 0));
+            }
+            else
+            {
+                floatValue = (float)value;
+            }
+
+            var keyframe = new Keyframe(time, floatValue, inTangent, outTangent);
 
             keyframe.tangentModeInternal = m_TangentMode;
             keyframe.weightedMode = weightedMode;

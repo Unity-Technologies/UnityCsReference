@@ -93,6 +93,7 @@ namespace UnityEditorInternal
         NotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = 1 << 8,
         NotSupportedWithVulkan = 1 << 9,
         NotSupportedWithMetal = 1 << 10,
+        NotSupportedWithOpenGLGPURecorders = 1 << 11,
     }
 
 
@@ -168,6 +169,10 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern bool IsAreaEnabled(ProfilerArea area);
 
+        [NativeMethod("SetCategoryEnabled")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static internal extern void SetCategoryEnabled(string categoryName, bool enabled);
+
         static public bool enabled
         {
             get
@@ -220,11 +225,12 @@ namespace UnityEditorInternal
             set;
         }
 
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern ProfilerMemoryRecordMode memoryRecordMode
         {
-            [FreeFunction("profiler_get_memory_record_mode")]
+            [NativeMethod("GetMemoryRecordMode")]
             get;
-            [FreeFunction("profiler_set_memory_record_mode")]
+            [NativeMethod("SetMemoryRecordMode")]
             set;
         }
 
@@ -463,6 +469,9 @@ namespace UnityEditorInternal
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static internal extern bool IsDeepProfilingSupported(int guid);
+
+        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
+        static internal extern string GetConnectionUnityVersion(int guid);
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         static internal extern string GetProjectName(int guid);

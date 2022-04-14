@@ -40,6 +40,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
     [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerUnsafeUtility.bindings.h")]
     [UsedByNativeCode]
+    [IgnoredByDeepProfiler]
     public static class ProfilerUnsafeUtility
     {
         // Built-in profiler categories.
@@ -65,6 +66,8 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public const ushort CategoryFileIO = 25;
         public const ushort CategoryInput = 30;
         public const ushort CategoryVirtualTexturing = 31;
+        internal const ushort CategoryGPU = 32;
+        public const ushort CategoryPhysics2D = 33;
         internal const ushort CategoryAny = 0xFFFF;
 
         [ThreadSafe]

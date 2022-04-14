@@ -259,6 +259,7 @@ namespace UnityEngine.UIElements
         public int unitySliceBottom;
         public int unitySliceLeft;
         public int unitySliceRight;
+        public float unitySliceScale;
         public int unitySliceTop;
         public TextOverflowPosition unityTextOverflowPosition;
 
@@ -282,6 +283,7 @@ namespace UnityEngine.UIElements
                 lhs.unitySliceBottom == rhs.unitySliceBottom &&
                 lhs.unitySliceLeft == rhs.unitySliceLeft &&
                 lhs.unitySliceRight == rhs.unitySliceRight &&
+                lhs.unitySliceScale == rhs.unitySliceScale &&
                 lhs.unitySliceTop == rhs.unitySliceTop &&
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
@@ -316,6 +318,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ unitySliceBottom;
                 hashCode = (hashCode * 397) ^ unitySliceLeft;
                 hashCode = (hashCode * 397) ^ unitySliceRight;
+                hashCode = (hashCode * 397) ^ unitySliceScale.GetHashCode();
                 hashCode = (hashCode * 397) ^ unitySliceTop;
                 hashCode = (hashCode * 397) ^ (int)unityTextOverflowPosition;
                 return hashCode;

@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_LUMIN_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_HEIGHTMESH_RUNTIME_SUPPORT;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <LangVersion>latest</LangVersion>
     <NoWarn>1071;0626</NoWarn>
   </PropertyGroup>
@@ -682,6 +682,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\SafeHandleAccess.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\SafeHandleAccess.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAllocator2D.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAllocator2D.cs</Link>
     </Compile>
@@ -1093,6 +1096,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\TemplateAsset.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\TemplateAsset.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAssetAttributeDescription.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAssetAttributeDescription.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs</Link>
     </Compile>
@@ -1185,6 +1191,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualTreeViewDataUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualTreeViewDataUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AI\AssemblyInfo.cs">
+      <Link>Modules\AI\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AI\Builder\NavMeshBuilder.bindings.cs">
       <Link>Modules\AI\Builder\NavMeshBuilder.bindings.cs</Link>
@@ -1411,9 +1420,6 @@
     <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs">
       <Link>Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AssetBundle\Managed\BuildCompression.cs">
-      <Link>Modules\AssetBundle\Managed\BuildCompression.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\Managed\Audio.deprecated.cs">
       <Link>Modules\Audio\Public\Managed\Audio.deprecated.cs</Link>
     </Compile>
@@ -1482,6 +1488,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ClusterRenderer\ClusterSerialization.bindings.cs">
       <Link>Modules\ClusterRenderer\ClusterSerialization.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Public\ContentLoad.bindings.cs">
+      <Link>Modules\ContentLoad\Public\ContentLoad.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
       <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>
@@ -1714,6 +1723,9 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Articulations.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Articulations.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\Articulations.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\Articulations.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\ContactModification.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\ContactModification.bindings.cs</Link>
     </Compile>
@@ -1725,6 +1737,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.deprecated.cs">
+      <Link>Modules\Physics\ScriptBindings\QueryCommand.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs">
       <Link>Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs</Link>
@@ -2011,6 +2026,9 @@
     <Compile Include="..\..\Modules\UIElementsNative\ImmediateStylePainter.bindings.cs">
       <Link>Modules\UIElementsNative\ImmediateStylePainter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIPainter2D.bindings.cs">
+      <Link>Modules\UIElementsNative\Renderer\UIPainter2D.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs">
       <Link>Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs</Link>
     </Compile>
@@ -2022,9 +2040,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
       <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\UITessellation.bindings.cs">
-      <Link>Modules\UIElementsNative\UITessellation.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
@@ -2040,30 +2055,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\UICanvas.bindings.cs">
       <Link>Modules\UI\ScriptBindings\UICanvas.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\Managed\MatchMakingClient.cs">
-      <Link>Modules\UNET\Managed\MatchMakingClient.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\Managed\NetworkTransport.cs">
-      <Link>Modules\UNET\Managed\NetworkTransport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\Managed\NetworkTransportConfig.cs">
-      <Link>Modules\UNET\Managed\NetworkTransportConfig.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\Managed\UNETInterface.cs">
-      <Link>Modules\UNET\Managed\UNETInterface.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\Managed\UNETTypes.cs">
-      <Link>Modules\UNET\Managed\UNETTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\Managed\UNETWebSocketLib.cs">
-      <Link>Modules\UNET\Managed\UNETWebSocketLib.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\ScriptBindings\UNETTransportConfig.bindings.cs">
-      <Link>Modules\UNET\ScriptBindings\UNETTransportConfig.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UNET\ScriptBindings\UNETworking.bindings.cs">
-      <Link>Modules\UNET\ScriptBindings\UNETworking.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityAnalytics\ContinuousEvent\ContinuousEvent.bindings.cs">
       <Link>Modules\UnityAnalytics\ContinuousEvent\ContinuousEvent.bindings.cs</Link>
@@ -2335,6 +2326,12 @@
     <Compile Include="..\..\Runtime\Export\Bootstrap\BootConfig.bindings.cs">
       <Link>Runtime\Export\Bootstrap\BootConfig.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\BurstLike\BurstLike.bindings.cs">
+      <Link>Runtime\Export\BurstLike\BurstLike.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Burst\BurstAuthorizedExternalMethodAttribute.cs">
+      <Link>Runtime\Export\Burst\BurstAuthorizedExternalMethodAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Burst\BurstCompilerService.bindings.cs">
       <Link>Runtime\Export\Burst\BurstCompilerService.bindings.cs</Link>
     </Compile>
@@ -2388,6 +2385,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Collections\NativeCollectionEnums.bindings.cs">
       <Link>Runtime\Export\Collections\NativeCollectionEnums.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ContentNamespace\ContentNamespace.bindings.cs">
+      <Link>Runtime\Export\ContentNamespace\ContentNamespace.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Coverage.bindings.cs">
       <Link>Runtime\Export\Coverage.bindings.cs</Link>
@@ -2515,8 +2515,14 @@
     <Compile Include="..\..\Runtime\Export\ExpressionEvaluator.cs">
       <Link>Runtime\Export\ExpressionEvaluator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\File\ArchiveFile.bindings.cs">
+      <Link>Runtime\Export\File\ArchiveFile.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\File\AsyncReadManager.bindings.cs">
       <Link>Runtime\Export\File\AsyncReadManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\File\BuildCompression.cs">
+      <Link>Runtime\Export\File\BuildCompression.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\File\File.bindings.cs">
       <Link>Runtime\Export\File\File.bindings.cs</Link>
@@ -2853,6 +2859,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\PlayerPrefs\PlayerPrefs.bindings.cs">
       <Link>Runtime\Export\PlayerPrefs\PlayerPrefs.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Profiler\IgnoredByDeepProfilerAttribute.cs">
+      <Link>Runtime\Export\Profiler\IgnoredByDeepProfilerAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Properties\DrivenPropertyManager.bindings.cs">
       <Link>Runtime\Export\Properties\DrivenPropertyManager.bindings.cs</Link>
@@ -3196,6 +3205,9 @@
     <Compile Include="..\..\Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs">
       <Link>Runtime\Export\Serialization\FormerlySerializedAsAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Serialization\ManagedReferenceUtility.bindings.cs">
+      <Link>Runtime\Export\Serialization\ManagedReferenceUtility.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Serialization\Serialization.cs">
       <Link>Runtime\Export\Serialization\Serialization.cs</Link>
     </Compile>
@@ -3509,4 +3521,6 @@
       <Link>artifacts\generated\UnityEvent\UnityEvent_4.cs</Link>
     </Compile>
   </ItemGroup>
+  <PropertyGroup>
+  </PropertyGroup>
 </Project>

@@ -120,14 +120,14 @@ namespace UnityEngine.UIElements
         {
             target.RegisterCallback<MouseDownEvent>(OnMouseDown, invokePolicy);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove, invokePolicy);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp, invokePolicy);
-            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut, invokePolicy);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp, InvokePolicy.IncludeDisabled);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut, InvokePolicy.IncludeDisabled);
 
             target.RegisterCallback<PointerDownEvent>(OnPointerDown, invokePolicy);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove, invokePolicy);
-            target.RegisterCallback<PointerUpEvent>(OnPointerUp, invokePolicy);
-            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel, invokePolicy);
-            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut, invokePolicy);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp, InvokePolicy.IncludeDisabled);
+            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel, InvokePolicy.IncludeDisabled);
+            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut, InvokePolicy.IncludeDisabled);
         }
 
         /// <summary>

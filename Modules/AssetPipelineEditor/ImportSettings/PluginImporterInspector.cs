@@ -313,12 +313,21 @@ namespace UnityEditor
             }
         }
 
+        [Obsolete("UnityUpgradeable () -> DiscardChanges")]
         protected override void ResetValues()
         {
-            base.ResetValues();
+            DiscardChanges();
+        }
+
+        public override void DiscardChanges()
+        {
+            base.DiscardChanges();
 
             m_HasModified = false;
             m_DefineConstraintState.Clear();
+
+            // making sure we apply any serialized changes to the targets so accessing pluginImporter.DefineConstraints will have the updated values
+            serializedObject.ApplyModifiedProperties();
 
             var minSizeOfDefines = importers.Min(x => x.DefineConstraints.Length);
             string[] baseImporterDefineConstraints = importer.DefineConstraints;
@@ -410,6 +419,7 @@ namespace UnityEditor
 
         protected override void Apply()
         {
+            serializedObject.ApplyModifiedProperties();
             var constraints = m_DefineConstraintState.Where(x => x.displayValue > Compatibility.Mixed).Select(x => x.name).ToArray();
             foreach (var imp in importers)
             {
@@ -471,13 +481,14 @@ namespace UnityEditor
             m_DesktopExtension = new DesktopPluginImporterExtension();
 
             base.Awake();
-
-            ResetValues();
         }
 
         public override void OnEnable()
         {
             base.OnEnable();
+
+            // this method is doing a lot of setup and it used to be called in awake for some old reasons, which is not the case anymore.
+            DiscardChanges();
 
             m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), true, false, true, true);
             m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;

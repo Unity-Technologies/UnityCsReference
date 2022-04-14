@@ -83,7 +83,7 @@ namespace UnityEditor.Profiling
             m_ModulesListView.makeItem = MakeListViewItem;
             m_ModulesListView.bindItem = BindListViewItem;
             m_ModulesListView.selectionType = SelectionType.Single;
-            m_ModulesListView.onSelectionChange += OnModuleSelected;
+            m_ModulesListView.selectionChanged += OnModuleSelected;
             m_ModulesListView.itemsSource = m_Modules;
 
             var configureButton = rootVisualElement.Q<Button>(k_UssSelector_ConfigureButton);

@@ -761,6 +761,72 @@ namespace UnityEngine
             return buf;
         }
 
+        public GraphicsBuffer GetBoneWeightBuffer(SkinWeights layout)
+        {
+            if (this == null)
+                throw new NullReferenceException();
+
+            if(layout == SkinWeights.None)
+            {
+                Debug.LogError($"Only possible to access bone weights buffer for values: {SkinWeights.OneBone}, {SkinWeights.TwoBones}, {SkinWeights.FourBones} and {SkinWeights.Unlimited}.");
+                return null;
+            }
+
+            var buf = GetBoneWeightBufferImpl((int)layout);
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
+
+        public GraphicsBuffer GetBlendShapeBuffer(BlendShapeBufferLayout layout)
+        {
+            if (this == null)
+                throw new NullReferenceException();
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                Debug.LogError("Only possible to access Blend Shape buffer on platforms that supports compute shaders.");
+                return null;
+            }
+
+            var buf = GetBlendShapeBufferImpl((int)layout);
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
+
+        public GraphicsBuffer GetBlendShapeBuffer()
+        {
+            if (this == null)
+                throw new NullReferenceException();
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                Debug.LogError("Only possible to access Blend Shape buffer on platforms that supports compute shaders.");
+                return null;
+            }
+
+            var buf = GetBlendShapeBufferImpl((int)BlendShapeBufferLayout.PerShape);
+            if (buf != null)
+                buf.SaveCallstack(2);
+            return buf;
+        }
+
+        public BlendShapeBufferRange GetBlendShapeBufferRange(int blendShapeIndex)
+        {
+            if (blendShapeIndex >= blendShapeCount || blendShapeIndex < 0)
+            {
+                Debug.LogError($"Incorrect index used to get blend shape buffer range");
+                return new BlendShapeBufferRange();
+            }
+
+            BlendShape blendShape = GetBlendShapeOffsetInternal(blendShapeIndex);
+            BlendShapeBufferRange blendShapeRange = new BlendShapeBufferRange();
+            blendShapeRange.startIndex = blendShape.firstVertex;
+            blendShapeRange.endIndex = blendShape.firstVertex + blendShape.vertexCount - 1;
+            return blendShapeRange;
+        }
+
         //
         // triangles/indices
         //
@@ -1189,7 +1255,7 @@ namespace UnityEngine
             if (bindposes == null)
                 throw new ArgumentNullException(nameof(bindposes), "The result bindposes list cannot be null.");
 
-            NoAllocHelpers.EnsureListElemCount(bindposes, GetBindposeCount());
+            NoAllocHelpers.EnsureListElemCount(bindposes, bindposeCount);
             GetBindposesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(bindposes));
         }
 
@@ -1212,6 +1278,14 @@ namespace UnityEngine
             set
             {
                 SetBoneWeightsImpl(value);
+            }
+        }
+
+        public SkinWeights skinWeightBufferLayout
+        {
+            get
+            {
+                return (SkinWeights)GetBoneWeightBufferLayoutInternal();
             }
         }
 
@@ -1333,6 +1407,39 @@ namespace UnityEngine
         {
             CombineMeshesImpl(combine, true, true, false);
         }
+    }
+
+    [Serializable]
+    [UsedByNativeCode]
+    internal struct BlendShape
+    {
+        [SerializeField]
+        UInt32 m_FirstVertex;
+        [SerializeField]
+        UInt32 m_VertexCount;
+
+        public UInt32 firstVertex { get { return m_FirstVertex; } set { m_FirstVertex = value; } }
+        public UInt32 vertexCount { get { return m_VertexCount; } set { m_VertexCount = value; } }
+
+
+        [SerializeField]
+        bool m_HasNormals;
+        [SerializeField]
+        bool m_HasTangents;
+        public bool hasNormals { get { return m_HasNormals; } set { m_HasNormals = value; } }
+        public bool hasTangents { get { return m_HasTangents; } set { m_HasTangents = value; } }
+    }
+
+    [Serializable]
+    public struct BlendShapeBufferRange
+    {
+        [SerializeField]
+        UInt32 m_StartIndex;
+        [SerializeField]
+        UInt32 m_EndIndex;
+
+        public UInt32 startIndex { get { return m_StartIndex; } internal set { m_StartIndex = value; } }
+        public UInt32 endIndex { get { return m_EndIndex; } internal set { m_EndIndex = value; } }
     }
 
     [Serializable]

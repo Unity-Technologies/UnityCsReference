@@ -178,12 +178,6 @@ namespace UnityEngine.UIElements
             if (s_ContainerStack.Count > 0)
             {
                 var topmostContainer = s_ContainerStack.Peek();
-
-                var currentCapturingElement = topmostContainer.panel.GetCapturingElement(PointerId.mousePointerId);
-                if (currentCapturingElement != null && currentCapturingElement != topmostContainer)
-                {
-                    Debug.Log("Should not grab hot control with an active capture");
-                }
                 topmostContainer.CaptureMouse();
                 return true;
             }
@@ -433,10 +427,18 @@ namespace UnityEngine.UIElements
 
         static bool DoDispatch(BaseVisualElementPanel panel)
         {
+            Debug.Assert(panel.contextType == ContextType.Editor);
+
             bool usesEvent = false;
 
             if (s_EventInstance.type == EventType.Repaint)
             {
+                var oldCam = Camera.current;
+                var oldRT = RenderTexture.active;
+
+                Camera.SetupCurrent(null);
+                RenderTexture.active = null;
+
                 using (s_RepaintProfilerMarker.Auto())
                     panel.Repaint(s_EventInstance);
 
@@ -446,6 +448,9 @@ namespace UnityEngine.UIElements
                 // in order to suspend to suspend OnGUI() processing on the native side
                 // since we've already run it if we have an IMGUIContainer
                 usesEvent = panel.IMGUIContainersCount > 0;
+
+                Camera.SetupCurrent(oldCam);
+                RenderTexture.active = oldRT;
             }
             else
             {
@@ -507,6 +512,17 @@ namespace UnityEngine.UIElements
             }
 
             return panel;
+        }
+
+        internal static float PixelsPerUnitScaleForElement(VisualElement ve, Sprite sprite)
+        {
+            if (ve == null || ve.elementPanel == null || sprite == null)
+                return 1.0f;
+
+            float referencePixelsPerUnit = ve.elementPanel.referenceSpritePixelsPerUnit;
+            float pixelsPerUnit = sprite.pixelsPerUnit;
+            pixelsPerUnit = Mathf.Max(0.01f, pixelsPerUnit);
+            return referencePixelsPerUnit / pixelsPerUnit;
         }
 
         internal static int m_InMemoryAssetsVersion { get; private set; } = 0;

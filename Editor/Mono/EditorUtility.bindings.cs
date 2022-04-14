@@ -10,11 +10,13 @@ using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Linq;
+using static UnityEditor.EditorGUI;
 
 namespace UnityEditor
 {
     [NativeHeader("Editor/Mono/EditorUtility.bindings.h")]
     [NativeHeader("Editor/Mono/MonoEditorUtility.h")]
+    [NativeHeader("Editor/Src/AssetPipeline/UnityExtensions.h")]
     [NativeHeader("Runtime/Shaders/ShaderImpl/ShaderUtilities.h")]
     partial class EditorUtility
     {
@@ -32,7 +34,18 @@ namespace UnityEditor
         public static extern void RevealInFinder(string path);
 
         [FreeFunction("DisplayDialog")]
-        public static extern bool DisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
+        static extern bool DoDisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
+
+        public static bool DisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel)
+        {
+            using (new DisabledGuiViewInputScope(GUIView.current, true))
+            {
+                return DoDisplayDialog(title, message, ok, cancel);
+            }
+        }
+
+        [FreeFunction("GetDialogResponse")]
+        internal static extern bool GetDialogResponse(InteractionContext interactionContext, string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
 
         [ExcludeFromDocs]
         public static bool DisplayDialog(string title, string message, string ok)
@@ -42,6 +55,9 @@ namespace UnityEditor
 
         [FreeFunction("DisplayDialogComplex")]
         public static extern int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt);
+        [FreeFunction("GetDialogResponseComplex")]
+        internal static extern int GetDialogResponseComplex(InteractionContext interactionContext, string title, string message, string ok, string cancel, string alt);
+
 
         [FreeFunction("RunOpenFolderPanel")]
         public static extern string OpenFolderPanel(string title, string folder, string defaultName);
@@ -51,6 +67,10 @@ namespace UnityEditor
 
         [FreeFunction("WarnPrefab")]
         public static extern bool WarnPrefab(Object target, string title, string warning, string okButton);
+
+        [StaticAccessor("UnityExtensions::Get()", StaticAccessorType.Dot)]
+        [NativeMethod("IsInitialized")]
+        public extern static bool IsUnityExtensionsInitialized();
 
         public static extern bool IsPersistent(Object target);
         public static extern string SaveFilePanel(string title, string directory, string defaultName, string extension);

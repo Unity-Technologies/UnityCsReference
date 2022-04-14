@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.UIElements.StyleSheets;
 using System;
 using System.IO;
 
@@ -35,7 +34,7 @@ namespace Unity.UI.Builder
         //
 
         [SerializeField]
-        ThemeStyleSheet m_CurrentCanvasThemeStyleSheet;
+        LazyLoadReference<ThemeStyleSheet> m_CurrentCanvasThemeStyleSheetReference;
 
         [SerializeField]
         bool m_CodePreviewVisible = true;
@@ -132,12 +131,12 @@ namespace Unity.UI.Builder
         }
 
         public CanvasTheme currentCanvasTheme => m_CurrentCanvasTheme;
-        public ThemeStyleSheet currentCanvasThemeStyleSheet => m_CurrentCanvasThemeStyleSheet;
+        public ThemeStyleSheet currentCanvasThemeStyleSheet => m_CurrentCanvasThemeStyleSheetReference.asset;
 
         public void ChangeDocumentTheme(VisualElement documentElement, CanvasTheme canvasTheme, ThemeStyleSheet themeSheet)
         {
             m_CurrentCanvasTheme = canvasTheme;
-            m_CurrentCanvasThemeStyleSheet = themeSheet;
+            m_CurrentCanvasThemeStyleSheetReference = themeSheet;
 
             if (themeSheet)
             {
@@ -383,7 +382,12 @@ namespace Unity.UI.Builder
         //
 
         public void OnPostProcessAsset(string assetPath)
-            => activeOpenUXMLFile.OnPostProcessAsset(assetPath);
+        {
+            activeOpenUXMLFile.OnPostProcessAsset(assetPath);
+            var builderWindow = Builder.ActiveWindow;
+            if (builderWindow != null)
+                builderWindow.toolbar?.InitCanvasTheme();
+        }
 
         //
         // Selection
@@ -429,6 +433,11 @@ namespace Unity.UI.Builder
 
             var json = File.ReadAllText(path);
             EditorJsonUtility.FromJsonOverwrite(json, this);
+
+            if (currentCanvasThemeStyleSheet == null && m_CurrentCanvasTheme == CanvasTheme.Custom)
+            {
+                m_CurrentCanvasTheme = CanvasTheme.Default;
+            }
 
             // Very important we convert asset references to paths here after a restore.
             foreach (var openUXMLFile in m_OpenUXMLFiles)

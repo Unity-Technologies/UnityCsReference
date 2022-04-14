@@ -649,22 +649,29 @@ namespace UnityEditor.SceneManagement
         internal static PrefabStage.Mode GetPrefabStageModeFromModifierKeys()
         {
             // Update GetPrefabButtonContent if this logic changes
-            return Event.current.alt ? PrefabStage.Mode.InIsolation : PrefabStage.Mode.InContext;
+            var defaultPrefabMode = PreferencesProvider.GetDefaultPrefabModeForHierarchy();
+            var alternativePrefabMode = (defaultPrefabMode == PrefabStage.Mode.InContext) ? PrefabStage.Mode.InIsolation : PrefabStage.Mode.InContext;
+
+            return Event.current.alt ? alternativePrefabMode : defaultPrefabMode;
         }
 
-        static Dictionary<int, GUIContent> m_PrefabButtonContents = new Dictionary<int, GUIContent>();
         internal static GUIContent GetPrefabButtonContent(int instanceID)
         {
             GUIContent result;
-            if (m_PrefabButtonContents.TryGetValue(instanceID, out result))
+            var defaultPrefabMode = PreferencesProvider.GetDefaultPrefabModeForHierarchy();
+            switch (defaultPrefabMode)
             {
-                return result;
+                case PrefabStage.Mode.InContext:
+                    result = new GUIContent("", null, $"Open Prefab Asset in context.\nPress modifier key [Alt] to open in isolation.");
+                    break;
+                case PrefabStage.Mode.InIsolation:
+                    result = new GUIContent("", null, "Open Prefab Asset in isolation.\nPress modifier key [Alt] to open in context.");
+                    break;
+                default:
+                    result = new GUIContent("");
+                    Debug.LogError("Unhandled defaultPrefabMode enum");
+                    break;
             }
-
-            string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(EditorUtility.InstanceIDToObject(instanceID) as GameObject);
-            string filename = System.IO.Path.GetFileNameWithoutExtension(path);
-            result = new GUIContent("", null, "Open Prefab Asset '" + filename + "'" + "\nPress modifier key [Alt] to open in isolation.");
-            m_PrefabButtonContents[instanceID] = result;
             return result;
         }
     }

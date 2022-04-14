@@ -16,6 +16,7 @@ using AnimatorControllerLayer = UnityEditor.Animations.AnimatorControllerLayer;
 namespace UnityEditor
 {
     [CustomEditor(typeof(AnimationClip))]
+    [CanEditMultipleObjects]
     internal class AnimationClipEditor : Editor
     {
         internal static void EditWithImporter(AnimationClip clip)
@@ -27,6 +28,7 @@ namespace UnityEditor
                 Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(importer.assetPath);
                 ModelImporterEditor inspector = Editor.CreateEditor(importer) as ModelImporterEditor;
                 EditorPrefs.SetInt(inspector.GetType().Name + "ActiveEditorIndex", 2);
+                Object.DestroyImmediate(inspector);
 
                 int clipIndex = 0;
                 //The ModelImporter handles "ClipAnimations" and "DefaultClipAnimations" independently, where there are no user specified clips, this clip must be a default clip.
@@ -123,6 +125,8 @@ namespace UnityEditor
             public static GUIContent Events = EditorGUIUtility.TrTextContent("Events");
             public static GUIContent LoopMatch = EditorGUIUtility.TrTextContent("loop match");
 
+            public static string InvalidMultiSelection = L10n.Tr("Both legacy and non legacy Animation Clips have been selected. This combination cannot be edited together. Select either legacy or non legacy Animation Clips.");
+
             public static GUIContent AddEventContent = EditorGUIUtility.TrIconContent("Animation.AddEvent", "Add Event.");
 
             public static GUIContent GreenLightIcon = EditorGUIUtility.IconContent("lightMeter/greenLight");
@@ -175,12 +179,12 @@ namespace UnityEditor
         {
             UpdateEventsPopupClipInfo(info);
             m_ClipInfo = info;
-            info.AssignToPreviewClip(m_Clip);
+            info.AssignToPreviewClip(m_Clips[0]);
         }
 
         public string[] takeNames { get; set; }
         public int takeIndex { get; set; }
-        private AnimationClip m_Clip = null;
+        private AnimationClip[] m_Clips = null;
         private AnimatorController m_Controller = null;
         private AnimatorStateMachine m_StateMachine;
         private AnimatorState m_State;
@@ -190,6 +194,21 @@ namespace UnityEditor
         private TimeArea m_TimeArea;
         private TimeArea m_EventTimeArea;
 
+        private SerializedProperty m_WrapModeProperty;
+        private SerializedProperty m_ClipSettingsProperty;
+        private SerializedProperty m_LoopTimeProperty;
+        private SerializedProperty m_LoopBlendProperty;
+        private SerializedProperty m_CycleOffsetProperty;
+        private SerializedProperty m_LoopBlendOrientationProperty;
+        private SerializedProperty m_KeepOriginalOrientationProperty;
+        private SerializedProperty m_OrientationOffsetYProperty;
+        private SerializedProperty m_LoopBlendPositionYProperty;
+        private SerializedProperty m_KeepOriginalPositionYProperty;
+        private SerializedProperty m_HeightFromFeetProperty;
+        private SerializedProperty m_LevelProperty;
+        private SerializedProperty m_LoopBlendPositionXZProperty;
+        private SerializedProperty m_KeepOriginalPositionXZProperty;
+        private SerializedProperty m_MirrorProperty;
 
         private bool m_DraggingRange = false;
         private bool m_DraggingRangeBegin = false;
@@ -214,6 +233,7 @@ namespace UnityEditor
         static private bool m_ShowEvents = false;
 
         bool m_NeedsToGenerateClipInfo = false;
+        bool m_IsSelectingMultipleClips = false;
 
         public bool needsToGenerateClipInfo
         {
@@ -232,7 +252,7 @@ namespace UnityEditor
 
         private void InitController()
         {
-            if (m_Clip.legacy)
+            if (m_Clips[0].legacy)
                 return;
 
             if (m_AvatarPreview != null && m_AvatarPreview.Animator != null)
@@ -263,7 +283,7 @@ namespace UnityEditor
                     m_State = m_StateMachine.AddState("preview");
                     m_State.pushUndo = false;
                     AnimatorControllerLayer[] layers = m_Controller.layers;
-                    m_State.motion = m_Clip;
+                    m_State.motion = m_Clips[0];
                     m_Controller.layers = layers;
 
                     m_State.iKOnFeet = m_AvatarPreview.IKOnFeet;
@@ -293,7 +313,7 @@ namespace UnityEditor
 
         internal override bool IsEnabled()
         {
-            if (FileUtil.IsReadOnly(m_Clip))
+            if (FileUtil.IsReadOnly(m_Clips[0]))
                 return false;
             return base.IsEnabled();
         }
@@ -365,7 +385,7 @@ namespace UnityEditor
             InitController();
         }
 
-        void Init()
+        void InitPreview()
         {
             if (m_AvatarPreview == null)
             {
@@ -385,7 +405,7 @@ namespace UnityEditor
         public void InitClipTime()
         {
             //case 790259: The length of the clip will be changed by this inspector, so we can't use it for sampling
-            m_InitialClipLength = m_Clip.stopTime - m_Clip.startTime;
+            m_InitialClipLength = m_Clips[0].stopTime - m_Clips[0].startTime;
 
             if (m_TimeArea == null)
             {
@@ -394,13 +414,13 @@ namespace UnityEditor
                 m_TimeArea.vRangeLocked = true;
                 m_TimeArea.hSlider = true;
                 m_TimeArea.vSlider = false;
-                m_TimeArea.hRangeMin = m_Clip.startTime;
-                m_TimeArea.hRangeMax = m_Clip.stopTime;
+                m_TimeArea.hRangeMin = m_Clips[0].startTime;
+                m_TimeArea.hRangeMax = m_Clips[0].stopTime;
                 m_TimeArea.margin = 10;
                 m_TimeArea.scaleWithWindow = true;
-                m_TimeArea.minWidth = 1.0f / m_Clip.frameRate;
-                m_TimeArea.SetShownHRangeInsideMargins(m_Clip.startTime, m_Clip.stopTime);
-                m_TimeArea.hTicks.SetTickModulosForFrameRate(m_Clip.frameRate);
+                m_TimeArea.minWidth = 1.0f / m_Clips[0].frameRate;
+                m_TimeArea.SetShownHRangeInsideMargins(m_Clips[0].startTime, m_Clips[0].stopTime);
+                m_TimeArea.hTicks.SetTickModulosForFrameRate(m_Clips[0].frameRate);
                 m_TimeArea.ignoreScrollWheelUntilClicked = true;
             }
 
@@ -426,7 +446,33 @@ namespace UnityEditor
 
         internal void OnEnable()
         {
-            m_Clip = target as AnimationClip;
+            m_Clips = new AnimationClip[targets.Length];
+            for (var i = 0; i < targets.Length; ++i)
+                m_Clips[i] = targets[i] as AnimationClip;
+
+            m_IsSelectingMultipleClips = m_Clips.Length > 1;
+            InitSerializedProperties();
+
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
+        }
+
+        void InitSerializedProperties()
+        {
+            m_WrapModeProperty = serializedObject.FindProperty("m_WrapMode");
+            m_ClipSettingsProperty = serializedObject.FindProperty("m_AnimationClipSettings");
+            m_LoopTimeProperty = m_ClipSettingsProperty.FindPropertyRelative("m_LoopTime");
+            m_LoopBlendProperty = m_ClipSettingsProperty.FindPropertyRelative("m_LoopBlend");
+            m_CycleOffsetProperty = m_ClipSettingsProperty.FindPropertyRelative("m_CycleOffset");
+            m_LoopBlendOrientationProperty = m_ClipSettingsProperty.FindPropertyRelative("m_LoopBlendOrientation");
+            m_KeepOriginalOrientationProperty = m_ClipSettingsProperty.FindPropertyRelative("m_KeepOriginalOrientation");
+            m_OrientationOffsetYProperty = m_ClipSettingsProperty.FindPropertyRelative("m_OrientationOffsetY");
+            m_LoopBlendPositionYProperty = m_ClipSettingsProperty.FindPropertyRelative("m_LoopBlendPositionY");
+            m_KeepOriginalPositionYProperty = m_ClipSettingsProperty.FindPropertyRelative("m_KeepOriginalPositionY");
+            m_HeightFromFeetProperty = m_ClipSettingsProperty.FindPropertyRelative("m_HeightFromFeet");
+            m_LevelProperty = m_ClipSettingsProperty.FindPropertyRelative("m_Level");
+            m_LoopBlendPositionXZProperty = m_ClipSettingsProperty.FindPropertyRelative("m_LoopBlendPositionXZ");
+            m_KeepOriginalPositionXZProperty = m_ClipSettingsProperty.FindPropertyRelative("m_KeepOriginalPositionXZ");
+            m_MirrorProperty = m_ClipSettingsProperty.FindPropertyRelative("m_Mirror");
         }
 
         void OnDisable()
@@ -437,13 +483,27 @@ namespace UnityEditor
                 m_AvatarPreview.OnDisable();
                 m_AvatarPreview = null;
             }
+
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+        }
+
+        void OnUndoRedoPerformed(in UndoRedoInfo info)
+        {
+            if (!m_IsSelectingMultipleClips)
+                return;
+
+            for (var i = 0; i < m_Clips.Length; ++i)
+                AnimationUtility.RebuildMecanimData(m_Clips[i]);
         }
 
         public override bool HasPreviewGUI()
         {
+            if (m_IsSelectingMultipleClips)
+                return false;
+
             if (Event.current.type == EventType.Layout)
             {
-                Init();
+                InitPreview();
             }
             return m_AvatarPreview != null;
         }
@@ -463,12 +523,12 @@ namespace UnityEditor
                 // [case 491172]
                 // There is no need to sample the quality curve outside of the animation range [m_Clip.startTime, m_Clip.stopTime] because the Time area show only the animation range anyway
                 // so it not possible for the user to see curve outside of this range.
-                float clipStartTime = Mathf.Clamp(m_ClipInfo.firstFrame / m_Clip.frameRate, m_Clip.startTime, m_Clip.stopTime);
-                float clipStopTime = Mathf.Clamp(m_ClipInfo.lastFrame / m_Clip.frameRate, m_Clip.startTime, m_Clip.stopTime);
+                float clipStartTime = Mathf.Clamp(m_ClipInfo.firstFrame / m_Clips[0].frameRate, m_Clips[0].startTime, m_Clips[0].stopTime);
+                float clipStopTime = Mathf.Clamp(m_ClipInfo.lastFrame / m_Clips[0].frameRate, m_Clips[0].startTime, m_Clips[0].stopTime);
 
                 float fixedTime = (q == 0 ? clipStopTime : clipStartTime);
                 float startTime = (q == 0 ? 0 : clipStartTime);
-                float stopTime = (q == 0 ? clipStopTime : m_Clip.stopTime);
+                float stopTime = (q == 0 ? clipStopTime : m_Clips[0].stopTime);
                 // Start sample may be a bit before start time; stop sample may be a bit after stop time
                 int startSample = Mathf.FloorToInt(startTime * kSamplesPerSecond);
                 int stopSample = Mathf.CeilToInt(stopTime * kSamplesPerSecond);
@@ -484,7 +544,7 @@ namespace UnityEditor
                 qualityCurvesTime.variableEndEnd = stopTime;
                 qualityCurvesTime.q = q;
 
-                MuscleClipUtility.CalculateQualityCurves(m_Clip, qualityCurvesTime,
+                MuscleClipUtility.CalculateQualityCurves(m_Clips[0], qualityCurvesTime,
                     m_QualityCurves[kPose][q], m_QualityCurves[kRotation][q],
                     m_QualityCurves[kHeight][q], m_QualityCurves[kPosition][q]);
             }
@@ -538,10 +598,10 @@ namespace UnityEditor
             m_DraggingRangeEnd = false;
 
             bool invalidRange = (
-                startFrame + 0.01f < m_Clip.startTime * m_Clip.frameRate ||
-                startFrame - 0.01f > m_Clip.stopTime * m_Clip.frameRate ||
-                stopFrame + 0.01f < m_Clip.startTime * m_Clip.frameRate ||
-                stopFrame - 0.01f > m_Clip.stopTime * m_Clip.frameRate);
+                startFrame + 0.01f < m_Clips[0].startTime * m_Clips[0].frameRate ||
+                startFrame - 0.01f > m_Clips[0].stopTime * m_Clips[0].frameRate ||
+                stopFrame + 0.01f < m_Clips[0].startTime * m_Clips[0].frameRate ||
+                stopFrame - 0.01f > m_Clips[0].stopTime * m_Clips[0].frameRate);
             bool fixRange = false;
             if (invalidRange)
             {
@@ -574,19 +634,19 @@ namespace UnityEditor
                 timeRect.x = timeRect.y = -1;
 
                 // Draw selected range as blue tint
-                float startPixel = m_TimeArea.FrameToPixel(startFrame, m_Clip.frameRate, timeRect);
-                float stopPixel = m_TimeArea.FrameToPixel(stopFrame, m_Clip.frameRate, timeRect);
+                float startPixel = m_TimeArea.FrameToPixel(startFrame, m_Clips[0].frameRate, timeRect);
+                float stopPixel = m_TimeArea.FrameToPixel(stopFrame, m_Clips[0].frameRate, timeRect);
                 GUI.Label(new Rect(startPixel, timeRect.y, stopPixel - startPixel, timeRect.height), "", EditorStyles.selectionRect);
 
                 // Draw time ruler
-                m_TimeArea.TimeRuler(timeRect, m_Clip.frameRate);
+                m_TimeArea.TimeRuler(timeRect, m_Clips[0].frameRate);
                 // Current time indicator
                 TimeArea.DrawPlayhead(m_TimeArea.TimeToPixel(m_AvatarPreview.timeControl.currentTime, timeRect), timeRect.yMin, timeRect.yMax, 2f, 1f);
 
                 using (new EditorGUI.DisabledScope(invalidRange))
                 {
                     // Range handles
-                    float startTime = startFrame / m_Clip.frameRate;
+                    float startTime = startFrame / m_Clips[0].frameRate;
                     TimeArea.TimeRulerDragMode inPoint = m_TimeArea.BrowseRuler(timeRect, startHandleId, ref startTime, 0, false, "TL InPoint");
                     if (inPoint == TimeArea.TimeRulerDragMode.Cancel)
                     {
@@ -594,12 +654,12 @@ namespace UnityEditor
                     }
                     else if (inPoint != TimeArea.TimeRulerDragMode.None)
                     {
-                        startFrame = startTime * m_Clip.frameRate;
+                        startFrame = startTime * m_Clips[0].frameRate;
                         // Snapping bias. Snap to whole frames when zoomed out.
-                        startFrame = MathUtils.RoundBasedOnMinimumDifference(startFrame, m_TimeArea.PixelDeltaToTime(timeRect) * m_Clip.frameRate * 10);
+                        startFrame = MathUtils.RoundBasedOnMinimumDifference(startFrame, m_TimeArea.PixelDeltaToTime(timeRect) * m_Clips[0].frameRate * 10);
                         changedStart = true;
                     }
-                    float stopTime = stopFrame / m_Clip.frameRate;
+                    float stopTime = stopFrame / m_Clips[0].frameRate;
 
                     TimeArea.TimeRulerDragMode outPoint = m_TimeArea.BrowseRuler(timeRect, stopHandleId, ref stopTime, 0, false, "TL OutPoint");
                     if (outPoint == TimeArea.TimeRulerDragMode.Cancel)
@@ -608,16 +668,16 @@ namespace UnityEditor
                     }
                     else if (outPoint != TimeArea.TimeRulerDragMode.None)
                     {
-                        stopFrame = stopTime * m_Clip.frameRate;
+                        stopFrame = stopTime * m_Clips[0].frameRate;
                         // Snapping bias. Snap to whole frames when zoomed out.
-                        stopFrame = MathUtils.RoundBasedOnMinimumDifference(stopFrame, m_TimeArea.PixelDeltaToTime(timeRect) * m_Clip.frameRate * 10);
+                        stopFrame = MathUtils.RoundBasedOnMinimumDifference(stopFrame, m_TimeArea.PixelDeltaToTime(timeRect) * m_Clips[0].frameRate * 10);
                         changedStop = true;
                     }
 
                     // Additive pose frame Handle
                     if (showAdditivePoseFrame)
                     {
-                        float additivePoseTime = additivePoseframe / m_Clip.frameRate;
+                        float additivePoseTime = additivePoseframe / m_Clips[0].frameRate;
                         TimeArea.TimeRulerDragMode additivePoint = m_TimeArea.BrowseRuler(timeRect, additiveHandleId, ref additivePoseTime, 0, false, "TL playhead");
                         if (additivePoint == TimeArea.TimeRulerDragMode.Cancel)
                         {
@@ -625,9 +685,9 @@ namespace UnityEditor
                         }
                         else if (additivePoint != TimeArea.TimeRulerDragMode.None)
                         {
-                            additivePoseframe = additivePoseTime * m_Clip.frameRate;
+                            additivePoseframe = additivePoseTime * m_Clips[0].frameRate;
                             // Snapping bias. Snap to whole frames when zoomed out.
-                            additivePoseframe = MathUtils.RoundBasedOnMinimumDifference(additivePoseframe, m_TimeArea.PixelDeltaToTime(timeRect) * m_Clip.frameRate * 10);
+                            additivePoseframe = MathUtils.RoundBasedOnMinimumDifference(additivePoseframe, m_TimeArea.PixelDeltaToTime(timeRect) * m_Clips[0].frameRate * 10);
                             changedAdditivePoseframe = true;
                         }
                     }
@@ -667,13 +727,13 @@ namespace UnityEditor
 
             // Start and stop time value clamping
             if (changedStart)
-                startFrame = Mathf.Clamp(startFrame, m_Clip.startTime * m_Clip.frameRate, Mathf.Clamp(stopFrame, m_Clip.startTime * m_Clip.frameRate, stopFrame));
+                startFrame = Mathf.Clamp(startFrame, m_Clips[0].startTime * m_Clips[0].frameRate, Mathf.Clamp(stopFrame, m_Clips[0].startTime * m_Clips[0].frameRate, stopFrame));
 
             if (changedStop)
-                stopFrame = Mathf.Clamp(stopFrame, startFrame, m_Clip.stopTime * m_Clip.frameRate);
+                stopFrame = Mathf.Clamp(stopFrame, startFrame, m_Clips[0].stopTime * m_Clips[0].frameRate);
 
             if (changedAdditivePoseframe)
-                additivePoseframe = Mathf.Clamp(additivePoseframe, m_Clip.startTime * m_Clip.frameRate, m_Clip.stopTime * m_Clip.frameRate);
+                additivePoseframe = Mathf.Clamp(additivePoseframe, m_Clips[0].startTime * m_Clips[0].frameRate, m_Clips[0].stopTime * m_Clips[0].frameRate);
 
             // Keep track of whether we're currently dragging the range or not
             if (changedStart || changedStop || changedAdditivePoseframe)
@@ -702,7 +762,7 @@ namespace UnityEditor
             // Muscle clip info is currently only available for humanoid
             if (IsHumanClip)
             {
-                statsText = UnityString.Format(Styles.AverageVelocity, m_Clip.averageSpeed.ToString("0.000"), (m_Clip.averageAngularSpeed * 180.0f / Mathf.PI).ToString("0.0", CultureInfo.InvariantCulture.NumberFormat));
+                statsText = UnityString.Format(Styles.AverageVelocity, m_Clips[0].averageSpeed.ToString("0.000"), (m_Clips[0].averageAngularSpeed * 180.0f / Mathf.PI).ToString("0.0", CultureInfo.InvariantCulture.NumberFormat));
             }
 
             // Only show stats in final clip not for the preview clip
@@ -737,12 +797,12 @@ namespace UnityEditor
             return statsText;
         }
 
-        private float GetClipLength()
+        private float GetClipLength(int clipIndex)
         {
             if (m_ClipInfo == null)
-                return m_Clip.length;
+                return m_Clips[clipIndex].length;
             else
-                return (m_ClipInfo.lastFrame - m_ClipInfo.firstFrame) / m_Clip.frameRate;
+                return (m_ClipInfo.lastFrame - m_ClipInfo.firstFrame) / m_Clips[clipIndex].frameRate;
         }
 
         // A minimal list of settings to be shown in the Asset Store preview inspector
@@ -753,7 +813,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            Init();
             EditorGUIUtility.labelWidth = 50;
             EditorGUIUtility.fieldWidth = 30;
 
@@ -761,15 +820,249 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
+                    var hasSameClipLength = true;
+                    var hasSameFrameRate = true;
+                    var firstClipLength = GetClipLength(0);
+                    var firstClipFrameRate = m_Clips[0].frameRate;
+                    for (var i = 1; i < m_Clips.Length; ++i)
+                    {
+                        if (Mathf.Abs(GetClipLength(i) - firstClipLength) > Mathf.Epsilon)
+                            hasSameClipLength = false;
+                        if (Mathf.Abs(m_Clips[i].frameRate - firstClipFrameRate) > Mathf.Epsilon)
+                            hasSameFrameRate = false;
+                    }
+
                     GUILayout.Label(Styles.Length, EditorStyles.label, GUILayout.Width(50 - 4));
-                    GUILayout.Label(GetClipLength().ToString("0.000", CultureInfo.InvariantCulture.NumberFormat), EditorStyles.label);
+                    var clipLengthStr = hasSameClipLength ? firstClipLength.ToString("0.000", CultureInfo.InvariantCulture.NumberFormat) : "-";
+                    GUILayout.Label(clipLengthStr, EditorStyles.label);
+
                     GUILayout.FlexibleSpace();
-                    GUILayout.Label(m_Clip.frameRate + " FPS", EditorStyles.label);
+
+                    var clipFrameRateStr = hasSameFrameRate ? firstClipFrameRate.ToString() : "-";
+                    GUILayout.Label(clipFrameRateStr + " FPS", EditorStyles.label);
                 }
             }
             EditorGUILayout.EndHorizontal();
 
-            if (!m_Clip.legacy)
+            if (m_IsSelectingMultipleClips)
+                MultiClipInspectorGUI();
+            else
+                SingleClipInspectorGUI();
+        }
+
+        private void MultiClipInspectorGUI()
+        {
+            var sameTypeOfClip = true;
+            for (var i = 1; i < m_Clips.Length; ++i)
+            {
+                if (m_Clips[i].legacy != m_Clips[0].legacy)
+                {
+                    sameTypeOfClip = false;
+                    break;
+                }
+            }
+
+            if (!sameTypeOfClip)
+            {
+                EditorGUILayout.HelpBox(Styles.InvalidMultiSelection, MessageType.Error);
+                return;
+            }
+
+            if (m_Clips[0].legacy)
+                MultiLegacyClipGUI();
+            else
+                MultiMuscleClipGUI();
+        }
+
+        private void MultiLegacyClipGUI()
+        {
+            serializedObject.Update();
+
+            EditorGUIUtility.labelWidth = 0;
+            EditorGUIUtility.fieldWidth = 0;
+
+            EditorGUI.BeginChangeCheck();
+
+            var wrapMode = serializedObject.FindProperty("m_WrapMode");
+            EditorGUILayout.PropertyField(wrapMode, Styles.WrapMode);
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void MultiMuscleClipGUI()
+        {
+            serializedObject.Update();
+
+            EditorGUIUtility.labelWidth = 0;
+            EditorGUIUtility.fieldWidth = 0;
+
+            var toggleLoopTimeRect = EditorGUILayout.GetControlRect();
+            EditorGUI.PropertyField(toggleLoopTimeRect, m_LoopTimeProperty, Styles.LoopTime);
+
+            using (new EditorGUI.DisabledScope(!m_LoopTimeProperty.boolValue))
+            {
+                EditorGUI.indentLevel++;
+
+                var toggleLoopPoseRect = EditorGUILayout.GetControlRect();
+                EditorGUI.PropertyField(toggleLoopPoseRect, m_LoopBlendProperty, Styles.LoopPose);
+                EditorGUILayout.PropertyField(m_CycleOffsetProperty, Styles.LoopCycleOffset);
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.Space();
+
+            var areAllClipsEitherHumanOrNonHuman = true;
+            var isSelectionHumanClip = true;
+            var doesSelectionHaveRootCurves = true;
+            var doesSelectionHaveMotionCurves = false;
+            for (var i = 0; i < m_Clips.Length; ++i)
+            {
+                if (m_Clips[0].isHumanMotion != m_Clips[i])
+                    areAllClipsEitherHumanOrNonHuman = false;
+                if (!m_Clips[i].isHumanMotion)
+                    isSelectionHumanClip = false;
+                if (!m_Clips[i].hasRootCurves)
+                    doesSelectionHaveRootCurves = false;
+                if (m_Clips[i].hasMotionCurves)
+                    doesSelectionHaveMotionCurves = true;
+            }
+
+            if (doesSelectionHaveRootCurves && !doesSelectionHaveMotionCurves)
+            {
+                // Rotation
+                GUILayout.Label(Styles.RootTransformRotation, EditorStyles.label);
+                EditorGUI.indentLevel++;
+
+                // Toggle
+                var toggleRotRect = EditorGUILayout.GetControlRect();
+                EditorGUI.PropertyField(toggleRotRect, m_LoopBlendOrientationProperty, Styles.BakeIntoPoseOrientation);
+
+                // Reference
+                BoolPropertyPopup(m_KeepOriginalOrientationProperty,
+                    m_LoopBlendOrientationProperty.boolValue ? Styles.BasedUponOrientation : Styles.BasedUponStartOrientation,
+                    m_KeepOriginalOrientationProperty.boolValue ? 0 : 1,
+                    isSelectionHumanClip ? Styles.BasedUponRotationHumanOpt : Styles.BasedUponRotationOpt);
+
+                // Offset
+                EditorGUILayout.PropertyField(m_OrientationOffsetYProperty, Styles.OrientationOffsetY);
+                EditorGUI.indentLevel--;
+
+                EditorGUILayout.Space();
+
+                // Position Y
+                GUILayout.Label(Styles.RootTransformRotationY, EditorStyles.label);
+                EditorGUI.indentLevel++;
+
+                // Toggle
+                var toggleYRect = EditorGUILayout.GetControlRect();
+                EditorGUI.PropertyField(toggleYRect, m_LoopBlendPositionYProperty, Styles.BakeIntoPosePositionY);
+
+                // Reference
+                if (isSelectionHumanClip && areAllClipsEitherHumanOrNonHuman)
+                {
+                    int offsetHeight;
+                    if (m_KeepOriginalPositionYProperty.boolValue)
+                        offsetHeight = 0;
+                    else if (m_HeightFromFeetProperty.boolValue)
+                        offsetHeight = 2;
+                    else
+                        offsetHeight = 1;
+
+                    var showMixedValueDefault = EditorGUI.showMixedValue;
+                    EditorGUI.showMixedValue = m_KeepOriginalPositionYProperty.hasMultipleDifferentValues || m_HeightFromFeetProperty.hasMultipleDifferentValues;
+
+                    offsetHeight =
+                        EditorGUILayout.Popup(
+                            m_LoopBlendPositionYProperty.boolValue ? Styles.BasedUponStartPositionY : Styles.BasedUponPositionY,
+                            offsetHeight,
+                            Styles.BasedUponPositionYHumanOpt);
+
+                    EditorGUI.showMixedValue = showMixedValueDefault;
+
+                    if (offsetHeight == 0)
+                    {
+                        m_KeepOriginalPositionYProperty.boolValue = true;
+                        m_HeightFromFeetProperty.boolValue = false;
+                    }
+                    else if (offsetHeight == 1)
+                    {
+                        m_KeepOriginalPositionYProperty.boolValue = false;
+                        m_HeightFromFeetProperty.boolValue = false;
+                    }
+                    else
+                    {
+                        m_KeepOriginalPositionYProperty.boolValue = false;
+                        m_HeightFromFeetProperty.boolValue = true;
+                    }
+                }
+                else if (areAllClipsEitherHumanOrNonHuman)
+                {
+                    BoolPropertyPopup(m_KeepOriginalPositionYProperty,
+                        m_LoopBlendPositionYProperty.boolValue ? Styles.BasedUponStartPositionY : Styles.BasedUponPositionY,
+                        m_KeepOriginalPositionYProperty.boolValue ? 0 : 1,
+                        Styles.BasedUponPositionYOpt);
+                }
+
+                // Offset
+                EditorGUILayout.PropertyField(m_LevelProperty, Styles.PositionOffsetY);
+                EditorGUI.indentLevel--;
+
+                EditorGUILayout.Space();
+
+                // Position XZ
+                GUILayout.Label(Styles.RootTransformPositionXZ, EditorStyles.label);
+                EditorGUI.indentLevel++;
+
+                // Toggle
+                var toggleXZRect = EditorGUILayout.GetControlRect();
+                EditorGUI.PropertyField(toggleXZRect, m_LoopBlendPositionXZProperty, Styles.BakeIntoPosePositionXZ);
+
+                // Reference
+                BoolPropertyPopup(m_KeepOriginalPositionXZProperty,
+                    m_LoopBlendPositionXZProperty.boolValue ? Styles.BasedUponStartPositionXZ : Styles.BasedUponPositionXZ,
+                    m_KeepOriginalPositionXZProperty.boolValue ? 0 : 1,
+                    isSelectionHumanClip ? Styles.BasedUponPositionXZHumanOpt : Styles.BasedUponPositionXZOpt);
+
+                EditorGUI.indentLevel--;
+
+                EditorGUILayout.Space();
+            }
+
+            if (isSelectionHumanClip)
+            {
+                EditorGUILayout.PropertyField(m_MirrorProperty, Styles.Mirror);
+            }
+
+            if (serializedObject.hasModifiedProperties)
+            {
+                serializedObject.ApplyModifiedProperties();
+                foreach(var clip in m_Clips)
+                    AnimationUtility.RebuildMecanimData(clip);
+            }
+        }
+
+        private static void BoolPropertyPopup(SerializedProperty property, GUIContent label, int selectedIndex, GUIContent[] displayOptions)
+        {
+            var showMixedValueDefault = EditorGUI.showMixedValue;
+
+            var hasMultipleDifferentValues = property.hasMultipleDifferentValues;
+            EditorGUI.showMixedValue = hasMultipleDifferentValues;
+
+            EditorGUI.BeginChangeCheck();
+            selectedIndex = EditorGUILayout.Popup(label, hasMultipleDifferentValues ? -1 : selectedIndex, displayOptions);
+
+            if (EditorGUI.EndChangeCheck())
+                property.boolValue = (selectedIndex == 0);
+
+            EditorGUI.showMixedValue = showMixedValueDefault;
+        }
+
+        private void SingleClipInspectorGUI()
+        {
+            InitPreview();
+
+            if (!m_Clips[0].legacy)
                 MuscleClipGUI();
             else
                 AnimationClipGUI();
@@ -791,13 +1084,13 @@ namespace UnityEditor
                 if (changedStop)
                     m_ClipInfo.lastFrame = stopFrame;
 
-                m_AvatarPreview.timeControl.startTime = startFrame / m_Clip.frameRate;
-                m_AvatarPreview.timeControl.stopTime = stopFrame / m_Clip.frameRate;
+                m_AvatarPreview.timeControl.startTime = startFrame / m_Clips[0].frameRate;
+                m_AvatarPreview.timeControl.stopTime = stopFrame / m_Clips[0].frameRate;
             }
             else
             {
                 m_AvatarPreview.timeControl.startTime = 0;
-                m_AvatarPreview.timeControl.stopTime = m_Clip.length;
+                m_AvatarPreview.timeControl.stopTime = m_Clips[0].length;
             }
 
             EditorGUIUtility.labelWidth = 0;
@@ -807,14 +1100,14 @@ namespace UnityEditor
                 m_ClipInfo.loop = EditorGUILayout.Toggle(Styles.AddLoopFrame, m_ClipInfo.loop);
 
             EditorGUI.BeginChangeCheck();
-            int wrap = m_ClipInfo != null ? m_ClipInfo.wrapMode : (int)m_Clip.wrapMode;
+            int wrap = m_ClipInfo != null ? m_ClipInfo.wrapMode : (int)m_Clips[0].wrapMode;
             wrap = (int)(WrapModeFixed)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixed)wrap);
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_ClipInfo != null)
                     m_ClipInfo.wrapMode = wrap;
                 else
-                    m_Clip.wrapMode = (WrapMode)wrap;
+                    m_Clips[0].wrapMode = (WrapMode)wrap;
             }
         }
 
@@ -1014,24 +1307,24 @@ namespace UnityEditor
 
             InitController();
 
-            AnimationClipSettings animationClipSettings = AnimationUtility.GetAnimationClipSettings(m_Clip);
+            AnimationClipSettings animationClipSettings = AnimationUtility.GetAnimationClipSettings(m_Clips[0]);
 
-            m_StartFrame = m_DraggingRange ? m_StartFrame : animationClipSettings.startTime * m_Clip.frameRate;
-            m_StopFrame = m_DraggingRange ? m_StopFrame : animationClipSettings.stopTime * m_Clip.frameRate;
-            m_AdditivePoseFrame = m_DraggingRange ? m_AdditivePoseFrame : animationClipSettings.additiveReferencePoseTime * m_Clip.frameRate;
+            m_StartFrame = m_DraggingRange ? m_StartFrame : animationClipSettings.startTime * m_Clips[0].frameRate;
+            m_StopFrame = m_DraggingRange ? m_StopFrame : animationClipSettings.stopTime * m_Clips[0].frameRate;
+            m_AdditivePoseFrame = m_DraggingRange ? m_AdditivePoseFrame : animationClipSettings.additiveReferencePoseTime * m_Clips[0].frameRate;
 
-            float startTime = m_StartFrame / m_Clip.frameRate;
-            float stopTime = m_StopFrame / m_Clip.frameRate;
-            float additivePoseTime = m_AdditivePoseFrame / m_Clip.frameRate;
+            float startTime = m_StartFrame / m_Clips[0].frameRate;
+            float stopTime = m_StopFrame / m_Clips[0].frameRate;
+            float additivePoseTime = m_AdditivePoseFrame / m_Clips[0].frameRate;
 
-            MuscleClipQualityInfo clipQualityInfo = MuscleClipUtility.GetMuscleClipQualityInfo(m_Clip, startTime,
+            MuscleClipQualityInfo clipQualityInfo = MuscleClipUtility.GetMuscleClipQualityInfo(m_Clips[0], startTime,
                 stopTime);
 
             bool IsHumanClip = (target as Motion).isHumanMotion;
-            bool hasMotionCurves = m_Clip.hasMotionCurves;
-            bool hasRootCurves = m_Clip.hasRootCurves;
-            bool hasGenericRootTransform = m_Clip.hasGenericRootTransform;
-            bool hasMotionFloatCurves = m_Clip.hasMotionFloatCurves;
+            bool hasMotionCurves = m_Clips[0].hasMotionCurves;
+            bool hasRootCurves = m_Clips[0].hasRootCurves;
+            bool hasGenericRootTransform = m_Clips[0].hasGenericRootTransform;
+            bool hasMotionFloatCurves = m_Clips[0].hasMotionFloatCurves;
             bool hasAnyRootCurves = hasRootCurves || hasMotionCurves;
 
             bool changedStart = false;
@@ -1254,9 +1547,9 @@ namespace UnityEditor
                     EditorGUI.indentLevel++;
 
                     m_AdditivePoseFrame = EditorGUILayout.FloatField(Styles.AdditiveReferencePoseFrame, m_AdditivePoseFrame);
-                    m_AdditivePoseFrame = Mathf.Clamp(m_AdditivePoseFrame, m_Clip.startTime * m_Clip.frameRate, m_Clip.stopTime * m_Clip.frameRate);
+                    m_AdditivePoseFrame = Mathf.Clamp(m_AdditivePoseFrame, m_Clips[0].startTime * m_Clips[0].frameRate, m_Clips[0].stopTime * m_Clips[0].frameRate);
 
-                    animationClipSettings.additiveReferencePoseTime = m_AdditivePoseFrame / m_Clip.frameRate;
+                    animationClipSettings.additiveReferencePoseTime = m_AdditivePoseFrame / m_Clips[0].frameRate;
                     EditorGUI.indentLevel--;
                 }
             }
@@ -1317,15 +1610,15 @@ namespace UnityEditor
                 animationClipSettings.loopBlendPositionY = false;
                 animationClipSettings.loopBlendPositionXZ = false;
 
-                m_DraggingStartFrame = animationClipSettings.startTime * m_Clip.frameRate;
-                m_DraggingStopFrame = animationClipSettings.stopTime * m_Clip.frameRate;
-                m_DraggingAdditivePoseFrame = animationClipSettings.additiveReferencePoseTime * m_Clip.frameRate;
+                m_DraggingStartFrame = animationClipSettings.startTime * m_Clips[0].frameRate;
+                m_DraggingStopFrame = animationClipSettings.stopTime * m_Clips[0].frameRate;
+                m_DraggingAdditivePoseFrame = animationClipSettings.additiveReferencePoseTime * m_Clips[0].frameRate;
 
                 //case 790259: The length of the clip will be changed by this inspector, so we can't use it for sampling
                 animationClipSettings.startTime = 0;
                 animationClipSettings.stopTime = m_InitialClipLength;
 
-                AnimationUtility.SetAnimationClipSettingsNoDirty(m_Clip, animationClipSettings);
+                AnimationUtility.SetAnimationClipSettingsNoDirty(m_Clips[0], animationClipSettings);
 
                 DestroyController();
             }
@@ -1343,9 +1636,9 @@ namespace UnityEditor
             {
                 if (!m_DraggingRange)
                 {
-                    Undo.RegisterCompleteObjectUndo(m_Clip, "Muscle Clip Edit");
-                    AnimationUtility.SetAnimationClipSettingsNoDirty(m_Clip, animationClipSettings);
-                    EditorUtility.SetDirty(m_Clip);
+                    Undo.RegisterCompleteObjectUndo(m_Clips, "Muscle Clip Edit");
+                    AnimationUtility.SetAnimationClipSettingsNoDirty(m_Clips[0], animationClipSettings);
+                    EditorUtility.SetDirty(m_Clips[0]);
                     DestroyController();
                 }
             }
@@ -1460,10 +1753,10 @@ namespace UnityEditor
                     // Draw start and end markers
                     GUI.color = new Color(0.3f, 0.6f, 1.0f);
                     // Draw marker for moving end
-                    float timePixel = matrix.MultiplyPoint3x4(new Vector3((changedStart ? m_StartFrame : m_StopFrame) / m_Clip.frameRate, 0, 0)).x;
+                    float timePixel = matrix.MultiplyPoint3x4(new Vector3((changedStart ? m_StartFrame : m_StopFrame) / m_Clips[0].frameRate, 0, 0)).x;
                     GUI.DrawTexture(new Rect(timePixel, 0, 1, r.height), EditorGUIUtility.whiteTexture);
                     // Draw marker for static end
-                    timePixel = matrix.MultiplyPoint3x4(new Vector3((changedStart ? m_StopFrame : m_StartFrame) / m_Clip.frameRate, 0, 0)).x;
+                    timePixel = matrix.MultiplyPoint3x4(new Vector3((changedStart ? m_StopFrame : m_StartFrame) / m_Clips[0].frameRate, 0, 0)).x;
                     GUI.DrawTexture(new Rect(timePixel, 0, 1, r.height), EditorGUIUtility.whiteTexture);
                     GUI.color = Color.white;
                 }

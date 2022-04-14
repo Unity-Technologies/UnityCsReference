@@ -106,8 +106,10 @@ namespace UnityEngine
         extern public bool freezeRotation { get; set; }
         extern public RigidbodyConstraints constraints { get; set; }
         extern public CollisionDetectionMode collisionDetectionMode { get; set; }
+        extern public bool automaticCenterOfMass { get; set; }
         extern public Vector3 centerOfMass { get; set; }
         extern public Vector3 worldCenterOfMass { get; }
+        extern public bool automaticInertiaTensor { get; set; }
         extern public Quaternion inertiaTensorRotation { get; set; }
         extern public Vector3 inertiaTensor { get; set; }
         extern public bool detectCollisions { get; set; }
@@ -457,6 +459,7 @@ namespace UnityEngine
         extern public JointSpring spring { get; set; }
         extern public bool useMotor { get; set; }
         extern public bool useLimits { get; set; }
+        extern public bool extendedLimits { get; set; }
         extern public bool useSpring { get; set; }
         extern public float velocity { get; }
         extern public float angle { get; }

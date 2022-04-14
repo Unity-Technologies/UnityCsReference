@@ -5,10 +5,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.AnimatedValues;
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -36,33 +35,176 @@ namespace UnityEditor
             public static readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
             public static readonly GUIContent textureScale = EditorGUIUtility.TrTextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.");
             public static readonly GUIContent tolerance = EditorGUIUtility.TrTextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.");
-            public static readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel) { richText = true };
             public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
             public static readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
             public static readonly GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
             public static readonly GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, colors will be converted appropriately before being passed to the GPU.");
-
-            public static readonly GUIContent[] toolContents =
-            {
-                EditorGUIUtility.IconContent("EditCollider", "|Edit Points in Scene View"),
-                EditorGUIUtility.IconContent("Toolbar Plus", "|Create Points in Scene View.")
-            };
-
-            public static readonly EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
-            {
-                EditMode.SceneViewEditMode.LineRendererEdit,
-                EditMode.SceneViewEditMode.LineRendererCreate
-            };
-
-            public static readonly string baseSceneEditingToolText = "<color=grey>Line Renderer Scene Editing Mode:</color> ";
-            public static readonly GUIContent[] ToolNames =
-            {
-                new GUIContent(L10n.Tr(baseSceneEditingToolText + "Edit Points"), ""),
-                new GUIContent(L10n.Tr(baseSceneEditingToolText + "Create Points"), "")
-            };
         }
 
-        private bool m_EditingPositions;
+        abstract class LineRendererTool : EditorTool
+        {
+            protected LineRendererEditor pointEditor
+            {
+                get
+                {
+                    if (m_PointEditor == null)
+                        m_PointEditor = new LineRendererEditor(target as LineRenderer);
+                    return m_PointEditor;
+                }
+            }
+
+            public override void OnActivated()
+            {
+                pointEditor.Deselect();
+            }
+
+            public override void OnWillBeDeactivated()
+            {
+                pointEditor.Deselect();
+            }
+
+            public void RemoveInvalidSelections()
+            {
+                pointEditor.RemoveInvalidSelections();
+            }
+
+            public List<int> pointSelection
+            {
+                set => pointEditor.m_Selection = value;
+                get => pointEditor.m_Selection;
+            }
+
+            public Bounds selectedPositionsBounds
+            {
+                get => pointEditor.selectedPositionsBounds;
+            }
+
+            public override bool IsAvailable()
+            {
+                return !targets.Skip(1).Any(); // TODO - multi-edit disabled for now. Need to make LineRendererEditor support multiple targets, and fix m_IsGameObjectEditable
+            }
+
+            public abstract void DrawToolbar(SerializedProperty positions);
+            public virtual void OnSceneGUIDelegate(SerializedProperty positions, LineRendererPositionsView positionsView) { }
+
+            private LineRendererEditor m_PointEditor;
+        }
+
+        [EditorTool("Edit Points", typeof(LineRenderer))]
+        class LineRendererEditPointsTool : LineRendererTool
+        {
+            public override GUIContent toolbarIcon
+            {
+                get { return EditorGUIUtility.TrIconContent("EditCollider", "Edit LineRenderer Points in the Scene View."); }
+            }
+
+            public override void OnToolGUI(EditorWindow window)
+            {
+                pointEditor.EditSceneGUI(window);
+            }
+
+            public override void DrawToolbar(SerializedProperty positions)
+            {
+                EditorGUI.BeginChangeCheck();
+                LineRendererEditor.showWireframe = GUILayout.Toggle(LineRendererEditor.showWireframe, Styles.showWireframe);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SceneView.RepaintAll();
+                }
+
+                bool adjacentPointsSelected = HasAdjacentPointsSelected();
+                using (new EditorGUI.DisabledGroupScope(!adjacentPointsSelected))
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button(Styles.subdivide, GUILayout.Width(150)))
+                    {
+                        SubdivideSelected(positions);
+                    }
+                    GUILayout.EndHorizontal();
+                }
+            }
+
+            public override void OnSceneGUIDelegate(SerializedProperty positions, LineRendererPositionsView positionsView)
+            {
+                // We need to wait for m_Positions to be updated next frame or we risk calling SetSelection with invalid indexes.
+                if (pointEditor.Count == positions.arraySize)
+                {
+                    if (positions.arraySize != positionsView.GetRows().Count)
+                        positionsView.Reload();
+                    positionsView.SetSelection(pointSelection, TreeViewSelectionOptions.RevealAndFrame);
+                }
+            }
+
+            private bool HasAdjacentPointsSelected()
+            {
+                var selection = pointSelection;
+                selection.Sort();
+                if (selection.Count < 2)
+                    return false;
+
+                for (int i = 0; i < selection.Count - 1; ++i)
+                {
+                    if (selection[i + 1] == selection[i] + 1)
+                        return true;
+                }
+
+                return false;
+            }
+
+            private void SubdivideSelected(SerializedProperty positions)
+            {
+                var selection = pointSelection;
+                if (selection.Count < 2)
+                    return;
+                selection.Sort();
+                var insertedIndexes = new List<int>();
+                int numInserted = 0; // As we insert new nodes, the selected indexes will become offset so we need to keep track of this.
+                for (int i = 0; i < selection.Count - 1; ++i)
+                {
+                    if (selection[i + 1] == selection[i] + 1)
+                    {
+                        int fromIndex = selection[i] + numInserted;
+                        int toIndex = selection[i + 1] + numInserted;
+                        var from = positions.GetArrayElementAtIndex(fromIndex).vector3Value;
+                        var to = positions.GetArrayElementAtIndex(toIndex).vector3Value;
+                        var midPoint = Vector3.Lerp(from, to, 0.5f);
+                        positions.InsertArrayElementAtIndex(toIndex);
+                        positions.GetArrayElementAtIndex(toIndex).vector3Value = midPoint;
+                        insertedIndexes.Add(toIndex);
+                        numInserted++;
+                    }
+                }
+
+                pointSelection = insertedIndexes;
+            }
+        }
+
+        [EditorTool("Add Points", typeof(LineRenderer))]
+        class LineRendererAddPointsTool : LineRendererTool
+        {
+            public override GUIContent toolbarIcon
+            {
+                get { return EditorGUIUtility.TrIconContent("Toolbar Plus", "Create LineRenderer Points in the Scene View."); }
+            }
+
+            public override void OnToolGUI(EditorWindow window)
+            {
+                pointEditor.CreateSceneGUI();
+            }
+
+            public override void DrawToolbar(SerializedProperty positions)
+            {
+                LineRendererEditor.inputMode = (LineRendererEditor.InputMode)EditorGUILayout.EnumPopup(Styles.inputMode, LineRendererEditor.inputMode);
+                if (LineRendererEditor.inputMode == LineRendererEditor.InputMode.PhysicsRaycast)
+                {
+                    LineRendererEditor.raycastMask = EditorGUILayout.LayerMaskField(LineRendererEditor.raycastMask, Styles.layerMask);
+                }
+
+                LineRendererEditor.createPointSeparation = EditorGUILayout.FloatField(Styles.pointSeparation, LineRendererEditor.createPointSeparation);
+                LineRendererEditor.creationOffset = EditorGUILayout.FloatField(Styles.normalOffset, LineRendererEditor.creationOffset);
+            }
+        }
 
         public static float simplifyTolerance
         {
@@ -79,7 +221,6 @@ namespace UnityEditor
         private Vector3[] m_PreviewPoints;
 
         private LineRendererCurveEditor m_CurveEditor = new LineRendererCurveEditor();
-        private LineRendererEditor m_PointEditor;
 
         private SerializedProperty m_Alignment;
         private SerializedProperty m_ColorGradient;
@@ -105,14 +246,9 @@ namespace UnityEditor
 
         public static readonly float kPositionsViewMinHeight = 30;
 
-        private static bool IsLineRendererEditMode(EditMode.SceneViewEditMode editMode)
+        private LineRendererTool activeSceneViewTool
         {
-            return editMode == EditMode.SceneViewEditMode.LineRendererEdit || editMode == EditMode.SceneViewEditMode.LineRendererCreate;
-        }
-
-        private bool sceneViewEditing
-        {
-            get { return IsLineRendererEditMode(EditMode.editMode) && EditMode.IsOwner(this); }
+            get { return EditorToolManager.activeTool as LineRendererTool; }
         }
 
         private bool canEditInScene
@@ -125,13 +261,9 @@ namespace UnityEditor
             base.OnEnable();
 
             var lineRenderer = target as LineRenderer;
-            m_PointEditor = new LineRendererEditor(lineRenderer, this);
 
-            m_PointEditor.Deselect();
             SceneView.duringSceneGui += OnSceneGUIDelegate;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
-            EditMode.onEditModeStartDelegate += EditModeStarted;
-            EditMode.onEditModeEndDelegate += EditModeEnded;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             m_CurveEditor.OnEnable(serializedObject);
 
             m_Loop = serializedObject.FindProperty("m_Loop");
@@ -188,81 +320,33 @@ namespace UnityEditor
 
         void PositionsViewSelectionChanged(List<int> selected)
         {
-            m_PointEditor.m_Selection = selected;
+            var sceneTool = activeSceneViewTool;
+            if (sceneTool != null)
+                sceneTool.pointSelection = selected;
+
             SceneView.RepaintAll();
         }
 
         public void OnDisable()
         {
             m_CurveEditor.OnDisable();
-            EndEditPositions();
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
             SceneView.duringSceneGui -= OnSceneGUIDelegate;
             EditorApplication.contextualPropertyMenu -= OnPropertyContextMenu;
         }
 
-        private void UndoRedoPerformed()
+        private void UndoRedoPerformed(in UndoRedoInfo info)
         {
-            m_PointEditor.RemoveInvalidSelections();
             m_PositionsView.Reload();
-            m_PositionsView.SetSelection(m_PointEditor.m_Selection);
+
+            var sceneTool = activeSceneViewTool;
+            if (sceneTool != null)
+            {
+                sceneTool.RemoveInvalidSelections();
+                m_PositionsView.SetSelection(sceneTool.pointSelection);
+            }
+
             ResetSimplifyPreview();
-        }
-
-        private void EditModeEnded(Editor editor)
-        {
-            if (editor == this)
-            {
-                EndEditPositions();
-            }
-        }
-
-        private void EditModeStarted(Editor editor, EditMode.SceneViewEditMode mode)
-        {
-            if (editor == this && IsLineRendererEditMode(mode))
-            {
-                StartEditPositions();
-            }
-        }
-
-        private void DrawEditPointTools()
-        {
-            EditorGUI.BeginChangeCheck();
-            LineRendererEditor.showWireframe = GUILayout.Toggle(LineRendererEditor.showWireframe, Styles.showWireframe);
-            if (EditorGUI.EndChangeCheck())
-            {
-                SceneView.RepaintAll();
-            }
-
-            bool adjacentPointsSelected = HasAdjacentPointsSelected();
-            using (new EditorGUI.DisabledGroupScope(!adjacentPointsSelected))
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button(Styles.subdivide, GUILayout.Width(150)))
-                {
-                    SubdivideSelected();
-                }
-                GUILayout.EndHorizontal();
-            }
-        }
-
-        private static void CreatePointTools()
-        {
-            LineRendererEditor.inputMode = (LineRendererEditor.InputMode)EditorGUILayout.EnumPopup(Styles.inputMode, LineRendererEditor.inputMode);
-            if (LineRendererEditor.inputMode == LineRendererEditor.InputMode.PhysicsRaycast)
-            {
-                LineRendererEditor.raycastMask = EditorGUILayout.LayerMaskField(LineRendererEditor.raycastMask, Styles.layerMask);
-            }
-
-            LineRendererEditor.createPointSeparation = EditorGUILayout.FloatField(Styles.pointSeparation, LineRendererEditor.createPointSeparation);
-            LineRendererEditor.creationOffset = EditorGUILayout.FloatField(Styles.normalOffset, LineRendererEditor.creationOffset);
-        }
-
-        Bounds GetBounds()
-        {
-            var lineRenderer = (target as LineRenderer);
-            return m_Positions.arraySize > 0 ? lineRenderer.bounds : new Bounds(lineRenderer.useWorldSpace ? lineRenderer.transform.position : Vector3.zero, Vector3.zero);
         }
 
         private void DrawToolbar()
@@ -273,43 +357,17 @@ namespace UnityEditor
             }
 
             EditorGUILayout.BeginVertical("GroupBox");
-            GUILayout.Label(Styles.sceneTools);
 
             EditorGUI.BeginDisabled(!canEditInScene);
-            EditorGUILayout.Space();
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, GetBounds, this);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-
-            // Tools box
-            GUILayout.BeginVertical(EditorStyles.helpBox);
-            string helpText = Styles.baseSceneEditingToolText;
-            if (sceneViewEditing)
-            {
-                int index = ArrayUtility.IndexOf(Styles.sceneViewEditModes, EditMode.editMode);
-                if (index >= 0)
-                    helpText = Styles.ToolNames[index].text;
-            }
-
-            GUILayout.Label(helpText, Styles.richTextMiniLabel);
-            GUILayout.EndVertical();
+            EditorGUILayout.EditorToolbarForTarget(Styles.sceneTools, this);
 
             // Editing mode toolbar
-            if (sceneViewEditing)
+            var sceneTools = activeSceneViewTool;
+            if (sceneTools != null)
             {
-                switch (EditMode.editMode)
-                {
-                    case EditMode.SceneViewEditMode.LineRendererEdit:
-                        DrawEditPointTools();
-                        break;
-                    case EditMode.SceneViewEditMode.LineRendererCreate:
-                        CreatePointTools();
-                        break;
-                }
+                sceneTools.DrawToolbar(m_Positions);
             }
-            if (!sceneViewEditing)
+            else
             {
                 EditorGUI.BeginChangeCheck();
                 showSimplifyPreview = EditorGUILayout.Toggle(Styles.simplifyPreview, showSimplifyPreview);
@@ -331,49 +389,6 @@ namespace UnityEditor
             EditorGUI.EndDisabled();
 
             EditorGUILayout.EndVertical();
-        }
-
-        private bool HasAdjacentPointsSelected()
-        {
-            var selection = m_PointEditor.m_Selection;
-            selection.Sort();
-            if (selection.Count < 2)
-                return false;
-
-            for (int i = 0; i < selection.Count - 1; ++i)
-            {
-                if (selection[i + 1] == selection[i] + 1)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private void SubdivideSelected()
-        {
-            var selection = m_PointEditor.m_Selection;
-            if (selection.Count < 2)
-                return;
-            selection.Sort();
-            var insertedIndexes = new List<int>();
-            int numInserted = 0; // As we insert new nodes, the selected indexes will become offset so we need to keep track of this.
-            for (int i = 0; i < selection.Count - 1; ++i)
-            {
-                if (selection[i + 1] == selection[i] + 1)
-                {
-                    int fromIndex = selection[i] + numInserted;
-                    int toIndex = selection[i + 1] + numInserted;
-                    var from = m_Positions.GetArrayElementAtIndex(fromIndex).vector3Value;
-                    var to = m_Positions.GetArrayElementAtIndex(toIndex).vector3Value;
-                    var midPoint = Vector3.Lerp(from, to, 0.5f);
-                    m_Positions.InsertArrayElementAtIndex(toIndex);
-                    m_Positions.GetArrayElementAtIndex(toIndex).vector3Value = midPoint;
-                    insertedIndexes.Add(toIndex);
-                    numInserted++;
-                }
-            }
-
-            m_PointEditor.m_Selection = insertedIndexes;
         }
 
         private void SimplifyPoints()
@@ -468,76 +483,37 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
-        public void StartEditPositions()
-        {
-            if (m_EditingPositions)
-                return;
-
-            m_EditingPositions = true;
-            Tools.s_Hidden = true;
-            SceneView.RepaintAll();
-        }
-
-        public void EndEditPositions()
-        {
-            if (!m_EditingPositions)
-                return;
-
-            if (m_PointEditor != null)
-                m_PointEditor.Deselect();
-
-            ResetSimplifyPreview();
-            Tools.s_Hidden = false;
-            SceneView.RepaintAll();
-        }
-
-        void InternalOnSceneView()
-        {
-            switch (EditMode.editMode)
-            {
-                case EditMode.SceneViewEditMode.LineRendererEdit:
-                    m_PointEditor.EditSceneGUI();
-
-                    // We need to wait for m_Positions to be updated next frame or we risk calling SetSelection with invalid indexes.
-                    if (m_PointEditor.Count != m_Positions.arraySize)
-                        break;
-
-                    if (m_Positions.arraySize != m_PositionsView.GetRows().Count)
-                    {
-                        m_PositionsView.Reload();
-                        ResetSimplifyPreview();
-                    }
-                    m_PositionsView.SetSelection(m_PointEditor.m_Selection, TreeViewSelectionOptions.RevealAndFrame);
-                    break;
-                case EditMode.SceneViewEditMode.LineRendererCreate:
-                    m_PointEditor.CreateSceneGUI();
-                    break;
-            }
-        }
-
         public void OnSceneGUIDelegate(SceneView sceneView)
         {
-            if (m_EditingPositions)
-                InternalOnSceneView();
-
-            if (!sceneViewEditing)
+            var sceneTool = activeSceneViewTool;
+            if (sceneTool != null)
+            {
+                sceneTool.OnSceneGUIDelegate(m_Positions, m_PositionsView);
+                ResetSimplifyPreview();
+            }
+            else
+            {
                 DrawSimplifyPreview();
+            }
         }
 
         public bool HasFrameBounds()
         {
-            return m_EditingPositions && m_PointEditor.m_Selection.Count > 0;
+            var sceneTool = activeSceneViewTool;
+            return (sceneTool != null) && (sceneTool.pointSelection.Count > 0);
         }
 
         public Bounds OnGetFrameBounds()
         {
-            return m_PointEditor.selectedPositionsBounds;
+            var sceneTool = activeSceneViewTool;
+            return (sceneTool != null) ? sceneTool.selectedPositionsBounds : new Bounds();
         }
 
         internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
-            if (sceneViewEditing)
-                return OnGetFrameBounds();
+            var sceneTool = activeSceneViewTool;
+            if (sceneTool != null)
+                return sceneTool.selectedPositionsBounds;
             return base.GetWorldBoundsOfTarget(targetObject);
         }
     }

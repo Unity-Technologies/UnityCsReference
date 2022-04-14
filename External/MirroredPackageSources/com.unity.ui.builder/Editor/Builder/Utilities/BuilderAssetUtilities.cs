@@ -47,7 +47,7 @@ namespace Unity.UI.Builder
             string errorMessage = null;
 
             string errorTitle = null;
-            
+
             if (asset == null)
             {
                 if (string.IsNullOrEmpty(path))
@@ -406,6 +406,7 @@ namespace Unity.UI.Builder
             }
             else if (ve.GetVisualElementAsset() != null)
             {
+                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
@@ -443,6 +444,7 @@ namespace Unity.UI.Builder
             }
             else if (ve.GetVisualElementAsset() != null)
             {
+                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 

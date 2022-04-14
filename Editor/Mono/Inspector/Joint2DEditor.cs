@@ -11,11 +11,13 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class Joint2DEditor : Editor
     {
+        SerializedProperty m_BreakAction;
         SerializedProperty m_BreakForce;
         SerializedProperty m_BreakTorque;
 
         public void OnEnable()
         {
+            m_BreakAction = serializedObject.FindProperty("m_BreakAction");
             m_BreakForce = serializedObject.FindProperty("m_BreakForce");
             m_BreakTorque = serializedObject.FindProperty("m_BreakTorque");
         }
@@ -36,6 +38,7 @@ namespace UnityEditor
 
             base.OnInspectorGUI();
 
+            EditorGUILayout.PropertyField(m_BreakAction);
             EditorGUILayout.PropertyField(m_BreakForce);
 
             // Distance/Spring/Target joints produce no reaction torque so they're not supported.

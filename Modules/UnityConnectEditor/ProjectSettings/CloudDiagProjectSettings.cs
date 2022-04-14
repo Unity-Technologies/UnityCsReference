@@ -67,14 +67,6 @@ namespace UnityEditor.Connect
         {
             SettingsProvider projectSettings = null;
 
-            if (ShouldShowBuiltInProjectSettings(CrashService.instance))
-            {
-                projectSettings = new CloudDiagProjectSettings(CrashService.instance.projectSettingsPath, SettingsScope.Project);
-            }
-            else if (ShouldShowFallbackProjectSettings(CrashService.instance))
-            {
-                projectSettings = new FallbackProjectSettings(CrashService.instance, SettingsScope.Project);
-            }
 
             return projectSettings;
         }

@@ -117,6 +117,8 @@ namespace UnityEngine.UIElements
         static List<Panel> s_SortedRuntimePanels = new List<Panel>();
         private static bool s_PanelOrderingDirty = true;
 
+        internal static int s_ResolvedSortingIndexMax = 0;
+
         internal static readonly string s_RepaintProfilerMarkerName = "UIElementsRuntimeUtility.DoDispatch(Repaint Event)";
         private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
 
@@ -137,9 +139,18 @@ namespace UnityEngine.UIElements
 
         public static void RepaintOverlayPanel(BaseRuntimePanel panel)
         {
+            var oldCam = Camera.current;
+            var oldRT = RenderTexture.active;
+
+            Camera.SetupCurrent(null);
+            RenderTexture.active = null;
+
             using (s_RepaintProfilerMarker.Auto())
                 panel.Repaint(Event.current);
             (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(Event.current);
+
+            Camera.SetupCurrent(oldCam);
+            RenderTexture.active = oldRT;
         }
 
         private static int currentOverlayIndex = -1;
@@ -198,6 +209,8 @@ namespace UnityEngine.UIElements
 
         public static void UpdateRuntimePanels()
         {
+            RemoveUnusedPanels();
+
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
                 panel.Update();
@@ -207,6 +220,32 @@ namespace UnityEngine.UIElements
             {
                 defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
             }
+        }
+
+        internal static void MarkPotentiallyEmpty(PanelSettings settings)
+        {
+            if (!s_PotentiallyEmptyPanelSettings.Contains(settings))
+                s_PotentiallyEmptyPanelSettings.Add(settings);
+        }
+
+        private static List<PanelSettings> s_PotentiallyEmptyPanelSettings = new List<PanelSettings>();
+        internal static void RemoveUnusedPanels()
+        {
+
+            foreach (PanelSettings psetting in s_PotentiallyEmptyPanelSettings)
+            {
+                var m_AttachedUIDocumentsList = psetting.m_AttachedUIDocumentsList;
+                if (m_AttachedUIDocumentsList == null || m_AttachedUIDocumentsList.m_AttachedUIDocuments.Count == 0)
+                {
+                    // The runtime panel is unused, dispose it immediately as we dont want any side effect of keeping the panel alive.
+                    // It'll be recreated if it's used again.
+                    psetting.DisposePanel();
+                }
+
+            }
+
+            s_PotentiallyEmptyPanelSettings.Clear();
+
         }
 
         public static void RegisterPlayerloopCallback()
@@ -259,6 +298,14 @@ namespace UnityEngine.UIElements
 
                 return (diff < 0) ? -1 : 1;
             });
+
+            for (var i = 0; i < s_SortedRuntimePanels.Count; i++)
+            {
+                var runtimePanel = s_SortedRuntimePanels[i] as BaseRuntimePanel;
+                if (runtimePanel != null)
+                    runtimePanel.resolvedSortingIndex = i;
+            }
+            s_ResolvedSortingIndexMax = s_SortedRuntimePanels.Count - 1;
 
             s_PanelOrderingDirty = false;
         }

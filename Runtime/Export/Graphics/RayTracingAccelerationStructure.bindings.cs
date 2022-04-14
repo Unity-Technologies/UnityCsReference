@@ -209,51 +209,90 @@ namespace UnityEngine.Experimental.Rendering
             Build(Vector3.zero);
         }
 
+        public void AddInstance(Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF)
+        {
+            AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask, id);
+        }
+
+        public int AddInstance(GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF)
+        {
+            return AddInstance_Procedural(aabbBuffer, aabbCount, dynamicData, matrix, material, opaqueMaterial, properties, mask, id);
+        }
+
+        public void RemoveInstance(Renderer targetRenderer)
+        {
+            RemoveInstance_Renderer(targetRenderer);
+        }
+
+        public void RemoveInstance(int handle)
+        {
+            RemoveInstance_InstanceID(handle);
+        }
+
+        public void UpdateInstanceTransform(Renderer renderer)
+        {
+            UpdateInstanceTransform_Renderer(renderer);
+        }
+        public void UpdateInstanceTransform(int handle, Matrix4x4 matrix)
+        {
+            UpdateInstanceTransform_InstanceID(handle, matrix);
+        }
+
         [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build()", true)]
         public void Update()
         {
             Build(Vector3.zero);
         }
 
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
-        extern public void Build(Vector3 relativeOrigin);
-
         [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build(*)", true)]
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Update", HasExplicitThis = true)]
         extern public void Update(Vector3 relativeOrigin);
 
+        [Obsolete("This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate method for adding Renderers to the acceleration structure.", false)]
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceDeprecated", HasExplicitThis = true)]
         extern public void AddInstance([NotNull] Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
 
-        public void AddInstance(Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF)
-        {
-            AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask, id);
-        }
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
-        extern public void RemoveInstance([NotNull] Renderer targetRenderer);
-
+        [Obsolete("This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate method for adding procedural geometry (AABBs) to the acceleration structure.", false)]
         public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF)
         {
-            AddInstance_Procedural(aabbBuffer, numElements, material, Matrix4x4.identity, isCutOff, enableTriangleCulling, frontTriangleCounterClockwise, mask, reuseBounds, id);
+            AddInstance_Procedural_Deprecated(aabbBuffer, numElements, material, Matrix4x4.identity, isCutOff, enableTriangleCulling, frontTriangleCounterClockwise, mask, reuseBounds, id);
         }
 
+        [Obsolete("This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate method for adding procedural geometry (AABBs) to the acceleration structure.", false)]
         public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF)
         {
-            AddInstance_Procedural(aabbBuffer, numElements, material, instanceTransform, isCutOff, enableTriangleCulling, frontTriangleCounterClockwise, mask, reuseBounds, id);
+            AddInstance_Procedural_Deprecated(aabbBuffer, numElements, material, instanceTransform, isCutOff, enableTriangleCulling, frontTriangleCounterClockwise, mask, reuseBounds, id);
         }
 
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
+        extern public void Build(Vector3 relativeOrigin);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceDeprecated", HasExplicitThis = true)]
+        extern private void AddInstance_Procedural_Deprecated([NotNull] GraphicsBuffer aabbBuffer, uint numElements, [NotNull] Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF);
+
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstance", HasExplicitThis = true)]
-        extern private void AddInstance_Procedural([NotNull] GraphicsBuffer aabbBuffer, uint numElements, [NotNull] Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF);
+        extern private int AddInstance_Procedural([NotNull] GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, [NotNull] Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
+        extern private void RemoveInstance_Renderer([NotNull] Renderer targetRenderer);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
+        extern private void RemoveInstance_InstanceID(int instanceID);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceTransform", HasExplicitThis = true)]
-        extern public void UpdateInstanceTransform([NotNull] Renderer renderer);
+        extern private void UpdateInstanceTransform_Renderer([NotNull] Renderer renderer);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceTransform", HasExplicitThis = true)]
+        extern private void UpdateInstanceTransform_InstanceID(int instanceID, Matrix4x4 matrix);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
         extern public void UpdateInstanceMask([NotNull] Renderer renderer, uint mask);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceID", HasExplicitThis = true)]
         extern public void UpdateInstanceID([NotNull] Renderer renderer, uint instanceID);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstancePropertyBlock", HasExplicitThis = true)]
+        extern public void UpdateInstancePropertyBlock(int handle, MaterialPropertyBlock properties);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::GetSize", HasExplicitThis = true)]
         extern public UInt64 GetSize();

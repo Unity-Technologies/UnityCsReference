@@ -46,9 +46,26 @@ namespace UnityEngine
             return Math.Max(1, Math.Pow(Math.Abs(value), 0.5)) * kDragSensitivity;
         }
 
+        internal static double CalculateFloatDragSensitivity(double value, double minValue, double maxValue)
+        {
+            if (double.IsInfinity(value) || double.IsNaN(value))
+            {
+                return 0.0;
+            }
+
+            double range = Math.Abs(maxValue - minValue);
+            return range / 100.0f * kDragSensitivity;
+        }
+
         internal static long CalculateIntDragSensitivity(long value)
         {
             return (long)Math.Max(1, Math.Pow(Math.Abs((double)value), 0.5) * kDragSensitivity);
+        }
+
+        internal static long CalculateIntDragSensitivity(long value, long minValue, long maxValue)
+        {
+            long range = Math.Abs(maxValue - minValue);
+            return Math.Max(1, (long)(kDragSensitivity * range / 100));
         }
     }
 }

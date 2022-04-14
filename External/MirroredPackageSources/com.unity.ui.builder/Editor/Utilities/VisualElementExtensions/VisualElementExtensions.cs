@@ -26,12 +26,18 @@ namespace Unity.UI.Builder
 
             foreach (IUxmlFactory f in factoryList)
             {
-                foreach (var a in f.uxmlAttributesDescription)
+                // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
+                if (f.uxmlAttributesDescription != null)
                 {
-                    if (s_SkippedAttributeNames.Contains(a.name))
-                        continue;
+                    foreach (var a in f.uxmlAttributesDescription)
+                    {
+                        // For user created types, they may `yield return null` which would create an array with a null, so we need
+                        // to check in order not to crash.
+                        if (a == null || s_SkippedAttributeNames.Contains(a.name))
+                            continue;
 
-                    attributeList.Add(a);
+                        attributeList.Add(a);
+                    }
                 }
             }
 
@@ -95,7 +101,7 @@ namespace Unity.UI.Builder
                 // This is a special patch that allows to search for built-in elements' attribute specifically
                 // without needing to add to the public API.
                 // Allowing to search for internal/private properties in all cases could lead to unforeseen issues.
-                else if (ve is EnumField && camel == "type")
+                else if (ve is EnumField or EnumFlagsField && camel == "type")
                 {
                     fieldInfo = veType.GetProperty(camel, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     var veValueAbstract = fieldInfo.GetValue(ve, null);
@@ -360,48 +366,6 @@ namespace Unity.UI.Builder
                 return true;
 
             return element.parent.HasAncestor(ancestor);
-        }
-
-        public static VisualElement GetMinSizeSpecialElement(this VisualElement element)
-        {
-            foreach (var child in element.Children())
-                if (child.name == BuilderConstants.SpecialVisualElementInitialMinSizeName)
-                    return child;
-
-            return null;
-        }
-
-        public static void HideMinSizeSpecialElement(this VisualElement element)
-        {
-            var minSizeSpecialElement = element.GetMinSizeSpecialElement();
-            if (minSizeSpecialElement == null)
-                return;
-
-            minSizeSpecialElement.style.display = DisplayStyle.None;
-        }
-
-        public static void UnhideMinSizeSpecialElement(this VisualElement element)
-        {
-            var minSizeSpecialElement = element.GetMinSizeSpecialElement();
-            if (minSizeSpecialElement == null)
-                return;
-
-            minSizeSpecialElement.style.display = DisplayStyle.Flex;
-        }
-
-        public static void RemoveMinSizeSpecialElement(this VisualElement element)
-        {
-            var minSizeSpecialElement = element.GetMinSizeSpecialElement();
-            if (minSizeSpecialElement == null)
-                return;
-
-            minSizeSpecialElement.RemoveFromHierarchy();
-
-            // HACK - Since recent changes in UITK, computed style is updated only when its matchingRuleHash has changed.
-            // This causes an issue where the height of a newly dropped VisualElement remains 100px even after added a child.
-            // Resetting ComputedStyle.matchingRulesHash is a workaround to force the VisualElement.computedStyle's yogaNode 
-            // to be updated even when the matchingRulesHash has not changed. see VisualElement.SetComputedStyle in VisualElement.cs.
-            element.computedStyle.matchingRulesHash = -1;
         }
 
         public static VisualElement GetFirstAncestorWithClass(this VisualElement element, string className)

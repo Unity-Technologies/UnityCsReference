@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -189,6 +190,14 @@ namespace UnityEditor
 
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Export...")))
             {
+                string invalidChars = EditorUtility.GetInvalidFilenameChars();
+                var selectedItemWithInvalidChar = m_ExportPackageItems.FirstOrDefault(item => Path.GetFileNameWithoutExtension(item.assetPath).IndexOfAny(invalidChars.ToCharArray()) != -1 && item.enabledStatus > 0);
+                if (selectedItemWithInvalidChar != null && !EditorUtility.DisplayDialog(L10n.Tr("Cross platform incompatibility"), L10n.Tr($"The asset “{Path.GetFileNameWithoutExtension(selectedItemWithInvalidChar.assetPath)}” contains one or more characters that are not compatible across platforms: {invalidChars}"), L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                {
+                    GUIUtility.ExitGUI();
+                    return;
+                }
+
                 Export();
                 GUIUtility.ExitGUI();
             }

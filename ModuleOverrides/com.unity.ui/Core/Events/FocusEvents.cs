@@ -133,7 +133,7 @@ namespace UnityEngine.UIElements
 
             if (relatedTarget == null)
             {
-                focusController.DoFocusChange(null);
+                focusController.ProcessPendingFocusChange(null);
             }
         }
     }
@@ -184,7 +184,7 @@ namespace UnityEngine.UIElements
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
-            focusController.DoFocusChange(target as Focusable);
+            focusController.ProcessPendingFocusChange(target as Focusable);
         }
     }
 }

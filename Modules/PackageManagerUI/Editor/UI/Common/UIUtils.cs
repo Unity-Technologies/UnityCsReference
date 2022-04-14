@@ -22,16 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             element.style.visibility = value ? Visibility.Visible : Visibility.Hidden;
         }
 
-        public static void SetElementDisplayNonEmpty(TextElement element)
-        {
-            if (element == null)
-                return;
-
-            var nonEmpty = !String.IsNullOrEmpty(element.text);
-            element.style.display = nonEmpty ? DisplayStyle.Flex : DisplayStyle.None;
-            element.style.visibility = nonEmpty ? Visibility.Visible : Visibility.Hidden;
-        }
-
         public static bool IsElementVisible(VisualElement element)
         {
             return element?.resolvedStyle.visibility == Visibility.Visible && element.resolvedStyle.display != DisplayStyle.None;

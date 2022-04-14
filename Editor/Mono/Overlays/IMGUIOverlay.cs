@@ -28,24 +28,25 @@ namespace UnityEditor.Overlays
 
     public abstract class IMGUIOverlay : Overlay
     {
-        internal IMGUIContainer drawingContainer { get; private set; }
+        internal IMGUIContainer imguiContainer { get; private set; }
 
         public sealed override VisualElement CreatePanelContent()
         {
             rootVisualElement.pickingMode = PickingMode.Position;
-            var imgui = new IMGUIContainer();
-            imgui.onGUIHandler = () => OnPanelGUIHandler(imgui);
-            return imgui;
+            imguiContainer = new IMGUIContainer();
+            imguiContainer.onGUIHandler = OnPanelGUIHandler;
+            OnContentRebuild();
+            return imguiContainer;
         }
 
-        void OnPanelGUIHandler(IMGUIContainer container)
+        internal virtual void OnContentRebuild() { }
+
+        void OnPanelGUIHandler()
         {
             if (!displayed)
                 return;
 
-            drawingContainer = container;
             OnGUI();
-            drawingContainer = null;
 
             if (Event.current.isMouse)
                 Event.current.Use();

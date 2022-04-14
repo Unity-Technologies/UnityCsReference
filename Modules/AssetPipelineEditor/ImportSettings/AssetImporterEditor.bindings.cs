@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.AssetImporters
 {
@@ -11,13 +12,13 @@ namespace UnityEditor.AssetImporters
     public abstract partial class AssetImporterEditor
     {
         [FreeFunction]
-        private static extern Object CreateOrReloadInspectorCopy(int instanceID);
+        private static extern Object CreateOrReloadInspectorCopy(int instanceID, Editor editor);
         [FreeFunction]
         private static extern void SaveUserData(int instanceID, Object userData);
         [FreeFunction]
-        private static extern bool ReleaseInspectorCopy(int instanceID);
+        private static extern bool ReleaseInspectorCopy(int instanceID, Editor editor);
         [FreeFunction]
-        private static extern void FixCacheCount(int instanceID, int count);
+        private static extern void FixCacheCount(int instanceID, int[] editors);
         [FreeFunction]
         private static extern int GetInspectorCopyCount(int instanceID);
         [FreeFunction("IsMetaDataSerializationEqual")]
@@ -28,7 +29,16 @@ namespace UnityEditor.AssetImporters
         private static extern void UpdateSavedData([NotNull] Object source);
         [FreeFunction]
         private static extern void FixSavedAssetbundleSettings(int instanceID, PropertyModification[] assetBundleProperties);
-        [FreeFunction]
-        private static extern void CheckForInspectorCopyBackingData([NotNull] Object source);
+
+        [UsedByNativeCode]
+        private static void UpdateUnsavedChangesState(Editor editor)
+        {
+            if (editor is AssetImporterEditor importerEditor)
+            {
+                importerEditor.serializedObject.Update();
+                importerEditor.extraDataSerializedObject?.Update();
+                importerEditor.hasUnsavedChanges = importerEditor.HasModified();
+            }
+        }
     }
 }

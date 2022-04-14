@@ -31,8 +31,6 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Radius);
 
-            serializedObject.ApplyModifiedProperties();
-
             FinalizeInspectorGUI();
         }
     }

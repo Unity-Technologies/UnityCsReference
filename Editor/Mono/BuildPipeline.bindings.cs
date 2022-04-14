@@ -686,36 +686,6 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern bool SupportsReflectionEmit(BuildTarget target);
 
-        internal static string[] GetReferencingPlayerAssembliesForDLL(string dllPath, string assembliesOutputPath)
-        {
-            DefaultAssemblyResolver resolverRoot = new DefaultAssemblyResolver();
-            resolverRoot.AddSearchDirectory(Path.GetDirectoryName(dllPath));
-            AssemblyDefinition assemblyRoot = AssemblyDefinition.ReadAssembly(dllPath, new ReaderParameters { AssemblyResolver = resolverRoot });
-
-            string[] assemblyPaths = BuildPipeline.GetManagedPlayerDllPaths(assembliesOutputPath);
-            List<string> referencingAssemblies = new List<string>();
-
-            // determine whether there is an assembly that is referencing the assembly path
-            foreach (string assemblyPath in assemblyPaths)
-            {
-                DefaultAssemblyResolver resolver = new DefaultAssemblyResolver();
-                resolver.AddSearchDirectory(Path.GetDirectoryName(assemblyPath));
-                AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters { AssemblyResolver = resolver });
-
-                foreach (AssemblyNameReference anr in assembly.MainModule.AssemblyReferences)
-                {
-                    if (anr.FullName == assemblyRoot.Name.FullName)
-                    {
-                        referencingAssemblies.Add(assemblyPath);
-                    }
-                }
-            }
-
-            return referencingAssemblies.ToArray();
-        }
-
-        internal static extern string[] GetManagedPlayerDllPaths(string assembliesOutputPath);
-
         [RequiredByNativeCode]
         public static PlayerConnectionInitiateMode GetPlayerConnectionInitiateMode(BuildTarget targetPlatform, BuildOptions buildOptions)
         {
@@ -729,6 +699,10 @@ namespace UnityEditor
         private static bool DoesBuildTargetSupportPlayerConnectionPlayerToEditor(BuildTarget targetPlatform)
         {
             return
+                targetPlatform == BuildTarget.StandaloneOSX ||
+                targetPlatform == BuildTarget.StandaloneWindows ||
+                targetPlatform == BuildTarget.StandaloneWindows64 ||
+                targetPlatform == BuildTarget.StandaloneLinux64 ||
                 // Android: support connection from player to Editor in both cases
                 //          connecting to 127.0.0.1 (when both Editor and Android are on localhost using USB cable)
                 //          connecting to <ip of machine where the Editor is running>, the Android and PC has to be on the same subnet

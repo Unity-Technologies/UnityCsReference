@@ -21,7 +21,7 @@ namespace UnityEditor
 
             static SplashScreenLogo()
             {
-                s_UnityLogo = Resources.GetBuiltinResource<Sprite>("UnitySplash-cube.png");
+                s_UnityLogo = AssetDatabase.GetBuiltinExtraResource<Sprite>("SplashScreen/UnitySplash-Light.png");
             }
 
             public Sprite logo

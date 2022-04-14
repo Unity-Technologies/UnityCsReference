@@ -303,8 +303,7 @@ namespace UnityEditor
 
                 arrayElemProp.Next(false);
                 AnimationClipInfoProperties info = new AnimationClipInfoProperties(arrayElemProp);
-                info.name = uniqueName;
-                InitAnimationClipInfoProperties(info, takeInfo);
+                InitAnimationClipInfoProperties(info, takeInfo,uniqueName,0);
             }
             UpdateList();
 
@@ -898,16 +897,23 @@ namespace UnityEditor
             m_ClipAnimations.InsertArrayElementAtIndex(m_ClipAnimations.arraySize);
             var property = m_ClipAnimations.GetArrayElementAtIndex(m_ClipAnimations.arraySize - 1);
             AnimationClipInfoProperties info = new AnimationClipInfoProperties(property);
-
-            info.name = uniqueName;
-            InitAnimationClipInfoProperties(info, takeInfo);
+            InitAnimationClipInfoProperties(info, takeInfo, uniqueName, m_ClipAnimations.arraySize - 1);
             UpdateList();
         }
 
-        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo)
+        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo,string uniqueName,int clipOffset)
         {
             SetupTakeNameAndFrames(info, takeInfo);
-            info.internalID = 0L;
+
+            var animationClipType = UnityType.FindTypeByName("AnimationClip");
+
+            long id = ImportSettingInternalID.FindInternalID(serializedObject, animationClipType, uniqueName);
+
+            info.internalID = id == 0L
+                ? AssetImporter.MakeLocalFileIDWithHash(animationClipType.persistentTypeID, uniqueName, clipOffset)
+                : id;
+
+            info.name = uniqueName;
             info.wrapMode = (int)WrapMode.Default;
             info.loop = false;
             info.orientationOffsetY = 0;
@@ -1050,17 +1056,17 @@ namespace UnityEditor
         {
             //Ensures that the ClipList and the Serialized copy of the clip remain in sync when an Undo/Redo is performed.
             if (!serializedObject.isEditingMultipleObjects)
-                Undo.undoRedoPerformed += HandleUndo;
+                Undo.undoRedoEvent += HandleUndo;
         }
 
         void UnregisterListeners()
         {
             //Ensures that the ClipList and the Serialized copy of the clip remain in sync when an Undo/Redo is performed.
             if (!serializedObject.isEditingMultipleObjects)
-                Undo.undoRedoPerformed -= HandleUndo;
+                Undo.undoRedoEvent -= HandleUndo;
         }
 
-        void HandleUndo()
+        void HandleUndo(in UndoRedoInfo info)
         {
             //Update animations serialization in-case something has changed
             m_ClipAnimations.serializedObject.UpdateIfRequiredOrScript();

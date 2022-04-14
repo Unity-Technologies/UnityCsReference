@@ -48,8 +48,9 @@ namespace UnityEngine
 
     public enum GradientMode
     {
-        Blend = 0,  // Keys will blend smoothly when the gradient is evaluated. (Default)
-        Fixed = 1   // An exact key color will be returned when the gradient is evaluated.
+        Blend = 0,              // Keys will blend smoothly when the gradient is evaluated. (Default)
+        Fixed = 1,              // An exact key color will be returned when the gradient is evaluated.
+        PerceptualBlend = 2     // Keys will blend smoothly when the gradient is evaluated, using Oklab blending (https://bottosson.github.io/posts/oklab/)
     }
 
     // Gradient used for animating colors
@@ -98,6 +99,7 @@ namespace UnityEngine
 
 
         extern public GradientMode mode { get; set; }
+        public extern ColorSpace colorSpace { get; set; }
 
         extern internal Color constantColor { get; set; }
 

@@ -107,11 +107,6 @@ namespace UnityEngine.UIElements
         /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
-        bool TryGetValue(CustomStyleProperty<Object> property, out Object value);
-        /// <summary>
-        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
-        /// </summary>
-        /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue<T>(CustomStyleProperty<T> property, out T value) where T : Object;
         /// <summary>
         /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.

@@ -9,11 +9,9 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.XR;
-using UnityEngine.Experimental.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
-using UnityEditor.Overlays;
 using UnityEditorInternal.VR;
 using Object = UnityEngine.Object;
 
@@ -34,9 +32,17 @@ namespace UnityEditor
             public static GUIContent viewportRect = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0-1).");
             public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size", "The size of the camera sensor in millimeters.");
             public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift", "Offset from the camera sensor. Use these properties to simulate a shift lens. Measured as a multiple of the sensor size.");
+            public static GUIContent iso = EditorGUIUtility.TrTextContent("ISO", "The sensor sensitivity (ISO).");
+            public static GUIContent shutterSpeed = EditorGUIUtility.TrTextContent("Shutter Speed", "The exposure time, in second.");
+            public static GUIContent aperture = EditorGUIUtility.TrTextContent("Aperture", "The aperture number, in f-stop.");
+            public static GUIContent focusDistance = EditorGUIUtility.TrTextContent("FocusDistance", "The focus distance of the lens. The Depth of Field Volume override uses this value if you set focusDistanceMode to FocusDistanceMode.Camera.");
+            public static GUIContent bladeCount = EditorGUIUtility.TrTextContent("Blade Count", "The number of diaphragm blades.");
+            public static GUIContent curvature = EditorGUIUtility.TrTextContent("Curvature", "Maps an aperture range to blade curvature.");
+            public static GUIContent barrelClipping = EditorGUIUtility.TrTextContent("Barrel Clipping", "The strength of the \"cat eye\" effect on bokeh (optical vignetting).");
+            public static GUIContent anamorphism = EditorGUIUtility.TrTextContent("Anamorphism", "Stretches the sensor to simulate an anamorphic look. Positive values distort the Camera vertically, negative will distort the Camera horizontally.");
             public static GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera", "Enables Physical camera mode. When checked, the field of view is calculated from properties for simulating physical attributes (focal length, sensor size, and lens shift)");
             public static GUIContent cameraType = EditorGUIUtility.TrTextContent("Sensor Type", "Common sensor sizes. Choose an item to set Sensor Size, or edit Sensor Size for your custom settings.");
-            public static GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path", "Choose a rendering method for this camera.\n\nUse Graphics Settings to use the rendering path specified in Player settings.\n\nUse Forward to render all objects with one pass per material.\n\nUse Deferred to draw all objects once without lighting and then draw the lighting of all objects at the end of the render queue.\n\nUse Legacy Vertex Lit to render all lights in a single pass, calculated in vertices.\n\nLegacy Deferred has been deprecated.");
+            public static GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path", "Choose a rendering method for this camera.\n\nUse Graphics Settings to use the rendering path specified in graphics settings.\n\nUse Forward to render all objects with one pass per light.\n\nUse Deferred to draw all objects once without lighting and then draw the lighting of all objects at the end of the render queue.\n\nUse Legacy Vertex Lit to render all lights in a single pass, calculated at vertices.");
             public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length", "The simulated distance between the lens and the sensor of the physical camera. Larger values give a narrower field of view.");
             public static GUIContent allowOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Occlusion Culling disables rendering of objects when they are not currently seen by the camera because they are obscured (occluded) by other objects.");
             public static GUIContent allowHDR = EditorGUIUtility.TrTextContent("HDR", "High Dynamic Range gives you a wider range of light intensities, so your lighting looks more realistic. With it, you can still see details and experience less saturation even with bright light.");
@@ -70,6 +76,10 @@ namespace UnityEditor
                 "35mm 2-perf",
                 "35mm Academy",
                 "Super-35",
+                "35mm TV Projection",
+                "35mm Full Aperture",
+                "35mm 1.85 Projection",
+                "35mm Anamorphic",
                 "65mm ALEXA",
                 "70mm",
                 "70mm IMAX",
@@ -83,12 +93,16 @@ namespace UnityEditor
                 new Vector2(4.8f, 3.5f) , // 8mm
                 new Vector2(5.79f, 4.01f) , // Super 8mm
                 new Vector2(10.26f, 7.49f) , // 16mm
-                new Vector2(12.52f, 7.41f) , // Super 16mm
+                new Vector2(12.522f, 7.417f) , // Super 16mm
                 new Vector2(21.95f, 9.35f) , // 35mm 2-perf
-                new Vector2(21.0f, 15.2f) , // 35mm academy
+                new Vector2(21.946f, 16.002f) , // 35mm academy
                 new Vector2(24.89f, 18.66f) , // Super-35
+                new Vector2(20.726f, 15.545f), // 35mm TV Projection
+                new Vector2(24.892f, 18.669f), // 35mm Full Aperture
+                new Vector2(20.955f, 11.328f), // 35mm 1.85 Projection
+                new Vector2(21.946f, 18.593f), // 35mm Anamorphic
                 new Vector2(54.12f, 25.59f) , // 65mm ALEXA
-                new Vector2(70.0f, 51.0f) , // 70mm
+                new Vector2(52.476f, 23.012f) , // 70mm
                 new Vector2(70.41f, 52.63f), // 70mm IMAX
             };
 
@@ -99,25 +113,31 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Use Graphics Settings"),
                 EditorGUIUtility.TrTextContent("Forward"),
                 EditorGUIUtility.TrTextContent("Deferred"),
-                EditorGUIUtility.TrTextContent("Legacy Vertex Lit"),
-                EditorGUIUtility.TrTextContent("Legacy Deferred (light prepass)")
+                EditorGUIUtility.TrTextContent("Legacy Vertex Lit")
             };
             private static readonly int[] kCameraRenderPathValues =
             {
                 (int)RenderingPath.UsePlayerSettings,
                 (int)RenderingPath.Forward,
                 (int)RenderingPath.DeferredShading,
-                (int)RenderingPath.VertexLit,
-                (int)RenderingPath.DeferredLighting
+                (int)RenderingPath.VertexLit
             };
 
             public SerializedProperty clearFlags { get; private set; }
             public SerializedProperty backgroundColor { get; private set; }
             public SerializedProperty normalizedViewPortRect { get; private set; }
             internal SerializedProperty projectionMatrixMode { get; private set; }
+            public SerializedProperty iso { get; private set; }
+            public SerializedProperty shutterSpeed { get; private set; }
+            public SerializedProperty aperture { get; private set; }
+            public SerializedProperty focusDistance { get; private set; }
+            public SerializedProperty focalLength { get; private set; }
+            public SerializedProperty bladeCount { get; private set; }
+            public SerializedProperty curvature { get; private set; }
+            public SerializedProperty barrelClipping { get; private set; }
+            public SerializedProperty anamorphism { get; private set; }
             public SerializedProperty sensorSize { get; private set; }
             public SerializedProperty lensShift { get; private set; }
-            public SerializedProperty focalLength { get; private set; }
             public SerializedProperty gateFit { get; private set; }
             public SerializedProperty verticalFOV { get; private set; }
             public SerializedProperty orthographic { get; private set; }
@@ -154,9 +174,17 @@ namespace UnityEditor
                 clearFlags = m_SerializedObject.FindProperty("m_ClearFlags");
                 backgroundColor = m_SerializedObject.FindProperty("m_BackGroundColor");
                 normalizedViewPortRect = m_SerializedObject.FindProperty("m_NormalizedViewPortRect");
+                iso = m_SerializedObject.FindProperty("m_Iso");
+                shutterSpeed = m_SerializedObject.FindProperty("m_ShutterSpeed");
+                aperture = m_SerializedObject.FindProperty("m_Aperture");
+                focusDistance = m_SerializedObject.FindProperty("m_FocusDistance");
+                focalLength = m_SerializedObject.FindProperty("m_FocalLength");
+                bladeCount = m_SerializedObject.FindProperty("m_BladeCount");
+                curvature = m_SerializedObject.FindProperty("m_Curvature");
+                barrelClipping = m_SerializedObject.FindProperty("m_BarrelClipping");
+                anamorphism = m_SerializedObject.FindProperty("m_Anamorphism");
                 sensorSize = m_SerializedObject.FindProperty("m_SensorSize");
                 lensShift = m_SerializedObject.FindProperty("m_LensShift");
-                focalLength = m_SerializedObject.FindProperty("m_FocalLength");
                 gateFit = m_SerializedObject.FindProperty("m_GateFitMode");
                 projectionMatrixMode = m_SerializedObject.FindProperty("m_projectionMatrixMode");
                 nearClippingPlane = m_SerializedObject.FindProperty("near clip plane");
@@ -297,6 +325,15 @@ namespace UnityEditor
                         {
                             using (new EditorGUI.IndentLevelScope())
                             {
+                                EditorGUILayout.PropertyField(iso, Styles.iso);
+                                EditorGUILayout.PropertyField(shutterSpeed, Styles.shutterSpeed);
+                                EditorGUILayout.PropertyField(aperture, Styles.aperture);
+                                EditorGUILayout.PropertyField(focusDistance, Styles.focusDistance);
+                                EditorGUILayout.PropertyField(bladeCount, Styles.bladeCount);
+                                EditorGUILayout.PropertyField(curvature, Styles.curvature);
+                                EditorGUILayout.PropertyField(barrelClipping, Styles.barrelClipping);
+                                EditorGUILayout.PropertyField(anamorphism, Styles.anamorphism);
+
                                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                                 using (new EditorGUI.PropertyScope(horizontal.rect, Styles.focalLength, focalLength))
                                 using (var checkScope = new EditorGUI.ChangeCheckScope())
@@ -474,7 +511,7 @@ namespace UnityEditor
         }
 
 
-        private static bool IsDeferredRenderingPath(RenderingPath rp) { return rp == RenderingPath.DeferredLighting || rp == RenderingPath.DeferredShading; }
+        private static bool IsDeferredRenderingPath(RenderingPath rp) { return rp == RenderingPath.DeferredShading; }
 
         private bool wantDeferredRendering
         {

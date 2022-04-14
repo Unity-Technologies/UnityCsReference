@@ -1,9 +1,6 @@
-using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-using UnityEditor.StyleSheets;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
@@ -19,9 +16,6 @@ namespace Unity.UI.Builder
         List<VisualElement> m_CutElements = new List<VisualElement>();
 
         List<BuilderPaneContent> m_Panes = new List<BuilderPaneContent>();
-
-        bool m_ControlWasPressed;
-        IVisualElementScheduledItem m_ControlUnpressScheduleItem;
 
         public BuilderCommandHandler(
             BuilderPaneWindow paneWindow,
@@ -46,12 +40,8 @@ namespace Unity.UI.Builder
                 pane.primaryFocusable.RegisterCallback<KeyDownEvent>(OnDelete);
             }
 
-            // Ctrl+S to save.
-            m_PaneWindow.rootVisualElement.RegisterCallback<KeyUpEvent>(OnSaveDocument);
-            m_ControlUnpressScheduleItem = m_PaneWindow.rootVisualElement.schedule.Execute(UnsetControlFlag);
-
             // Undo/Redo
-            Undo.undoRedoPerformed += OnUndoRedo;
+            Undo.undoRedoEvent += OnUndoRedo;
         }
 
         public void OnDisable()
@@ -64,10 +54,8 @@ namespace Unity.UI.Builder
                 pane.primaryFocusable.UnregisterCallback<KeyDownEvent>(OnDelete);
             }
 
-            m_PaneWindow.rootVisualElement.UnregisterCallback<KeyUpEvent>(OnSaveDocument);
-
             // Undo/Redo
-            Undo.undoRedoPerformed -= OnUndoRedo;
+            Undo.undoRedoEvent -= OnUndoRedo;
         }
 
         public void RegisterPane(BuilderPaneContent paneContent)
@@ -108,45 +96,9 @@ namespace Unity.UI.Builder
             }
         }
 
-        void OnUndoRedo()
+        void OnUndoRedo(in UndoRedoInfo info)
         {
             m_PaneWindow.OnEnableAfterAllSerialization();
-        }
-
-        void UnsetControlFlag()
-        {
-            m_ControlWasPressed = false;
-            m_ControlUnpressScheduleItem.Pause();
-        }
-
-        void OnSaveDocument(KeyUpEvent evt)
-        {
-            if (m_Toolbar == null)
-                return;
-
-            if (evt.keyCode == KeyCode.LeftCommand ||
-                evt.keyCode == KeyCode.RightCommand ||
-                evt.keyCode == KeyCode.LeftControl ||
-                evt.keyCode == KeyCode.RightControl)
-            {
-                m_ControlUnpressScheduleItem.ExecuteLater(100);
-                m_ControlWasPressed = true;
-                return;
-            }
-
-            if (evt.keyCode != KeyCode.S)
-                return;
-
-            if (!evt.modifiers.HasFlag(EventModifiers.Control) &&
-                !evt.modifiers.HasFlag(EventModifiers.Command) &&
-                !m_ControlWasPressed)
-                return;
-
-            m_ControlWasPressed = false;
-
-            m_Toolbar.SaveDocument(false);
-
-            evt.StopPropagation();
         }
 
         void OnDelete(KeyDownEvent evt)
@@ -416,7 +368,7 @@ namespace Unity.UI.Builder
 
             return true;
         }
-        
+
         public void CreateTemplateFromHierarchy(VisualElement ve, VisualTreeAsset vta, string path = "")
         {
             var veas = new List<VisualElementAsset>();

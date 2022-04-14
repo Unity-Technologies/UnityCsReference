@@ -25,6 +25,8 @@ namespace UnityEngine.UIElements
         public abstract void OnScroll(Vector2 offset);
         public abstract int GetIndexFromPosition(Vector2 position);
         public abstract float GetItemHeight(int index);
+        public abstract void OnFocus(VisualElement leafTarget);
+        public abstract void OnBlur(VisualElement willFocus);
         public abstract void UpdateBackground();
 
         public abstract IEnumerable<ReusableCollectionItem> activeItems { get; }

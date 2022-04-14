@@ -2,15 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.IO;
-using UnityEditor;
-using UnityEditor.Experimental;
 using UnityEngine;
+
 
 namespace UnityEditor.Search
 {
-    internal static class Icons
+    static class Icons
     {
         public static string iconFolder = $"Icons/QuickSearch";
         public static Texture2D quicksearch = EditorGUIUtility.FindTexture("Search Icon");
@@ -29,5 +26,6 @@ namespace UnityEditor.Search
         public static Texture2D packageInstalled = EditorGUIUtility.LoadIcon($"{iconFolder}/package_installed.png");
         public static Texture2D packageUpdate = EditorGUIUtility.LoadIcon($"{iconFolder}/package_update.png");
         public static Texture2D dependencies = EditorGUIUtility.LoadIcon("UnityEditor.FindDependencies");
+        public static Texture2D toggles = EditorGUIUtility.FindTexture("MoreOptions");
     }
 }

@@ -7,7 +7,6 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -16,6 +15,12 @@ namespace Unity.UI.Builder
 {
     internal partial class BuilderInspectorStyleFields
     {
+        public enum NotifyType
+        {
+            Default,
+            RefreshOnly,
+        };
+
         BuilderInspector m_Inspector;
         BuilderSelection m_Selection;
 
@@ -228,8 +233,6 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
                 imageStyleField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
-                if (BuilderExternalPackages.isVectorGraphicsInstalled)
-                    imageStyleField.TryEnableVectorGraphicTypeSupport();
             }
             else if (IsComputedStyleCursor(val) && fieldElement is ObjectField)
             {
@@ -545,8 +548,6 @@ namespace Unity.UI.Builder
                 var value = GetComputedStyleTextShadowValue(val);
                 if (useStyleProperty)
                     value = styleSheet.GetTextShadow(styleProperty);
-                else
-                    value.color.a = 255.0f; // When no specific style value defined, we will use default alpha = 255 instead of 0.
 
                 uiField.SetValueWithoutNotify(value);
             }
@@ -751,8 +752,6 @@ namespace Unity.UI.Builder
                 var value = GetComputedStyleColorValue(val);
                 if (useStyleProperty)
                     value = styleSheet.GetColor(styleProperty.values[0]);
-                else
-                    value.a = 255.0f; // When no specific style value defined, we will use default alpha = 255 instead of 0.
 
                 uiField.SetValueWithoutNotify(value);
             }
@@ -815,10 +814,34 @@ namespace Unity.UI.Builder
             {
                 var uiField = fieldElement as ObjectField;
                 var value = GetComputedStyleCursorValue(val);
-                if (useStyleProperty)
-                    value.texture = styleSheet.GetAsset(styleProperty.values[0]) as Texture2D;
 
-                uiField.SetValueWithoutNotify(value.texture);
+                if (useStyleProperty)
+                {
+                    switch (styleProperty.values[0].valueType)
+                    {
+                        case StyleValueType.AssetReference:
+                        case StyleValueType.ResourcePath:
+                        case StyleValueType.ScalableImage:
+                            value.texture = styleSheet.GetAsset(styleProperty.values[0]) as Texture2D;
+                            uiField.SetValueWithoutNotify(value.texture);
+                            break;
+                        case StyleValueType.MissingAssetReference:
+                            uiField.SetValueWithoutNotify(null);
+                            break;
+                        case StyleValueType.Enum:
+                            // TODO: Add support for using the predefined list from the MouseCursor enum.
+                            // This is only available in the editor.
+                            uiField.SetValueWithoutNotify(null);
+                            break;
+                        default:
+                            uiField.SetValueWithoutNotify(null);
+                            break;
+                    }
+                }
+                else
+                {
+                    uiField.SetValueWithoutNotify(null);
+                }
             }
             else if (IsComputedStyleEnum(val, valType))
             {
@@ -1082,10 +1105,6 @@ namespace Unity.UI.Builder
                     var style = (StyleColor)val;
                     var value = style.value;
 
-                    // We keep falling into the alpha==0 trap. This patches the issue a little.
-                    if (value.a < 0.1f)
-                        value.a = 255.0f;
-
                     if (styleProperty != null && !styleProperty.IsVariable())
                     {
                         isDirty = true;
@@ -1199,13 +1218,13 @@ namespace Unity.UI.Builder
             }
         }
 
-        public void OnFieldVariableChange(string newValue, VisualElement target, string styleName, int index)
+        public void OnFieldVariableChange(string newValue, VisualElement target, string styleName, int index, NotifyType notifyType = NotifyType.Default)
         {
             if (newValue.Length <= BuilderConstants.UssVariablePrefix.Length)
                 return;
 
             bool isNewValue = OnFieldVariableChangeImplInBatch(newValue, styleName, index);
-            PostStyleFieldSteps(target, styleName, isNewValue, true);
+            PostStyleFieldSteps(target, styleName, isNewValue, true, notifyType);
         }
 
         public DropdownMenuAction.Status UnsetAllActionStatus(DropdownMenuAction action)
@@ -1405,20 +1424,33 @@ namespace Unity.UI.Builder
                     styleSheet.RemoveProperty(currentRule, TransitionConstants.Delay);
                 }
             }
+
             NotifyStyleChanges(null, true);
         }
 
-        void NotifyStyleChanges(List<string> styles = null, bool selfNotify = false)
+        void NotifyStyleChanges(List<string> styles = null, bool selfNotify = false, NotifyType notifyType = NotifyType.Default)
         {
+            BuilderStylingChangeType styleChangeType;
+            var hierarchyChangeType = BuilderHierarchyChangeType.InlineStyle;
+            if (notifyType == NotifyType.RefreshOnly)
+            {
+                styleChangeType = BuilderStylingChangeType.RefreshOnly;
+            }
+            else
+            {
+                styleChangeType = BuilderStylingChangeType.Default;
+                hierarchyChangeType |= BuilderHierarchyChangeType.FullRefresh;
+            }
+
             if (BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {
-                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles);
+                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
                 currentVisualElement.IncrementVersion((VersionChangeType)(-1));
             }
             else
             {
-                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles);
-                m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, BuilderHierarchyChangeType.InlineStyle);
+                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
+                m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, hierarchyChangeType);
             }
         }
 
@@ -1433,7 +1465,7 @@ namespace Unity.UI.Builder
             return styleProperty;
         }
 
-        void PostStyleFieldSteps(VisualElement target, string styleName, bool isNewValue, bool isVariable = false)
+        void PostStyleFieldSteps(VisualElement target, string styleName, bool isNewValue, bool isVariable = false, NotifyType notifyType = NotifyType.Default)
         {
             if (isVariable)
             {
@@ -1450,9 +1482,6 @@ namespace Unity.UI.Builder
 
                 var styleRow = target.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
                 styleRow.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-
-                // Remove temporary min-size class on VisualElement.
-                currentVisualElement.RemoveMinSizeSpecialElement();
 
                 var styleFields = styleRow.Query<BindableElement>().ToList();
 
@@ -1475,7 +1504,7 @@ namespace Unity.UI.Builder
 
             s_StyleChangeList.Clear();
             s_StyleChangeList.Add(styleName);
-            NotifyStyleChanges(s_StyleChangeList, isVariable);
+            NotifyStyleChanges(s_StyleChangeList, isVariable, notifyType);
 
             if (isNewValue && updateStyleCategoryFoldoutOverrides != null)
                 updateStyleCategoryFoldoutOverrides();
@@ -1499,7 +1528,7 @@ namespace Unity.UI.Builder
             return isNewValue;
         }
 
-        void OnFieldKeywordChange(StyleValueKeyword keyword, VisualElement target, string styleName)
+        void OnFieldKeywordChange(StyleValueKeyword keyword, VisualElement target, string styleName, NotifyType notifyType = NotifyType.Default)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
             var isNewValue = IsNewValue(styleProperty, StyleValueType.Keyword);
@@ -1522,7 +1551,7 @@ namespace Unity.UI.Builder
                 styleProperty.values[0] = styleValue;
             }
 
-            PostStyleFieldSteps(target, styleName, isNewValue);
+            PostStyleFieldSteps(target, styleName, isNewValue, false, notifyType);
         }
 
         bool OnFieldDimensionChangeImplBatch(float newValue, Dimension.Unit newUnit, VisualElement target, string styleName)
@@ -1552,11 +1581,11 @@ namespace Unity.UI.Builder
             return isNewValue;
         }
 
-        void OnFieldDimensionChangeImpl(float newValue, Dimension.Unit newUnit, VisualElement target, string styleName)
+        void OnFieldDimensionChangeImpl(float newValue, Dimension.Unit newUnit, VisualElement target, string styleName, NotifyType notifyType = NotifyType.Default)
         {
             bool isNewValue = OnFieldDimensionChangeImplBatch(newValue, newUnit, target, styleName);
 
-            PostStyleFieldSteps(target, styleName, isNewValue);
+            PostStyleFieldSteps(target, styleName, isNewValue, false, notifyType);
         }
 
         void OnFieldDimensionChange(ChangeEvent<int> e, string styleName)
@@ -1567,18 +1596,32 @@ namespace Unity.UI.Builder
         void OnDimensionStyleFieldValueChange(ChangeEvent<string> e, string styleName)
         {
             var dimensionStyleField = e.target as DimensionStyleField;
-            bool isVar = e.newValue.Trim().StartsWith(BuilderConstants.UssVariablePrefix);
+            var notifyType = dimensionStyleField.isUsingLabelDragger ? NotifyType.RefreshOnly : NotifyType.Default;
 
-            if (isVar && BuilderSharedStyles.IsSelectorElement(currentVisualElement))
+            if (!dimensionStyleField.isUsingLabelDragger && BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {
-                OnFieldVariableChange(StyleSheetUtilities.GetCleanVariableName(e.newValue), dimensionStyleField, styleName, 0);
+                var startsWithUssVariablePrefix = e.newValue.Trim().StartsWith(BuilderConstants.UssVariablePrefix);
+
+                if (startsWithUssVariablePrefix)
+                {
+                    OnFieldVariableChange(
+                        StyleSheetUtilities.GetCleanVariableName(e.newValue),
+                        dimensionStyleField,
+                        styleName,
+                        0,
+                        notifyType);
+
+                    return;
+                }
             }
-            else if (dimensionStyleField.isKeyword)
+
+            if (dimensionStyleField.isKeyword)
             {
                 OnFieldKeywordChange(
                     dimensionStyleField.keyword,
                     dimensionStyleField,
-                    styleName);
+                    styleName,
+                    notifyType);
             }
             else
             {
@@ -1586,7 +1629,8 @@ namespace Unity.UI.Builder
                     dimensionStyleField.length,
                     dimensionStyleField.unit,
                     dimensionStyleField,
-                    styleName);
+                    styleName,
+                    notifyType);
             }
         }
 
@@ -1853,32 +1897,6 @@ namespace Unity.UI.Builder
                     Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
                     styleProperty.values = new StyleValueHandle[0];
                     isNewValue = true;
-                }
-            }
-
-            if (styleName == "background-image")
-            {
-                if (currentVisualElement.GetMinSizeSpecialElement() != null)
-                {
-                    var newSize = Vector2.negativeInfinity;
-
-                    if (newValue is Texture texture)
-                        newSize = new Vector2(texture.width, texture.height);
-                    else if (newValue is Sprite sprite)
-                        newSize = new Vector2(sprite.rect.width, sprite.rect.height);
-
-                    if (newSize != Vector2.negativeInfinity)
-                    {
-                        var widthFieldsForName = GetFieldListForStyleName("width");
-                        Assert.AreEqual(1, widthFieldsForName.Count);
-                        var widthField = (DimensionStyleField)widthFieldsForName[0];
-                        widthField.value = $"{newSize.x}px";
-
-                        var heightFieldsForName = GetFieldListForStyleName("height");
-                        Assert.AreEqual(1, heightFieldsForName.Count);
-                        var heightField = (DimensionStyleField)heightFieldsForName[0];
-                        heightField.value = $"{newSize.y}px";
-                    }
                 }
             }
 

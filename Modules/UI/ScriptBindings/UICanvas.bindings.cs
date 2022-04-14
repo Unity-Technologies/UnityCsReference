@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Profiling;
 
 namespace UnityEngine
 {
@@ -123,6 +124,7 @@ namespace UnityEngine
         }
     }
 
+    [IgnoredByDeepProfiler]
     [NativeHeader("Modules/UI/Canvas.h"),
      StaticAccessor("UI::SystemProfilerApi", StaticAccessorType.DoubleColon)]
     public static class UISystemProfilerApi

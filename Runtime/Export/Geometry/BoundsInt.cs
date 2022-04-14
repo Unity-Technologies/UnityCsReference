@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
@@ -18,42 +19,101 @@ namespace UnityEngine
         private Vector3Int m_Position;
         private Vector3Int m_Size;
 
-        public int x { get { return m_Position.x; } set { m_Position.x = value; } }
-        public int y { get { return m_Position.y; } set { m_Position.y = value; } }
-        public int z { get { return m_Position.z; } set { m_Position.z = value; } }
+        public int x
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Position.x; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Position.x = value; }
+        }
+        public int y
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Position.y; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Position.y = value; }
+        }
+        public int z
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Position.z; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Position.z = value; }
+        }
 
-        public Vector3 center { get { return new Vector3(x + m_Size.x / 2f, y + m_Size.y / 2f, z + m_Size.z / 2f); } }
-        public Vector3Int min { get { return new Vector3Int(xMin, yMin, zMin); } set { xMin = value.x; yMin = value.y; zMin = value.z; } }
-        public Vector3Int max { get { return new Vector3Int(xMax, yMax, zMax); } set { xMax = value.x; yMax = value.y; zMax = value.z; } }
+        public Vector3 center
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Vector3(x + m_Size.x / 2f, y + m_Size.y / 2f, z + m_Size.z / 2f); }
+        }
+        public Vector3Int min
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Vector3Int(xMin, yMin, zMin); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { xMin = value.x; yMin = value.y; zMin = value.z; }
+        }
+        public Vector3Int max
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Vector3Int(xMax, yMax, zMax); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { xMax = value.x; yMax = value.y; zMax = value.z; }
+        }
 
-        public int xMin { get { return Math.Min(m_Position.x, m_Position.x + m_Size.x); } set { int oldxmax = xMax; m_Position.x = value; m_Size.x = oldxmax - m_Position.x; } }
-        public int yMin { get { return Math.Min(m_Position.y, m_Position.y + m_Size.y); } set { int oldymax = yMax; m_Position.y = value; m_Size.y = oldymax - m_Position.y; } }
-        public int zMin { get { return Math.Min(m_Position.z, m_Position.z + m_Size.z); } set { int oldzmax = zMax; m_Position.z = value; m_Size.z = oldzmax - m_Position.z; } }
-        public int xMax { get { return Math.Max(m_Position.x, m_Position.x + m_Size.x); } set { m_Size.x = value - m_Position.x; } }
-        public int yMax { get { return Math.Max(m_Position.y, m_Position.y + m_Size.y); } set { m_Size.y = value - m_Position.y; } }
-        public int zMax { get { return Math.Max(m_Position.z, m_Position.z + m_Size.z); } set { m_Size.z = value - m_Position.z; } }
+        public int xMin
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Math.Min(m_Position.x, m_Position.x + m_Size.x); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { int oldxmax = xMax; m_Position.x = value; m_Size.x = oldxmax - m_Position.x; }
+        }
+        public int yMin
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Math.Min(m_Position.y, m_Position.y + m_Size.y); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { int oldymax = yMax; m_Position.y = value; m_Size.y = oldymax - m_Position.y; }
+        }
+        public int zMin
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Math.Min(m_Position.z, m_Position.z + m_Size.z); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { int oldzmax = zMax; m_Position.z = value; m_Size.z = oldzmax - m_Position.z; }
+        }
+        public int xMax
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Math.Max(m_Position.x, m_Position.x + m_Size.x); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Size.x = value - m_Position.x; }
+        }
+        public int yMax
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Math.Max(m_Position.y, m_Position.y + m_Size.y); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Size.y = value - m_Position.y; }
+        }
+        public int zMax
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Math.Max(m_Position.z, m_Position.z + m_Size.z); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Size.z = value - m_Position.z; }
+        }
 
-        public Vector3Int position { get { return m_Position; } set { m_Position = value; } }
-        public Vector3Int size { get { return m_Size; } set { m_Size = value; } }
+        public Vector3Int position
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Position; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Position = value; }
+        }
+        public Vector3Int size
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Size; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Size = value; }
+        }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public BoundsInt(int xMin, int yMin, int zMin, int sizeX, int sizeY, int sizeZ)
         {
             m_Position = new Vector3Int(xMin, yMin, zMin);
             m_Size = new Vector3Int(sizeX, sizeY, sizeZ);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public BoundsInt(Vector3Int position, Vector3Int size)
         {
             m_Position = position;
             m_Size = size;
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void SetMinMax(Vector3Int minPosition, Vector3Int maxPosition)
         {
             min = minPosition;
             max = maxPosition;
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void ClampToBounds(BoundsInt bounds)
         {
             position = new Vector3Int(
@@ -68,6 +128,7 @@ namespace UnityEngine
             );
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Contains(Vector3Int position)
         {
             return position.x >= xMin
@@ -78,16 +139,19 @@ namespace UnityEngine
                 && position.z < zMax;
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override string ToString()
         {
             return ToString(null, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format)
         {
             return ToString(format, null);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (formatProvider == null)
@@ -95,16 +159,19 @@ namespace UnityEngine
             return UnityString.Format("Position: {0}, Size: {1}", m_Position.ToString(format, formatProvider), m_Size.ToString(format, formatProvider));
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator==(BoundsInt lhs, BoundsInt rhs)
         {
             return lhs.m_Position == rhs.m_Position && lhs.m_Size == rhs.m_Size;
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(BoundsInt lhs, BoundsInt rhs)
         {
             return !(lhs == rhs);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
         {
             if (!(other is BoundsInt)) return false;
@@ -112,6 +179,7 @@ namespace UnityEngine
             return Equals((BoundsInt)other);
         }
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Equals(BoundsInt other)
         {
             return m_Position.Equals(other.m_Position) && m_Size.Equals(other.m_Size);
@@ -124,6 +192,7 @@ namespace UnityEngine
 
         public PositionEnumerator allPositionsWithin
         {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get { return new PositionEnumerator(min, max); }
         }
 
@@ -132,6 +201,7 @@ namespace UnityEngine
             private readonly Vector3Int _min, _max;
             private Vector3Int _current;
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             public PositionEnumerator(Vector3Int min, Vector3Int max)
             {
                 _min = _current = min;
@@ -139,11 +209,13 @@ namespace UnityEngine
                 Reset();
             }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             public PositionEnumerator GetEnumerator()
             {
                 return this;
             }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             public bool MoveNext()
             {
                 if (_current.z >= _max.z || _current.y >= _max.y)
@@ -170,16 +242,18 @@ namespace UnityEngine
                 return true;
             }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             public void Reset()
             {
                 _current = _min;
                 _current.x--;
             }
 
-            public Vector3Int Current { get { return _current; } }
+            public Vector3Int Current { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return _current; } }
 
-            object IEnumerator.Current { get { return Current; } }
+            object IEnumerator.Current { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return Current; } }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             void IDisposable.Dispose() {}
         }
     }

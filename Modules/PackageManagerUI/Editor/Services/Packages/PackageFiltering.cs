@@ -67,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = settingsProxy;
         }
 
-        internal static bool FilterByTab(IPackage package, PackageFilterTab tab, bool showDependencies, bool isLoggedIn)
+        internal static bool FilterByTab(IPackage package, PackageFilterTab tab, bool isLoggedIn)
         {
             switch (tab)
             {
@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 case PackageFilterTab.MyRegistries:
                     return package.Is(PackageType.Installable) && (package.Is(PackageType.ScopedRegistry) || package.Is(PackageType.MainNotUnity)) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
-                    return !package.Is(PackageType.BuiltIn) && (package.progress == PackageProgress.Installing || (package.versions.installed != null && (showDependencies || package.versions.installed.isDirectDependency)));
+                    return !package.Is(PackageType.BuiltIn) && (package.progress == PackageProgress.Installing || package.versions.installed != null);
                 case PackageFilterTab.AssetStore:
                     return isLoggedIn && package.Is(PackageType.AssetStore);
                 default:
@@ -143,7 +143,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool FilterByCurrentTab(IPackage package)
         {
-            return FilterByTab(package, currentFilterTab, m_SettingsProxy.enablePackageDependencies, m_UnityConnect.isUserLoggedIn);
+            return FilterByTab(package, currentFilterTab, m_UnityConnect.isUserLoggedIn);
         }
 
         public virtual void SetCurrentFilterTabWithoutNotify(PackageFilterTab tab)

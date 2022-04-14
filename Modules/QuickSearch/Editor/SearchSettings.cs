@@ -73,42 +73,42 @@ namespace UnityEditor.Search
         public void Remove(object key) { throw new NotSupportedException(); }
     }
 
-    static class SearchSettings
+    public static class SearchSettings
     {
-        public static readonly string projectLocalSettingsFolder = Utils.CleanPath(new DirectoryInfo("UserSettings").FullName);
-        public static readonly string projectLocalSettingsPath = $"{projectLocalSettingsFolder}/Search.settings";
+        internal static readonly string projectLocalSettingsFolder = Utils.CleanPath(new DirectoryInfo("UserSettings").FullName);
+        internal static readonly string projectLocalSettingsPath = $"{projectLocalSettingsFolder}/Search.settings";
 
         const string k_ItemIconSizePrefKey = "Search.ItemIconSize";
-        public const string settingsPreferencesKey = "Preferences/Search";
+        internal const string settingsPreferencesKey = "Preferences/Search";
 
         // Per project settings
-        public static bool trackSelection { get; set; }
-        public static bool fetchPreview { get; set; }
-        public static bool wantsMore { get; set; }
-        public static bool keepOpen { get; set; }
-        public static string queryFolder { get; set; }
-        public static bool onBoardingDoNotAskAgain { get; set; }
-        public static bool showPackageIndexes { get; set; }
-        public static bool showStatusBar { get; set; }
-        public static SearchQuerySortOrder savedSearchesSortOrder { get; set; }
-        public static bool showSavedSearchPanel { get; set; }
-        public static Dictionary<string, string> scopes { get; private set; }
-        public static Dictionary<string, SearchProviderSettings> providers { get; private set; }
-        public static bool queryBuilder { get; set; }
-        public static string ignoredProperties { get; set; }
-        public static string helperWidgetCurrentArea { get; set; }
+        internal static bool trackSelection { get; set; }
+        internal static bool fetchPreview { get; set; }
+        internal static bool wantsMore { get; set; }
+        internal static bool keepOpen { get; set; }
+        internal static string queryFolder { get; set; }
+        internal static bool onBoardingDoNotAskAgain { get; set; }
+        internal static bool showPackageIndexes { get; set; }
+        internal static bool showStatusBar { get; set; }
+        internal static SearchQuerySortOrder savedSearchesSortOrder { get; set; }
+        internal static bool showSavedSearchPanel { get; set; }
+        internal static Dictionary<string, string> scopes { get; private set; }
+        internal static Dictionary<string, SearchProviderSettings> providers { get; private set; }
+        internal static bool queryBuilder { get; set; }
+        internal static string ignoredProperties { get; set; }
+        internal static string helperWidgetCurrentArea { get; set; }
 
-        public static int[] expandedQueries { get; set; }
+        internal static int[] expandedQueries { get; set; }
 
         // User editor pref
-        public static float itemIconSize { get; set; } = (float)DisplayMode.List;
+        internal static float itemIconSize { get; set; } = (float)DisplayMode.List;
 
-        public const int k_RecentSearchMaxCount = 20;
-        public static List<string> recentSearches = new List<string>(k_RecentSearchMaxCount);
+        internal const int k_RecentSearchMaxCount = 20;
+        internal static List<string> recentSearches = new List<string>(k_RecentSearchMaxCount);
 
         static string s_DisabledIndexersString;
         static HashSet<string> s_DisabledIndexers;
-        public static HashSet<string> disabledIndexers
+        internal static HashSet<string> disabledIndexers
         {
             get
             {
@@ -122,11 +122,11 @@ namespace UnityEditor.Search
         }
 
         public static HashSet<string> searchItemFavorites = new HashSet<string>();
-        public static HashSet<string> searchQueryFavorites = new HashSet<string>();
+        internal static HashSet<string> searchQueryFavorites = new HashSet<string>();
 
         internal static event Action<string, bool> providerActivationChanged;
 
-        public static int debounceMs
+        internal static int debounceMs
         {
             get { return UnityEditor.SearchUtils.debounceThresholdMs; }
 
@@ -194,7 +194,7 @@ namespace UnityEditor.Search
             LoadFavorites();
         }
 
-        public static void Save()
+        internal static void Save()
         {
             var settings = new Dictionary<string, object>
             {
@@ -228,29 +228,29 @@ namespace UnityEditor.Search
             AssetDatabaseAPI.RegisterCustomDependency("SearchIndexIgnoredProperties", Hash128.Compute(ignoredProperties));
         }
 
-        public static void SetScopeValue(string prefix, int hash, string value)
+        internal static void SetScopeValue(string prefix, int hash, string value)
         {
             scopes[$"{prefix}.{hash:X8}"] = value;
         }
 
-        public static void SetScopeValue(string prefix, int hash, int value)
+        internal static void SetScopeValue(string prefix, int hash, int value)
         {
             scopes[$"{prefix}.{hash:X8}"] = value.ToString();
         }
 
-        public static void SetScopeValue(string prefix, int hash, float value)
+        internal static void SetScopeValue(string prefix, int hash, float value)
         {
             scopes[$"{prefix}.{hash:X8}"] = value.ToString();
         }
 
-        public static string GetScopeValue(string prefix, int hash, string defaultValue)
+        internal static string GetScopeValue(string prefix, int hash, string defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
                 return value;
             return defaultValue;
         }
 
-        public static int GetScopeValue(string prefix, int hash, int defaultValue)
+        internal static int GetScopeValue(string prefix, int hash, int defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
             {
@@ -259,7 +259,7 @@ namespace UnityEditor.Search
             return defaultValue;
         }
 
-        public static float GetScopeValue(string prefix, int hash, float defaultValue)
+        internal static float GetScopeValue(string prefix, int hash, float defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
             {
@@ -268,7 +268,7 @@ namespace UnityEditor.Search
             return defaultValue;
         }
 
-        public static SearchFlags GetContextOptions()
+        internal static SearchFlags GetContextOptions()
         {
             SearchFlags options = SearchFlags.Default;
             if (wantsMore)
@@ -276,7 +276,7 @@ namespace UnityEditor.Search
             return options;
         }
 
-        public static SearchFlags ApplyContextOptions(SearchFlags options)
+        internal static SearchFlags ApplyContextOptions(SearchFlags options)
         {
             if (wantsMore)
                 options |= SearchFlags.WantsMore;
@@ -284,12 +284,12 @@ namespace UnityEditor.Search
             return options;
         }
 
-        public static void ApplyContextOptions(SearchContext context)
+        internal static void ApplyContextOptions(SearchContext context)
         {
             context.options = ApplyContextOptions(context.options);
         }
 
-        public static void AddRecentSearch(string search)
+        internal static void AddRecentSearch(string search)
         {
             recentSearches.Insert(0, search);
             if (recentSearches.Count > k_RecentSearchMaxCount)
@@ -554,7 +554,8 @@ namespace UnityEditor.Search
 
                 using (new EditorGUI.DisabledGroupScope(!p.active))
                 {
-                    GUILayout.Label(new GUIContent(p.name, $"{p.id}"), GUILayout.Width(175));
+                    var content = p.name + " (" + $"{p.filterId}" + ")";
+                    GUILayout.Label(new GUIContent(content), GUILayout.Width(175));
                 }
 
                 if (!p.isExplicitProvider)
@@ -604,7 +605,7 @@ namespace UnityEditor.Search
             GUILayout.EndHorizontal();
         }
 
-        public static SearchProviderSettings GetProviderSettings(string providerId)
+        internal static SearchProviderSettings GetProviderSettings(string providerId)
         {
             if (TryGetProviderSettings(providerId, out var settings))
                 return settings;
@@ -617,7 +618,7 @@ namespace UnityEditor.Search
             return providers[providerId];
         }
 
-        public static bool TryGetProviderSettings(string providerId, out SearchProviderSettings settings)
+        internal static bool TryGetProviderSettings(string providerId, out SearchProviderSettings settings)
         {
             return providers.TryGetValue(providerId, out settings);
         }
@@ -685,7 +686,7 @@ namespace UnityEditor.Search
             SortActionsPriority();
         }
 
-        public static void SortActionsPriority()
+        internal static void SortActionsPriority()
         {
             foreach (var searchProvider in SearchService.Providers)
                 SortActionsPriority(searchProvider);
@@ -714,7 +715,7 @@ namespace UnityEditor.Search
             });
         }
 
-        public static string GetFullQueryFolderPath()
+        internal static string GetFullQueryFolderPath()
         {
             var initialFolder = Utils.CleanPath(new DirectoryInfo(queryFolder).FullName);
             if (!Directory.Exists(initialFolder) || !Utils.IsPathUnderProject(initialFolder))
@@ -752,13 +753,13 @@ namespace UnityEditor.Search
             public static GUIContent debounceThreshold = EditorGUIUtility.TrTextContent("Select the typing debounce threshold (ms)");
         }
 
-        public static void AddSearchFavorite(string searchText)
+        internal static void AddSearchFavorite(string searchText)
         {
             searchQueryFavorites.Add(searchText);
             SaveFavorites();
         }
 
-        public static void RemoveSearchFavorite(string searchText)
+        internal static void RemoveSearchFavorite(string searchText)
         {
             searchQueryFavorites.Remove(searchText);
             SaveFavorites();
@@ -776,13 +777,13 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchRemoveFavoriteItem, item.provider.id);
         }
 
-        public static void LoadFavorites()
+        internal static void LoadFavorites()
         {
             var favoriteString = EditorPrefs.GetString("SearchQuery.Favorites", "");
             searchQueryFavorites.UnionWith(favoriteString.Split(new string[] { ";;;" }, StringSplitOptions.RemoveEmptyEntries));
         }
 
-        public static void SaveFavorites()
+        internal static void SaveFavorites()
         {
             EditorPrefs.SetString("SearchQuery.Favorites", string.Join(";;;", searchQueryFavorites));
         }

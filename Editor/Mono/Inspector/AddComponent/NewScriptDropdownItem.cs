@@ -110,11 +110,17 @@ namespace UnityEditor.AddComponent
             return ClassExists(m_ClassName);
         }
 
+        private string GetTemplatePath(){
+            if(File.Exists("Assets/ScriptTemplates/81-C# Script-NewBehaviourScript.cs.txt"))
+            {
+                return "Assets/ScriptTemplates/81-C# Script-NewBehaviourScript.cs.txt";
+            }
+            var basePath = Path.Combine(EditorApplication.applicationContentsPath, kResourcesTemplatePath);
+            return Path.Combine(basePath, "81-C# Script-NewBehaviourScript.cs.txt");
+        }
         private void CreateScript()
         {
-            var basePath = Path.Combine(EditorApplication.applicationContentsPath, kResourcesTemplatePath);
-            var templatePath = Path.Combine(basePath, "81-C# Script-NewBehaviourScript.cs.txt");
-            ProjectWindowUtil.CreateScriptAssetFromTemplate(TargetPath(), templatePath);
+            ProjectWindowUtil.CreateScriptAssetFromTemplate(TargetPath(), GetTemplatePath());
             AssetDatabase.Refresh();
         }
     }

@@ -121,7 +121,7 @@ namespace UnityEditor
 
                     if (hasModified || upgrade)
                     {
-                        ApplyAndImport();
+                        SaveChanges();
                         applied = true;
                     }
                 }

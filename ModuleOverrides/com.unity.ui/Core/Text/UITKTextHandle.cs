@@ -50,11 +50,6 @@ namespace UnityEngine.UIElements
             return textHandle.GetCursorPositionFromStringIndexUsingLineHeight(index);
         }
 
-        public Vector2 GetCursorPositionFromIndexUsingCharacterHeight(int index)
-        {
-            return textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(index);
-        }
-
         public float ComputeTextWidth(string textToMeasure, bool wordWrap, float width, float height)
         {
             ConvertUssToTextGenerationSettings(s_LayoutSettings);
@@ -162,6 +157,7 @@ namespace UnityEngine.UIElements
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
+
             tgs.wordWrap = style.whiteSpace == WhiteSpace.Normal;
 
             tgs.wordWrappingRatio = 0.4f;
@@ -172,6 +168,7 @@ namespace UnityEngine.UIElements
             tgs.paragraphSpacing = style.unityParagraphSpacing.value;
 
             tgs.color = style.color;
+            tgs.shouldConvertToLinearSpace = false;
 
             if (m_TextElement.panel?.contextType == ContextType.Editor)
                 tgs.color *= UIElementsUtility.editorPlayModeTintColor;
@@ -197,11 +194,11 @@ namespace UnityEngine.UIElements
             if (textToMeasure == null || !IsFontAssigned(te))
                 return new Vector2(measuredWidth, measuredHeight);
 
-            var elementScaling = te.ComputeGlobalScale();
-            if (elementScaling.x + elementScaling.y <= 0 || te.scaledPixelsPerPoint <= 0)
+            float pixelsPerPoint = te.scaledPixelsPerPoint;
+
+            if ( pixelsPerPoint <= 0)
                 return Vector2.zero;
 
-            float pixelsPerPoint = te.scaledPixelsPerPoint;
             if (widthMode == VisualElement.MeasureMode.Exactly)
             {
                 measuredWidth = width;

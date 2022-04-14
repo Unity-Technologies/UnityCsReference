@@ -36,7 +36,7 @@ namespace UnityEditor
             }
             else
             {
-                BeginColliderInspector();
+                BeginEditColliderInspector();
             }
 
             // Grab this as the offset to the top of the drag target.
@@ -51,8 +51,6 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_Points, true);
                 EditorGUI.EndDisabledGroup();
             }
-
-            EndColliderInspector();
 
             FinalizeInspectorGUI();
 

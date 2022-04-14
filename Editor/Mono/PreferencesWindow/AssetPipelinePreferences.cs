@@ -227,7 +227,9 @@ namespace UnityEditor
                 GUILayout.Label(Properties.cacheServer, EditorStyles.boldLabel);
                 if (GUILayout.Button(Properties.cacheServerLearnMore, EditorStyles.linkLabel))
                 {
-                    Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+                    // Known issue with Docs redirect - versioned pages might not open offline docs
+                    var help = Help.FindHelpNamed("UnityAccelerator");
+                    Application.OpenURL(help);
                 }
                 GUILayout.EndHorizontal();
                 EditorGUI.BeginChangeCheck();
@@ -293,7 +295,9 @@ namespace UnityEditor
 
             if (GUILayout.Button(Properties.desiredImportWorkerCountPctOfLogicalCPUsLearnMore, EditorStyles.linkLabel))
             {
-                Application.OpenURL("https://docs.unity3d.com/Manual/ParallelImport.html");
+                // Known issue with Docs redirect - versioned pages might not open offline docs
+                var help = Help.FindHelpNamed("ParallelImport");
+                Application.OpenURL(help);
             }
 
             GUILayout.EndHorizontal();
@@ -308,6 +312,31 @@ namespace UnityEditor
                 if (!isWindows)
                     EditorGUILayout.HelpBox("Directory monitoring currently only available on windows", MessageType.Info, true);
             }
+        }
+
+        internal static bool ParseCacheServerAddress(string input, out string ip, out UInt16 port)
+        {
+            var address = input.Split(':');
+            ip = address[0];
+            port = 0;
+            if (address.Length == 2)
+            {
+                try
+                {
+                    port = UInt16.Parse(address[1]);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"{e.Message} Exception thrown attempting to parse the port '{address[1]}'. Please double check the 'Default IP Address' and try again.");
+                    return false;
+                }
+            }
+            else if (address.Length > 2)
+            {
+                Debug.LogError($"Failure attempting to parse the address '{input}' as multiple ports were detected. Please double check the 'Default IP Address' and try again.");
+                return false;
+            }
+            return true;
         }
 
         static void CacheServerGUI()
@@ -327,13 +356,7 @@ namespace UnityEditor
 
             if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
             {
-                var address = s_CacheServer2IPAddress.Split(':');
-                var ip = address[0];
-                UInt16 port = 0;
-                if (address.Length == 2)
-                    port = Convert.ToUInt16(address[1]);
-
-                if (AssetDatabase.CanConnectToCacheServer(ip, port))
+                if (ParseCacheServerAddress(s_CacheServer2IPAddress, out var ip, out var port) && AssetDatabase.CanConnectToCacheServer(ip, port))
                     s_ConnectionState = ConnectionState.Success;
                 else
                     s_ConnectionState = ConnectionState.Failure;

@@ -81,7 +81,7 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
+                    if (GUIUtility.hotControl == id)
                     {
                         GUIUtility.hotControl = 0;
                         evt.Use();
@@ -169,7 +169,7 @@ namespace UnityEditorInternal
                     break;
 
                 case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
+                    if (GUIUtility.hotControl == id)
                     {
                         GUIUtility.hotControl = 0;
                         Tools.UnlockHandlePosition();

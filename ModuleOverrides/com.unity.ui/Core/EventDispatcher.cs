@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
 {
@@ -119,6 +121,8 @@ namespace UnityEngine.UIElements
         {
             public EventBase m_Event;
             public IPanel m_Panel;
+            public StackTrace m_StackTrace;
+            public string stackTrace => m_StackTrace?.ToString() ?? string.Empty;
         }
 
         private ClickDetector m_ClickDetector = new ClickDetector();
@@ -165,6 +169,7 @@ namespace UnityEngine.UIElements
             new KeyboardEventDispatchingStrategy(),
             new PointerEventDispatchingStrategy(),
             new MouseEventDispatchingStrategy(),
+            new NavigationEventDispatchingStrategy(),
             new CommandEventDispatchingStrategy(),
             new IMGUIEventDispatchingStrategy(),
             new DefaultDispatchingStrategy(),
@@ -204,7 +209,7 @@ namespace UnityEngine.UIElements
 
         internal bool processingEvents { get; private set; }
 
-        internal void Dispatch(EventBase evt, IPanel panel, DispatchMode dispatchMode)
+        internal void Dispatch(EventBase evt, [NotNull] IPanel panel, DispatchMode dispatchMode)
         {
             evt.MarkReceivedByDispatcher();
 
@@ -224,7 +229,13 @@ namespace UnityEngine.UIElements
             else
             {
                 evt.Acquire();
-                m_Queue.Enqueue(new EventRecord {m_Event = evt, m_Panel = panel});
+                m_Queue.Enqueue(new EventRecord
+                {
+                    m_Event = evt,
+                    m_Panel = panel,
+                    m_StackTrace = panel is BaseVisualElementPanel p &&
+                                   p.panelDebug != null && p.panelDebug.hasAttachedDebuggers ? new StackTrace() : null
+                });
             }
         }
 
@@ -307,7 +318,7 @@ namespace UnityEngine.UIElements
                     }
                     catch (ExitGUIException e)
                     {
-                        Debug.Assert(caughtExitGUIException == null);
+                        Debug.Assert(caughtExitGUIException == null, eventRecord.stackTrace);
                         caughtExitGUIException = e;
                     }
                     finally
@@ -329,7 +340,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void ProcessEvent(EventBase evt, IPanel panel)
+        void ProcessEvent(EventBase evt, [NotNull] IPanel panel)
         {
             Event e = evt.imguiEvent;
             // Sometimes (in tests only?) we receive Used events. Protect our verification from this case.
@@ -344,9 +355,19 @@ namespace UnityEngine.UIElements
                     ApplyDispatchingStrategies(evt, panel, imguiEventIsInitiallyUsed);
                 }
 
-                if (evt.path != null)
+                // Last chance to build a path. Some dispatching strategies (e.g. PointerCaptureDispatchingStrategy)
+                // don't call PropagateEvents but still need to call ExecuteDefaultActions on composite roots.
+                var path = evt.path;
+                if (path == null && evt.bubblesOrTricklesDown && evt.leafTarget is VisualElement leafTarget)
                 {
-                    foreach (var element in evt.path.targetElements)
+                    path = PropagationPaths.Build(leafTarget, evt);
+                    evt.path = path;
+                    EventDebugger.LogPropagationPaths(evt, path);
+                }
+
+                if (path != null)
+                {
+                    foreach (var element in path.targetElements)
                     {
                         if (element.panel == panel)
                         {
@@ -361,11 +382,15 @@ namespace UnityEngine.UIElements
                 else
                 {
                     // If no propagation path, make sure EventDispatchUtilities.ExecuteDefaultAction has a target
-                    if (evt.target == null && panel != null)
+                    if (!(evt.target is VisualElement target))
                     {
-                        evt.target = panel.visualTree;
+                        evt.target = target = panel.visualTree;
                     }
-                    EventDispatchUtilities.ExecuteDefaultAction(evt);
+
+                    if (target.panel == panel)
+                    {
+                        EventDispatchUtilities.ExecuteDefaultAction(evt);
+                    }
                 }
 
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);

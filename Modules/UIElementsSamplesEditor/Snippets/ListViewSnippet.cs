@@ -37,10 +37,10 @@ namespace UnityEditor.UIElements.Samples
             listView.selectionType = SelectionType.Multiple;
 
             // Callback invoked when the user double clicks an item
-            listView.onItemsChosen += Debug.Log;
+            listView.itemsChosen += Debug.Log;
 
             // Callback invoked when the user changes the selection inside the ListView
-            listView.onSelectionChange += Debug.Log;
+            listView.selectionChanged += Debug.Log;
             /// </sample>
         }
     }

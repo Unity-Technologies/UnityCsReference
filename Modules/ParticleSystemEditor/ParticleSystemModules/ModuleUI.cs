@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
@@ -119,11 +119,11 @@ namespace UnityEditor
 
         protected virtual void OnModuleEnable()
         {
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             Init(); // ensure initialized
         }
 
-        public virtual void UndoRedoPerformed()
+        public virtual void UndoRedoPerformed(in UndoRedoInfo info)
         {
             // If the undo operation has changed the module to now be disabled then we should remove any of its curves from the curve editor. (case 861424)
             if (!enabled)
@@ -132,7 +132,7 @@ namespace UnityEditor
 
         protected virtual void OnModuleDisable()
         {
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
             ParticleSystemCurveEditor psce = m_ParticleSystemUI.m_ParticleEffectUI.GetParticleSystemCurveEditor();
             foreach (SerializedProperty curveProp in m_ModuleCurves)
             {
@@ -211,9 +211,14 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
             GUI.enabled = true;
 
+            EditorGUI.BeginChangeCheck();
+
             label = EditorGUI.BeginProperty(rect, label, m_Enabled);
             var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().moduleHeaderStyle);
             EditorGUI.EndProperty();
+
+            if (EditorGUI.EndChangeCheck())
+                ToolManager.RefreshAvailableTools();
 
             GUI.enabled = wasEnabled;
             return toggleState;

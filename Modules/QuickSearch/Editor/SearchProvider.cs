@@ -292,7 +292,9 @@ namespace UnityEditor.Search
 
         /// <summary>Unique id of the provider.</summary>
         public string id { get; private set; }
-        internal string type { get; set; }
+
+        /// <summary>Non-unique id of the provider. This is used for specialized or grouped providers.</summary>
+        public string type { get; set; }
 
         /// <summary>Display name of the provider.</summary>
         public string name { get; private set; }
@@ -369,6 +371,12 @@ namespace UnityEditor.Search
         /// Fetch search tables that are used to display search result using a table view.
         /// </summary>
         public Func<SearchContext, IEnumerable<SearchItem>, IEnumerable<SearchColumn>> fetchColumns;
+
+        /// <summary>
+        /// Returns a default table configuration for the current provider if any.
+        /// TODO: Make public when 22.2 Search API lands
+        /// </summary>
+        internal Func<SearchContext, SearchTable> tableConfig;
 
         /// <summary>
         /// Called when the QuickSearchWindow is opened. Allow the Provider to perform some caching.

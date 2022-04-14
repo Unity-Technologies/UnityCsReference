@@ -19,6 +19,8 @@ namespace Unity.UI.Builder
         static readonly string s_CodeCodeContainerClassName = "unity-builder-code__code_container";
         static readonly string s_CodeOpenSourceFileClassName = "unity-builder-code__open-source-file-button";
 
+        static readonly string s_TruncatedPreviewTextMessage = BuilderConstants.EllipsisText + $"\n({BuilderConstants.CodePreviewTruncatedTextMessage})";
+
         ScrollView m_ScrollView;
 
         VisualElement m_Container;
@@ -27,6 +29,8 @@ namespace Unity.UI.Builder
         TextField m_Code;
         Label m_LineNumbers;
 
+        bool m_NeedsRefreshOnResize;
+
         private Button m_OpenTargetAssetSourceButton;
         ScriptableObject m_TargetAsset;
         BuilderPaneWindow m_PaneWindow;
@@ -34,9 +38,10 @@ namespace Unity.UI.Builder
         public BuilderCodePreview(BuilderPaneWindow paneWindow)
         {
             m_PaneWindow = paneWindow;
-            
+
             m_ScrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             m_ScrollView.AddToClassList(s_CodeScrollViewClassName);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(m_ScrollView);
 
             AddToClassList(s_UssClassName);
@@ -51,11 +56,13 @@ namespace Unity.UI.Builder
             m_LineNumbers.AddToClassList(s_CodeInputClassName);
 
             m_Code = new TextField(TextField.kMaxLengthNone, true, false, char.MinValue);
+            m_Code.textSelection.isSelectable = true;
             m_Code.isReadOnly = true;
             m_Code.name = s_CodeName;
             m_Code.RemoveFromClassList(TextField.ussClassName);
             m_Code.AddToClassList(s_CodeClassName);
             m_Code.AddToClassList(s_CodeTextClassName);
+            m_Code.AddToClassList(disabledUssClassName);
             var codeInput = m_Code.Q(className: TextField.inputUssClassName);
             codeInput.AddToClassList(s_CodeInputClassName);
 
@@ -92,7 +99,35 @@ namespace Unity.UI.Builder
                 m_OpenTargetAssetSourceButton.AddToClassList(s_CodeOpenSourceFileClassName);
                 pane.toolbar.Add(m_OpenTargetAssetSourceButton);
             }
+
+            RefreshPreviewIfVisible();
         }
+
+        void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (!m_NeedsRefreshOnResize)
+                return;
+
+            RefreshPreview();
+            m_NeedsRefreshOnResize = false;
+        }
+
+        protected void RefreshPreviewIfVisible()
+        {
+            RefreshHeader();
+
+            if (m_ScrollView.contentViewport.resolvedStyle.height <= 0 ||
+                m_ScrollView.contentViewport.resolvedStyle.width <= 0)
+            {
+                m_NeedsRefreshOnResize = true;
+                return;
+            }
+
+            RefreshPreview();
+        }
+
+        protected abstract void RefreshPreview();
+        protected abstract void RefreshHeader();
 
         protected abstract string previewAssetExtension { get; }
 
@@ -116,7 +151,7 @@ namespace Unity.UI.Builder
             if(!isTargetAssetAvailableOnDisk)
                 return;
 
-            AssetDatabase.OpenAsset(m_TargetAsset);
+            AssetDatabase.OpenAsset(m_TargetAsset, BuilderConstants.OpenInIDELineNumber);
         }
 
         void BlockEvent(KeyUpEvent evt)
@@ -156,12 +191,13 @@ namespace Unity.UI.Builder
 
             truncated = false;
 
+            var maxTextPrintableCharCount = BuilderConstants.MaxTextPrintableCharCount;
             foreach (var c in text)
             {
                 if (!char.IsControl(c))
                     printableCharCount++;
 
-                if (printableCharCount > BuilderConstants.MaxTextPrintableCharCount)
+                if (printableCharCount > maxTextPrintableCharCount)
                 {
                     truncated = true;
                     break;
@@ -187,6 +223,9 @@ namespace Unity.UI.Builder
             }
 
             var clampedText = GetClampedText(text, out var truncated);
+            if (truncated)
+                clampedText = clampedText.Substring(0, clampedText.Length - s_TruncatedPreviewTextMessage.Length);
+
             var lineCount = clampedText.Count(x => x == '\n') + 1;
             string lineNumbersText = "";
             for (int i = 1; i <= lineCount; ++i)
@@ -200,7 +239,8 @@ namespace Unity.UI.Builder
             m_LineNumbers.text = lineNumbersText;
 
             if (truncated)
-                 clampedText += BuilderConstants.EllipsisText + $"\n{BuilderConstants.EllipsisText}\n({BuilderConstants.CodePreviewTruncatedTextMessage})";
+                clampedText += s_TruncatedPreviewTextMessage;
+
             m_Code.value = clampedText;
         }
     }

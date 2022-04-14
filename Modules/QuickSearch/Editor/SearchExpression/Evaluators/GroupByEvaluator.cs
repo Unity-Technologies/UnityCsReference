@@ -35,7 +35,7 @@ namespace UnityEditor.Search
                         groupId.GetStringView(), groupId.GetStringView(), (group.Key?.ToString() ?? groupId).GetStringView(),
                         evaluator);
 
-                    yield return EvaluatorUtils.CreateSearchExpressionItem(genExpr);
+                    yield return SearchExpression.CreateSearchExpressionItem(genExpr);
                 }
                 else
                 {

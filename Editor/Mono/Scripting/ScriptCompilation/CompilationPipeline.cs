@@ -31,6 +31,8 @@ namespace UnityEditor.Compilation
     {
         public string RoslynAnalyzerRulesetPath { get; set; }
         public string[] RoslynAnalyzerDllPaths { get; set; }
+        public string[] RoslynAdditionalFilePaths { get; set; }
+        public string AnalyzerConfigPath {get; set;}
         public bool AllowUnsafeCode { get; set; }
 
         [Obsolete("Use of reference assemblies is always enabled", true)]
@@ -53,6 +55,7 @@ namespace UnityEditor.Compilation
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_Unity_4_8;
             ResponseFiles = new string[0];
             RoslynAnalyzerDllPaths = new string[0];
+            RoslynAdditionalFilePaths = new string[0];
             LanguageVersion = "9.0";
         }
 
@@ -61,6 +64,8 @@ namespace UnityEditor.Compilation
             ResponseFiles = new List<string>(scriptCompilerOptions.ResponseFiles).ToArray();
             RoslynAnalyzerDllPaths = new List<string>(scriptCompilerOptions.RoslynAnalyzerDllPaths).ToArray();
             RoslynAnalyzerRulesetPath = scriptCompilerOptions.RoslynAnalyzerRulesetPath;
+            AnalyzerConfigPath = scriptCompilerOptions.AnalyzerConfigPath;
+            RoslynAdditionalFilePaths = scriptCompilerOptions.RoslynAdditionalFilePaths;
             UseDeterministicCompilation = scriptCompilerOptions.UseDeterministicCompilation;
             AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
             CodeOptimization = scriptCompilerOptions.CodeOptimization;
@@ -196,6 +201,7 @@ namespace UnityEditor.Compilation
         public static event Action<object> compilationFinished;
         [Obsolete("Use compilationStarted, compilationFinished or assemblyCompilationFinished instead. Note that using any of these functions to do time measurements is a bad idea as they run async to actual compilation.")]
         public static event Action<string> assemblyCompilationStarted;
+        public static event Action<string> assemblyCompilationNotRequired;
         public static event Action<string, CompilerMessage[]> assemblyCompilationFinished;
 
         public static event Action<CodeOptimization> codeOptimizationChanged;
@@ -263,6 +269,18 @@ namespace UnityEditor.Compilation
                 }
             };
 
+            editorCompilation.assemblyCompilationNotRequired += (scriptAssembly) =>
+            {
+                try
+                {
+                    assemblyCompilationNotRequired?.Invoke(scriptAssembly.FullPath);
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogException(e);
+                }
+            };
+
             editorCompilation.assemblyCompilationFinished += (scriptAssembly, messages) =>
             {
                 try
@@ -327,7 +345,7 @@ namespace UnityEditor.Compilation
             var buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) != 0;
 
             var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, @group, target);
-            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(buildingForEditor, @group, target, extraScriptingDefines);
+            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, @group, target, extraScriptingDefines);
             return editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, null);
         }
 
@@ -438,7 +456,10 @@ namespace UnityEditor.Compilation
 
         internal static string[] GetPrecompiledAssemblyNames(PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
         {
-            return precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
+            return precompiledAssemblyProvider.GetPrecompiledAssemblies(
+                EditorScriptCompilationOptions.BuildingForEditor|EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorUserBuildSettings.activeBuildTargetGroup,
+                EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
                 .Select(x => AssetPath.GetFileName(x.Path))
                 .ToArray();
@@ -492,7 +513,10 @@ namespace UnityEditor.Compilation
             if ((precompiledAssemblySources & PrecompiledAssemblySources.UserAssembly) != 0)
                 flags |= sc.AssemblyFlags.UserAssembly;
 
-            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, buildTargetGroup, buildTarget)
+            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                buildTargetGroup,
+                buildTarget)
                 .Concat(precompiledAssemblyProvider.GetUnityAssemblies(true, buildTarget));
 
             foreach (var a in precompiledAssemblies.Where(x => (x.Flags & flags) != 0))
@@ -509,7 +533,11 @@ namespace UnityEditor.Compilation
 
         internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, PrecompiledAssemblyProviderBase precompiledAssemblyProvider, string[] extraScriptingDefines = null)
         {
-            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, extraScriptingDefines);
+            var precompiledAssemblies = precompiledAssemblyProvider.GetPrecompiledAssemblies(
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorUserBuildSettings.activeBuildTargetGroup,
+                EditorUserBuildSettings.activeBuildTarget,
+                extraScriptingDefines);
 
             foreach (var assembly in precompiledAssemblies)
             {
@@ -624,8 +652,7 @@ namespace UnityEditor.Compilation
             try
             {
                 var csa = editorCompilation.FindCustomScriptAssemblyFromScriptPath(sourceFilePath);
-                return csa != null ? csa.RootNamespace : projectRootNamespace;
-            }
+                return csa != null ? (csa.RootNamespace ?? projectRootNamespace) : projectRootNamespace;            }
             catch (Exception)
             {
                 return null;

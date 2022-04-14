@@ -12,6 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
+        protected override string operationErrorMessage => string.Format(L10n.Tr("Error embedding package: {0}."), packageName);
+
         public void Embed(string packageName, string packageUniqueId = null)
         {
             m_PackageName = packageName;

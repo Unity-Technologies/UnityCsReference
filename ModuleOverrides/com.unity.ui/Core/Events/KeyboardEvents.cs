@@ -257,6 +257,65 @@ namespace UnityEngine.UIElements
                 outImguiEvent.keyCode = keyCode;
             }
         }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            base.PostDispatch(panel);
+
+            // Only editor panels send navigation events automatically. This is because runtime panels may have an
+            // abstract input layer where navigation events can be triggered by various different input combinations.
+            // Note that by convention, stopping the KeyDownEvent will not stop resulting navigation events, but using
+            // the IMGUI Event will, because IMGUI has no other way of stopping the navigation events.
+            if (panel.contextType == ContextType.Editor && !(imguiEvent?.type == EventType.Used))
+            {
+                SendEquivalentNavigationEventIfAny(panel);
+            }
+        }
+
+        private void SendEquivalentNavigationEventIfAny(IPanel panel)
+        {
+            if (character == '\n' || character == 3 || character == 10 || character == ' ')
+            {
+                using (var ne = NavigationSubmitEvent.GetPooled(NavigationDeviceType.Keyboard, modifiers))
+                {
+                    ne.target = leafTarget;
+                    panel.visualTree.SendEvent(ne);
+                }
+            }
+            else if (keyCode == KeyCode.Escape)
+            {
+                using (var ne = NavigationCancelEvent.GetPooled(NavigationDeviceType.Keyboard, modifiers))
+                {
+                    ne.target = leafTarget;
+                    panel.visualTree.SendEvent(ne);
+                }
+            }
+            // Important: wait for character \t instead of KeyCode.Tab, because we don't want to insert a
+            // NavigationTabEvent between the two KeyDownEvents, in case some controls use \t to navigate.
+            else if (character == '\t' && !ctrlKey && !altKey && !commandKey)
+            {
+                using (var ne = NavigationMoveEvent.GetPooled(
+                    shiftKey ? NavigationMoveEvent.Direction.Previous : NavigationMoveEvent.Direction.Next,
+                    NavigationDeviceType.Keyboard, modifiers))
+                {
+                    ne.target = leafTarget;
+                    panel.visualTree.SendEvent(ne);
+                }
+            }
+            else if (keyCode == KeyCode.RightArrow || keyCode == KeyCode.LeftArrow ||
+                     keyCode == KeyCode.UpArrow || keyCode == KeyCode.DownArrow)
+            {
+                var d = keyCode == KeyCode.RightArrow ? Vector2.right :
+                    keyCode == KeyCode.LeftArrow ? Vector2.left :
+                    keyCode == KeyCode.UpArrow ? Vector2.up :
+                    Vector2.down;
+                using (var ne = NavigationMoveEvent.GetPooled(d, NavigationDeviceType.Keyboard, modifiers))
+                {
+                    ne.target = leafTarget;
+                    panel.visualTree.SendEvent(ne);
+                }
+            }
+        }
     }
 
     /// <summary>

@@ -155,17 +155,17 @@ namespace UnityEditor.Search
 
         public string name => ParseName(path ?? string.Empty);
 
-        internal SearchColumn(string path, GUIContent content = null, SearchColumnFlags options = SearchColumnFlags.Default)
+        public SearchColumn(string path, GUIContent content = null, SearchColumnFlags options = SearchColumnFlags.Default)
             : this(path, path, content, options)
         {
         }
 
-        internal SearchColumn(string path, string selector, GUIContent content = null, SearchColumnFlags options = SearchColumnFlags.Default)
+        public SearchColumn(string path, string selector, GUIContent content = null, SearchColumnFlags options = SearchColumnFlags.Default)
             : this(path, selector, string.Empty, content, options)
         {
         }
 
-        internal SearchColumn(string path, string selector, string provider, GUIContent content = null, SearchColumnFlags options = SearchColumnFlags.Default)
+        public SearchColumn(string path, string selector, string provider, GUIContent content = null, SearchColumnFlags options = SearchColumnFlags.Default)
         {
             this.path = path;
             this.selector = selector;
@@ -226,7 +226,7 @@ namespace UnityEditor.Search
             return name;
         }
 
-        internal void InitFunctors()
+        public void InitFunctors()
         {
             getter = getter ?? DefaultSelect;
             if (!string.IsNullOrEmpty(provider))
@@ -250,7 +250,7 @@ namespace UnityEditor.Search
             return SelectorManager.SelectValue(item, context, selector);
         }
 
-        internal static List<SearchColumn> Enumerate(SearchContext context, IEnumerable<SearchItem> items)
+        public static List<SearchColumn> Enumerate(SearchContext context, IEnumerable<SearchItem> items)
         {
             var columns = new List<SearchColumn>(ItemSelectors.Enumerate(items));
 

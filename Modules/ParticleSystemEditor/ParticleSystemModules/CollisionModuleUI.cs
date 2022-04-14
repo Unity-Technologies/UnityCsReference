@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
@@ -36,18 +37,10 @@ namespace UnityEditor
 
         ReorderableList m_PlanesList;
 
-        List<Transform> m_ScenePlanes = new List<Transform>();
         static PlaneVizType m_PlaneVisualizationType = PlaneVizType.Solid;
         static float m_ScaleGrid = 1.0f;
         static bool s_VisualizeBounds = false;
-        static Transform s_SelectedTransform; // static so to ensure only one selected Transform across multiple particle systems
         internal static PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
-
-        static EditMode.SceneViewEditMode[] s_SceneViewEditModes = new[]
-        {
-            EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove,
-            EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate
-        };
 
         static readonly string s_UndoCollisionPlaneString = L10n.Tr("Modified Collision Plane Transform");
 
@@ -76,6 +69,7 @@ namespace UnityEditor
             public GUIContent multiplyColliderForceByCollisionAngle = EditorGUIUtility.TrTextContent("Multiply by Collision Angle", "Should the force be proportional to the angle of the particle collision?  A particle collision directly along the collision normal produces all the specified force whilst collisions away from the collision normal produce less force.");
             public GUIContent multiplyColliderForceByParticleSpeed = EditorGUIUtility.TrTextContent("Multiply by Particle Speed", "Should the force be proportional to the particle speed?");
             public GUIContent multiplyColliderForceByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Particle Size", "Should the force be proportional to the particle size?");
+            public GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
 
             public GUIContent[] collisionTypes = new GUIContent[]
             {
@@ -101,14 +95,158 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Grid"),
                 EditorGUIUtility.TrTextContent("Solid")
             };
-
-            public GUIContent[] toolContents =
-            {
-                EditorGUIUtility.TrIconContent("MoveTool", "Move plane editing mode."),
-                EditorGUIUtility.TrIconContent("RotateTool", "Rotate plane editing mode.")
-            };
         }
         private static Texts s_Texts;
+
+        [EditorTool("Transform Collider", typeof(ParticleSystem))]
+        class CollisionModuleTransformTool : EditorTool
+        {
+            private HashSet<Transform> m_ScenePlanes = new HashSet<Transform>();
+            private static Transform s_SelectedTransform;    // static to ensure there is only one selected Transform across multiple particle systems
+
+            public override GUIContent toolbarIcon
+            {
+                get { return EditorGUIUtility.TrIconContent("TransformTool", "Collision module plane editing mode."); }
+            }
+
+            public override bool IsAvailable()
+            {
+                foreach (var t in targets)
+                {
+                    var ps = t as ParticleSystem;
+                    if (ps == null)
+                        continue;
+
+                    var collision = ps.collision;
+                    if (collision.enabled && collision.type == ParticleSystemCollisionType.Planes)
+                        return true;
+                }
+
+                return false;
+            }
+
+            public override void OnToolGUI(EditorWindow window)
+            {
+                var firstTransform = SyncScenePlanes();
+
+                if (m_ScenePlanes.Count == 0)
+                    return;
+
+                // Clear invalid selection (ie when selecting other system)
+                if (s_SelectedTransform != null)
+                {
+                    if (!m_ScenePlanes.Contains(s_SelectedTransform))
+                        s_SelectedTransform = null;
+                }
+
+                // Always try to select first collider if no selection exists
+                if (s_SelectedTransform == null)
+                    s_SelectedTransform = firstTransform;
+
+                Event evt = Event.current;
+
+                Color origCol = Handles.color;
+                Color col = new Color(1, 1, 1, 0.5F);
+                bool isPlaying = EditorApplication.isPlaying;
+
+                foreach (var transform in m_ScenePlanes)
+                {
+                    Vector3 position = transform.position;
+                    Quaternion rotation = transform.rotation;
+                    Vector3 right = rotation * Vector3.right;
+                    Vector3 up = rotation * Vector3.up;
+                    Vector3 forward = rotation * Vector3.forward;
+                    bool isPlayingAndStatic = isPlaying && transform.gameObject.isStatic;
+
+                    if (ReferenceEquals(s_SelectedTransform, transform))
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        var newPosition = transform.position;
+                        var newRotation = transform.rotation;
+
+                        using (new EditorGUI.DisabledScope(isPlayingAndStatic))
+                        {
+                            if (isPlayingAndStatic)
+                                Handles.ShowSceneViewLabel(position, Handles.s_StaticLabel);
+                            Handles.TransformHandle(ref newPosition, ref newRotation);
+                        }
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(transform, s_UndoCollisionPlaneString);
+                            transform.position = newPosition;
+                            transform.rotation = newRotation;
+                            ParticleSystemEditorUtils.PerformCompleteResimulation();
+                        }
+                    }
+                    else
+                    {
+                        float handleSize = HandleUtility.GetHandleSize(position) * 0.6f;
+
+                        EventType oldEventType = evt.type;
+
+                        // we want ignored mouse up events to check for dragging off of scene view
+                        if (evt.type == EventType.Ignore && evt.rawType == EventType.MouseUp)
+                            oldEventType = evt.rawType;
+
+                        Handles.FreeMoveHandle(position, handleSize, Vector3.zero, Handles.RectangleHandleCap);
+
+                        // Detect selected plane (similar to TreeEditor)
+                        if (oldEventType == EventType.MouseDown && evt.type == EventType.Used)
+                        {
+                            s_SelectedTransform = transform;
+                            oldEventType = EventType.Used;
+                            GUIUtility.hotControl = 0; // Reset hot control or the FreeMoveHandle will prevent input to the new Handles. (case 873514)
+                        }
+                    }
+
+                    Handles.color = col;
+                    Color color = Handles.s_ColliderHandleColor * 0.9f;
+                    if (isPlayingAndStatic)
+                        color.a *= 0.2f;
+
+                    if (m_PlaneVisualizationType == PlaneVizType.Grid)
+                    {
+                        DrawGrid(position, right, forward, up, color);
+                    }
+                    else
+                    {
+                        DrawSolidPlane(position, rotation, color, Color.yellow);
+                    }
+                }
+
+                Handles.color = origCol;
+            }
+
+            private Transform SyncScenePlanes()
+            {
+                m_ScenePlanes.Clear();
+
+                Transform firstTransform = null;
+
+                foreach (var t in targets)
+                {
+                    var ps = t as ParticleSystem;
+                    if (ps == null)
+                        continue;
+
+                    if (ps.collision.type != ParticleSystemCollisionType.Planes)
+                        continue;
+
+                    for (int planeIndex = 0; planeIndex < ps.collision.planeCount; planeIndex++)
+                    {
+                        var transform = ps.collision.GetPlane(planeIndex);
+                        if (transform != null)
+                        {
+                            m_ScenePlanes.Add(transform);
+                            if (firstTransform == null)
+                                firstTransform = transform;
+                        }
+                    }
+                }
+
+                return firstTransform;
+            }
+        }
 
         public CollisionModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "CollisionModule", displayName)
@@ -120,15 +258,7 @@ namespace UnityEditor
         {
             get
             {
-                return ((EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove ||
-                    EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate) &&
-                    EditMode.IsOwner(m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor));
-            }
-            set
-            {
-                if (!value && editingPlanes)
-                    EditMode.QuitEditMode();
-                SceneView.RepaintAll();
+                return EditorToolManager.activeTool is CollisionModuleTransformTool;
             }
         }
 
@@ -182,30 +312,6 @@ namespace UnityEditor
             m_PlanesList.drawElementCallback = DrawPlaneElementCallback;
             m_PlanesList.elementHeight = kReorderableListElementHeight;
             m_PlanesList.onAddCallback = OnAddPlaneElementCallback;
-
-            SyncVisualization();
-        }
-
-        public override void UndoRedoPerformed()
-        {
-            base.UndoRedoPerformed();
-            SyncVisualization();
-        }
-
-        protected override void SetVisibilityState(VisibilityState newState)
-        {
-            base.SetVisibilityState(newState);
-
-            // Show tools again when module is not visible
-            if (newState != VisibilityState.VisibleAndFoldedOut)
-            {
-                s_SelectedTransform = null;
-                editingPlanes = false;
-            }
-            else
-            {
-                SyncVisualization();
-            }
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -213,34 +319,12 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             CollisionTypes type = (CollisionTypes)GUIPopup(s_Texts.collisionType, m_Type, s_Texts.collisionTypes);
             if (EditorGUI.EndChangeCheck())
-                SyncVisualization();
+                ToolManager.RefreshAvailableTools();
 
             if (type == CollisionTypes.Plane)
-            {
                 DoListOfPlanesGUI();
-
-                EditorGUI.BeginChangeCheck();
-                m_PlaneVisualizationType = (PlaneVizType)GUIPopup(s_Texts.visualization, (int)m_PlaneVisualizationType, s_Texts.planeVizTypes);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    EditorPrefs.SetInt("PlaneColisionVizType", (int)m_PlaneVisualizationType);
-                }
-
-                EditorGUI.BeginChangeCheck();
-                m_ScaleGrid = GUIFloat(s_Texts.scalePlane, m_ScaleGrid, "f2");
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_ScaleGrid = Mathf.Max(0f, m_ScaleGrid);
-                    EditorPrefs.SetFloat("ScalePlaneColision", m_ScaleGrid);
-                }
-
-                if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
-                    GUIButtonGroup(s_SceneViewEditModes, s_Texts.toolContents, m_ParticleSystemUI.GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
-            }
             else
-            {
                 GUIPopup(s_Texts.collisionMode, m_CollisionMode, s_Texts.collisionModes);
-            }
 
             GUIMinMaxCurve(s_Texts.dampen, m_Dampen);
             GUIMinMaxCurve(s_Texts.bounce, m_Bounce);
@@ -275,46 +359,46 @@ namespace UnityEditor
 
             if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
             {
+                EditorGUILayout.BeginVertical("GroupBox");
+
+                if (type == CollisionTypes.Plane)
+                {
+                    var editorTools = new List<EditorTool>(2);
+                    EditorToolManager.GetComponentTools(x => x.GetEditor<EditorTool>() is CollisionModuleTransformTool, editorTools, true);
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.PrefixLabel(s_Texts.sceneTools, ParticleSystemStyles.Get().label, ParticleSystemStyles.Get().label);
+                    EditorGUILayout.EditorToolbar(editorTools);
+                    GUILayout.EndHorizontal();
+
+                    EditorGUILayout.Space();
+
+                    EditorGUI.BeginChangeCheck();
+                    m_PlaneVisualizationType = (PlaneVizType)GUIPopup(s_Texts.visualization, (int)m_PlaneVisualizationType, s_Texts.planeVizTypes);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        EditorPrefs.SetInt("PlaneColisionVizType", (int)m_PlaneVisualizationType);
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    m_ScaleGrid = GUIFloat(s_Texts.scalePlane, m_ScaleGrid, "f2");
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_ScaleGrid = Mathf.Max(0f, m_ScaleGrid);
+                        EditorPrefs.SetFloat("ScalePlaneColision", m_ScaleGrid);
+                    }
+                }
+                else
+                {
+                    GUILayout.Label(s_Texts.sceneTools, ParticleSystemStyles.Get().label);
+                }
+
                 EditorGUI.BeginChangeCheck();
                 s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
                 if (EditorGUI.EndChangeCheck())
                     EditorPrefs.SetBool("VisualizeBounds", s_VisualizeBounds);
-            }
-        }
 
-        protected override void OnModuleEnable()
-        {
-            base.OnModuleEnable();
-            SyncVisualization();
-        }
-
-        protected override void OnModuleDisable()
-        {
-            base.OnModuleDisable();
-            editingPlanes = false;
-        }
-
-        private void SyncVisualization()
-        {
-            m_ScenePlanes.Clear();
-
-            if (m_Type.hasMultipleDifferentValues || (CollisionTypes)m_Type.intValue != CollisionTypes.Plane)
-            {
-                editingPlanes = false;
-                return;
-            }
-
-            foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
-            {
-                if (ps.collision.type != ParticleSystemCollisionType.Planes)
-                    continue;
-
-                for (int planeIndex = 0; planeIndex < ps.collision.planeCount; planeIndex++)
-                {
-                    var transform = ps.collision.GetPlane(planeIndex);
-                    if (transform != null && !m_ScenePlanes.Contains(transform))
-                        m_ScenePlanes.Add(transform);
-                }
+                EditorGUILayout.EndVertical();
             }
         }
 
@@ -340,12 +424,7 @@ namespace UnityEditor
                 return;
             }
 
-            EditorGUI.BeginChangeCheck();
-
             m_PlanesList.DoLayoutList();
-
-            if (EditorGUI.EndChangeCheck())
-                SyncVisualization();
         }
 
         void OnAddPlaneElementCallback(ReorderableList list)
@@ -380,94 +459,6 @@ namespace UnityEditor
         override public void OnSceneViewGUI()
         {
             RenderCollisionBounds();
-            CollisionPlanesSceneGUI();
-        }
-
-        private void CollisionPlanesSceneGUI()
-        {
-            if (m_ScenePlanes.Count == 0)
-                return;
-
-            Event evt = Event.current;
-
-            Color origCol = Handles.color;
-            Color col = new Color(1, 1, 1, 0.5F);
-
-            for (int i = 0; i < m_ScenePlanes.Count; ++i)
-            {
-                if (m_ScenePlanes[i] == null)
-                    continue;
-
-                Transform transform = m_ScenePlanes[i];
-                Vector3 position = transform.position;
-                Quaternion rotation = transform.rotation;
-                Vector3 right = rotation * Vector3.right;
-                Vector3 up = rotation * Vector3.up;
-                Vector3 forward = rotation * Vector3.forward;
-                bool isPlayingAndStatic = EditorApplication.isPlaying && transform.gameObject.isStatic;
-                if (editingPlanes)
-                {
-                    if (Object.ReferenceEquals(s_SelectedTransform, transform))
-                    {
-                        EditorGUI.BeginChangeCheck();
-                        var newPosition = transform.position;
-                        var newRotation = transform.rotation;
-
-                        using (new EditorGUI.DisabledScope(isPlayingAndStatic))
-                        {
-                            if (isPlayingAndStatic)
-                                Handles.ShowSceneViewLabel(position, Handles.s_StaticLabel);
-                            if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove)
-                                newPosition = Handles.PositionHandle(position, rotation);
-                            else if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate)
-                                newRotation = Handles.RotationHandle(rotation, position);
-                        }
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            Undo.RecordObject(transform, s_UndoCollisionPlaneString);
-                            transform.position = newPosition;
-                            transform.rotation = newRotation;
-                            ParticleSystemEditorUtils.PerformCompleteResimulation();
-                        }
-                    }
-                    else
-                    {
-                        float handleSize = HandleUtility.GetHandleSize(position) * 0.6f;
-
-                        EventType oldEventType = evt.type;
-
-                        // we want ignored mouse up events to check for dragging off of scene view
-                        if (evt.type == EventType.Ignore && evt.rawType == EventType.MouseUp)
-                            oldEventType = evt.rawType;
-
-                        Handles.FreeMoveHandle(position, handleSize, Vector3.zero, Handles.RectangleHandleCap);
-
-                        // Detect selected plane (similar to TreeEditor)
-                        if (oldEventType == EventType.MouseDown && evt.type == EventType.Used)
-                        {
-                            s_SelectedTransform = transform;
-                            oldEventType = EventType.Used;
-                            GUIUtility.hotControl = 0; // Reset hot control or the FreeMoveHandle will prevent input to the new Handles. (case 873514)
-                        }
-                    }
-                }
-
-                Handles.color = col;
-                Color color = Handles.s_ColliderHandleColor * 0.9f;
-                if (isPlayingAndStatic)
-                    color.a *= 0.2f;
-
-                if (m_PlaneVisualizationType == PlaneVizType.Grid)
-                {
-                    DrawGrid(position, right, forward, up, color);
-                }
-                else
-                {
-                    DrawSolidPlane(position, rotation, color, Color.yellow);
-                }
-            }
-
-            Handles.color = origCol;
         }
 
         void RenderCollisionBounds()

@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.Search.Providers
 {
@@ -42,9 +43,15 @@ namespace UnityEditor.Search.Providers
                 })
                     .ToArray();
 
+                var iconName = "Filter Icon";
+                var icon = Utils.LoadIcon(iconName);
+                var scopeValues = Enum.GetNames(typeof(SettingsScope)).Select(n => Utils.FastToLower(n));
                 queryEngine = new QueryEngine<SettingsProviderInfo>();
                 queryEngine.SetSearchDataCallback(info => info.searchables, s => Utils.FastToLower(s), StringComparison.Ordinal);
-                queryEngine.AddFilter("scope", info => info.scope, new[] {":", "=", "!=", "<", ">", "<=", ">="});
+                queryEngine.SetFilter("scope", info => info.scope, new[] { ":", "=", "!=", "<", ">", "<=", ">=" })
+                    .SetGlobalPropositionData(category: "Scope", priority: 0, icon: icon, color: QueryColors.typeIcon)
+                    .AddOrUpdatePropositionData(label: "Project", replacement: "scope:" + SearchUtils.GetListMarkerReplacementText("project", scopeValues, iconName, QueryColors.typeIcon), help: "Search project settings")
+                    .AddOrUpdatePropositionData(label: "User", replacement: "scope:" + SearchUtils.GetListMarkerReplacementText("user", scopeValues, iconName, QueryColors.typeIcon), help: "Search user settings");
 
                 queryEngine.AddOperatorHandler(":", (SettingsScope ev, SettingsScope fv, StringComparison sc) => ev.ToString().IndexOf(fv.ToString(), sc) != -1);
                 queryEngine.AddOperatorHandler(":", (SettingsScope ev, string fv, StringComparison sc) => ev.ToString().IndexOf(fv, sc) != -1);
@@ -81,7 +88,7 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(context.searchQuery))
                 yield break;
 
-            var query = SettingsProviderCache.queryEngine.Parse(context.searchQuery);
+            var query = SettingsProviderCache.queryEngine.ParseQuery(context.searchQuery);
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
@@ -96,7 +103,7 @@ namespace UnityEditor.Search.Providers
             if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
                 yield break;
 
-            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryScopeFilterBlock)))
+            foreach (var f in SettingsProviderCache.queryEngine.GetPropositions())
                 yield return f;
         }
 
@@ -114,22 +121,6 @@ namespace UnityEditor.Search.Providers
                         SettingsService.OpenUserPreferences(item.id);
                 })
             };
-        }
-    }
-
-    [QueryListBlock("Scope", "scope", "scope")]
-    class QueryScopeFilterBlock : QueryListBlock
-    {
-        public QueryScopeFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
-            : base(source, id, value, attr)
-        {
-            icon = Utils.LoadIcon("Filter Icon");
-        }
-
-        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
-        {
-            yield return CreateProposition(flags, "Project", "project", "Search project settings");
-            yield return CreateProposition(flags, "User", "user", "Search user settings");
         }
     }
 }

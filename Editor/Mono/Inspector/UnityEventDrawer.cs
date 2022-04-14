@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.Events;
 using Object = UnityEngine.Object;
 using UnityEngine.Pool;
@@ -155,22 +156,21 @@ namespace UnityEditorInternal
 
         private ListView CreateListView(SerializedProperty property)
         {
-            var listView = EditorUIService.instance.CreateListViewBinding(property.serializedObject);
-            listView.showAddRemoveFooter = true;
-            listView.reorderMode = ListViewReorderMode.Animated;
-            listView.showBorder = true;
-            listView.showFoldoutHeader = false;
-            listView.showBoundCollectionSize = false;
-            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
-            listView.fixedItemHeight = GetElementHeight();
+            var listView = new ListView
+            {
+                showAddRemoveFooter = true,
+                reorderMode = ListViewReorderMode.Animated,
+                showBorder = true,
+                showFoldoutHeader = false,
+                showBoundCollectionSize = false,
+                showAlternatingRowBackgrounds = AlternatingRowBackground.None,
+                fixedItemHeight = GetElementHeight()
+            };
 
             var propertyRelative = property.FindPropertyRelative(kCallsPath);
             listView.bindingPath = propertyRelative.propertyPath;
 
-            listView.makeItem += () =>
-            {
-                return EditorUIService.instance.CreateUnityEventItem();
-            };
+            listView.makeItem += () => new UnityEventItem();
 
             listView.bindItem += (VisualElement element, int i) =>
             {
@@ -208,7 +208,8 @@ namespace UnityEditorInternal
                     return GetArgument(pListener);
                 };
 
-                EditorUIService.instance.BindUnityEventItem(element, propertyData, createMenuCallback, formatSelectedValueCallback, getArgumentCallback);
+                var eventItem = element as UnityEventItem;
+                eventItem.BindFields(propertyData, createMenuCallback, formatSelectedValueCallback, getArgumentCallback);
             };
 
             return listView;
@@ -663,6 +664,9 @@ namespace UnityEditorInternal
                 // Collect all the names and record how many times the same name is used.
                 foreach (Component comp in comps)
                 {
+                    if (comp == null)
+                        continue;
+
                     var duplicateIndex = 0;
                     if (duplicateNames.TryGetValue(comp.GetType().Name, out duplicateIndex))
                         duplicateIndex++;

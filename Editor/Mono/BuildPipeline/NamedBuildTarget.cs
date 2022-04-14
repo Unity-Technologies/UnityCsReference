@@ -118,6 +118,22 @@ namespace UnityEditor.Build
             throw new ArgumentException($"There is no a valid NamedBuildTarget for BuildTargetGroup '{buildTargetGroup}'");
         }
 
+        // TODO: We shouldn't be assuming that the namedBuildTarget can be extracted from the
+        // active settings. This should be passed through the callstack instead when building.
+        // We will need to use BuildTargetSelection (BuildTarget + Subtarget) that is in the cpp side.
+        // For now this fixes an issue where Dedicated Server compiles with the Standalone settings.
+        internal static NamedBuildTarget FromActiveSettings(BuildTarget target)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+
+            if (buildTargetGroup == BuildTargetGroup.Standalone && (StandaloneBuildSubtarget)EditorUserBuildSettings.GetActiveSubtargetFor(target) == StandaloneBuildSubtarget.Server)
+            {
+                return NamedBuildTarget.Server;
+            }
+
+            return NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+        }
+
         public static bool operator==(NamedBuildTarget lhs, NamedBuildTarget rhs)
         {
             return lhs.Equals(rhs);

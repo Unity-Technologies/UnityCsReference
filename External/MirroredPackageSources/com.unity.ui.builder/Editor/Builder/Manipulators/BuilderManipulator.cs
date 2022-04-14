@@ -243,9 +243,6 @@ namespace Unity.UI.Builder
 
         protected void SetStyleSheetValue(string styleName, float value)
         {
-            // Remove temporary min-size element.
-            m_Target.RemoveMinSizeSpecialElement();
-
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, styleName, Mathf.Round(value));
         }
 

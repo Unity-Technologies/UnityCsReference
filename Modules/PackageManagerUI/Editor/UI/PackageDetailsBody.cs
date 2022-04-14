@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -13,83 +12,99 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetailsBody> {}
 
-        private const string k_EmptyDescriptionClass = "empty";
-        private const int k_maxDescriptionCharacters = 10000;
-
         private ResourceLoader m_ResourceLoader;
         private PackageDatabase m_PackageDatabase;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private PackageManagerPrefs m_PackageManagerPrefs;
+        private SelectionProxy m_Selection;
+        private AssetDatabaseProxy m_AssetDatabase;
+        private ApplicationProxy m_Application;
+        private IOProxy m_IOProxy;
+        private AssetStoreCache m_AssetStoreCache;
+        private PageManager m_PageManager;
+        private UpmCache m_UpmCache;
+
+        private PackageDetailsTabView m_TabView;
+
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
+            m_Selection = container.Resolve<SelectionProxy>();
+            m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
+            m_Application = container.Resolve<ApplicationProxy>();
+            m_IOProxy = container.Resolve<IOProxy>();
+            m_AssetStoreCache = container.Resolve<AssetStoreCache>();
+            m_PageManager = container.Resolve<PageManager>();
+            m_UpmCache = container.Resolve<UpmCache>();
         }
 
-        internal bool descriptionExpanded => m_DescriptionExpanded;
-        private bool m_DescriptionExpanded;
-
-        private IPackage m_Package;
         private IPackageVersion m_Version;
 
         public PackageDetailsBody()
         {
             ResolveDependencies();
 
-            var root = m_ResourceLoader.GetTemplate("PackageDetailsBody.uxml");
-            Add(root);
-            cache = new VisualElementCache(root);
+            m_TabView = new PackageDetailsTabView()
+            {
+                name = "packageDetailsTabView"
+            };
+            Add(m_TabView);
 
-            detailDescMore.clickable.clicked += DescMoreClick;
-            detailDescLess.clickable.clicked += DescLessClick;
-            detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
+            m_TabView.onTabSwitched += OnTabSwitched;
+
+            AddTabs();
+        }
+
+        public void AddTabs()
+        {
+            // the ordering for each tab matters; since right now, the order of tabs between
+            //  package types does not matter, we can afford to keep everything ordered statically
+            // AssetStore: Overview - Releases - Images
+            m_TabView.AddTab(new PackageDetailsOverviewTab(m_ResourceLoader));
+            m_TabView.AddTab(new PackageDetailsReleasesTab());
+            m_TabView.AddTab(new PackageDetailsImagesTab(m_AssetStoreCache));
+
+            // Other packages: Description - Versions - Samples - Dependencies or Packages Included
+            m_TabView.AddTab(new PackageDetailsDescriptionTab(m_ResourceLoader));
+            m_TabView.AddTab(new PackageDetailsVersionsTab(m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager, m_SettingsProxy, m_UpmCache, m_IOProxy));
+            m_TabView.AddTab(new PackageDetailsSamplesTab(m_ResourceLoader, m_PackageDatabase, m_Selection, m_AssetDatabase, m_Application, m_IOProxy));
+            m_TabView.AddTab(new PackageDetailsDependenciesTab(m_ResourceLoader, m_PackageDatabase));
+            m_TabView.AddTab(new FeatureDependenciesTab(m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_SettingsProxy, m_Application));
         }
 
         public void OnEnable()
         {
             m_PackageDatabase.onPackagesChanged += RefreshDependencies;
-            m_SettingsProxy.onEnablePackageDependenciesChanged += RefreshDependencies;
+            m_PageManager.onVisualStateChange += RefreshVersionsHistory;
+
+            // restore after domain reload
+            m_TabView.SelectTab(m_PackageManagerPrefs.selectedPackageDetailsTabIdentifier);
         }
 
         public void OnDisable()
         {
-            detailsImages.OnDisable();
-
             m_PackageDatabase.onPackagesChanged -= RefreshDependencies;
-            m_SettingsProxy.onEnablePackageDependenciesChanged -= RefreshDependencies;
+            m_PageManager.onVisualStateChange -= RefreshVersionsHistory;
         }
 
         public void Refresh(IPackage package, IPackageVersion version)
         {
-            m_Package = package;
             m_Version = version;
-
-            detailsImages.Refresh(m_Package);
-            sampleList.SetPackageVersion(m_Version);
-            UIUtils.SetElementDisplay(disabledInfoBox, m_Version.HasTag(PackageTag.Disabled));
-
-            SetEnabled(m_Package?.hasEntitlementsError != true);
-
-            RefreshDependencies();
-            RefreshLabels();
-            RefreshDescription();
-            RefreshReleaseDetails();
-            RefreshSizeAndSupportedUnityVersions();
-            RefreshPurchasedDate();
-            RefreshSourcePath();
-            RefreshPlatformList();
+            RefreshTabs();
         }
 
-        private void RefreshPlatformList()
+        private void RefreshTabs()
         {
-            packagePlatformList.SetPackageVersion(m_Version);
+            m_TabView.RefreshAllTabs(m_Version);
         }
 
         private void RefreshDependencies()
         {
-            featureDependencies.SetPackageVersion(m_Version);
-            dependencies.SetPackageVersion(m_Version);
+            m_TabView.RefreshTabs(new[] { FeatureDependenciesTab.k_Id, PackageDetailsDependenciesTab.k_Id }, m_Version);
         }
 
         private void RefreshDependencies(bool _)
@@ -102,219 +117,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDependencies();
         }
 
-        private void RefreshLabels()
+        public void OnTabSwitched(PackageDetailsTabElement oldSelection, PackageDetailsTabElement newSelection)
         {
-            detailLabels.Clear();
-
-            if (enabledSelf && m_Package?.labels != null)
-            {
-                var labels = string.Join(", ", m_Package.labels.ToArray());
-
-                if (!string.IsNullOrEmpty(labels))
-                {
-                    var label = new SelectableLabel();
-                    label.SetValueWithoutNotify(labels);
-                    detailLabels.Add(label);
-                }
-            }
-
-            var hasLabels = detailLabels.Children().Any();
-            var isAssetStorePackage = m_Package is AssetStorePackage;
-
-            if (!hasLabels && isAssetStorePackage)
-                detailLabels.Add(new Label(L10n.Tr("(None)")));
-
-            UIUtils.SetElementDisplay(detailLabelsContainer, hasLabels || isAssetStorePackage);
+            m_PackageManagerPrefs.selectedPackageDetailsTabIdentifier = newSelection.id;
         }
 
-        private void DescMoreClick()
+        private void RefreshVersionsHistory(IEnumerable<VisualState> states)
         {
-            detailDesc.style.maxHeight = float.MaxValue;
-            UIUtils.SetElementDisplay(detailDescMore, false);
-            UIUtils.SetElementDisplay(detailDescLess, true);
-            m_DescriptionExpanded = true;
+            var newVisualState = states.FirstOrDefault(state => state.packageUniqueId == m_Version?.packageUniqueId);
+            if (newVisualState?.userUnlocked == true && m_PageManager.GetSelection()?.Count == 1)
+                m_TabView.RefreshTab(PackageDetailsVersionsTab.k_Id, m_Version);
         }
-
-        private void DescLessClick()
-        {
-            detailDesc.style.maxHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y * 3 + 5;
-            UIUtils.SetElementDisplay(detailDescMore, true);
-            UIUtils.SetElementDisplay(detailDescLess, false);
-            m_DescriptionExpanded = false;
-        }
-
-        private void DescriptionGeometryChangeEvent(GeometryChangedEvent evt)
-        {
-            if (m_Package == null || !m_Package.Is(PackageType.AssetStore))
-            {
-                UIUtils.SetElementDisplay(detailDescMore, false);
-                UIUtils.SetElementDisplay(detailDescLess, false);
-                return;
-            }
-
-            var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y * 3 + 1;
-            var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
-            if (!m_DescriptionExpanded && textHeight > minTextHeight)
-            {
-                UIUtils.SetElementDisplay(detailDescMore, true);
-                UIUtils.SetElementDisplay(detailDescLess, false);
-                detailDesc.style.maxHeight = minTextHeight + 4;
-                return;
-            }
-
-            if (evt.newRect.width > evt.oldRect.width && textHeight <= minTextHeight)
-            {
-                UIUtils.SetElementDisplay(detailDescMore, false);
-                UIUtils.SetElementDisplay(detailDescLess, false);
-            }
-            else if (m_DescriptionExpanded && evt.newRect.width < evt.oldRect.width && textHeight > minTextHeight)
-            {
-                UIUtils.SetElementDisplay(detailDescMore, false);
-                UIUtils.SetElementDisplay(detailDescLess, true);
-            }
-        }
-
-        private void RefreshDescription()
-        {
-            var hasDescription = !string.IsNullOrEmpty(m_Version.description);
-            var desc = hasDescription ? m_Version.description : L10n.Tr("There is no description for this package.");
-            if (desc.Length > k_maxDescriptionCharacters)
-                desc = desc.Substring(0, k_maxDescriptionCharacters);
-            detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
-            detailDesc.style.maxHeight = int.MaxValue;
-            detailDesc.SetValueWithoutNotify(desc);
-            UIUtils.SetElementDisplay(detailDescMore, false);
-            UIUtils.SetElementDisplay(detailDescLess, false);
-            m_DescriptionExpanded = !m_Package.Is(PackageType.AssetStore);
-        }
-
-        private void RefreshPurchasedDate()
-        {
-            if (enabledSelf)
-            {
-                detailPurchasedDate.SetValueWithoutNotify(m_Package?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
-            }
-            UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
-        }
-
-        private void RefreshReleaseDetails()
-        {
-            detailReleaseDetails.Clear();
-
-            // If the package details is not enabled, don't update the date yet as we are fetching new information
-            if (enabledSelf && m_Package.firstPublishedDate != null)
-            {
-                detailReleaseDetails.Add(new PackageReleaseDetailsItem($"{m_Version.versionString}{(m_Version is AssetStorePackageVersion ? " (Current)" : string.Empty)}",
-                    m_Version.publishedDate, m_Version.releaseNotes));
-
-                if (m_Package.firstPublishedDate != null)
-                    detailReleaseDetails.Add(new PackageReleaseDetailsItem("Original", m_Package.firstPublishedDate, string.Empty));
-            }
-
-            UIUtils.SetElementDisplay(detailReleaseDetailsContainer, detailReleaseDetails.Children().Any());
-        }
-
-        private void RefreshSizeAndSupportedUnityVersions()
-        {
-            var showSupportedUnityVersions = RefreshSupportedUnityVersions();
-            var showSize = RefreshSizeInfo();
-            UIUtils.SetElementDisplay(detailSizesAndSupportedVersionsContainer, showSize || showSupportedUnityVersions);
-        }
-
-        private bool RefreshSupportedUnityVersions()
-        {
-            var hasSupportedVersions = (m_Version.supportedVersions?.Any() == true);
-            var supportedVersion = m_Version.supportedVersions?.FirstOrDefault();
-
-            if (!hasSupportedVersions)
-            {
-                supportedVersion = m_Version.supportedVersion;
-                hasSupportedVersions = supportedVersion != null;
-            }
-
-            UIUtils.SetElementDisplay(detailUnityVersionsContainer, hasSupportedVersions);
-            if (hasSupportedVersions)
-            {
-                detailUnityVersions.SetValueWithoutNotify(string.Format(L10n.Tr("{0} or higher"), supportedVersion));
-                var tooltip = supportedVersion.ToString();
-                if (m_Version.supportedVersions != null && m_Version.supportedVersions.Any())
-                {
-                    var versions = m_Version.supportedVersions.Select(version => version.ToString()).ToArray();
-                    tooltip = versions.Length == 1 ? versions[0] :
-                        string.Format(L10n.Tr("{0} and {1} to improve compatibility with the range of these versions of Unity"), string.Join(", ", versions, 0, versions.Length - 1), versions[versions.Length - 1]);
-                }
-                detailUnityVersions.tooltip = string.Format(L10n.Tr("Package has been submitted using Unity {0}"), tooltip);
-            }
-            else
-            {
-                detailUnityVersions.SetValueWithoutNotify(string.Empty);
-                detailUnityVersions.tooltip = string.Empty;
-            }
-
-            return hasSupportedVersions;
-        }
-
-        private bool RefreshSizeInfo()
-        {
-            var showSizes = m_Version.sizes.Any();
-            UIUtils.SetElementDisplay(detailSizesContainer, showSizes);
-            detailSizes.Clear();
-
-            var sizeInfo = m_Version.sizes.FirstOrDefault(info => info.supportedUnityVersion == m_Version.supportedVersion);
-            if (sizeInfo == null)
-                sizeInfo = m_Version.sizes.LastOrDefault();
-
-            if (sizeInfo != null)
-            {
-                var label = new SelectableLabel();
-                label.style.whiteSpace = WhiteSpace.Normal;
-                label.SetValueWithoutNotify(string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
-                detailSizes.Add(label);
-            }
-
-            return showSizes;
-        }
-
-        private void RefreshSourcePath()
-        {
-            var sourcePath = (m_Version as UpmPackageVersion)?.sourcePath;
-            UIUtils.SetElementDisplay(detailSourcePathContainer, !string.IsNullOrEmpty(sourcePath));
-
-            if (!string.IsNullOrEmpty(sourcePath))
-                detailSourcePath.SetValueWithoutNotify(sourcePath);
-        }
-
-        private VisualElementCache cache { get; set; }
-
-        private SelectableLabel detailDesc => cache.Get<SelectableLabel>("detailDesc");
-        private Button detailDescMore => cache.Get<Button>("detailDescMore");
-        private Button detailDescLess => cache.Get<Button>("detailDescLess");
-
-        private HelpBox disabledInfoBox => cache.Get<HelpBox>("disabledInfoBox");
-
-        private VisualElement detailSourcePathContainer => cache.Get<VisualElement>("detailSourcePathContainer");
-        private SelectableLabel detailSourcePath => cache.Get<SelectableLabel>("detailSourcePath");
-
-        private VisualElement detailSizesAndSupportedVersionsContainer => cache.Get<VisualElement>("detailSizesAndSupportedVersionsContainer");
-        private VisualElement detailUnityVersionsContainer => cache.Get<VisualElement>("detailUnityVersionsContainer");
-        private SelectableLabel detailUnityVersions => cache.Get<SelectableLabel>("detailUnityVersions");
-        private VisualElement detailSizesContainer => cache.Get<VisualElement>("detailSizesContainer");
-        private VisualElement detailSizes => cache.Get<VisualElement>("detailSizes");
-
-        private VisualElement detailPurchasedDateContainer => cache.Get<VisualElement>("detailPurchasedDateContainer");
-        private SelectableLabel detailPurchasedDate => cache.Get<SelectableLabel>("detailPurchasedDate");
-
-        private VisualElement detailReleaseDetailsContainer => cache.Get<VisualElement>("detailReleaseDetailsContainer");
-        private VisualElement detailReleaseDetails => cache.Get<VisualElement>("detailReleaseDetails");
-
-        private VisualElement detailLabelsContainer => cache.Get<VisualElement>("detailLabelsContainer");
-        private VisualElement detailLabels => cache.Get<VisualElement>("detailLabels");
-
-        private PackageSampleList sampleList => cache.Get<PackageSampleList>("detailSampleList");
-        private PackageDependencies dependencies => cache.Get<PackageDependencies>("detailDependencies");
-        private PackageDetailsImages detailsImages => cache.Get<PackageDetailsImages>("detailImagesContainer");
-
-        private FeatureDependencies featureDependencies => cache.Get<FeatureDependencies>("featureDependencies");
-        private PackagePlatformList packagePlatformList => cache.Get<PackagePlatformList>("detailPlatformList");
     }
 }

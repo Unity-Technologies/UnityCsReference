@@ -66,27 +66,14 @@ namespace UnityEngine.Rendering
         public bool editableMaterialRenderQueue { get; set; } = true;
         public bool overridesLODBias { get; set; } = false;
         public bool overridesMaximumLODLevel { get; set; } = false;
+        public bool overridesEnableLODCrossFade { get; set; } = false;
         public bool rendererProbes { get; set; } = true;
         public bool particleSystemInstancing { get; set; } = true;
         public bool autoAmbientProbeBaking { get; set; } = true;
         public bool autoDefaultReflectionProbeBaking { get; set; } = true;
-
-        // if this is overridden, please provide a message telling the user where to find it, otherwise it will be an empty string (to prevent confusion)
         public bool overridesShadowmask { get; set; } = false;
-        public string overrideShadowmaskMessage { get; set; } = "";
-
         public bool overridesLightProbeSystem { get; set; } = false;
         public string overridesLightProbeSystemWarningMessage { get; set; } = "The rendering pipeline used has an alternative method to handle light probes. Please consult the documentation for the used SRP to setup the alternative.";
-
-        public string shadowmaskMessage
-        {
-            get
-            {
-                if (!overridesShadowmask)
-                    return "The Shadowmask Mode used at run time can be set in the Quality Settings panel.";
-                return overrideShadowmaskMessage;
-            }
-        }
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {

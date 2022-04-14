@@ -157,6 +157,8 @@ namespace UnityEditor.IMGUI.Controls
                 var child = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
                 if (child == null)
                     break;
+                if (child.id == m_CurrentlyRenderedTree.id)
+                    Debug.LogWarning($"Same id: {child.id} given to both {child.displayName} and {m_CurrentlyRenderedTree.displayName}. Selection may be wrong.");
                 selectedIndex = m_State.GetSelectedIndex(child);
                 if (selectedIndex < 0)
                     break;

@@ -19,12 +19,6 @@ namespace UnityEngine.UIElements
     public abstract class BaseCompositeField<TValueType, TField, TFieldValue> : BaseField<TValueType>
         where TField : TextValueField<TFieldValue>, new()
     {
-        /// <summary>
-        /// Test.
-        /// </summary>
-        /// <param name="compositeField">.</param>
-        /// <param name="field">.</param>
-        internal static RegisterSerializedPropertyBindCallback<TValueType, TField, TFieldValue> s_SerializedPropertyBindCallback;
         internal struct FieldDescription
         {
             public delegate void WriteDelegate(ref TValueType val, TFieldValue fieldValue);
@@ -168,8 +162,6 @@ namespace UnityEngine.UIElements
 
                     field.label = desc.name;
 
-                    s_SerializedPropertyBindCallback?.Invoke(this, field);
-
                     field.onValidateValue += newValue =>
                     {
                         TValueType cur = value;
@@ -263,6 +255,14 @@ namespace UnityEngine.UIElements
             }
 
             m_ForceUpdateDisplay = false;
+        }
+
+        internal override void OnViewDataReady()
+        {
+            // Should the composite field be reloaded, ensure that the value saved in memory is actually displayed when a data key is used.
+            m_ForceUpdateDisplay = true;
+
+            base.OnViewDataReady();
         }
 
         protected override void UpdateMixedValueContent()

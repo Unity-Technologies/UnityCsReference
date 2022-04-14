@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEditor.Experimental;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -827,7 +828,16 @@ namespace UnityEditor.StyleSheets
 
         internal static StyleSheet CompileStyleSheetContent(string styleSheetContent, bool disableValidation = true, bool reportErrors = false)
         {
-            return EditorUIService.instance.CompileStyleSheetContent(styleSheetContent, disableValidation, reportErrors);
+            var importer = new StyleSheetImporterImpl();
+            var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            importer.disableValidation = disableValidation;
+            importer.Import(styleSheet, styleSheetContent);
+            if (reportErrors)
+            {
+                foreach (var err in importer.importErrors)
+                    Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, styleSheet, err.ToString());
+            }
+            return styleSheet;
         }
     }
 }

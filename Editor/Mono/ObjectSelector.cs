@@ -79,6 +79,7 @@ namespace UnityEditor
         UnityObject m_ObjectBeingEdited;
         SerializedProperty m_EditedProperty;
 
+        bool m_SelectionCancelled;
         int m_LastSelectedInstanceId = 0;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
@@ -428,6 +429,7 @@ namespace UnityEditor
             m_AllowedIDs = allowedInstanceIDs;
             m_ObjectBeingEdited = objectBeingEdited;
             m_LastSelectedInstanceId = obj?.GetInstanceID() ?? 0;
+            m_SelectionCancelled = false;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
             m_OnObjectSelectorUpdated = onObjectSelectedUpdated;
@@ -502,6 +504,7 @@ namespace UnityEditor
                         // Undo changes we have done in the ObjectSelector
                         Undo.RevertAllDownToGroup(m_ModalUndoGroup);
                         m_LastSelectedInstanceId = 0;
+                        m_SelectionCancelled = true;
                     }
                     else
                     {
@@ -515,6 +518,8 @@ namespace UnityEditor
 
                 if (m_SearchSessionHandler.SelectObject(onSelectorClosed, onSelectionChanged))
                     return;
+                else
+                    m_SearchSessionHandler.EndSession();
             }
 
             // Freeze to prevent flicker on OSX.
@@ -522,6 +527,7 @@ namespace UnityEditor
             // SetFreezeDisplay(false) further down.
             ContainerWindow.SetFreezeDisplay(true);
 
+            var shouldRepositionWindow = m_Parent != null;
             ShowWithMode(ShowMode.AuxWindow);
             string text = "Select " + (requiredTypes[0] == null ? m_RequiredTypes[0] : requiredTypes[0].Name);
             for (int i = 1; i < requiredTypes.Length; i++)
@@ -529,6 +535,11 @@ namespace UnityEditor
             titleContent = EditorGUIUtility.TrTextContent(text);
 
             // Deal with window size
+            if (shouldRepositionWindow)
+            {
+                m_Parent.window.LoadInCurrentMousePosition();
+                m_Parent.window.FitWindowToScreen(true);
+            }
             Rect p = m_Parent == null ? new Rect(0, 0, 1, 1) : m_Parent.window.position;
             p.width = EditorPrefs.GetFloat("ObjectSelectorWidth", 200);
             p.height = EditorPrefs.GetFloat("ObjectSelectorHeight", 390);
@@ -614,6 +625,11 @@ namespace UnityEditor
 
                 FilterSettingsChanged();
             }
+        }
+
+        public static bool SelectionCanceled()
+        {
+            return ObjectSelector.get.m_SelectionCancelled;
         }
 
         public static UnityObject GetCurrentObject()
@@ -945,6 +961,7 @@ namespace UnityEditor
             m_ListArea?.InitSelection(new int[0]);
             m_ObjectTreeWithSearch.Clear();
             m_LastSelectedInstanceId = 0;
+            m_SelectionCancelled = true;
             m_EditedProperty = null;
 
             SendEvent(ObjectSelectorCanceledCommand, false);

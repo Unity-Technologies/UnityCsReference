@@ -7,6 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Serialization;
 
 using UnityObject = UnityEngine.Object;
 using System.Reflection;
@@ -475,6 +476,9 @@ namespace UnityEditor
         [NativeName("FindProperty")]
         extern internal bool FindPropertyInternal(string propertyPath);
 
+        [NativeName("FindFirstPropertyFromManagedReferencePath")]
+        extern internal bool FindFirstPropertyFromManagedReferencePathInternal(string managedReferencePath);
+
         [ThreadAndSerializationSafe()]
         public void Dispose()
         {
@@ -751,6 +755,19 @@ namespace UnityEditor
         [NativeName("IsKey")]
         private extern bool IsKeyInternal();
 
+        [NativeName("IsLiveModified")]
+        private extern bool IsLiveModified();
+
+        // Is this property live modified?
+        internal bool isLiveModified
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return IsLiveModified();
+            }
+        }
+
         // Is this property expanded in the inspector?
         public bool isExpanded
         {
@@ -847,6 +864,27 @@ namespace UnityEditor
         // Useful in the same context as 'isReferencingAManagedReferenceField'.
         [NativeName("GetPropertyPathInCurrentManagedTypeTree")]
         internal extern string GetPropertyPathInCurrentManagedTypeTreeInternal();
+
+
+        /// <summary>
+        /// If the current field is on a SerializeReference instance this returns the path
+        /// of the field relative the ManagedReferenceRegistry. managedReferences[refId].field
+        /// </summary>
+        internal string managedReferencePropertyPath
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetManagedReferencePropertyPathInternal();
+            }
+        }
+
+        /// <summary>
+        /// Returns the path of the current field relative to the managed reference registry managedReferences[refId].
+        /// </summary>
+        // Useful in the same context as 'isReferencingAManagedReferenceField'.
+        [NativeName("GetManagedReferencePropertyPath")]
+        internal extern string GetManagedReferencePropertyPathInternal();
 
         // Is property's value different from the prefab it belongs to?
         public bool prefabOverride
@@ -1230,7 +1268,7 @@ namespace UnityEditor
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
                 var referencedObj = LookupInstanceByIdInternal(value);
-                if (value != SerializationUtility.RefIdNull && referencedObj == null)
+                if (value != ManagedReferenceUtility.RefIdNull && referencedObj == null)
                 {
                     throw new System.InvalidOperationException(
                         $"The specified managed reference id cannot be set because it is not currently assigned to an object.");

@@ -21,6 +21,7 @@ namespace UnityEngine.Rendering
         Vector4 m_CullingSphere;
         float m_ShadowCascadeBlendCullingFactor;
         private float m_CullingNearPlane;
+        Matrix4x4 m_CullingMatrix;
 
         public int cullingPlaneCount
         {
@@ -38,6 +39,18 @@ namespace UnityEngine.Rendering
             get { return m_CullingSphere; }
             set { m_CullingSphere = value; }
         }
+
+        public Matrix4x4 cullingMatrix
+        {
+            get { return m_CullingMatrix; }
+            set { m_CullingMatrix = value; }
+        }
+        public float cullingNearPlane
+        {
+            get { return m_CullingNearPlane; }
+            set { m_CullingNearPlane = value; }
+        }
+
 
         public float shadowCascadeBlendCullingFactor
         {

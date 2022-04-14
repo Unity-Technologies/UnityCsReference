@@ -156,13 +156,18 @@ namespace UnityEditor
                 EvaluateMaterialExtractionState();
             }
 
-            Undo.undoRedoPerformed += ResetValues;
+            Undo.undoRedoEvent += OnUndoRedo;
         }
 
         internal override void OnDisable()
         {
-            Undo.undoRedoPerformed -= ResetValues;
+            Undo.undoRedoEvent -= OnUndoRedo;
             base.OnDisable();
+        }
+
+        private void OnUndoRedo(in UndoRedoInfo info)
+        {
+            ResetValues();
         }
 
         private void BuildMaterialsCache()

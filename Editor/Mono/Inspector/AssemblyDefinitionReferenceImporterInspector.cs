@@ -70,8 +70,9 @@ namespace UnityEditor
             }
 
             extraDataSerializedObject.Update();
-
+            EditorGUI.BeginDisabled(m_ReferenceAsset.objectReferenceValue == null);
             EditorGUILayout.PropertyField(m_UseGUIDs, Styles.useGUID);
+            EditorGUI.EndDisabled();
 
             EditorGUI.BeginChangeCheck();
             var obj = EditorGUILayout.ObjectField(Styles.assemblyDefinition, m_ReferenceAsset.objectReferenceValue, typeof(AssemblyDefinitionAsset), false);

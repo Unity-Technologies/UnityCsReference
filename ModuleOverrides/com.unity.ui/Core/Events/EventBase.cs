@@ -148,6 +148,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool bubblesOrTricklesDown =>
+            (propagation & (EventPropagation.Bubbles | EventPropagation.TricklesDown)) != 0;
+
         internal bool skipDisabledElements
         {
             get { return (propagation & EventPropagation.SkipDisabledElements) != 0; }

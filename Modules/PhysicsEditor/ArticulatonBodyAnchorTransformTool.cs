@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor.IMGUI.Controls;
 using UnityEditor.EditorTools;
 using UnityEngine;
 
@@ -69,11 +67,14 @@ namespace UnityEditor
 
         private void DisplayProperAnchorHandle(ArticulationBody body, ref Vector3 anchorPos, ref Quaternion anchorRot)
         {
-            var bodySpace = Matrix4x4.TRS(body.transform.position, body.transform.rotation, Vector3.one);
+            // Anchors are relative to the body here, and that includes scale.
+            // However, we don't want to pass scale to DrawingScope - because that transforms the gizmos themselves.
+            // For that reason, we add and remove scale manually when drawing.
+            var bodySpace = Matrix4x4.TRS(Vector3.zero, body.transform.rotation, Vector3.one);
             using (new Handles.DrawingScope(bodySpace))
             {
-                anchorPos = Handles.PositionHandle(anchorPos, anchorRot);
-                anchorRot = Handles.RotationHandle(anchorRot, anchorPos);
+                anchorRot = Handles.RotationHandle(anchorRot, body.transform.TransformPoint(anchorPos));
+                anchorPos = body.transform.InverseTransformPoint(Handles.PositionHandle(body.transform.TransformPoint(anchorPos), anchorRot));
             }
         }
     }

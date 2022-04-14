@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -14,26 +15,66 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     class ModelInspector : Editor
     {
-        MeshPreview m_MeshPreview;
+        Dictionary<Object, MeshPreview> m_MeshPreviews = new Dictionary<Object, MeshPreview>();
+        MeshPreview m_DirtyMeshPreview = null;
+
         static Vector2 m_ScrollPos;
 
         void OnEnable()
         {
-            m_MeshPreview = new MeshPreview(targets?.FirstOrDefault(x => x is Mesh) as Mesh);
+            foreach (var previewTarget in targets)
+            {
+                var meshPreview = new MeshPreview(previewTarget as Mesh);
+                meshPreview.settingsChanged += OnPreviewSettingsChanged;
+                m_MeshPreviews.Add(previewTarget, meshPreview);
+            }
         }
 
         void OnDisable()
         {
-            m_MeshPreview.Dispose();
+            foreach (var previewTarget in targets)
+            {
+                var meshPreview = m_MeshPreviews[previewTarget];
+                meshPreview.settingsChanged -= OnPreviewSettingsChanged;
+                meshPreview.Dispose();
+            }
+
+            m_MeshPreviews.Clear();
         }
 
-        public override void OnPreviewSettings() => m_MeshPreview.OnPreviewSettings();
+        public override void OnPreviewSettings()
+        {
+            if (m_MeshPreviews.TryGetValue(target, out var targetMeshPreview))
+                targetMeshPreview.OnPreviewSettings();
+
+            if (m_DirtyMeshPreview != null)
+            {
+                foreach (var meshPreview in m_MeshPreviews.Values)
+                {
+                    if (meshPreview != m_DirtyMeshPreview)
+                        meshPreview.CopySettings(m_DirtyMeshPreview);
+                }
+
+                m_DirtyMeshPreview = null;
+            }
+        }
+
+        void OnPreviewSettingsChanged(MeshPreview preview)
+        {
+            m_DirtyMeshPreview = preview;
+        }
 
         public override Texture2D RenderStaticPreview(
             string assetPath,
             Object[] subAssets,
             int width,
-            int height) => m_MeshPreview.RenderStaticPreview(width, height);
+            int height)
+        {
+            if (m_MeshPreviews.TryGetValue(target, out var meshPreview))
+                return meshPreview.RenderStaticPreview(width, height);
+
+            return null;
+        }
 
         public override bool HasPreviewGUI()
         {
@@ -246,7 +287,11 @@ namespace UnityEditor
             EditorGUI.DrawRect(new Rect(rect.x, rect.y + rect.height - 1, rect.width, 1), dimmed);
         }
 
-        public override void OnPreviewGUI(Rect r, GUIStyle background) => m_MeshPreview.OnPreviewGUI(r, background);
+        public override void OnPreviewGUI(Rect r, GUIStyle background)
+        {
+            if (m_MeshPreviews.TryGetValue(target, out var meshPreview))
+                meshPreview.OnPreviewGUI(r, background);
+        }
 
         public override string GetInfoString() => MeshPreview.GetInfoString(target as Mesh);
     }

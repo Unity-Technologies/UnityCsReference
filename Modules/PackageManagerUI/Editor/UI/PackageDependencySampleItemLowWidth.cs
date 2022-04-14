@@ -10,18 +10,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private VisualElementCache cache { get; set; }
 
-        private ResourceLoader m_ResourceLoader;
-
-        public void ResolveDependencies()
+        public PackageDependencySampleItemLowWidth(ResourceLoader resourceLoader, string name, string version, Label installStatus)
         {
-            var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
-        }
-
-        public PackageDependencySampleItemLowWidth(string name, string version, Label installStatus)
-        {
-            ResolveDependencies();
-            var root = m_ResourceLoader.GetTemplate("PackageDependencySampleItemLowWidth.uxml");
+            var root = resourceLoader.GetTemplate("PackageDependencySampleItemLowWidth.uxml");
             Add(root);
 
             cache = new VisualElementCache(root);
@@ -38,15 +29,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 item.Add(installStatus);
         }
 
-        public PackageDependencySampleItemLowWidth(IPackageVersion version, Sample sample)
+        public PackageDependencySampleItemLowWidth(ResourceLoader resourceLoader, IPackageVersion version, Sample sample, SelectionProxy selection, AssetDatabaseProxy assetDatabase, ApplicationProxy application, IOProxy iOProxy)
         {
-            ResolveDependencies();
-            var root = m_ResourceLoader.GetTemplate("PackageDependencySampleItemLowWidth.uxml");
+            var root = resourceLoader.GetTemplate("PackageDependencySampleItemLowWidth.uxml");
             Add(root);
 
             cache = new VisualElementCache(root);
 
-            var sampleItem  = new PackageSampleItem(version, sample);
+            var sampleItem  = new PackageDetailsSampleItem(version, sample, selection, assetDatabase, application, iOProxy);
             sampleItem.importButton.SetEnabled(version.isInstalled);
 
             var name = sampleItem.nameLabel.text;

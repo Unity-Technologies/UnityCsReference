@@ -655,7 +655,7 @@ namespace UnityEditor.Search
         public IEnumerable<SearchItem> Where(SearchExpressionContext context, IEnumerable<SearchItem> dataSet, string queryStr)
         {
             m_Context = context;
-            var query = Parse(queryStr, true);
+            var query = ParseQuery(queryStr, true);
             if (query.errors.Count != 0)
             {
                 var errorStr = string.Join("\n", query.errors.Select(err => $"Invalid where query expression at {err.index}: {err.reason}"));
@@ -678,7 +678,7 @@ namespace UnityEditor.Search
         public IEnumerable<SearchItem> WhereMainThread(SearchExpressionContext context, IEnumerable<SearchItem> dataSet, string queryStr)
         {
             m_Context = context;
-            var query = Parse(queryStr, true);
+            var query = ParseQuery(queryStr, true);
             if (query.errors.Count != 0)
             {
                 var errorStr = string.Join("\n", query.errors.Select(err => $"Invalid where query expression at {err.index}: {err.reason}"));

@@ -334,7 +334,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (m_IOProxy.GetFileName(path) != "package.json")
                     {
-                        Debug.Log(L10n.Tr("[Package Manager] Please select a valid package.json file in a package folder."));
+                        Debug.Log(L10n.Tr("[Package Manager Window] Please select a valid package.json file in a package folder."));
                         return;
                     }
 
@@ -354,7 +354,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 catch (System.IO.IOException e)
                 {
-                    Debug.Log($"[Package Manager] Cannot add package from disk {path}: {e.Message}");
+                    Debug.Log($"[Package Manager Window] Cannot add package from disk {path}: {e.Message}");
                 }
             };
 
@@ -403,7 +403,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 m_PageManager.SetSelected(package);
                             }
                         }
-                    }
+                    },
+                    windowSize = new Vector2(resolvedStyle.width, 50)
                 };
                 addMenu.ShowInputDropdown(args);
             };
@@ -484,7 +485,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     orderingMenu.text = $"Sort: {L10n.Tr(firstOrdering.displayName)}";
                     filters.orderBy = firstOrdering.orderBy;
                     filters.isReverseOrder = firstOrdering.order == PageCapability.Order.Descending;
-                    page.UpdateFilters(filters);
+
+                    if(page.UpdateFilters(filters))
+                        PackageManagerFiltersAnalytics.SendEvent(filters);
                 }
             }
         }
@@ -499,7 +502,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var filters = page.filters.Clone();
                 filters.orderBy = ordering.orderBy;
                 filters.isReverseOrder = ordering.order == PageCapability.Order.Descending;
-                page.UpdateFilters(filters);
+                if (page.UpdateFilters(filters))
+                    PackageManagerFiltersAnalytics.SendEvent(filters);
+
             }, a =>
                 {
                     return page.filters.orderBy == ordering.orderBy &&
@@ -529,12 +534,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     PackageManagerFiltersWindow.instance.Close();
 
                 var page = m_PageManager.GetCurrentPage();
-                if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page.tab, page.filters))
+                if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page))
                 {
                     filtersMenu.pseudoStates |= PseudoStates.Active;
                     PackageManagerFiltersWindow.instance.OnFiltersChanged += filters =>
                     {
-                        page.UpdateFilters(filters);
+                        if (page.UpdateFilters(filters))
+                            PackageManagerFiltersAnalytics.SendEvent(filters);
                     };
                     PackageManagerFiltersWindow.instance.OnClose += () =>
                     {

@@ -98,6 +98,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.rareData.Write().unitySliceBottom = 0;
             s_InitialStyle.rareData.Write().unitySliceLeft = 0;
             s_InitialStyle.rareData.Write().unitySliceRight = 0;
+            s_InitialStyle.rareData.Write().unitySliceScale = 1f;
             s_InitialStyle.rareData.Write().unitySliceTop = 0;
             s_InitialStyle.inheritedData.Write().unityTextAlign = TextAnchor.UpperLeft;
             s_InitialStyle.inheritedData.Write().unityTextOutlineColor = Color.clear;
@@ -177,6 +178,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static int unitySliceBottom => s_InitialStyle.rareData.Read().unitySliceBottom;
         public static int unitySliceLeft => s_InitialStyle.rareData.Read().unitySliceLeft;
         public static int unitySliceRight => s_InitialStyle.rareData.Read().unitySliceRight;
+        public static float unitySliceScale => s_InitialStyle.rareData.Read().unitySliceScale;
         public static int unitySliceTop => s_InitialStyle.rareData.Read().unitySliceTop;
         public static TextAnchor unityTextAlign => s_InitialStyle.inheritedData.Read().unityTextAlign;
         public static Color unityTextOutlineColor => s_InitialStyle.inheritedData.Read().unityTextOutlineColor;

@@ -33,8 +33,8 @@ namespace UnityEditorInternal
 
     internal class AnimationWindowHierarchyPropertyGroupNode : AnimationWindowHierarchyNode
     {
-        public AnimationWindowHierarchyPropertyGroupNode(System.Type animatableObjectType, int setId, string propertyName, string path, TreeViewItem parent)
-            : base(AnimationWindowUtility.GetPropertyNodeID(setId, path, animatableObjectType, propertyName), parent != null ? parent.depth + 1 : -1, parent, animatableObjectType, AnimationWindowUtility.GetPropertyGroupName(propertyName), path, AnimationWindowUtility.GetNicePropertyGroupDisplayName(animatableObjectType, propertyName))
+        public AnimationWindowHierarchyPropertyGroupNode(System.Type animatableObjectType, int setId, string propertyName, string path, TreeViewItem parent, string displayName)
+            : base(AnimationWindowUtility.GetPropertyNodeID(setId, path, animatableObjectType, propertyName), parent != null ? parent.depth + 1 : -1, parent, animatableObjectType, AnimationWindowUtility.GetPropertyGroupName(propertyName), path, displayName)
         {}
     }
 
@@ -42,8 +42,8 @@ namespace UnityEditorInternal
     {
         public bool isPptrNode;
 
-        public AnimationWindowHierarchyPropertyNode(System.Type animatableObjectType, int setId, string propertyName, string path, TreeViewItem parent, EditorCurveBinding binding, bool isPptrNode)
-            : base(AnimationWindowUtility.GetPropertyNodeID(setId, path, animatableObjectType, propertyName), parent != null ? parent.depth + 1 : -1, parent, animatableObjectType, propertyName, path, AnimationWindowUtility.GetNicePropertyDisplayName(animatableObjectType, propertyName))
+        public AnimationWindowHierarchyPropertyNode(System.Type animatableObjectType, int setId, string propertyName, string path, TreeViewItem parent, EditorCurveBinding binding, bool isPptrNode, string displayName)
+            : base(AnimationWindowUtility.GetPropertyNodeID(setId, path, animatableObjectType, propertyName), parent != null ? parent.depth + 1 : -1, parent, animatableObjectType, propertyName, path, displayName)
         {
             this.binding = binding;
             this.isPptrNode = isPptrNode;

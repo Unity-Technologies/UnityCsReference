@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
         {
             if (panel != null)
             {
-                evt.target = panel.focusController.GetLeafFocusedElement() ?? panel.visualTree;
+                evt.target ??= panel.focusController.GetLeafFocusedElement() ?? panel.visualTree;
                 EventDispatchUtilities.PropagateEvent(evt);
             }
 

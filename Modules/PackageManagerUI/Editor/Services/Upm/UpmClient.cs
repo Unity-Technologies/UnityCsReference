@@ -168,11 +168,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupAddOperation()
         {
             addOperation.onProcessResult += (request) => OnProcessAddResult(addOperation, request);
-            addOperation.onOperationError += (op, error) =>
-            {
-                var packageId = string.IsNullOrEmpty(addOperation.packageId) ? addOperation.specialUniqueId : addOperation.packageId;
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error adding package: {0}."), packageId));
-            };
+            addOperation.logErrorInConsole = true;
             onAddOperation?.Invoke(addOperation);
         }
 
@@ -220,7 +216,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot add package {path}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot add package {path}: {e.Message}");
                 return false;
             }
         }
@@ -269,11 +265,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupAddAndRemoveOperation()
         {
             addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
-            addAndRemoveOperation.onOperationError += (op, error) =>
-            {
-                var packageIds = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packagesNamesToRemove);
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error adding/removing packages: {0}."), string.Join(",", packageIds.ToArray())));
-            };
+            addAndRemoveOperation.logErrorInConsole = true;
             onAddAndRemoveOperation?.Invoke(addAndRemoveOperation);
         }
 
@@ -301,13 +293,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var operation = offlineMode ? listOfflineOperation : listOperation;
             if (operation.isInProgress)
                 operation.Cancel();
-            var errorMessage = offlineMode ? L10n.Tr("Error fetching package list offline.") : L10n.Tr("Error fetching package list.");
             if (offlineMode)
                 operation.ListOffline(listOperation.lastSuccessTimestamp);
             else
                 operation.List();
             operation.onProcessResult += request => OnProcessListResult(request, offlineMode);
-            operation.onOperationError += (op, error) => Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
+            operation.logErrorInConsole = true;
             onListOperation(operation);
         }
 
@@ -331,7 +322,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupEmbedOperation()
         {
             embedOperation.onProcessResult += (request) => OnProcessAddResult(embedOperation, request);
-            embedOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error embedding package: {0}."), embedOperation.packageName));
+            embedOperation.logErrorInConsole = true;
             onEmbedOperation?.Invoke(embedOperation);
         }
 
@@ -361,7 +352,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 catch (System.IO.IOException e)
                 {
-                    Debug.Log($"[Package Manager] Cannot remove embedded package {packageName}: {e.Message}");
+                    Debug.Log($"[Package Manager Window] Cannot remove embedded package {packageName}: {e.Message}");
                 }
             }
         }
@@ -369,7 +360,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupRemoveOperation()
         {
             removeOperation.onProcessResult += OnProcessRemoveResult;
-            removeOperation.onOperationError += (op, error) => Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Error removing package: {0}."), removeOperation.packageName));
+            removeOperation.logErrorInConsole = true;
             onRemoveOperation?.Invoke(removeOperation);
         }
 
@@ -395,13 +386,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var operation = offlineMode ? searchOfflineOperation : searchOperation;
             if (operation.isInProgress)
                 operation.Cancel();
-            var errorMessage = offlineMode ? L10n.Tr("Error searching for packages offline.") : L10n.Tr("Error searching for packages.");
             if (offlineMode)
                 operation.SearchAllOffline(searchOperation.lastSuccessTimestamp);
             else
                 operation.SearchAll();
             operation.onProcessResult += request => OnProcessSearchAllResult(request, offlineMode);
-            operation.onOperationError += (op, error) => Debug.LogError($"{L10n.Tr("[Package Manager Window]")} {errorMessage}");
+            operation.logErrorInConsole = true;
             onSearchAllOperation(operation);
         }
 
@@ -721,7 +711,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
         {
-            if (!(packageInfo?.registry?.isDefault ?? false) || string.IsNullOrEmpty(packageInfo.registry?.url) || !packageInfo.versions.all.Any())
+            if (packageInfo?.source == PackageSource.BuiltIn)
+                return true;
+
+            if (packageInfo == null || packageInfo.source != PackageSource.Registry || packageInfo.registry?.isDefault != true || string.IsNullOrEmpty(packageInfo.registry?.url) || !packageInfo.versions.all.Any())
                 return false;
 
             if (m_RegistriesUrl.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))

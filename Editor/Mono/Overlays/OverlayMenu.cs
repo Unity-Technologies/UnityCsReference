@@ -137,14 +137,19 @@ namespace UnityEditor.Overlays
             size.x = Mathf.Min(parentBounds.width, size.x);
             size.y = Mathf.Min(parentBounds.height, size.y);
 
-            if (menuRect.xMax > parentBounds.width)
+            //Show has been triggered by a menu entry and not by a shortcut key
+            //Place the menu at the center of the parent Bounds
+            if(mousePosition.Equals(Vector2.negativeInfinity))
+                menuRect = new Rect(parentBounds.center - size / 2f, size);
+
+            if(menuRect.xMax > parentBounds.width)
                 menuRect.x -= menuRect.xMax - parentBounds.width;
-            if (menuRect.xMin < 0)
+            if(menuRect.xMin < 0)
                 menuRect.x = 0;
 
-            if (menuRect.yMax > parentBounds.height)
+            if(menuRect.yMax > parentBounds.height)
                 menuRect.y -= menuRect.yMax - parentBounds.height;
-            if (menuRect.yMin < 0)
+            if(menuRect.yMin < 0)
                 menuRect.y = 0;
 
             style.top = menuRect.y;

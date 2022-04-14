@@ -11,7 +11,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class GenericInputDropdown : DropdownContent
     {
         public static readonly string k_DefaultSubmitButtonText = L10n.Tr("Submit");
-        internal override Vector2 windowSize => new Vector2(320, 50);
+        private static readonly Vector2 k_DefaultWindowSize = new Vector2(320, 50);
+
+        private Vector2 m_WindowSize;
+        internal override Vector2 windowSize => m_WindowSize;
 
         public Action<string> submitClicked { get; set; }
 
@@ -39,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal override void OnDropdownShown()
         {
-            inputTextField.visualInput.Focus();
+            inputTextField.Focus();
             m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
         }
 
@@ -48,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_InputPlaceholder.OnDisable();
 
             inputTextField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            inputTextField.visualInput.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            inputTextField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
             submitButton.clickable.clicked -= SubmitClicked;
 
@@ -67,9 +70,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_AnchorWindow = anchorWindow;
 
+            m_WindowSize = args.windowSize ?? k_DefaultWindowSize;
+
             inputTextField.value = args.defaultValue ?? string.Empty;
             inputTextField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            inputTextField.visualInput.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            inputTextField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
 
             m_InputPlaceholder = new TextFieldPlaceholder(inputTextField);
             m_InputPlaceholder.text = args.placeholderText ?? string.Empty;

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
@@ -108,13 +110,13 @@ namespace UnityEditor
         private static Mesh s_SphereMesh;
         private static Mesh s_HemisphereMesh;
         private static readonly Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one);
-        private ArcHandle m_ArcHandle = new ArcHandle();
-        private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle();
-        private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle();
+        private static ArcHandle s_ArcHandle = new ArcHandle();
+        private static BoxBoundsHandle s_BoxBoundsHandle = new BoxBoundsHandle();
+        private static SphereBoundsHandle s_SphereBoundsHandle = new SphereBoundsHandle();
         private static PrefColor s_GizmoColor = new PrefColor("Particle System/Shape Module Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
         private static Color s_ShapeGizmoThicknessTint = new Color(0.7f, 0.7f, 0.7f, 1.0f);
 
-        private Mesh m_SpriteMesh;
+        private static Mesh s_SpriteMesh;
 
         private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Donut, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Sprite, ParticleSystemShapeType.SpriteRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge, ParticleSystemShapeType.Rectangle };
         private readonly int[] m_TypeToGuiTypeIndex = new[] { 0, 0, 1, 1, 2, 4, 5, 2, 2, 2, 10, 10, 11, 6, 7, 4, 4, 3, 12, 8, 9 };
@@ -122,13 +124,83 @@ namespace UnityEditor
         private readonly ParticleSystemShapeType[] boxShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Box, ParticleSystemShapeType.BoxShell, ParticleSystemShapeType.BoxEdge };
         private readonly ParticleSystemShapeType[] coneShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Cone, ParticleSystemShapeType.ConeVolume };
 
-        static EditMode.SceneViewEditMode[] s_SceneViewEditModes = new[]
+        abstract class ShapeTool : EditorTool
         {
-            EditMode.SceneViewEditMode.ParticleSystemShapeModuleGizmo,
-            EditMode.SceneViewEditMode.ParticleSystemShapeModulePosition,
-            EditMode.SceneViewEditMode.ParticleSystemShapeModuleRotation,
-            EditMode.SceneViewEditMode.ParticleSystemShapeModuleScale
-        };
+            public override bool IsAvailable()
+            {
+                foreach (var t in targets)
+                {
+                    var ps = t as ParticleSystem;
+                    if (ps == null)
+                        continue;
+
+                    if (ps.shape.enabled)
+                        return true;
+                }
+                return false;
+
+            }
+        }
+
+        [EditorTool("Shape", typeof(ParticleSystem))]
+        class ShapeGizmoTool : ShapeTool, IDrawSelectedHandles
+        {
+            public override GUIContent toolbarIcon
+            {
+                get { return EditorGUIUtility.TrIconContent("ParticleShapeTool", "Shape module gizmo editing mode."); }
+            }
+
+            public override void OnToolGUI(EditorWindow window)
+            {
+                OnShapeToolGUI(true, targets);
+            }
+
+            public void OnDrawHandles()
+            {
+                OnShapeToolGUI(false, targets);
+            }
+        }
+
+        [EditorTool("Transform Shape", typeof(ParticleSystem))]
+        class ShapePositionTool : ShapeTool
+        {
+            public override GUIContent toolbarIcon
+            {
+                get { return EditorGUIUtility.TrIconContent("TransformTool", "Shape module transform editing mode."); }
+            }
+
+            public override void OnToolGUI(EditorWindow window)
+            {
+                foreach (var t in targets)
+                {
+                    var ps = t as ParticleSystem;
+                    if (ps == null)
+                        continue;
+
+                    var shapeModule = ps.shape;
+                    Matrix4x4 transformMatrix = GetSceneViewTransformMatrix(ps);
+
+                    Vector3 position = transformMatrix.MultiplyPoint(shapeModule.position);
+                    Quaternion rotation = transformMatrix.rotation * Quaternion.Euler(shapeModule.rotation);
+                    Vector3 scale = transformMatrix.MultiplyVector(shapeModule.scale);
+
+                    EditorGUI.BeginChangeCheck();
+
+                    Handles.TransformHandle(ref position, ref rotation, ref scale);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(ps, s_Texts.undoTransform);
+
+                        Matrix4x4 inverseTransformMatrix = transformMatrix.inverse;
+
+                        shapeModule.position = inverseTransformMatrix.MultiplyPoint(position);
+                        shapeModule.rotation = (inverseTransformMatrix.rotation * rotation).eulerAngles;
+                        shapeModule.scale = inverseTransformMatrix.MultiplyVector(scale);
+                    }
+                }
+            }
+        }
 
         class Texts
         {
@@ -163,6 +235,7 @@ namespace UnityEditor
             public GUIContent position = EditorGUIUtility.TrTextContent("Position", "Translate the emission shape.");
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Rotate the emission shape.");
             public GUIContent scale = EditorGUIUtility.TrTextContent("Scale", "Scale the emission shape.");
+            public GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
 
             public readonly string undoSphereThickness = L10n.Tr("Sphere Thickness Handle Change");
             public readonly string undoSphere = L10n.Tr("Sphere Handle Change");
@@ -241,14 +314,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Blue"),
                 EditorGUIUtility.TrTextContent("Alpha")
             };
-
-            public GUIContent[] toolContents =
-            {
-                EditorGUIUtility.TrIconContent("ParticleShapeTool", "Shape gizmo editing mode."),
-                EditorGUIUtility.TrIconContent("MoveTool", "Shape transform position editing mode."),
-                EditorGUIUtility.TrIconContent("RotateTool", "Shape transform rotation editing mode."),
-                EditorGUIUtility.TrIconContent("ScaleTool", "Shape transform scale editing mode.")
-            };
         }
 
         static Texts s_Texts;
@@ -297,37 +362,8 @@ namespace UnityEditor
         {
             get
             {
-                if (EditMode.IsOwner(m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor))
-                {
-                    if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleGizmo ||
-                        EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModulePosition ||
-                        EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleRotation ||
-                        EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleScale)
-                        return true;
-                }
-                return false;
+                return EditorToolManager.activeTool is ShapeTool;
             }
-            set
-            {
-                if (!value && editToolActive)
-                    EditMode.QuitEditMode();
-                SceneView.RepaintAll();
-            }
-        }
-
-        protected override void SetVisibilityState(VisibilityState newState)
-        {
-            base.SetVisibilityState(newState);
-
-            // Show tools again when module is not visible
-            if (newState != VisibilityState.VisibleAndFoldedOut)
-                editToolActive = false;
-        }
-
-        protected override void OnModuleDisable()
-        {
-            base.OnModuleDisable();
-            editToolActive = false;
         }
 
         protected override void Init()
@@ -596,7 +632,19 @@ namespace UnityEditor
             OnMiscInspectorGUI();
 
             if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
-                GUIButtonGroup(s_SceneViewEditModes, s_Texts.toolContents, m_ParticleSystemUI.GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
+            {
+                EditorGUILayout.BeginVertical("GroupBox");
+
+                var editorTools = new List<EditorTool>(2);
+                EditorToolManager.GetComponentTools(x => x.GetEditor<EditorTool>() is ShapeTool, editorTools, true);
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.PrefixLabel(s_Texts.sceneTools, ParticleSystemStyles.Get().label, ParticleSystemStyles.Get().label);
+                EditorGUILayout.EditorToolbar(editorTools);
+                GUILayout.EndHorizontal();
+
+                EditorGUILayout.EndVertical();
+            }
         }
 
         private void OnTextureInspectorGUI()
@@ -640,29 +688,39 @@ namespace UnityEditor
             GUIFloat(s_Texts.randomPositionAmount, m_RandomPositionAmount);
         }
 
-        override public void OnSceneViewGUI()
+        private static Matrix4x4 GetSceneViewTransformMatrix(ParticleSystem ps)
         {
+            Matrix4x4 transformMatrix = new Matrix4x4();
+            var transform = ps.transform;
+            if (ps.main.scalingMode == ParticleSystemScalingMode.Local)
+                transformMatrix.SetTRS(transform.position, transform.rotation, transform.localScale);
+            else
+                transformMatrix = transform.localToWorldMatrix;
+            return transformMatrix;
+        }
+
+        internal static void OnShapeToolGUI(bool allowGizmoEditing, IEnumerable<UnityEngine.Object> targets)
+        {
+            if (s_Texts == null)
+                s_Texts = new Texts();
+
             Color origCol = Handles.color;
             Handles.color = s_GizmoColor;
 
             Matrix4x4 orgMatrix = Handles.matrix;
 
-            EditorGUI.BeginChangeCheck();
-
-            bool allowGizmoEditing = editToolActive && EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleGizmo;
-
-            foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
+            foreach (var target in targets)
             {
+                var ps = target as ParticleSystem;
+                if (ps == null)
+                    continue;
+
                 var shapeModule = ps.shape;
                 var mainModule = ps.main;
 
                 ParticleSystemShapeType type = shapeModule.shapeType;
 
-                Matrix4x4 transformMatrix = new Matrix4x4();
-                if (mainModule.scalingMode == ParticleSystemScalingMode.Local)
-                    transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.localScale);
-                else
-                    transformMatrix = ps.transform.localToWorldMatrix;
+                Matrix4x4 transformMatrix = GetSceneViewTransformMatrix(ps);
 
                 bool isBox = (type == ParticleSystemShapeType.Box || type == ParticleSystemShapeType.BoxShell || type == ParticleSystemShapeType.BoxEdge || type == ParticleSystemShapeType.Rectangle);
 
@@ -704,37 +762,37 @@ namespace UnityEditor
                     // Thickness
                     EditorGUI.BeginChangeCheck();
 
-                    m_ArcHandle.angle = shapeModule.arc;
-                    m_ArcHandle.radius = shapeModule.radius * (1.0f - shapeModule.radiusThickness);
-                    m_ArcHandle.SetColorWithRadiusHandle(s_ShapeGizmoThicknessTint, 0f);
-                    m_ArcHandle.radiusHandleColor *= gizmoEditingColor;
-                    m_ArcHandle.angleHandleColor = Color.clear;
+                    s_ArcHandle.angle = shapeModule.arc;
+                    s_ArcHandle.radius = shapeModule.radius * (1.0f - shapeModule.radiusThickness);
+                    s_ArcHandle.SetColorWithRadiusHandle(s_ShapeGizmoThicknessTint, 0f);
+                    s_ArcHandle.radiusHandleColor *= gizmoEditingColor;
+                    s_ArcHandle.angleHandleColor = Color.clear;
 
                     using (new Handles.DrawingScope(Handles.matrix * s_ArcHandleOffsetMatrix))
-                        m_ArcHandle.DrawHandle();
+                        s_ArcHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, s_Texts.undoCircleThickness);
-                        shapeModule.radiusThickness = 1.0f - (m_ArcHandle.radius / shapeModule.radius);
+                        shapeModule.radiusThickness = 1.0f - (s_ArcHandle.radius / shapeModule.radius);
                     }
 
                     // Circle
                     EditorGUI.BeginChangeCheck();
 
-                    m_ArcHandle.radius = shapeModule.radius;
-                    m_ArcHandle.SetColorWithRadiusHandle(Color.white, 0f);
-                    m_ArcHandle.radiusHandleColor *= gizmoEditingColor;
-                    m_ArcHandle.angleHandleColor *= gizmoEditingColor;
+                    s_ArcHandle.radius = shapeModule.radius;
+                    s_ArcHandle.SetColorWithRadiusHandle(Color.white, 0f);
+                    s_ArcHandle.radiusHandleColor *= gizmoEditingColor;
+                    s_ArcHandle.angleHandleColor *= gizmoEditingColor;
 
                     using (new Handles.DrawingScope(Handles.matrix * s_ArcHandleOffsetMatrix))
-                        m_ArcHandle.DrawHandle();
+                        s_ArcHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, s_Texts.undoCircle);
-                        shapeModule.radius = m_ArcHandle.radius;
-                        shapeModule.arc = m_ArcHandle.angle;
+                        shapeModule.radius = s_ArcHandle.radius;
+                        shapeModule.arc = s_ArcHandle.angle;
                     }
 
                     // Texture
@@ -837,18 +895,18 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
 
-                    m_BoxBoundsHandle.center = Vector3.zero;
-                    m_BoxBoundsHandle.size = shapeModule.scale;
-                    m_BoxBoundsHandle.handleColor = gizmoEditingColor;
-                    m_BoxBoundsHandle.DrawHandle();
+                    s_BoxBoundsHandle.center = Vector3.zero;
+                    s_BoxBoundsHandle.size = shapeModule.scale;
+                    s_BoxBoundsHandle.handleColor = gizmoEditingColor;
+                    s_BoxBoundsHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, s_Texts.undoBox);
-                        shapeModule.scale = m_BoxBoundsHandle.size;
+                        shapeModule.scale = s_BoxBoundsHandle.size;
                     }
 
-                    Matrix4x4 textureTransform = combinedMatrix * Matrix4x4.TRS(new Vector3(0.0f, 0.0f, -m_BoxBoundsHandle.size.z * 0.5f), Quaternion.identity, m_BoxBoundsHandle.size);
+                    Matrix4x4 textureTransform = combinedMatrix * Matrix4x4.TRS(new Vector3(0.0f, 0.0f, -s_BoxBoundsHandle.size.z * 0.5f), Quaternion.identity, s_BoxBoundsHandle.size);
                     OnSceneViewTextureGUI(shapeModule, s_QuadMesh, true, s_TextureMaterial, textureTransform);
                 }
                 else if (type == ParticleSystemShapeType.Donut)
@@ -856,19 +914,19 @@ namespace UnityEditor
                     // Radius
                     EditorGUI.BeginChangeCheck();
 
-                    m_ArcHandle.radius = shapeModule.radius;
-                    m_ArcHandle.angle = shapeModule.arc;
-                    m_ArcHandle.SetColorWithRadiusHandle(Color.white * gizmoEditingColor, 0f);
-                    m_ArcHandle.wireframeColor = Color.clear;
+                    s_ArcHandle.radius = shapeModule.radius;
+                    s_ArcHandle.angle = shapeModule.arc;
+                    s_ArcHandle.SetColorWithRadiusHandle(Color.white * gizmoEditingColor, 0f);
+                    s_ArcHandle.wireframeColor = Color.clear;
 
                     using (new Handles.DrawingScope(Handles.matrix * s_ArcHandleOffsetMatrix))
-                        m_ArcHandle.DrawHandle();
+                        s_ArcHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, s_Texts.undoDonut);
-                        shapeModule.radius = m_ArcHandle.radius;
-                        shapeModule.arc = m_ArcHandle.angle;
+                        shapeModule.radius = s_ArcHandle.radius;
+                        shapeModule.arc = s_ArcHandle.angle;
                     }
 
                     // Donut extents
@@ -891,11 +949,11 @@ namespace UnityEditor
                     }
 
                     // Donut thickness
-                    m_SphereBoundsHandle.axes = PrimitiveBoundsHandle.Axes.X | PrimitiveBoundsHandle.Axes.Y;
-                    m_SphereBoundsHandle.radius = shapeModule.donutRadius * (1.0f - shapeModule.radiusThickness);
-                    m_SphereBoundsHandle.center = Vector3.zero;
-                    m_SphereBoundsHandle.SetColor(s_ShapeGizmoThicknessTint);
-                    m_SphereBoundsHandle.handleColor *= gizmoEditingColor;
+                    s_SphereBoundsHandle.axes = PrimitiveBoundsHandle.Axes.X | PrimitiveBoundsHandle.Axes.Y;
+                    s_SphereBoundsHandle.radius = shapeModule.donutRadius * (1.0f - shapeModule.radiusThickness);
+                    s_SphereBoundsHandle.center = Vector3.zero;
+                    s_SphereBoundsHandle.SetColor(s_ShapeGizmoThicknessTint);
+                    s_SphereBoundsHandle.handleColor *= gizmoEditingColor;
 
                     const float handleInterval = 90.0f;
                     int numOuterRadii = Mathf.Max(1, (int)Mathf.Ceil(shapeModule.arc / handleInterval));
@@ -905,28 +963,28 @@ namespace UnityEditor
                     {
                         EditorGUI.BeginChangeCheck();
                         using (new Handles.DrawingScope(Handles.matrix * (Matrix4x4.Rotate(Quaternion.Euler(0.0f, 0.0f, handleInterval * i)) * donutRadiusStartMatrix)))
-                            m_SphereBoundsHandle.DrawHandle();
+                            s_SphereBoundsHandle.DrawHandle();
                         if (EditorGUI.EndChangeCheck())
                         {
                             Undo.RecordObject(ps, s_Texts.undoDonutRadiusThickness);
-                            shapeModule.radiusThickness = 1.0f - (m_SphereBoundsHandle.radius / shapeModule.donutRadius);
+                            shapeModule.radiusThickness = 1.0f - (s_SphereBoundsHandle.radius / shapeModule.donutRadius);
                         }
                     }
 
                     // Donut radius
-                    m_SphereBoundsHandle.radius = shapeModule.donutRadius;
-                    m_SphereBoundsHandle.SetColor(Color.white);
-                    m_SphereBoundsHandle.handleColor *= gizmoEditingColor;
+                    s_SphereBoundsHandle.radius = shapeModule.donutRadius;
+                    s_SphereBoundsHandle.SetColor(Color.white);
+                    s_SphereBoundsHandle.handleColor *= gizmoEditingColor;
 
                     for (int i = 0; i < numOuterRadii; i++)
                     {
                         EditorGUI.BeginChangeCheck();
                         using (new Handles.DrawingScope(Handles.matrix * (Matrix4x4.Rotate(Quaternion.Euler(0.0f, 0.0f, handleInterval * i)) * donutRadiusStartMatrix)))
-                            m_SphereBoundsHandle.DrawHandle();
+                            s_SphereBoundsHandle.DrawHandle();
                         if (EditorGUI.EndChangeCheck())
                         {
                             Undo.RecordObject(ps, s_Texts.undoDonutRadius);
-                            shapeModule.donutRadius = m_SphereBoundsHandle.radius;
+                            shapeModule.donutRadius = s_SphereBoundsHandle.radius;
                         }
                     }
 
@@ -962,85 +1020,51 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
 
-                    m_BoxBoundsHandle.center = Vector3.zero;
-                    m_BoxBoundsHandle.size = new Vector3(shapeModule.scale.x, shapeModule.scale.y, 0.0f);
-                    m_BoxBoundsHandle.handleColor = gizmoEditingColor;
-                    m_BoxBoundsHandle.DrawHandle();
+                    s_BoxBoundsHandle.center = Vector3.zero;
+                    s_BoxBoundsHandle.size = new Vector3(shapeModule.scale.x, shapeModule.scale.y, 0.0f);
+                    s_BoxBoundsHandle.handleColor = gizmoEditingColor;
+                    s_BoxBoundsHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, s_Texts.undoRectangle);
-                        shapeModule.scale = new Vector3(m_BoxBoundsHandle.size.x, m_BoxBoundsHandle.size.y, 0.0f);
+                        shapeModule.scale = new Vector3(s_BoxBoundsHandle.size.x, s_BoxBoundsHandle.size.y, 0.0f);
                     }
 
-                    OnSceneViewTextureGUI(shapeModule, s_QuadMesh, true, s_TextureMaterial, combinedMatrix * Matrix4x4.Scale(m_BoxBoundsHandle.size));
+                    OnSceneViewTextureGUI(shapeModule, s_QuadMesh, true, s_TextureMaterial, combinedMatrix * Matrix4x4.Scale(s_BoxBoundsHandle.size));
                 }
                 else if (type == ParticleSystemShapeType.Sprite)
                 {
                     Sprite sprite = shapeModule.sprite;
                     if (sprite)
                     {
-                        if (!m_SpriteMesh)
+                        if (!s_SpriteMesh)
                         {
-                            m_SpriteMesh = new Mesh();
-                            m_SpriteMesh.name = "ParticleSpritePreview";
-                            m_SpriteMesh.hideFlags |= HideFlags.HideAndDontSave;
+                            s_SpriteMesh = new Mesh();
+                            s_SpriteMesh.name = "ParticleSpritePreview";
+                            s_SpriteMesh.hideFlags |= HideFlags.HideAndDontSave;
                         }
 
-                        m_SpriteMesh.vertices = Array.ConvertAll(sprite.vertices, i => (Vector3)i);
-                        m_SpriteMesh.uv = sprite.uv;
-                        m_SpriteMesh.triangles = Array.ConvertAll(sprite.triangles, i => (int)i);
+                        s_SpriteMesh.vertices = Array.ConvertAll(sprite.vertices, i => (Vector3)i);
+                        s_SpriteMesh.uv = sprite.uv;
+                        s_SpriteMesh.triangles = Array.ConvertAll(sprite.triangles, i => (int)i);
 
                         bool orgWireframeMode = GL.wireframe;
                         GL.wireframe = true;
                         s_Material.SetPass(0);
-                        Graphics.DrawMeshNow(m_SpriteMesh, combinedMatrix);
+                        Graphics.DrawMeshNow(s_SpriteMesh, combinedMatrix);
                         GL.wireframe = orgWireframeMode;
 
-                        OnSceneViewTextureGUI(shapeModule, m_SpriteMesh, false, s_TextureMaterial, combinedMatrix);
-                    }
-                }
-
-                if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModulePosition || EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleRotation || EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleScale)
-                {
-                    Handles.matrix = Matrix4x4.identity;
-
-                    Vector3 position = transformMatrix.MultiplyPoint(shapeModule.position);
-                    Quaternion rotation = transformMatrix.rotation * Quaternion.Euler(shapeModule.rotation);
-                    Vector3 scale = transformMatrix.MultiplyVector(shapeModule.scale);
-
-                    float handleSize = HandleUtility.GetHandleSize(position);
-
-                    EditorGUI.BeginChangeCheck();
-
-                    if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModulePosition)
-                        position = Handles.PositionHandle(position, rotation);
-                    else if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleRotation)
-                        rotation = Handles.RotationHandle(rotation, position);
-                    else if (EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemShapeModuleScale)
-                        scale = Handles.ScaleHandle(scale, position, rotation, handleSize);
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        Undo.RecordObject(ps, s_Texts.undoTransform);
-
-                        Matrix4x4 inverseTransformMatrix = transformMatrix.inverse;
-
-                        shapeModule.position = inverseTransformMatrix.MultiplyPoint(position);
-                        shapeModule.rotation = (inverseTransformMatrix.rotation * rotation).eulerAngles;
-                        shapeModule.scale = inverseTransformMatrix.MultiplyVector(scale);
+                        OnSceneViewTextureGUI(shapeModule, s_SpriteMesh, false, s_TextureMaterial, combinedMatrix);
                     }
                 }
             }
-
-            if (EditorGUI.EndChangeCheck())
-                m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.Repaint();
 
             Handles.color = origCol;
             Handles.matrix = orgMatrix;
         }
 
-        private void OnSceneViewTextureGUI(ParticleSystem.ShapeModule shapeModule, Mesh mesh, bool twoSided, Material mat, Matrix4x4 transform)
+        private static void OnSceneViewTextureGUI(ParticleSystem.ShapeModule shapeModule, Mesh mesh, bool twoSided, Material mat, Matrix4x4 transform)
         {
             Texture texture = shapeModule.texture;
             if (texture)
@@ -1048,10 +1072,10 @@ namespace UnityEditor
                 mat.SetPass(0);
                 mat.SetTexture("_MainTex", texture);
                 mat.SetColor("_Color", new Color(1.0f, 1.0f, 1.0f, 0.4f));
-                mat.SetFloat("_ClipChannel", (float)(int)shapeModule.textureClipChannel);
+                mat.SetFloat("_ClipChannel", (int)shapeModule.textureClipChannel);
                 mat.SetFloat("_ClipThreshold", shapeModule.textureClipThreshold);
-                mat.SetFloat("_Cull", twoSided ? (float)UnityEngine.Rendering.CullMode.Off : (float)UnityEngine.Rendering.CullMode.Back);
-                mat.SetFloat("_UVChannel", (float)shapeModule.textureUVChannel);
+                mat.SetFloat("_Cull", twoSided ? (float)CullMode.Off : (float)CullMode.Back);
+                mat.SetFloat("_UVChannel", shapeModule.textureUVChannel);
                 Graphics.DrawMeshNow(mesh, transform);
             }
         }

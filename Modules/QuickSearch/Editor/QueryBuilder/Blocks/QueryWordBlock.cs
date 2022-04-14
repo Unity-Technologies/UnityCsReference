@@ -14,19 +14,19 @@ namespace UnityEditor.Search
         {
         }
 
-        public override Rect openRect => drawRect;
+        internal override Rect openRect => drawRect;
 
-        protected override Color GetBackgroundColor()
+        internal override Color GetBackgroundColor()
         {
             return QueryColors.combine;
         }
 
-        public override IBlockEditor OpenEditor(in Rect rect)
+        internal override IBlockEditor OpenEditor(in Rect rect)
         {
             return QuerySelector.Open(rect, this);
         }
 
-        public override IEnumerable<SearchProposition> FetchPropositions()
+        internal override IEnumerable<SearchProposition> FetchPropositions()
         {
             return BuiltInQueryBuilderPropositions(null);
         }
@@ -61,14 +61,14 @@ namespace UnityEditor.Search
             value = searchValue;
         }
 
-        public override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override Rect Layout(in Vector2 at, in float availableSpace)
         {
             var wordContent = Styles.QueryBuilder.label.CreateContent(value);
             var widgetWidth = wordContent.expandedWidth;
             return GetRect(at, widgetWidth, blockHeight);
         }
 
-        protected override void Draw(in Rect widgetRect, in Vector2 mousePosition)
+        internal override void Draw(in Rect widgetRect, in Vector2 mousePosition)
         {
             var wordContent = Styles.QueryBuilder.label.CreateContent(value);
             var widgetWidth = wordContent.expandedWidth;
@@ -79,13 +79,13 @@ namespace UnityEditor.Search
             DrawBorders(widgetRect, mousePosition);
         }
 
-        public override IBlockEditor OpenEditor(in Rect rect)
+        internal override IBlockEditor OpenEditor(in Rect rect)
         {
             var screenRect = new Rect(rect.position + context.searchView.position.position, rect.size);
             return QueryTextBlockEditor.Open(screenRect, this);
         }
 
-        protected override Color GetBackgroundColor()
+        internal override Color GetBackgroundColor()
         {
             return QueryColors.word;
         }
@@ -94,5 +94,45 @@ namespace UnityEditor.Search
         {
             return EscapeLiteralString(value);
         }
+    }
+
+    class QueryToggleBlock : QueryWordBlock
+    {
+        public bool active { get; set; }
+
+        public QueryToggleBlock(IQuerySource source, string toggle)
+            : base(source, toggle)
+        {
+            active = true;
+        }
+
+        internal override bool canExclude => false;
+        internal override bool canOpenEditorOnValueClicked => false;
+        internal override IBlockEditor OpenEditor(in Rect rect)
+        {
+            active = !active;
+            source.Apply();
+            return null;
+        }
+
+        internal override void Draw(in Rect widgetRect, in Vector2 mousePosition)
+        {
+            var oldColor = GUI.color;
+            if (!active)
+                GUI.color *= new Color(1f, 1f, 1f, 0.5f);
+
+            base.Draw(widgetRect, mousePosition);
+            GUI.color = oldColor;
+        }
+
+        public override string ToString()
+        {
+            if (!active)
+                return null;
+            return base.ToString();
+        }
+
+        internal override Rect openRect => drawRect;
+        internal override Color GetBackgroundColor() => QueryColors.toggle;
     }
 }

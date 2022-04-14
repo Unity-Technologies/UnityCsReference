@@ -103,21 +103,28 @@ namespace Unity.UI.Builder
                 var transition = transitions[i];
                 if (isSet)
                 {
-                    var handle = manipulator.GetValueContextAtIndex(i % valueCount);
-                    if (handle.handle.valueType == StyleValueType.Keyword)
-                        transition.property = new UIStyleValue<string>(handle.AsKeyword());
-                    else if (handle.handle.valueType == StyleValueType.Enum)
-                        transition.property = handle.AsEnum();
-                    else if (handle.handle.valueType == StyleValueType.String)
-                        transition.property = handle.AsString();
-                    // Error, use default value
+                    if (i < valueCount)
+                    {
+                        var handle = manipulator.GetValueContextAtIndex(i % valueCount);
+                        if (handle.handle.valueType == StyleValueType.Keyword)
+                            transition.property = new UIStyleValue<string>(handle.AsKeyword());
+                        else if (handle.handle.valueType == StyleValueType.Enum)
+                            transition.property = handle.AsEnum();
+                        else if (handle.handle.valueType == StyleValueType.String)
+                            transition.property = handle.AsString();
+                        // Error, use default value
+                        else
+                            transition.property = BuilderTransition.IgnoredProperty;
+                    }
                     else
+                    {
                         transition.property = BuilderTransition.IgnoredProperty;
+                    }
                 }
                 else
                 {
                     transition.property = i < valueCount
-                        ? computedData[i].ToString()
+                        ? computedData[i].ToString() ?? BuilderTransition.IgnoredProperty
                         : BuilderTransition.IgnoredProperty;
                 }
                 transitions[i] = transition;

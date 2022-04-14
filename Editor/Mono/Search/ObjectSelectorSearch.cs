@@ -38,78 +38,93 @@ namespace UnityEditor.SearchService
     [InitializeOnLoad]
     public static class ObjectSelectorSearch
     {
-        static readonly SearchApiBaseImp<ObjectSelectorEngineAttribute, IObjectSelectorEngine> k_EngineImp;
+        static SearchApiBaseImp<ObjectSelectorEngineAttribute, IObjectSelectorEngine> s_EngineImp;
+        static SearchApiBaseImp<ObjectSelectorEngineAttribute, IObjectSelectorEngine> engineImp
+        {
+            get
+            {
+                if (s_EngineImp == null)
+                    StaticInit();
+                return s_EngineImp;
+            }
+        }
 
         public const SearchEngineScope EngineScope = SearchEngineScope.ObjectSelector;
 
         static ObjectSelectorSearch()
         {
-            k_EngineImp = new SearchApiBaseImp<ObjectSelectorEngineAttribute, IObjectSelectorEngine>(EngineScope, "Object Selector");
+            EditorApplication.tick += StaticInit;
+        }
+
+        private static void StaticInit()
+        {
+            EditorApplication.tick -= StaticInit;
+            s_EngineImp = s_EngineImp ?? new SearchApiBaseImp<ObjectSelectorEngineAttribute, IObjectSelectorEngine>(EngineScope, "Object Selector");
         }
 
         internal static bool SelectObject(ObjectSelectorSearchContext context, Action<Object, bool> onObjectSelectorClosed, Action<Object> onObjectSelectedUpdated)
         {
-            var activeEngine = k_EngineImp.activeSearchEngine;
+            var activeEngine = engineImp.activeSearchEngine;
             try
             {
                 return activeEngine.SelectObject(context, onObjectSelectorClosed, onObjectSelectedUpdated);
             }
             catch (Exception ex)
             {
-                k_EngineImp.HandleUserException(ex);
+                engineImp.HandleUserException(ex);
                 return false;
             }
         }
 
         internal static void SetSearchFilter(string searchFilter, ObjectSelectorSearchContext context)
         {
-            var activeEngine = k_EngineImp.activeSearchEngine;
+            var activeEngine = engineImp.activeSearchEngine;
             activeEngine.SetSearchFilter(context, searchFilter);
         }
 
         internal static bool HasEngineOverride()
         {
-            return k_EngineImp.HasEngineOverride();
+            return engineImp.HasEngineOverride();
         }
 
         internal static void BeginSession(ObjectSelectorSearchContext context)
         {
-            k_EngineImp.BeginSession(context);
+            engineImp.BeginSession(context);
         }
 
         internal static void EndSession(ObjectSelectorSearchContext context)
         {
-            k_EngineImp.EndSession(context);
+            engineImp.EndSession(context);
         }
 
         internal static void BeginSearch(string query, ObjectSelectorSearchContext context)
         {
-            k_EngineImp.BeginSearch(query, context);
+            engineImp.BeginSearch(query, context);
         }
 
         internal static void EndSearch(ObjectSelectorSearchContext context)
         {
-            k_EngineImp.EndSearch(context);
+            engineImp.EndSearch(context);
         }
 
         internal static IObjectSelectorEngine GetActiveSearchEngine()
         {
-            return k_EngineImp.GetActiveSearchEngine();
+            return engineImp.GetActiveSearchEngine();
         }
 
         internal static void SetActiveSearchEngine(string searchEngineName)
         {
-            k_EngineImp.SetActiveSearchEngine(searchEngineName);
+            engineImp.SetActiveSearchEngine(searchEngineName);
         }
 
         public static void RegisterEngine(IObjectSelectorEngine engine)
         {
-            k_EngineImp.RegisterEngine(engine);
+            engineImp.RegisterEngine(engine);
         }
 
         public static void UnregisterEngine(IObjectSelectorEngine engine)
         {
-            k_EngineImp.UnregisterEngine(engine);
+            engineImp.UnregisterEngine(engine);
         }
     }
 

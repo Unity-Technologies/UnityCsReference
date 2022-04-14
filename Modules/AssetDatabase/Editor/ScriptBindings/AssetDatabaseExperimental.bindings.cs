@@ -118,6 +118,7 @@ namespace UnityEditor.Experimental
                 public Counter importedOutOfProcess;
                 public Counter refresh;
                 public Counter domainReload;
+                internal Counter fullScan;
             }
 
             public CacheServerCounters cacheServer;

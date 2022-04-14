@@ -48,12 +48,17 @@ namespace UnityEditor
         static readonly float k_LogoListPropertyLabelWidth = 100;
         static readonly float k_MinPersonalEditionOverlayOpacity = 0.5f;
         static readonly float k_MinProEditionOverlayOpacity = 0.0f;
+        static readonly Color32 k_DarkOnLightBgColor = new Color32(204, 204, 204, 255);// #CCCCCC
+        static readonly Color32 k_LightOnDarkBgColor = new Color32(35, 31, 32, 255);
 
-        static Sprite s_UnityLogo;
+        static Sprite s_UnityLogoLight; // We use this version as a placeholder when the logo is in the list.
+        static Sprite s_UnityLogoDark;
 
         readonly AnimBool m_ShowAnimationControlsAnimator = new AnimBool();
         readonly AnimBool m_ShowBackgroundColorAnimator = new AnimBool();
         readonly AnimBool m_ShowLogoControlsAnimator = new AnimBool();
+
+        Sprite UnityLogo => m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight ? s_UnityLogoDark : s_UnityLogoLight;
 
         // If the user changes an asset(delete, re-import etc) then we should cancel the splash screen to avoid using invalid data. (case 857060)
         class CancelSplashScreenOnAssetChange : AssetPostprocessor
@@ -137,8 +142,10 @@ namespace UnityEditor
             m_ShowLogoControlsAnimator.value = m_ShowUnitySplashLogo.boolValue;
             SetValueChangeListeners(m_Owner.Repaint);
 
-            if (s_UnityLogo == null)
-                s_UnityLogo = Resources.GetBuiltinResource<Sprite>("UnitySplash-cube.png");
+            if (s_UnityLogoLight == null)
+                s_UnityLogoLight = AssetDatabase.GetBuiltinExtraResource<Sprite>("SplashScreen/UnitySplash-Light.png");
+            if (s_UnityLogoDark == null)
+                s_UnityLogoDark = AssetDatabase.GetBuiltinExtraResource<Sprite>("SplashScreen/UnitySplash-Dark.png");
         }
 
         internal void SetValueChangeListeners(UnityAction action)
@@ -167,10 +174,7 @@ namespace UnityEditor
             // Unity logo
             float logoWidth = Mathf.Clamp(rect.width - k_LogoListPropertyMinWidth, k_LogoListUnityLogoMinWidth, k_LogoListUnityLogoMaxWidth);
             var logoRect = new Rect(rect.x, rect.y, logoWidth, rect.height);
-            var oldCol = GUI.color;
-            GUI.color = (m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight ? Color.black : Color.white);
-            GUI.DrawTexture(logoRect, s_UnityLogo.texture, ScaleMode.ScaleToFit);
-            GUI.color = oldCol;
+            GUI.DrawTexture(logoRect, UnityLogo.texture, ScaleMode.ScaleToFit);
 
             // Properties
             var oldLabelWidth = EditorGUIUtility.labelWidth;
@@ -194,7 +198,7 @@ namespace UnityEditor
             var element = m_SplashScreenLogos.GetArrayElementAtIndex(index);
             var logo = element.FindPropertyRelative("logo");
 
-            if ((Sprite)logo.objectReferenceValue == s_UnityLogo)
+            if ((Sprite)logo.objectReferenceValue == s_UnityLogoLight)
             {
                 DrawElementUnityLogo(rect, index, isActive, isFocused);
                 return;
@@ -244,11 +248,11 @@ namespace UnityEditor
         }
 
         // Prevent users removing the unity logo.
-        private static bool OnLogoListCanRemoveCallback(ReorderableList list)
+        private bool OnLogoListCanRemoveCallback(ReorderableList list)
         {
             var element = list.serializedProperty.GetArrayElementAtIndex(list.index);
             var logo = (Sprite)element.FindPropertyRelative("logo").objectReferenceValue;
-            return logo != s_UnityLogo;
+            return logo != s_UnityLogoLight;
         }
 
         private void AddUnityLogoToLogosList()
@@ -258,7 +262,7 @@ namespace UnityEditor
             {
                 var listElement = m_SplashScreenLogos.GetArrayElementAtIndex(i);
                 var listLogo = listElement.FindPropertyRelative("logo");
-                if ((Sprite)listLogo.objectReferenceValue == s_UnityLogo)
+                if ((Sprite)listLogo.objectReferenceValue == s_UnityLogoLight)
                     return;
             }
 
@@ -266,7 +270,7 @@ namespace UnityEditor
             var element = m_SplashScreenLogos.GetArrayElementAtIndex(0);
             var logo = element.FindPropertyRelative("logo");
             var duration = element.FindPropertyRelative("duration");
-            logo.objectReferenceValue = s_UnityLogo;
+            logo.objectReferenceValue = s_UnityLogoLight;
             duration.floatValue = k_DefaultLogoTime;
         }
 
@@ -276,7 +280,7 @@ namespace UnityEditor
             {
                 var element = m_SplashScreenLogos.GetArrayElementAtIndex(i);
                 var logo = element.FindPropertyRelative("logo");
-                if ((Sprite)logo.objectReferenceValue == s_UnityLogo)
+                if ((Sprite)logo.objectReferenceValue == s_UnityLogoLight)
                 {
                     m_SplashScreenLogos.DeleteArrayElementAtIndex(i);
                     --i; // Continue checking in case we have duplicates.
@@ -366,7 +370,15 @@ namespace UnityEditor
                 GameView.RepaintAll();
             }
 
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_SplashScreenLogoStyle, k_Texts.splashStyle);
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight)
+                    m_SplashScreenBackgroundColor.colorValue = k_DarkOnLightBgColor;
+                else
+                    m_SplashScreenBackgroundColor.colorValue = k_LightOnDarkBgColor;
+            }
 
             // Animation
             EditorGUILayout.PropertyField(m_SplashScreenAnimation, k_Texts.animate);

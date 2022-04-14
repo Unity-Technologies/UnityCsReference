@@ -41,6 +41,7 @@ namespace UnityEditor
         private int m_mainDisplayId;
 
         private EnumData m_buildTargetData;
+        private bool m_buildTargetDataInitialized;
 
         private Dictionary<Type, string> m_AvailableWindowTypes;
         private Dictionary<int, EditorDisplayFullscreenSetting> m_DisplaySettings;
@@ -266,7 +267,7 @@ namespace UnityEditor
             EditorApplication.globalEventHandler += HandleToggleFullscreenKeyShortcut;
 
             UpdateDisplayNamesAndIds();
-            GetInstalledBuildTargetData();
+            m_buildTargetDataInitialized = false;
 
             if (m_profiles == null)
             {
@@ -354,6 +355,9 @@ namespace UnityEditor
 
         private void GetInstalledBuildTargetData()
         {
+            if (m_buildTargetDataInitialized)
+                return;
+
             var buildTargetData = EnumDataUtility.GetCachedEnumData(typeof(BuildTarget));
             var installedBuildTargetCount =
                 (from BuildTarget target in buildTargetData.values
@@ -385,6 +389,8 @@ namespace UnityEditor
                     ++j;
                 }
             }
+
+            m_buildTargetDataInitialized = true;
         }
 
         private EditorDisplayFullscreenSetting GetSettingForDisplay(int displayIndex)
@@ -1024,6 +1030,8 @@ namespace UnityEditor
                 {
                     profile.Name = newName;
                 }
+
+                instance.GetInstalledBuildTargetData();
 
                 var selectedIndex = Array.IndexOf(instance.m_buildTargetData.values, profile.Target);
                 var newSelectedIndex = EditorGUILayout.Popup(Styles.platformContent, selectedIndex, instance.m_buildTargetData.displayNames, GUILayout.Width(400));

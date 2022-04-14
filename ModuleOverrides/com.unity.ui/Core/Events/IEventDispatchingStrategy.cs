@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
             Debug.Assert(!evt.dispatch, "Event is being dispatched recursively.");
             evt.dispatch = true;
 
-            if ((evt.propagation & (EventBase.EventPropagation.Bubbles | EventBase.EventPropagation.TricklesDown)) == 0)
+            if (!evt.bubblesOrTricklesDown)
             {
                 // Early out if no callback on target.
                 if (ve.HasEventCallbacksOrDefaultActionAtTarget(evt.eventCategory))

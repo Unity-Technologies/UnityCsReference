@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
                     throw new NotImplementedException("You must specify bindItem if makeItem is specified.");
 
                 var label = (Label)element;
-                var item = treeView.itemsSource[index];
+                var item = GetItemForIndex(index);
                 label.text = item?.ToString() ?? "null";
                 return;
             }

@@ -305,5 +305,8 @@ namespace UnityEditor
         public static extern NamingScheme gameObjectNamingScheme { get; set; }
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool assetNamingUsesSpace { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        internal static extern bool inspectorUseIMGUIDefaultInspector { get; set; }
     }
 }

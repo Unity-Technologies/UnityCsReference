@@ -75,6 +75,12 @@ namespace UnityEngine
         Grass = 2
     }
 
+    public enum DetailScatterMode
+    {
+        CoverageMode = 0,
+        InstanceCountMode = 1
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("TerrainScriptingClasses.h")]
     [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]
@@ -94,10 +100,13 @@ namespace UnityEngine
         internal float m_MaxHeight = 2F;
         internal int m_NoiseSeed = 0;
         internal float m_NoiseSpread = 0.1F;
+        internal float m_Density = 1.0F;
         internal float m_HoleEdgePadding = 0.0F;
         internal int m_RenderMode = 2;
         internal int m_UsePrototypeMesh = 0;
         internal int m_UseInstancing = 0;
+        internal float m_AlignToGround = 0;
+        internal float m_PositionOrderliness = 0;
 
         public GameObject prototype { get { return m_Prototype; } set { m_Prototype = value; } }
 
@@ -115,6 +124,8 @@ namespace UnityEngine
 
         public float noiseSpread { get { return m_NoiseSpread; } set { m_NoiseSpread = value; } }
 
+        public float density { get { return m_Density; } set { m_Density = value; } }
+
         [Obsolete("bendFactor has no effect and is deprecated.", false)]
         public float bendFactor { get { return 0.0f; } set {} }
 
@@ -130,6 +141,10 @@ namespace UnityEngine
 
         public bool useInstancing { get { return m_UseInstancing != 0; } set { m_UseInstancing = value ? 1 : 0; } }
 
+        public float alignToGround { get { return m_AlignToGround; } set { m_AlignToGround = value; } }
+
+        public float positionOrderliness { get { return m_PositionOrderliness; } set { m_PositionOrderliness = value; } }
+
         public DetailPrototype() {}
 
         public DetailPrototype(DetailPrototype other)
@@ -144,10 +159,13 @@ namespace UnityEngine
             m_MaxHeight = other.m_MaxHeight;
             m_NoiseSeed = other.m_NoiseSeed;
             m_NoiseSpread = other.m_NoiseSpread;
+            m_Density = other.m_Density;
             m_HoleEdgePadding = other.m_HoleEdgePadding;
             m_RenderMode = other.m_RenderMode;
             m_UsePrototypeMesh = other.m_UsePrototypeMesh;
             m_UseInstancing = other.m_UseInstancing;
+            m_AlignToGround = other.m_AlignToGround;
+            m_PositionOrderliness = other.m_PositionOrderliness;
         }
 
         public override bool Equals(object obj)
@@ -181,6 +199,7 @@ namespace UnityEngine
                 && m_MaxHeight == other.m_MaxHeight
                 && m_NoiseSeed == other.m_NoiseSeed
                 && m_NoiseSpread == other.m_NoiseSpread
+                && m_Density == other.m_Density
                 && m_HoleEdgePadding == other.m_HoleEdgePadding
                 && m_RenderMode == other.m_RenderMode
                 && m_UsePrototypeMesh == other.m_UsePrototypeMesh
@@ -318,7 +337,7 @@ namespace UnityEngine
             MinDetailResPerPatch = 1,
             MaxDetailResPerPatch = 2,
             MaxDetailPatchCount = 3,
-            MaxDetailsPerRes = 4,
+            MaxCoveragePerRes = 4,
             MinAlphamapRes = 5,
             MaxAlphamapRes = 6,
             MinBaseMapRes = 7,
@@ -333,7 +352,6 @@ namespace UnityEngine
         internal static readonly int k_MinimumDetailResolutionPerPatch = GetBoundaryValue(BoundaryValueType.MinDetailResPerPatch);
         internal static readonly int k_MaximumDetailResolutionPerPatch = GetBoundaryValue(BoundaryValueType.MaxDetailResPerPatch);
         internal static readonly int k_MaximumDetailPatchCount = GetBoundaryValue(BoundaryValueType.MaxDetailPatchCount);
-        internal static readonly int k_MaximumDetailsPerRes = GetBoundaryValue(BoundaryValueType.MaxDetailsPerRes);
         internal static readonly int k_MinimumAlphamapResolution = GetBoundaryValue(BoundaryValueType.MinAlphamapRes);
         internal static readonly int k_MaximumAlphamapResolution = GetBoundaryValue(BoundaryValueType.MaxAlphamapRes);
         internal static readonly int k_MinimumBaseMapResolution = GetBoundaryValue(BoundaryValueType.MinBaseMapRes);
@@ -680,9 +698,10 @@ namespace UnityEngine
             get;
         }
 
-        internal static int maxDetailsPerRes
+        extern public int maxDetailScatterPerRes
         {
-            get { return k_MaximumDetailsPerRes; }
+            [NativeName(k_DetailDatabasePrefix + "GetMaximumScatterPerRes")]
+            get;
         }
 
         public void SetDetailResolution(int detailResolution, int resolutionPerPatch)
@@ -712,6 +731,14 @@ namespace UnityEngine
         [NativeName(k_DetailDatabasePrefix + "SetDetailResolution")]
         extern private void Internal_SetDetailResolution(int patchCount, int resolutionPerPatch);
 
+        public void SetDetailScatterMode(DetailScatterMode scatterMode)
+        {
+            Internal_SetDetailScatterMode(scatterMode);
+        }
+
+        [NativeName(k_DetailDatabasePrefix + "SetDetailScatterMode")]
+        extern private void Internal_SetDetailScatterMode(DetailScatterMode scatterMode);
+
         extern public int detailPatchCount
         {
             [NativeName(k_DetailDatabasePrefix + "GetPatchCount")]
@@ -727,6 +754,12 @@ namespace UnityEngine
         extern public int detailResolutionPerPatch
         {
             [NativeName(k_DetailDatabasePrefix + "GetResolutionPerPatch")]
+            get;
+        }
+
+        extern public DetailScatterMode detailScatterMode
+        {
+            [NativeName(k_DetailDatabasePrefix + "GetDetailScatterMode")]
             get;
         }
 

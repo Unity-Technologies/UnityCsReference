@@ -128,9 +128,9 @@ namespace UnityEngine
         [System.Obsolete("Use LinuxPlayer instead")]
         CloudRendering = 35,
         // Game Core
-        GameCoreXboxSeries = 36, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
         [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
-        GameCoreScarlett = 36,
+        GameCoreScarlett = -1, // GameCoreScarlett renumbered here so it's destinct from GameCoreXboxSeries.
+        GameCoreXboxSeries = 36,
         GameCoreXboxOne = 37,
         // PS5
         PS5 = 38,
@@ -240,8 +240,10 @@ namespace UnityEngine
         ChineseSimplified = 40,
         //Chinese-Traditional
         ChineseTraditional = 41,
+        //Hindi
+        Hindi = 42,
         //Unknown
-        Unknown = 42,
+        Unknown = 43,
         //Hungarian
         Hungarian = 18
     }

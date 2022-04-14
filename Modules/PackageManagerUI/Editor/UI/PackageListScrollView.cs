@@ -81,14 +81,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_PackageDatabase.GetPackageAndVersion(m_PageManager.GetSelection().firstSelection, out var package, out var version);
             var selectedVersion = version ?? package?.versions.primary;
-            var packageItem = GetPackageItem(selectedVersion?.packageUniqueId);
-            if (packageItem == null)
-                return null;
-
-            if (!packageItem.visualState.expanded)
-                return packageItem;
-
-            return packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
+            return GetPackageItem(selectedVersion?.packageUniqueId);
         }
 
         public void ScrollToSelection()
@@ -121,19 +114,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             ScrollIfNeeded();
         }
 
-        public void SetSelectedItemExpanded(bool value)
-        {
-            // Disable item expansion when there are multiple items selected
-            var selection = m_PageManager.GetSelection();
-            if (selection.Count > 1)
-                return;
-
-            GetPackageItem(selection.firstSelection?.packageUniqueId)?.SetExpanded(value);
-        }
-
         private void AddOrUpdatePackageItem(VisualState state, IPackage package = null)
         {
-            package = package ?? m_PackageDatabase.GetPackage(state?.packageUniqueId);
+            package ??= m_PackageDatabase.GetPackage(state?.packageUniqueId);
             if (package == null)
                 return;
 
@@ -305,15 +288,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private PackageItem GetPackageItemFromMouseEvent(MouseDownEvent evt, out PackageVersionItem versionItem)
+        private PackageItem GetPackageItemFromMouseEvent(MouseDownEvent evt)
         {
-            versionItem = null;
             var target = evt.leafTarget as VisualElement;
             while (target != null && target != this)
             {
-                var packageVersionItem = target as PackageVersionItem;
-                if (packageVersionItem != null)
-                    versionItem = packageVersionItem;
                 var packageItem = target as PackageItem;
                 if (packageItem != null)
                     return packageItem;
@@ -373,7 +352,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (evt.button != 0)
                 return;
 
-            var packageItem = GetPackageItemFromMouseEvent(evt, out var packageVersionItem);
+            var packageItem = GetPackageItemFromMouseEvent(evt);
             if (packageItem == null)
                 return;
 
@@ -386,8 +365,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (evt.actionKey)
                 packageItem.ToggleSelectMainItem();
-            else if (packageVersionItem != null)
-                packageVersionItem.SelectVersionItem();
             else
                 packageItem.SelectMainItem();
         }
@@ -426,16 +403,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SelectAllVisible();
                 evt.StopPropagation();
             }
-            else if (evt.keyCode == KeyCode.RightArrow)
-            {
-                SetSelectedItemExpanded(true);
-                evt.StopPropagation();
-            }
-            else if (evt.keyCode == KeyCode.LeftArrow)
-            {
-                SetSelectedItemExpanded(false);
-                evt.StopPropagation();
-            }
             else if (evt.keyCode == KeyCode.UpArrow)
             {
                 if (SelectNext(true))
@@ -468,29 +435,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageItem == null)
                 return null;
 
-            // First we try to look for the next visible options within all the versions of the current package when the list is expanded
-            if (packageItem.visualState.expanded)
-            {
-                m_PackageDatabase.GetPackageAndVersion(lastSelection, out var package, out var version);
-                var selectedVersion = version ?? package?.versions.primary;
-
-                var versionItem = packageItem.versionItems.FirstOrDefault(v => v.targetVersion == selectedVersion);
-                var nextVersionItem = UIUtils.FindNextSibling(versionItem, reverseOrder, UIUtils.IsElementVisible) as PackageVersionItem;
-                if (nextVersionItem != null)
-                    return nextVersionItem;
-            }
-
-            var nextPackageItem = FindNextVisiblePackageItem(packageItem, reverseOrder);
-            if (nextPackageItem == null)
-                return null;
-
-            if (nextPackageItem.visualState.expanded)
-            {
-                var nextVersionItem = reverseOrder ? nextPackageItem.versionItems.LastOrDefault() : nextPackageItem.versionItems.FirstOrDefault();
-                if (nextVersionItem != null)
-                    return nextVersionItem;
-            }
-            return nextPackageItem;
+            return FindNextVisiblePackageItem(packageItem, reverseOrder);
         }
 
         public void OnFilterTabChanged(PackageFilterTab filterTab)
@@ -545,17 +490,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                         : nextGroup.packageItems.FirstOrDefault(p => UIUtils.IsElementVisible(p));
             }
             return nextVisibleItem;
-        }
-
-        public void OnSeeAllPackageVersionsChanged(bool value)
-        {
-            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.BuiltIn || m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
-                return;
-
-            var page = m_PageManager.GetPage(m_PackageFiltering.currentFilterTab);
-            foreach (var visualState in page.visualStates)
-                visualState.expanded = false;
-            page.Rebuild();
         }
     }
 }

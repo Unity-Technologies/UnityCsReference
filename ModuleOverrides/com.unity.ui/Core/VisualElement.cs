@@ -217,7 +217,7 @@ namespace UnityEngine.UIElements
                     ve.tabIndex = index;
                 }
 
-                bool focus = false;
+                var focus = false;
 
                 if (focusable.TryGetValueFromBag(bag, cc, ref focus))
                 {
@@ -468,20 +468,6 @@ namespace UnityEngine.UIElements
                 // This is the older API where Z-scaling doesn't make sense, forcing the value to Vector2.
                 style.scale = new Scale((Vector2)value);
             }
-        }
-
-        internal Vector3 ComputeGlobalScale()
-        {
-            Vector3 result = resolvedStyle.scale.value;
-
-            var ve = this.hierarchy.parent;
-
-            while (ve != null)
-            {
-                result.Scale(ve.resolvedStyle.scale.value);
-                ve = ve.hierarchy.parent;
-            }
-            return result;
         }
 
         Matrix4x4 ITransform.matrix
@@ -1147,6 +1133,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public VisualElement()
         {
+            UIElementsRuntimeUtilityNative.VisualElementCreation();
+
             m_Children = s_EmptyList;
             controlid = ++s_NextId;
 
@@ -1169,7 +1157,7 @@ namespace UnityEngine.UIElements
 
         [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(PointerEnterEvent),
             typeof(PointerLeaveEvent), typeof(PointerCaptureEvent), typeof(PointerCaptureOutEvent),
-            typeof(BlurEvent), typeof(FocusEvent))]
+            typeof(BlurEvent), typeof(FocusEvent), typeof(TooltipEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -1215,6 +1203,21 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
+            }
+            else if (evt.eventTypeId == TooltipEvent.TypeId())
+            {
+                // Allow child elements to set their own tooltip
+                SetTooltip((TooltipEvent)evt);
+            }
+        }
+
+        void SetTooltip(TooltipEvent e)
+        {
+            if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
+            {
+                e.rect = element.worldBound;
+                e.tooltip = element.tooltip;
+                e.StopImmediatePropagation();
             }
         }
 

@@ -68,8 +68,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
-            m_SettingsProxy.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
-
             m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
 
             listView.OnEnable();
@@ -100,7 +98,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
-            m_SettingsProxy.onSeeAllVersionsChanged -= OnSeeAllPackageVersionsChanged;
             m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
 
             listView.OnDisable();
@@ -308,11 +305,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (UpdateListVisibility())
                 currentView.OnFilterTabChanged(filterTab);
-        }
-
-        private void OnSeeAllPackageVersionsChanged(bool value)
-        {
-            currentView.OnSeeAllPackageVersionsChanged(value);
         }
 
         internal IPackageListView currentView => m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore ? (IPackageListView)listView : scrollView;

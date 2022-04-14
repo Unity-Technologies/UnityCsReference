@@ -29,6 +29,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var packageNameAndVersions = string.Join("\n\u2022 ",
                 packagesToUninstall.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
+
+            var title = string.Format(L10n.Tr("Resetting {0}"), version.package.GetDescriptor());
             var message = packagesToUninstall.Length == 1 ?
                 string.Format(
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included package will reset to the required version:\n\u2022 {1}"),
@@ -37,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included packages will reset to their required versions:\n\u2022 {1}"),
                 version.package.GetDescriptor(), packageNameAndVersions);
 
-            if (!m_Application.DisplayDialog(L10n.Tr("Unity Package Manager"), message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
+            if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 return false;
 
             m_PageManager.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);

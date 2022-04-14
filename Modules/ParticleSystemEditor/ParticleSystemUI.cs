@@ -425,7 +425,7 @@ namespace UnityEditor
                 Handles.color = oldCol;
             }
 
-            // In multi-edit, children are not stored, so render thir bounds manually
+            // In multi-edit, children are not stored, so render their bounds manually
             if (multiEdit)
             {
                 ParticleSystem[] children = ps.transform.GetComponentsInChildren<ParticleSystem>();

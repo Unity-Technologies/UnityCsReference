@@ -965,7 +965,7 @@ namespace UnityEngine
         // Returns ture if a transform a bone controlled by human
         extern internal bool IsBoneTransform(Transform transform);
 
-        extern internal Transform avatarRoot
+        extern public Transform avatarRoot
         {
             get;
         }

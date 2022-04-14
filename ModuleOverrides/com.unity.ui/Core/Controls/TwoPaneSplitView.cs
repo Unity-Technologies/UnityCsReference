@@ -215,6 +215,16 @@ namespace UnityEngine.UIElements
             if (m_LeftPane == null)
                 return;
 
+            VisualElement collapsedPane = null;
+
+            if (m_LeftPane.style.display == DisplayStyle.None)
+                collapsedPane = m_LeftPane;
+            else if (m_RightPane.style.display == DisplayStyle.None)
+                collapsedPane = m_RightPane;
+
+            if (collapsedPane == null)
+                return;
+
             m_LeftPane.style.display = DisplayStyle.Flex;
             m_RightPane.style.display = DisplayStyle.Flex;
 
@@ -226,6 +236,16 @@ namespace UnityEngine.UIElements
             m_CollapseMode = false;
 
             Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, m_Orientation);
+
+            // Update the position of the drag line anchor after one of the pane gets uncollapsed.
+            // However, the computation of the position requires the resolved style of the panes to be computed.
+            collapsedPane.RegisterCallback<GeometryChangedEvent>(OnUncollapsedPaneResized);
+        }
+
+        void OnUncollapsedPaneResized(GeometryChangedEvent evt)
+        {
+            UpdateDragLineAnchorOffset();
+            (evt.target as VisualElement).UnregisterCallback<GeometryChangedEvent>(OnUncollapsedPaneResized);
         }
 
         internal void Init(int fixedPaneIndex, float fixedPaneInitialDimension, TwoPaneSplitViewOrientation orientation)
@@ -336,19 +356,22 @@ namespace UnityEngine.UIElements
             m_FlexedPane.style.flexShrink = 0;
             m_FlexedPane.style.flexBasis = 0;
 
+            m_DragLineAnchor.style.left = 0;
+            m_DragLineAnchor.style.top = 0;
+
             if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
-                if (m_FixedPaneIndex == 0)
-                    m_DragLineAnchor.style.left = dimension;
-                else
-                    m_DragLineAnchor.style.left = this.resolvedStyle.width - dimension;
+                var fixedPaneMargins = m_FixedPane.resolvedStyle.marginLeft + m_FixedPane.resolvedStyle.marginRight;
+
+                m_DragLineAnchor.style.left = (m_FixedPaneIndex == 0) ? dimension + fixedPaneMargins :
+                    resolvedStyle.width - dimension - fixedPaneMargins;
             }
             else
             {
-                if (m_FixedPaneIndex == 0)
-                    m_DragLineAnchor.style.top = dimension;
-                else
-                    m_DragLineAnchor.style.top = this.resolvedStyle.height - dimension;
+                var fixedPaneMargins = m_FixedPane.resolvedStyle.marginTop + m_FixedPane.resolvedStyle.marginBottom;
+
+                m_DragLineAnchor.style.top = (m_FixedPaneIndex == 0) ? dimension + fixedPaneMargins :
+                   resolvedStyle.height - dimension - fixedPaneMargins;
             }
 
             int direction = 1;
@@ -357,10 +380,9 @@ namespace UnityEngine.UIElements
             else
                 direction = -1;
 
-            if (m_FixedPaneIndex == 0)
-                m_Resizer = new TwoPaneSplitViewResizer(this, direction, m_Orientation);
-            else
-                m_Resizer = new TwoPaneSplitViewResizer(this, direction, m_Orientation);
+            if (m_Resizer != null)
+                m_DragLineAnchor.RemoveManipulator(m_Resizer);
+            m_Resizer = new TwoPaneSplitViewResizer(this, direction);
 
             m_DragLineAnchor.AddManipulator(m_Resizer);
 
@@ -369,46 +391,62 @@ namespace UnityEngine.UIElements
 
         void OnSizeChange(GeometryChangedEvent evt)
         {
-            OnSizeChange();
+            UpdateLayout(true, true);
         }
 
-        void OnSizeChange()
+        void UpdateDragLineAnchorOffset()
+        {
+            UpdateLayout(false, true);
+        }
+
+        void UpdateLayout(bool updateFixedPane, bool updateDragLine)
         {
             if (m_CollapseMode)
                 return;
-
             var maxLength = resolvedStyle.width;
             var fixedPaneLength = m_FixedPane.resolvedStyle.width;
+            var fixedPaneMargins = m_FixedPane.resolvedStyle.marginLeft + m_FixedPane.resolvedStyle.marginRight;
             var fixedPaneMinLength = m_FixedPane.resolvedStyle.minWidth.value;
+            var flexedPaneMargins = m_FlexedPane.resolvedStyle.marginLeft + m_FlexedPane.resolvedStyle.marginRight;
             var flexedPaneMinLength = m_FlexedPane.resolvedStyle.minWidth.value;
 
             if (m_Orientation == TwoPaneSplitViewOrientation.Vertical)
             {
                 maxLength = resolvedStyle.height;
                 fixedPaneLength = m_FixedPane.resolvedStyle.height;
+                fixedPaneMargins = m_FixedPane.resolvedStyle.marginTop + m_FixedPane.resolvedStyle.marginBottom;
                 fixedPaneMinLength = m_FixedPane.resolvedStyle.minHeight.value;
+                flexedPaneMargins = m_FlexedPane.resolvedStyle.marginTop + m_FlexedPane.resolvedStyle.marginBottom;
                 flexedPaneMinLength = m_FlexedPane.resolvedStyle.minHeight.value;
             }
 
             // Big enough to account for current fixed pane size and flexed pane minimum size, so we let the layout
             // dictates where the dragger should be.
-            if (maxLength >= fixedPaneLength + flexedPaneMinLength)
+            if (maxLength >= fixedPaneLength + fixedPaneMargins + flexedPaneMinLength + flexedPaneMargins)
             {
-                SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneLength : maxLength - fixedPaneLength);
+                if (updateDragLine)
+                    SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneLength + fixedPaneMargins : maxLength - fixedPaneLength - fixedPaneMargins);
             }
             // Big enough to account for fixed and flexed pane minimum sizes, so we resize the fixed pane and adjust
             // where the dragger should be.
-            else if (maxLength >= fixedPaneMinLength + flexedPaneMinLength)
+            else if (maxLength >= fixedPaneMinLength + fixedPaneMargins + flexedPaneMinLength + flexedPaneMargins)
             {
-                var newDimension = maxLength - flexedPaneMinLength;
-                SetFixedPaneDimension(newDimension);
-                SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension : flexedPaneMinLength);
+                var newDimension = maxLength - flexedPaneMinLength - flexedPaneMargins - fixedPaneMargins;
+
+                if (updateFixedPane)
+                    SetFixedPaneDimension(newDimension);
+
+                if (updateDragLine)
+                    SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension + fixedPaneMargins: flexedPaneMinLength + flexedPaneMargins);
             }
             // Not big enough for fixed and flexed pane minimum sizes
             else
             {
-                SetFixedPaneDimension(fixedPaneMinLength);
-                SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneMinLength : flexedPaneMinLength);
+                if (updateFixedPane)
+                    SetFixedPaneDimension(fixedPaneMinLength);
+
+                if (updateDragLine)
+                    SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneMinLength + fixedPaneMargins : flexedPaneMinLength + flexedPaneMargins);
             }
         }
 

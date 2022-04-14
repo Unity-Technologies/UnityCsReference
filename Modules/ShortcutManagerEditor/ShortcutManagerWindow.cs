@@ -184,7 +184,7 @@ namespace UnityEditor.ShortcutManagement
             var profileManager = ShortcutIntegration.instance.profileManager;
             var bindingValidator = ShortcutIntegration.instance.bindingValidator;
             m_ViewController = new ShortcutManagerWindowViewController(m_State, directory, bindingValidator, profileManager, contextManager, ShortcutIntegration.instance);
-            var view = EditorUIService.instance.CreateShortcutManagerWindowView(m_ViewController, m_ViewController);
+            var view = new ShortcutManagerWindowView(m_ViewController, m_ViewController);
             m_ViewController.SetView(view);
 
             var root = view.GetVisualElementHierarchyRoot();

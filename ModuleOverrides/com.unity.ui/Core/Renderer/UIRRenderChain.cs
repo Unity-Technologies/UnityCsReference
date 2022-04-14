@@ -256,7 +256,16 @@ namespace UnityEngine.UIElements.UIR
             device?.Dispose();
             opacityIdAccelerator?.Dispose();
 
-            painter = null;
+            if (painter != null)
+            {
+                // todo: move painter2d to the render chain instead of the mgc
+                if (painter.meshGenerationContext.hasPainter2D)
+                {
+                    painter.meshGenerationContext.painter2D.Destroy();
+                }
+                painter = null;
+            }
+
             atlas = null;
             shaderInfoAllocator = new UIRVEShaderInfoAllocator();
             device = null;
@@ -492,7 +501,7 @@ namespace UnityEngine.UIElements.UIR
         public void UIEOnChildAdded(VisualElement ve)
         {
             VisualElement parent = ve.hierarchy.parent;
-            int index = parent != null ? parent.IndexOf(ve) : 0;
+            int index = parent != null ? parent.hierarchy.IndexOf(ve) : 0;
 
             if (m_BlockDirtyRegistration)
                 throw new InvalidOperationException("VisualElements cannot be added to an active visual tree during generateVisualContent callback execution nor during visual tree rendering");

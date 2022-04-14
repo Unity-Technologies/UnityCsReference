@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -28,10 +29,16 @@ namespace UnityEngine.Rendering
         }
 
 
+        public unsafe void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
+        {
+            Validate();
+            BeginRenderPass_Internal(m_Ptr, width, height, volumeDepth, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex);
+        }
+
         public unsafe void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
         {
             Validate();
-            BeginRenderPass_Internal(m_Ptr, width, height, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex);
+            BeginRenderPass_Internal(m_Ptr, width, height, 1, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex);
         }
 
         public ScopedRenderPass BeginScopedRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
@@ -118,13 +125,17 @@ namespace UnityEngine.Rendering
             GetCameras_Internal(typeof(Camera), results);
         }
 
+        //TODO(ddebaets) temporary disable the obsoletion of the DrawX functions untill SRP2Core is done.
+        //const bool deprecateDrawXmethods = false;
+
+        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
         public void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings)
         {
             Validate();
             cullingResults.Validate();
             DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, ShaderTagId.none, false, IntPtr.Zero, IntPtr.Zero, 0);
         }
-
+        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ref RenderStateBlock stateBlock)
         {
             Validate();
@@ -135,7 +146,7 @@ namespace UnityEngine.Rendering
                 DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, ShaderTagId.none, false, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
             }
         }
-
+        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, NativeArray<ShaderTagId> renderTypes, NativeArray<RenderStateBlock> stateBlocks)
         {
             Validate();
@@ -144,7 +155,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException($"Arrays {nameof(renderTypes)} and {nameof(stateBlocks)} should have same length, but {nameof(renderTypes)} had length {renderTypes.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
             DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, kRenderTypeTag, false, (IntPtr)renderTypes.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), renderTypes.Length);
         }
-
+        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, NativeArray<ShaderTagId> tagValues, NativeArray<RenderStateBlock> stateBlocks)
         {
             Validate();
@@ -153,7 +164,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException($"Arrays {nameof(tagValues)} and {nameof(stateBlocks)} should have same length, but {nameof(tagValues)} had length {tagValues.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
             DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, tagName, isPassTagName, (IntPtr)tagValues.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), tagValues.Length);
         }
-
+        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
         public unsafe void DrawShadows(ref ShadowDrawingSettings settings)
         {
             Validate();
@@ -229,7 +240,7 @@ namespace UnityEngine.Rendering
             Validate();
             StopMultiEye_Internal(camera);
         }
-
+        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
         public void DrawSkybox(Camera camera)
         {
             Validate();
@@ -309,32 +320,58 @@ namespace UnityEngine.Rendering
             return !left.Equals(right);
         }
 
-        // RendererList public API
-        public unsafe RendererUtils.RendererList CreateRendererList(RendererUtils.RendererListDesc desc)
+        public unsafe RendererList CreateRendererList(RendererUtils.RendererListDesc desc)
         {
             Validate();
-            RendererUtils.RendererListParams param = RendererUtils.RendererListParams.Create(desc);
+            RendererListParams param = RendererUtils.RendererListDesc.ConvertToParameters(desc);
+            var list = CreateRendererList(ref param);
+            param.Dispose();
+            return list;
+        }
 
-            if (param.stateBlock == null)
-                return CreateRendererList_Internal(param.cullingResult.ptr, ref param.drawSettings, ref param.filteringSettings, ShaderTagId.none, false, IntPtr.Zero, IntPtr.Zero, 0);
-            else
+        public unsafe RendererList CreateRendererList(ref RendererListParams param)
+        {
+            Validate();
+            param.Validate();
+
+            var list = CreateRendererList_Internal(param.cullingResults.ptr, ref param.drawSettings, ref param.filteringSettings, param.tagName, param.isPassTagName,
+                param.tagsValuePtr, param.stateBlocksPtr, param.numStateBlocks);
+            return list;
+        }
+
+        public unsafe RendererList CreateShadowRendererList(ref ShadowDrawingSettings settings)
+        {
+            Validate();
+            settings.cullingResults.Validate();
+            fixed (ShadowDrawingSettings* settingsPtr = &settings)
             {
-                var renderType = new ShaderTagId();
-                var renderStateBlock = param.stateBlock.Value;
-                RenderStateBlock* stateBlockPtr = &renderStateBlock;
-                {
-                    return CreateRendererList_Internal(param.cullingResult.ptr, ref param.drawSettings, ref param.filteringSettings, ShaderTagId.none, false, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
-                }
+                return CreateShadowRendererList_Internal((IntPtr)settingsPtr);
             }
         }
 
-        public unsafe void PrepareRendererListsAsync(List<RendererUtils.RendererList> rendererLists)
+        public unsafe RendererList CreateSkyboxRendererList(Camera camera, Matrix4x4 projectionMatrixL, Matrix4x4 viewMatrixL, Matrix4x4 projectionMatrixR, Matrix4x4 viewMatrixR)
+        {
+            Validate();
+            return CreateSkyboxRendererList_Internal(camera, (int)SkyboxXRMode.LegacySinglePass, projectionMatrixL, viewMatrixL, projectionMatrixR, viewMatrixR);
+        }
+        public RendererList CreateSkyboxRendererList(Camera camera, Matrix4x4 projectionMatrix, Matrix4x4 viewMatrix)
+        {
+            Validate();
+            return CreateSkyboxRendererList_Internal(camera, (int)SkyboxXRMode.Enabled, projectionMatrix, viewMatrix, Matrix4x4.identity, Matrix4x4.identity);
+        }
+        public RendererList CreateSkyboxRendererList(Camera camera)
+        {
+            Validate();
+            return CreateSkyboxRendererList_Internal(camera, (int)SkyboxXRMode.Off, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity);
+        }
+
+        public unsafe void PrepareRendererListsAsync(List<RendererList> rendererLists)
         {
             Validate();
             PrepareRendererListsAsync_Internal(rendererLists);
         }
 
-        public RendererUtils.RendererListStatus QueryRendererListStatus(RendererUtils.RendererList rendererList)
+        public RendererListStatus QueryRendererListStatus(RendererList rendererList)
         {
             Validate();
             return QueryRendererListStatus_Internal(rendererList);

@@ -32,6 +32,8 @@ namespace UnityEditor
         Mono2x = 0,
         IL2CPP = 1,
         WinRTDotNET = 2,
+        [Obsolete("CoreCLR support is still a work in progress and is disabled for now.")] // Hide from intellisense while WIP
+        CoreCLR = 3,
     }
 
     // Must be in sync with Il2CppCompilerConfiguration enum in SerializationMetaFlags.h
@@ -40,25 +42,6 @@ namespace UnityEditor
         Debug = 0,
         Release = 1,
         Master = 2,
-    }
-
-    // Must be in sync with kAspectRatioSerializeNames and kAspectRatioValues
-    public enum AspectRatio
-    {
-        // Undefined aspect ratios.
-        AspectOthers = 0,
-
-        // 4:3 aspect ratio.
-        Aspect4by3 = 1,
-
-        // 5:4 aspect ratio.
-        Aspect5by4 = 2,
-
-        // 16:10 aspect ratio.
-        Aspect16by10 = 3,
-
-        // 16:9 aspect ratio.
-        Aspect16by9 = 4,
     }
 
     // Mac fullscreen mode
@@ -236,6 +219,14 @@ namespace UnityEditor
 
     // Keep in synch with LightmapEncodingQuality enum from GfxDeviceTypes.h
     internal enum LightmapEncodingQuality
+    {
+        Low = 0,
+        Normal = 1,
+        High = 2
+    }
+
+    // Keep in synch with HDRCubemapEncodingQuality enum from GfxDeviceTypes.h
+    internal enum HDRCubemapEncodingQuality
     {
         Low = 0,
         Normal = 1,
@@ -489,13 +480,6 @@ namespace UnityEditor
         [Obsolete("displayResolutionDialog has been removed.", false)]
         public static extern ResolutionDialogSetting displayResolutionDialog { get; set; }
 
-        // Returns whether or not the specified aspect ratio is enabled.
-        [NativeMethod("AspectRatioEnabled")]
-        public static extern bool HasAspectRatio(AspectRatio aspectRatio);
-
-        // Enables the specified aspect ratio.
-        public static extern void SetAspectRatio(AspectRatio aspectRatio, bool enable);
-
         // If enabled, the game will default to fullscreen mode.
         [Obsolete("(defaultIsFullScreen is deprecated, use fullScreenMode instead")]
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
@@ -518,6 +502,9 @@ namespace UnityEditor
 
         // Use resizable window in standalone player builds.
         public static extern bool resizableWindow { get; set; }
+
+        // Should resolution be reset when native window size changes. Shared between iOS & Android platforms.
+        public static extern bool resetResolutionOnWindowResize { get; set; }
 
         /// Bake collision meshes into the mesh asset.
         public static extern bool bakeCollisionMeshes { get; set; }
@@ -577,6 +564,7 @@ namespace UnityEditor
         public static bool protectGraphicsMemory { get { return false; } set {} }
 
         public static extern bool enableFrameTimingStats { get; set; }
+        public static extern bool enableOpenGLProfilerGPURecorders { get; set; }
 
         public static extern bool useHDRDisplay { get; set; }
 
@@ -716,6 +704,12 @@ namespace UnityEditor
 
         [NativeMethod("SetLightmapEncodingQuality")]
         internal static extern void SetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup, LightmapEncodingQuality encodingQuality);
+
+        [NativeMethod("GetHDRCubemapEncodingQuality")]
+        internal static extern HDRCubemapEncodingQuality GetHDRCubemapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup);
+
+        [NativeMethod("SetHDRCubemapEncodingQuality")]
+        internal static extern void SetHDRCubemapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup, HDRCubemapEncodingQuality encodingQuality);
 
         [FreeFunction("GetTargetPlatformGraphicsAPIAvailability")]
         internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetSupportedGraphicsAPIs(BuildTarget platform);
@@ -880,11 +874,11 @@ namespace UnityEditor
         public static void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration) =>
             SetIl2CppCompilerConfiguration(NamedBuildTarget.FromBuildTargetGroup(targetGroup), configuration);
 
-        // [Obsolete("Use GetIncrementalIl2CppBuild(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("GetIncrementalIl2CppBuild has no impact on the build process")]
         public static bool GetIncrementalIl2CppBuild(BuildTargetGroup targetGroup) =>
             GetIncrementalIl2CppBuild(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetIncrementalIl2CppBuild(NamedBuildTarget buildTarget, bool enabled) instead")]
+        [Obsolete("SetIncrementalIl2CppBuild has no impact on the build process")]
         public static void SetIncrementalIl2CppBuild(BuildTargetGroup targetGroup, bool enabled) =>
             SetIncrementalIl2CppBuild(NamedBuildTarget.FromBuildTargetGroup(targetGroup), enabled);
 
@@ -1065,12 +1059,14 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         [NativeMethod("GetPlatformIncrementalIl2CppBuild")]
         private static extern bool GetIncrementalIl2CppBuildInternal(string buildTargetName);
+        [Obsolete("GetIncrementalIl2CppBuild has no impact on the build process")]
         public static bool GetIncrementalIl2CppBuild(NamedBuildTarget buildTarget) => GetIncrementalIl2CppBuildInternal(buildTarget.TargetName);
 
         [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetPlatformIncrementalIl2CppBuild")]
         private static extern void SetIncrementalIl2CppBuildInternal(string buildTargetName, bool enabled);
+        [Obsolete("SetIncrementalIl2CppBuild has no impact on the build process")]
         public static void SetIncrementalIl2CppBuild(NamedBuildTarget buildTarget, bool enabled) =>
             SetIncrementalIl2CppBuildInternal(buildTarget.TargetName, enabled);
 
@@ -1137,13 +1133,11 @@ namespace UnityEditor
         public static void SetNormalMapEncoding(NamedBuildTarget buildTarget, NormalMapEncoding encoding) =>
             SetNormalMapEncodingInternal(buildTarget.TargetName, encoding);
 
-        public static extern bool assemblyVersionValidation
+        [Obsolete("assemblyVersionValidation has been deprecated due to the introduction of binding redirects")]
+        public static bool assemblyVersionValidation
         {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
-
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
+            get => false;
+            set { }
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly().additionalIl2CppArgs")]

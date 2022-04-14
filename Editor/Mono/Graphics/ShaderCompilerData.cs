@@ -45,6 +45,7 @@ namespace UnityEditor.Rendering
         private ShaderRequirements m_ShaderRequirements;
         private GraphicsTier m_GraphicsTier;
         private ShaderCompilerPlatform m_ShaderCompilerPlatform;
+        private BuildTarget m_BuildTarget;
 
         public ShaderRequirements shaderRequirements
         {
@@ -60,6 +61,8 @@ namespace UnityEditor.Rendering
         {
             get { return m_ShaderCompilerPlatform; }
         }
+
+        public BuildTarget buildTarget { get { return m_BuildTarget; } }
     }
 
     public enum ShaderCompilerPlatform
@@ -75,9 +78,12 @@ namespace UnityEditor.Rendering
         Vulkan          = 18, // Vulkan SPIR-V, compiled with MS D3DCompiler + HLSLcc
         Switch          = 19, // Nintendo Switch (NVN)
         XboxOneD3D12    = 20, // Xbox One D3D12
-        GameCore        = 21, // Game Core
+        GameCoreXboxOne = 21, // Game Core Xbox One
+        GameCoreXboxSeries= 22, // Game Core Scarlett
         PS5             = 23, // PS5
-        PS5NGGC         = 24  // PS5 NGGC
+        PS5NGGC         = 24,  // PS5 NGGC
+        [System.Obsolete(@"GameCore  is deprecated, please use GameCoreXboxOne (UnityUpgradable) -> GameCoreXboxOne ", true)]
+        GameCore = 25 // Game Core deprecated as single platform
     }
 
     public enum ShaderCompilerMessageSeverity

@@ -20,38 +20,17 @@ namespace UnityEditorInternal
         private GUIContent addPropertiesContent = EditorGUIUtility.TrTextContent("Add Properties");
         private const float plusButtonWidth = 17;
 
-        static Texture2D warningIcon = (Texture2D)EditorGUIUtility.LoadRequired("Icons/ShortcutManager/alertDialog.png");
-        public static GUIStyle warningIconStyle;
-
         public AddCurvesPopupHierarchyGUI(TreeViewController treeView, EditorWindow owner)
             : base(treeView, true)
         {
             this.owner = owner;
-            warningIconStyle = new GUIStyle();
-            warningIconStyle.margin = new RectOffset(15, 15, 15, 15);
         }
 
         public override void OnRowGUI(Rect rowRect, TreeViewItem node, int row, bool selected, bool focused)
         {
-            bool propertyPathMismatchWithHumanAvatar = false;
-            AddCurvesPopupGameObjectNode addCurvesPopupNode = node as AddCurvesPopupGameObjectNode;
-            if (addCurvesPopupNode != null)
-            {
-                propertyPathMismatchWithHumanAvatar = addCurvesPopupNode.propertyPathMismatchWithHumanAvatar;
-            }
-
-            using (new EditorGUI.DisabledScope(propertyPathMismatchWithHumanAvatar))
-            {
-                base.OnRowGUI(rowRect, node, row, selected, focused);
-                DoAddCurveButton(rowRect, node);
-                HandleContextMenu(rowRect, node);
-            }
-
-            if (propertyPathMismatchWithHumanAvatar)
-            {
-                Rect iconRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, buttonStyle.fixedHeight);
-                GUI.Label(iconRect, new GUIContent(warningIcon, "The Avatar definition does not match the property path. Please author using a hierarchy the Avatar was built with."), warningIconStyle);
-            }
+            base.OnRowGUI(rowRect, node, row, selected, focused);
+            DoAddCurveButton(rowRect, node);
+            HandleContextMenu(rowRect, node);
         }
 
         private void DoAddCurveButton(Rect rowRect, TreeViewItem node)

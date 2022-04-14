@@ -41,7 +41,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ListView.selectionType = SelectionType.Single;
             m_ListView.reorderable = true;
             m_ListView.itemIndexChanged += OnListViewItemMoved;
-            m_ListView.onSelectionChange += OnListViewSelectionChange;
+            m_ListView.selectionChanged += OnListViewSelectionChange;
             m_ListView.itemsSource = m_Modules;
 
             m_CreateButton.text = LocalizationDatabase.GetLocalizedString("Add");

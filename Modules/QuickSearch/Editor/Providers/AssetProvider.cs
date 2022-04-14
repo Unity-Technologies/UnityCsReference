@@ -105,25 +105,35 @@ namespace UnityEditor.Search.Providers
             }
 
             public AssetMetaInfo(string path, GlobalObjectId gid, SearchDocumentFlags flags)
+                : this(path, gid, flags, type: null)
+            {
+            }
+
+            public AssetMetaInfo(string path, GlobalObjectId gid, SearchDocumentFlags flags, in Type type)
             {
                 this.path = path;
                 gidString = null;
                 m_GID = gid;
                 m_Source = null;
-                m_HasType = false;
-                m_Type = null;
+                m_Type = type;
+                m_HasType = m_Type != null;
                 m_Object = null;
                 this.flags = flags;
             }
 
             public AssetMetaInfo(string path, string gid, SearchDocumentFlags flags)
+                : this(path, gid, flags, type: null)
+            {
+            }
+
+            public AssetMetaInfo(string path, string gid, SearchDocumentFlags flags, in Type type)
             {
                 this.path = path;
                 this.gidString = gid;
                 m_GID = default;
                 m_Source = null;
-                m_HasType = false;
-                m_Type = null;
+                m_Type = type;
+                m_HasType = m_Type != null;
                 m_Object = null;
                 this.flags = flags;
             }
@@ -180,7 +190,7 @@ namespace UnityEditor.Search.Providers
 
             var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid);
             if (obj is GameObject go)
-                return (item.preview = Utils.GetSceneObjectPreview(go, size, options, item.thumbnail));
+                return Utils.GetSceneObjectPreview(go, size, options, item.thumbnail);
             else if (obj)
             {
                 var p = AssetPreview.GetAssetPreview(obj);
@@ -188,7 +198,7 @@ namespace UnityEditor.Search.Providers
                     return p;
             }
 
-            return (item.preview = Utils.GetAssetPreviewFromPath(info.source, size, options));
+            return Utils.GetAssetPreviewFromPath(info.source, size, options);
         }
 
         private static Texture2D FetchThumbnail(in SearchItem item)
@@ -378,11 +388,16 @@ namespace UnityEditor.Search.Providers
                     yield return t;
             }
 
-            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "File size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Options", "Fuzzy Matches", "+fuzzy",
+                "Use fuzzy search to match object names", priority: 0, moveCursor: TextCursorPlacement.MoveAutoComplete, icon: Icons.toggles,
+                color: QueryColors.toggle);
+
+            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Name", replacement: "name=", help: "Search asset by object name", icon: Icons.quicksearch, color: QueryColors.filter);
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
             yield return new SearchProposition(category: null, "Reference", "ref=<$object:none,UnityEngine.Object$>", "Find all assets referencing a specific asset.", icon: sceneIcon, color: QueryColors.filter);
@@ -400,6 +415,7 @@ namespace UnityEditor.Search.Providers
                     category: "Area",
                     label: db.name,
                     replacement: $"a:{db.name}",
+                    help: $"Search assets index by {db.name}.index",
                     color: QueryColors.type,
                     icon: Icons.quicksearch);
 
@@ -568,6 +584,14 @@ namespace UnityEditor.Search.Providers
             in string gid, in string path, in int itemScore,
             in SearchDocumentFlags flags)
         {
+            return CreateItem(tag, context, provider, null, gid, path, itemScore, flags);
+        }
+
+        public static SearchItem CreateItem(
+            in string tag, in SearchContext context, SearchProvider provider,
+            in Type type, in string gid, in string path, in int itemScore,
+            in SearchDocumentFlags flags)
+        {
             string filename = null;
             if (context.options.HasAny(SearchFlags.Debug) && !string.IsNullOrEmpty(tag))
             {
@@ -579,7 +603,7 @@ namespace UnityEditor.Search.Providers
                 provider = SearchUtils.CreateGroupProvider(provider, GetProviderGroupName(tag, path), provider.priority, cacheProvider: true);
             else if (flags.HasAny(SearchDocumentFlags.Object))
                 provider = SearchUtils.CreateGroupProvider(provider, "Objects", provider.priority, cacheProvider: true);
-            var info = new AssetMetaInfo(path, gid, flags);
+            var info = new AssetMetaInfo(path, gid, flags, type);
             return provider.CreateItem(context, gid ?? info.gid.ToString(), itemScore, filename, null, null, info);
         }
 
@@ -795,7 +819,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Assets")]
         internal static void PopQuickSearch()
         {
-            QuickSearch.OpenWithContextualProvider(type, Query.type, FindProvider.providerId);
+            QuickSearch.OpenWithContextualProvider(type, FindProvider.providerId);
         }
 
         [SearchTemplate(description = "Find all textures", providerId = type)] internal static string ST1() => @"t:texture";

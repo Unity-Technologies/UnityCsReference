@@ -37,10 +37,15 @@ namespace UnityEngine.UIElements
             }
             else if (evt.target == null && elementUnderPointer == null)
             {
-                // Event occured outside the window.
-                // Send event to visual tree root and
-                // don't modify evt.propagateToIMGUI.
-                evt.target = panel?.visualTree;
+                // Event occurred outside the window.
+                // Fix for case 1306631 - a MouseUp event received outside of the GameView
+                // is re-directed to the DockArea IMGUIContainer. Otherwise send the event
+                // to the visual tree root and don't modify evt.propagateToIMGUI, allowing
+                // MouseLeaveWindow events may be received via trickle down traversal.
+                if (panel?.contextType == ContextType.Editor && evt.eventTypeId == PointerUpEvent.TypeId())
+                    evt.target = (panel as Panel)?.rootIMGUIContainer;
+                else
+                    evt.target = panel?.visualTree;
             }
             else if (evt.target != null)
             {

@@ -94,65 +94,43 @@ namespace UnityEditor.Overlays
             base.OnDropZoneActivated(draggedOverlay);
 
             //Disable if the drop zone is linked to the overlay being dragged currently
-            if (m_Placement == Placement.Start && m_Container.LastTopOverlay() == draggedOverlay
-                || m_Placement == Placement.End && m_Container.FirstBottomOverlay() == draggedOverlay)
+            if (m_Placement == Placement.Start && m_Container.GetLastVisible(OverlayContainerSection.BeforeSpacer) == draggedOverlay
+                || m_Placement == Placement.End && m_Container.GetLastVisible(OverlayContainerSection.AfterSpacer) == draggedOverlay)
             {
                 SetVisualMode(VisualMode.Disabled);
                 return;
             }
 
-            if (m_Container is ToolbarOverlayContainer)
+            if (m_Container is FloatingOverlayContainer)
             {
-                //Disable if drop zone is reduced to 0 size. Toolbar have container drop zone with flex-grow = 1
-                if (Mathf.Approximately(rect.width, 0) || Mathf.Approximately(rect.height, 0))
-                {
-                    SetVisualMode(VisualMode.Disabled);
-                    return;
-                }
-
-                switch (m_Placement)
-                {
-                    case Placement.Start:
-                        SetVisualMode(VisualMode.AddToStart);
-                        break;
-                    case Placement.End:
-                        SetVisualMode(VisualMode.AddToEnd);
-                        break;
-                    default:
-                        SetVisualMode(VisualMode.Disabled);
-                        break;
-                }
+                SetVisualMode(VisualMode.Disabled);
             }
             else
             {
-                switch (m_Placement)
+                if (m_Container is ToolbarOverlayContainer && !m_Container.HasVisibleOverlays())
                 {
-                    case Placement.Start:
-                        SetVisualMode(OverlayVisibleInContainerCount(m_Container, m_Container.topOverlays) == 0
-                            ? VisualMode.AddToStart
-                            : VisualMode.Insert);
-                        break;
-                    case Placement.End:
-                        SetVisualMode(OverlayVisibleInContainerCount(m_Container, m_Container.bottomOverlays) == 0
-                            ? VisualMode.AddToEnd
-                            : VisualMode.Insert);
-                        break;
-                    default:
-                        SetVisualMode(VisualMode.Insert);
-                        break;
+                    SetVisualMode(VisualMode.Disabled);
+                }
+                else if (!m_Container.isSpacerVisible)
+                {
+                    SetVisualMode(VisualMode.Insert);
+                }
+                else
+                {
+                    switch (m_Placement)
+                    {
+                        case Placement.Start:
+                            SetVisualMode(VisualMode.AddToStart);
+                            break;
+                        case Placement.End:
+                            SetVisualMode(VisualMode.AddToEnd);
+                            break;
+                        default:
+                            SetVisualMode(VisualMode.Disabled);
+                            break;
+                    }
                 }
             }
-        }
-
-        static int OverlayVisibleInContainerCount(OverlayContainer container, List<Overlay> overlays)
-        {
-            int count = 0;
-            foreach (var overlay in overlays)
-            {
-                if (container.IsOverlayVisibleInContainer(overlay))
-                    ++count;
-            }
-            return count;
         }
 
         public override void DropOverlay(Overlay overlay)
@@ -160,26 +138,12 @@ namespace UnityEditor.Overlays
             switch (m_Placement)
             {
                 case Placement.Start:
-                {
-                    var target = m_Container.LastTopOverlay();
-                    if (target != null)
-                        m_Container.AddAfter(overlay, target);
-                    else
-                        m_Container.AddToTop(overlay);
-
+                    overlay.DockAt(m_Container, OverlayContainerSection.BeforeSpacer, m_Container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
                     break;
-                }
 
                 case Placement.End:
-                {
-                    var target = m_Container.FirstBottomOverlay();
-                    if (target != null)
-                        m_Container.InsertBefore(overlay, target);
-                    else
-                        m_Container.AddToBottom(overlay);
-
+                    overlay.DockAt(m_Container, OverlayContainerSection.AfterSpacer, m_Container.GetSectionCount(OverlayContainerSection.AfterSpacer));
                     break;
-                }
             }
 
             overlay.floating = false;
@@ -217,8 +181,13 @@ namespace UnityEditor.Overlays
         {
             base.OnDropZoneActivated(draggedOverlay);
 
+            var container = m_TargetOverlay.container;
+
+            //If floating, current overlay or this dropzone is next to a spacer
             if (m_TargetOverlay.floating
-                || m_TargetOverlay == draggedOverlay)
+                || m_TargetOverlay == draggedOverlay
+                || m_Placement == Placement.After && container.GetLastVisible(OverlayContainerSection.BeforeSpacer) == m_TargetOverlay
+                || m_Placement == Placement.Before && container.GetLastVisible(OverlayContainerSection.AfterSpacer) == m_TargetOverlay)
             {
                 SetVisualMode(VisualMode.Disabled);
             }
@@ -227,14 +196,14 @@ namespace UnityEditor.Overlays
                 switch (m_Placement)
                 {
                     case Placement.Before:
-                        if (m_TargetOverlay.container.FirstTopOverlay() != m_TargetOverlay)
+                        if (container.GetFirstVisible(OverlayContainerSection.BeforeSpacer) != m_TargetOverlay)
                             goto default;
 
                         SetVisualMode(VisualMode.AddToStart);
                         break;
 
                     case Placement.After:
-                        if (m_TargetOverlay.container.LastBottomOverlay() != m_TargetOverlay)
+                        if (container.GetFirstVisible(OverlayContainerSection.AfterSpacer) != m_TargetOverlay)
                             goto default;
 
                         SetVisualMode(VisualMode.AddToEnd);
@@ -254,17 +223,17 @@ namespace UnityEditor.Overlays
 
         public override void DropOverlay(Overlay overlay)
         {
-            var container = m_TargetOverlay.container;
-
-            switch (m_Placement)
+            // The drop zone before the element should place after the next overlay when after the spacer.
+            // Overlay after the spacer are listed from bottom to spacer instead of spacer to bottom.
+            m_TargetOverlay.container.GetOverlayIndex(m_TargetOverlay, out var section, out _);
+            if (section == OverlayContainerSection.BeforeSpacer && m_Placement == Placement.After
+                || section == OverlayContainerSection.AfterSpacer && m_Placement == Placement.Before)
             {
-                case Placement.Before:
-                    container.InsertBefore(overlay, m_TargetOverlay);
-                    break;
-
-                case Placement.After:
-                    container.AddAfter(overlay, m_TargetOverlay);
-                    break;
+                overlay.DockAfter(m_TargetOverlay);
+            }
+            else
+            {
+                overlay.DockBefore(m_TargetOverlay);
             }
 
             overlay.floating = false;
@@ -283,11 +252,13 @@ namespace UnityEditor.Overlays
     {
         const string k_NoElementClassName = className + "-no-element";
         const string k_DestinationClassName = OverlayDestinationMarker.className + "--no-element";
+        OverlayContainer m_OverlayContainer;
 
         public HiddenToolbarDropZone(OverlayContainer container) : base(container, Placement.Start)
         {
             AddToClassList(k_NoElementClassName);
-
+            m_OverlayContainer = container;
+            SetVisualMode(VisualMode.Disabled);
             priority = 1;
         }
 
@@ -296,6 +267,18 @@ namespace UnityEditor.Overlays
             base.PopulateDestMarkerClassList(classes);
 
             classes.Add(k_DestinationClassName);
+        }
+
+        protected override void OnDropZoneActivated(Overlay draggedOverlay)
+        {
+            base.OnDropZoneActivated(draggedOverlay);
+
+            SetVisualMode(m_OverlayContainer.HasVisibleOverlays() ? VisualMode.Disabled : VisualMode.Custom);
+        }
+
+        protected override void OnDropZoneDeactivated(Overlay draggedOverlay)
+        {
+            SetVisualMode(VisualMode.Disabled);
         }
     }
 

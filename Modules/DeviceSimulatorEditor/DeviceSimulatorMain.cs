@@ -22,6 +22,7 @@ namespace UnityEditor.DeviceSimulation
         public PlayModeView playModeView { get; }
 
         public Vector2 targetSize => new Vector2(m_ScreenSimulation.currentResolution.width, m_ScreenSimulation.currentResolution.height);
+        public ScreenSimulation ScreenSimulation => m_ScreenSimulation;
 
         public RenderTexture displayTexture
         {
@@ -115,6 +116,7 @@ namespace UnityEditor.DeviceSimulation
             m_TouchInput.SetDevice(m_ScreenSimulation, currentDevice.deviceInfo.IsAndroidDevice());
 
             m_UserInterface.OnSimulationStart(m_ScreenSimulation);
+            m_ScreenSimulation.ApplyChanges();
             InitScreenUI();
 
             m_ApplicationSimulation.OnSimulationStart(currentDevice.deviceInfo);

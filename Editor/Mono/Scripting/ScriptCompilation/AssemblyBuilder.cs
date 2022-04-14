@@ -113,7 +113,7 @@ namespace UnityEditor.Compilation
             activeBeeBuild = new BeeScriptCompilationState
             {
                 assemblies = new[] { assembly },
-                Driver = UnityBeeDriver.Make(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", beeAssemblyBuilderDirectory),
+                Driver = UnityBeeDriver.Make(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", new ILPostProcessingProgram(), beeAssemblyBuilderDirectory),
                 editorCompilation = editorCompilation,
                 finishedCompiling = false,
             };
@@ -175,7 +175,7 @@ namespace UnityEditor.Compilation
             try
             {
                 buildFinished?.Invoke(assemblyPath, EditorCompilation.ConvertCompilerMessages(BeeScriptCompilation
-                    .ParseAllNodeResultsIntoCompilerMessages(result.NodeResults, EditorCompilationInterface.Instance)
+                    .ParseAllResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeResults, EditorCompilationInterface.Instance)
                     .SelectMany(a => a).ToArray()));
             }
             catch (Exception e)

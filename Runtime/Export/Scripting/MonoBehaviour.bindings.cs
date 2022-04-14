@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Threading;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngineInternal;
@@ -23,6 +24,26 @@ namespace UnityEngine
             ConstructorCheck(this);
         }
 
+
+        private CancellationTokenSource m_CancellationTokenSource;
+        public CancellationToken CancellationToken
+        {
+            get
+            {
+                if(m_CancellationTokenSource == null)
+                {
+                    m_CancellationTokenSource = new CancellationTokenSource();
+                    OnCancellationTokenCreated();
+                }
+                return m_CancellationTokenSource.Token;
+            }
+        }
+
+        [RequiredByNativeCode]
+        private void RaiseCancellation()
+        {
+            m_CancellationTokenSource?.Cancel();
+        }
 
         // Is any invoke pending on this MonoBehaviour?
         public bool IsInvoking()
@@ -172,5 +193,7 @@ namespace UnityEngine
         extern void StopCoroutineFromEnumeratorManaged(IEnumerator routine);
 
         extern internal string GetScriptClassName();
+
+        extern void OnCancellationTokenCreated();
     }
 }

@@ -108,7 +108,8 @@ namespace UnityEditor
 
             public GUIContent sortingLayer = EditorGUIUtility.TrTextContent("Sorting Layer", "Name of the Renderer's sorting layer.");
             public GUIContent sortingOrder = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
-            public GUIContent space = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles will face the camera, align to world axes, or stay local to the system's transform.");
+            public GUIContent space = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles face the camera, align to world axes, or stay local to the system's transform.");
+            public GUIContent alignedToDirectionSpace = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles face the camera, align to world axes, or stay local to the system's transform. When using Align to Direction in the Shape module, Particle Systems only support Local and World Render Alignments.");
             public GUIContent pivot = EditorGUIUtility.TrTextContent("Pivot", "Applies an offset to the pivot of particles, as a multiplier of its size.");
             public GUIContent flip = EditorGUIUtility.TrTextContent("Flip", "Cause some particles to be flipped horizontally and/or vertically. (Set between 0 and 1, where a higher value causes more to flip)");
             public GUIContent flipMeshes = EditorGUIUtility.TrTextContent("Flip", "Cause some mesh particles to be flipped along each of their axes. Use a shader with CullMode=None, to avoid inside-out geometry. (Set between 0 and 1, where a higher value causes more to flip)");
@@ -146,6 +147,12 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Local"),
                 EditorGUIUtility.TrTextContent("Facing"),
                 EditorGUIUtility.TrTextContent("Velocity")
+            };
+
+            public GUIContent[] alignedToDirectionSpaces = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("World"),
+                EditorGUIUtility.TrTextContent("Local")
             };
 
             public GUIContent[] localSpace = new GUIContent[]
@@ -358,13 +365,11 @@ namespace UnityEditor
                         bool anyAlignToDirection = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.enabled && o.shape.alignToDirection) != null;
                         if (anyAlignToDirection)
                         {
-                            using (new EditorGUI.DisabledScope(true))
-                            {
-                                GUIPopup(s_Texts.space, 0, s_Texts.localSpace); // force to "Local"
-                            }
-
-                            GUIContent info = EditorGUIUtility.TrTextContent("Using Align to Direction in the Shape Module forces the system to be rendered using Local Render Alignment.");
-                            EditorGUILayout.HelpBox(info.text, MessageType.Info, true);
+                            EditorGUI.BeginChangeCheck();
+                            int selectedIndex = (m_RenderAlignment.hasMultipleDifferentValues || m_RenderAlignment.intValue == (int)ParticleSystemRenderSpace.World) ? 0 : 1;
+                            selectedIndex = GUIPopup(s_Texts.alignedToDirectionSpace, selectedIndex, s_Texts.alignedToDirectionSpaces);
+                            if (EditorGUI.EndChangeCheck())
+                                m_RenderAlignment.intValue = (selectedIndex == 0) ? (int)ParticleSystemRenderSpace.World : (int)ParticleSystemRenderSpace.Local;
                         }
                         else
                         {
@@ -586,11 +591,11 @@ namespace UnityEditor
                     int numMeshes = renderer.GetMeshes(meshes);
                     for (int i = 0; i < numMeshes; i++)
                     {
-                        if (meshes[i].HasVertexAttribute(VertexAttribute.TexCoord2))
+                        if (meshes[i].HasVertexAttribute(VertexAttribute.TexCoord4))
                         {
                             if (errors != "")
                                 errors += "\n\n";
-                            errors += "Meshes may only use a maximum of 2 input UV streams.";
+                            errors += "Meshes may only use a maximum of 4 input UV streams.";
                         }
                     }
                 }

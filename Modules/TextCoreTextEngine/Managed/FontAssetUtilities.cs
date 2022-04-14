@@ -83,9 +83,14 @@ namespace UnityEngine.TextCore.Text
                 {
                     if (temp.characterLookupTable.TryGetValue(unicode, out character))
                     {
-                        isAlternativeTypeface = true;
+                        if (character.textAsset != null)
+                        {
+                            isAlternativeTypeface = true;
+                            return character;
+                        }
 
-                        return character;
+                        // Remove character from lookup table
+                        temp.characterLookupTable.Remove(unicode);
                     }
 
                     if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic || temp.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
@@ -120,7 +125,12 @@ namespace UnityEngine.TextCore.Text
 
             // Search the source font asset for the requested character.
             if (sourceFontAsset.characterLookupTable.TryGetValue(unicode, out character))
-                return character;
+            {
+                if (character.textAsset != null)
+                    return character;
+
+                sourceFontAsset.characterLookupTable.Remove(unicode);
+            }
 
             if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
             {

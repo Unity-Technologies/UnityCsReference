@@ -336,7 +336,7 @@ namespace UnityEditor
         static float ThicknessToPixels(float thickness)
         {
             var halfThicknessPixels = thickness * EditorGUIUtility.pixelsPerPoint * 0.5f;
-            if (halfThicknessPixels < 0.5f)
+            if (halfThicknessPixels < 0.9f)
                 halfThicknessPixels = 0;
             return halfThicknessPixels;
         }
@@ -511,16 +511,6 @@ namespace UnityEditor
                 Internal_DoDrawGizmos(camera);
         }
 
-        public static Quaternion Disc(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
-        {
-            return UnityEditorInternal.Disc.Do(id, rotation, position, axis, size, cutoffPlane, snap);
-        }
-
-        public static Quaternion FreeRotateHandle(int id, Quaternion rotation, Vector3 position, float size)
-        {
-            return UnityEditorInternal.FreeRotate.Do(id, rotation, position, size);
-        }
-
         // Make a 3D slider
         public static Vector3 Slider(Vector3 position, Vector3 direction)
         {
@@ -591,6 +581,11 @@ namespace UnityEditor
             return UnityEditorInternal.Button.Do(controlID, position, direction, size, pickSize, capFunction);
         }
 
+        internal static bool Button(int controlID, Vector3 position, Quaternion direction, float size, float pickSize, CapFunction capFunction, bool checkMouseProximity)
+        {
+            return UnityEditorInternal.Button.Do(controlID, position, direction, size, pickSize, capFunction, checkMouseProximity);
+        }
+
         // Draw a cube. Pass this into handle functions.
         public static void CubeHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
@@ -631,7 +626,7 @@ namespace UnityEditor
                 case EventType.MouseMove:
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCone(position, rotation, size));
                     break;
-                case (EventType.Repaint):
+                case EventType.Repaint:
                     Graphics.DrawMeshNow(coneMesh, StartCapDraw(position, rotation, size));
                     break;
             }
@@ -856,11 +851,22 @@ namespace UnityEditor
             return DoPositionHandle(position, rotation);
         }
 
+        public static Vector3 PositionHandle(PositionHandleIds ids, Vector3 position, Quaternion rotation)
+        {
+            return DoPositionHandle(ids, position, rotation);
+        }
+
         // Make a Scene view rotation handle.
         public static Quaternion RotationHandle(Quaternion rotation, Vector3 position)
         {
             return DoRotationHandle(rotation, position);
         }
+
+        public static Quaternion RotationHandle(RotationHandleIds ids, Quaternion rotation, Vector3 position)
+        {
+            return DoRotationHandle(ids, rotation, position, RotationHandleParam.Default);
+        }
+
 
         // Make a Scene view scale handle
         public static Vector3 ScaleHandle(Vector3 scale, Vector3 position, Quaternion rotation)
@@ -950,6 +956,11 @@ namespace UnityEditor
         }
 
         // Make an unconstrained rotation handle.
+        public static Quaternion FreeRotateHandle(int id, Quaternion rotation, Vector3 position, float size)
+        {
+            return UnityEditorInternal.FreeRotate.Do(id, rotation, position, size);
+        }
+
         public static Quaternion FreeRotateHandle(Quaternion rotation, Vector3 position, float size)
         {
             int id = GUIUtility.GetControlID(s_FreeRotateHandleHash, FocusType.Passive);
@@ -957,6 +968,11 @@ namespace UnityEditor
         }
 
         // Make a directional scale slider
+        public static float ScaleSlider(int id, float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap)
+        {
+            return UnityEditorInternal.SliderScale.DoAxis(id, scale, position, direction, rotation, size, snap);
+        }
+
         public static float ScaleSlider(float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap)
         {
             int id = GUIUtility.GetControlID(s_ScaleSliderHash, FocusType.Passive);
@@ -964,6 +980,11 @@ namespace UnityEditor
         }
 
         // Make a 3D disc that can be dragged with the mouse
+        public static Quaternion Disc(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
+        {
+            return UnityEditorInternal.Disc.Do(id, rotation, position, axis, size, cutoffPlane, snap);
+        }
+
         public static Quaternion Disc(Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
         {
             int id = GUIUtility.GetControlID(s_DiscHash, FocusType.Passive);
@@ -1008,6 +1029,18 @@ namespace UnityEditor
                 {
                     if (t != null)
                         t.position = Snapping.Snap(t.position, Vector3.Scale(GridSettings.size, new SnapAxisFilter(axis)));
+                }
+            }
+        }
+
+        // Snap all positions to the grid
+        public static void SnapToGrid(Vector3[] positions, SnapAxis axis = SnapAxis.All)
+        {
+            if (positions != null && positions.Length > 0)
+            {
+                for(int i = 0; i<positions.Length; i++)
+                {
+                    positions[i] = Snapping.Snap(positions[i], Vector3.Scale(GridSettings.size, new SnapAxisFilter(axis)));
                 }
             }
         }
@@ -1400,14 +1433,14 @@ namespace UnityEditor
 
         public static void DrawOutline(int[] parentRenderers, int[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
         public static void DrawOutline(int[] renderers, Color color, float fillOpacity = 0)
         {
-            Internal_DrawOutline(color, color, 0, renderers, null, fillOpacity);
+            Internal_DrawOutline(color, color, 0, renderers, null, OutlineDrawMode.SelectionOutline, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
@@ -1416,7 +1449,7 @@ namespace UnityEditor
         {
             int[] parentRenderers, childRenderers;
             HandleUtility.FilterRendererIDs(renderers, out parentRenderers, out childRenderers);
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
@@ -1428,7 +1461,7 @@ namespace UnityEditor
             foreach (var renderer in renderers)
                     ids[index++] = renderer.GetInstanceID();
 
-            Internal_DrawOutline(color, color, 0, ids, null, fillOpacity, fillOpacity);
+            Internal_DrawOutline(color, color, 0, ids, null, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
@@ -1436,8 +1469,8 @@ namespace UnityEditor
         public static void DrawOutline(GameObject[] objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
-            HandleUtility.FilterRendererIDs(objects, out parentRenderers, out childRenderers);
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+            HandleUtility.FilterInstanceIDs(objects, out parentRenderers, out childRenderers);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
@@ -1452,7 +1485,7 @@ namespace UnityEditor
                     ids[index++] = renderer.GetInstanceID();
             }
 
-            Internal_DrawOutline(color, color, 0, ids, null, fillOpacity, fillOpacity);
+            Internal_DrawOutline(color, color, 0, ids, null, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
@@ -1460,8 +1493,8 @@ namespace UnityEditor
         public static void DrawOutline(List<GameObject> objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
-            HandleUtility.FilterRendererIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers);
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, fillOpacity, fillOpacity);
+            HandleUtility.FilterInstanceIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
@@ -1476,25 +1509,25 @@ namespace UnityEditor
                     ids[index++] = renderer.GetInstanceID();
             }
 
-            Internal_DrawOutline(color, color, 0, ids, null, fillOpacity, fillOpacity);
+            Internal_DrawOutline(color, color, 0, ids, null, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
 
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
-        internal static void DrawOutlineInternal(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int[] parentRenderers, int[] childRenderers)
+        internal static void DrawOutlineOrWireframeInternal(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int[] parentRenderers, int[] childRenderers, OutlineDrawMode outlineMode)
         {
             // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
             var parentOutlineAlpha = parentNodeColor.a;
             var childOutlineAlpha = childNodeColor.a;
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, parentOutlineAlpha, childOutlineAlpha, true);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
         }
 
         internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
         {
             int[] parentRenderers, childRenderers;
-            HandleUtility.FilterRendererIDs(Selection.gameObjects, out parentRenderers, out childRenderers);
+            HandleUtility.FilterInstanceIDs(Selection.gameObjects, out parentRenderers, out childRenderers);
 
             // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
             var parentOutlineAlpha = parentNodeColor.a;
@@ -1502,7 +1535,7 @@ namespace UnityEditor
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
 
-            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers, childRenderers, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, parentOutlineAlpha, childOutlineAlpha);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 

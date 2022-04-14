@@ -426,26 +426,46 @@ namespace UnityEditor.UIElements
                 restriction.AnyAttribute = anyAttribute;
             }
 
-            foreach (UxmlAttributeDescription attrDesc in factory.uxmlAttributesDescription)
+            // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
+            if (factory.uxmlAttributesDescription != null)
             {
-                XmlQualifiedName typeName = AddAttributeTypeToXmlSchema(schemaInfo, attrDesc, factory, processingData);
-                if (typeName != null)
+                foreach (UxmlAttributeDescription attrDesc in factory.uxmlAttributesDescription)
                 {
-                    AddAttributeToXmlSchema(restriction, attrDesc, typeName);
-                    schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
+                    // For user created types, they may `yield return null` which would create an array with a null, so we need
+                    // to check in order not to crash.
+                    if (attrDesc != null)
+                    {
+                        XmlQualifiedName typeName =
+                            AddAttributeTypeToXmlSchema(schemaInfo, attrDesc, factory, processingData);
+                        if (typeName != null)
+                        {
+                            AddAttributeToXmlSchema(restriction, attrDesc, typeName);
+                            schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
+                        }
+                    }
                 }
             }
 
-            bool hasChildElements = false;
-            foreach (UxmlChildElementDescription childDesc in factory.uxmlChildElementsDescription)
+            // For user created types, they may return null for uxmlChildElementsDescription, so we need to check in order not to crash.
+            if (factory.uxmlChildElementsDescription != null)
             {
-                hasChildElements = true;
-                schemaInfo.importNamespaces.Add(childDesc.elementNamespace);
-            }
+                bool hasChildElements = false;
+                foreach (UxmlChildElementDescription childDesc in factory.uxmlChildElementsDescription)
+                {
+                    // For user created types, they may `yield return null` which would create an array with a null, so we need
+                    // to check in order not to crash.
+                    if (childDesc != null)
+                    {
+                        hasChildElements = true;
+                        schemaInfo.importNamespaces.Add(childDesc.elementNamespace);
+                    }
+                }
 
-            if (hasChildElements)
-            {
-                restriction.Particle = MakeChoiceSequence(factory.uxmlChildElementsDescription);
+                if (hasChildElements)
+                {
+                    restriction.Particle =
+                        MakeChoiceSequence(factory.uxmlChildElementsDescription.Where(x => x != null));
+                }
             }
 
             schemaInfo.schema.Items.Add(elementType);

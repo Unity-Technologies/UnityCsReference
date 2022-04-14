@@ -36,6 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var servicesContainer = ServicesContainer.instance;
                 var packageManagerSettingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
+                var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
                 packageManagerSettingsProxy.scopedRegistriesSettingsExpanded = true;
 
                 var message = registriesAddedCount.Pluralize(
@@ -47,9 +48,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     string.Empty, string.Empty,
                     "a scoped registry", $"{registriesAddedCount} scoped registries");
 
-                if (EditorUtility.DisplayDialog(L10n.Tr(title), L10n.Tr(message), L10n.Tr("Read more"), L10n.Tr("Close")))
+                if (applicationProxy.DisplayDialog("onRegistriesAddedPopup", L10n.Tr(title), L10n.Tr(message), L10n.Tr("Read more"), L10n.Tr("Close")))
                 {
-                    var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
                     applicationProxy.OpenURL($"https://docs.unity3d.com/{applicationProxy.shortUnityVersion}/Documentation/Manual/upm-scoped.html");
                 }
             }

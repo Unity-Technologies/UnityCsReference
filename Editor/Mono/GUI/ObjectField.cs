@@ -161,12 +161,17 @@ namespace UnityEditor
             return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, null, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton);
         }
 
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, Action<Object> onObjectSelectorClosed, Action<Object> onObjectSelectedUpdated = null)
+        {
+            return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton, onObjectSelectorClosed, onObjectSelectedUpdated);
+        }
+
         static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
         {
             return DoObjectField(position, dropRect, id, obj, objBeingEdited, objType, additionalType, property, validator, allowSceneObjects, style, EditorStyles.objectFieldButton);
         }
 
-        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle)
+        static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, Object objBeingEdited, System.Type objType, System.Type additionalType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style, GUIStyle buttonStyle, Action<Object> onObjectSelectorClosed = null, Action<Object> onObjectSelectedUpdated = null)
         {
             if (validator == null)
                 validator = ValidateObjectFieldAssignment;
@@ -278,9 +283,9 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
                                 var types = additionalType == null ? new Type[] {objType} : new Type[] { objType, additionalType };
                                 if (property != null)
-                                    ObjectSelector.get.Show(types, property, allowSceneObjects);
+                                    ObjectSelector.get.Show(types, property, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated);
                                 else
-                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects);
+                                    ObjectSelector.get.Show(obj, types, objBeingEdited, allowSceneObjects, onObjectSelectorClosed: onObjectSelectorClosed, onObjectSelectedUpdated: onObjectSelectedUpdated);
                                 ObjectSelector.get.objectSelectorID = id;
 
                                 evt.Use();
@@ -364,8 +369,8 @@ namespace UnityEditor
                                     var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
                                     bool isReorderableList = PropertyHandler.s_reorderableLists.ContainsKey(ReorderableListWrapper.GetPropertyIdentifier(parentArrayProperty));
 
-                                    // If it's an element of an non-orderable array, remove that element from the array
-                                    if (!isReorderableList)
+                                    // If it's an element of an non-orderable array and it is displayed inside a list, remove that element from the array (cases 1379541 & 1335322)
+                                    if (!isReorderableList && GUI.isInsideList && GetInsideListDepth() == parentArrayProperty.depth)
                                         TargetChoiceHandler.DeleteArrayElement(property);
                                     else
                                         property.objectReferenceValue = null;

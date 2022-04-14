@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
+    [ExcludeFromCodeCoverage]
     internal sealed class ServicesContainer : ScriptableSingleton<ServicesContainer>, ISerializationCallbackReceiver
     {
         // Some services are stateless, hence no serialization needed
@@ -19,6 +21,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly SelectionProxy m_SelectionProxy;
 
         private readonly AssetDatabaseProxy m_AssetDatabaseProxy;
+
+        private readonly EditorAnalyticsProxy m_EditorAnalyticsProxy;
 
         private readonly IOProxy m_IOProxy;
 
@@ -108,6 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetDatabaseProxy = new AssetDatabaseProxy();
             m_UnityConnectProxy = new UnityConnectProxy();
             m_ApplicationProxy = new ApplicationProxy();
+            m_EditorAnalyticsProxy = new EditorAnalyticsProxy();
             m_IOProxy = new IOProxy();
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
             m_ClientProxy = new ClientProxy();
@@ -232,6 +237,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_AssetDatabaseProxy);
             Register(m_ResourceLoader);
             Register(m_ExtensionManager);
+            Register(m_EditorAnalyticsProxy);
             Register(m_IOProxy);
             Register(m_SettingsProxy);
             Register(m_ClientProxy);

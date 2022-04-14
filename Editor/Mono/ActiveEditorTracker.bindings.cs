@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -15,6 +16,7 @@ namespace UnityEditor
     // Might want to add a manual dispose
     [NativeHeader("Editor/Src/Utility/ActiveEditorTracker.bindings.h")]
     [Serializable]
+    [RequiredByNativeCode]
     public sealed class ActiveEditorTracker
     {
         #pragma warning disable 649
@@ -111,6 +113,17 @@ namespace UnityEditor
         {
             get { return Internal_GetIsLocked(this); }
             set { Internal_SetIsLocked(this, value); }
+        }
+
+        [FreeFunction]
+        static extern bool Internal_HasUnsavedChanges(ActiveEditorTracker activeEditorTracker);
+        public bool hasUnsavedChanges => Internal_HasUnsavedChanges(this);
+
+        [FreeFunction]
+        static extern void Internal_UnsavedChangesStateChanged(ActiveEditorTracker self, int editorInstance, bool value);
+        internal void UnsavedChangesStateChanged(Editor editor, bool value)
+        {
+            Internal_UnsavedChangesStateChanged(this, editor.GetInstanceID(), value);
         }
 
         [FreeFunction]

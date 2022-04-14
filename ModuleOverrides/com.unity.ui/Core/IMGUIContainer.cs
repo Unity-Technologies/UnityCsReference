@@ -185,6 +185,8 @@ namespace UnityEngine.UIElements
         public IMGUIContainer(Action onGUIHandler)
         {
             isIMGUIContainer = true;
+            eventCallbackCategories |= (int)EventCategoryFlags.TriggeredByOS |
+                                       (1 << (int)EventCategory.Navigation);
 
             AddToClassList(ussClassName);
 
@@ -502,15 +504,13 @@ namespace UnityEngine.UIElements
             IncrementVersion(VersionChangeType.Layout);
         }
 
-        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        internal void ProcessEvent(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (evt.imguiEvent == null)
-                return;
-
-            if (SendEventToIMGUI(evt))
+            if (evt.imguiEvent != null && SendEventToIMGUI(evt) ||
+                // Prevent navigation events since IMGUI already uses KeyDown events
+                evt.eventTypeId == NavigationMoveEvent.TypeId() ||
+                evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
+                evt.eventTypeId == NavigationCancelEvent.TypeId())
             {
                 evt.StopPropagation();
                 evt.PreventDefault();
@@ -600,7 +600,7 @@ namespace UnityEngine.UIElements
 
         private bool VerifyBounds(EventBase evt)
         {
-            return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt);
+            return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt) || IsDockAreaMouseUp(evt);
         }
 
         private bool IsContainerCapturingTheMouse()
@@ -623,6 +623,12 @@ namespace UnityEngine.UIElements
             string pointerType = (evt as IPointerEvent)?.pointerType;
             bool isDirectManipulationDevice = (pointerType == PointerType.touch || pointerType == PointerType.pen);
             return GUIUtility.HitTest(clippingRect, evt.originalMousePosition, isDirectManipulationDevice);
+        }
+
+        private static bool IsDockAreaMouseUp(EventBase evt)
+        {
+            return evt.eventTypeId == MouseUpEvent.TypeId() &&
+                   evt.target == (evt.target as VisualElement)?.elementPanel.rootIMGUIContainer;
         }
 
         private bool HandleIMGUIEvent(Event e, bool canAffectFocus)

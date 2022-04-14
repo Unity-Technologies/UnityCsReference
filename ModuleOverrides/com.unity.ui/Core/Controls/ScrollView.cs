@@ -114,6 +114,9 @@ namespace UnityEngine.UIElements
             UxmlEnumAttributeDescription<ScrollViewMode> m_ScrollViewMode = new UxmlEnumAttributeDescription<ScrollViewMode>
             { name = "mode", defaultValue = ScrollViewMode.Vertical };
 
+            UxmlEnumAttributeDescription<NestedInteractionKind> m_NestedInteractionKind = new UxmlEnumAttributeDescription<NestedInteractionKind>
+            { name = "nested-interaction-kind", defaultValue = NestedInteractionKind.Default };
+
             UxmlBoolAttributeDescription m_ShowHorizontal = new UxmlBoolAttributeDescription
             { name = "show-horizontal-scroller" };
 
@@ -170,6 +173,7 @@ namespace UnityEngine.UIElements
                     scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
 #pragma warning restore 618
 
+                scrollView.nestedInteractionKind = m_NestedInteractionKind.GetValueFromBag(bag, cc);
                 scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
                 scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag, cc);
                 scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
@@ -398,6 +402,38 @@ namespace UnityEngine.UIElements
                     verticalScroller.slider.clamped = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Options for controlling how nested <see cref="ScrollView"/> handles scrolling when reaching
+        /// the limits of the scrollable area.
+        /// </summary>
+        public enum NestedInteractionKind
+        {
+            /// <summary>
+            /// Automatically selects the behavior according to the context in which the UI runs. For touch input, typically mobile devices,
+            /// NestedInteractionKind.StopScrolling is used. For scroll wheel input, NestedInteractionKind.ForwardScrolling is used.
+            /// </summary>
+            Default,
+            /// <summary>
+            /// Scrolling capture will remain in the scroll view if it initiated the drag.
+            /// </summary>
+            StopScrolling,
+            /// <summary>
+            /// Scrolling will continue to the parent when no movement is possible in the scrolled direction.
+            /// </summary>
+            ForwardScrolling
+        }
+
+        NestedInteractionKind m_NestedInteractionKind;
+
+        /// <summary>
+        /// The behavior to use when scrolling reaches limits of a nested <see cref="ScrollView"/>.
+        /// </summary>
+        public NestedInteractionKind nestedInteractionKind
+        {
+            get => m_NestedInteractionKind;
+            set => m_NestedInteractionKind = value;
         }
 
         void OnHorizontalScrollDragElementChanged(GeometryChangedEvent evt)
@@ -862,6 +898,7 @@ namespace UnityEngine.UIElements
             if (m_CapturedTarget == null)
                 return;
 
+            m_ScrollingPointerId = evt.pointerId;
             m_CapturedTarget.RegisterCallback(m_CapturedTargetPointerMoveCallback);
             m_CapturedTarget.RegisterCallback(m_CapturedTargetPointerUpCallback);
         }
@@ -904,7 +941,7 @@ namespace UnityEngine.UIElements
 
         private int m_ScrollingPointerId = PointerId.invalidPointerId;
         private const float k_VelocityLerpTimeFactor = 10;
-        internal const float ScrollThresholdSquared = 25;
+        internal const float ScrollThresholdSquared = 100;
         private Vector2 m_StartPosition;
         private Vector2 m_PointerStartPosition;
         private Vector2 m_Velocity;
@@ -913,6 +950,7 @@ namespace UnityEngine.UIElements
         private Vector2 m_HighBounds;
         private float m_LastVelocityLerpTime;
         private bool m_StartedMoving;
+        private bool m_TouchStoppedVelocity;
         VisualElement m_CapturedTarget;
         EventCallback<PointerMoveEvent> m_CapturedTargetPointerMoveCallback;
         EventCallback<PointerUpEvent> m_CapturedTargetPointerUpCallback;
@@ -1147,24 +1185,15 @@ namespace UnityEngine.UIElements
                 var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
 
                 m_ScrollingPointerId = evt.pointerId;
-                m_PointerStartPosition = evt.position;
-                m_StartPosition = scrollOffset;
                 m_StartedMoving = false;
-                m_Velocity = Vector2.zero;
-                m_SpringBackVelocity = Vector2.zero;
-
-                m_LowBounds = new Vector2(
-                    Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
-                    Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
-                m_HighBounds = new Vector2(
-                    Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
-                    Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+                InitTouchScrolling(evt.position);
 
                 if (touchStopsVelocityOnly)
                 {
                     contentContainer.CapturePointer(evt.pointerId);
                     contentContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
                     evt.StopPropagation();
+                    m_TouchStoppedVelocity = true;
                 }
             }
         }
@@ -1177,69 +1206,29 @@ namespace UnityEngine.UIElements
             if (evt.isHandledByDraggable)
             {
                 m_PointerStartPosition = evt.position;
+                m_StartPosition = scrollOffset;
                 return;
             }
 
             Vector2 position = evt.position;
-            if (!m_StartedMoving && (position - m_PointerStartPosition).sqrMagnitude < ScrollThresholdSquared)
+            var delta = position - m_PointerStartPosition;
+            if (mode == ScrollViewMode.Horizontal)
+                delta.y = 0;
+            else if (mode == ScrollViewMode.Vertical)
+                delta.x = 0;
+
+            if (!m_TouchStoppedVelocity && !m_StartedMoving && delta.sqrMagnitude < ScrollThresholdSquared)
                 return;
 
-            m_StartedMoving = true;
+            var scrollResult = ComputeTouchScrolling(evt.position);
 
-            Vector2 newScrollOffset;
-            if (touchScrollBehavior == TouchScrollBehavior.Clamped)
-            {
-                newScrollOffset = m_StartPosition - (new Vector2(evt.position.x, evt.position.y) - m_PointerStartPosition);
-                newScrollOffset = Vector2.Max(newScrollOffset, m_LowBounds);
-                newScrollOffset = Vector2.Min(newScrollOffset, m_HighBounds);
-            }
-            else if (touchScrollBehavior == TouchScrollBehavior.Elastic)
-            {
-                Vector2 deltaPointer = new Vector2(evt.position.x, evt.position.y) - m_PointerStartPosition;
-                newScrollOffset.x = ComputeElasticOffset(deltaPointer.x, m_StartPosition.x,
-                    m_LowBounds.x, m_LowBounds.x - contentViewport.resolvedStyle.width,
-                    m_HighBounds.x, m_HighBounds.x + contentViewport.resolvedStyle.width);
-                newScrollOffset.y = ComputeElasticOffset(deltaPointer.y, m_StartPosition.y,
-                    m_LowBounds.y, m_LowBounds.y - contentViewport.resolvedStyle.height,
-                    m_HighBounds.y, m_HighBounds.y + contentViewport.resolvedStyle.height);
-            }
-            else
-            {
-                newScrollOffset = m_StartPosition - (new Vector2(evt.position.x, evt.position.y) - m_PointerStartPosition);
-            }
-
-            if (hasInertia)
-            {
-                // Reset velocity if we reached bounds.
-                if (newScrollOffset == m_LowBounds || newScrollOffset == m_HighBounds)
-                {
-                    m_Velocity = Vector2.zero;
-                    scrollOffset = newScrollOffset;
-                    return; // We don't want to stop propagation, to allow nested draggables to respond.
-                }
-
-                // Account for idle pointer time.
-                if (m_LastVelocityLerpTime > 0)
-                {
-                    var deltaTimeSinceLastLerp = Time.unscaledTime - m_LastVelocityLerpTime;
-                    m_Velocity = Vector2.Lerp(m_Velocity, Vector2.zero, deltaTimeSinceLastLerp * k_VelocityLerpTimeFactor);
-                }
-
-                m_LastVelocityLerpTime = Time.unscaledTime;
-
-                var deltaTime = Time.unscaledDeltaTime;
-                var newVelocity = (newScrollOffset - scrollOffset) / deltaTime;
-                m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
-            }
-
-            var scrollOffsetChanged = scrollOffset != newScrollOffset;
-            scrollOffset = newScrollOffset;
-
-            if (scrollOffsetChanged)
+            if (scrollResult != TouchScrollingResult.Forward)
             {
                 evt.isHandledByDraggable = true;
-                contentContainer.CapturePointer(evt.pointerId);
                 evt.StopPropagation();
+
+                if (!contentContainer.HasPointerCapture(evt.pointerId))
+                    contentContainer.CapturePointer(evt.pointerId);
             }
             else
             {
@@ -1261,12 +1250,116 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Internal for tests.
+        internal enum TouchScrollingResult
+        {
+            Apply,
+            Forward,
+            Block
+        }
+
+        // Internal for tests.
+        internal void InitTouchScrolling(Vector2 position)
+        {
+            m_PointerStartPosition = position;
+            m_StartPosition = scrollOffset;
+            m_Velocity = Vector2.zero;
+            m_SpringBackVelocity = Vector2.zero;
+
+            m_LowBounds = new Vector2(
+                Mathf.Min(horizontalScroller.lowValue, horizontalScroller.highValue),
+                Mathf.Min(verticalScroller.lowValue, verticalScroller.highValue));
+            m_HighBounds = new Vector2(
+                Mathf.Max(horizontalScroller.lowValue, horizontalScroller.highValue),
+                Mathf.Max(verticalScroller.lowValue, verticalScroller.highValue));
+        }
+
+        // Internal for tests.
+        internal TouchScrollingResult ComputeTouchScrolling(Vector2 position)
+        {
+            // Calculate offset based on touch scroll behavior.
+            Vector2 newScrollOffset;
+            if (touchScrollBehavior == TouchScrollBehavior.Clamped)
+            {
+                newScrollOffset = m_StartPosition - (position - m_PointerStartPosition);
+                newScrollOffset = Vector2.Max(newScrollOffset, m_LowBounds);
+                newScrollOffset = Vector2.Min(newScrollOffset, m_HighBounds);
+            }
+            else if (touchScrollBehavior == TouchScrollBehavior.Elastic)
+            {
+                Vector2 deltaPointer = position - m_PointerStartPosition;
+                newScrollOffset.x = ComputeElasticOffset(deltaPointer.x, m_StartPosition.x,
+                    m_LowBounds.x, m_LowBounds.x - contentViewport.resolvedStyle.width,
+                    m_HighBounds.x, m_HighBounds.x + contentViewport.resolvedStyle.width);
+                newScrollOffset.y = ComputeElasticOffset(deltaPointer.y, m_StartPosition.y,
+                    m_LowBounds.y, m_LowBounds.y - contentViewport.resolvedStyle.height,
+                    m_HighBounds.y, m_HighBounds.y + contentViewport.resolvedStyle.height);
+            }
+            else
+            {
+                newScrollOffset = m_StartPosition - (position - m_PointerStartPosition);
+            }
+
+            // Cancel opposite axis if mode is set to only a single direction.
+            if (mode == ScrollViewMode.Vertical)
+                newScrollOffset.x = m_LowBounds.x;
+            else if (mode == ScrollViewMode.Horizontal)
+                newScrollOffset.y = m_LowBounds.y;
+
+            var shouldScrollOffsetChange = scrollOffset != newScrollOffset;
+            if (shouldScrollOffsetChange)
+            {
+                ApplyTouchScrolling(newScrollOffset);
+                return TouchScrollingResult.Apply;
+            }
+
+            var shouldBlock = m_StartedMoving && nestedInteractionKind != NestedInteractionKind.ForwardScrolling;
+            if (shouldBlock)
+                return TouchScrollingResult.Block;
+
+            return TouchScrollingResult.Forward;
+        }
+
+        void ApplyTouchScrolling(Vector2 newScrollOffset)
+        {
+            m_StartedMoving = true;
+
+            if (hasInertia)
+            {
+                // Reset velocity if we reached bounds.
+                if (newScrollOffset == m_LowBounds || newScrollOffset == m_HighBounds)
+                {
+                    m_Velocity = Vector2.zero;
+                    scrollOffset = newScrollOffset;
+                    return;
+                }
+
+                // Account for idle pointer time.
+                if (m_LastVelocityLerpTime > 0)
+                {
+                    var deltaTimeSinceLastLerp = Time.unscaledTime - m_LastVelocityLerpTime;
+                    m_Velocity = Vector2.Lerp(m_Velocity, Vector2.zero, deltaTimeSinceLastLerp * k_VelocityLerpTimeFactor);
+                }
+
+                m_LastVelocityLerpTime = Time.unscaledTime;
+
+                var deltaTime = Time.unscaledDeltaTime;
+                var newVelocity = (newScrollOffset - scrollOffset) / deltaTime;
+                m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
+            }
+
+            scrollOffset = newScrollOffset;
+        }
+
         bool ReleaseScrolling(int pointerId, IEventHandler target)
         {
             if (pointerId != m_ScrollingPointerId)
                 return false;
 
             m_ScrollingPointerId = PointerId.invalidPointerId;
+
+            m_TouchStoppedVelocity = false;
+            m_StartedMoving = false;
 
             if (target != contentContainer || !contentContainer.HasPointerCapture(pointerId))
                 return false;
@@ -1303,7 +1396,7 @@ namespace UnityEngine.UIElements
             verticalScroller.Adjust(verticalFactor);
         }
 
-        void UpdateScrollers(bool displayHorizontal, bool displayVertical)
+        internal void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
             AdjustScrollers();
 
@@ -1374,7 +1467,7 @@ namespace UnityEngine.UIElements
                 var oldVerticalValue = verticalScroller.value;
                 verticalScroller.value += evt.delta.y * (verticalScroller.lowValue < verticalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
 
-                if (verticalScroller.value != oldVerticalValue)
+                if (nestedInteractionKind == NestedInteractionKind.StopScrolling || !Mathf.Approximately(verticalScroller.value, oldVerticalValue))
                 {
                     evt.StopPropagation();
                     updateContentViewTransform = true;
@@ -1386,7 +1479,7 @@ namespace UnityEngine.UIElements
                 var oldHorizontalValue = horizontalScroller.value;
                 horizontalScroller.value += horizontalScrollDelta * (horizontalScroller.lowValue < horizontalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
 
-                if (horizontalScroller.value != oldHorizontalValue)
+                if (nestedInteractionKind == NestedInteractionKind.StopScrolling || !Mathf.Approximately(horizontalScroller.value, oldHorizontalValue))
                 {
                     evt.StopPropagation();
                     updateContentViewTransform = true;

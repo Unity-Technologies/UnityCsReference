@@ -5,6 +5,8 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Connect;
+using UnityEditor.PackageManager.UI;
+using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -47,7 +49,7 @@ namespace UnityEditor
             {
                 var root = windowResource.CloneTree();
 
-                var lightStyleSheet = EditorGUIUtility.Load(EditorUIService.instance.GetUIToolkitDefaultCommonLightStyleSheetPath()) as StyleSheet;
+                var lightStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath) as StyleSheet;
                 var assetStoreStyleSheet = EditorGUIUtility.Load("StyleSheets/AssetStore/AssetStoreWindow.uss") as StyleSheet;
                 var styleSheet = CreateInstance<StyleSheet>();
                 styleSheet.isDefaultStyleSheet = true;
@@ -93,7 +95,7 @@ namespace UnityEditor
 
         private void OnLaunchPackageManagerButtonClicked()
         {
-            EditorUIService.instance.PackageManagerOpen();
+            PackageManagerWindow.OpenPackageManager(null);
         }
 
         private void SetMinMaxSizes()

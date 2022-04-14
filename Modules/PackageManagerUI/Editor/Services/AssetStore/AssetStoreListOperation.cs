@@ -34,6 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isProgressVisible => false;
 
+        public bool isInPause => false;
+
         public RefreshOptions refreshOptions => RefreshOptions.Purchased;
 
         public bool isProgressTrackable => false;
@@ -197,6 +199,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             onOperationError?.Invoke(this, error);
             FinalizedOperation();
+
+            PackageManagerOperationErrorAnalytics.SendEvent(GetType().Name, error);
         }
 
         private void FinalizedOperation()

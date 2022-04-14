@@ -32,6 +32,7 @@ namespace UnityEngine.Rendering
             get;
             set;
         }
+        extern public static LightProbeOutsideHullStrategy lightProbeOutsideHullStrategy { get; set; }
 
         extern public static bool HasShaderDefine(GraphicsTier tier, BuiltinShaderDefine defineHash);
         public static bool HasShaderDefine(BuiltinShaderDefine defineHash)

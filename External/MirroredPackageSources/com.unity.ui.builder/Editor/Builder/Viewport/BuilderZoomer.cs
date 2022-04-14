@@ -1,20 +1,45 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderZoomer : MouseManipulator
+    internal class BuilderZoomer : PointerManipulator
     {
-        public static readonly float DefaultScale = 1;
-        public static readonly float ZoomStepDistance = 10;
+        private const int MinScaleStart = 25;           // This is the minimum scale (25%), increment in small steps
+        private const int MaxScaleStart = 150;          // At 150%, let's increment in larger steps
+        private const int MaxScaleEnd = 500;            // until we reach the max scale (500%)
+        private const int LowScaleIncrement = 5;        // Low scale increment step (5%)
+        private const int HighScaleIncrement = 25;      // High scale increment step (25%)
+        private List<float> m_ZoomScaleValues;
+        private const float DefaultScale = 1;
+        private const float ZoomStepDistance = 10;
 
-        public List<float> zoomScaleValues { get; set; } = new List<float>() { 0.25f, 0.5f, 0.75f, DefaultScale, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 4f, 5f };
+        // Full zoom scale list available with the Zoomer manipulator
+        public List<float> zoomScaleValues
+        {
+            get
+            {
+                if (m_ZoomScaleValues == null)
+                {
+                    m_ZoomScaleValues = new List<float>();
+                    for (var val = MinScaleStart; val < MaxScaleStart; val += LowScaleIncrement)
+                        m_ZoomScaleValues.Add((float)Math.Round(val/100.0, 2));
+                    for (var val = MaxScaleStart; val <= MaxScaleEnd; val += HighScaleIncrement)
+                        m_ZoomScaleValues.Add((float)Math.Round(val/100.0, 2));
+                }
+                return m_ZoomScaleValues;
+            }
+        }
 
-        private bool m_Zooming = false;
-        private Vector2 m_PressPos;
-        private Vector2 m_LastZoomPos;
-        private BuilderViewport m_Viewport;
+        // Short list of zoom scales for the Zoom menu
+        public List<float> zoomMenuScaleValues { get; } = new() { 0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 4f, 5f };
+
+        bool m_Zooming;
+        Vector2 m_PressPos;
+        Vector2 m_LastZoomPos;
+        readonly BuilderViewport m_Viewport;
 
         public BuilderZoomer(BuilderViewport viewport)
         {
@@ -25,23 +50,23 @@ namespace Unity.UI.Builder
 
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
             target.RegisterCallback<WheelEvent>(OnWheel);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             target.UnregisterCallback<WheelEvent>(OnWheel);
         }
 
         private static float CalculateNewZoom(float currentZoom, float wheelDelta, List<float> zoomValues)
         {
-            currentZoom = Mathf.Clamp(currentZoom, zoomValues[0], zoomValues[zoomValues.Count - 1]);
+            currentZoom = Mathf.Clamp(currentZoom, zoomValues[0], zoomValues[^1]);
 
             if (Mathf.Approximately(wheelDelta, 0))
             {
@@ -54,29 +79,27 @@ namespace Unity.UI.Builder
             {
                 return DefaultScale;
             }
-            else
-            {
-                currentZoomIndex =
-                    Mathf.Clamp(currentZoomIndex + ((wheelDelta > 0) ? 1 : -1), 0, zoomValues.Count - 1);
-                return zoomValues[currentZoomIndex];
-            }
+
+            currentZoomIndex =
+                Mathf.Clamp(currentZoomIndex + ((wheelDelta > 0) ? 1 : -1), 0, zoomValues.Count - 1);
+            return zoomValues[currentZoomIndex];
         }
 
-        void OnMouseDown(MouseDownEvent evt)
+        void OnPointerDown(PointerDownEvent evt)
         {
             if (CanStartManipulation(evt))
             {
                 m_Zooming = true;
-                m_PressPos = evt.localMousePosition;
+                m_PressPos = evt.localPosition;
                 m_LastZoomPos = m_PressPos;
                 target.CaptureMouse();
                 evt.StopImmediatePropagation();
             }
         }
 
-        void OnMouseUp(MouseUpEvent evt)
+        void OnPointerUp(PointerUpEvent evt)
         {
-            if (!m_Zooming && !CanStopManipulation(evt))
+            if (!m_Zooming || !CanStopManipulation(evt))
                 return;
 
             m_Zooming = false;
@@ -84,13 +107,13 @@ namespace Unity.UI.Builder
             evt.StopPropagation();
         }
 
-        void OnMouseMove(MouseMoveEvent evt)
+        void OnPointerMove(PointerMoveEvent evt)
         {
-            if (!m_Zooming || Mathf.Abs(evt.localMousePosition.x - m_LastZoomPos.x) < ZoomStepDistance)
+            if (!m_Zooming || Mathf.Abs(evt.localPosition.y - m_LastZoomPos.y) < ZoomStepDistance)
                 return;
 
-            Zoom(evt.mouseDelta.x, m_PressPos);
-            m_LastZoomPos = evt.localMousePosition;
+            Zoom(evt.deltaPosition.y, m_PressPos);
+            m_LastZoomPos = evt.localPosition;
             evt.StopPropagation();
         }
 

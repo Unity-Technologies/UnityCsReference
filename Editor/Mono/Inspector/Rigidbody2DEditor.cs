@@ -28,10 +28,13 @@ namespace UnityEditor
         SerializedProperty m_SleepingMode;
         SerializedProperty m_CollisionDetection;
         SerializedProperty m_Constraints;
+        SerializedProperty m_IncludeLayers;
+        SerializedProperty m_ExcludeLayers;
 
         readonly AnimBool m_ShowIsStatic = new AnimBool();
         readonly AnimBool m_ShowIsKinematic = new AnimBool();
 
+        readonly AnimBool m_ShowLayerOverrides = new AnimBool();
         readonly AnimBool m_ShowInfo = new AnimBool();
         readonly AnimBool m_ShowContacts = new AnimBool();
         Vector2 m_ContactScrollPosition;
@@ -41,6 +44,7 @@ namespace UnityEditor
 
         static List<ContactPoint2D> m_Contacts = new List<ContactPoint2D>(64);
 
+        private SavedBool m_ShowLayerOverridesFoldout;
         private SavedBool m_ShowInfoFoldout;
         private bool m_RequiresConstantRepaint;
 
@@ -63,6 +67,8 @@ namespace UnityEditor
             m_SleepingMode = serializedObject.FindProperty("m_SleepingMode");
             m_CollisionDetection = serializedObject.FindProperty("m_CollisionDetection");
             m_Constraints = serializedObject.FindProperty("m_Constraints");
+            m_IncludeLayers = serializedObject.FindProperty("m_IncludeLayers");
+            m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
 
             m_ShowIsStatic.value = body.bodyType != RigidbodyType2D.Static;
             m_ShowIsStatic.valueChanged.AddListener(Repaint);
@@ -70,8 +76,11 @@ namespace UnityEditor
             m_ShowIsKinematic.value = body.bodyType != RigidbodyType2D.Kinematic;
             m_ShowIsKinematic.valueChanged.AddListener(Repaint);
 
+            m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
+            m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
+            m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
             m_ShowInfo.valueChanged.AddListener(Repaint);
-            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowFoldout", false);
+            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowInfoFoldout", false);
             m_ShowInfo.value = m_ShowInfoFoldout.value;
             m_ShowContacts.valueChanged.AddListener(Repaint);
             m_ContactScrollPosition = Vector2.zero;
@@ -83,6 +92,7 @@ namespace UnityEditor
         {
             m_ShowIsStatic.valueChanged.RemoveListener(Repaint);
             m_ShowIsKinematic.valueChanged.RemoveListener(Repaint);
+            m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
             m_ShowInfo.valueChanged.RemoveListener(Repaint);
             m_ShowContacts.valueChanged.RemoveListener(Repaint);
         }
@@ -174,9 +184,24 @@ namespace UnityEditor
                 EditorGUILayout.EndFadeGroup();
             }
 
-            serializedObject.ApplyModifiedProperties();
-
+            ShowLayerOverridesProperties();
             ShowBodyInfoProperties();
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void ShowLayerOverridesProperties()
+        {
+            // Show Layer Overrides.
+            m_ShowLayerOverridesFoldout.value = m_ShowLayerOverrides.target = EditorGUILayout.Foldout(m_ShowLayerOverrides.target, "Layer Overrides", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowLayerOverrides.faded))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_IncludeLayers);
+                EditorGUILayout.PropertyField(m_ExcludeLayers);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
         }
 
         private void ShowBodyInfoProperties()

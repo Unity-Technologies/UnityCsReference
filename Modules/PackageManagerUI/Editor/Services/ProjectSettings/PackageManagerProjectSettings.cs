@@ -13,7 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageManagerProjectSettings : ScriptableSingleton<PackageManagerProjectSettings>
     {
         public event Action<bool> onEnablePreReleasePackagesChanged = delegate {};
-        public event Action<bool> onEnablePackageDependenciesChanged = delegate {};
         public event Action<bool> onAdvancedSettingsFoldoutChanged = delegate {};
         public event Action<bool> onScopedRegistriesSettingsFoldoutChanged = delegate {};
         public event Action<bool> onSeeAllVersionsChanged = delegate {};
@@ -32,22 +31,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     m_EnablePreReleasePackages = value;
                     onEnablePreReleasePackagesChanged?.Invoke(m_EnablePreReleasePackages);
-                }
-            }
-        }
-
-        [SerializeField]
-        private bool m_EnablePackageDependencies;
-
-        public bool enablePackageDependencies
-        {
-            get { return m_EnablePackageDependencies; }
-            set
-            {
-                if (value != m_EnablePackageDependencies)
-                {
-                    m_EnablePackageDependencies = value;
-                    onEnablePackageDependenciesChanged?.Invoke(m_EnablePackageDependencies);
                 }
             }
         }

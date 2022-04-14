@@ -19,6 +19,7 @@ namespace UnityEngine.Diagnostics
     }
 
     [NativeHeader("Runtime/Export/Diagnostics/DiagnosticsUtils.bindings.h")]
+    [NativeHeader("Runtime/Misc/GarbageCollectSharedAssets.h")]
     public static class Utils
     {
         [FreeFunction("DiagnosticsUtils_Bindings::ForceCrash", ThrowsException = true)]
@@ -32,5 +33,8 @@ namespace UnityEngine.Diagnostics
 
         [FreeFunction("DiagnosticsUtils_Bindings::NativeWarning")]
         extern public static void NativeWarning(string message);
+
+        [FreeFunction("ValidateHeap")]
+        extern public static void ValidateHeap();
     }
 }

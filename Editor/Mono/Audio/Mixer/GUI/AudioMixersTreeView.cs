@@ -657,7 +657,7 @@ namespace UnityEditor
             m_TreeView.EndNameEditing(true);
         }
 
-        public void OnUndoRedoPerformed()
+        public void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             ReloadTree();
         }

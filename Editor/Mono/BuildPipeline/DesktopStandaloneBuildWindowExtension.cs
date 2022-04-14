@@ -18,15 +18,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
     protected bool m_HasMonoPlayers;
     protected bool m_HasIl2CppPlayers;
+    protected bool m_HasCoreCLRPlayers;
     protected bool m_HasServerPlayers;
     protected bool m_IsRunningOnHostPlatform;
 
-    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasServerPlayers)
+    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerPlayers)
     {
         SetupStandaloneSubtargets();
 
         m_IsRunningOnHostPlatform = Application.platform == GetHostPlatform();
         m_HasIl2CppPlayers = hasIl2CppPlayers;
+        m_HasCoreCLRPlayers = hasCoreCLRPlayers;
         m_HasMonoPlayers = hasMonoPlayers;
         m_HasServerPlayers = hasServerPlayers;
     }
@@ -210,7 +212,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (namedBuildTarget == NamedBuildTarget.Server)
         {
             if(!m_HasServerPlayers)
-                return $"Dedicated Server support for {GetHostPlatformName()} is not installed";
+                return $"Dedicated Server support for {GetHostPlatformName()} is not installed.";
 
             if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
@@ -218,19 +220,36 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             return null;
         }
 
-        if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
+        switch(PlayerSettings.GetScriptingBackend(namedBuildTarget))
         {
-            if (!m_HasMonoPlayers)
-                return "Currently selected scripting backend (Mono) is not installed.";
+            case ScriptingImplementation.Mono2x:
+            {
+                if (!m_HasMonoPlayers)
+                    return "Currently selected scripting backend (Mono) is not installed.";
+                break;
+            }
+            #pragma warning disable 618
+            case ScriptingImplementation.CoreCLR:
+            {
+                if (!m_HasCoreCLRPlayers)
+                    return $"Currently selected scripting backend (CoreCLR) is not {(Unsupported.IsSourceBuild() ? "installed" : "supported")}.";
+                break;
+            }
+            case ScriptingImplementation.IL2CPP:
+            {
+                if (!m_IsRunningOnHostPlatform)
+                    return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
+                if (!m_HasIl2CppPlayers)
+                    return "Currently selected scripting backend (IL2CPP) is not installed.";
+                break;
+            }
+            default:
+            {
+                return $"Unknown scripting backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}";
+            }
         }
-        else
-        {
-            if (!m_IsRunningOnHostPlatform)
-                return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
-            if (!m_HasIl2CppPlayers)
-                return "Currently selected scripting backend (IL2CPP) is not installed."; // Note: error should match UWP player error message for consistency.
-        }
+
 
         return null;
     }

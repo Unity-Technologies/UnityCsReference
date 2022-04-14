@@ -40,7 +40,7 @@ namespace UnityEditor.Search
 
             if (!string.IsNullOrEmpty(currentSelectedPath))
                 currentSelectedPath = currentSelectedPath.ConvertSeparatorsToUnity();
-            yield return EvaluatorUtils.CreateItem(currentSelectedPath, c.ResolveAlias("CurrentFolder"));
+            yield return SearchExpression.CreateItem(currentSelectedPath, c.ResolveAlias("CurrentFolder"));
         }
 
         [Description("Returns the name of the current project."), Category("Env")]
@@ -48,7 +48,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> ProjectName(SearchExpressionContext c)
         {
             var desc = TaskEvaluatorManager.EvaluateMainThread(() => EditorApplication.GetApplicationTitleDescriptor());
-            yield return EvaluatorUtils.CreateItem(desc.projectName ?? string.Empty, c.ResolveAlias("ProjectName"));
+            yield return SearchExpression.CreateItem(desc.projectName ?? string.Empty, c.ResolveAlias("ProjectName"));
         }
 
         [Description("Returns the name of the currently opened scene."), Category("Env")]
@@ -56,7 +56,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> SceneName(SearchExpressionContext c)
         {
             var desc = TaskEvaluatorManager.EvaluateMainThread(() => EditorApplication.GetApplicationTitleDescriptor());
-            yield return EvaluatorUtils.CreateItem(desc.activeSceneName ?? string.Empty, c.ResolveAlias("SceneName"));
+            yield return SearchExpression.CreateItem(desc.activeSceneName ?? string.Empty, c.ResolveAlias("SceneName"));
         }
 
         readonly struct SelectionResult
@@ -87,9 +87,9 @@ namespace UnityEditor.Search
             foreach (var selectionResult in selection)
             {
                 if (string.IsNullOrEmpty(selectionResult.assetPath))
-                    yield return EvaluatorUtils.CreateItem(selectionResult.instanceId, c.ResolveAlias("Selection"));
+                    yield return SearchExpression.CreateItem(selectionResult.instanceId, c.ResolveAlias("Selection"));
                 else
-                    yield return EvaluatorUtils.CreateItem(selectionResult.assetPath, c.ResolveAlias("Selection"));
+                    yield return SearchExpression.CreateItem(selectionResult.assetPath, c.ResolveAlias("Selection"));
             }
         }
 
@@ -98,7 +98,7 @@ namespace UnityEditor.Search
         public static IEnumerable<SearchItem> DataPath(SearchExpressionContext c)
         {
             var dataPath = TaskEvaluatorManager.EvaluateMainThread(() => Application.dataPath);
-            yield return EvaluatorUtils.CreateItem(dataPath ?? string.Empty, c.ResolveAlias("DataPath"));
+            yield return SearchExpression.CreateItem(dataPath ?? string.Empty, c.ResolveAlias("DataPath"));
         }
 
         static Dictionary<string, MethodInfo> s_EnvFunctions = null;

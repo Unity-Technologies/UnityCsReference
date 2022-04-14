@@ -100,6 +100,26 @@ namespace UnityEditor
             }
         }
 
+        internal static DragAndDropVisualMode DropOnProjectBrowserWindow(int dragUponInstanceId, string dropUponPath, bool perform)
+        {
+            return Drop(DragAndDropWindowTarget.projectBrowser, dragUponInstanceId, dropUponPath, perform);
+        }
+
+        internal static DragAndDropVisualMode DropOnSceneWindow(UnityEngine.Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform)
+        {
+            return Drop(DragAndDropWindowTarget.sceneView, dropUpon, worldPosition, viewportPosition, parentForDraggedObjects, perform);
+        }
+
+        internal static DragAndDropVisualMode DropOnInspectorWindow(UnityEngine.Object[] targets, bool perform)
+        {
+            return Drop(DragAndDropWindowTarget.inspector, targets, perform);
+        }
+
+        internal static DragAndDropVisualMode DropOnHierarchyWindow(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
+        {
+            return Drop(DragAndDropWindowTarget.hierarchy, dropTargetInstanceID, dropMode, parentForDraggedObjects, perform);
+        }
+
         internal static DragAndDropVisualMode Drop(int dropDstId, params object[] args)
         {
             SavedGUIState guiState = SavedGUIState.Create();
@@ -246,8 +266,12 @@ namespace UnityEditor
         public static extern DragAndDropVisualMode visualMode { get; set; }
 
         public static extern void AcceptDrag();
-        [NativeMethod("PrepareStartDrag")] private static extern void PrepareStartDrag_Internal();
-        [NativeMethod("StartDrag")] private static extern void StartDrag_Internal(string title);
+        [NativeMethod("PrepareStartDrag")]
+        private static extern void PrepareStartDrag_Internal();
+        [NativeMethod("Cleanup")]
+        internal static extern void Cleanup();
+        [NativeMethod("StartDrag")]
+        private static extern void StartDrag_Internal(string title);
 
         public delegate DragAndDropVisualMode ProjectBrowserDropHandler(int dragInstanceId, string dropUponPath, bool perform);
         public delegate DragAndDropVisualMode SceneDropHandler(UnityEngine.Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform);

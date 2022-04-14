@@ -18,6 +18,8 @@ using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using Unity.Profiling;
+using UnityEditor.AssetImporters;
+using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor
 {
@@ -254,59 +256,35 @@ namespace UnityEditor
             return searchPaths.ToArray();
         }
 
-        public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray, out string[] originalClassNameSpacesArray)
+        [RequiredByNativeCode]
+        public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray, out string[] movedFromNamespacesArray)
         {
-            List<string> classNames = new List<string>();
-            List<string> nameSpaces = new List<string>();
-            List<string> originalNamespaces = new List<string>();
-            var readerParameters = new ReaderParameters();
+            var typesDerivedFromMonoBehaviour = TypeCache.GetTypesDerivedFrom<MonoBehaviour>();
+            var typesDerivedFromScriptableObject = TypeCache.GetTypesDerivedFrom<ScriptableObject>();
+            var typesDerivedFromScriptedImporter = TypeCache.GetTypesDerivedFrom<ScriptedImporter>();
 
-            // this will resolve any types in assemblies within the same directory as the type's assembly
-            // or any folder which contains a currently available precompiled dll
-            var assemblyResolver = new DefaultAssemblyResolver();
-            var searchPaths = GetDefaultAssemblySearchPaths();
+            var fullPath = Path.GetFullPath(path);
+            IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFullPath(x.Assembly.Location) == fullPath);
+            userTypes = userTypes
+                .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFullPath(x.Assembly.Location) == fullPath))
+                .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFullPath(x.Assembly.Location) == fullPath)).ToList();
 
-            foreach (var asmpath in searchPaths)
-                assemblyResolver.AddSearchDirectory(asmpath);
+            List<string> classNames = new List<string>(userTypes.Count());
+            List<string> nameSpaces = new List<string>(userTypes.Count());
+            List<string> originalNamespaces = new List<string>(userTypes.Count());
 
-            assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(path));
-            readerParameters.AssemblyResolver = assemblyResolver;
-
-            AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(path, readerParameters);
-            foreach (ModuleDefinition module in assembly.Modules)
+            foreach (var userType in userTypes)
             {
-                foreach (TypeDefinition type in module.Types)
-                {
-                    TypeReference baseType = type.BaseType;
+                classNames.Add(userType.Name);
+                nameSpaces.Add(userType.Namespace);
 
-                    try
-                    {
-                        if (IsTypeAUserExtendedScript(baseType))
-                        {
-                            classNames.Add(type.Name);
-                            nameSpaces.Add(type.Namespace);
-
-                            var originalNamespace = string.Empty;
-                            var attribute = type.CustomAttributes.SingleOrDefault(a => a.AttributeType.FullName == typeof(UnityEngine.Scripting.APIUpdating.MovedFromAttribute).FullName);
-
-                            if (attribute != null)
-                            {
-                                originalNamespace = (string)attribute.ConstructorArguments[0].Value;
-                            }
-
-                            originalNamespaces.Add(originalNamespace);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        Debug.LogError("Failed to extract " + type.FullName + " class of base type " + baseType.FullName + " when inspecting " + path);
-                    }
-                }
+                var movedFromAttribute = userType.GetCustomAttribute<MovedFromAttribute>();
+                originalNamespaces.Add(movedFromAttribute?.data.nameSpace);
             }
 
             classNamesArray = classNames.ToArray();
             classNameSpacesArray = nameSpaces.ToArray();
-            originalClassNameSpacesArray = originalNamespaces.ToArray();
+            movedFromNamespacesArray = originalNamespaces.ToArray();
         }
 
         /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.

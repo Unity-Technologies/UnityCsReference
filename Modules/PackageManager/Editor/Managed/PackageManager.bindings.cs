@@ -35,7 +35,7 @@ namespace UnityEditor.PackageManager
         private static extern NativeStatusCode GetCachedPackages([Out] out long operationId, string registryId);
 
         [FreeFunction("PackageManager::GetCacheRoot::StartOperation")]
-        private static extern NativeStatusCode GetCacheRoot([Out] out long operationId);
+        private static extern NativeStatusCode GetCacheRoot([Out] out long operationId, ConfigSource source);
 
         [FreeFunction("PackageManager::GetPackageInfo::StartOperation")]
         private static extern NativeStatusCode GetPackageInfo([Out] out long operationId, string packageId, bool offlineMode);

@@ -53,6 +53,12 @@ namespace UnityEditor
                     m_Icon = m_TargetObject.FindProperty("m_Icon");
                 }
 
+                if (m_Icon == null)
+                {
+                    base.OnHeaderIconGUI(iconRect);
+                    return;
+                }
+
                 Rect dropDownRect = iconRect;
 
                 dropDownRect.size = EditorGUI.GetObjectIconDropDownSize(iconRect.width, iconRect.height);

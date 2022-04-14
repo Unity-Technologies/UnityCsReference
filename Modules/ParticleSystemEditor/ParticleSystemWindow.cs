@@ -62,7 +62,7 @@ namespace UnityEditor
             SceneView.duringSceneGui += OnSceneViewGUI;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
 
             autoRepaintOnSceneChange = false;
         }
@@ -74,7 +74,7 @@ namespace UnityEditor
             EditorApplication.hierarchyChanged -= OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
 
 
             Clear();
@@ -105,7 +105,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        void UndoRedoPerformed()
+        void UndoRedoPerformed(in UndoRedoInfo info)
         {
             InitEffectUI();
             Repaint();

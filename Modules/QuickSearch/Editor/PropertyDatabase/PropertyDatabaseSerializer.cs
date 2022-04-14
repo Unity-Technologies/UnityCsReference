@@ -7,9 +7,10 @@ using System.Collections.Generic;
 
 namespace UnityEditor.Search
 {
-    enum PropertyDatabaseType : byte
+    public enum PropertyDatabaseType : byte
     {
-        FixedString = 1,
+        None = 0,
+        FixedString,
         String,
         Bool,
         Byte,

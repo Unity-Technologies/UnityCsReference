@@ -29,6 +29,26 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     public sealed partial class Camera : Behaviour
     {
+        /// <summary>
+        /// The minimum allowed aperture.
+        /// </summary>
+        public const float kMinAperture = 0.7f;
+
+        /// <summary>
+        /// The maximum allowed aperture.
+        /// </summary>
+        public const float kMaxAperture = 32f;
+
+        /// <summary>
+        /// The minimum blade count for the aperture diaphragm.
+        /// </summary>
+        public const int kMinBladeCount = 3;
+
+        /// <summary>
+        /// The maximum blade count for the aperture diaphragm.
+        /// </summary>
+        public const int kMaxBladeCount = 11;
+
         public Camera() {}
 
         [NativeProperty("Near")] extern public float nearClipPlane { get; set; }
@@ -107,9 +127,19 @@ namespace UnityEngine
 
         public enum GateFitMode{ Vertical = 1 , Horizontal = 2, Fill = 3, Overscan = 4, None = 0 }
         extern public bool usePhysicalProperties { get; set; }
+
+
+        extern public int iso  { get; set; }
+        extern public float shutterSpeed  { get; set; }
+        extern public float aperture  { get; set; }
+        extern public float focusDistance  { get; set; }
+        extern public float focalLength  { get; set; }
+        extern public int bladeCount  { get; set; }
+        extern public Vector2 curvature  { get; set; }
+        extern public float barrelClipping  { get; set; }
+        extern public float anamorphism  { get; set; }
         extern public Vector2 sensorSize  { get; set; }
         extern public Vector2 lensShift  { get; set; }
-        extern public float focalLength  { get; set; }
         extern public GateFitMode gateFit  { get; set; }
         public enum FieldOfViewAxis { Vertical, Horizontal }
         extern public float GetGateFittedFieldOfView();

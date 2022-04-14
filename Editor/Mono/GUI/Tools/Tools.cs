@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using Unity.Profiling;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -77,7 +78,13 @@ namespace UnityEditor
             get { return EditorToolUtility.GetEnumWithEditorTool(EditorToolManager.GetActiveTool()); }
             set
             {
-                EditorToolManager.activeTool = EditorToolUtility.GetEditorToolWithEnum(value);
+                var tool = EditorToolUtility.GetEditorToolWithEnum(value);
+
+                //In case the new tool is leading to an incorrect tool type, return and leave the current tool as it is.
+                if(value != Tool.None && tool is NoneTool)
+                    return;
+
+                EditorToolManager.activeTool = tool;
                 ShortcutManager.RegisterTag(value);
             }
         }
@@ -346,6 +353,25 @@ namespace UnityEditor
 
         internal static bool vertexDragging;
 
+        static Event m_VertexDraggingShortcutEvent;
+        internal static Event vertexDraggingShortcutEvent
+        {
+            get
+            {
+                if(m_VertexDraggingShortcutEvent == null)
+                {
+                    var vertexSnappingBinding = ShortcutManager.instance.GetShortcutBinding(VertexSnapping.k_VertexSnappingShortcut);
+                    if(Enumerable.Count(vertexSnappingBinding.keyCombinationSequence) == 0)
+                        m_VertexDraggingShortcutEvent = new Event();
+                    else
+                        m_VertexDraggingShortcutEvent = vertexSnappingBinding.keyCombinationSequence.First().ToKeyboardEvent();
+                }
+
+                return m_VertexDraggingShortcutEvent;
+            }
+            set => m_VertexDraggingShortcutEvent = value;
+        }
+
         static Vector3 s_LockHandlePosition;
         static bool s_LockHandlePositionActive = false;
 
@@ -406,7 +432,10 @@ namespace UnityEditor
             visibleLayers = layerSettings.visibleLayersValue;
             lockedLayers = layerSettings.lockedLayersValue;
             Selection.selectionChanged += OnSelectionChange;
-            Undo.undoRedoPerformed += OnSelectionChange;
+            Undo.undoRedoEvent += OnUndoRedo;
+
+            ShortcutManager.instance.activeProfileChanged += args => vertexDraggingShortcutEvent = null;
+            ShortcutManager.instance.shortcutBindingChanged += args => vertexDraggingShortcutEvent = null;
 
             EditorToolManager.activeToolChanged += (previous, active) =>
             {
@@ -422,7 +451,7 @@ namespace UnityEditor
         void OnDisable()
         {
             Selection.selectionChanged -= OnSelectionChange;
-            Undo.undoRedoPerformed -= OnSelectionChange;
+            Undo.undoRedoEvent -= OnUndoRedo;
         }
 
         internal static void OnSelectionChange()
@@ -430,6 +459,11 @@ namespace UnityEditor
             ResetGlobalHandleRotation();
             InvalidateHandlePosition();
             localHandleOffset = Vector3.zero;
+        }
+
+        internal static void OnUndoRedo(in UndoRedoInfo info)
+        {
+            OnSelectionChange();
         }
 
         internal static void ResetGlobalHandleRotation()

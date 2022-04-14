@@ -46,6 +46,16 @@ namespace UnityEngine.UIElements
                 case ExecuteCommandEvent ece:
                     OnExecuteCommandEvent(ece);
                     break;
+
+                case NavigationMoveEvent ne:
+                    OnNavigationEvent(ne);
+                    break;
+                case NavigationSubmitEvent ne:
+                    OnNavigationEvent(ne);
+                    break;
+                case NavigationCancelEvent ne:
+                    OnNavigationEvent(ne);
+                    break;
             }
         }
 
@@ -67,12 +77,6 @@ namespace UnityEngine.UIElements
 
             m_Changed = false;
 
-            if (evt.keyCode == KeyCode.Escape)
-            {
-                textElement.edition.RestoreValueAndText();
-                textElement.parent.Focus();
-            }
-
             evt.GetEquivalentImguiEvent(m_ImguiEvent);
             if (editingUtilities.HandleKeyEvent(m_ImguiEvent, false))
             {
@@ -90,23 +94,41 @@ namespace UnityEngine.UIElements
                 if (evt.actionKey && !(evt.altKey && c != '\0'))
                     return;
 
-                // Ignore tab & shift-tab in single-line text fields
-                if (!textElement.edition.multiline && (evt.keyCode == KeyCode.Tab || c == '\t'))
-                    return;
+                if (!textElement.edition.multiline && (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return))
+                    textElement.edition.UpdateValueFromText?.Invoke();
 
-                // Ignore modifier+tab in multiline text fields
-                if ((evt.keyCode == KeyCode.Tab || c == '\t') && evt.modifiers != EventModifiers.None)
+                // Ignore tab & shift-tab in single-line text fields, modifier+tab in multiline text fields
+                if ((evt.keyCode == KeyCode.Tab || c == '\t') &&
+                    (!textElement.edition.multiline || evt.modifiers != EventModifiers.None))
+                {
+                    // Do the navigation manually since NavigationTabEvent doesn't pass through
+                    if (c == '\t')
+                    {
+                        textElement.focusController.FocusNextInDirection(evt.shiftKey
+                            ? VisualElementFocusChangeDirection.left
+                            : VisualElementFocusChangeDirection.right);
+                    }
                     return;
+                }
 
                 evt.StopPropagation();
 
-                if ((c == '\n' || c == '\r' || c == k_LineFeed) && !textElement.edition.multiline && !evt.altKey)
-                    return;
-
                 // When the newline character is sent, we have to check if the shift key is down also...
                 // In the multiline case, this is like a return on a single line
-                if (c == '\n' && textElement.edition.multiline && evt.shiftKey)
+                if (textElement.edition.multiline
+                    ? c == '\n' && evt.shiftKey
+                    : (c == '\n' || c == '\r' || c == k_LineFeed) && !evt.altKey)
+                {
+                    textElement.edition.MoveFocusToCompositeRoot?.Invoke();
                     return;
+                }
+
+                if (evt.keyCode == KeyCode.Escape)
+                {
+                    textElement.edition.RestoreValueAndText();
+                    textElement.edition.UpdateValueFromText?.Invoke();
+                    textElement.edition.MoveFocusToCompositeRoot?.Invoke();
+                }
 
                 if (!textElement.edition.AcceptCharacter(c))
                     return;
@@ -130,6 +152,9 @@ namespace UnityEngine.UIElements
                 UpdateLabel();
                 // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
                 textElement.uitkTextHandle.Update();
+
+                if (!textElement.edition.isDelayed)
+                    textElement.edition.UpdateValueFromText?.Invoke();
             }
 
             // Scroll offset might need to be updated
@@ -145,8 +170,8 @@ namespace UnityEngine.UIElements
                 editingUtilities.SetImeWindowPosition(new Vector2(textElement.worldBound.x, textElement.worldBound.y));
 
             var fullText = editingUtilities.GeneratePreviewString(textElement.enableRichText);
-            fullText = textElement.edition.CullString(fullText);
-            textElement.edition.UpdateText(fullText);
+            editingUtilities.text = textElement.edition.CullString(fullText);
+            textElement.edition.UpdateText(editingUtilities.text);
 
             if (imeEnabled)
             {
@@ -234,6 +259,19 @@ namespace UnityEngine.UIElements
 
                 // Scroll offset might need to be updated
                 textElement.edition.UpdateScrollOffset?.Invoke();
+
+                if (!textElement.edition.isDelayed)
+                    textElement.edition.UpdateValueFromText();
+            }
+        }
+
+        void OnNavigationEvent<TEvent>(NavigationEventBase<TEvent> evt) where TEvent : NavigationEventBase<TEvent>, new()
+        {
+            // Prevent navigation events, since we're consuming KeyDownEvents directly
+            if (evt.deviceType == NavigationDeviceType.Keyboard || evt.deviceType == NavigationDeviceType.Unknown)
+            {
+                evt.StopPropagation();
+                evt.PreventDefault();
             }
         }
     }

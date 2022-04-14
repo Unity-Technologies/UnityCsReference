@@ -17,6 +17,12 @@ namespace UnityEditor
         SerializedProperty m_Immovable;
         SerializedProperty m_UseGravity;
 
+        SerializedProperty m_ImplicitCom;
+        SerializedProperty m_ImplicitTensor;
+        SerializedProperty m_CenterOfMass;
+        SerializedProperty m_InertiaTensor;
+        SerializedProperty m_InertiaRotation;
+
         SerializedProperty m_LinearDamping;
         SerializedProperty m_AngularDamping;
         SerializedProperty m_JointFriction;
@@ -45,14 +51,18 @@ namespace UnityEditor
         readonly AnimBool m_ShowInfo = new AnimBool();
         bool m_RequiresConstantRepaint;
 
-        private const float GizmoLinearSize = 0.5f;
-        private const float CapScale = 0.03f;
-
         private class Styles
         {
-            public static GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this articulation body");
+            public static GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this articulation body.");
             public static GUIContent immovable = EditorGUIUtility.TrTextContent("Immovable", "Is this articulation body immovable by forces and torques? Only applies to the root body of the articulation.");
             public static GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this articulation body.");
+
+            public static GUIContent implicitCom = EditorGUIUtility.TrTextContent("Automatic Center Of Mass", "Use the calculated center of mass or set it directly.");
+            public static GUIContent implicitTensor = EditorGUIUtility.TrTextContent("Automatic Tensor", "Use the calculated tensor or set it directly.");
+
+            public static GUIContent centerOfMass = EditorGUIUtility.TrTextContent("Center Of Mass", "The local space coordinates of the center of mass.");
+            public static GUIContent inertiaTensor = EditorGUIUtility.TrTextContent("Inertia Tensor", "The diagonal inertia tensor of mass relative to the center of mass.");
+            public static GUIContent inertiaRotation = EditorGUIUtility.TrTextContent("Inertia Tensor Rotation", "The rotation of the inertia tensor.");
 
             public static GUIContent collisionDetectionMode = EditorGUIUtility.TrTextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.");
 
@@ -98,6 +108,12 @@ namespace UnityEditor
             m_Immovable = serializedObject.FindProperty("m_Immovable");
             m_UseGravity = serializedObject.FindProperty("m_UseGravity");
 
+            m_ImplicitCom = serializedObject.FindProperty("m_ImplicitCom");
+            m_ImplicitTensor = serializedObject.FindProperty("m_ImplicitTensor");
+            m_CenterOfMass = serializedObject.FindProperty("m_CenterOfMass");
+            m_InertiaTensor = serializedObject.FindProperty("m_InertiaTensor");
+            m_InertiaRotation = serializedObject.FindProperty("m_InertiaRotation");
+
             m_CollisionDetectionMode = serializedObject.FindProperty("m_CollisionDetectionMode");
 
             m_LinearDamping = serializedObject.FindProperty("m_LinearDamping");
@@ -135,11 +151,6 @@ namespace UnityEditor
             m_ShowInfo.valueChanged.RemoveListener(Repaint);
         }
 
-        private void QuaternionAsEulerAnglesPropertyField(GUIContent tag, SerializedProperty quaternionProperty, Quaternion rotation)
-        {
-            quaternionProperty.quaternionValue = Quaternion.Euler(EditorGUILayout.Vector3Field(tag, rotation.eulerAngles));
-        }
-
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -155,9 +166,22 @@ namespace UnityEditor
 
             EditorGUILayout.Space(5);
             EditorGUILayout.PropertyField(m_Mass, Styles.mass);
-            CollisionDetectionMode collisionDetectionMode = (CollisionDetectionMode)m_CollisionDetectionMode.intValue;
 
             EditorGUILayout.PropertyField(m_UseGravity, Styles.useGravity);
+            EditorGUILayout.PropertyField(m_ImplicitCom, Styles.implicitCom);
+
+            if (!m_ImplicitCom.boolValue)
+            {
+                EditorGUILayout.PropertyField(m_CenterOfMass, Styles.centerOfMass);
+            }
+
+            EditorGUILayout.PropertyField(m_ImplicitTensor, Styles.implicitTensor);
+            if (!m_ImplicitTensor.boolValue)
+            {
+                EditorGUILayout.PropertyField(m_InertiaTensor, Styles.inertiaTensor);
+                EditorGUILayout.PropertyField(m_InertiaRotation, Styles.inertiaRotation);
+            }
+
             if (body.isRoot)
             {
                 EditorGUILayout.PropertyField(m_Immovable, Styles.immovable);
@@ -167,8 +191,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 }
 
-                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
-                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
+                EditorGUILayout.PropertyField(m_CollisionDetectionMode, Styles.collisionDetectionMode);
 
                 EditorGUILayout.HelpBox("This is the root body of the articulation.", MessageType.Info);
             }
@@ -178,9 +201,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_AngularDamping, Styles.angularDamping);
                 EditorGUILayout.PropertyField(m_JointFriction, Styles.jointFriction);
 
-                collisionDetectionMode = (CollisionDetectionMode)EditorGUILayout.EnumPopup(Styles.collisionDetectionMode, collisionDetectionMode);
-                m_CollisionDetectionMode.intValue = (int)collisionDetectionMode;
-
+                EditorGUILayout.PropertyField(m_CollisionDetectionMode, Styles.collisionDetectionMode);
                 EditorGUILayout.PropertyField(m_MatchAnchors, Styles.matchAnchors);
 
                 // Show anchor edit fields and set to joint if changed
@@ -188,7 +209,7 @@ namespace UnityEditor
                 // If we were to do that, simulation would drift caused by anchors reset relative to current poses
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_AnchorPosition, Styles.anchorPosition);
-                QuaternionAsEulerAnglesPropertyField(Styles.anchorRotation, m_AnchorRotation, body.anchorRotation);
+                EditorGUILayout.PropertyField(m_AnchorRotation, Styles.anchorRotation);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(target, "Changing Articulation body anchor position/rotation");
@@ -209,7 +230,7 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_ParentAnchorPosition, Styles.parentAnchorPosition);
-                    QuaternionAsEulerAnglesPropertyField(Styles.parentAnchorRotation, m_ParentAnchorRotation, body.parentAnchorRotation);
+                    EditorGUILayout.PropertyField(m_ParentAnchorRotation, Styles.parentAnchorRotation);
 
                     if (EditorGUI.EndChangeCheck())
                     {

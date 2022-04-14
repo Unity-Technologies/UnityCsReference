@@ -145,7 +145,7 @@ namespace UnityEditor
             };
             public static GUIContent MaxBonesPerVertex = EditorGUIUtility.TrTextContent("Max Bones/Vertex", "Number of bones that can affect each vertex.");
             public static GUIContent MinBoneWeight = EditorGUIUtility.TrTextContent("Min Bone Weight", "Bone weights smaller than this value are rejected. The remaining weights are scaled to add up to 1.0.");
-            public static GUIContent OptimizeBones = EditorGUIUtility.TrTextContent("Optimize Bones", "Only import bones where they are connected to vertices.");
+            public static GUIContent OptimizeBones = EditorGUIUtility.TrTextContent("Strip Bones", "Only adds bones to SkinnedMeshRenderers that have skin weights assigned to them.");
 
             public static GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update reference clips", "Click on this button to update all the @convention files referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
 

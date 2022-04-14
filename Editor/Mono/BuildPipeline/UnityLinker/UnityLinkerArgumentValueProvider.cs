@@ -20,7 +20,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                var backend = PlayerSettings.GetScriptingBackend(m_RunInformation.buildTargetGroup);
+                var backend = PlayerSettings.GetScriptingBackend(m_RunInformation.namedBuildTarget);
                 switch (backend)
                 {
                     case ScriptingImplementation.IL2CPP:
@@ -33,7 +33,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public string Profile => IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(m_RunInformation.buildTargetGroup), m_RunInformation.target);
+        public string Profile => IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(m_RunInformation.namedBuildTarget), m_RunInformation.target);
 
         public string RuleSet
         {

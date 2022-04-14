@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.Utils;
 using File = System.IO.File;
 using SystemPath = System.IO.Path;
@@ -12,6 +13,42 @@ namespace UnityEditor.Scripting.ScriptCompilation
     static class AssetPath
     {
         public static readonly char Separator = '/';
+
+        /// <summary>
+        /// Compares two paths
+        /// type of slashes is ignored, so different path separators is allowed
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        public static bool ComparePaths(string left, string right)
+        {
+            var lengthDiff = left.Length - right.Length;
+            if (lengthDiff > 1 || lengthDiff < -1)
+                return false;
+
+            for (int i = 0; i < left.Length || i < right.Length; i++)
+            {
+                char leftCharLower = ' ';
+                char rightCharLower= ' ';
+                if (i < left.Length)
+                {
+                    leftCharLower = Utility.FastToLower(left[i]);
+                    leftCharLower = Utility.IsPathSeparator(leftCharLower) ? ' ' : leftCharLower;
+                }
+
+                if (i < right.Length)
+                {
+                    rightCharLower = Utility.FastToLower(right[i]);
+                    rightCharLower = Utility.IsPathSeparator(rightCharLower) ? ' ' : rightCharLower;
+                }
+
+                if (leftCharLower != rightCharLower)
+                    return false;
+            }
+
+            return true;
+        }
 
         public static string GetFullPath(string path)
         {

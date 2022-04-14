@@ -93,6 +93,13 @@ namespace UnityEngine.UIElements
         /// Unity adds this USS class to Text sub-elements of the <see cref="Toggle"/>.
         /// </remarks>
         public static readonly string textUssClassName = ussClassName + "__text";
+        /// <summary>
+        /// USS class name of Toggle elements that have mixed values
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to checkmark of the <see cref="Toggle"/> when it has mixed values.
+        /// </remarks>
+        public static readonly string mixedValuesUssClassName = ussClassName + "__mixed-values";
 
         /// <summary>
         /// Creates a <see cref="Toggle"/> with no label.
@@ -122,6 +129,31 @@ namespace UnityEngine.UIElements
         {
             base.InitLabel();
             m_Label.AddToClassList(textUssClassName);
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            if (showMixedValue)
+            {
+                visualInput.pseudoStates &= ~PseudoStates.Checked;
+                pseudoStates &= ~PseudoStates.Checked;
+                m_CheckMark.AddToClassList(mixedValuesUssClassName);
+            }
+            else
+            {
+                m_CheckMark.RemoveFromClassList(mixedValuesUssClassName);
+
+                if (value)
+                {
+                    visualInput.pseudoStates |= PseudoStates.Checked;
+                    pseudoStates |= PseudoStates.Checked;
+                }
+                else
+                {
+                    visualInput.pseudoStates &= ~PseudoStates.Checked;
+                    pseudoStates &= ~PseudoStates.Checked;
+                }
+            }
         }
     }
 }

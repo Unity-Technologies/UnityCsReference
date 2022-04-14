@@ -26,6 +26,8 @@ namespace UnityEditor.UIElements
             private set { m_DebugContainer = value; }
         }
 
+        public bool hasAttachedDebuggers => m_Debuggers.Count > 0;
+
         private PanelOwner ownerObject;
 
         private void InitializeDebuggerOverlayPanel()

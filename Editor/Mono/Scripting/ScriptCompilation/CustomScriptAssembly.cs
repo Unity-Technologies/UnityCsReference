@@ -249,6 +249,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         private AssemblyFlags assemblyFlags = AssemblyFlags.None;
 
+        public bool IsPredefined { get; set; }
+
         public AssemblyFlags AssemblyFlags
         {
             get
@@ -347,7 +349,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             if (defines != null && defines.Length == 0)
+            {
                 throw new ArgumentException("Defines cannot be empty", nameof(defines));
+            }
 
             // Log invalid define constraints
             if (DefineConstraints != null)
@@ -360,8 +364,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 }
             }
-            var allDefines = ArrayHelper.Merge(defines, ResponseFileDefines);
-            if (!DefineConstraintsHelper.IsDefineConstraintsCompatible(allDefines, DefineConstraints))
+            var allDefines = ResponseFileDefines != null ?
+                (defines != null ? defines.Concat(ResponseFileDefines) : ResponseFileDefines)
+                : defines;
+            if (!DefineConstraintsHelper.IsDefineConstraintsCompatible_Enumerable(allDefines, DefineConstraints))
             {
                 return false;
             }
@@ -373,13 +379,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // Compatible with editor and all platforms.
             if (IncludePlatforms == null && ExcludePlatforms == null)
+            {
                 return true;
+            }
 
             if (buildingForEditor)
+            {
                 return IsCompatibleWithEditor();
+            }
 
             if (ExcludePlatforms != null)
+            {
                 return ExcludePlatforms.All(p => p.BuildTarget != buildTarget);
+            }
 
             return IncludePlatforms.Any(p => p.BuildTarget == buildTarget);
         }
@@ -488,6 +500,43 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     return platform;
 
             throw new System.ArgumentException(string.Format("No CustomScriptAssemblyPlatform setup for BuildTarget '{0}'", buildTarget));
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((CustomScriptAssembly) obj);
+        }
+
+        public bool Equals(CustomScriptAssembly other)
+        {
+            return assemblyFlags == other.assemblyFlags
+                   && string.Equals(FilePath, other.FilePath, StringComparison.Ordinal)
+                   && string.Equals(PathPrefix, other.PathPrefix, StringComparison.Ordinal)
+                   && string.Equals(Name, other.Name, StringComparison.Ordinal)
+                   && string.Equals(RootNamespace, other.RootNamespace, StringComparison.Ordinal)
+                   && GUID == other.GUID
+                   && Equals(References, other.References)
+                   && Equals(AdditionalPrefixes, other.AdditionalPrefixes)
+                   && Equals(IncludePlatforms, other.IncludePlatforms)
+                   && Equals(ExcludePlatforms, other.ExcludePlatforms)
+                   && Equals(AssetPathMetaData, other.AssetPathMetaData)
+                   && Equals(CompilerOptions, other.CompilerOptions)
+                   && OverrideReferences == other.OverrideReferences
+                   && Equals(PrecompiledReferences, other.PrecompiledReferences)
+                   && AutoReferenced == other.AutoReferenced
+                   && Equals(DefineConstraints, other.DefineConstraints)
+                   && Equals(VersionDefines, other.VersionDefines)
+                   && Equals(ResponseFileDefines, other.ResponseFileDefines)
+                   && NoEngineReferences == other.NoEngineReferences
+                   && IsPredefined == other.IsPredefined;
+        }
+
+        public override int GetHashCode()
+        {
+            return GUID.GetHashCode();
         }
     }
 }

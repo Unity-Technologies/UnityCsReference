@@ -33,6 +33,8 @@ namespace UnityEditor.UIElements.Inspector
         private VisualElement m_ScaleModeScaleWithScreenSizeGroup;
         private VisualElement m_ScaleModeContantPhysicalSizeGroup;
 
+        private VisualElement m_ReferencePixelsPerUnit;
+
         private VisualElement m_ScreenMatchModeMatchWidthOrHeightGroup;
 
         private PropertyField m_ClearColorField;
@@ -61,6 +63,8 @@ namespace UnityEditor.UIElements.Inspector
             m_ScaleModeConstantPixelSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-pixel-size");
             m_ScaleModeScaleWithScreenSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-scale-with-screen-size");
             m_ScaleModeContantPhysicalSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-physical-size");
+
+            m_ReferencePixelsPerUnit = m_RootVisualElement.MandatoryQ("reference-pixels-per-unit");
 
             m_ScreenMatchModeMatchWidthOrHeightGroup =
                 m_RootVisualElement.MandatoryQ("screen-match-mode-match-width-or-height");

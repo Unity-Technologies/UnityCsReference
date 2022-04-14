@@ -36,8 +36,8 @@ namespace UnityEditor
         public LightProbeGroupEditor(LightProbeGroup group)
         {
             m_Group = group;
-            m_ShouldRecalculateTetrahedra = false;
-            m_SourcePositionsDirty = false;
+            m_ShouldRecalculateTetrahedra = true;
+            m_SourcePositionsDirty = true;
             m_SerializedSelectedProbes = ScriptableObject.CreateInstance<LightProbeGroupSelection>();
             m_SerializedSelectedProbes.hideFlags = HideFlags.HideAndDontSave;
         }
@@ -543,7 +543,7 @@ namespace UnityEditor
 
             m_Editor.drawTetrahedra = new SavedBool($"{target.GetType()}.drawTetrahedra", true);
 
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             EditMode.editModeStarted += OnEditModeStarted;
             EditMode.editModeEnded += OnEditModeEnded;
         }
@@ -595,7 +595,7 @@ namespace UnityEditor
         public void OnDisable()
         {
             EndEditProbes();
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent-= UndoRedoPerformed;
             EditMode.editModeStarted -= OnEditModeStarted;
             EditMode.editModeEnded -= OnEditModeEnded;
 
@@ -606,7 +606,7 @@ namespace UnityEditor
             }
         }
 
-        private void UndoRedoPerformed()
+        private void UndoRedoPerformed(in UndoRedoInfo info)
         {
             // Update the cached probe positions from the ones just restored in the LightProbeGroup
             m_Editor.PullProbePositions();

@@ -41,7 +41,6 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_ExtrusionFactor, Styles.extrusionFactorLabel);
             EditorGUILayout.PropertyField(m_UseDelaunayMesh);
             base.OnInspectorGUI();
-            serializedObject.ApplyModifiedProperties();
 
             FinalizeInspectorGUI();
         }

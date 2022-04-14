@@ -319,6 +319,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleInt unitySliceRight { get; set; }
         /// <summary>
+        /// Scale applied to an element's slices.
+        /// </summary>
+        StyleFloat unitySliceScale { get; set; }
+        /// <summary>
         /// Size of the 9-slice's top edge when painting an element's background image.
         /// </summary>
         StyleInt unitySliceTop { get; set; }

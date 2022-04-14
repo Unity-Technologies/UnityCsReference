@@ -436,12 +436,8 @@ namespace UnityEditor
             {
                 foreach (var editor in inspector.tracker.activeEditors)
                 {
-                    AssetImporterEditor assetImporterEditor = editor as AssetImporterEditor;
-
-                    if (assetImporterEditor != null && assetImporterEditor.HasModified())
-                    {
-                        assetImporterEditor.ApplyAndImport();
-                    }
+                    if(editor.hasUnsavedChanges)
+                        editor.SaveChanges();
                 }
             }
         }

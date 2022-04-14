@@ -17,19 +17,19 @@ namespace UnityEditorInternal
     {
         public static bool MoveComponentUp(Component component)
         {
-            return MoveComponentUp(new[] { component }, false);
+            return MoveComponentUp_Internal(new[] { component }, false, false);
         }
 
         [FreeFunction]
-        static extern bool MoveComponentUp(UnityObject[] context, bool validateOnly);
+        static extern bool MoveComponentUp_Internal(UnityObject[] context, bool validateOnly, bool showDialog);
 
         public static bool MoveComponentDown(Component component)
         {
-            return MoveComponentDown(new UnityObject[] { component }, false);
+            return MoveComponentDown_Internal(new UnityObject[] { component }, false, false);
         }
 
         [FreeFunction]
-        static extern bool MoveComponentDown(UnityObject[] context, bool validateOnly);
+        static extern bool MoveComponentDown_Internal(UnityObject[] context, bool validateOnly, bool showDialog);
 
         public static bool CopyComponent(Component component)
         {

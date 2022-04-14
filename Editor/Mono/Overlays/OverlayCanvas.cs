@@ -28,6 +28,8 @@ namespace UnityEditor.Overlays
         public string id;
         public int index = k_InvalidIndex;
         public Layout layout = Layout.Panel;
+        public Vector2 size;
+        public bool sizeOverriden;
 
         public SaveData() { }
 
@@ -44,12 +46,14 @@ namespace UnityEditor.Overlays
             id = other.id;
             index = other.index;
             layout = other.layout;
+            size = other.size;
+            sizeOverriden = other.sizeOverriden;
         }
 
         public SaveData(Overlay overlay, int indexInContainer = k_InvalidIndex)
         {
             var container = overlay.container != null ? overlay.container.name : "";
-            var dock = overlay.container != null && overlay.container.topOverlays.Contains(overlay)
+            var dock = overlay.container != null && overlay.container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer)
                 ? DockPosition.Top
                 : DockPosition.Bottom;
 
@@ -181,7 +185,7 @@ namespace UnityEditor.Overlays
             "overlay-toolbar__bottom",
             "overlay-container--left",
             "overlay-container--right",
-            k_DefaultContainer
+            "Floating"
         };
 
         internal static DockZone GetDockZone(OverlayContainer container)
@@ -214,20 +218,22 @@ namespace UnityEditor.Overlays
 
         VisualElement m_RootVisualElement;
         internal EditorWindow containerWindow { get; set; }
-        internal VisualElement floatingContainer { get; set; }
+
+        internal FloatingOverlayContainer floatingContainer => m_FloatingOverlayContainer ??= new FloatingOverlayContainer {canvas = this};
+
+        FloatingOverlayContainer m_FloatingOverlayContainer;
         Overlay m_HoveredOverlay;
 
         OverlayMenu menu => m_Menu ??= new OverlayMenu(this);
         internal VisualElement rootVisualElement => m_RootVisualElement ??= CreateRoot();
 
-        Vector2 localMousePosition { get; set; }
+        internal Vector2 localMousePosition { get; set; }
         internal Overlay hoveredOverlay => m_HoveredOverlay;
         OverlayContainer hoveredOverlayContainer { get; set; }
         OverlayContainer defaultContainer { get; set; }
         OverlayContainer defaultToolbarContainer { get; set; }
 
-        List<OverlayContainer> containers;
-        List<VisualElement> toolbarZones { get; set; }
+        List<OverlayContainer> containers { get; set; }
 
         readonly Dictionary<VisualElement, Overlay> m_OverlaysByVE = new Dictionary<VisualElement, Overlay>();
 
@@ -253,9 +259,6 @@ namespace UnityEditor.Overlays
 
             foreach (var container in containers)
                 container.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-            foreach (var toolbar in toolbarZones)
-                toolbar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-            floatingContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
 
             overlaysEnabledChanged?.Invoke(visible);
         }
@@ -286,22 +289,13 @@ namespace UnityEditor.Overlays
             if (s_DropZoneTreeAsset == null)
                 s_DropZoneTreeAsset = EditorGUIUtility.Load(k_UxmlPathDropZone) as VisualTreeAsset;
 
-            var toolbarZonesContainer = ve.Q("overlay-drop-zones__toolbars");
-
-            if (s_DropZoneTreeAsset != null)
-            {
-                s_DropZoneTreeAsset.CloneTree(toolbarZonesContainer);
-
-                toolbarZones = toolbarZonesContainer.Query(null, k_ToolbarZone).ToList();
-
-                foreach (var visualElement in toolbarZones)
-                {
-                    visualElement.style.position = Position.Absolute;
-                }
-            }
-
             ve.name = ussClassName;
             ve.style.flexGrow = 1;
+
+            ve.Add(floatingContainer);
+            floatingContainer.AddToClassList(k_FloatingContainer);
+            floatingContainer.name = "Floating";
+
             containers = ve.Query<OverlayContainer>().ToList();
 
             foreach (var container in containers)
@@ -316,19 +310,12 @@ namespace UnityEditor.Overlays
                 }
             }
 
-            floatingContainer = ve.Q(k_FloatingContainer);
-            floatingContainer.style.position = Position.Absolute;
-            floatingContainer.style.top = 0;
-            floatingContainer.style.left = 0;
-            floatingContainer.style.right = 0;
-            floatingContainer.style.bottom = 0;
-
             m_OriginGhost = new VisualElement { name = "origin-ghost"};
             m_OriginGhost.AddToClassList(k_GhostClassName);
             m_OriginGhost.AddToClassList(k_DropTargetClassName);
 
             destinationMarker = new OverlayDestinationMarker { name = "dest-marker"};
-            ve.Q("overlay-drop-zones").Add(destinationMarker);
+            ve.Add(destinationMarker);
 
             SetPickingMode(ve, PickingMode.Ignore);
 
@@ -517,7 +504,9 @@ namespace UnityEditor.Overlays
         void WriteOrReplaceSaveData(Overlay overlay, int containerIndex = -1)
         {
             if (containerIndex < 0)
-                containerIndex = overlay.container?.FindIndex(overlay) ?? SaveData.k_InvalidIndex;
+                if (overlay.container == null || !overlay.container.GetOverlayIndex(overlay, out _, out containerIndex))
+                    containerIndex = SaveData.k_InvalidIndex;
+
             var saveData = new SaveData(overlay, containerIndex);
             int existing = m_SaveData.FindIndex(x => x.id == overlay.id);
 
@@ -536,19 +525,19 @@ namespace UnityEditor.Overlays
             {
                 if (container != null)
                 {
-                    var top = container.topOverlays;
-                    var bot = container.bottomOverlays;
+                    var before = container.GetSection(OverlayContainerSection.BeforeSpacer);
+                    var after = container.GetSection(OverlayContainerSection.AfterSpacer);
 
-                    for (int i = 0, c = top.Count; i < c; ++i)
+                    for (int i = 0, c = before.Count; i < c; ++i)
                     {
-                        if (!top[i].dontSaveInLayout)
-                            WriteOrReplaceSaveData(top[i], i);
+                        if (!before[i].dontSaveInLayout)
+                            WriteOrReplaceSaveData(before[i], i);
                     }
 
-                    for (int i = 0, c = bot.Count; i < c; ++i)
+                    for (int i = 0, c = after.Count; i < c; ++i)
                     {
-                        if (!bot[i].dontSaveInLayout)
-                            WriteOrReplaceSaveData(bot[i], i);
+                        if (!after[i].dontSaveInLayout)
+                            WriteOrReplaceSaveData(after[i], i);
                     }
                 }
             }
@@ -587,11 +576,16 @@ namespace UnityEditor.Overlays
         internal void Move(Overlay overlay, DockZone zone, DockPosition position = DockPosition.Bottom)
         {
             var container = GetDockZoneContainer(zone);
-            if(position == DockPosition.Bottom)
-                container.AddToBottom(overlay);
+            if (position == DockPosition.Bottom)
+                overlay.DockAt(container, OverlayContainerSection.AfterSpacer);
             else
-                container.AddToTop(overlay);
-            overlay.RebuildContent();
+                overlay.DockAt(container, OverlayContainerSection.BeforeSpacer);
+        }
+
+        internal void Rebuild()
+        {
+            OnBeforeSerialize();
+            RestoreOverlays();
         }
 
         public void Add(Overlay overlay, bool show = true)
@@ -680,6 +674,7 @@ namespace UnityEditor.Overlays
                     data.dockPosition = attrib.defaultDockPosition;
                     data.floating = attrib.defaultDockZone == DockZone.Floating;
                     data.layout = attrib.defaultLayout;
+                    data.displayed = attrib.defaultDisplay;
                 }
             }
 
@@ -704,18 +699,21 @@ namespace UnityEditor.Overlays
 
             // Overlays are sorted by their index in containers so we can directly add them to top or bottom without
             // thinking of order
-            if(data.dockPosition == DockPosition.Top)
-                container.AddToTop(overlay);
+            if (data.dockPosition == DockPosition.Top)
+                overlay.DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
             else if (data.dockPosition == DockPosition.Bottom)
-                container.AddToBottom(overlay);
+                overlay.DockAt(container, OverlayContainerSection.AfterSpacer, container.GetSectionCount(OverlayContainerSection.AfterSpacer));
             else
                 throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
 
             if(overlay.floating)
                 floatingContainer.Add(overlay.rootVisualElement);
 
-            overlay.SetDisplayedNoCallback(data.displayed);
-            overlay.RebuildContent();
+            if(overlay.displayed != data.displayed)
+                overlay.displayed = data.displayed;
+            else
+                overlay.RebuildContent();
+
             overlay.UpdateAbsolutePosition();
         }
 

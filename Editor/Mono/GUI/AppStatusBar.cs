@@ -205,11 +205,11 @@ namespace UnityEditor
             }
             else
             {
-                var canHide = EditorUIService.instance.ProgressWindowCanHideDetails();
+                var canHide = ProgressWindow.canHideDetails;
                 if (GUILayout.Button(canHide ? Styles.progressHideIcon : Styles.progressIcon, Styles.statusIcon))
                 {
                     if (canHide)
-                        EditorUIService.instance.ProgressWindowHideDetails();
+                        ProgressWindow.HideDetails();
                     else
                         Progress.ShowDetails(false);
                 }

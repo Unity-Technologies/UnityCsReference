@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
 using UnityEngine.Events;
 
 namespace UnityEngine.Device
@@ -180,6 +181,8 @@ namespace UnityEngine.Device
         {
             ShimManager.applicationShim.Unload();
         }
+
+        public static CancellationToken CancellationToken => ShimManager.applicationShim.CancellationToken;
 
     }
 }

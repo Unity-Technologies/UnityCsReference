@@ -13,6 +13,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal new class UxmlFactory : UxmlFactory<ProgressBar> {}
 
         private ResourceLoader m_ResourceLoader;
+
+        static private double s_LastWidthTime;
+        private const double k_PaintInterval = 1f; // Time interval to repaint
+
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -31,7 +35,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             cache = new VisualElementCache(root);
 
-            currentProgressText.text = string.Empty;
             currentProgressBar.style.width = Length.Percent(0);
         }
 
@@ -41,17 +44,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(this, showProgressBar);
             if (showProgressBar)
             {
-                var percentage = Mathf.Clamp01(operation.progressPercentage);
+                var currentTime = EditorApplication.timeSinceStartup;
+                var deltaTime = currentTime - s_LastWidthTime;
+                if (deltaTime >= k_PaintInterval)
+                {
+                    var percentage = Mathf.Clamp01(operation.progressPercentage);
 
-                currentProgressText.text = percentage.ToString("P1", CultureInfo.InvariantCulture);
-                currentProgressBar.style.width = Length.Percent(percentage * 100.0f);
-                currentProgressBar.MarkDirtyRepaint();
+                    currentProgressBar.style.width = Length.Percent(percentage * 100.0f);
+                    currentProgressBar.MarkDirtyRepaint();
+
+                    s_LastWidthTime = currentTime;
+                }
+
+                if (operation.isInPause)
+                    currentProgressState.text = L10n.Tr("Paused");
+                else if(operation.isInProgress)
+                    currentProgressState.text = L10n.Tr("Downloading");
+                else
+                    currentProgressState.text = string.Empty;
             }
             return showProgressBar;
         }
 
         private VisualElementCache cache { get; }
-        private Label currentProgressBar { get { return cache.Get<Label>("currentProgressBar"); } }
-        private Label currentProgressText { get { return cache.Get<Label>("currentProgressText"); } }
+        private VisualElement currentProgressBar { get { return cache.Get<VisualElement>("progressBarForeground"); } }
+        private Label currentProgressState { get { return cache.Get<Label>("currentProgressState"); } }
     }
 }

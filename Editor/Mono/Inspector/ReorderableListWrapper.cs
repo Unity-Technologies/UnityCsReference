@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -40,6 +41,7 @@ namespace UnityEditorInternal
             set
             {
                 m_OriginalProperty = value;
+                if (!m_OriginalProperty.isValid) return;
                 m_ArraySize = m_OriginalProperty.FindPropertyRelative("Array.size");
 
                 if (m_ReorderableList != null)
@@ -50,7 +52,7 @@ namespace UnityEditorInternal
 
                     if (versionChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
                     {
-                        m_ReorderableList.ClearCacheRecursive();
+                        m_ReorderableList.InvalidateCacheRecursive();
                         ReorderableList.InvalidateParentCaches(m_ReorderableList.serializedProperty.propertyPath);
 
                         if (m_ArraySize != null) m_LastArraySize = m_ArraySize.intValue;
@@ -61,7 +63,15 @@ namespace UnityEditorInternal
 
         public static string GetPropertyIdentifier(SerializedProperty serializedProperty)
         {
-            return serializedProperty.propertyPath + (GUIView.current?.nativeHandle.ToInt32() ?? -1);
+            // Property may be disposed
+            try
+            {
+                return serializedProperty?.propertyPath + serializedProperty.serializedObject.targetObject.GetInstanceID() + (GUIView.current?.nativeHandle.ToInt32() ?? -1);
+            }
+            catch (NullReferenceException)
+            {
+                return string.Empty;
+            }
         }
 
         ReorderableListWrapper() {}
@@ -97,10 +107,7 @@ namespace UnityEditorInternal
             };
         }
 
-        internal void ClearCache()
-        {
-            m_ReorderableList.ClearCache();
-        }
+        internal void InvalidateCache() => m_ReorderableList.InvalidateCache();
 
         public float GetHeight()
         {
@@ -155,7 +162,7 @@ namespace UnityEditorInternal
                     EditorGUI.SetExpandedRecurse(Property, Property.isExpanded);
                 }
 
-                m_ReorderableList.ClearCacheRecursive();
+                m_ReorderableList.InvalidateCacheRecursive();
             }
 
             DrawChildren(r, headerRect, sizeRect, visibleArea, prevType);
@@ -165,8 +172,10 @@ namespace UnityEditorInternal
         {
             if (Event.current.type == EventType.Used && sizeRect.Contains(Event.current.mousePosition)) Event.current.type = previousEvent;
 
+            EditorGUI.BeginChangeCheck();
             EditorGUI.DefaultPropertyField(sizeRect, m_ArraySize, GUIContent.none);
             EditorGUI.LabelField(sizeRect, new GUIContent("", "Array Size"));
+            if (EditorGUI.EndChangeCheck()) m_ReorderableList.InvalidateCache();
 
             if (headerRect.Contains(Event.current.mousePosition))
             {

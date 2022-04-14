@@ -81,6 +81,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal override void UpdateValueFromText()
+        {
+            // Prevent text from changing when the value change
+            // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
+            m_UpdateTextFromValue = false;
+            try
+            {
+                value = StringToValue(text);
+            }
+            finally
+            {
+                m_UpdateTextFromValue = true;
+            }
+        }
+
+        internal override void UpdateTextFromValue()
+        {
+            text = ValueToString(rawValue);
+        }
+
         public override void SetValueWithoutNotify(Hash128 newValue)
         {
             base.SetValueWithoutNotify(newValue);
@@ -99,69 +119,16 @@ namespace UnityEngine.UIElements
 
         protected override Hash128 StringToValue(string str)
         {
-            return Hash128.Parse(str);
+            return Hash128Input.Parse(str);
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            bool hasChanged = false;
-            if (evt.eventTypeId == KeyDownEvent.TypeId())
-            {
-                KeyDownEvent kde = evt as KeyDownEvent;
-
-                if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
-                    (kde?.character == '\n'))    // KeyCode.Return
-                {
-                    if (textEdition.hasFocus)
-                        Focus();
-                    else
-                        textInputBase.textElement.Focus();
-                    evt.StopPropagation();
-                    evt.PreventDefault();
-                }
-                else if (!isReadOnly)
-                {
-                    hasChanged = true;
-                }
-            }
-            else if (!isReadOnly && evt.eventTypeId == ExecuteCommandEvent.TypeId())
-            {
-                ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
-                string cmdName = commandEvt.commandName;
-                if (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut)
-                {
-                    hasChanged = true;
-                }
-            }
-
-            if (!isDelayed && hasChanged)
-            {
-                // Prevent text from changing when the value change
-                // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
-                m_UpdateTextFromValue = false;
-                try
-                {
-                    textInputBase.UpdateValueFromText();
-                }
-                finally
-                {
-                    m_UpdateTextFromValue = true;
-                }
-            }
-        }
-
-            [EventInterest(typeof(BlurEvent))]
+        [EventInterest(typeof(BlurEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt == null)
-            {
+            if (evt == null || textEdition.isReadOnly)
                 return;
-            }
 
             if (evt.eventTypeId == BlurEvent.TypeId())
             {
@@ -173,6 +140,7 @@ namespace UnityEngine.UIElements
                 else
                 {
                     textInputBase.UpdateValueFromText();
+                    textInputBase.UpdateTextFromValue();
                 }
             }
         }
@@ -201,13 +169,17 @@ namespace UnityEngine.UIElements
 
             protected override Hash128 StringToValue(string str)
             {
+                return Parse(str);
+            }
+
+            internal static Hash128 Parse(string str)
+            {
                 // Hash128.Parse does not accept strings of Length == 1, but works well with Length in the range [2, 32]
                 if (str.Length == 1 && ulong.TryParse(str, out var val))
                     return new Hash128(val, 0L);
 
                 return Hash128.Parse(str);
             }
-
         }
     }
 }

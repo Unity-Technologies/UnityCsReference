@@ -408,6 +408,7 @@ namespace UnityEditor
             /// </summary>
             [SerializeField, HideInInspector]
             bool m_IsLocked;
+            PingData m_Ping = new PingData();
 
             internal virtual bool isLocked
             {
@@ -439,19 +440,55 @@ namespace UnityEditor
                 }
             }
 
-            internal void ShowButton(Rect position, GUIStyle lockButtonStyle, bool disabled = false)
+            internal virtual void PingIcon()
+            {
+                m_Ping.isPinging = true;
+
+                if (m_Ping.m_PingStyle == null)
+                {
+                    m_Ping.m_PingStyle = new GUIStyle("TV Ping");
+
+                    // The default padding is too high for such a small icon and causes the animation to become offset to the left.
+                    m_Ping.m_PingStyle.padding = new RectOffset(8, 0, 0, 0);
+                }
+            }
+
+            internal virtual void StopPingIcon()
+            {
+                m_Ping.isPinging = false;
+            }
+
+            internal bool ShowButton(Rect position, GUIStyle lockButtonStyle, bool disabled = false)
             {
                 using (new EditorGUI.DisabledScope(disabled))
                 {
                     EditorGUI.BeginChangeCheck();
                     bool newLock = GUI.Toggle(position, isLocked, GUIContent.none, lockButtonStyle);
 
+                    if (m_Ping.isPinging && Event.current.type == EventType.Layout)
+                    {
+                        m_Ping.m_ContentRect = position;
+                        m_Ping.m_ContentRect.width *= 2f;
+                        m_Ping.m_AvailableWidth = GUIView.current.position.width;
+
+                        m_Ping.m_ContentDraw = r =>
+                        {
+                            GUI.Toggle(r, newLock, GUIContent.none, lockButtonStyle);
+                        };
+                    }
+
+                    m_Ping.HandlePing();
+
                     if (EditorGUI.EndChangeCheck())
                     {
                         if (newLock != isLocked)
+                        {
                             FlipLocked();
+                            m_Ping.isPinging = false;
+                        }
                     }
                 }
+                return m_Ping.isPinging;
             }
 
             void FlipLocked()

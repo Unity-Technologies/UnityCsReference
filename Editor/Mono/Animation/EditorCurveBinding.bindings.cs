@@ -29,8 +29,15 @@ namespace UnityEditor
         //is it a discrete curve
         private int   m_isDiscreteCurve;
 
+        //is it a serialize reference curve
+        private int  m_isSerializeReferenceCurve;
+
         //is it placeholder curve
         private int   m_isPhantom;
+
+        //is it a unknow curve: mean it needs to be processed further more to find out what is this curve
+        // This is necessary to support old user code using FloatCurve for non float type
+        private int  m_isUnknowCurve;
 
         // This is only used internally for deleting curves
         internal int  m_ClassID;
@@ -38,6 +45,8 @@ namespace UnityEditor
 
         public bool  isPPtrCurve { get { return m_isPPtrCurve != 0; } }
         public bool  isDiscreteCurve { get { return m_isDiscreteCurve != 0; } }
+
+        public bool isSerializeReferenceCurve { get { return m_isSerializeReferenceCurve != 0; } }
         internal bool  isPhantom { get { return m_isPhantom != 0; } set { m_isPhantom = value == true ? 1 : 0; } }
 
         public static bool operator==(EditorCurveBinding lhs, EditorCurveBinding rhs)
@@ -49,7 +58,7 @@ namespace UnityEditor
                     return false;
             }
 
-            return lhs.m_isPPtrCurve == rhs.m_isPPtrCurve && lhs.m_isDiscreteCurve == rhs.m_isDiscreteCurve && lhs.path == rhs.path && lhs.type == rhs.type && lhs.propertyName == rhs.propertyName;
+            return lhs.m_isPPtrCurve == rhs.m_isPPtrCurve && lhs.m_isDiscreteCurve == rhs.m_isDiscreteCurve && lhs.m_isSerializeReferenceCurve == rhs.m_isSerializeReferenceCurve && lhs.path == rhs.path && lhs.type == rhs.type && lhs.propertyName == rhs.propertyName;
         }
 
         public static bool operator!=(EditorCurveBinding lhs, EditorCurveBinding rhs)
@@ -93,6 +102,8 @@ namespace UnityEditor
             BaseCurve(inPath, inType, inPropertyName, out binding);
             binding.m_isPPtrCurve = 0;
             binding.m_isDiscreteCurve = 0;
+            binding.m_isSerializeReferenceCurve = 0;
+            binding.m_isUnknowCurve = 1;
 
             return binding;
         }
@@ -103,6 +114,8 @@ namespace UnityEditor
             BaseCurve(inPath, inType, inPropertyName, out binding);
             binding.m_isPPtrCurve = 1;
             binding.m_isDiscreteCurve = 1;
+            binding.m_isSerializeReferenceCurve = 0;
+            binding.m_isUnknowCurve = 0;
             return binding;
         }
 
@@ -112,6 +125,20 @@ namespace UnityEditor
             BaseCurve(inPath, inType, inPropertyName, out binding);
             binding.m_isPPtrCurve = 0;
             binding.m_isDiscreteCurve = 1;
+            binding.m_isSerializeReferenceCurve = 0;
+            binding.m_isUnknowCurve = 0;
+
+            return binding;
+        }
+
+        static public EditorCurveBinding SerializeReferenceCurve(string inPath, System.Type inType, long refID, string inPropertyName, bool isPPtr, bool isDiscrete)
+        {
+            EditorCurveBinding binding;
+            BaseCurve(inPath, inType, $"managedReferences[{refID}].{inPropertyName}", out binding);
+            binding.m_isPPtrCurve = isPPtr ? 1 : 0;
+            binding.m_isDiscreteCurve = isDiscrete || isPPtr ? 1 : 0;
+            binding.m_isSerializeReferenceCurve = 1;
+            binding.m_isUnknowCurve = 0;
 
             return binding;
         }

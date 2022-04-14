@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -230,7 +229,7 @@ namespace Unity.UI.Builder
                     if (!string.IsNullOrWhiteSpace(styleName))
                     {
                         var styleId = StyleDebug.GetStylePropertyIdFromName(styleName);
-                        if (!StylePropertyUtil.s_AnimatableProperties.Contains(styleId))
+                        if (!StylePropertyUtil.IsAnimatable(styleId))
                             continue;
 
                         if (!string.IsNullOrWhiteSpace(styleId.ToString()))
@@ -255,7 +254,7 @@ namespace Unity.UI.Builder
                             if (shortHandId == StylePropertyId.Unknown || !hashSet.Add(shortHandId))
                                 continue;
 
-                            if (!StylePropertyUtil.s_AnimatableProperties.Contains(shortHandId))
+                            if (!StylePropertyUtil.IsAnimatable(shortHandId))
                                 continue;
 
                             if (!string.IsNullOrWhiteSpace(shortHandId.ToString()))

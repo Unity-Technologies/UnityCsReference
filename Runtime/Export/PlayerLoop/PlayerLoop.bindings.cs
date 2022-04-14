@@ -78,6 +78,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct UpdatePreloading {}
         [RequiredByNativeCode]
+        public struct UpdateContentLoading{ }
+        [RequiredByNativeCode]
         public struct RendererNotifyInvisible {}
         [RequiredByNativeCode]
         public struct PlayerCleanupCachedData {}
@@ -99,6 +101,8 @@ namespace UnityEngine.PlayerLoop
         public struct DeliverIosPlatformEvents {}
         [RequiredByNativeCode]
         public struct DispatchEventQueueEvents {}
+        [RequiredByNativeCode]
+        public struct Physics2DEarlyUpdate {}
         [RequiredByNativeCode]
         public struct PhysicsResetInterpolatedTransformPosition {}
         [RequiredByNativeCode]
@@ -151,6 +155,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct Physics2DUpdate {}
         [RequiredByNativeCode]
+        internal struct PhysicsClothUpdate {}
+        [RequiredByNativeCode]
         public struct CheckTexFieldInput {}
         [RequiredByNativeCode]
         public struct IMGUISendQueuedEvents {}
@@ -200,8 +206,6 @@ namespace UnityEngine.PlayerLoop
         public struct UpdateNetworkManager {}
         [RequiredByNativeCode]
         public struct UpdateMasterServerInterface {}
-        [RequiredByNativeCode]
-        public struct UNetUpdate {}
         [RequiredByNativeCode]
         public struct EndGraphicsJobsAfterScriptUpdate {}
         [RequiredByNativeCode]

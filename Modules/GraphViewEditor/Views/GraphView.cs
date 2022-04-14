@@ -365,7 +365,7 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        private void UndoRedoPerformed()
+        private void UndoRedoPerformed(in UndoRedoInfo info)
         {
             RestoreSavedSelection(m_GraphViewUndoRedoSelection);
         }
@@ -773,7 +773,7 @@ namespace UnityEditor.Experimental.GraphView
                 if (dtpe.destinationPanel == null)
                 {
                     Undo.ClearUndo(m_GraphViewUndoRedoSelection);
-                    Undo.undoRedoPerformed -= UndoRedoPerformed;
+                    Undo.undoRedoEvent -= UndoRedoPerformed;
                     ScriptableObject.DestroyImmediate(m_GraphViewUndoRedoSelection);
                     m_GraphViewUndoRedoSelection = null;
 
@@ -787,7 +787,7 @@ namespace UnityEditor.Experimental.GraphView
 
                 if (atpe.originPanel == null)
                 {
-                    Undo.undoRedoPerformed += UndoRedoPerformed;
+                    Undo.undoRedoEvent += UndoRedoPerformed;
                     m_GraphViewUndoRedoSelection = ScriptableObject.CreateInstance<GraphViewUndoRedoSelection>();
                     m_GraphViewUndoRedoSelection.hideFlags = HideFlags.HideAndDontSave;
                 }

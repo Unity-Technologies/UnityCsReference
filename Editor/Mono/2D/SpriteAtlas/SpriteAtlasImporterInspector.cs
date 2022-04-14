@@ -412,12 +412,6 @@ namespace UnityEditor.U2D
             base.Apply();
         }
 
-        public void ApplyAndImportSpriteAtlas()
-        {
-            Apply();
-            base.ApplyAndImport();
-        }
-
         protected void PackPreviewGUI()
         {
             EditorGUILayout.Space();
@@ -432,7 +426,7 @@ namespace UnityEditor.U2D
                     {
                         GUI.FocusControl(null);
                         SpriteAtlasUtility.EnableV2Import(true);
-                        ApplyAndImportSpriteAtlas();
+                        SaveChanges();
                         SpriteAtlasUtility.EnableV2Import(false);
                     }
                 }
@@ -445,26 +439,6 @@ namespace UnityEditor.U2D
                 return m_MasterAtlas.objectReferenceValue != null;
             else
                 return true;
-        }
-
-        public override void OnDisable()
-        {
-
-            if (Unsupported.IsDestroyScriptableObject(this))
-            {
-                if (spriteAtlasAsset && HasModified())
-                {
-                    if (EditorUtility.DisplayDialog("Unapplied import settings", "Unapplied import settings for \'" + m_AssetPath + "\'", "Apply", "Revert"))
-                    {
-                        ApplyAndImportSpriteAtlas();
-                    }
-                    else
-                    {
-                        ResetValues();
-                    }
-                }
-            }
-            base.OnDisable();
         }
 
         public override bool HasModified()
@@ -535,6 +509,8 @@ namespace UnityEditor.U2D
                 serializedAssetObject.ApplyModifiedProperties();
                 PackPreviewGUI();
             }
+
+            ApplyRevertGUI();
         }
 
         private void HandleCommonSettingUI()

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -79,6 +80,12 @@ namespace UnityEngine
             var handler = lowMemory;
             if (handler != null)
                 handler();
+        }
+
+        [RequiredByNativeCode]
+        internal static bool HasLogCallback()
+        {
+            return s_LogCallbackHandler != null || s_LogCallbackHandlerThreaded != null;
         }
 
         // Use this delegate type with RegisterLogCallback to monitor what gets logged.
@@ -298,9 +305,15 @@ namespace UnityEngine
             return true;
         }
 
+        private static CancellationTokenSource s_currentCancellationTokenSource = new CancellationTokenSource();
+        public static CancellationToken CancellationToken => s_currentCancellationTokenSource.Token;
+
         [RequiredByNativeCode]
         static void Internal_ApplicationQuit()
         {
+            s_currentCancellationTokenSource.Cancel();
+            // when running in editor without domain reload, we prepare the cts for next enter play mode.
+            s_currentCancellationTokenSource = new CancellationTokenSource();
             if (quitting != null)
                 quitting();
         }

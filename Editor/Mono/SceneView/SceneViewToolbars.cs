@@ -53,7 +53,7 @@ namespace UnityEditor
 
         public override VisualElement CreatePanelContent()
         {
-            return CreatePanelContent();
+            return CreateHorizontalToolbarContent();
         }
 
         public IEnumerable<string> toolbarElements

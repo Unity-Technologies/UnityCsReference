@@ -44,14 +44,19 @@ namespace UnityEditor
         void OnEnable()
         {
             CacheColliderData();
-            Undo.undoRedoPerformed += CacheColliderData;
+            Undo.undoRedoEvent += OnUndoRedo;
             Selection.selectionChanged += CacheColliderData;
         }
 
         void OnDisable()
         {
-            Undo.undoRedoPerformed -= CacheColliderData;
+            Undo.undoRedoEvent -= OnUndoRedo;
             Selection.selectionChanged -= CacheColliderData;
+        }
+
+        void OnUndoRedo(in UndoRedoInfo info)
+        {
+            CacheColliderData();
         }
 
         void CacheColliderData()

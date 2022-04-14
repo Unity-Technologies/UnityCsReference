@@ -34,6 +34,11 @@ namespace UnityEditor
 
         public SceneViewCameraOverlay()
         {
+            minSize = new Vector2(40, 40);
+            maxSize = new Vector2(4000, 4000);
+
+            sizeOverridenChanged += UpdateSize;
+
             OnSelectionChanged();
         }
 
@@ -97,8 +102,21 @@ namespace UnityEditor
             return m_PreviewTexture;
         }
 
+        void UpdateSize()
+        {
+            if (!sizeOverridden)
+                size = new Vector2(240, 135);
+        }
+
         public override void OnGUI()
         {
+            UpdateSize();
+
+            imguiContainer.style.minWidth = collapsed ? new StyleLength(240) : new StyleLength(StyleKeyword.Auto);
+            imguiContainer.style.minHeight = collapsed ? new StyleLength(135) : new StyleLength(StyleKeyword.Auto);
+            imguiContainer.parent.style.flexGrow = 1;
+            imguiContainer.style.flexGrow = 1;
+
             if (selectedCamera == null)
             {
                 GUILayout.Label("No camera selected", EditorStyles.centeredGreyMiniLabel);
@@ -115,66 +133,16 @@ namespace UnityEditor
             if (!sceneView.IsGameObjectInThisSceneView(selectedCamera.gameObject))
                 return;
 
-            Vector2 previewSize = selectedCamera.targetTexture
-                ? new Vector2(selectedCamera.targetTexture.width, selectedCamera.targetTexture.height)
-                : PlayModeView.GetMainPlayModeViewTargetSize();
-
-            if (previewSize.x < 0f)
-            {
-                // Fallback to Scene View of not a valid game view size
-                previewSize.x = sceneView.position.width;
-                previewSize.y = sceneView.position.height;
-            }
-
-            // Apply normalized viewport rect of camera
-            Rect normalizedViewPortRect = selectedCamera.rect;
-
-            // clamp normalized rect in [0,1]
-            normalizedViewPortRect.xMin = Math.Max(normalizedViewPortRect.xMin, 0f);
-            normalizedViewPortRect.yMin = Math.Max(normalizedViewPortRect.yMin, 0f);
-            normalizedViewPortRect.xMax = Math.Min(normalizedViewPortRect.xMax, 1f);
-            normalizedViewPortRect.yMax = Math.Min(normalizedViewPortRect.yMax, 1f);
-
-            previewSize.x *= Mathf.Max(normalizedViewPortRect.width, 0f);
-            previewSize.y *= Mathf.Max(normalizedViewPortRect.height, 0f);
-
-            // Prevent using invalid previewSize
-            if (previewSize.x < 1f || previewSize.y < 1f)
-                return;
-
-            float aspect = previewSize.x / previewSize.y;
-
-            // Scale down (fit to scene view)
-            previewSize.y = kPreviewNormalizedSize * sceneView.position.height;
-            previewSize.x = previewSize.y * aspect;
-            if (previewSize.y > sceneView.position.height * 0.5f)
-            {
-                previewSize.y = sceneView.position.height * 0.5f;
-                previewSize.x = previewSize.y * aspect;
-            }
-            if (previewSize.x > sceneView.position.width * 0.5f)
-            {
-                previewSize.x = sceneView.position.width * 0.5f;
-                previewSize.y = previewSize.x / aspect;
-            }
-
-            // Get and reserve rect
-            drawingContainer.style.minWidth = previewSize.x;
-            drawingContainer.style.minHeight = previewSize.y;
-            var cameraRect = drawingContainer.rect;
+            var cameraRect = imguiContainer.rect;
             cameraRect.width = Mathf.Floor(cameraRect.width);
+
+            if (cameraRect.width < 1 || cameraRect.height < 1)
+                return;
 
             if (Event.current.type == EventType.Repaint)
             {
                 Graphics.DrawTexture(cameraRect, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.black);
-            }
 
-            var properWidth = cameraRect.height * aspect;
-            cameraRect.x += (cameraRect.width - properWidth) * 0.5f;
-            cameraRect.width = properWidth;
-
-            if (Event.current.type == EventType.Repaint)
-            {
                 // setup camera and render
                 previewCamera.CopyFrom(selectedCamera);
 
@@ -200,9 +168,34 @@ namespace UnityEditor
                     }
                 }
 
-                var previewTexture = GetPreviewTextureWithSizeAndAA((int)cameraRect.width, (int)cameraRect.height);
+                Vector2 previewSize = selectedCamera.targetTexture
+                    ? new Vector2(selectedCamera.targetTexture.width, selectedCamera.targetTexture.height)
+                    : PlayModeView.GetMainPlayModeViewTargetSize();
+
+                if (previewSize.x < 0f)
+                {
+                    // Fallback to Scene View of not a valid game view size
+                    previewSize.x = sceneView.position.width;
+                    previewSize.y = sceneView.position.height;
+                }
+
+                float rectAspect = cameraRect.width / cameraRect.height;
+                float previewAspect = previewSize.x / previewSize.y;
+                Rect previewRect = cameraRect;
+                if (rectAspect > previewAspect)
+                {
+                    float stretch = previewAspect / rectAspect;
+                    previewRect = new Rect(cameraRect.xMin + cameraRect.width * (1.0f - stretch) * .5f, cameraRect.yMin, stretch * cameraRect.width, cameraRect.height);
+                }
+                else
+                {
+                    float stretch = rectAspect / previewAspect;
+                    previewRect = new Rect(cameraRect.xMin, cameraRect.yMin + cameraRect.height * (1.0f - stretch) * .5f, cameraRect.width, stretch * cameraRect.height);
+                }
+
+                var previewTexture = GetPreviewTextureWithSizeAndAA((int)previewRect.width, (int)previewRect.height);
                 previewCamera.targetTexture = previewTexture;
-                previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
+                previewCamera.pixelRect = new Rect(0, 0, previewRect.width, previewRect.height);
 
                 Handles.EmitGUIGeometryForCamera(selectedCamera, previewCamera);
 
@@ -216,7 +209,8 @@ namespace UnityEditor
                 }
 
                 previewCamera.Render();
-                Graphics.DrawTexture(cameraRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+
+                Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }
         }
     }

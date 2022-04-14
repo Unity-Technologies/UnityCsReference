@@ -57,6 +57,14 @@ namespace UnityEngine.SceneManagement
             get;
         }
 
+        public extern static int loadedSceneCount
+        {
+            [NativeHeader("Runtime/SceneManager/SceneManager.h")]
+            [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
+            [NativeMethod("GetLoadedSceneCount")]
+            get;
+        }
+
         public static int sceneCountInBuildSettings
         {
             get { return SceneManagerAPI.ActiveAPI.GetNumScenesInBuildSettings(); }

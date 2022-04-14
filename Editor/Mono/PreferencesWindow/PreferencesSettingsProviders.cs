@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEditor.Analytics;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ using JetBrains.Annotations;
 using Unity.CodeEditor;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -45,13 +47,15 @@ namespace UnityEditor
         class GeneralProperties
         {
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
-            public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
+            public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics");
             public static readonly GUIContent autoSaveScenesBeforeBuilding = EditorGUIUtility.TrTextContent("Auto-save scenes before building");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
-            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting");
+            public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
+            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting", "If enabled then you can choose between Transform sorting and Alphabetical sorting in the Hierarchy.");
+            public static readonly GUIContent defaultPrefabMode = EditorGUIUtility.TrTextContent("Default Prefab Mode", "This mode will be used when opening Prefab Mode from a Prefab instance in the Hierarchy.");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -121,7 +125,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
-            public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines in UI points (0 = single pixel)");
+            public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
             public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
@@ -137,6 +141,7 @@ namespace UnityEditor
         class DeveloperModeProperties
         {
             public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
+            public static readonly GUIContent generateOnPostprocessAllAssets = EditorGUIUtility.TrTextContent("Generate OnPostprocessAllAssets Dependency Diagram", "Generates a graphviz diagram to show OnPostprocessAllAssets dependencies.");
             public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
             public static readonly GUIContent redirectionServer = EditorGUIUtility.TrTextContent("Documentation Server", "Select the documentation redirection server.");
         }
@@ -187,6 +192,7 @@ namespace UnityEditor
         private bool m_EnableCompilerMessagesLocalization;
 
         private bool m_AllowAlphaNumericHierarchy = false;
+        private PrefabStage.Mode m_DefaultPrefabModeFromHierarchy = PrefabStage.Mode.InContext;
         private bool m_Create3DObjectsAtOrigin = false;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
@@ -457,14 +463,15 @@ namespace UnityEditor
             // Options
             m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(GeneralProperties.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
 
-            bool pro = UnityEngine.Application.HasProLicense();
-            using (new EditorGUI.DisabledScope(!pro))
+            bool enableEditorAnalyticsOld = m_EnableEditorAnalytics;
+
+            using (new EditorGUI.DisabledScope(m_AnalyticSettingChangedThisSession))
             {
-                bool enableEditorAnalyticsOld = m_EnableEditorAnalytics;
-                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
+                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics);
                 if (enableEditorAnalyticsOld != m_EnableEditorAnalytics)
                 {
                     m_AnalyticSettingChangedThisSession = true;
+                    EditorAnalytics.enabled = m_EnableEditorAnalytics;
                 }
                 if (m_AnalyticSettingChangedThisSession)
                 {
@@ -506,9 +513,6 @@ namespace UnityEditor
                     InternalEditorUtility.RepaintAllViews();
                 }
             }
-
-            bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
-            m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(GeneralProperties.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {
@@ -562,16 +566,27 @@ namespace UnityEditor
 
             GameView.openWindowOnEnteringPlayMode = EditorGUILayout.Toggle(GeneralProperties.enterPlayModeSettingsFocusGameView, GameView.openWindowOnEnteringPlayMode);
 
-            ApplyChangesToPrefs();
-
-            if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
-                EditorApplication.DirtyHierarchyWindowSorting();
-
             DrawInteractionModeOptions();
 
             DrawPackageManagerOptions();
             DrawDynamicHintsOptions();
             DrawPerformBumpMapCheck();
+
+            EditorGUILayout.Space();
+            GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
+
+            EditorGUI.indentLevel++;
+            bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
+            m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(GeneralProperties.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
+            m_DefaultPrefabModeFromHierarchy = (PrefabStage.Mode)EditorGUILayout.EnumPopup(GeneralProperties.defaultPrefabMode, m_DefaultPrefabModeFromHierarchy);
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space();
+
+            ApplyChangesToPrefs();
+
+            if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
+                EditorApplication.DirtyHierarchyWindowSorting();
         }
 
         enum InteractionMode
@@ -775,7 +790,7 @@ namespace UnityEditor
             AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
-            Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 0, 5);
+            Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 1, 5);
 
             GUILayout.Label("Search", EditorStyles.boldLabel);
             SceneView.s_PreferenceEnableFilteringWhileSearching.value = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileSearching, SceneView.s_PreferenceEnableFilteringWhileSearching);
@@ -983,6 +998,11 @@ namespace UnityEditor
                 {
                     Help.docRedirectionServer = docServer;
                 }
+
+                if (GUILayout.Button(DeveloperModeProperties.generateOnPostprocessAllAssets))
+                {
+                    AssetPostprocessingInternal.s_OnPostprocessAllAssetsCallbacks.GenerateDependencyDiagram("OnPostprocessAllAssets.dot");
+                }
             }
 
             if (m_DeveloperModeDirty)
@@ -1054,6 +1074,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("Editor.kEnableCompilerMessagesLocalization", m_EnableCompilerMessagesLocalization);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
+            EditorPrefs.SetInt("DefaultPrefabModeFromHierarchy", (int)m_DefaultPrefabModeFromHierarchy);
 
             EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
             GOCreationCommands.s_PlaceObjectsAtWorldOrigin.value = m_Create3DObjectsAtOrigin;
@@ -1121,7 +1142,7 @@ namespace UnityEditor
 
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 
-            m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
+            m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalyticsV2", EditorPrefs.GetBool("EnableEditorAnalytics", true));
 
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
             m_DeveloperMode = Unsupported.IsDeveloperMode();
@@ -1137,6 +1158,7 @@ namespace UnityEditor
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
+            m_DefaultPrefabModeFromHierarchy = GetDefaultPrefabModeForHierarchy();
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
             m_Create3DObjectsAtOrigin = GOCreationCommands.s_PlaceObjectsAtWorldOrigin;
 
@@ -1328,6 +1350,11 @@ namespace UnityEditor
             }
 
             return list.ToArray();
+        }
+
+        internal static PrefabStage.Mode GetDefaultPrefabModeForHierarchy()
+        {
+            return (PrefabStage.Mode)EditorPrefs.GetInt("DefaultPrefabModeFromHierarchy", (int)PrefabStage.Mode.InContext);
         }
     }
 }

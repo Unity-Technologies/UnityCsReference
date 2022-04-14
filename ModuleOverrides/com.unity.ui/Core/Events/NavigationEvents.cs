@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +10,83 @@ namespace UnityEngine.UIElements
     /// </summary>
     public interface INavigationEvent
     {
+        /// <summary>
+        /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
+        /// </summary>
+        EventModifiers modifiers { get; }
+
+        /// <summary>
+        /// Describes the type of device this event was created from.
+        /// </summary>
+        /// <remarks>
+        /// The device type indicates whether there should be an KeyDownEvent observable before this navigation event.
+        /// </remarks>
+        internal NavigationDeviceType deviceType { get; }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        bool shiftKey { get; }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        bool ctrlKey { get; }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
+        /// is pressed. False means it isn't.
+        /// </summary>
+        bool commandKey { get; }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        bool altKey { get; }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
+        /// key is pressed. False means it isn't.
+        /// </summary>
+        /// <remarks>
+        /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </remarks>
+        bool actionKey { get; }
+    }
+
+    /// <summary>
+    /// Describes types of devices that can generate navigation events.
+    /// This can help avoid duplicated treatment of events when some controls react to keyboard input
+    /// using KeyDownEvent while others react to navigation events coming from the same keyboard input.
+    /// </summary>
+    internal enum NavigationDeviceType
+    {
+        /// <summary>
+        /// Indicates that no specific information is known about this device.
+        /// </summary>
+        /// <remarks>
+        /// Controls reacting to navigation events from an unknown device should react conservatively.
+        /// For example, if there is a conflict between a KeyDownEvent and a subsequent navigation event,
+        /// a control could assume that the device type is a keyboard and conservatively block the navigation event.
+        /// </remarks>
+        Unknown = 0,
+        /// <summary>
+        /// Indicates that this device is known to be a keyboard.
+        /// </summary>
+        /// <remarks>
+        /// This device should also send a KeyDownEvent immediately before any navigation event it generates.
+        /// </remarks>
+        Keyboard,
+        /// <summary>
+        /// Indicates that this device is anything else than a keyboard (it could be a Gamepad, for example).
+        /// </summary>
+        /// <remarks>
+        /// This device should not send a KeyDownEvent before the navigation events it generates.
+        /// </remarks>
+        NonKeyboard
     }
 
     /// <summary>
@@ -24,6 +99,79 @@ namespace UnityEngine.UIElements
     [EventCategory(EventCategory.Navigation)]
     public abstract class NavigationEventBase<T> : EventBase<T>, INavigationEvent where T : NavigationEventBase<T>, new()
     {
+        /// <summary>
+        /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
+        /// </summary>
+        public EventModifiers modifiers { get; protected set; }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        public bool shiftKey
+        {
+            get { return (modifiers & EventModifiers.Shift) != 0; }
+        }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        public bool ctrlKey
+        {
+            get { return (modifiers & EventModifiers.Control) != 0; }
+        }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
+        /// is pressed. False means it isn't.
+        /// </summary>
+        public bool commandKey
+        {
+            get { return (modifiers & EventModifiers.Command) != 0; }
+        }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        public bool altKey
+        {
+            get { return (modifiers & EventModifiers.Alt) != 0; }
+        }
+
+        /// <summary>
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
+        /// key is pressed. False means it isn't.
+        /// </summary>
+        /// <remarks>
+        /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </remarks>
+        public bool actionKey
+        {
+            get
+            {
+                if (Application.platform == RuntimePlatform.OSXEditor ||
+                    Application.platform == RuntimePlatform.OSXPlayer)
+                {
+                    return commandKey;
+                }
+                else
+                {
+                    return ctrlKey;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Describes the type of device this event was created from.
+        /// </summary>
+        /// <remarks>
+        /// The device type indicates whether there should be an KeyDownEvent observable before this navigation event.
+        /// </remarks>
+        NavigationDeviceType INavigationEvent.deviceType => deviceType;
+        internal NavigationDeviceType deviceType { get; private set; }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -43,6 +191,32 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
                 EventPropagation.SkipDisabledElements;
             propagateToIMGUI = false;
+            modifiers = EventModifiers.None;
+            deviceType = NavigationDeviceType.Unknown;
+        }
+
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values.
+        /// Use this function instead of creating new events.
+        /// Events obtained from this method should be released back to the pool using Dispose().
+        /// </summary>
+        /// <param name="modifiers">The modifier keys held down during the event.</param>
+        /// <param name="deviceType">The type of device this event was created from.</param>
+        /// <returns>An initialized navigation event.</returns>
+        public static T GetPooled(EventModifiers modifiers = EventModifiers.None)
+        {
+            T e = EventBase<T>.GetPooled();
+            e.modifiers = modifiers;
+            e.deviceType = NavigationDeviceType.Unknown;
+            return e;
+        }
+
+        internal static T GetPooled(NavigationDeviceType deviceType, EventModifiers modifiers = EventModifiers.None)
+        {
+            T e = EventBase<T>.GetPooled();
+            e.modifiers = modifiers;
+            e.deviceType = deviceType;
+            return e;
         }
     }
 
@@ -66,21 +240,30 @@ namespace UnityEngine.UIElements
             /// </summary>
             None,
             /// <summary>
-            /// Lefto.
+            /// Left.
             /// </summary>
             Left,
             /// <summary>
-            /// Upo.
+            /// Up.
             /// </summary>
             Up,
             /// <summary>
-            /// Righto.
+            /// Right.
             /// </summary>
             Right,
             /// <summary>
-            /// Downo.
+            /// Down.
             /// </summary>
-            Down
+            Down,
+
+            /// <summary>
+            /// Forwards, toward next element.
+            /// </summary>
+            Next,
+            /// <summary>
+            /// Backwards, toward previous element.
+            /// </summary>
+            Previous,
         }
 
         internal static Direction DetermineMoveDirection(float x, float y, float deadZone = 0.6f)
@@ -109,8 +292,12 @@ namespace UnityEngine.UIElements
         public Direction direction { get; private set; }
 
         /// <summary>
-        /// The move vector.
+        /// The move vector, if applicable.
         /// </summary>
+        /// <remarks>
+        /// This information is not guaranteed to be available through all input sources that can generate
+        /// NavigationMoveEvents. UI Toolkit standard controls should never depend on this value being set.
+        /// </remarks>
         public Vector2 move { get; private set; }
 
         /// <summary>
@@ -119,12 +306,49 @@ namespace UnityEngine.UIElements
         /// Events obtained from this method should be released back to the pool using Dispose().
         /// </summary>
         /// <param name="moveVector">The move vector.</param>
+        /// <param name="modifiers">The modifier keys held down during the event.</param>
         /// <returns>An initialized navigation event.</returns>
-        public static NavigationMoveEvent GetPooled(Vector2 moveVector)
+        public static NavigationMoveEvent GetPooled(Vector2 moveVector, EventModifiers modifiers = EventModifiers.None)
         {
-            NavigationMoveEvent e = GetPooled();
+            NavigationMoveEvent e = GetPooled(NavigationDeviceType.Unknown, modifiers);
             e.direction = DetermineMoveDirection(moveVector.x, moveVector.y);
             e.move = moveVector;
+            return e;
+        }
+
+        internal static NavigationMoveEvent GetPooled(Vector2 moveVector, NavigationDeviceType deviceType, EventModifiers modifiers = EventModifiers.None)
+        {
+            NavigationMoveEvent e = GetPooled(deviceType, modifiers);
+            e.direction = DetermineMoveDirection(moveVector.x, moveVector.y);
+            e.move = moveVector;
+            return e;
+        }
+
+        /// <summary>
+        /// Gets an event from the event pool and initializes it with the given values.
+        /// Use this function instead of creating new events.
+        /// Events obtained from this method should be released back to the pool using Dispose().
+        /// </summary>
+        /// <param name="direction">The logical direction of the navigation.</param>
+        /// <param name="modifiers">The modifier keys held down during the event.</param>
+        /// <returns>An initialized navigation event.</returns>
+        /// <remarks>
+        /// This method doesn't set any move vector. For NavigationMoveEvents using move vector information, see
+        /// <see cref="GetPooled(UnityEngine.Vector2,UnityEngine.EventModifiers,UnityEngine.UIElements.NavigationDeviceType)"/>.
+        /// </remarks>
+        public static NavigationMoveEvent GetPooled(Direction direction, EventModifiers modifiers = EventModifiers.None)
+        {
+            NavigationMoveEvent e = GetPooled(NavigationDeviceType.Unknown, modifiers);
+            e.direction = direction;
+            e.move = Vector2.zero;
+            return e;
+        }
+
+        internal static NavigationMoveEvent GetPooled(Direction direction, NavigationDeviceType deviceType, EventModifiers modifiers = EventModifiers.None)
+        {
+            NavigationMoveEvent e = GetPooled(deviceType, modifiers);
+            e.direction = direction;
+            e.move = Vector2.zero;
             return e;
         }
 
@@ -134,8 +358,7 @@ namespace UnityEngine.UIElements
         protected override void Init()
         {
             base.Init();
-            direction = Direction.None;
-            move = Vector2.zero;
+            LocalInit();
         }
 
         /// <summary>
@@ -143,74 +366,13 @@ namespace UnityEngine.UIElements
         /// </summary>
         public NavigationMoveEvent()
         {
-            Init();
-        }
-    }
-
-    // This event is not used in current UIElementsEventSystem implementation but is used by the
-    // Input System integration branch.
-    // Ideally this would be made public and replace the KeyDownEvent with KeyCode.Tab in UIElementsEventSystem too.
-    /// <summary>
-    /// Event typically sent when the user presses L1/R1 or presses tab or shift+tab key.
-    /// </summary>
-    internal class NavigationTabEvent : NavigationEventBase<NavigationTabEvent>
-    {
-        static NavigationTabEvent()
-        {
-            SetCreateFunction(() => new NavigationTabEvent());
+            LocalInit();
         }
 
-        /// <summary>
-        /// Tab event direction.
-        /// </summary>
-        public enum Direction
+        void LocalInit()
         {
-            /// <summary>
-            /// No specific direction.
-            /// </summary>
-            None,
-            /// <summary>
-            /// Forwards, toward next element.
-            /// </summary>
-            Next,
-            /// <summary>
-            /// Backwards, toward previous element.
-            /// </summary>
-            Previous,
-        }
-
-        /// <summary>
-        /// The direction of the navigation
-        /// </summary>
-        public Direction direction { get; private set; }
-
-        internal static Direction DetermineMoveDirection(int moveValue)
-        {
-            return moveValue > 0 ? Direction.Next : moveValue < 0 ? Direction.Previous : Direction.None;
-        }
-
-        public static NavigationTabEvent GetPooled(int moveValue)
-        {
-            NavigationTabEvent e = GetPooled();
-            e.direction = DetermineMoveDirection(moveValue);
-            return e;
-        }
-
-        /// <summary>
-        /// Initialize the event members.
-        /// </summary>
-        protected override void Init()
-        {
-            base.Init();
             direction = Direction.None;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public NavigationTabEvent()
-        {
-            Init();
+            move = Vector2.zero;
         }
     }
 

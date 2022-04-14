@@ -32,6 +32,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
     class CustomScriptAssemblyReference
     {
+        public bool Equals(CustomScriptAssemblyReference other)
+        {
+            return string.Equals(FilePath, other.FilePath, StringComparison.Ordinal)
+                   && string.Equals(PathPrefix, other.PathPrefix, StringComparison.Ordinal)
+                   && string.Equals(Reference, other.Reference, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((CustomScriptAssemblyReference) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(FilePath, PathPrefix, Reference);
+        }
+
         public string FilePath { get; set; }
         public string PathPrefix { get; set; }
         public string Reference { get; set; } // Name or GUID
@@ -47,6 +67,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssemblyReference.FilePath = path;
             customScriptAssemblyReference.PathPrefix = pathPrefix;
             customScriptAssemblyReference.Reference = customScriptAssemblyReferenceData.reference;
+
+            return customScriptAssemblyReference;
+        }
+
+        public static CustomScriptAssemblyReference FromPathAndReference(string path, string reference)
+        {
+            var pathPrefix = path.Substring(0, path.Length - AssetPath.GetFileName(path).Length);
+
+            var customScriptAssemblyReference = new CustomScriptAssemblyReference();
+            customScriptAssemblyReference.FilePath = path;
+            customScriptAssemblyReference.PathPrefix = pathPrefix;
+            customScriptAssemblyReference.Reference = reference;
 
             return customScriptAssemblyReference;
         }

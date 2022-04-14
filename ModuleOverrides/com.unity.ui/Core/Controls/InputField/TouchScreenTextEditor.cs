@@ -48,6 +48,9 @@ namespace UnityEngine.UIElements
 
                         if (edition.isDelayed)
                             edition.UpdateValueFromText?.Invoke();
+                        edition.UpdateTextFromValue?.Invoke();
+
+                        textElement.edition.MoveFocusToCompositeRoot?.Invoke();
                     }
                 }
             }

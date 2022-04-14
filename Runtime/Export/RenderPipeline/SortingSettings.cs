@@ -24,8 +24,6 @@ namespace UnityEngine.Rendering
         Vector3 m_CustomAxis;
         SortingCriteria m_Criteria;
         DistanceMetric m_DistanceMetric;
-        Matrix4x4 m_PreviousVPMatrix;
-        Matrix4x4 m_NonJitteredVPMatrix;
 
         public SortingSettings(Camera camera)
         {
@@ -65,7 +63,7 @@ namespace UnityEngine.Rendering
 
         public bool Equals(SortingSettings other)
         {
-            return m_WorldToCameraMatrix.Equals(other.m_WorldToCameraMatrix) && m_CameraPosition.Equals(other.m_CameraPosition) && m_CustomAxis.Equals(other.m_CustomAxis) && m_Criteria == other.m_Criteria && m_DistanceMetric == other.m_DistanceMetric && m_PreviousVPMatrix.Equals(other.m_PreviousVPMatrix) && m_NonJitteredVPMatrix.Equals(other.m_NonJitteredVPMatrix);
+            return m_WorldToCameraMatrix.Equals(other.m_WorldToCameraMatrix) && m_CameraPosition.Equals(other.m_CameraPosition) && m_CustomAxis.Equals(other.m_CustomAxis) && m_Criteria == other.m_Criteria && m_DistanceMetric == other.m_DistanceMetric;
         }
 
         public override bool Equals(object obj)
@@ -83,8 +81,6 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_CustomAxis.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_Criteria;
                 hashCode = (hashCode * 397) ^ (int)m_DistanceMetric;
-                hashCode = (hashCode * 397) ^ m_PreviousVPMatrix.GetHashCode();
-                hashCode = (hashCode * 397) ^ m_NonJitteredVPMatrix.GetHashCode();
                 return hashCode;
             }
         }

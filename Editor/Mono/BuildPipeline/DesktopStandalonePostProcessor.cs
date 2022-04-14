@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -25,11 +27,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
     }
 
     protected bool GetServer(BuildPostProcessArgs args) =>
-        (args.target == BuildTarget.StandaloneWindows ||
-            args.target == BuildTarget.StandaloneWindows64 ||
-            args.target == BuildTarget.StandaloneOSX ||
-            args.target == BuildTarget.StandaloneLinux64) &&
-        (StandaloneBuildSubtarget)args.subtarget == StandaloneBuildSubtarget.Server;
+        GetNamedBuildTarget(args) == NamedBuildTarget.Server;
 
     protected string GetVariationFolder(BuildPostProcessArgs args) =>
         $"{args.playerPackage}/Variations/{GetVariationName(args)}";
@@ -41,7 +39,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.AddKey("single-instance");
         if (!PlayerSettings.useFlipModelSwapchain)
             config.AddKey("force-d3d11-bitblt-mode");
-        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
+        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(NamedBuildTarget.FromActiveSettings(target)))
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableCodeCoverage) != 0)
             config.Set("enableCodeCoverage", "1");
@@ -56,27 +54,43 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
 
     readonly bool m_HasMonoPlayers;
     readonly bool m_HasIl2CppPlayers;
+    readonly bool m_HasCoreCLRPlayers;
+    readonly bool m_HasServerMonoPlayers;
+    readonly bool m_HasServerIl2CppPlayers;
+    readonly bool m_HasServerCoreCLRPlayers;
 
-    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers)
+    protected DesktopStandalonePostProcessor(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerMonoPlayers, bool hasServerIl2CppPlayers, bool hasServerCoreCLRPlayers)
     {
         m_HasMonoPlayers = hasMonoPlayers;
         m_HasIl2CppPlayers = hasIl2CppPlayers;
+        m_HasCoreCLRPlayers = hasCoreCLRPlayers;
+        m_HasServerMonoPlayers = hasServerMonoPlayers;
+        m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
+        m_HasServerCoreCLRPlayers = hasServerCoreCLRPlayers;
     }
 
     public override string PrepareForBuild(BuildOptions options, BuildTarget target)
     {
-        if (!m_HasMonoPlayers)
-        {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.IL2CPP)
-                return "Currently selected scripting backend (Mono) is not installed.";
-        }
+        var namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
+        var isServer = namedBuildTarget == NamedBuildTarget.Server;
 
-        if (!m_HasIl2CppPlayers)
+        switch (PlayerSettings.GetScriptingBackend(namedBuildTarget))
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
-                return "Currently selected scripting backend (IL2CPP) is not installed.";
+            case ScriptingImplementation.Mono2x:
+                if ((!isServer && !m_HasMonoPlayers) || (isServer && !m_HasServerMonoPlayers))
+                    return "Currently selected scripting backend (Mono) is not installed.";
+                break;
+            case ScriptingImplementation.IL2CPP:
+                if ((!isServer && !m_HasIl2CppPlayers) || (isServer && !m_HasServerIl2CppPlayers))
+                    return "Currently selected scripting backend (IL2CPP) is not installed.";
+                break;
+            #pragma warning disable 618
+            case ScriptingImplementation.CoreCLR:
+                if ((!isServer && !m_HasCoreCLRPlayers) || (isServer && !m_HasServerCoreCLRPlayers))
+                    return "Currently selected scripting backend (CoreCLR) is not installed.";
+                break;
+            default:
+                return $"Unknown scripting backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}";
         }
 
         return base.PrepareForBuild(options, target);

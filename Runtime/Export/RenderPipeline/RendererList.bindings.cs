@@ -7,24 +7,20 @@ using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Rendering.RendererUtils
+namespace UnityEngine.Rendering
 {
-    public enum RendererListStatus
-    {
-        kRendererListInvalid = -2,
-        kRendererListProcessing = -1,
-        kRendererListEmpty = 0,
-        kRendererListPopulated = 1,
-    };
-
     [NativeHeader("Runtime/Graphics/ScriptableRenderLoop/RendererList.h")]
     [StructLayout(LayoutKind.Sequential)]
+    [MovedFrom("UnityEngine.Rendering.RendererUtils")]
     public struct RendererList
     {
         internal UIntPtr context;
-        internal UInt32  index;
-        internal UInt32  frame;
+        internal UInt32 index;
+        internal UInt32 frame;
+        internal UInt32 type;
 
         extern public bool isValid { get; }
 
@@ -35,9 +31,142 @@ namespace UnityEngine.Rendering.RendererUtils
             context = ctx;
             index = indx;
             frame = 0;
+            type = 0;
         }
     }
 
+    [MovedFrom("UnityEngine.Rendering.RendererUtils")]
+    public enum RendererListStatus
+    {
+        kRendererListInvalid = -2,
+        kRendererListProcessing = -1,
+        kRendererListEmpty = 0,
+        kRendererListPopulated = 1,
+    };
+
+    public struct RendererListParams : IEquatable<RendererListParams>
+    {
+        public static readonly RendererListParams Invalid = new RendererListParams();
+
+        public CullingResults cullingResults;
+        public DrawingSettings drawSettings;
+        public FilteringSettings filteringSettings;
+        public ShaderTagId tagName;
+        public bool isPassTagName;
+        public NativeArray<ShaderTagId>? tagValues;
+        public NativeArray<RenderStateBlock>? stateBlocks;
+
+        public RendererListParams(CullingResults cullingResults, DrawingSettings drawSettings, FilteringSettings filteringSettings)
+        {
+            this.cullingResults = cullingResults;
+            this.drawSettings = drawSettings;
+            this.filteringSettings = filteringSettings;
+            tagName = ShaderTagId.none;
+            isPassTagName = false;
+            tagValues = null;
+            stateBlocks = null;
+        }
+
+        internal int numStateBlocks
+        {
+            get
+            {
+                if (tagValues != null)
+                    return tagValues.Value.Length;
+                return 0;
+            }
+        }
+        internal unsafe IntPtr stateBlocksPtr
+        {
+            get
+            {
+                if (stateBlocks == null) return IntPtr.Zero;
+                return (IntPtr)stateBlocks.Value.GetUnsafeReadOnlyPtr();
+            }
+        }
+        internal unsafe IntPtr tagsValuePtr
+        {
+            get
+            {
+                if (tagValues == null) return IntPtr.Zero;
+                return (IntPtr)tagValues.Value.GetUnsafeReadOnlyPtr();
+            }
+        }
+        internal void Dispose()
+        {
+            if (stateBlocks != null)
+            {
+                stateBlocks.Value.Dispose();
+                stateBlocks = null;
+            }
+            if (tagValues != null)
+            {
+                tagValues.Value.Dispose();
+                tagValues = null;
+            }
+        }
+
+        internal void Validate()
+        {
+            cullingResults.Validate();
+            if (tagValues.HasValue && stateBlocks.HasValue)
+            {
+                if (tagValues.Value.Length != stateBlocks.Value.Length)
+                    throw new ArgumentException($"Arrays {nameof(tagValues)} and {nameof(stateBlocks)} should have same length, but {nameof(tagValues)} had length {tagValues.Value.Length} while {nameof(stateBlocks)} had length {stateBlocks.Value.Length}.");
+            }
+            else if ( (tagValues.HasValue && !stateBlocks.HasValue) || (!tagValues.HasValue && stateBlocks.HasValue))
+            {
+                throw new ArgumentException($"Arrays {nameof(tagValues)} and {nameof(stateBlocks)} should have same length, but one of them is null ({nameof(tagValues)} : {tagValues.HasValue}, {nameof(stateBlocks)} : {stateBlocks.HasValue}).");
+            }
+        }
+
+        public bool Equals(RendererListParams other)
+        {
+            return cullingResults == other.cullingResults &&
+                   drawSettings == other.drawSettings &&
+                   filteringSettings == other.filteringSettings &&
+                   tagName == other.tagName &&
+                   isPassTagName == other.isPassTagName &&
+                   tagValues == other.tagValues &&
+                   stateBlocks == other.stateBlocks;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is RendererListParams && Equals((RendererListParams)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = cullingResults.GetHashCode();
+                hashCode = (hashCode * 397) ^ drawSettings.GetHashCode();
+                hashCode = (hashCode * 397) ^ filteringSettings.GetHashCode();
+                hashCode = (hashCode * 397) ^ tagName.GetHashCode();
+                hashCode = (hashCode * 397) ^ (isPassTagName ? 0 : 1);
+                hashCode = (hashCode * 397) ^ tagValues.GetHashCode();
+                hashCode = (hashCode * 397) ^ stateBlocks.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(RendererListParams left, RendererListParams right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(RendererListParams left, RendererListParams right)
+        {
+            return !left.Equals(right);
+        }
+    }
+}
+
+
+namespace UnityEngine.Rendering.RendererUtils
+{
     /// <summary>
     /// Renderer list creation descriptor.
     /// </summary>
@@ -68,9 +197,13 @@ namespace UnityEngine.Rendering.RendererUtils
         /// </summary>
         public bool excludeObjectMotionVectors;
         /// <summary>
-        /// Rendering layer mask used for filtering this renderer list.
+        /// The layer mask to use for filtering this RendererList.
         /// </summary>
         public int layerMask;
+        /// <summary>
+        /// The rendering layer mask to use for filtering this RendererList.
+        /// </summary>
+        public uint renderingLayerMask;
         /// <summary>
         /// Pass index for the override material.
         /// </summary>
@@ -96,6 +229,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.cullingResult = cullingResult;
             this.camera = camera;
             this.layerMask = -1;
+            this.renderingLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
         }
 
@@ -113,6 +247,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.cullingResult = cullingResult;
             this.camera = camera;
             this.layerMask = -1;
+            this.renderingLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
         }
 
@@ -127,51 +262,16 @@ namespace UnityEngine.Rendering.RendererUtils
 
             return true;
         }
-    }
 
-    internal struct RendererListParams
-    {
         static readonly ShaderTagId s_EmptyName = new ShaderTagId("");
-
-        /// <summary>
-        /// Default null renderer list.
-        /// </summary>
-        public static readonly RendererListParams nullRendererList = new RendererListParams();
-
-        /// <summary>
-        /// True if the renderer list is valid.
-        /// </summary>
-        public bool isValid { get; private set; }
-        /// <summary>
-        /// CullingResults associated with the renderer list.
-        /// </summary>
-        internal CullingResults cullingResult;
-        /// <summary>
-        /// DrawingSettings associated with the renderer list.
-        /// </summary>
-        internal DrawingSettings drawSettings;
-        /// <summary>
-        /// FilteringSettings associated with the renderer list.
-        /// </summary>
-        internal FilteringSettings filteringSettings;
-        /// <summary>
-        /// Optional RenderStateBlock associated with the renderer list.
-        /// </summary>
-        internal RenderStateBlock? stateBlock;
-
-        /// <summary>
-        /// Creates a new renderer list.
-        /// </summary>
-        /// <param name="desc">Parameters for renderer list creation.</param>
-        /// <returns>A new renderer list.</returns>
-        internal static RendererListParams Create(in RendererListDesc desc)
+        public static RendererListParams ConvertToParameters(in RendererListDesc desc)
         {
-            RendererListParams newRenderList = new RendererListParams();
-
             // At this point the RendererList is invalid and will be caught when using it.
             // It's fine because to simplify setup code you might not always have a valid desc. The important part is to catch it if used.
             if (!desc.IsValid())
-                return newRenderList;
+                return RendererListParams.Invalid;
+
+            RendererListParams rlParams = new RendererListParams();
 
             var sortingSettings = new SortingSettings(desc.camera)
             {
@@ -180,7 +280,10 @@ namespace UnityEngine.Rendering.RendererUtils
 
             var drawSettings = new DrawingSettings(s_EmptyName, sortingSettings)
             {
-                perObjectData = desc.rendererConfiguration
+                perObjectData = desc.rendererConfiguration,
+                //enableDynamicBatching
+                //enableInstancing
+                //mainLightIndex
             };
 
             if (desc.passName != ShaderTagId.none)
@@ -202,18 +305,33 @@ namespace UnityEngine.Rendering.RendererUtils
                 drawSettings.overrideMaterialPassIndex = desc.overrideMaterialPassIndex;
             }
 
-            var filterSettings = new FilteringSettings(desc.renderQueueRange, desc.layerMask)
+            //drawSettings.fallbackMaterial
+
+            var filterSettings = new FilteringSettings(desc.renderQueueRange, desc.layerMask, desc.renderingLayerMask)
             {
-                excludeMotionVectorObjects = desc.excludeObjectMotionVectors
+                excludeMotionVectorObjects = desc.excludeObjectMotionVectors,
+               // sortingLayerRange
             };
 
-            newRenderList.isValid = true;
-            newRenderList.cullingResult = desc.cullingResult;
-            newRenderList.drawSettings = drawSettings;
-            newRenderList.filteringSettings = filterSettings;
-            newRenderList.stateBlock = desc.stateBlock;
+            rlParams.cullingResults = desc.cullingResult;
+            rlParams.drawSettings = drawSettings;
+            rlParams.filteringSettings = filterSettings;
 
-            return newRenderList;
+            rlParams.tagName = ShaderTagId.none;
+            rlParams.isPassTagName = false;
+
+            if (desc.stateBlock != null && desc.stateBlock.HasValue)
+            {
+                rlParams.stateBlocks = new NativeArray<RenderStateBlock>(1, Allocator.Temp) {
+                    [0] = desc.stateBlock.Value
+                };
+                rlParams.tagValues = new NativeArray<ShaderTagId>(1, Allocator.Temp) {
+                    [0] = ShaderTagId.none
+                };
+            }
+
+            return rlParams;
         }
     }
+
 }

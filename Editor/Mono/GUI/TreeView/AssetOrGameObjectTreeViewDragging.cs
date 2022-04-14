@@ -56,7 +56,7 @@ namespace UnityEditor
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
             var dragToInstanceId = parentItem?.id ?? 0;
-            return DragAndDrop.Drop(DragAndDropWindowTarget.projectBrowser, dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
+            return DragAndDrop.DropOnProjectBrowserWindow(dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
         }
     }
 
@@ -164,7 +164,7 @@ namespace UnityEditor
                 if (parentForDraggedObjectsOutsideItems != null)
                 {
                     // Use specific parent for DragAndDropForwarding
-                    return DragAndDrop.Drop(DragAndDropWindowTarget.hierarchy, 0, option, parentForDraggedObjectsOutsideItems, perform);
+                    return DragAndDrop.DropOnHierarchyWindow(0, option, parentForDraggedObjectsOutsideItems, perform);
                 }
                 else
                 {
@@ -174,7 +174,7 @@ namespace UnityEditor
                         return DragAndDropVisualMode.Rejected;
 
                     option |= HierarchyDropFlags.DropUpon;
-                    return DragAndDrop.Drop(DragAndDropWindowTarget.hierarchy, lastScene.handle, option, null, perform);
+                    return DragAndDrop.DropOnHierarchyWindow(lastScene.handle, option, null, perform);
                 }
             }
 
@@ -214,7 +214,7 @@ namespace UnityEditor
             if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
 
-            return DragAndDrop.Drop(DragAndDropWindowTarget.hierarchy, gameObjectOrSceneInstanceID, option, null, perform);
+            return DragAndDrop.DropOnHierarchyWindow(gameObjectOrSceneInstanceID, option, null, perform);
         }
 
         int GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem, DropPosition dropPosition)

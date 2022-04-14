@@ -70,6 +70,9 @@ namespace UnityEngine.UIElements
 
         private Event m_Event = new Event();
         private BaseRuntimePanel m_FocusedPanel;
+        private BaseRuntimePanel m_PreviousFocusedPanel;
+        private Focusable m_PreviousFocusedElement;
+        private EventModifiers m_CurrentModifiers;
 
         public BaseRuntimePanel focusedPanel
         {
@@ -102,21 +105,52 @@ namespace UnityEngine.UIElements
             if (!m_SendingPenEvent)
                 m_SendingTouchEvents = ProcessTouchEvents();
 
-            SendIMGUIEvents();
+            using (FocusBasedEventSequence())
+            {
+                SendIMGUIEvents();
+                SendInputEvents();
+            }
+        }
 
-            SendInputEvents();
+        internal struct FocusBasedEventSequenceContext : IDisposable
+        {
+            private DefaultEventSystem es;
+
+            public FocusBasedEventSequenceContext(DefaultEventSystem es)
+            {
+                this.es = es;
+                es.m_PreviousFocusedPanel = es.focusedPanel;
+                es.m_PreviousFocusedElement = es.focusedPanel?.focusController.GetLeafFocusedElement();
+            }
+            public void Dispose()
+            {
+                es.m_PreviousFocusedPanel = null;
+                es.m_PreviousFocusedElement = null;
+            }
+        }
+
+        internal FocusBasedEventSequenceContext FocusBasedEventSequence()
+        {
+            return new FocusBasedEventSequenceContext(this);
         }
 
         void SendIMGUIEvents()
         {
+            bool first = true;
+
             while (Event.PopEvent(m_Event))
             {
-                if (m_Event.type == EventType.Repaint)
+                if (m_Event.type == EventType.Ignore || m_Event.type == EventType.Repaint ||
+                    m_Event.type == EventType.Layout)
                     continue;
+
+                m_CurrentModifiers = first ? m_Event.modifiers : (m_CurrentModifiers | m_Event.modifiers);
+                first = false;
 
                 if (m_Event.type == EventType.KeyUp || m_Event.type == EventType.KeyDown)
                 {
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
+                    ProcessTabEvent(m_Event, m_CurrentModifiers);
                 }
                 else if (!m_SendingTouchEvents && !m_SendingPenEvent && input.mousePresent)
                 {
@@ -151,29 +185,40 @@ namespace UnityEngine.UIElements
 
             if (sendNavigationMove)
             {
-                SendFocusBasedEvent(self => NavigationMoveEvent.GetPooled(self.GetRawMoveVector()), this);
+                SendFocusBasedEvent(
+                    self => NavigationMoveEvent.GetPooled(self.GetRawMoveVector(),
+                        self.input.anyKey ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard,
+                        self.m_CurrentModifiers), this);
             }
 
             if (input.GetButtonDown(m_SubmitButton))
             {
-                SendFocusBasedEvent(self => NavigationSubmitEvent.GetPooled(), this);
+                SendFocusBasedEvent(
+                    self => NavigationSubmitEvent.GetPooled(
+                        self.input.anyKey ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard,
+                        self.m_CurrentModifiers), this);
             }
 
             if (input.GetButtonDown(m_CancelButton))
             {
-                SendFocusBasedEvent(self => NavigationCancelEvent.GetPooled(), this);
+                SendFocusBasedEvent(
+                    self => NavigationCancelEvent.GetPooled(
+                        self.input.anyKey ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard,
+                        self.m_CurrentModifiers), this);
             }
         }
 
         internal void SendFocusBasedEvent<TArg>(Func<TArg, EventBase> evtFactory, TArg arg)
         {
-            // Send focus-based events to focused panel if there's one
-            if (focusedPanel != null)
+            // Send all focus-based events to the same previously focused panel if there's one
+            // This allows Navigation events to use the same target as related KeyDown (and eventually Gamepad) events
+            if (m_PreviousFocusedPanel != null)
             {
                 using (EventBase evt = evtFactory(arg))
                 {
-                    focusedPanel.visualTree.SendEvent(evt);
-                    UpdateFocusedPanel(focusedPanel);
+                    evt.target = m_PreviousFocusedElement ?? m_PreviousFocusedPanel.visualTree;
+                    m_PreviousFocusedPanel.visualTree.SendEvent(evt);
+                    UpdateFocusedPanel(m_PreviousFocusedPanel);
                     return;
                 }
             }
@@ -190,16 +235,20 @@ namespace UnityEngine.UIElements
                 {
                     using (EventBase evt = evtFactory(arg))
                     {
+                        // Since there was no focused element, send event to the visualTree to avoid reacting to a
+                        // focus change in between events.
+                        evt.target = runtimePanel.visualTree;
                         runtimePanel.visualTree.SendEvent(evt);
 
-                        if (evt.processedByFocusController)
+                        if (runtimePanel.focusController.focusedElement != null)
                         {
-                            UpdateFocusedPanel(runtimePanel);
+                            focusedPanel = runtimePanel;
+                            break;
                         }
 
                         if (evt.isPropagationStopped)
                         {
-                            break;
+                            return;
                         }
                     }
                 }
@@ -219,82 +268,72 @@ namespace UnityEngine.UIElements
                 UpdateFocusedPanel(focusedPanel);
             }
 
-            var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
-            for (var i = panels.Count - 1; i >= 0; i--)
+            var capturingPanel = PointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
+
+            // Allow element with pointer capture to update panel soft capture
+            var capturing = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId);
+            if (capturing is VisualElement capturingVE)
             {
-                var panel = panels[i];
-                if (panel is BaseRuntimePanel runtimePanel)
+                capturingPanel = capturingVE.panel;
+            }
+
+            BaseRuntimePanel targetPanel = null;
+            Vector2 targetPanelPosition = Vector2.zero;
+            Vector2 targetPanelDelta = Vector2.zero;
+
+            if (capturingPanel is BaseRuntimePanel capturingRuntimePanel)
+            {
+                // Panel with soft capture has priority, that is it will receive pointer events until pointer up
+                targetPanel = capturingRuntimePanel;
+                targetPanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, out targetPanelDelta);
+            }
+            else
+            {
+                // Find a candidate panel for the event
+                // Try all the panels, from closest to deepest
+                var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+                for (var i = panels.Count - 1; i >= 0; i--)
                 {
-                    if (panel.GetCapturingElement(pointerId) is VisualElement ve && ve.panel == panel)
+                    if (panels[i] is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
                     {
-                        runtimePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
-
-                        using (EventBase evt = evtFactory(panelPosition, panelDelta, arg))
+                        if (runtimePanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, out targetPanelDelta) &&
+                            runtimePanel.Pick(targetPanelPosition) != null)
                         {
-                            runtimePanel.visualTree.SendEvent(evt);
-
-                            if (evt.processedByFocusController)
-                            {
-                                UpdateFocusedPanel(runtimePanel);
-                            }
-
-                            // Only 1 panel receives the event.
-                            return;
+                            targetPanel = runtimePanel;
+                            break;
                         }
                     }
                 }
             }
 
-            // Find a candidate panel for the event
-            // Try all the panels, from closest to deepest
-            BaseRuntimePanel candidatePanel = null;
-            Vector2 candidateMousePosition = Vector2.zero;
-            Vector2 candidateDelta = Vector2.zero;
-            for (var i = panels.Count - 1; i >= 0; i--)
-            {
-                if (panels[i] is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
-                {
-                    if (runtimePanel.ScreenToPanel(mousePosition, delta, out candidateMousePosition, out candidateDelta) &&
-                        runtimePanel.Pick(candidateMousePosition) != null)
-                    {
-                        candidatePanel = runtimePanel;
-                        break;
-                    }
-                }
-            }
-
             BaseRuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as BaseRuntimePanel;
-            if (lastActivePanel != null && lastActivePanel != candidatePanel)
+
+            if (lastActivePanel != targetPanel)
             {
-                // Send an event to the last panel the pointer was in, so it can dispatch [Mouse|Pointer][Out|Leave] events.
-                lastActivePanel.ScreenToPanel(mousePosition, delta, out var panelPosition, out var panelDelta, true);
-                using (EventBase lastActivePanelEvent = evtFactory(panelPosition, panelDelta, arg))
-                {
-                    lastActivePanel.visualTree.SendEvent(lastActivePanelEvent);
-                }
+                // Allow last panel the pointer was in to dispatch [Mouse|Pointer][Out|Leave] events if needed.
+                lastActivePanel?.PointerLeavesPanel(pointerId, lastActivePanel.ScreenToPanel(mousePosition));
+                targetPanel?.PointerEntersPanel(pointerId, targetPanelPosition);
             }
 
-            if (candidatePanel != null)
+            if (targetPanel != null)
             {
-                using (EventBase evt = evtFactory(candidateMousePosition, candidateDelta, arg))
+                using (EventBase evt = evtFactory(targetPanelPosition, targetPanelDelta, arg))
                 {
-                    candidatePanel.visualTree.SendEvent(evt);
+                    targetPanel.visualTree.SendEvent(evt);
 
                     if (evt.processedByFocusController)
                     {
-                        UpdateFocusedPanel(candidatePanel);
+                        UpdateFocusedPanel(targetPanel);
                     }
+
+                    if (evt.eventTypeId == PointerDownEvent.TypeId())
+                        PointerDeviceState.SetPlayerPanelWithSoftPointerCapture(pointerId, targetPanel);
+                    else if (evt.eventTypeId == PointerUpEvent.TypeId() && ((PointerUpEvent)evt).pressedButtons == 0)
+                        PointerDeviceState.SetPlayerPanelWithSoftPointerCapture(pointerId, null);
                 }
             }
             else
             {
-                if (lastActivePanel == null)
-                {
-                    // Mouse and pointer events calls PointerDeviceState.SavePointerPosition in their PreDispatch().
-                    // If we did not send any event, we need to manually update the pointer position.
-                    PointerDeviceState.SavePointerPosition(pointerId, mousePosition, null, ContextType.Player);
-                }
-
                 if (deselectIfNoTarget)
                 {
                     focusedPanel = null;
@@ -470,6 +509,18 @@ namespace UnityEngine.UIElements
             return evt.mousePosition;
         }
 
+        void ProcessTabEvent(Event e, EventModifiers modifiers)
+        {
+            if (e.type == EventType.KeyDown && e.character == '\t')
+            {
+                var direction = e.shift ? NavigationMoveEvent.Direction.Previous : NavigationMoveEvent.Direction.Next;
+                SendFocusBasedEvent(
+                    t => NavigationMoveEvent.GetPooled(t.direction,
+                        t.input.anyKey ? NavigationDeviceType.Keyboard : NavigationDeviceType.NonKeyboard, t.modifiers),
+                    (direction, modifiers, input));
+            }
+        }
+
         internal interface IInput
         {
             bool GetButtonDown(string button);
@@ -482,6 +533,7 @@ namespace UnityEngine.UIElements
             int touchCount { get; }
             Touch GetTouch(int index);
             bool mousePresent { get; }
+            bool anyKey { get; }
         }
 
         private class Input : IInput
@@ -496,6 +548,7 @@ namespace UnityEngine.UIElements
             public int touchCount => UnityEngine.Input.touchCount;
             public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
             public bool mousePresent => UnityEngine.Input.mousePresent;
+            public bool anyKey => UnityEngine.Input.anyKey;
         }
 
         private class NoInput : IInput
@@ -510,6 +563,7 @@ namespace UnityEngine.UIElements
             public PenData GetPenEvent(int index) => default;
             public PenData GetLastPenContactEvent() => default;
             public bool mousePresent => false;
+            public bool anyKey => false;
         }
     }
 }

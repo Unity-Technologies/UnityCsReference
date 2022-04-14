@@ -99,7 +99,7 @@ namespace UnityEditor
                     var remainingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true));
                     if ((Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && remainingRect.Contains(Event.current.mousePosition))
                     {
-                        DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.inspector, new[] { settingsEditor.target }, Event.current.type == EventType.DragPerform);
+                        DragAndDrop.visualMode = DragAndDrop.DropOnInspectorWindow(new[] { settingsEditor.target }, Event.current.type == EventType.DragPerform);
                         if (Event.current.type == EventType.DragPerform)
                             DragAndDrop.AcceptDrag();
                     }

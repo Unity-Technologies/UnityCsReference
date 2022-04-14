@@ -86,6 +86,8 @@ namespace UnityEditor.SceneManagement
         Transform m_LastRootTransform;
         const float kDurationBeforeShowingSavingBadge = 1.0f;
         static ExposablePopupMenu s_ContextRenderModeSelector;
+        Hash128 m_InitialFileHash;
+        byte[] m_InitialFileContent;
         Hash128 m_LastPrefabSourceFileHash;
         bool m_NeedsReloadingWhenReturningToStage;
         bool m_IsAssetMissing;
@@ -216,7 +218,7 @@ namespace UnityEditor.SceneManagement
                 }
                 else
                 {
-                    // Could not find GameObject with fileID: m_FileIdForOpenedFromInstanceObject, this can happen if inserting a base in a Variant and then discarding changes when entering in-context of the new base
+                    // Could not find GameObject with fileID: m_FileIdForOpenedFromInstanceObject, this can happen if inserting a variant parent in a Variant and then discarding changes when entering in-context of the new base
                 }
             }
         }
@@ -236,7 +238,7 @@ namespace UnityEditor.SceneManagement
             PrefabUtility.savingPrefab += OnSavingPrefab;
             PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
             AssetEvents.assetsChangedOnHDD += OnAssetsChangedOnHDD;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
+            Undo.undoRedoEvent += UndoRedoPerformed;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             m_AllPrefabStages.Add(this);
@@ -248,7 +250,7 @@ namespace UnityEditor.SceneManagement
             PrefabUtility.savingPrefab -= OnSavingPrefab;
             PrefabUtility.prefabInstanceUpdated -= OnPrefabInstanceUpdated;
             AssetEvents.assetsChangedOnHDD -= OnAssetsChangedOnHDD;
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             // Also cleanup any potential registered event handlers
@@ -563,7 +565,16 @@ namespace UnityEditor.SceneManagement
                 return false;
             }
 
-            return OpenStage();
+            bool success = OpenStage();
+            if (success)
+            {
+                var guid = AssetDatabase.AssetPathToGUID(m_PrefabAssetPath);
+                m_InitialFileHash = AssetDatabase.GetSourceAssetFileHash(guid);
+                if (!FileUtil.ReadFileContentBinary(assetPath, out m_InitialFileContent, out string errorMessage))
+                    Debug.LogError($"No undo will be registered for {m_PrefabContentsRoot.name}. \nError: {errorMessage}");
+            }
+
+            return success;
         }
 
         bool OpenStage()
@@ -604,7 +615,21 @@ namespace UnityEditor.SceneManagement
             if (isValid)
                 prefabStageClosing?.Invoke(this);
 
+            var initialFileContent = m_InitialFileContent;
+            var path = m_PrefabAssetPath;
+            var guid = AssetDatabase.AssetPathToGUID(m_PrefabAssetPath);
+            var currentPrefabSourceFileHash = AssetDatabase.GetSourceAssetFileHash(guid);
+
             CleanupBeforeClosing();
+
+            if (initialFileContent?.Length > 0 && currentPrefabSourceFileHash != m_InitialFileHash)
+            {
+                if (FileUtil.ReadFileContentBinary(path, out byte[] newFileContent, out string errorMessage))
+                    Undo.RegisterFileChangeUndo(AssetDatabase.GUIDFromAssetPath(path), initialFileContent, newFileContent);
+                else
+                    Debug.LogError($"No undo will be registered for {m_PrefabContentsRoot.name}. \nError: {errorMessage}");
+
+            }
         }
 
         protected internal override void OnReturnToStage()
@@ -906,7 +931,7 @@ namespace UnityEditor.SceneManagement
             StageUtility.CallAwakeFromLoadOnSubHierarchy(m_PrefabContentsRoot);
         }
 
-        void UndoRedoPerformed()
+        void UndoRedoPerformed(in UndoRedoInfo info)
         {
             if (m_Mode == Mode.InContext)
             {
@@ -941,6 +966,8 @@ namespace UnityEditor.SceneManagement
             m_OpenedFromInstanceObject = null;
             m_HideFlagUtility = null;
             m_PrefabAssetPath = null;
+            m_InitialFileContent = null;
+            m_InitialFileHash = new Hash128();
             m_InitialSceneDirtyID = 0;
             m_StageDirtiedFired = false;
             m_LastSceneDirtyID = 0;
@@ -1294,12 +1321,12 @@ namespace UnityEditor.SceneManagement
             m_StageDirtiedFired = false;
         }
 
-        bool PromptIfMissingBasePrefabForVariant()
+        bool PromptIfMissingVariantParentForVariant()
         {
             if (PrefabUtility.IsPrefabAssetMissing(m_PrefabContentsRoot))
             {
                 string title = L10n.Tr("Saving Variant Failed");
-                string message = L10n.Tr("Can't save the Prefab Variant when its base Prefab is missing. You have to unpack the root GameObject or recover the missing base Prefab in order to save the Prefab Variant");
+                string message = L10n.Tr("Can't save the Prefab Variant when its parent Prefab is missing. You have to unpack the root GameObject or recover the missing parent Prefab in order to save the Prefab Variant");
                 if (autoSave)
                     message += L10n.Tr("\n\nAuto Save has been temporarily disabled.");
                 EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
@@ -1348,7 +1375,7 @@ namespace UnityEditor.SceneManagement
 
             var startTime = EditorApplication.timeSinceStartup;
 
-            if (PromptIfMissingBasePrefabForVariant())
+            if (PromptIfMissingVariantParentForVariant())
                 return false;
 
             // The user can have deleted required folders

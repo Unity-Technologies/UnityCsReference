@@ -120,6 +120,7 @@ namespace UnityEditor.TerrainTools
                 terrainData.terrainLayers = newarray;
             }
             terrainData.SetDetailResolution(parent.terrainData.detailResolution, parent.terrainData.detailResolutionPerPatch);
+            terrainData.SetDetailScatterMode(parent.terrainData.detailScatterMode);
             terrainData.wavingGrassSpeed = parent.terrainData.wavingGrassSpeed;
             terrainData.wavingGrassAmount = parent.terrainData.wavingGrassAmount;
             terrainData.wavingGrassStrength = parent.terrainData.wavingGrassStrength;

@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor.AddComponent;
 using UnityEditor.VersionControl;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
 using UnityEditor.StyleSheets;
@@ -20,6 +22,7 @@ using Object = UnityEngine.Object;
 using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 using JetBrains.Annotations;
 using Unity.Profiling;
+using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -27,7 +30,6 @@ namespace UnityEditor
     {
         ActiveEditorTracker tracker { get; }
         InspectorMode inspectorMode { get; }
-        bool useUIElementsDefaultInspector { get; }
         HashSet<int> editorsWithImportedObjectLabel { get; }
         Editor lastInteractedEditor { get; set; }
         GUIView parent { get; }
@@ -37,6 +39,7 @@ namespace UnityEditor
         bool WasEditorVisible(Editor[] editors, int editorIndex, Object target);
         bool ShouldCullEditor(Editor[] editors, int editorIndex);
         void Repaint();
+        void UnsavedChangesStateChanged(Editor editor, bool value);
     }
 
     interface IPropertySourceOpener
@@ -92,6 +95,11 @@ namespace UnityEditor
         protected Component[] m_ComponentsInPrefabSource;
         protected HashSet<Component> m_RemovedComponents;
         protected HashSet<Component> m_SuppressedComponents;
+        // Map that maps from editorIndex to list of removed asset components
+        // This is later used to determine if removed components visual elements need to be added to some editor at some index
+        protected Dictionary<int, List<Component>> m_RemovedComponentDict;
+        // List of removed components at the end of the editor list that needs to have visual elements append to the editor list
+        protected List<Component> m_AdditionalRemovedComponents;
         protected bool m_ResetKeyboardControl;
         internal bool m_OpenAddComponentMenu = false;
         protected ActiveEditorTracker m_Tracker;
@@ -121,7 +129,6 @@ namespace UnityEditor
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
         public EditorDragging editorDragging { get; }
-        public bool useUIElementsDefaultInspector { get; internal set; } = false;
         internal int inspectorElementModeOverride { get; set; } = 0;
         public Editor lastInteractedEditor { get; set; }
         internal static PropertyEditor HoveredPropertyEditor { get; private set; }
@@ -319,7 +326,7 @@ namespace UnityEditor
             CreateTracker();
 
             EditorApplication.focusChanged += OnFocusChanged;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished += OnObjectChanged;
 
@@ -341,7 +348,7 @@ namespace UnityEditor
             m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
 
             EditorApplication.focusChanged -= OnFocusChanged;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished -= OnObjectChanged;
 
@@ -369,12 +376,6 @@ namespace UnityEditor
 
         protected virtual bool CloseIfEmpty()
         {
-            // It should never close if its tracker is not locked.
-            if (!tracker.isLocked)
-            {
-                return false;
-            }
-
             // We can rely on the tracker to always keep valid Objects
             // even after an assemblyreload or assetdatabase refresh.
             List<Object> locked = new List<Object>();
@@ -394,6 +395,7 @@ namespace UnityEditor
 
             // Check if scripts have changed without calling set dirty
             tracker.VerifyModifiedMonoBehaviours();
+            InspectorUtility.DirtyLivePropertyChanges(tracker);
 
             if (!tracker.isDirty || !ReadyToRepaint())
                 return;
@@ -531,9 +533,8 @@ namespace UnityEditor
             RestoreVerticalScrollIfNeeded();
         }
 
-        private void SetUseUIEDefaultInspector()
+        internal void ClearEditorsAndRebuild()
         {
-            useUIElementsDefaultInspector = !useUIElementsDefaultInspector;
             // Clear the editors Element so that a real rebuild is done
             editorsElement.Clear();
             m_EditorElementUpdater.Clear();
@@ -563,7 +564,6 @@ namespace UnityEditor
             if (Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Use UI Toolkit Default Inspector"), useUIElementsDefaultInspector, SetUseUIEDefaultInspector);
             }
         }
 
@@ -723,7 +723,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        private void OnUndoRedoPerformed()
+        private void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             // Early out if we have no removed or suppressed components.
             // It's only a change from suppressed to removed or vice versa that needs to be handled specially on undo/redo.
@@ -735,11 +735,87 @@ namespace UnityEditor
             RebuildContentsContainers();
         }
 
+        private void DetermineInsertionPointOfVisualElementForRemovedComponent(int targetGameObjectIndex, Editor[] editors)
+        {
+            // Calculate which editor should have the removed component visual element added, if any.
+            // The visual element for removed components is added to the top of the chosen editor.
+            // It is assumed the asset components comes in the same order in the editors list, but there can be additional added
+            // components in the editors list, i.e. the editors for assets components can't be moved by the user
+            // Added components can appear anywhere in the editors list
+            if (m_RemovedComponentDict == null)
+                m_RemovedComponentDict = new Dictionary<int, List<Component>>();
+            if (m_AdditionalRemovedComponents == null)
+                m_AdditionalRemovedComponents = new List<Component>();
+
+            m_RemovedComponentDict.Clear();
+            m_AdditionalRemovedComponents.Clear();
+
+            int editorIndex = targetGameObjectIndex + 1;
+
+            foreach(var sourceComponent in m_ComponentsInPrefabSource)
+            {
+                // editorCounter is used to look forward in the list of editor, this is because added components might have be inserted between prefab components
+                // it starts at editorIndex because there is no need to look at the previous editors, based on the assumption that asset components and instance components
+                // always comes in the same order
+                int editorCounter = editorIndex;
+
+                // Move forwards through the list of editors to find one that matches the asset component
+                while (editorCounter < editors.Length)
+                {
+                    Object editorTarget = editors[editorCounter].target;
+
+                    // Skip added Components
+                    if (editorTarget is Component && PrefabUtility.GetPrefabInstanceHandle(editorTarget) == null)
+                    {
+                        // If editorIndex and editorCounter are identical we also increment the editor index because we don't
+                        // want to add the removed component visual element to added components editors
+                        // For consistency the visual element for removed components are never added to added components, so if the current
+                        // editor is an added component we skip the current editor
+                        if (editorIndex == editorCounter)
+                            ++editorIndex;
+                        ++editorCounter;
+                        continue;
+                    }
+
+                    Object correspondingSource = PrefabUtility.GetCorrespondingObjectFromSource(editorTarget);
+                    if (correspondingSource == sourceComponent)
+                    {
+                        // When we found an editor that matches the asset component, we move the start index because we don't have to test
+                        // this editor again
+                        editorIndex = editorCounter + 1;
+                        break;
+                    }
+
+                    ++editorCounter;
+                }
+
+                // If the forward looking counter has reached the end of the editors list, the component must have been removed from the instance
+                if (editorCounter >= editors.Length)
+                {
+                    // If the editorIndex has also reached the end we have removed components at the end of the list and those need to have their
+                    // visual element added separately
+                    if (editorIndex >= editors.Length)
+                    {
+                        m_AdditionalRemovedComponents.Add(sourceComponent);
+                    }
+                    else
+                    {
+                        if (!m_RemovedComponentDict.ContainsKey(editorIndex))
+                            m_RemovedComponentDict.Add(editorIndex, new List<Component>());
+
+                        m_RemovedComponentDict[editorIndex].Add(sourceComponent);
+                    }
+                }
+            }
+        }
+
         private void ExtractPrefabComponents()
         {
             m_LastInitialEditorInstanceID = m_Tracker.activeEditors.Length == 0 ? 0 : m_Tracker.activeEditors[0].GetInstanceID();
 
             m_ComponentsInPrefabSource = null;
+            m_RemovedComponentDict = null;
+            m_AdditionalRemovedComponents = null;
             if (m_RemovedComponents == null)
             {
                 m_RemovedComponents = new HashSet<Component>();
@@ -895,6 +971,13 @@ namespace UnityEditor
             {
                 m_RemovedPrefabComponentsElement.RemoveFromHierarchy();
                 m_RemovedPrefabComponentsElement = null;
+
+            }
+
+            if (m_RemovedComponentDict != null)
+            {
+                m_RemovedComponentDict = null;
+                m_AdditionalRemovedComponents = null;
             }
 
             BeginRebuildContentContainers();
@@ -965,7 +1048,7 @@ namespace UnityEditor
 
             k_CreateInspectorElements.Begin();
             // Only trigger the fixed count and viewport creation if this is the first build. Otherwise let the update method handle it.
-            if (m_EditorElementUpdater.Position == 0)
+            if (m_EditorElementUpdater.Position == 0 && editors.Any())
             {
                 // Force create a certain number of inspector elements without invoking a layout pass.
                 // We always want a minimum number of elements to be added.
@@ -1124,7 +1207,7 @@ namespace UnityEditor
             foreach (Editor e in editors)
             {
                 ++i;
-                if (e.target == null)
+                if (!e || e.target == null)
                     continue;
 
                 // If target is an asset, but not the same asset as the asset
@@ -1176,14 +1259,15 @@ namespace UnityEditor
             }
         }
 
-        private static bool HasLabel(Object target)
+        private static bool IsOpenForEdit(Object target)
         {
-            return HasLabel(target, AssetDatabase.GetAssetPath(target));
-        }
+            if (EditorUtility.IsPersistent(target))
+            {
+                var assetPath = AssetDatabase.GetAssetPath(target);
+                return Provider.PathHasMetaFile(assetPath) && AssetDatabase.IsMetaFileOpenForEdit(target);
+            }
 
-        private static bool HasLabel(Object target, string assetPath)
-        {
-            return EditorUtility.IsPersistent(target) && assetPath.StartsWith("assets", StringComparison.OrdinalIgnoreCase);
+            return false;
         }
 
         private Object[] GetInspectedAssets()
@@ -1193,13 +1277,13 @@ namespace UnityEditor
             if (assetEditor != null && assetEditor.targets.Length == 1)
             {
                 string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
-                if (HasLabel(assetEditor.target, assetPath) && !Directory.Exists(assetPath))
+                if (IsOpenForEdit(assetEditor.target) && !Directory.Exists(assetPath))
                     return assetEditor.targets;
             }
 
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
-            return Selection.objects.Where(HasLabel).ToArray();
+            return Selection.objects.Where(IsOpenForEdit).ToArray();
         }
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }
@@ -1712,7 +1796,6 @@ namespace UnityEditor
             if (m_RemovedComponents == null)
                 ExtractPrefabComponents(); // needed after assembly reload (due to HashSet not being serializable)
 
-            int prefabComponentIndex = -1;
             int targetGameObjectIndex = -1;
             GameObject targetGameObject = null;
             if (m_ComponentsInPrefabSource != null)
@@ -1721,30 +1804,23 @@ namespace UnityEditor
                 targetGameObject = (GameObject)editors[targetGameObjectIndex].target;
             }
 
+            if (m_ComponentsInPrefabSource != null && m_RemovedComponents.Count > 0 && m_RemovedComponentDict == null)
+                DetermineInsertionPointOfVisualElementForRemovedComponent(targetGameObjectIndex, editors);
+
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
+                if (!editors[editorIndex])
+                    continue;
                 editors[editorIndex].propertyViewer = this;
-                VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
-                if (m_ComponentsInPrefabSource != null && editorIndex > targetGameObjectIndex)
-                {
-                    if (prefabComponentIndex == -1)
-                        prefabComponentIndex = 0;
-                    while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
-                    {
-                        Object target = editors[editorIndex].target;
-                        // This is possible if there's a component with a missing script.
-                        if (target != null)
-                        {
-                            Object correspondingSource = PrefabUtility.GetCorrespondingObjectFromSource(target);
-                            Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
 
-                            if (correspondingSource == nextInSource)
-                                break;
-                            AddRemovedPrefabComponentElement(targetGameObject, nextInSource, prefabsComponentElement);
-                        }
-                        prefabComponentIndex++;
-                    }
-                    prefabComponentIndex++;
+                VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
+                Object target = editors[editorIndex].target;
+
+                if (m_RemovedComponentDict != null && m_RemovedComponentDict.ContainsKey(editorIndex))
+                {
+                    var objectList = m_RemovedComponentDict[editorIndex];
+                    foreach (var sourceComponent in objectList)
+                        AddRemovedPrefabComponentElement(targetGameObject, sourceComponent, prefabsComponentElement);
                 }
 
                 try
@@ -1766,10 +1842,10 @@ namespace UnityEditor
                                 ? "Nothing Selected"
                                 : ObjectNames.GetInspectorTitle(editorTarget);
                             culledEditorContainer =
-                                EditorUIService.instance.CreateCulledEditorElement(editorIndex, this, editorTitle);
+                                new UIElements.EditorElement(editorIndex, this, true) { name = editorTitle };
                             editorsElement.Add(culledEditorContainer as VisualElement);
 
-                            if (!EditorUIService.disableInspectorElementThrottling)
+                            if (!InspectorElement.disabledThrottling)
                                 m_EditorElementUpdater.Add(culledEditorContainer);
                         }
 
@@ -1781,10 +1857,9 @@ namespace UnityEditor
                         string editorTitle = editorTarget == null ?
                             "Nothing Selected" :
                             $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                        editorContainer = EditorUIService.instance.CreateEditorElement(editorIndex, this, editorTitle);
+                        editorContainer = new UIElements.EditorElement(editorIndex, this) { name = editorTitle };
                         editorsElement.Add(editorContainer as VisualElement);
-
-                        if (!EditorUIService.disableInspectorElementThrottling)
+                        if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(editorContainer);
                     }
 
@@ -1810,16 +1885,11 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
-            if (m_ComponentsInPrefabSource != null)
+            if (m_AdditionalRemovedComponents != null && m_AdditionalRemovedComponents.Count() > 0)
             {
                 VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
-                while (prefabComponentIndex > -1 && prefabComponentIndex < m_ComponentsInPrefabSource.Length)
-                {
-                    Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
-                    AddRemovedPrefabComponentElement(targetGameObject, nextInSource, prefabsComponentElement);
-
-                    prefabComponentIndex++;
-                }
+                foreach(var sourceComponent in m_AdditionalRemovedComponents)
+                    AddRemovedPrefabComponentElement(targetGameObject, sourceComponent, prefabsComponentElement);
 
                 if (prefabsComponentElement.childCount > 0)
                 {
@@ -1839,7 +1909,7 @@ namespace UnityEditor
             m_LastInspectedObjectInstanceID = -1; // reset to make sure the restore occurs once
         }
 
-        void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance)
+        void OnPrefabInstanceUnpacked(GameObject unpackedPrefabInstance, PrefabUnpackMode unpackMode)
         {
             if (m_RemovedComponents == null)
                 return;
@@ -1984,6 +2054,60 @@ namespace UnityEditor
             return false;
         }
 
+        public override void SaveChanges()
+        {
+            base.SaveChanges();
+            foreach (var editor in tracker.activeEditors)
+            {
+                editor.SaveChanges();
+            }
+        }
+
+        public override void DiscardChanges()
+        {
+            base.DiscardChanges();
+            foreach (var editor in tracker.activeEditors)
+            {
+                editor.DiscardChanges();
+            }
+        }
+
+        public void UnsavedChangesStateChanged(Editor editor, bool value)
+        {
+            tracker.UnsavedChangesStateChanged(editor, value);
+            hasUnsavedChanges = tracker.hasUnsavedChanges;
+            if (hasUnsavedChanges)
+            {
+                StringBuilder str = new StringBuilder();
+                foreach (var activeEditor in tracker.activeEditors)
+                {
+                    if (activeEditor.hasUnsavedChanges)
+                    {
+                        str.AppendLine(activeEditor.saveChangesMessage);
+                    }
+                }
+                saveChangesMessage = str.ToString();
+            }
+            else
+            {
+                saveChangesMessage = string.Empty;
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static bool PrivateRequestRebuild(ActiveEditorTracker tracker)
+        {
+            foreach (var inspector in Resources.FindObjectsOfTypeAll<PropertyEditor>())
+            {
+                if (inspector.tracker.Equals(tracker))
+                {
+                    return ContainerWindow.PrivateRequestClose(new List<EditorWindow>() {inspector});
+                }
+            }
+
+            return true;
+        }
+
         private void DrawSelectionPickerList()
         {
             if (m_TypeSelectionList == null)
@@ -2032,8 +2156,12 @@ namespace UnityEditor
                 return;
 
             Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
+
             if (editor != null && editor.target != null && editor.target is GameObject && editor.IsEnabled())
             {
+                if (ModeService.HasExecuteHandler("inspector_read_only") && ModeService.Execute("inspector_read_only", editor.target))
+                    return;
+
                 EditorGUILayout.BeginHorizontal(GUIContent.none, GUIStyle.none, GUILayout.Height(kAddComponentButtonHeight));
                 {
                     GUILayout.FlexibleSpace();

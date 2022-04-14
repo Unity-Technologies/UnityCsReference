@@ -81,7 +81,7 @@ namespace UnityEditor.PackageManager
 
         [SerializeField]
         [NativeName("versions")]
-        private VersionsInfo m_Versions = new VersionsInfo(null, null, null);
+        private VersionsInfo m_Versions = new VersionsInfo(null, null, null, null);
 
         [SerializeField]
         [NativeName("dependencies")]
@@ -155,6 +155,14 @@ namespace UnityEditor.PackageManager
         [NativeName("signature")]
         private SignatureInfo m_Signature = new SignatureInfo();
 
+        [SerializeField]
+        [NativeName("isDeprecated")]
+        private bool m_IsDeprecated = false;
+
+        [SerializeField]
+        [NativeName("deprecationMessage")]
+        private string m_DeprecationMessage = "";
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -189,6 +197,8 @@ namespace UnityEditor.PackageManager
         internal string upmReserved { get { return m_UpmReserved; } }
         public RegistryInfo registry { get { return m_Registry; } }
         internal SignatureInfo signature { get { return m_Signature ; } }
+        public bool isDeprecated { get { return m_IsDeprecated; } }
+        public string deprecationMessage { get { return m_DeprecationMessage; } }
 
         public DateTime? datePublished
         {
@@ -240,14 +250,7 @@ namespace UnityEditor.PackageManager
                 return FindForAssetPath(asmdefPath);
 
             // No asmdef - this is a precompiled DLL.
-            // Do a scan through all packages for one that owns the directory in which it is.
-            foreach (var package in GetAllRegisteredPackages())
-            {
-                if (fullPath.StartsWith(package.resolvedPath + Path.DirectorySeparatorChar))
-                    return package;
-            }
-
-            return null;
+            return FindForAssetPath(fullPath);
         }
 
         internal static List<PackageInfo> GetForAssemblyFilePaths(List<string> assemblyPaths)

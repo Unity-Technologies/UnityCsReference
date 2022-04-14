@@ -135,6 +135,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal override void UpdateValueFromText()
+        {
+            // Prevent text from changing when the value change
+            // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
+            m_UpdateTextFromValue = false;
+            try
+            {
+                value = StringToValue(text);
+            }
+            finally
+            {
+                m_UpdateTextFromValue = true;
+            }
+        }
+
+        internal override void UpdateTextFromValue()
+        {
+            text = ValueToString(rawValue);
+        }
+
         private void OnIsReadOnlyChanged(bool newValue)
         {
             EnableLabelDragger(!newValue);
@@ -176,56 +196,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            bool hasChanged = false;
-            if (evt.eventTypeId == KeyDownEvent.TypeId())
-            {
-                KeyDownEvent kde = evt as KeyDownEvent;
-
-                if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
-                    (kde?.character == '\n'))    // KeyCode.Return
-                {
-                    if (textEdition.hasFocus)
-                        Focus();
-                    else
-                        textValueInput.textElement.Focus();
-                    evt.StopPropagation();
-                    evt.PreventDefault();
-                }
-                else if (!isReadOnly)
-                {
-                    hasChanged = true;
-                }
-            }
-            else if (!isReadOnly && evt.eventTypeId == ExecuteCommandEvent.TypeId())
-            {
-                ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
-                string cmdName = commandEvt.commandName;
-                if (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut)
-                {
-                    hasChanged = true;
-                }
-            }
-
-            if (!isDelayed && hasChanged)
-            {
-                // Prevent text from changing when the value change
-                // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
-                m_UpdateTextFromValue = false;
-                try
-                {
-                    textInputBase.UpdateValueFromText();
-                }
-                finally
-                {
-                    m_UpdateTextFromValue = true;
-                }
-            }
-        }
 
         [EventInterest(typeof(BlurEvent), typeof(FocusEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
@@ -247,6 +217,7 @@ namespace UnityEngine.UIElements
                 else
                 {
                     textInputBase.UpdateValueFromText();
+                    textInputBase.UpdateTextFromValue();
                 }
             }
             else if (evt.eventTypeId == FocusEvent.TypeId())

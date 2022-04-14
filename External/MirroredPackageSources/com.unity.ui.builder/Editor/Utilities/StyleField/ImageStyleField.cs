@@ -3,7 +3,6 @@ using Object = UnityEngine.Object;
 using System;
 using System.Threading;
 using UnityEditor.PackageManager;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -79,6 +78,7 @@ namespace Unity.UI.Builder
             };
 
             AddType(typeof(Sprite), "Sprite");
+            AddType(typeof(VectorImage), "Vector");
         }
 
         private void OnEnterEditButton(PointerEnterEvent evt)
@@ -134,11 +134,6 @@ namespace Unity.UI.Builder
                 Debug.Log($"Successfully installed package \"{k_2DSpriteEditorPackageName}\".");
 
             return addRequest.Result != null;
-        }
-
-        public void TryEnableVectorGraphicTypeSupport()
-        {
-            AddType(typeof(VectorImage), "Vector");
         }
     }
 }

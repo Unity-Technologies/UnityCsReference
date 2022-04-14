@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -15,6 +13,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public interface ITextSelection
     {
+        /// <summary>
+        /// Returns true if the field is selectable.
+        /// </summary>
+        bool isSelectable { get; set; }
+
         /// <summary>
         /// Color of the cursor.
         /// </summary>
@@ -95,71 +98,71 @@ namespace UnityEngine.UIElements
         /// </summary>
         public ITextSelection selection => this;
 
-        internal TextSelectingManipulator m_SelectingManipulator;
+        TextSelectingManipulator m_SelectingManipulator;
 
-        bool m_IsSelectable = false;
-
+        bool m_IsSelectable;
         /// <summary>
-        /// Controls whether the element's content is selectable.
+        /// Controls whether the element's content is selectable.  Note that selectable TextElement are required to be focusable.
         /// </summary>
-        public bool isSelectable
+        bool ITextSelection.isSelectable
         {
-            get => m_IsSelectable;
+            get => m_IsSelectable && focusable;
             set
             {
                 if (value == m_IsSelectable)
                     return;
 
-                m_SelectingManipulator = value ? new TextSelectingManipulator(this) : null;
+                focusable = value;
                 m_IsSelectable = value;
             }
         }
 
         int ITextSelection.cursorIndex
         {
-            get => m_SelectingManipulator?.cursorIndex ?? -1;
+            get => selection.isSelectable ? selectingManipulator.cursorIndex : -1;
             set
             {
-                if (isSelectable)
-                    m_SelectingManipulator.cursorIndex = value;
+                if (selection.isSelectable)
+                    selectingManipulator.cursorIndex = value;
             }
         }
 
 
         int ITextSelection.selectIndex
         {
-            get => m_SelectingManipulator?.selectIndex ?? -1;
+            get => selection.isSelectable ? selectingManipulator.selectIndex : -1;
             set
             {
-                if (isSelectable)
-                    m_SelectingManipulator.selectIndex = value;
+                if (selection.isSelectable)
+                    selectingManipulator.selectIndex = value;
             }
         }
 
         void ITextSelection.SelectAll()
         {
-            m_SelectingManipulator?.m_SelectingUtilities.SelectAll();
+            if (selection.isSelectable)
+                selectingManipulator.m_SelectingUtilities.SelectAll();
         }
 
         void ITextSelection.SelectNone()
         {
-            m_SelectingManipulator?.m_SelectingUtilities.SelectNone();
+            if (selection.isSelectable)
+                selectingManipulator.m_SelectingUtilities.SelectNone();
         }
 
         void ITextSelection.SelectRange(int cursorIndex, int selectionIndex)
         {
-            if (isSelectable)
+            if (selection.isSelectable)
             {
-                m_SelectingManipulator.m_SelectingUtilities.cursorIndex = cursorIndex;
-                m_SelectingManipulator.m_SelectingUtilities.selectIndex = selectionIndex;
+                selectingManipulator.m_SelectingUtilities.cursorIndex = cursorIndex;
+                selectingManipulator.m_SelectingUtilities.selectIndex = selectionIndex;
             }
         }
 
         bool ITextSelection.HasSelection()
         {
-            return isSelectable && m_SelectingManipulator.HasSelection();
+            return selection.isSelectable && selectingManipulator.HasSelection();
         }
-
 
         bool ITextSelection.doubleClickSelectsWord { get; set; } = true;
 
@@ -181,8 +184,8 @@ namespace UnityEngine.UIElements
 
         void ITextSelection.MoveTextEnd()
         {
-            if (isSelectable)
-                m_SelectingManipulator.m_SelectingUtilities.MoveTextEnd();
+            if (selection.isSelectable)
+                selectingManipulator.m_SelectingUtilities.MoveTextEnd();
         }
 
         Color ITextSelection.selectionColor { get; set; } = new Color(0.239f, 0.502f, 0.875f, 0.65f);
@@ -191,6 +194,10 @@ namespace UnityEngine.UIElements
         Color ITextSelection.cursorColor { get; set; } = new Color(0.706f, 0.706f, 0.706f, 1.0f);
 
         float ITextSelection.cursorWidth { get; set; } = 1.0f;
+
+        // Always return a valid selecting manipulator and rely on isSelectable to use it/not
+        internal TextSelectingManipulator selectingManipulator =>
+            m_SelectingManipulator ??= new TextSelectingManipulator(this);
 
         private void DrawHighlighting(MeshGenerationContext mgc)
         {

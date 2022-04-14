@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -32,13 +33,6 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         [NativeMethod("IsReloading")]
         public extern static bool IsReloading(Scene scene);
-
-        public extern static int loadedSceneCount
-        {
-            [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
-            [NativeMethod("GetLoadedSceneCount")]
-            get;
-        }
 
         public extern static int loadedRootSceneCount
         {

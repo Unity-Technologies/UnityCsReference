@@ -30,8 +30,11 @@ namespace UnityEditor
             private bool m_WasSelected;
             private bool m_PartiallySelected;
             private bool m_Enabled;
+            private string[] m_Types;
 
-            public ListElement(string text, bool selected, float score)
+            public ListElement(string text, bool selected, float score) : this(text, new [] { text }, selected, score) { }
+
+            public ListElement(string text, string[] types, bool selected, float score)
             {
                 m_Content = new GUIContent(text);
                 if (!string.IsNullOrEmpty(m_Content.text))
@@ -40,6 +43,7 @@ namespace UnityEditor
                     a[0] = char.ToUpper(a[0]);
                     m_Content.text = new string(a);
                 }
+                m_Types = types;
                 m_Selected = selected;
                 filterScore = score;
                 m_PartiallySelected = false;
@@ -124,6 +128,14 @@ namespace UnityEditor
                 }
             }
 
+            public IEnumerable<string> types
+            {
+                get
+                {
+                    return m_Types;
+                }
+            }
+
             public void ResetScore()
             {
                 m_WasSelected = m_Selected || m_PartiallySelected;
@@ -187,6 +199,12 @@ namespace UnityEditor
                 if (m_MaxCount > 0)
                     res = res.Take(m_MaxCount);
                 return res.Count();
+            }
+
+            public void AddElement(string label, string[] types)
+            {
+                var res = new ListElement(label, types, false, -1);
+                m_ListElements.Add(res);
             }
 
             public ListElement NewOrMatchingElement(string label)

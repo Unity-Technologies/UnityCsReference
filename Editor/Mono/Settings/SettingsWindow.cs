@@ -137,7 +137,7 @@ namespace UnityEditor
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
@@ -154,8 +154,8 @@ namespace UnityEditor
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
             SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
 
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
 
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -166,7 +166,7 @@ namespace UnityEditor
             m_TreeView?.currentProvider?.OnInspectorUpdate();
         }
 
-        private void OnUndoRedoPerformed()
+        private void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             Repaint();
         }
@@ -230,10 +230,7 @@ namespace UnityEditor
 
         private void Init()
         {
-            m_Providers = SettingsService.FetchSettingsProviders().Where(p => p.scope == m_Scope).ToArray();
-
-            WarnAgainstDuplicates();
-
+            m_Providers = SettingsService.FetchSettingsProviders(m_Scope);
             foreach (var provider in m_Providers)
             {
                 provider.settingsWindow = this;
@@ -248,16 +245,6 @@ namespace UnityEditor
             m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
             RestoreSelection();
             m_TreeView.currentProviderChanged += ProviderChanged;
-        }
-
-        private void WarnAgainstDuplicates()
-        {
-            // Warn for providers with same id (will be supported later)
-            foreach (var g in m_Providers.GroupBy(x => x.settingsPath))
-            {
-                if (g.Count() > 1)
-                    Debug.LogWarning($"There are {g.Count()} settings providers with the same name {g.Key}.");
-            }
         }
 
         private void ProviderChanged(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider)
@@ -498,7 +485,6 @@ namespace UnityEditor
             });
         }
 
-
         [Serializable]
         internal struct EditorGameServiceEvent
         {
@@ -508,7 +494,6 @@ namespace UnityEditor
             public string package;
             public string package_ver;
         }
-
 
         internal static SettingsWindow OpenUserPreferences()
         {

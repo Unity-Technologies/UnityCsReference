@@ -65,14 +65,11 @@ namespace UnityEditor.Profiling.ModuleEditor
         {
             if (collection.TryGetValue(categoryName, out List<string> counters))
             {
-                // If we could use SortedSet rather than List (we are limited to .NET 3.5 currently), it would prevent the need to do this ordering and duplicate checking manually.
-                for (int i = 0; i < counters.Count; i++)
+                // Insert in alphabetical order.
+                int index = counters.BinarySearch(counterName);
+                if (index < 0) // Prevent duplicates.
                 {
-                    int index = counters.BinarySearch(counterName);
-                    if (index < 0) // Prevent duplicates.
-                    {
-                        counters.Insert(~index, counterName);
-                    }
+                    counters.Insert(~index, counterName);
                 }
             }
             else

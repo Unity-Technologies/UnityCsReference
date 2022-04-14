@@ -97,7 +97,7 @@ namespace UnityEditor
                 return;
             }
 
-            DragAndDrop.visualMode = DragAndDrop.Drop(DragAndDropWindowTarget.inspector, editor.targets, Event.current.type == EventType.DragPerform);
+            DragAndDrop.visualMode = DragAndDrop.DropOnInspectorWindow(editor.targets, Event.current.type == EventType.DragPerform);
 
             if (Event.current.type == EventType.DragPerform)
             {

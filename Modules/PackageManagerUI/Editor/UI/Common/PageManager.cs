@@ -226,6 +226,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     requireUserLoggedIn = false,
                     supportLocalReordering = true,
                     requireNetwork = false,
+                    supportFilters = true,
                     orderingValues = new[]
                     {
                         new PageCapability.Ordering("Name (asc)", "displayName", PageCapability.Order.Ascending),
@@ -391,16 +392,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageDatabase.GetPackageAndVersion(item, out var package, out var version);
                 var visualState = page.GetVisualState(item.packageUniqueId);
                 if (package == null || visualState?.visible != true)
-                {
                     toRemove.Add(item);
-                    continue;
-                }
-
-                // Re-select the primary version of a package if the package item is no longer expanded,
-                // or if the previous selected version could not be found anymore (while the package could still be found)
-                // This could happen when we uninstall a package or when we change from placeholder version to the real version.
-                if (!string.IsNullOrEmpty(item.versionUniqueId) && (version == null || !visualState.expanded))
-                    toAddOrUpdate.Add(new PackageAndVersionIdPair(item.packageUniqueId));
             }
 
             if (selection.Count > 0 && toAddOrUpdate.Count + toRemove.Count == 0)
@@ -437,11 +429,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void SetSeeAllVersions(IPackage package, bool value)
         {
             GetPageFromTab().SetSeeAllVersions(package, value);
-        }
-
-        public virtual void SetExpanded(IPackage package, bool value)
-        {
-            GetPageFromTab().SetExpanded(package, value);
         }
 
         public virtual bool IsGroupExpanded(string groupName)
@@ -532,14 +519,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var filters = page.filters.Clone();
             filters.searchText = searchText;
             page.UpdateFilters(filters);
-        }
-
-        private void OnShowDependenciesChanged(bool value)
-        {
-            if (m_PackageFiltering.currentFilterTab != PackageFilterTab.InProject)
-                return;
-            var page = GetPageFromTab();
-            page.Rebuild();
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)
@@ -727,8 +706,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
             m_PackageFiltering.onSearchTextChanged += OnSearchTextChanged;
 
-            m_SettingsProxy.onEnablePackageDependenciesChanged += OnShowDependenciesChanged;
-
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Selection.onSelectionChanged += OnEditorSelectionChanged;
         }
@@ -749,8 +726,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
             m_PackageFiltering.onSearchTextChanged -= OnSearchTextChanged;
-
-            m_SettingsProxy.onEnablePackageDependenciesChanged -= OnShowDependenciesChanged;
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Selection.onSelectionChanged -= OnEditorSelectionChanged;

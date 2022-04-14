@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    class QueryListBlockAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class)]
+    public class QueryListBlockAttribute : Attribute
     {
         static List<QueryListBlockAttribute> s_Attributes;
 
@@ -26,15 +26,15 @@ namespace UnityEditor.Search
             this.op = op;
         }
 
-        public string[] ids;
-        public string name;
-        public string category;
-        public string op;
-        public Type type;
+        public string[] ids { get; set; }
+        public string name { get; set; }
+        public string category { get; set; }
+        public string op { get; set; }
+        public Type type { get; set; }
 
         public string id => ids.Length > 0 ? ids[0] : string.Empty;
 
-        public static QueryListBlock CreateBlock(Type type, IQuerySource source, string value)
+        internal static QueryListBlock CreateBlock(Type type, IQuerySource source, string value)
         {
             var attr = FindBlock(type);
             if (attr != null)
@@ -42,7 +42,7 @@ namespace UnityEditor.Search
             return null;
         }
 
-        public static QueryListBlock CreateBlock(string id, string op, IQuerySource source, string value)
+        internal static QueryListBlock CreateBlock(string id, string op, IQuerySource source, string value)
         {
             var attr = FindBlock(id);
             QueryMarker.TryParse(value, out var marker);
@@ -63,7 +63,7 @@ namespace UnityEditor.Search
             return null;
         }
 
-        public static IEnumerable<SearchProposition> GetPropositions(Type type)
+        internal static IEnumerable<SearchProposition> GetPropositions(Type type)
         {
             var block = CreateBlock(type, null, null);
             if (block != null)
@@ -106,7 +106,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public static bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
+        internal static bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
         {
             var block = CreateBlock(id, null, null, null);
             if (block != null)

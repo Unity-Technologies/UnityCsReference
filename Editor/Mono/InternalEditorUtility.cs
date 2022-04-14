@@ -13,6 +13,7 @@ using UnityEditor.Experimental;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
+using UnityEditor.Build;
 
 namespace UnityEditorInternal
 {
@@ -619,7 +620,6 @@ namespace UnityEditorInternal
             switch (System.IO.Path.GetExtension(filename).ToLower())
             {
                 case ".cs":
-                case ".js":
                 case ".boo":
                     return true;
                 case ".dll":
@@ -647,7 +647,7 @@ namespace UnityEditorInternal
 
         internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target)
         {
-            return GetCompilationDefines(options, targetGroup, target, PlayerSettings.GetApiCompatibilityLevel(targetGroup));
+            return GetCompilationDefines(options, targetGroup, target, PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(target)));
         }
 
         public static void SetShowGizmos(bool value)
@@ -661,6 +661,27 @@ namespace UnityEditorInternal
                 return;
 
             view.SetShowGizmos(value);
+        }
+
+        private static Material blitSceneViewCaptureMat;
+        public static bool CaptureSceneView(SceneView sv, RenderTexture rt)
+        {
+            if (!sv.hasFocus)
+                return false;
+
+            if (blitSceneViewCaptureMat == null)
+                blitSceneViewCaptureMat = (Material)EditorGUIUtility.LoadRequired("SceneView/BlitSceneViewCapture.mat");
+
+            // Grab SceneView framebuffer into a temporary RT.
+            RenderTexture tmp = RenderTexture.GetTemporary(rt.descriptor);
+            Rect rect = new Rect(0, 0, sv.position.width, sv.position.height);
+            sv.m_Parent.GrabPixels(tmp, rect);
+
+            // Blit it into the target RT, it will be flipped by the shader if necessary.
+            Graphics.Blit(tmp, rt, blitSceneViewCaptureMat);
+            RenderTexture.ReleaseTemporary(tmp);
+
+            return true;
         }
     }
 }

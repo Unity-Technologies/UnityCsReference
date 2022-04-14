@@ -31,6 +31,8 @@ namespace UnityEditor.EditorTools
 
     public abstract class EditorToolContext : ScriptableObject, IEditor
     {
+        bool m_Active;
+
         [HideInInspector]
         [SerializeField]
         internal UnityObject[] m_Targets;
@@ -44,6 +46,27 @@ namespace UnityEditor.EditorTools
             : Selection.objects;
 
         public UnityObject target => m_Target == null ? Selection.activeObject : m_Target;
+
+        internal void Activate()
+        {
+            if(m_Active
+            // Prevent to reenable the context if this is not the active one anymore
+            // Can happen when entering playmode due to the delayCall in EditorToolManager.OnEnable
+                || this != EditorToolManager.activeToolContext)
+                return;
+
+            OnActivated();
+            m_Active = true;
+        }
+
+        internal void Deactivate()
+        {
+            if(!m_Active)
+                return;
+
+            OnWillBeDeactivated();
+            m_Active = false;
+        }
 
         public virtual void OnActivated() {}
 

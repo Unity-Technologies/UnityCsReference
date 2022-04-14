@@ -70,8 +70,11 @@ namespace UnityEngine.UIElements
             get => m_MakeItem;
             set
             {
-                m_MakeItem = value;
-                Rebuild();
+                if (value != m_MakeItem)
+                {
+                    m_MakeItem = value;
+                    Rebuild();
+                }
             }
         }
 
@@ -92,8 +95,12 @@ namespace UnityEngine.UIElements
             get => m_BindItem;
             set
             {
-                m_BindItem = value;
-                RefreshItems();
+                if (value != m_BindItem)
+                {
+                    m_BindItem = value;
+                    RefreshItems();
+                }
+
             }
         }
 

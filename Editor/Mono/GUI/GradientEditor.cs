@@ -28,6 +28,19 @@ namespace UnityEditor
                 GUISkin s = (GUISkin)EditorGUIUtility.LoadRequired("GradientEditor.GUISkin");
                 return s.GetStyle(name);
             }
+
+            public readonly GUIContent[] modeTexts =
+            {
+                EditorGUIUtility.TrTextContent("Blend (Classic)"),
+                EditorGUIUtility.TrTextContent("Blend (Perceptual)"),
+                EditorGUIUtility.TrTextContent("Fixed")
+            };
+            public readonly int[] modeValues =
+            {
+                (int)GradientMode.Blend,
+                (int)GradientMode.PerceptualBlend,
+                (int)GradientMode.Fixed
+            };
         }
         static Styles s_Styles;
         static Texture2D s_BackgroundTexture;
@@ -155,7 +168,7 @@ namespace UnityEditor
             float gradientTextureHeight = position.height - 2 * swatchHeight - editSectionHeight - modeHeight;
 
             position.height = modeHeight;
-            m_GradientMode = (GradientMode)EditorGUI.EnumPopup(position, s_Styles.modeText, m_GradientMode);
+            m_GradientMode = (GradientMode)EditorGUI.IntPopup(position, s_Styles.modeText, (int)m_GradientMode, s_Styles.modeTexts, s_Styles.modeValues);
             if (m_GradientMode != m_Gradient.mode)
                 AssignBack();
 
@@ -471,6 +484,7 @@ namespace UnityEditor
             m_Gradient.colorKeys = colorKeys;
             m_Gradient.alphaKeys = alphaKeys;
             m_Gradient.mode = m_GradientMode;
+            m_Gradient.colorSpace = m_ColorSpace;
 
             GUI.changed = true;
         }

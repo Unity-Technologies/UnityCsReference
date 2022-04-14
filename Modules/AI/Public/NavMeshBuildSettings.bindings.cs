@@ -25,6 +25,7 @@ namespace UnityEngine.AI
         public int tileSize { get { return m_TileSize; } set { m_TileSize = value; } }
         public uint maxJobWorkers { get { return m_MaxJobWorkers; } set { m_MaxJobWorkers = value; } }
         public bool preserveTilesOutsideBounds { get { return m_PreserveTilesOutsideBounds != 0; } set { m_PreserveTilesOutsideBounds = value ? 1 : 0; } }
+        public bool buildHeightMesh { get { return m_BuildHeightMesh != 0; } set { m_BuildHeightMesh = value ? 1 : 0; } }
         public NavMeshBuildDebugSettings debug { get { return m_Debug; } set { m_Debug = value; } }
 
         int m_AgentTypeID;
@@ -39,7 +40,7 @@ namespace UnityEngine.AI
         float m_VoxelSize;
         int m_OverrideTileSize;
         int m_TileSize;
-        int m_AccuratePlacement;        // Not exposed
+        int m_BuildHeightMesh;
         uint m_MaxJobWorkers;
         int m_PreserveTilesOutsideBounds;
 

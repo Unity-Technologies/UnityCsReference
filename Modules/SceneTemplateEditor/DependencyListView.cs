@@ -123,6 +123,7 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
+        const string k_ListInternalView = "dependency-list-internal-view";
         const string k_ListView = "dependency-list-view";
         const string k_HeaderItem = "dependency-list-view-header";
         const string k_SearchFieldItem = "dependency-list-view-search-field";
@@ -132,6 +133,9 @@ namespace UnityEditor.SceneTemplate
 
         public ListView listView { get; }
         public VisualElement header { get; }
+
+        bool m_SearchFieldReady;
+        internal bool viewReady => m_SearchFieldReady;
 
         Toggle m_CloneHeaderToggle;
 
@@ -159,18 +163,28 @@ namespace UnityEditor.SceneTemplate
             listViewContainer.style.flexGrow = 1;
 
             listView = new ListView(m_FilteredItems, itemHeight, MakeItem, BindItem);
+            listView.name = k_ListInternalView;
             listView.showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly;
             listView.style.flexGrow = 1;
             listView.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
             listView.selectionType = SelectionType.Multiple;
-            listView.onItemsChosen += OnDoubleClick;
+            listView.itemsChosen += OnDoubleClick;
+            listView.style.maxHeight = Mathf.Max(m_OriginalItems.Count * m_ItemSize + 100, listView.style.maxHeight.value.value);
 
             var searchField = new ToolbarSearchField();
+            searchField.name = "dependency-listview-toolbar-searchfield";
             searchField.RegisterValueChangedCallback(evt =>
             {
                 m_CurrentSearchString = evt.newValue;
                 FilterItems(evt.newValue);
             });
+            var textField = searchField.Q<TextField>();
+            if (textField != null)
+            {
+                textField.maxLength = 1024;
+                m_SearchFieldReady = true;
+            }
+
             searchField.AddToClassList(k_SearchFieldItem);
             Add(searchField);
 
@@ -376,7 +390,7 @@ namespace UnityEditor.SceneTemplate
         {
             m_FilteredItems.Clear();
 
-            var query = m_QueryEngine.Parse(searchText);
+            var query = m_QueryEngine.ParseQuery(searchText);
             query.returnPayloadIfEmpty = true;
             foreach (var item in query.Apply(m_OriginalItems))
             {

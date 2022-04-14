@@ -72,6 +72,7 @@ namespace UnityEngine.AI
         public extern Bounds sourceBounds { get; }
         public extern Vector3 position { get; set; }
         public extern Quaternion rotation { get; set; }
+        internal extern bool hasHeightMeshData { [NativeMethod("HasHeightMeshData")] get; }
     }
 
     public struct NavMeshDataInstance

@@ -40,11 +40,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isOfflineMode => false;
 
-        public bool isInProgress => (state & DownloadState.InProgress) != 0;
+        public virtual bool isInProgress => (state & DownloadState.InProgress) != 0;
 
         public bool isInPause => (state & DownloadState.InPause) != 0;
 
-        public bool isProgressVisible => (state & ~DownloadState.DownloadRequested & (DownloadState.InPause | DownloadState.InProgress)) != 0;
+        public virtual bool isProgressVisible => (state & ~DownloadState.DownloadRequested & (DownloadState.InPause | DownloadState.InProgress)) != 0;
 
         public bool isProgressTrackable => true;
 
@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private DownloadState m_State;
-        public DownloadState state => m_State;
+        public virtual DownloadState state => m_State;
 
         [SerializeField]
         private string m_ErrorMessage;
@@ -90,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
         }
 
-        private AssetStoreDownloadOperation()
+        public AssetStoreDownloadOperation()
         {
         }
 
@@ -155,18 +155,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 Debug.LogError($"{k_ConsoleLogPrefix} {errorMessage}");
 
+            attr |= UIError.Attribute.IsDetailInConsole;
             if (operationErrorCode == 403)
             {
                 m_ErrorMessage = k_ForbiddenErrorMessage;
             }
             else
             {
-                attr |= UIError.Attribute.IsDetailInConsole | UIError.Attribute.IsClearable;
+                attr |= UIError.Attribute.IsClearable;
                 m_ErrorMessage = k_DownloadErrorMessage;
             }
 
-            onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, attr, operationErrorCode));
+            var error = new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, attr, operationErrorCode);
+            onOperationError?.Invoke(this, error);
             onOperationFinalized?.Invoke(this);
+
+            PackageManagerOperationErrorAnalytics.SendEvent(GetType().Name, error);
         }
 
         public void Pause()

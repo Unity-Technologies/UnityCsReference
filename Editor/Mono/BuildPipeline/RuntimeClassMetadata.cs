@@ -5,8 +5,10 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -17,11 +19,11 @@ namespace UnityEditor
     internal class RuntimeClassRegistry
     {
         protected Dictionary<string, HashSet<string>> serializedClassesPerAssembly = new Dictionary<string, HashSet<string>>();
-        protected Dictionary<string, string[]> m_UsedTypesPerUserAssembly = new Dictionary<string, string[]>();
+        protected Dictionary<string, HashSet<string>> m_UsedTypesPerUserAssembly = new Dictionary<string, HashSet<string>>();
         protected Dictionary<int, List<string>> classScenes = new Dictionary<int, List<string>>();
         protected UnityType objectUnityType = null;
 
-        public Dictionary<string, string[]> UsedTypePerUserAssembly
+        public Dictionary<string, HashSet<string>> UsedTypePerUserAssembly
         {
             get { return m_UsedTypesPerUserAssembly; }
         }
@@ -49,7 +51,21 @@ namespace UnityEditor
 
         public void SetUsedTypesInUserAssembly(string[] typeNames, string assemblyName)
         {
-            m_UsedTypesPerUserAssembly[assemblyName] = typeNames;
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
+                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+
+            foreach (var typeName in typeNames)
+                types.Add(typeName);
+        }
+
+        [RequiredByNativeCode]
+        public void SetSerializedTypesInUserAssembly(string[] typeNames, string assemblyName)
+        {
+            if (!serializedClassesPerAssembly.TryGetValue(assemblyName, out HashSet<string> types))
+                serializedClassesPerAssembly[assemblyName] = types = new HashSet<string>();
+
+            foreach (var typeName in typeNames)
+                types.Add(typeName);
         }
 
         public bool IsDLLUsed(string dll)
@@ -66,6 +82,20 @@ namespace UnityEditor
             }
 
             return m_UsedTypesPerUserAssembly.ContainsKey(dll);
+        }
+
+        protected void AddUsedClass(string assemblyName, string className)
+        {
+            if (string.IsNullOrEmpty(assemblyName))
+                throw new ArgumentException(nameof(assemblyName));
+
+            if (string.IsNullOrEmpty(className))
+                throw new ArgumentException(nameof(className));
+
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
+                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+
+            types.Add(className);
         }
 
         protected void AddSerializedClass(string assemblyName, string className)
@@ -115,7 +145,7 @@ namespace UnityEditor
             items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
 
             foreach (var userAssembly in m_UsedTypesPerUserAssembly)
-                items.Add(userAssembly.Key, userAssembly.Value);
+                items.Add(userAssembly.Key, userAssembly.Value.ToArray());
 
             return items;
         }
@@ -131,6 +161,24 @@ namespace UnityEditor
             {
                 yield return new KeyValuePair<string, string[]>(pair.Key, pair.Value.ToArray());
             }
+        }
+
+        [RequiredByNativeCode]
+        public MethodDescription[] GetAllMethodsToPreserve()
+        {
+            return m_MethodsToPreserve.ToArray();
+        }
+
+        [RequiredByNativeCode]
+        public string[] GetAllSerializedClassesAssemblies()
+        {
+            return serializedClassesPerAssembly.Keys.ToArray();
+        }
+
+        [RequiredByNativeCode]
+        public string[] GetAllSerializedClassesForAssembly(string assembly)
+        {
+            return serializedClassesPerAssembly[assembly].ToArray();
         }
 
         public static RuntimeClassRegistry Create()
@@ -155,6 +203,8 @@ namespace UnityEditor
             }
         }
 
+        // Needs to stay in sync with MethodDescription in Editor/Src/BuildPipeline/BuildSerialization.h
+        [StructLayout(LayoutKind.Sequential)]
         internal class MethodDescription
         {
             public string assembly;
@@ -165,12 +215,24 @@ namespace UnityEditor
         internal List<MethodDescription> m_MethodsToPreserve = new List<MethodDescription>();
 
         //invoked by native code
-        internal void AddMethodToPreserve(string assembly, string @namespace, string klassName, string methodName)
+        [RequiredByNativeCode]
+        public void AddMethodToPreserve(string assembly, string ns, string klassName, string methodName)
         {
             m_MethodsToPreserve.Add(new MethodDescription()
             {
                 assembly = assembly,
-                fullTypeName = @namespace + (@namespace.Length > 0 ? "." : "") + klassName,
+                fullTypeName = ns + (ns.Length > 0 ? "." : "") + klassName,
+                methodName = methodName
+            });
+        }
+
+        [RequiredByNativeCode]
+        public void AddMethodToPreserveWithFullTypeName(string assembly, string fullTypeName, string methodName)
+        {
+            m_MethodsToPreserve.Add(new MethodDescription()
+            {
+                assembly = assembly,
+                fullTypeName = fullTypeName,
                 methodName = methodName
             });
         }

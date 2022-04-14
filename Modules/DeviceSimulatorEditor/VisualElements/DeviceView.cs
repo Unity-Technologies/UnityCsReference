@@ -39,6 +39,8 @@ namespace UnityEditor.DeviceSimulation
         private bool m_OverlayMeshDirty = true;
         private bool m_ProceduralOverlayMeshDirty = true;
 
+        internal Vector4 borderSize => m_BorderSize;
+
         public int Rotation
         {
             set
@@ -51,7 +53,7 @@ namespace UnityEditor.DeviceSimulation
 
         public float Scale
         {
-            private get => m_Scale;
+            internal get => m_Scale;
             set
             {
                 m_Scale = value;

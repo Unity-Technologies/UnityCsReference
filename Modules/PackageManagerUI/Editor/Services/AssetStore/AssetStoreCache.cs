@@ -22,8 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Dictionary<string, AssetStoreLocalInfo> m_LocalInfos = new Dictionary<string, AssetStoreLocalInfo>();
 
-        private Texture2D m_MissingTexture;
-
         [SerializeField]
         private string[] m_SerializedKeys = new string[0];
 
@@ -124,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot load image: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot load image: {e.Message}");
             }
 
             return null;
@@ -147,17 +145,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException e)
             {
-                Debug.Log($"[Package Manager] Cannot save image: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot save image: {e.Message}");
             }
         }
 
         public virtual void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null)
         {
-            if (m_MissingTexture == null)
-            {
-                m_MissingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
-            }
-
             var texture = LoadImage(productID, url);
             if (texture != null)
             {
@@ -175,7 +168,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
                 }
 
-                doneCallbackAction?.Invoke(productID, m_MissingTexture);
+                doneCallbackAction?.Invoke(productID, null);
             };
             httpRequest.Begin();
         }
@@ -188,7 +181,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PurchaseInfos.Clear();
             m_ProductInfos.Clear();
             m_LocalInfos.Clear();
-            m_MissingTexture = null;
         }
 
         public virtual AssetStorePurchaseInfo GetPurchaseInfo(string productIdString)
@@ -255,10 +247,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (localInfoUpdated)
                     addedOrUpdatedLocalInfos.Add(info);
                 else
-                {
-                    info.updateInfoFetched = oldInfo.updateInfoFetched;
-                    info.canUpdate = oldInfo.canUpdate;
-                }
+                    info.updateStatus = oldInfo.updateStatus;
             }
             if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);

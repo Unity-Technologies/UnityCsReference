@@ -171,6 +171,22 @@ namespace UnityEngine
             CopyMaterialArray(NoAllocHelpers.ExtractArrayFromListT(m));
         }
 
+        public void SetSharedMaterials(List<Material> materials)
+        {
+            if (materials == null)
+                throw new ArgumentNullException("The material list to set cannot be null.", "materials");
+
+            SetMaterialArray(NoAllocHelpers.ExtractArrayFromListT(materials));
+        }
+
+        public void SetMaterials(List<Material> materials)
+        {
+            if (materials == null)
+                throw new ArgumentNullException("The material list to set cannot be null.", "materials");
+
+            SetMaterialArray(NoAllocHelpers.ExtractArrayFromListT(materials));
+        }
+
         public void GetSharedMaterials(List<Material> m)
         {
             if (m == null)
@@ -190,6 +206,7 @@ namespace UnityEngine
     public sealed partial class TrailRenderer : Renderer
     {
         extern public float time                { get; set; }
+        extern internal float previewTimeScale  { get; set; }
         extern public float startWidth          { get; set; }
         extern public float endWidth            { get; set; }
         extern public float widthMultiplier     { get; set; }

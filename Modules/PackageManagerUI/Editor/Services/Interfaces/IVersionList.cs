@@ -28,5 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isNonLifecycleVersionInstalled { get; }
 
         bool hasLifecycleVersion { get; }
+
+        IPackageVersion GetUpdateTarget(IPackageVersion version);
     }
 }

@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -46,9 +44,6 @@ namespace Unity.UI.Builder
             base.PerformAction(destination, pane, localMousePosition, index);
 
             m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);
-
-            // Remove temporary min-size element.
-            destination.RemoveMinSizeSpecialElement();
 
             var newParent = destination;
 
@@ -136,8 +131,12 @@ namespace Unity.UI.Builder
                 return;
 
             UnfixElementSizeAndPosition(m_DragPreviewLastParent);
-            m_DragPreviewLastParent.UnhideMinSizeSpecialElement();
             m_DragPreviewLastParent = null;
+        }
+
+        protected override IEnumerable<VisualElement> GetSelectedElements()
+        {
+            return documentRootElement.FindSelectedElements();
         }
     }
 }

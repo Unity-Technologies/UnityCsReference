@@ -127,5 +127,6 @@ namespace UnityEngine
         [FreeFunction(IsThreadSafe = true)] extern public static float HalfToFloat(ushort val);
 
         [FreeFunction("PerlinNoise::NoiseNormalized", IsThreadSafe = true)] extern public static float PerlinNoise(float x, float y);
+        [FreeFunction("PerlinNoise::NoiseNormalized", IsThreadSafe = true)] extern public static float PerlinNoise1D(float x);
     }
 }

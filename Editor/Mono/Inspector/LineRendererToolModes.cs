@@ -17,7 +17,6 @@ namespace UnityEditor
         }
 
         private LineRenderer m_LineRenderer;
-        private LineRendererInspector m_Inspector;
         public List<int> m_Selection = new List<int>();
 
         public static float createPointSeparation
@@ -53,10 +52,9 @@ namespace UnityEditor
         private static readonly Color kCloudColor = new Color(200f / 255f, 200f / 255f, 20f / 255f, 0.85f);
         private static readonly Color kSelectedCloudColor = new Color(.3f, .6f, 1, 1);
 
-        public LineRendererEditor(LineRenderer lineRenderer, LineRendererInspector inspector)
+        public LineRendererEditor(LineRenderer lineRenderer)
         {
             m_LineRenderer = lineRenderer;
-            m_Inspector = inspector;
         }
 
         public void Deselect()
@@ -64,7 +62,7 @@ namespace UnityEditor
             m_Selection.Clear();
         }
 
-        public void HandleEditMenuHotKeyCommands()
+        public void HandleEditMenuHotKeyCommands(EditorWindow window)
         {
             //Handle other events!
             if (Event.current.type == EventType.ValidateCommand
@@ -86,7 +84,7 @@ namespace UnityEditor
                         break;
                     case "SelectAll":
                         if (execute)
-                            SelectAllPoints();
+                            SelectAllPoints(window);
                         Event.current.Use();
                         break;
                     case "Cut":
@@ -107,12 +105,12 @@ namespace UnityEditor
             m_Selection = m_Selection.Where(o => o < points).ToList();
         }
 
-        public void SelectAllPoints()
+        private void SelectAllPoints(EditorWindow window)
         {
             m_Selection.Clear();
             for (int i = 0; i < m_LineRenderer.positionCount; ++i)
                 m_Selection.Add(i);
-            m_Inspector.Repaint();
+            window.Repaint();
         }
 
         public void DestroySelected()
@@ -199,7 +197,7 @@ namespace UnityEditor
             PointCreator.Draw();
         }
 
-        public void EditSceneGUI()
+        public void EditSceneGUI(EditorWindow window)
         {
             Transform transform = m_LineRenderer.useWorldSpace ? null : m_LineRenderer.transform;
 
@@ -212,7 +210,7 @@ namespace UnityEditor
             if (showWireframe)
                 DrawWireframe();
 
-            HandleEditMenuHotKeyCommands();
+            HandleEditMenuHotKeyCommands(window);
         }
 
         public int Count { get { return m_LineRenderer.positionCount; } }

@@ -5,8 +5,10 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.MPE;
 using UnityEditor.Profiling;
 using Unity.Profiling;
 
@@ -429,6 +431,26 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        // Open hyperlinks directing users to specific settings in the Player Settings window.
+        static void EditorGUI_OpenSettingsOnHyperlinkClicked(EditorWindow window, HyperLinkClickedEventArgs args)
+        {
+            if (window.GetType() == typeof(ProfilerWindow) && args.hyperLinkData.ContainsKey("playersettingslink"))
+            {
+                var settings = SettingsWindow.Show(SettingsScope.Project, "Project/Player");
+                if (settings == null)
+                {
+                    Debug.LogError("Could not find Preferences for 'Project/Player'");
+                }
+                else
+                {
+                    string linkString;
+                    args.hyperLinkData.TryGetValue("playersettingssearchstring", out linkString);
+
+                    settings.FilterProviders(linkString);
+                }
+            }
+        }
+
         public void DoGUI(HierarchyFrameDataView frameDataView, bool fetchData, ref bool updateViewLive, ProfilerViewType viewType)
         {
             using (m_DoGUIMarker.Auto())
@@ -458,7 +480,25 @@ namespace UnityEditorInternal.Profiling
 
                 if (!string.IsNullOrEmpty(dataAvailabilityMessage))
                 {
-                    GUILayout.Label(dataAvailabilityMessage, BaseStyles.label);
+                    GUIStyle style = BaseStyles.label;
+
+                    if (dataAvailabilityMessage.Contains("PlayerSettings."))
+                    {
+                        // Don't do hyperlinks if we're in standalone profiler since we can't easily connect back to the main process.
+                        if(UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Secondary)
+                        {
+                            dataAvailabilityMessage = Regex.Replace(dataAvailabilityMessage, @"\(<a playersettingslink=.*<\/a>\)", "");
+                        }
+                        else
+                        {
+                            style.richText = true;
+                            EditorGUI.hyperLinkClicked -= EditorGUI_OpenSettingsOnHyperlinkClicked;
+                            EditorGUI.hyperLinkClicked += EditorGUI_OpenSettingsOnHyperlinkClicked;
+                        }
+                    }
+
+                    var rect = GUILayoutUtility.GetRect(GUIContent.Temp(dataAvailabilityMessage), style);
+                    EditorGUI.SelectableLabel(rect, dataAvailabilityMessage, style);
                 }
                 else if (!isDataAvailable)
                 {
@@ -647,9 +687,15 @@ namespace UnityEditorInternal.Profiling
             {
                 if (this == other)
                     return 0;
+                // Sort by group
                 if (groupOrder != other.groupOrder)
                     return groupOrder - other.groupOrder;
-                return EditorUtility.NaturalCompare(fullName, other.fullName);
+                // then by name.
+                var result = EditorUtility.NaturalCompare(fullName, other.fullName);
+                if (result != 0)
+                    return result;
+                // and if names are the same use thread index to ensure the order persistence.
+                return threadIndex - other.threadIndex;
             }
 
             public static bool operator==(ThreadInfo lhs, ThreadInfo rhs) => ReferenceEquals(lhs, null) && ReferenceEquals(rhs, null) || !ReferenceEquals(lhs, null) && lhs.Equals(rhs);
@@ -922,8 +968,12 @@ namespace UnityEditorInternal.Profiling
         {
             InitIfNeeded();
 
+            bool forceUpdateThreadNames = true;
             if (frameDataView.valid)
             {
+                // Only reset and rebuild threads cache if we change frame. Otherwise preserve the currently selected index and all threads data.
+                forceUpdateThreadNames = frameDataView.frameIndex != m_FrameIndex;
+
                 threadName = frameDataView.threadName;
                 groupName = frameDataView.threadGroupName;
                 threadId = frameDataView.threadId;
@@ -931,7 +981,7 @@ namespace UnityEditorInternal.Profiling
                 fullThreadName = string.IsNullOrEmpty(groupName) ? threadName : $"{groupName}.{threadName}";
             }
             m_TreeView.SetFrameDataView(frameDataView);
-            UpdateThreadNamesAndThreadIndex(frameDataView, forceUpdate: true);
+            UpdateThreadNamesAndThreadIndex(frameDataView, forceUpdateThreadNames);
         }
 
         public override void Clear()

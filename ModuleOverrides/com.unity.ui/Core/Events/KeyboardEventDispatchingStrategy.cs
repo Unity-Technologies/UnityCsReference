@@ -15,10 +15,16 @@ namespace UnityEngine.UIElements
         {
             if (panel != null)
             {
+                // Note that here we always overwrite evt.target, even if it's already set. This might be required by
+                // some pre-existing editor content, but it's not standard among the dispatching strategies and should
+                // probably be changed in the future.
+
                 var leafFocusElement = panel.focusController.GetLeafFocusedElement();
 
                 if (leafFocusElement != null)
                 {
+                    evt.target = leafFocusElement;
+
                     if (leafFocusElement.isIMGUIContainer)
                     {
                         IMGUIContainer imguiContainer =  (IMGUIContainer)leafFocusElement;
@@ -30,7 +36,6 @@ namespace UnityEngine.UIElements
                     }
                     else
                     {
-                        evt.target = leafFocusElement;
                         EventDispatchUtilities.PropagateEvent(evt);
                     }
                 }

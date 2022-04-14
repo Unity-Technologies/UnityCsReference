@@ -62,7 +62,7 @@ namespace UnityEditor
             }
         }
 
-        void OnUndoRedoPerformed()
+        void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             if (target == null || serializedObject == null)
                 return;
@@ -109,7 +109,7 @@ namespace UnityEditor
 
             m_TargetTransform = (target as LODGroup)?.gameObject?.transform;
 
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
             Repaint();
         }
 
@@ -175,7 +175,7 @@ namespace UnityEditor
         void OnDisable()
         {
             EditorApplication.update -= Update;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
 
             m_ShowAnimateCrossFading.valueChanged.RemoveListener(Repaint);
             m_ShowFadeTransitionWidth.valueChanged.RemoveListener(Repaint);

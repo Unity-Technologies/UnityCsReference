@@ -4,6 +4,7 @@
 
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Animations;
 
 namespace UnityEditorInternal
 {
@@ -36,6 +37,10 @@ namespace UnityEditorInternal
                 {
                     // Cannot extract type of PPtrCurve.
                     return null;
+                }
+                else if (curveBinding.isDiscreteCurve)
+                {
+                    return 0;
                 }
                 else
                 {

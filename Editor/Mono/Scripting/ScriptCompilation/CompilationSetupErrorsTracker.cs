@@ -27,30 +27,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
     static class CompilationSetupErrorsTrackerExtensions
     {
-        public static void ProcessPrecompiledAssemblyException(this ICompilationSetupErrorsTracker tracker, PrecompiledAssemblyException exception)
-        {
-            tracker.SetCompilationSetupErrors(CompilationSetupErrors.PrecompiledAssemblyError);
-            tracker.LogCompilationSetupErrors(CompilationSetupErrors.PrecompiledAssemblyError, exception.filePaths, exception.Message);
-        }
-
         public static bool ProcessException(this ICompilationSetupErrorsTracker tracker, Exception exception)
         {
             var assemblyDefinitionException = exception as AssemblyDefinitionException;
-            var precompiledAssemblyException = exception as PrecompiledAssemblyException;
 
             if (assemblyDefinitionException != null && assemblyDefinitionException.filePaths.Length > 0)
             {
-                tracker.LogCompilationSetupErrors(
-                    assemblyDefinitionException.errorType == AssemblyDefinitionErrorType.LoadError ?
-                    CompilationSetupErrors.LoadError : CompilationSetupErrors.CyclicReferences,
-                    assemblyDefinitionException.filePaths, assemblyDefinitionException.Message);
-                return true;
-            }
-            else if (precompiledAssemblyException != null)
-            {
-                // PrecompiledAssemblyException was potentially processed earlier at the GetPrecompiledAssemblies call site
-                // if it was called in the context of script compilation within the editor.
-                UnityEngine.Debug.LogException(exception);
+                tracker.LogCompilationSetupErrors(CompilationSetupErrors.LoadError, assemblyDefinitionException.filePaths, assemblyDefinitionException.Message);
                 return true;
             }
 

@@ -138,7 +138,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// GUI content used to display the action in the search view.
         /// </summary>
-        internal GUIContent content;
+        public GUIContent content;
 
         /// <summary>
         /// Callback used to check if the action is enabled based on the current context.

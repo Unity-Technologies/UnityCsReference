@@ -6,10 +6,12 @@ using System;
 using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
+    [ExcludeFromCodeCoverage]
     internal class ApplicationProxy
     {
         [SerializeField]
@@ -132,14 +134,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return EditorUtility.OpenFolderPanel(title, folder, string.Empty);
         }
 
-        public virtual bool DisplayDialog(string title, string message, string ok, string cancel = "")
+        public virtual bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "")
         {
-            return EditorUtility.DisplayDialog(title, message, ok, cancel);
+            var result = EditorUtility.DisplayDialog(title, message, ok, cancel);
+            PackageManagerDialogAnalytics.SendEvent(idForAnalytics, title, message, result ? ok : cancel);
+            return result;
         }
 
-        public virtual int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
+        public virtual int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt)
         {
-            return EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
+            var result = EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
+            PackageManagerDialogAnalytics.SendEvent(idForAnalytics, title, message, result == 1 ? cancel : (result == 2 ? alt : ok));
+            return result;
         }
 
         public virtual T Load<T>(string path) where T : Object

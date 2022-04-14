@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine.Scripting;
 using UnityEngine;
@@ -43,6 +44,44 @@ namespace UnityEngine
         static readonly HitInfo[] m_CurrentHit = { new HitInfo(), new HitInfo(), new HitInfo() };
         static Camera[] m_Cameras;
 
+        public enum LeftMouseButtonState
+        {
+            NotPressed = 0,
+            Pressed = 1,
+            PressedThisFrame = 2,
+        }
+
+        public static Func<KeyValuePair<int, Vector2>> s_GetMouseState;
+
+        private static Vector2 s_MousePosition;
+        private static bool s_MouseButtonPressedThisFrame;
+        private static bool s_MouseButtonIsPressed;
+
+        private static void UpdateMouse()
+        {
+            if (s_GetMouseState != null)
+            {
+                // Allow handler to override input from UnityEngine.Input.
+                // Tuple value would be more elegant here but is .NET 5+.
+                var state = s_GetMouseState();
+                s_MousePosition = state.Value;
+                s_MouseButtonPressedThisFrame = (state.Key == (int)LeftMouseButtonState.PressedThisFrame);
+                s_MouseButtonIsPressed = state.Key != (int)LeftMouseButtonState.NotPressed;
+            }
+            else if (!UnityEngine.Input.CheckDisabled())
+            {
+                s_MousePosition = Input.mousePosition;
+                s_MouseButtonPressedThisFrame = Input.GetMouseButtonDown(0);
+                s_MouseButtonIsPressed = Input.GetMouseButton(0);
+            }
+            else
+            {
+                s_MousePosition = default;
+                s_MouseButtonPressedThisFrame = default;
+                s_MouseButtonIsPressed = default;
+            }
+        }
+
         [RequiredByNativeCode]
         static void SetMouseMoved()
         {
@@ -52,7 +91,8 @@ namespace UnityEngine
         [RequiredByNativeCode]
         static void DoSendMouseEvents(int skipRTCameras)
         {
-            var mousePosition = Input.mousePosition;
+            UpdateMouse();
+            var mousePosition = s_MousePosition;
 
             int camerasCount = Camera.allCamerasCount;
             if (m_Cameras == null || m_Cameras.Length != camerasCount)
@@ -177,8 +217,8 @@ namespace UnityEngine
         static void SendEvents(int i, HitInfo hit)
         {
             // Handle MouseDown, MouseDrag, MouseUp
-            bool mouseDownThisFrame = Input.GetMouseButtonDown(0);
-            bool mousePressed = Input.GetMouseButton(0);
+            bool mouseDownThisFrame = s_MouseButtonPressedThisFrame;
+            bool mousePressed = s_MouseButtonIsPressed;
 
             if (mouseDownThisFrame)
             {

@@ -92,6 +92,9 @@ namespace UnityEditor
 
             public static readonly GUIContent numberingScheme = EditorGUIUtility.TrTextContent("Numbering Scheme");
 
+            public static readonly GUIContent inspectorSettings = EditorGUIUtility.TrTextContent("Inspector");
+            public static readonly GUIContent inspectorUseIMGUIDefaultInspector = EditorGUIUtility.TrTextContent("Use IMGUI Default Inspector", "Revert to using IMGUI to generate Default Inspectors where no custom Inspector/Editor was defined.");
+
             public static readonly GUIContent[] numberingSchemeNames =
             {
                 EditorGUIUtility.TrTextContent("Prefab (1)", "Number in parentheses"),
@@ -268,6 +271,7 @@ namespace UnityEditor
         SerializedProperty m_ProjectGenerationIncludedExtensions;
         SerializedProperty m_ProjectGenerationRootNamespace;
         SerializedProperty m_CacheServerValidationMode;
+        SerializedProperty m_InspectorUseIMGUIDefaultInspector;
 
         bool m_IsGlobalSettings;
 
@@ -360,6 +364,9 @@ namespace UnityEditor
             Assert.IsNotNull(m_ProjectGenerationRootNamespace);
 
             m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
+
+            m_InspectorUseIMGUIDefaultInspector = serializedObject.FindProperty("m_InspectorUseIMGUIDefaultInspector");
+            Assert.IsNotNull(m_InspectorUseIMGUIDefaultInspector);
 
             m_IsGlobalSettings = EditorSettings.GetEditorSettings() == target;
         }
@@ -570,6 +577,7 @@ namespace UnityEditor
             DoShaderCompilationSettings();
             DoEnterPlayModeSettings();
             DoNumberingSchemeSettings();
+            DoEnterInspectorSettings();
 
             serializedObject.ApplyModifiedProperties();
             if (compressorsChanged)
@@ -658,7 +666,11 @@ namespace UnityEditor
                     if (parallelImportEnabledOld != parallelImportEnabledNew)
                         EditorSettings.refreshImportMode = parallelImportEnabledNew ? AssetDatabase.RefreshImportMode.OutOfProcessPerQueue : AssetDatabase.RefreshImportMode.InProcess;
                     if (GUILayout.Button(Content.parallelImportLearnMore, EditorStyles.linkLabel))
-                        Application.OpenURL("https://docs.unity3d.com/Manual/ParallelImport.html");
+                    {
+                        // Known issue with Docs redirect - versioned pages might not open offline docs
+                        var help = Help.FindHelpNamed("ParallelImport");
+                        Application.OpenURL(help);
+                    }
                 GUILayout.EndHorizontal();
             }
 
@@ -731,7 +743,9 @@ namespace UnityEditor
 
             if (GUILayout.Button(Content.cacheServerLearnMore, EditorStyles.linkLabel))
             {
-                Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+                // Known issue with Docs redirect - versioned pages might not open offline docs
+                var help = Help.FindHelpNamed("UnityAccelerator");
+                Application.OpenURL(help);
             }
             GUILayout.EndHorizontal();
 
@@ -952,6 +966,33 @@ namespace UnityEditor
             EditorGUI.indentLevel--;
         }
 
+        private void DoEnterInspectorSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.inspectorSettings, EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_InspectorUseIMGUIDefaultInspector, Content.inspectorUseIMGUIDefaultInspector);
+            if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
+            {
+                EditorSettings.inspectorUseIMGUIDefaultInspector = m_InspectorUseIMGUIDefaultInspector.boolValue;
+
+                // Needs to be delayCall because it forces redrawing of UI which messes with the current IMGUI context of the Settings window.
+                EditorApplication.delayCall += ClearEditorsAndRebuildInspectors;
+            }
+        }
+
+        static void ClearEditorsAndRebuildInspectors()
+        {
+            // Cannot use something like EditorUtility.ForceRebuildInspectors() because this only refreshes
+            // the inspector's values and IMGUI state, but otherwise, if the target did not change we
+            // re-use the Editors. We need a special clear function to properly recreate the UI using
+            // the new setting.
+            var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>();
+            foreach (var propertyEditor in propertyEditors)
+                propertyEditor.ClearEditorsAndRebuild();
+        }
+
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)
         {
             for (int i = 0; i < elements.Length; i++)
@@ -1044,6 +1085,13 @@ namespace UnityEditor
         private void SetAssetSerializationMode(object data)
         {
             int popupIndex = (int)data;
+
+            if (m_SerializationMode.intValue == popupIndex) return;
+
+            if (!EditorUtility.DisplayDialog("Change Asset Serialization Mode?",
+                    "Changing the serialization method for assets may force a reimport of some or all assets immediately in the project.\n\nAre you sure you wish to change the asset serialization mode?",
+                    "Yes", "No")) return;
+
             m_SerializationMode.intValue = popupIndex;
             if (m_IsGlobalSettings)
                 EditorSettings.serializationMode = (SerializationMode)popupIndex;

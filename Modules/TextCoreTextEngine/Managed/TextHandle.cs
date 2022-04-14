@@ -294,6 +294,10 @@ namespace UnityEngine.TextCore.Text
                 var cInfo = textInfo.textElementInfo[i];
                 if (visibleOnly && !cInfo.isVisible) continue;
 
+                // Ignore Carriage Returns <CR>
+                if (cInfo.character == '\r')
+                    continue;
+
                 // Get Bottom Left and Top Right position of the current character
                 Vector3 bl = cInfo.bottomLeft;
                 Vector3 tl = new Vector3(cInfo.bottomLeft.x, cInfo.topRight.y, 0);
@@ -446,7 +450,7 @@ namespace UnityEngine.TextCore.Text
             if (textInfo.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
                 return true;
 
-            return textInfo.textElementInfo[textInfo.characterCount - 1].character == 0x2026; //the character is hardcoded in textcore
+            return TextGenerator.isTextTruncated;
         }
     }
 }

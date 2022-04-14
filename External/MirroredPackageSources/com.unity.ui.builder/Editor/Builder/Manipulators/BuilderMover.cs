@@ -46,20 +46,17 @@ namespace Unity.UI.Builder
         {
             base.OnStartDrag(handle);
 
-            if (parentTracker == null)
-                return;
-
-            parentTracker.Activate(m_Target.parent);
+            parentTracker?.Activate(m_Target.parent);
         }
 
         new void OnEndDrag()
         {
             base.OnEndDrag();
 
-            if (parentTracker == null)
-                return;
+            parentTracker?.Deactivate();
 
-            parentTracker.Deactivate();
+            m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList);
+            m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
         }
 
         void OnMove(
@@ -95,7 +92,7 @@ namespace Unity.UI.Builder
             style.left = Mathf.Round(m_ThisRectOnStartDrag.x + diff.x);
             style.top = Mathf.Round(m_ThisRectOnStartDrag.y + diff.y);
 
-            m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList);
+            m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList, BuilderStylingChangeType.RefreshOnly);
             m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);
         }
     }

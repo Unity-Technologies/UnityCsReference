@@ -497,6 +497,21 @@ namespace UnityEngine.UIElements
                     panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.KeyUp), panel,
                         DispatchMode.Default);
                 }
+                else if (eventBase.eventTypeId == NavigationMoveEvent.TypeId())
+                {
+                    panel.dispatcher.Dispatch(NavigationMoveEvent.GetPooled(eventBase.navigationDirection, eventBase.deviceType, eventBase.modifiers), panel,
+                        DispatchMode.Default);
+                }
+                else if (eventBase.eventTypeId == NavigationSubmitEvent.TypeId())
+                {
+                    panel.dispatcher.Dispatch(NavigationSubmitEvent.GetPooled(eventBase.deviceType, eventBase.modifiers), panel,
+                        DispatchMode.Default);
+                }
+                else if (eventBase.eventTypeId == NavigationCancelEvent.TypeId())
+                {
+                    panel.dispatcher.Dispatch(NavigationCancelEvent.GetPooled(eventBase.deviceType, eventBase.modifiers), panel,
+                        DispatchMode.Default);
+                }
                 else if (eventBase.eventTypeId == DragUpdatedEvent.TypeId())
                 {
                     newEvent.type = EventType.DragUpdated;

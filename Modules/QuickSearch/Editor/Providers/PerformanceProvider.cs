@@ -9,6 +9,7 @@ using UnityEngine;
 using System.Text.RegularExpressions;
 using UnityEditorInternal;
 using UnityEngine.Profiling;
+using System.Linq;
 
 namespace UnityEditor.Search.Providers
 {
@@ -41,6 +42,7 @@ namespace UnityEditor.Search.Providers
                 fetchColumns = FetchColumns,
                 fetchDescription = FetchDescription,
                 fetchItems = (context, items, provider) => FetchItem(qe, context, provider),
+                tableConfig = GetDefaultTableConfig,
                 actions = new List<SearchAction>(new[]
                 {
                     new SearchAction("open", "Profile...", item => StartProfilerRecording(item.id, true, deepProfile: false), _ => !ProfilerDriver.deepProfiling && !ProfilerDriver.enabled),
@@ -51,6 +53,11 @@ namespace UnityEditor.Search.Providers
                     new SearchAction("reset", "Reset", item => EditorPerformanceTracker.Reset(item.id)),
                 })
             };
+        }
+
+        private static SearchTable GetDefaultTableConfig(SearchContext context)
+        {
+            return new SearchTable(type, new [] { new SearchColumn("Name", "label") }.Concat(FetchColumns(context, null)));
         }
 
         [SearchColumnProvider(nameof(PerformanceMetric))]
@@ -194,7 +201,7 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<SearchItem> FetchItem(QueryEngine<string> qe, SearchContext context, SearchProvider provider)
         {
-            var query = qe.Parse(context.searchQuery);
+            var query = qe.ParseQuery(context.searchQuery);
             if (!query.valid)
                 yield break;
 
