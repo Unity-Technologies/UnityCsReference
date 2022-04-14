@@ -243,7 +243,8 @@ namespace UnityEditor
             }
 
             // Detect if we clicked outside the text field (must be before text field below which steals keyboard control)
-            if (m_OriginalEventType == EventType.MouseDown && !m_EditFieldRect.Contains(Event.current.mousePosition))
+            // To workaround that, we assume that an used mousedown event means a click outside.
+            if (m_OriginalEventType == EventType.MouseDown && (Event.current.type == EventType.Used || !m_EditFieldRect.Contains(Event.current.mousePosition)))
             {
                 EndRename(true);
                 return false;

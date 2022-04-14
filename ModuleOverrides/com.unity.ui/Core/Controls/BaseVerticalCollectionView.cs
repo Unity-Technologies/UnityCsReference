@@ -1080,7 +1080,8 @@ namespace UnityEngine.UIElements
 
         private void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
         {
-            var shiftKey = (sourceEvent as KeyDownEvent)?.shiftKey ?? false;
+            var shiftKey = sourceEvent is KeyDownEvent kde && kde.shiftKey ||
+                           sourceEvent is INavigationEvent ne && ne.shiftKey;
             if (Apply(op, shiftKey))
             {
                 sourceEvent.StopPropagation();
@@ -1467,7 +1468,7 @@ namespace UnityEngine.UIElements
             OverwriteFromViewData(this, key);
         }
 
-        [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent))]
+        [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent), typeof(BlurEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -1485,6 +1486,11 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 m_VirtualizationController?.OnFocus(evt.leafTarget as VisualElement);
+            }
+            else if (evt.eventTypeId == BlurEvent.TypeId())
+            {
+                BlurEvent e = evt as BlurEvent;
+                m_VirtualizationController.OnBlur(e?.relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {

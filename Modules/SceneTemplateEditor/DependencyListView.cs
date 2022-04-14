@@ -390,7 +390,7 @@ namespace UnityEditor.SceneTemplate
         {
             m_FilteredItems.Clear();
 
-            var query = m_QueryEngine.Parse(searchText);
+            var query = m_QueryEngine.ParseQuery(searchText);
             query.returnPayloadIfEmpty = true;
             foreach (var item in query.Apply(m_OriginalItems))
             {

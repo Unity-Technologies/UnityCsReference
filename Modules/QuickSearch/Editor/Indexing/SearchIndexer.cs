@@ -401,7 +401,7 @@ namespace UnityEditor.Search
 
         private static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions {validateFilters = true, skipNestedQueries = true};
         private QueryEngine<SearchResult> m_QueryEngine;
-        private ConcurrentDictionary<string, Query<SearchResult, object>> m_QueryPool;
+        private ConcurrentDictionary<string, ParsedQuery<SearchResult, object>> m_QueryPool;
 
         private readonly Dictionary<RangeSet, IndexRange> m_FixedRanges;
         private SearchResultCollection m_AllDocumentIndexes;
@@ -449,7 +449,7 @@ namespace UnityEditor.Search
             m_MetaInfo = new Dictionary<string, string>();
         }
 
-        private Query<SearchResult, object> BuildQuery(string searchQuery)
+        private ParsedQuery<SearchResult, object> BuildQuery(string searchQuery)
         {
             lock (this)
             {
@@ -457,7 +457,7 @@ namespace UnityEditor.Search
                 {
                     m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
                     m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
-                    m_QueryPool = new ConcurrentDictionary<string, Query<SearchResult, object>>();
+                    m_QueryPool = new ConcurrentDictionary<string, ParsedQuery<SearchResult, object>>();
                 }
 
                 if (m_RebuildFilters)
@@ -467,14 +467,14 @@ namespace UnityEditor.Search
                 }
             }
 
-            Query<SearchResult, object> query;
+            ParsedQuery<SearchResult, object> query;
             if (m_QueryPool.TryGetValue(searchQuery, out query) && query.valid)
                 return query;
 
             if (m_QueryPool.Count > 50)
                 m_QueryPool.Clear();
 
-            query = m_QueryEngine.Parse(searchQuery, new SearchIndexerQueryFactory(EvaluateSearchNode));
+            query = m_QueryEngine.ParseQuery(searchQuery, new SearchIndexerQueryFactory(EvaluateSearchNode));
             if (query.valid)
                 m_QueryPool[searchQuery] = query;
             return query;

@@ -116,7 +116,7 @@ namespace UnityEditor.Search.Providers
         {
             if (string.IsNullOrEmpty(context.searchQuery))
                 yield break;
-            var query = queryEngine.Parse(context.searchQuery);
+            var query = queryEngine.ParseQuery(context.searchQuery);
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));

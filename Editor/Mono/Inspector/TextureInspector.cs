@@ -812,7 +812,7 @@ namespace UnityEditor
             {
                 string path = AssetDatabase.GetAssetPath(t);
                 TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-                SpriteMetaData[] spritesheet = textureImporter != null ? textureImporter.spritesheet : null;
+                SpriteMetaData[] spritesheet = textureImporter != null ? textureImporter.GetSpriteMetaDatas() : null;
 
                 if (spritesheet != null && textureImporter.spriteImportMode == SpriteImportMode.Multiple)
                 {

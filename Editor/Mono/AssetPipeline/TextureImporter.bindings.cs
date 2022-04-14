@@ -468,5 +468,8 @@ namespace UnityEditor
 
         // This is for remapping Sprite that are renamed.
         extern internal bool GetNameFromInternalIDMap(long id, ref string name);
+
+        [NativeName("GetSpriteMetaDatas")]
+        internal extern SpriteMetaData[] GetSpriteMetaDatas();
     }
 }

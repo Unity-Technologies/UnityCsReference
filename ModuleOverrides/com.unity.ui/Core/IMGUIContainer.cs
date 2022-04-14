@@ -185,7 +185,8 @@ namespace UnityEngine.UIElements
         public IMGUIContainer(Action onGUIHandler)
         {
             isIMGUIContainer = true;
-            eventCallbackCategories |= (int)EventCategoryFlags.TriggeredByOS;
+            eventCallbackCategories |= (int)EventCategoryFlags.TriggeredByOS |
+                                       (1 << (int)EventCategory.Navigation);
 
             AddToClassList(ussClassName);
 
@@ -505,10 +506,11 @@ namespace UnityEngine.UIElements
 
         internal void ProcessEvent(EventBase evt)
         {
-            if (evt.imguiEvent == null)
-                return;
-
-            if (SendEventToIMGUI(evt))
+            if (evt.imguiEvent != null && SendEventToIMGUI(evt) ||
+                // Prevent navigation events since IMGUI already uses KeyDown events
+                evt.eventTypeId == NavigationMoveEvent.TypeId() ||
+                evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
+                evt.eventTypeId == NavigationCancelEvent.TypeId())
             {
                 evt.StopPropagation();
                 evt.PreventDefault();

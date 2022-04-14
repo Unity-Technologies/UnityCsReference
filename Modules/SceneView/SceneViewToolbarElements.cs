@@ -56,10 +56,10 @@ namespace UnityEditor.Toolbars
 
             clicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
 
-            m_ShadedIcon = EditorGUIUtility.FindTexture("Toolbars/Shaded");
-            m_ShadedWireframeIcon = EditorGUIUtility.FindTexture("Toolbars/ShadedWireframe");
-            m_WireframeIcon = EditorGUIUtility.FindTexture("Toolbars/Wireframe");
-            m_DebugIcon = EditorGUIUtility.FindTexture("Toolbars/debug");
+            m_ShadedIcon = EditorGUIUtility.IconContent("Toolbars/Shaded").image as Texture2D;
+            m_ShadedWireframeIcon = EditorGUIUtility.IconContent("Toolbars/ShadedWireframe").image as Texture2D;;
+            m_WireframeIcon = EditorGUIUtility.IconContent("Toolbars/Wireframe").image as Texture2D;;
+            m_DebugIcon = EditorGUIUtility.IconContent("Toolbars/debug").image as Texture2D;;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);

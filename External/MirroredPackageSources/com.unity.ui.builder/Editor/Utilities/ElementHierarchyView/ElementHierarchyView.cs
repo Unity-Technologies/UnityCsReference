@@ -125,6 +125,7 @@ namespace Unity.UI.Builder
             m_TreeView.viewDataKey = "unity-builder-explorer-tree";
             m_TreeView.style.flexGrow = 1;
             m_TreeView.selectedIndicesChanged += OnSelectionChange;
+            m_TreeView.horizontalScrollingEnabled = true;
 
             m_TreeView.RegisterCallback<MouseDownEvent>(OnLeakedMouseClick);
             m_Container.Add(m_TreeView);

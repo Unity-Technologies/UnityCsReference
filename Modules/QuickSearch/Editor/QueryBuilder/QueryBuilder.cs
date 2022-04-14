@@ -474,7 +474,7 @@ namespace UnityEditor.Search
                 }
                 else
                 {
-                    var query = m_QueryEngine.Parse(searchQuery);
+                    var query = m_QueryEngine.ParseQuery(searchQuery);
                     if (HasFlag(SearchFlags.ShowErrorsWithResults) && !query.valid)
                         errors.AddRange(query.errors);
 
@@ -519,7 +519,7 @@ namespace UnityEditor.Search
             var newBlocks = new List<QueryBlock>();
             var searchQuery = searchText;
 
-            var query = m_QueryEngine.Parse(searchQuery);
+            var query = m_QueryEngine.ParseQuery(searchQuery);
             var rootNode = query.queryGraph.root;
             if (rootNode == null)
                 return null;

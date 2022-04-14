@@ -37,7 +37,7 @@ namespace UnityEditor
         SerializedProperty m_MinRegionArea;
         SerializedProperty m_ManualCellSize;
         SerializedProperty m_CellSize;
-        SerializedProperty m_AccuratePlacement;
+        SerializedProperty m_BuildHeightMesh;
 
         // Project based configuration
         SerializedObject m_NavMeshProjectSettingsObject;
@@ -202,7 +202,7 @@ namespace UnityEditor
             m_MinRegionArea = m_SettingsObject.FindProperty(kRootPath + "minRegionArea");
             m_ManualCellSize = m_SettingsObject.FindProperty(kRootPath + "manualCellSize");
             m_CellSize = m_SettingsObject.FindProperty(kRootPath + "cellSize");
-            m_AccuratePlacement = m_SettingsObject.FindProperty(kRootPath + "accuratePlacement");
+            m_BuildHeightMesh = m_SettingsObject.FindProperty(kRootPath + "buildHeightMesh");
         }
 
         private void InitAreas()
@@ -539,6 +539,13 @@ namespace UnityEditor
                 if (showHeightMeshBVTree != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMesh BV-Tree"), showHeightMeshBVTree))
                 {
                     NavMeshVisualizationSettings.showHeightMeshBVTree = !showHeightMeshBVTree;
+                    bRepaint = true;
+                }
+
+                var showHeightMaps = NavMeshVisualizationSettings.showHeightMaps;
+                if (showHeightMaps != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMaps"), showHeightMaps))
+                {
+                    NavMeshVisualizationSettings.showHeightMaps = !showHeightMaps;
                     bRepaint = true;
                 }
             }
@@ -971,8 +978,9 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 //Height mesh
-                var accurate = EditorGUILayout.Toggle(s_Styles.m_BakePlacementContent, m_AccuratePlacement.boolValue);
-                if (accurate != m_AccuratePlacement.boolValue) m_AccuratePlacement.boolValue = accurate;
+                var heightMesh = EditorGUILayout.Toggle(s_Styles.m_BakePlacementContent, m_BuildHeightMesh.boolValue);
+                if (heightMesh != m_BuildHeightMesh.boolValue)
+                    m_BuildHeightMesh.boolValue = heightMesh;
 
                 EditorGUI.indentLevel--;
             }

@@ -198,6 +198,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasLifecycleVersion => m_LifecycleVersion != null || m_LifecycleNextVersion != null;
 
+        public IPackageVersion GetUpdateTarget(IPackageVersion version)
+        {
+            if (version?.isInstalled == true && version != recommended)
+                return key.LastOrDefault() ?? version;
+            return version;
+        }
+
         internal void UpdateVersion(UpmPackageVersion version)
         {
             for (var i = 0; i < m_Versions.Count; ++i)

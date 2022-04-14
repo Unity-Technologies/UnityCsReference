@@ -173,7 +173,7 @@ namespace UnityEditor.Search.Providers
         #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
-            var query = m_QueryEngine.Parse(context.searchQuery, true);
+            var query = m_QueryEngine.ParseQuery(context.searchQuery, true);
             if (!query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));

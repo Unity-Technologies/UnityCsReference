@@ -128,7 +128,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var versionMetaDataComparer = new VersionMetaDataComparer();
 
-            m_VersionMetaDatas = assetPathMetaDatas ?
+            m_VersionMetaDatas = assetPathMetaDatas?
                 .Where(x => x.VersionMetaData != null)
                 .Select(x => x.VersionMetaData)
                 .Distinct(versionMetaDataComparer)
@@ -231,28 +231,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
                 EditorUserBuildSettings.activeBuildTargetGroup,
                 EditorUserBuildSettings.activeBuildTarget);
-        }
-
-        Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(EditorScriptCompilationOptions options, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, string[] extraScriptingDefines = null)
-        {
-            Dictionary<string, PrecompiledAssembly> precompiledAssemblies;
-            CompilationSetupErrorsTracker.ClearCompilationSetupErrors(CompilationSetupErrors.PrecompiledAssemblyError); // this will also remove the console errors associated with the setup error flags set in the past
-            try
-            {
-                precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, buildTargetGroup, buildTarget, extraScriptingDefines);
-            }
-            catch (PrecompiledAssemblyException exception)
-            {
-                CompilationSetupErrorsTracker.ProcessPrecompiledAssemblyException(exception);
-                throw;
-            }
-
-            return precompiledAssemblies;
-        }
-
-        public PrecompiledAssembly[] GetPrecompiledAssembliesWithSetupErrorsTracking(EditorScriptCompilationOptions options, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, string[] extraScriptingDefines = null)
-        {
-            return GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(options, buildTargetGroup, buildTarget, extraScriptingDefines)?.Values.ToArray();
         }
 
         public void GetAssemblyDefinitionReferencesWithMissingAssemblies(out List<CustomScriptAssemblyReference> referencesWithMissingAssemblies)
@@ -717,15 +695,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CompileStatus compilationResult;
             using (new ProfilerMarker("Initiating Script Compilation").Auto())
             {
-                try
-                {
-                    compilationResult = CompileScriptsWithSettings(scriptAssemblySettings);
-                }
-                catch (PrecompiledAssemblyException)
-                {
-                    // The setup errors for this exception has already been logged earlier, so there's no need to log the exception.
-                    compilationResult = CompileStatus.CompilationFailed;
-                }
+                compilationResult = CompileScriptsWithSettings(scriptAssemblySettings);
             }
 
             return compilationResult;
@@ -824,21 +794,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 (scriptAssemblySettings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0;
 
             ScriptAssembly[] scriptAssemblies;
-            try
+            if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile))
+                scriptAssemblies = Array.Empty<ScriptAssembly>();
+            else
             {
-                if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile))
-                    scriptAssemblies = Array.Empty<ScriptAssembly>();
-                else
-                {
-                    CompilationSetupWarningTracker.ClearAssetWarnings();
-                    scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings,
-                        TargetAssemblyType.Undefined, CompilationSetupWarningTracker);
-                }
-            }
-            catch (PrecompiledAssemblyException)
-            {
-                // The setup errors for this exception has already been logged earlier, so there's no need to log the exception.
-                return CompileStatus.Idle;
+                CompilationSetupWarningTracker.ClearAssetWarnings();
+                scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings,
+                    TargetAssemblyType.Undefined, CompilationSetupWarningTracker);
             }
 
             // Do no start compilation if there is an setup error.
@@ -867,7 +829,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTarget buildTarget = scriptAssemblySettings.BuildTarget;
             activeBeeBuild = new BeeScriptCompilationState()
             {
-                Driver = UnityBeeDriver.Make(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater),
+                Driver = UnityBeeDriver.Make(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater, ilpp: new ILPostProcessingProgram()),
                 settings = scriptAssemblySettings,
                 assemblies = scriptAssemblies,
             };
@@ -898,7 +860,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static SystemProcessRunnableProgram MakeScriptCompilationBuildProgram()
         {
             var buildProgramAssembly = new NPath($"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/ScriptCompilationBuildProgram.exe");
-            return new SystemProcessRunnableProgram($"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", buildProgramAssembly.InQuotes(SlashMode.Native));
+            return new SystemProcessRunnableProgram(
+                $"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}",
+                new [] { buildProgramAssembly.InQuotes(SlashMode.Native) },
+                new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
+                );
         }
 
         public void InvokeCompilationStarted(object context)
@@ -918,7 +884,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, options, new string[] {});
+            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, options, new string[] { });
         }
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
@@ -1318,7 +1284,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
         {
-            var precompiledAssemblies = GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(
+            var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
                 options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, defines);
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
         }
@@ -1506,7 +1472,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             using (new ProfilerMarker(nameof(GetAllScriptAssembliesOfType)).Auto())
             {
                 var precompiledAssemblies =
-                    GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(settings.CompilationOptions,
+                    PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(settings.CompilationOptions,
                         settings.BuildTargetGroup, settings.BuildTarget, settings.ExtraGeneralDefines);
 
                 UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
@@ -1691,7 +1657,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
 
-            var precompiledAssemblies = GetPrecompiledAssembliesWithSetupErrorsTracking(options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+            var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssemblies(options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
             // todo split implicit/explicit precompiled references
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, TargetAssemblyType.Custom, options, EditorCompatibility.CompatibleWithEditor, precompiledAssemblies, null, null);
             var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);

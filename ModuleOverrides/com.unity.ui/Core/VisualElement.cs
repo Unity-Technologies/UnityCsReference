@@ -1157,7 +1157,7 @@ namespace UnityEngine.UIElements
 
         [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(PointerEnterEvent),
             typeof(PointerLeaveEvent), typeof(PointerCaptureEvent), typeof(PointerCaptureOutEvent),
-            typeof(BlurEvent), typeof(FocusEvent))]
+            typeof(BlurEvent), typeof(FocusEvent), typeof(TooltipEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -1203,6 +1203,21 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
+            }
+            else if (evt.eventTypeId == TooltipEvent.TypeId())
+            {
+                // Allow child elements to set their own tooltip
+                SetTooltip((TooltipEvent)evt);
+            }
+        }
+
+        void SetTooltip(TooltipEvent e)
+        {
+            if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
+            {
+                e.rect = element.worldBound;
+                e.tooltip = element.tooltip;
+                e.StopImmediatePropagation();
             }
         }
 

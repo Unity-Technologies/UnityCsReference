@@ -146,14 +146,14 @@ namespace UnityEngine.UIElements
         }
 
         // If we open IFocusRing to users, we need to offer a way to listen to other event types.
-        [EventInterest(typeof(PointerDownEvent), typeof(KeyDownEvent), typeof(NavigationMoveEvent), typeof(NavigationTabEvent))]
+        [EventInterest(typeof(PointerDownEvent), typeof(NavigationMoveEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
             ProcessEvent(evt);
         }
 
-        [EventInterest(typeof(PointerDownEvent), typeof(KeyDownEvent), typeof(NavigationMoveEvent), typeof(NavigationTabEvent))]
+        [EventInterest(typeof(PointerDownEvent), typeof(NavigationMoveEvent))]
         internal override void ExecuteDefaultActionDisabled(EventBase evt)
         {
             base.ExecuteDefaultActionDisabled(evt);
@@ -534,23 +534,20 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal Focusable SwitchFocusOnEvent(EventBase e)
+        internal void SwitchFocusOnEvent(EventBase e)
         {
             if (e.processedByFocusController)
-                return GetLeafFocusedElement();
+                return;
 
             using (FocusChangeDirection direction = focusRing.GetFocusChangeDirection(GetLeafFocusedElement(), e))
             {
                 if (direction != FocusChangeDirection.none)
                 {
-                    Focusable f = FocusNextInDirection(direction);
+                    FocusNextInDirection(direction);
                     e.processedByFocusController = true;
-                    // f does not have the focus yet. It will when the series of focus events will have been handled.
-                    return f;
+                    // The new element does not have the focus until the series of focus events have been handled.
                 }
             }
-
-            return GetLeafFocusedElement();
         }
 
         internal void ReevaluateFocus()

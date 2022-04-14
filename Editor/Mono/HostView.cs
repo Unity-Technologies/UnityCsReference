@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.Overlays;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.StyleSheets;
 using UnityEditorInternal;
 using UnityEngine;
@@ -960,15 +961,17 @@ namespace UnityEditor
                 }
             }
 
-            if (window is ISupportsOverlays)
+            if(window is ISupportsOverlays)
             {
-                OverlayPresetManager.GenerateMenu(menu, "Overlays/Presets/", window);
-                foreach (var overlay in window.overlayCanvas.overlays)
-                {
-                    if (overlay.userControlledVisibility)
-                        menu.AddItem(new GUIContent($"Overlays/{overlay.displayName}"), overlay.displayed,
-                            o => ((Overlay)o).displayed = !((Overlay)o).displayed, overlay);
-                }
+                var binding = ShortcutManager.instance.GetShortcutBinding("Overlays/Show Overlay Menu");
+                var visibleMenu = window.overlayCanvas.menuVisible;
+                menu.AddItem(EditorGUIUtility.TrTextContent($"Overlay Menu _{binding}"),
+                    visibleMenu,
+                    () =>
+                    {
+                        window.overlayCanvas.localMousePosition = Vector2.negativeInfinity;
+                        window.overlayCanvas.menuVisible = !visibleMenu;
+                    });
             }
 
             if (window && Unsupported.IsDeveloperMode())

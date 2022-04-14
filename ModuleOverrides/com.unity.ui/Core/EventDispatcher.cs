@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
@@ -120,6 +121,8 @@ namespace UnityEngine.UIElements
         {
             public EventBase m_Event;
             public IPanel m_Panel;
+            public StackTrace m_StackTrace;
+            public string stackTrace => m_StackTrace?.ToString() ?? string.Empty;
         }
 
         private ClickDetector m_ClickDetector = new ClickDetector();
@@ -166,6 +169,7 @@ namespace UnityEngine.UIElements
             new KeyboardEventDispatchingStrategy(),
             new PointerEventDispatchingStrategy(),
             new MouseEventDispatchingStrategy(),
+            new NavigationEventDispatchingStrategy(),
             new CommandEventDispatchingStrategy(),
             new IMGUIEventDispatchingStrategy(),
             new DefaultDispatchingStrategy(),
@@ -225,7 +229,13 @@ namespace UnityEngine.UIElements
             else
             {
                 evt.Acquire();
-                m_Queue.Enqueue(new EventRecord {m_Event = evt, m_Panel = panel});
+                m_Queue.Enqueue(new EventRecord
+                {
+                    m_Event = evt,
+                    m_Panel = panel,
+                    m_StackTrace = panel is BaseVisualElementPanel p &&
+                                   p.panelDebug != null && p.panelDebug.hasAttachedDebuggers ? new StackTrace() : null
+                });
             }
         }
 
@@ -308,7 +318,7 @@ namespace UnityEngine.UIElements
                     }
                     catch (ExitGUIException e)
                     {
-                        Debug.Assert(caughtExitGUIException == null);
+                        Debug.Assert(caughtExitGUIException == null, eventRecord.stackTrace);
                         caughtExitGUIException = e;
                     }
                     finally

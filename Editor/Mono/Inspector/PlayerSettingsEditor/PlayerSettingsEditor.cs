@@ -162,8 +162,6 @@ namespace UnityEditor
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
             public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
-            public static readonly GUIContent assemblyVersionValidation = EditorGUIUtility.TrTextContent("Assembly Version Validation", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
-            public static readonly GUIContent assemblyVersionValidationEditorOnly = EditorGUIUtility.TrTextContent("Assembly Version Validation (editor only)", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
@@ -359,7 +357,6 @@ namespace UnityEditor
         SerializedProperty m_SuppressCommonWarnings;
         SerializedProperty m_AllowUnsafeCode;
         SerializedProperty m_GCIncremental;
-        SerializedProperty m_AssemblyVersionValidation;
 
         SerializedProperty m_OverrideDefaultApplicationIdentifier;
         SerializedProperty m_ApplicationIdentifier;
@@ -571,7 +568,6 @@ namespace UnityEditor
             m_SuppressCommonWarnings        = FindPropertyAssert("suppressCommonWarnings");
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
-            m_AssemblyVersionValidation = FindPropertyAssert("assemblyVersionValidation");
             m_UseDeterministicCompilation   = FindPropertyAssert("useDeterministicCompilation");
             m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
             m_EnableRoslynAnalyzers         = FindPropertyAssert("enableRoslynAnalyzers");
@@ -2117,7 +2113,7 @@ namespace UnityEditor
                 }
 
                 // Tickbox for OpenGL-only option to toggle Profiler GPU Recorders.
-                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android)
                 {
                     PlayerSettings.enableOpenGLProfilerGPURecorders = EditorGUILayout.Toggle(SettingsContent.enableOpenGLProfilerGPURecorders, PlayerSettings.enableOpenGLProfilerGPURecorders);
 
@@ -2619,9 +2615,6 @@ namespace UnityEditor
                             m_GCIncremental.boolValue = oldValue;
                     }
                 }
-
-                EditorGUILayout.PropertyField(m_AssemblyVersionValidation,
-                    (PlayerSettings.GetScriptingBackend(platform.namedBuildTarget) != ScriptingImplementation.Mono2x) ? SettingsContent.assemblyVersionValidationEditorOnly : SettingsContent.assemblyVersionValidation);
             }
 
             var insecureHttp = BuildEnumPopup(m_InsecureHttpOption, SettingsContent.insecureHttpOption, new[] { InsecureHttpOption.NotAllowed, InsecureHttpOption.DevelopmentOnly, InsecureHttpOption.AlwaysAllowed }, SettingsContent.insecureHttpOptions);

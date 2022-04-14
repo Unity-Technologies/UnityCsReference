@@ -19,6 +19,7 @@ namespace UnityEditor.AI
         internal static extern bool showNavMeshLinks { get; set; }
         internal static extern bool showProximityGrid { get; set; }
         internal static extern bool showHeightMeshBVTree { get; set; }
+        internal static extern bool showHeightMaps { get; set; }
         internal static extern bool hasHeightMesh
         {
             [NativeName("HasHeightMesh")]

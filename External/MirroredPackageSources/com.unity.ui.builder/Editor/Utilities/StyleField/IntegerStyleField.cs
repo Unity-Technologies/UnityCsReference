@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -38,6 +39,13 @@ namespace Unity.UI.Builder
             m_DraggerIntegerField.RegisterValueChangedCallback(OnDraggerFieldUpdate);
             Insert(0, m_DraggerIntegerField);
             RefreshChildFields();
+        }
+
+        protected override void RefreshChildFields()
+        {
+            base.RefreshChildFields();
+
+            m_DraggerIntegerField.SetValueWithoutNotify(Mathf.RoundToInt(innerValue));
         }
 
         protected override List<string> GenerateAdditionalOptions(string binding)

@@ -73,6 +73,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         // Since burst would fail to compile managed types anyway, we can default to unmanaged and
         // conditionally mark as managed in managed code paths
+        // These flags must be kept in sync with kScriptingTypeXXX flags in Scripting.cpp
         const int kIsManaged = 0x01;
         const int kIsNativeContainer = 0x02;
 

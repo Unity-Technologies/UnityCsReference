@@ -527,7 +527,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
     public partial class Graphics
     {
-        [FreeFunction("GraphicsScripting::GetMaxDrawMeshInstanceCount")] extern private static int Internal_GetMaxDrawMeshInstanceCount();
+        [FreeFunction("GraphicsScripting::GetMaxDrawMeshInstanceCount", IsThreadSafe = true)] extern private static int Internal_GetMaxDrawMeshInstanceCount();
         internal static readonly int kMaxDrawMeshInstanceCount = Internal_GetMaxDrawMeshInstanceCount();
 
         [FreeFunction] extern private static ColorGamut GetActiveColorGamut();

@@ -91,14 +91,6 @@ namespace UnityEngine.UIElements
 
         internal void OnKeyDown(KeyDownEvent evt)
         {
-            if (target.panel?.contextType == ContextType.Editor)
-                OnEditorKeyDown(evt);
-            else
-                OnRuntimeKeyDown(evt);
-        }
-
-        void OnRuntimeKeyDown(KeyDownEvent evt)
-        {
             // At the moment these actions are not mapped dynamically in the InputSystemEventSystem component.
             // When that becomes the case in the future, remove the following and use corresponding Navigation events.
             KeyboardNavigationOperation GetOperation()
@@ -111,35 +103,14 @@ namespace UnityEngine.UIElements
                     case KeyCode.PageUp: return KeyboardNavigationOperation.PageUp;
                     case KeyCode.PageDown: return KeyboardNavigationOperation.PageDown;
                 }
-                // TODO why do we want to invoke the callback in this case? Looks weird.
                 return KeyboardNavigationOperation.None;
             }
 
-            Invoke(GetOperation(), evt);
-        }
-
-        void OnEditorKeyDown(KeyDownEvent evt)
-        {
-            KeyboardNavigationOperation GetOperation()
+            var op = GetOperation();
+            if (op != KeyboardNavigationOperation.None)
             {
-                switch (evt.keyCode)
-                {
-                    case KeyCode.A when evt.actionKey: return KeyboardNavigationOperation.SelectAll;
-                    case KeyCode.Escape: return KeyboardNavigationOperation.Cancel;
-                    case KeyCode.Return:
-                    case KeyCode.KeypadEnter: return KeyboardNavigationOperation.Submit;
-                    case KeyCode.UpArrow: return KeyboardNavigationOperation.Previous;
-                    case KeyCode.DownArrow: return KeyboardNavigationOperation.Next;
-                    case KeyCode.Home: return KeyboardNavigationOperation.Begin;
-                    case KeyCode.End: return KeyboardNavigationOperation.End;
-                    case KeyCode.PageUp: return KeyboardNavigationOperation.PageUp;
-                    case KeyCode.PageDown: return KeyboardNavigationOperation.PageDown;
-                }
-
-                return KeyboardNavigationOperation.None;
+                Invoke(op, evt);
             }
-
-            Invoke(GetOperation(), evt);
         }
 
         void OnNavigationCancel(NavigationCancelEvent evt)
@@ -167,9 +138,6 @@ namespace UnityEngine.UIElements
 
         void Invoke(KeyboardNavigationOperation operation, EventBase evt)
         {
-            if (operation == KeyboardNavigationOperation.None)
-                return;
-
             m_Action?.Invoke(operation, evt);
         }
     }

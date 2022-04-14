@@ -9,9 +9,11 @@ namespace UnityEditor
 {
     internal class VertexSnapping
     {
+        internal const string k_VertexSnappingShortcut = "Scene View/Vertex Snapping";
+        internal const string k_VertexSnappingToggleShortcut = "Scene View/Toggle Vertex Snapping";
         private static Vector3 s_VertexSnappingOffset = Vector3.zero;
 
-        [Shortcut("Scene View/Toggle Vertex Snapping", typeof(SceneView), KeyCode.V, ShortcutModifiers.Shift)]
+        [Shortcut(k_VertexSnappingToggleShortcut, typeof(SceneView), KeyCode.V, ShortcutModifiers.Shift)]
         private static void ToggleVertexSnappingViaShortcut()
         {
             int id = GUIUtility.hotControl;
@@ -21,7 +23,7 @@ namespace UnityEditor
                 EnableVertexSnapping(id);
         }
 
-        [ClutchShortcut("Scene View/Vertex Snapping", typeof(SceneView), KeyCode.V)]
+        [ClutchShortcut(k_VertexSnappingShortcut, typeof(SceneView), KeyCode.V)]
         private static void ToggleVertexSnappingViaClutchShortcut(ShortcutArguments arguments)
         {
             int id = GUIUtility.hotControl;
@@ -62,7 +64,7 @@ namespace UnityEditor
         private static void EnableVertexSnapping(int id)
         {
             Tools.vertexDragging = true;
-            if (GUIUtility.hotControl == id)
+            if (GUIUtility.hotControl != 0 && GUIUtility.hotControl == id)
             {
                 Tools.handleOffset = s_VertexSnappingOffset;
             }
@@ -71,6 +73,14 @@ namespace UnityEditor
                 UpdateVertexSnappingOffset();
                 s_VertexSnappingOffset = Tools.handleOffset;
             }
+        }
+
+        //Used in tests
+        internal static void DisableVertexSnapping_Internal()
+        {
+            Tools.vertexDragging = false;
+            Tools.handleOffset = Vector3.zero;
+            s_VertexSnappingOffset = Vector3.zero;
         }
 
         private static void DisableVertexSnapping(int id)
@@ -85,6 +95,16 @@ namespace UnityEditor
         private static void UpdateVertexSnappingOffset()
         {
             Event evt = Event.current;
+
+            // If pressing ctrl/cmd key while using vertex snapping,
+            // then the pivot should be used to snap on vertices
+            if(EditorGUI.actionKey &&! evt.shift)
+            {
+                Tools.InvalidateHandlePosition();
+                Tools.handleOffset = Vector3.zero;
+                return;
+            }
+
             Tools.vertexDragging = true;
             Vector3 nearestVertex;
             Transform[] selection = Selection.GetTransforms(SelectionMode.Deep | SelectionMode.ExcludePrefab | SelectionMode.Editable);

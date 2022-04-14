@@ -1385,6 +1385,11 @@ namespace UnityEditor.ShortcutManagement
         {
             return default;
         }
+
+        internal override void UpdateValueFromText()
+        {
+            // Do nothing. There's no text-to-value conversion here.
+        }
     }
 
     internal class ShortcutSearchField : SearchFieldBase<ShortcutTextField, List<KeyCombination>>

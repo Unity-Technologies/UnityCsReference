@@ -55,7 +55,6 @@ namespace UnityEditorInternal
                     if (GUIUtility.hotControl == id)
                     {
                         bool rayDrag = EditorGUI.actionKey && evt.shift;
-
                         if (rayDrag)
                         {
                             if (HandleUtility.ignoreRaySnapObjects == null)
@@ -64,7 +63,7 @@ namespace UnityEditorInternal
                             if (HandleUtility.PlaceObject(evt.mousePosition, out Vector3 point, out Vector3 normal))
                             {
                                 float offset = 0;
-                                if (Tools.pivotMode == PivotMode.Center)
+                                if (Tools.pivotMode == PivotMode.Center && !Tools.vertexDragging)
                                 {
                                     float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, normal);
                                     if (geomOffset != Mathf.Infinity)
@@ -100,7 +99,7 @@ namespace UnityEditorInternal
                                     position = Handles.inverseMatrix.MultiplyPoint(near);
                                 }
                             }
-
+                            else
                             if (EditorSnapSettings.incrementalSnapActive && !evt.shift)
                             {
                                 Vector3 delta = position - s_StartPosition;

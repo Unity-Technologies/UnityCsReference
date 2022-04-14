@@ -252,7 +252,7 @@ namespace UnityEditor.Search
         {
             if (string.IsNullOrEmpty(m_SearchText) || m_QueryEngine == null)
                 return m_Items;
-            var query = m_QueryEngine.Parse(m_SearchText);
+            var query = m_QueryEngine.ParseQuery(m_SearchText);
             if (!query.valid)
                 return m_Items;
             return query.Apply(Enumerable.Range(0, m_Items.Count), false).Select(i => m_Items[i]);

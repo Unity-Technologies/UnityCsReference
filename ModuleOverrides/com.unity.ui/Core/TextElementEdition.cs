@@ -43,8 +43,10 @@ namespace UnityEngine.UIElements
         internal void RestoreValueAndText();
 
         internal Func<char, bool> AcceptCharacter { get; set; }
-        internal Action UpdateScrollOffset{ get; set; }
-        internal Action UpdateValueFromText{ get; set; }
+        internal Action UpdateScrollOffset { get; set; }
+        internal Action UpdateValueFromText { get; set; }
+        internal Action UpdateTextFromValue { get; set; }
+        internal Action MoveFocusToCompositeRoot { get; set; }
 
         internal void UpdateText(string value);
 
@@ -173,7 +175,7 @@ namespace UnityEngine.UIElements
             typeof(KeyDownEvent), typeof(KeyUpEvent), typeof(FocusEvent), typeof(BlurEvent),
             typeof(MouseUpEvent), typeof(MouseDownEvent), typeof(MouseMoveEvent), typeof(ValidateCommandEvent),
             typeof(ExecuteCommandEvent), typeof(PointerDownEvent), typeof(PointerUpEvent),
-            typeof(NavigationCancelEvent), typeof(NavigationSubmitEvent), typeof(NavigationMoveEvent))]
+            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             if (selection.isSelectable)
@@ -233,8 +235,10 @@ namespace UnityEngine.UIElements
         }
 
         Func<char, bool> ITextEdition.AcceptCharacter { get; set; }
-        Action ITextEdition.UpdateScrollOffset{ get; set; }
-        Action ITextEdition.UpdateValueFromText{ get; set; }
+        Action ITextEdition.UpdateScrollOffset { get; set; }
+        Action ITextEdition.UpdateValueFromText { get; set; }
+        Action ITextEdition.UpdateTextFromValue { get; set; }
+        Action ITextEdition.MoveFocusToCompositeRoot { get; set; }
 
         void ITextEdition.UpdateText(string value)
         {

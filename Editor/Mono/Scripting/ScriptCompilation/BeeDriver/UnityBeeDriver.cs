@@ -109,9 +109,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static BeeDriver Make(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, string dagDirectory = null, bool useScriptUpdater = true)
+        public static BeeDriver Make(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, ILPostProcessingProgram ilpp, string dagDirectory = null, bool useScriptUpdater = true)
         {
-            return Make(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, StdOutModeForScriptCompilation);
+            return Make(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, ilpp, StdOutModeForScriptCompilation);
         }
 
         public const StdOutMode StdOutModeForScriptCompilation =
@@ -125,6 +125,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string dagDirectory,
             bool useScriptUpdater,
             string projectDirectory,
+            ILPostProcessingProgram ilpp,
             StdOutMode stdoutMode,
             ProgressAPI progressAPI = null,
             RunnableProgram beeBackendProgram = null)
@@ -155,6 +156,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 AdvancedLicense = PlayerSettings.advancedLicense,
                 Batchmode = InternalEditorUtility.inBatchMode,
                 EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
+                NamedPipeOrUnixSocket = ilpp.NamedPipeOrUnixSocket,
             });
             return result;
         }

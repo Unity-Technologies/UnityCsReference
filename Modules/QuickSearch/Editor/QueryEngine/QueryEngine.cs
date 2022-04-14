@@ -2242,7 +2242,7 @@ namespace UnityEditor.Search
     /// It can be customized to support custom filters and operators.
     /// </summary>
     /// <typeparam name="TData">The filtered data type.</typeparam>
-    public class QueryEngine<TData>
+    public partial class QueryEngine<TData>
     {
         QueryEngineImpl<TData> m_Impl;
 
@@ -3129,36 +3129,36 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
-        /// Parse a query string into a Query operation. This Query operation can then be used to filter any data set of type TData.
+        /// Parse a query string into a ParsedQuery operation. This ParsedQuery operation can then be used to filter any data set of type TData.
         /// </summary>
         /// <param name="text">The query input string.</param>
         /// <param name="useFastYieldingQueryHandler">Set to true to get a query that will yield null results for elements that don't pass the query, instead of only the elements that pass the query.</param>
-        /// <returns>Query operation of type TData.</returns>
-        public Query<TData> Parse(string text, bool useFastYieldingQueryHandler = false)
+        /// <returns>ParsedQuery operation of type TData.</returns>
+        public ParsedQuery<TData> ParseQuery(string text, bool useFastYieldingQueryHandler = false)
         {
             var handlerFactory = new DefaultQueryHandlerFactory<TData>(this, useFastYieldingQueryHandler);
-            return BuildQuery(text, handlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new Query<TData>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
+            return BuildQuery(text, handlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new ParsedQuery<TData>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
         }
 
         /// <summary>
-        /// Parse a query string into a Query operation. This Query operation can then be used to filter any data set of type TData.
+        /// Parse a query string into a ParsedQuery operation. This ParsedQuery operation can then be used to filter any data set of type TData.
         /// </summary>
         /// <typeparam name="TQueryHandler">Type of the underlying query handler. See IQueryHandler.</typeparam>
         /// <typeparam name="TPayload">Type of the payload that the query handler receives.</typeparam>
         /// <param name="text">The query input string.</param>
         /// <param name="queryHandlerFactory">A factory object that creates query handlers of type TQueryHandler. See IQueryHandlerFactory.</param>
-        /// <returns>Query operation of type TData and TPayload.</returns>
-        public Query<TData, TPayload> Parse<TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory)
+        /// <returns>ParsedQuery operation of type TData and TPayload.</returns>
+        public ParsedQuery<TData, TPayload> ParseQuery<TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory)
             where TQueryHandler : IQueryHandler<TData, TPayload>
             where TPayload : class
         {
-            return BuildQuery(text, queryHandlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new Query<TData, TPayload>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
+            return BuildQuery(text, queryHandlerFactory, (evalGraph, queryGraph, errors, tokens, toggles, handler) => new ParsedQuery<TData, TPayload>(text, evalGraph, queryGraph, errors, tokens, toggles, handler));
         }
 
         TQuery BuildQuery<TQuery, TQueryHandler, TPayload>(string text, IQueryHandlerFactory<TData, TQueryHandler, TPayload> queryHandlerFactory, Func<QueryGraph, QueryGraph, ICollection<QueryError>, ICollection<string>, ICollection<QueryToggle>, TQueryHandler, TQuery> queryCreator)
             where TQueryHandler : IQueryHandler<TData, TPayload>
             where TPayload : class
-            where TQuery : Query<TData, TPayload>
+            where TQuery : ParsedQuery<TData, TPayload>
         {
             var errors = new List<QueryError>();
             var tokens = new List<string>();

@@ -190,6 +190,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public override void OnBlur(VisualElement willFocus)
+        {
+            // Focus lost and the about-to-be-focused VisualElement is not part of the VerticalVirtualizationController.
+            if (willFocus == null || willFocus != m_ScrollView.contentContainer)
+            {
+                m_LastFocusedElementTreeChildIndexes.Clear();
+                m_LastFocusedElementIndex = -1;
+            }
+        }
+
         void HandleFocus(ReusableCollectionItem recycledItem, int previousIndex)
         {
             if (m_LastFocusedElementIndex == -1)

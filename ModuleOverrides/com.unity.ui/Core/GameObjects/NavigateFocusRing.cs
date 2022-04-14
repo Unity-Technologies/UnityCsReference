@@ -17,8 +17,8 @@ namespace UnityEngine.UIElements
         public static readonly ChangeDirection Right = new ChangeDirection(2);
         public static readonly ChangeDirection Up = new ChangeDirection(3);
         public static readonly ChangeDirection Down = new ChangeDirection(4);
-        public static readonly ChangeDirection Next = new ChangeDirection(5);
-        public static readonly ChangeDirection Previous = new ChangeDirection(6);
+        public static readonly FocusChangeDirection Next = VisualElementFocusChangeDirection.right;
+        public static readonly FocusChangeDirection Previous = VisualElementFocusChangeDirection.left;
 
         private readonly VisualElement m_Root;
         private readonly VisualElementFocusRing m_Ring;
@@ -46,20 +46,9 @@ namespace UnityEngine.UIElements
                     case NavigationMoveEvent.Direction.Up: return Up;
                     case NavigationMoveEvent.Direction.Right: return Right;
                     case NavigationMoveEvent.Direction.Down: return Down;
+                    case NavigationMoveEvent.Direction.Next: return Next;
+                    case NavigationMoveEvent.Direction.Previous: return Previous;
                 }
-            }
-            //TODO: make NavigationTabEvent public and use it here
-            else if (e.eventTypeId == KeyDownEvent.TypeId())
-            {
-                var kde = (KeyDownEvent)e;
-
-                // Important: using KeyDownEvent.character for focus prevents a TextField bug.
-                // IMGUI sends KeyDownEvent with keyCode != None, then it sends another one with character != '\0'.
-                // If we use keyCode instead of character, TextField will receive focus on the first KeyDownEvent,
-                // then text will become selected and, in the case of multiline, the KeyDownEvent with character = '\t'
-                // will immediately overwrite the text with a single Tab string.
-                if (kde.character == (char)25 || kde.character == '\t')
-                    return kde.shiftKey ? Previous : Next;
             }
 
             return FocusChangeDirection.none;
@@ -67,24 +56,12 @@ namespace UnityEngine.UIElements
 
         public virtual Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction)
         {
-            if (direction is VisualElementFocusChangeTarget changeTarget)
-            {
-                return changeTarget.target;
-            }
-
-            if (direction == Next || direction == Previous)
-            {
-                return m_Ring.GetNextFocusable(currentFocusable, direction == Next
-                    ? VisualElementFocusChangeDirection.right
-                    : VisualElementFocusChangeDirection.left);
-            }
-
             if (direction == Up || direction == Down || direction == Right || direction == Left)
             {
                 return GetNextFocusable2D(currentFocusable, (ChangeDirection)direction);
             }
 
-            return currentFocusable;
+            return m_Ring.GetNextFocusable(currentFocusable, direction);
         }
 
         // Searches for a navigable element starting from currentFocusable and scanning along the specified direction.

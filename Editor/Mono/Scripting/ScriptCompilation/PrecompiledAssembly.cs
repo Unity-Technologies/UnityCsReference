@@ -14,6 +14,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     [DebuggerDisplay("{Path}")]
     [NativeHeader("Editor/Src/ScriptCompilation/ScriptCompilationPipeline.h")]
+    [NativeHeader("Runtime/Scripting/ScriptingTypes.h")]
     [StructLayout(LayoutKind.Sequential)]
     struct PrecompiledAssembly
     {
@@ -21,6 +22,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string Path;
         [NativeName("flags")]
         public AssemblyFlags Flags;
+        [NativeName("redirected")]
+        public bool Redirected;
     }
 
     abstract class PrecompiledAssemblyProviderBase
@@ -136,7 +139,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var precompiledAssembliesInternal = GetPrecompiledAssembliesInternal(compilationOptions, buildTargetGroup, buildTarget, extraScriptingDefines);
-            var fileNameToPrecompiledAssembly = ValidateAndGetNameToPrecompiledAssembly(precompiledAssembliesInternal);
+            var fileNameToPrecompiledAssembly = FilenameToPrecompiledAssembly(precompiledAssembliesInternal);
 
             if (isEditor && (extraScriptingDefines == null || extraScriptingDefines.Length == 0))
             {
@@ -152,46 +155,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             m_UnityAssemblies = null;
         }
 
-        private static Dictionary<string, PrecompiledAssembly> ValidateAndGetNameToPrecompiledAssembly(PrecompiledAssembly[] precompiledAssemblies)
+        private static Dictionary<string, PrecompiledAssembly> FilenameToPrecompiledAssembly(PrecompiledAssembly[] precompiledAssemblies)
         {
             if (precompiledAssemblies == null)
             {
                 return new Dictionary<string, PrecompiledAssembly>(0);
             }
 
-            Dictionary<string, PrecompiledAssembly> fileNameToUserPrecompiledAssemblies = new Dictionary<string, PrecompiledAssembly>(precompiledAssemblies.Length);
-
-            var sameNamedPrecompiledAssemblies = new Dictionary<string, List<string>>(precompiledAssemblies.Length);
-            for (int i = 0; i < precompiledAssemblies.Length; i++)
+            var dictionary = new Dictionary<string, PrecompiledAssembly>();
+            foreach (var assembly in precompiledAssemblies)
             {
-                var precompiledAssembly = precompiledAssemblies[i];
-
-                var fileName = AssetPath.GetFileName(precompiledAssembly.Path);
-                if (!fileNameToUserPrecompiledAssemblies.ContainsKey(fileName))
+                var filename = AssetPath.GetFileName(assembly.Path);
+                if (!dictionary.TryGetValue(filename, out var existingAssembly))
                 {
-                    fileNameToUserPrecompiledAssemblies.Add(fileName, precompiledAssembly);
+                    dictionary[filename] = assembly;
+                    continue;
                 }
-                else
+
+                if (existingAssembly.Redirected)
                 {
-                    if (!sameNamedPrecompiledAssemblies.ContainsKey(fileName))
-                    {
-                        sameNamedPrecompiledAssemblies.Add(fileName, new List<string>
-                        {
-                            fileNameToUserPrecompiledAssemblies[fileName].Path
-                        });
-                    }
-                    sameNamedPrecompiledAssemblies[fileName].Add(precompiledAssembly.Path);
+                    dictionary[filename] = assembly;
                 }
             }
-
-            foreach (var precompiledAssemblyNameToIndexes in sameNamedPrecompiledAssemblies)
-            {
-                throw new PrecompiledAssemblyException(
-                    $"Multiple precompiled assemblies with the same name {precompiledAssemblyNameToIndexes.Key} included on the current platform. Only one assembly with the same name is allowed per platform.",
-                    precompiledAssemblyNameToIndexes.Value.ToArray());
-            }
-
-            return fileNameToUserPrecompiledAssemblies;
+            return dictionary;
         }
     }
 }

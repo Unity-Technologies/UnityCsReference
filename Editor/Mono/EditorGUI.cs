@@ -6614,7 +6614,9 @@ namespace UnityEditor
             }
 
             var isLiveModified = property.isLiveModified;
-            EditorGUIUtility.SetBoldDefaultFont(isLiveModified);
+            if (isLiveModified)
+                EditorGUIUtility.SetBoldDefaultFont(isLiveModified);
+
             if (Event.current.type == EventType.Repaint && isLiveModified)
             {
                 Rect highlightRect = totalPosition;

@@ -134,6 +134,7 @@ namespace UnityEngine.UIElements
                 if (e.button == (int)MouseButton.LeftMouse)
                     e.StopPropagation();
             });
+            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
         }
 
         void OnPointerDownEvent(PointerDownEvent evt)
@@ -171,27 +172,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [EventInterest(typeof(KeyDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        void OnNavigationSubmit(NavigationSubmitEvent evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            KeyDownEvent kde = (evt as KeyDownEvent);
-            if (kde != null)
-            {
-                if ((kde.keyCode == KeyCode.Space) ||
-                    (kde.keyCode == KeyCode.KeypadEnter) ||
-                    (kde.keyCode == KeyCode.Return))
-                {
-                    ShowMenu();
-                    evt.StopPropagation();
-                }
-            }
+            ShowMenu();
+            evt.StopPropagation();
         }
 
         private void ShowMenu()

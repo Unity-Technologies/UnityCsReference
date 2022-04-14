@@ -16,6 +16,7 @@ namespace UnityEditor.Compilation
         }
     }
 
+    [Obsolete("PrecompiledAssemblyException is no longer being thrown by Unity and will be removed.")]
     public class PrecompiledAssemblyException : Exception
     {
         public string[] filePaths { get; }

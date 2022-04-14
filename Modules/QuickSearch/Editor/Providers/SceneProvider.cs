@@ -400,7 +400,7 @@ namespace UnityEditor.Search.Providers
                 "Use fuzzy search to match object names", priority: 0, moveCursor: TextCursorPlacement.MoveAutoComplete, icon: Icons.toggles,
                 color: QueryColors.toggle);
 
-            var sceneObjects = context.searchView?.results.Count > 0 ?
+            var sceneObjects = context.searchView?.results.Count > 0 && !context.searchInProgress ?
                 context.searchView.results.Select(r => r.ToObject()).Where(o => o) : SearchUtils.FetchGameObjects();
             foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects))
                 yield return p;

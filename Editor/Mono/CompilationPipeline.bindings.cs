@@ -12,8 +12,7 @@ namespace UnityEditor.Compilation
     {
         None                        = 0,
         LoadError                   = 1 << 0, // set when AssemblyDefinitionException is thrown
-        PrecompiledAssemblyError    = 1 << 1, // set when PrecompiledAssemblyException is thrown
-        All                         = LoadError | PrecompiledAssemblyError,
+        All                         = LoadError,
     };
 
     [NativeHeader("Editor/Src/ScriptCompilation/ScriptCompilationPipeline.h")]

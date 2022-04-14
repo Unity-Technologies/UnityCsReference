@@ -216,7 +216,7 @@ namespace UnityEngine.UIElements
             viewDataKey = ussClassName;
             AddToClassList(ussClassName);
 
-            scrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnScrollViewKeyDown);
+            scrollView.contentContainer.RegisterCallback<NavigationMoveEvent>(OnScrollViewNavigationMove);
 
             RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
         }
@@ -347,6 +347,31 @@ namespace UnityEngine.UIElements
                         ExpandItemByIndex(index, evt.altKey);
                     break;
                 case KeyCode.LeftArrow:
+                    if (evt.altKey || IsExpandedByIndex(index))
+                        CollapseItemByIndex(index, evt.altKey);
+                    break;
+                default:
+                    shouldStopPropagation = false;
+                    break;
+            }
+
+            if (shouldStopPropagation)
+                evt.StopPropagation();
+        }
+
+        private void OnScrollViewNavigationMove(NavigationMoveEvent evt)
+        {
+            var index = selectedIndex;
+
+            bool shouldStopPropagation = true;
+
+            switch (evt.direction)
+            {
+                case NavigationMoveEvent.Direction.Right:
+                    if (evt.altKey || !IsExpandedByIndex(index))
+                        ExpandItemByIndex(index, evt.altKey);
+                    break;
+                case NavigationMoveEvent.Direction.Left:
                     if (evt.altKey || IsExpandedByIndex(index))
                         CollapseItemByIndex(index, evt.altKey);
                     break;

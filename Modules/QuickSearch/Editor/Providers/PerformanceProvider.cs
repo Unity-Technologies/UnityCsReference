@@ -201,7 +201,7 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<SearchItem> FetchItem(QueryEngine<string> qe, SearchContext context, SearchProvider provider)
         {
-            var query = qe.Parse(context.searchQuery);
+            var query = qe.ParseQuery(context.searchQuery);
             if (!query.valid)
                 yield break;
 

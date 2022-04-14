@@ -240,17 +240,22 @@ namespace UnityEditor.EditorTools
 
             res = new GUIContent() { tooltip = GetToolName(editorToolType) };
 
-            // First check for the tool type itself
-            if ((res.image = EditorGUIUtility.FindTexture(editorToolType)) != null)
+            // First check if the tool as an icon attribute
+            var iconPath = EditorGUIUtility.GetIconPathFromAttribute(editorToolType);
+            if(!string.IsNullOrEmpty(iconPath) && (res.image = EditorGUIUtility.IconContent(iconPath).image))
+                goto ReturnToolbarIcon;
+
+            // Second check for the tool type itself
+            if(( res.image = EditorGUIUtility.FindTexture(editorToolType) ) != null)
                 goto ReturnToolbarIcon;
 
             // If it's a custom editor tool, try to get an icon for the tool's target type
             var attrib = GetEditorToolAttribute(editorToolType);
-            if (attrib?.targetType != null && (res.image = AssetPreview.GetMiniTypeThumbnailFromType(attrib.targetType)) != null)
+            if(attrib?.targetType != null && ( res.image = AssetPreview.GetMiniTypeThumbnailFromType(attrib.targetType) ) != null)
                 goto ReturnToolbarIcon;
 
             // And finally fall back to the default Custom Tool icon
-            res.image = EditorGUIUtility.LoadIconRequired("CustomTool");
+            res.image = EditorGUIUtility.IconContent("CustomTool").image;
 
         ReturnToolbarIcon:
             if (string.IsNullOrEmpty(res.tooltip))

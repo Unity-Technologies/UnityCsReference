@@ -883,6 +883,47 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
         public extern static bool IsAssetImportWorkerProcess();
 
+        [FreeFunction("AssetDatabase::GetImporterType")]
+        public extern static Type GetImporterType(GUID guid);
+
+        [FreeFunction("AssetDatabase::GetImporterTypes")]
+        private static extern unsafe Type[] GetImporterTypes_Internal([Span("guidsLength", isReadOnly: true)]GUID* guids, int guidsLength);
+
+        private static unsafe Type[] GetImporterTypesUnsafe_Internal(ReadOnlySpan<GUID> guids)
+        {
+            fixed (GUID* guidsPtr = guids)
+            {
+                return GetImporterTypes_Internal(guidsPtr, guids.Length);
+            }
+        }
+
+        public static Type[] GetImporterTypes(ReadOnlySpan<GUID> guids)
+        {
+            return GetImporterTypesUnsafe_Internal(guids);
+        }
+
+        //Since extern method overloads are not supported
+        //this is the name we pick, but users end up being able
+        //to call either of the overloads
+        [FreeFunction("AssetDatabase::GetImporterTypesAtPaths")]
+        private static extern Type[] GetImporterTypesAtPaths(string[] paths);
+
+        public static Type GetImporterType(string assetPath)
+        {
+            return GetImporterTypeAtPath(assetPath);
+        }
+
+        //Since extern method overloads are not supported
+        //this is the name we pick, but users end up being able
+        //to call either of the overloads
+        [FreeFunction("AssetDatabase::GetImporterTypeAtPath")]
+        private static extern Type GetImporterTypeAtPath(string assetPath);
+
+        public static Type[] GetImporterTypes(string[] paths)
+        {
+            return GetImporterTypesAtPaths(paths);
+        }
+
         [RequiredByNativeCode]
         static string[] OnSourceAssetsModified(string[] changedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {

@@ -30,6 +30,12 @@ namespace UnityEditor
             GlobalAllImporterVersionModified(ref diff, msgsList);
         }
 
+        internal static void Test_ImporterVersionModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            //Only way to test internals
+            ImporterVersionModified(ref diff, msgsList);
+        }
+
         internal static void Test_ArtifactFileIdOfMainObjectModified(ref ArtifactInfoDifference diff, List<string> msgsList)
         {
             //Only way to test internals
@@ -40,6 +46,31 @@ namespace UnityEditor
         {
             //Only way to test internals
             ScriptingRuntimeVersionModified(ref diff, msgsList);
+        }
+
+        internal static void Test_PlatformGroupModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            PlatformGroupModified(ref diff, msgsList);
+        }
+
+        internal static void Test_PlatformDependencyModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            PlatformDependencyModified(ref diff, msgsList);
+        }
+
+        internal static void Test_PostProcessorVersionHashModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            PostProcessorVersionHashModified(ref diff, msgsList);
+        }
+
+        internal static void Test_TextureCompressionModified(ref ArtifactInfoDifference diff, List<string> msgsList)
+        {
+            TextureCompressionModified(ref diff, msgsList);
+        }
+
+        internal static void Test_GuidOfPathLocationModifiedViaHashOfSourceAsset(ref ArtifactInfoDifference diff, List<string> msgsList, string pathOfDependency)
+        {
+            GuidOfPathLocationModifiedViaHashOfSourceAsset(ref diff, msgsList, pathOfDependency);
         }
     }
 }

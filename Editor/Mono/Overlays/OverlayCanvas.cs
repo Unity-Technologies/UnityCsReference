@@ -227,7 +227,7 @@ namespace UnityEditor.Overlays
         OverlayMenu menu => m_Menu ??= new OverlayMenu(this);
         internal VisualElement rootVisualElement => m_RootVisualElement ??= CreateRoot();
 
-        Vector2 localMousePosition { get; set; }
+        internal Vector2 localMousePosition { get; set; }
         internal Overlay hoveredOverlay => m_HoveredOverlay;
         OverlayContainer hoveredOverlayContainer { get; set; }
         OverlayContainer defaultContainer { get; set; }

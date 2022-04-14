@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using Unity.Profiling;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -352,6 +353,25 @@ namespace UnityEditor
 
         internal static bool vertexDragging;
 
+        static Event m_VertexDraggingShortcutEvent;
+        internal static Event vertexDraggingShortcutEvent
+        {
+            get
+            {
+                if(m_VertexDraggingShortcutEvent == null)
+                {
+                    var vertexSnappingBinding = ShortcutManager.instance.GetShortcutBinding(VertexSnapping.k_VertexSnappingShortcut);
+                    if(Enumerable.Count(vertexSnappingBinding.keyCombinationSequence) == 0)
+                        m_VertexDraggingShortcutEvent = new Event();
+                    else
+                        m_VertexDraggingShortcutEvent = vertexSnappingBinding.keyCombinationSequence.First().ToKeyboardEvent();
+                }
+
+                return m_VertexDraggingShortcutEvent;
+            }
+            set => m_VertexDraggingShortcutEvent = value;
+        }
+
         static Vector3 s_LockHandlePosition;
         static bool s_LockHandlePositionActive = false;
 
@@ -413,6 +433,9 @@ namespace UnityEditor
             lockedLayers = layerSettings.lockedLayersValue;
             Selection.selectionChanged += OnSelectionChange;
             Undo.undoRedoEvent += OnUndoRedo;
+
+            ShortcutManager.instance.activeProfileChanged += args => vertexDraggingShortcutEvent = null;
+            ShortcutManager.instance.shortcutBindingChanged += args => vertexDraggingShortcutEvent = null;
 
             EditorToolManager.activeToolChanged += (previous, active) =>
             {

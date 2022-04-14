@@ -190,7 +190,9 @@ namespace UnityEditor
             {
                 case EventType.KeyDown:
                     // Holding 'V' turns on the FreeMove transform gizmo and enables vertex snapping.
-                    if (evt.keyCode == KeyCode.V && !currentlyDragging)
+                    if (evt.keyCode == Tools.vertexDraggingShortcutEvent.keyCode
+                        && evt.modifiers == Tools.vertexDraggingShortcutEvent.modifiers
+                        && !currentlyDragging)
                     {
                         s_FreeMoveMode = true;
                     }
@@ -203,13 +205,19 @@ namespace UnityEditor
                     // implementation is a fair bit simpler this way.
                     // Basic idea: Leave this call above the 'if' statement.
                     position = DoPositionHandle_Internal(ids, position, rotation, PositionHandleParam.DefaultHandle);
-                    if (evt.keyCode == KeyCode.V && !evt.shift && !currentlyDragging)
+                    if (evt.keyCode == Tools.vertexDraggingShortcutEvent.keyCode
+                        && evt.modifiers == Tools.vertexDraggingShortcutEvent.modifiers
+                        && !evt.shift && !currentlyDragging)
                     {
                         s_FreeMoveMode = false;
                     }
                     return position;
 
                 case EventType.Layout:
+                    if (Tools.vertexDragging && !s_FreeMoveMode)
+                    {
+                        s_FreeMoveMode = true;
+                    }
                     if (!currentlyDragging && !Tools.vertexDragging)
                     {
                         s_FreeMoveMode = evt.shift;

@@ -503,6 +503,9 @@ namespace UnityEditor
         // Use resizable window in standalone player builds.
         public static extern bool resizableWindow { get; set; }
 
+        // Should resolution be reset when native window size changes. Shared between iOS & Android platforms.
+        public static extern bool resetResolutionOnWindowResize { get; set; }
+
         /// Bake collision meshes into the mesh asset.
         public static extern bool bakeCollisionMeshes { get; set; }
 
@@ -1130,13 +1133,11 @@ namespace UnityEditor
         public static void SetNormalMapEncoding(NamedBuildTarget buildTarget, NormalMapEncoding encoding) =>
             SetNormalMapEncodingInternal(buildTarget.TargetName, encoding);
 
-        public static extern bool assemblyVersionValidation
+        [Obsolete("assemblyVersionValidation has been deprecated due to the introduction of binding redirects")]
+        public static bool assemblyVersionValidation
         {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
-
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
+            get => false;
+            set { }
         }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly().additionalIl2CppArgs")]

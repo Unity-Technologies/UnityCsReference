@@ -144,67 +144,6 @@ namespace UnityEngine.UIElements
             textEdition.UpdateText(rawValue);
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(ExecuteCommandEvent),
-                typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (textEdition.isReadOnly)
-                return;
-
-            if (evt is KeyDownEvent kde)
-            {
-                if (!isDelayed || (!multiline && ((kde?.keyCode == KeyCode.KeypadEnter) || (kde?.keyCode == KeyCode.Return))))
-                {
-                    value = text;
-                }
-
-                if (multiline)
-                {
-                    // For multiline text fields, make sure tab doesn't trigger a focus change.
-                    if (hasFocus && (kde?.keyCode == KeyCode.Tab || kde?.character == '\t'))
-                    {
-                        evt.StopPropagation();
-                        evt.PreventDefault();
-                    }
-                    else if (((kde?.character == 3) && (kde?.shiftKey == true)) || // KeyCode.KeypadEnter
-                             ((kde?.character == '\n') && (kde?.shiftKey == true))) // KeyCode.Return
-                    {
-                        Focus();
-                        evt.StopPropagation();
-                        evt.PreventDefault();
-                    }
-                }
-                else if ((kde?.character == 3) ||     // KeyCode.KeypadEnter
-                        (kde?.character == '\n'))    // KeyCode.Return
-                {
-                    if (hasFocus)
-                        Focus();
-                    else
-                        textInput.textElement.Focus();
-                    evt.StopPropagation();
-                    evt.PreventDefault();
-                }
-            }
-            else if (evt is ExecuteCommandEvent commandEvt)
-            {
-                string cmdName = commandEvt.commandName;
-                if (!isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
-                {
-                    value = text;
-                }
-            }
-            // Prevent duplicated navigation events, since we're observing KeyDownEvents instead.
-            // NavigationMoveEvent is still allowed to go in and out at the TextField (parent) level.
-            else if (evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
-                     evt.eventTypeId == NavigationCancelEvent.TypeId())
-            {
-                evt.StopPropagation();
-                evt.PreventDefault();
-            }
-        }
-
         [EventInterest(typeof(BlurEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {

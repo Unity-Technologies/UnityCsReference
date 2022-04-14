@@ -150,7 +150,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public ITextEdition textEdition => m_TextInputBase.textElement.edition;
 
-        // TODO: Obsolete all of these belolw and use the exposed TextSelection above
+        // TODO: Obsolete all of these below and use the exposed TextSelection above
 
         /// <summary>
         /// Background color of selected text.
@@ -342,7 +342,7 @@ namespace UnityEngine.UIElements
             m_TextInputBase.OnInputCustomStyleResolved(e);
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(BlurEvent))]
+        [EventInterest(typeof(NavigationSubmitEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(BlurEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
@@ -350,22 +350,9 @@ namespace UnityEngine.UIElements
             if (textEdition.isReadOnly)
                 return;
 
-            if (evt.eventTypeId == KeyDownEvent.TypeId())
+            if (evt.eventTypeId == NavigationSubmitEvent.TypeId() && evt.leafTarget != textInputBase.textElement)
             {
-                KeyDownEvent keyDownEvt = evt as KeyDownEvent;
-
-                // We must handle the ETX (char 3) or the \n instead of the KeypadEnter or Return because the focus will
-                //     have the drawback of having the second event to be handled by the focused field.
-                if ((keyDownEvt?.character == 3) ||     // KeyCode.KeypadEnter
-                    (keyDownEvt?.character == '\n'))    // KeyCode.Return
-                {
-                    textInputBase.textElement.Focus();
-                }
-                else if (keyDownEvt?.keyCode == KeyCode.Escape)
-                {
-                    textEdition.RestoreValueAndText();
-                    Focus();
-                }
+                textInputBase.textElement.Focus();
             }
 
             // The following code is to help achieve the following behaviour:
@@ -416,6 +403,19 @@ namespace UnityEngine.UIElements
                 visualInput?.RemoveFromClassList(mixedValueLabelUssClassName);
                 RemoveFromClassList(mixedValueLabelUssClassName);
             }
+        }
+
+        // UpdateValueFromText and UpdateTextFromValue are overriden by TextValueField and potentially other
+        // TextInputFieldBase derived classes when the text content of the TextElement needs to be synchronized with
+        // some numerical value. Some TextEditor operations like pressing Enter will update the text to match a
+        // canonical form of the underlying value, while other operations force the value to be updated from text.
+        internal virtual void UpdateValueFromText()
+        {
+            value = StringToValue(text);
+        }
+        internal virtual void UpdateTextFromValue()
+        {
+            // Do nothing. Value-based fields will override this if appropriate.
         }
 
         /// <summary>
@@ -505,9 +505,20 @@ namespace UnityEngine.UIElements
 
             internal void UpdateValueFromText()
             {
-                var newValue = StringToValue(text);
                 TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
-                parentTextField.value = newValue;
+                parentTextField.UpdateValueFromText();
+            }
+
+            internal void UpdateTextFromValue()
+            {
+                TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
+                parentTextField.UpdateTextFromValue();
+            }
+
+            internal void MoveFocusToCompositeRoot()
+            {
+                TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
+                parentTextField.Focus();
             }
 
             /// <summary>
@@ -644,6 +655,8 @@ namespace UnityEngine.UIElements
                 textEdition.AcceptCharacter += AcceptCharacter;
                 textEdition.UpdateScrollOffset += UpdateScrollOffset;
                 textEdition.UpdateValueFromText += UpdateValueFromText;
+                textEdition.UpdateTextFromValue += UpdateTextFromValue;
+                textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
 
                 AddToClassList(inputUssClassName);
                 name = TextField.textInputUssName;

@@ -716,7 +716,7 @@ namespace UnityEditor
             tr.localScale = Clipboard.vector3Value;
         }
 
-        [MenuItem("CONTEXT/Transform/Copy/Position (World)", false, 100101)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Copy/World Transform", false, 100150)] // ReSharper disable once UnusedMember.Local
         static void CopyTransformWorldPlacementMenu(MenuCommand command)
         {
             var tr = command.context as Transform;
@@ -725,14 +725,14 @@ namespace UnityEditor
             Clipboard.SetCustomValue(new TransformWorldPlacement(tr));
         }
 
-        [MenuItem("CONTEXT/Transform/Paste/Position (World)", true)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/World Transform", true)] // ReSharper disable once UnusedMember.Local
         static bool PasteTransformWorldPlacementMenuValidate(MenuCommand command)
         {
             var tr = command.context as Transform;
             return tr != null && IsUserModifiable(tr) && Clipboard.HasCustomValue<TransformWorldPlacement>();
         }
 
-        [MenuItem("CONTEXT/Transform/Paste/Position (World)", false, 100101)] // ReSharper disable once UnusedMember.Local
+        [MenuItem("CONTEXT/Transform/Paste/World Transform", false, 100150)] // ReSharper disable once UnusedMember.Local
         static void PasteTransformWorldPlacementMenu(MenuCommand command)
         {
             var tr = command.context as Transform;

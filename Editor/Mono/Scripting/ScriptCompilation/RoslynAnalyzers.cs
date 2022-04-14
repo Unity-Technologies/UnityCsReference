@@ -46,10 +46,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths.Length > 0)
             {
-                scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath =
-                    scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined
-                        ? RuleSetFileCache.GetRuleSetFilePathInRootFolder(Path.ChangeExtension(scriptAssembly.Filename, null))
-                        : RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                if(scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined)
+                {
+                    var originPath = Path.ChangeExtension(scriptAssembly.Filename, null);
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetRuleSetFilePathInRootFolder(originPath);
+                    scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigRootFolder(originPath);
+                }
+                else
+                {
+                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                    scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigForAssembly(scriptAssembly.OriginPath);
+                }
+                scriptAssembly.CompilerOptions.RoslynAdditionalFilePaths = scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths
+                    .SelectMany(a=>RoslynAdditionalFiles.GetAnalyzerAdditionalFilesForTargetAssembly(a, scriptAssembly.OriginPath))
+                    .Distinct()
+                    .ToArray();
             }
 
             return scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths;

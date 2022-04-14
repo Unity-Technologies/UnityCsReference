@@ -152,6 +152,11 @@ namespace UnityEngine.UIElements
             {
                 UIElementsRuntimeUtility.DisposeRuntimePanel(m_Settings);
             }
+
+            internal void MarkPotentiallyEmpty()
+            {
+                UIElementsRuntimeUtility.MarkPotentiallyEmpty(m_Settings);
+            }
         }
 
 
@@ -532,6 +537,11 @@ namespace UnityEngine.UIElements
             m_PanelAccess.DisposePanel();
         }
 
+        internal void DisposePanel()
+        {
+            m_PanelAccess.DisposePanel();
+        }
+
         private void ApplyThemeStyleSheet(VisualElement root = null)
         {
             if (!m_PanelAccess.isInitialized)
@@ -729,10 +739,7 @@ namespace UnityEngine.UIElements
             m_AttachedUIDocumentsList.RemoveFromListAndFromVisualTree(uiDocument);
 
             if (m_AttachedUIDocumentsList.m_AttachedUIDocuments.Count == 0)
-            {
-                // No references to the panel, we can dispose it and it'll be recreated if it's used again.
-                m_PanelAccess.DisposePanel();
-            }
+                m_PanelAccess.MarkPotentiallyEmpty();
         }
 
         private float m_OldReferenceDpi;

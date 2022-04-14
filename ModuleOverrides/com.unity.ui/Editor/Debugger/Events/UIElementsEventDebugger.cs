@@ -935,7 +935,10 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             if (eventBase.eventTypeId == KeyDownEvent.TypeId() ||
-                eventBase.eventTypeId == KeyUpEvent.TypeId())
+                eventBase.eventTypeId == KeyUpEvent.TypeId() ||
+                eventBase.eventTypeId == NavigationMoveEvent.TypeId() ||
+                eventBase.eventTypeId == NavigationSubmitEvent.TypeId() ||
+                eventBase.eventTypeId == NavigationCancelEvent.TypeId())
             {
                 m_EventBaseInfo.text += "Modifiers: " + eventBase.modifiers + "\n";
             }
@@ -1003,6 +1006,19 @@ namespace UnityEditor.UIElements.Debugger
                 eventBase.eventTypeId == ExecuteCommandEvent.TypeId())
             {
                 m_EventBaseInfo.text += "Command: " + eventBase.commandName + "\n";
+            }
+
+            if (eventBase.eventTypeId == NavigationMoveEvent.TypeId() ||
+                eventBase.eventTypeId == NavigationSubmitEvent.TypeId() ||
+                eventBase.eventTypeId == NavigationCancelEvent.TypeId())
+            {
+                if (eventBase.deviceType != NavigationDeviceType.Unknown)
+                    m_EventBaseInfo.text += "Device type: " + eventBase.deviceType + "\n";
+
+                if (eventBase.eventTypeId == NavigationMoveEvent.TypeId())
+                {
+                    m_EventBaseInfo.text += "Navigation direction: " + eventBase.navigationDirection + "\n";
+                }
             }
         }
 

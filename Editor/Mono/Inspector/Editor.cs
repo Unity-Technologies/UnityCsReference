@@ -954,15 +954,29 @@ namespace UnityEditor
 
         internal void ShowOpenButton(UnityObject[] assets, bool enableCondition = true)
         {
-            enableCondition &= (CanOpenMultipleObjects() || assets.Length == 1);
+            int assetCount = assets != null? assets.Length : 0;
+            enableCondition &= (CanOpenMultipleObjects() || assetCount == 1);
             bool previousGUIState = GUI.enabled;
             GUI.enabled = enableCondition;
 
             if (GUILayout.Button(BaseStyles.open, EditorStyles.miniButton))
             {
-                if (!ShouldTryToMakeEditableOnOpen() || AssetDatabase.MakeEditable(
-                    assets.Select(AssetDatabase.GetAssetPath).ToArray(),
-                    "Do you want to check out this file or files?"))
+                bool openAssets = false;
+
+                // 'Check Out and Open' dialog
+                openAssets = AssetDatabase.MakeEditable(assets.Select(AssetDatabase.GetAssetPath).ToArray(),
+                    "Do you want to check out " +
+                    (assetCount > 1 ? String.Format("these {0} files?", assetCount) : "this file?"));
+
+                // 'Open multiple assets' dialog
+                if (openAssets && assetCount > 1)
+                {
+                    openAssets = (EditorUtility.DisplayDialog("Open Selected Assets?",
+                        String.Format("Are you sure you want to open {0} selected assets?", assetCount), "Open",
+                        "Cancel"));
+                }
+
+                if (openAssets)
                 {
                     AssetDatabase.OpenAsset(assets);
                     GUIUtility.ExitGUI();

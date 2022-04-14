@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,6 +16,11 @@ namespace UnityEditor
     internal class ModelImporterPostProcessor : AssetPostprocessor
     {
         static bool AskedForBumpMap = false;
+
+        private static bool IsTypeOf(System.Type query, System.Type desiredType)
+        {
+            return query != null && (query.IsSubclassOf(desiredType) || query == desiredType);
+        }
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPath)
         {
@@ -32,11 +38,14 @@ namespace UnityEditor
             bool oneFound = false;
             try
             {
+                System.Type modelImporterType = typeof(ModelImporter);
+                System.Type speedTreeImporterType = typeof(SpeedTreeImporter);
+
                 foreach (var assetPath in importedAssets)
                 {
-                    var importer = AssetImporter.GetAtPath(assetPath);
-                    var isMaterialAsset = Path.GetExtension(assetPath) == ".mat";
-                    if (isMaterialAsset == true || importer is ModelImporter || importer is SpeedTreeImporter)
+                    var importer = AssetDatabase.GetImporterType(assetPath);
+                    var isMaterialAsset = assetPath.EndsWith(".mat", StringComparison.OrdinalIgnoreCase);
+                    if (isMaterialAsset == true || IsTypeOf(importer, modelImporterType) || IsTypeOf(importer, speedTreeImporterType))
                     {
                         if (!AssetDatabase.IsMainAssetAtPathLoaded(assetPath))
                         {

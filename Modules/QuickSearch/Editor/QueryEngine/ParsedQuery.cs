@@ -55,7 +55,7 @@ namespace UnityEditor.Search
     /// </summary>
     /// <typeparam name="TData">The filtered data type.</typeparam>
     /// <typeparam name="TPayload">The payload type.</typeparam>
-    public class Query<TData, TPayload>
+    public class ParsedQuery<TData, TPayload>
         where TPayload : class
     {
         /// <summary>
@@ -81,7 +81,7 @@ namespace UnityEditor.Search
         public QueryGraph evaluationGraph { get; }
         public QueryGraph queryGraph { get; }
 
-        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
+        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles)
         {
             this.text = text;
             this.evaluationGraph = evaluationGraph;
@@ -91,7 +91,7 @@ namespace UnityEditor.Search
             this.toggles = toggles;
         }
 
-        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<TData, TPayload> graphHandler)
+        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<TData, TPayload> graphHandler)
             : this(text, evaluationGraph, queryGraph, errors, tokens, toggles)
         {
             if (valid)
@@ -181,7 +181,7 @@ namespace UnityEditor.Search
     /// A Query defines an operation that can be used to filter a data set.
     /// </summary>
     /// <typeparam name="T">The filtered data type.</typeparam>
-    public class Query<T> : Query<T, IEnumerable<T>>
+    public class ParsedQuery<T> : ParsedQuery<T, IEnumerable<T>>
     {
         /// <summary>
         /// Boolean indicating if the original payload should be return when the query is empty.
@@ -189,7 +189,7 @@ namespace UnityEditor.Search
         /// </summary>
         public bool returnPayloadIfEmpty { get; set; } = true;
 
-        internal Query(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<T, IEnumerable<T>> graphHandler)
+        internal ParsedQuery(string text, QueryGraph evaluationGraph, QueryGraph queryGraph, ICollection<QueryError> errors, ICollection<string> tokens, ICollection<QueryToggle> toggles, IQueryHandler<T, IEnumerable<T>> graphHandler)
             : base(text, evaluationGraph, queryGraph, errors, tokens, toggles, graphHandler)
         {}
 

@@ -309,6 +309,7 @@ namespace UnityEngine.UIElements
                     m_CachedInspectorElement = currentElement;
                     m_CachedListAndFoldoutDepth = this.GetListAndFoldoutDepth();
                     RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
+                    RegisterCallback<TooltipEvent>(evt => OnTooltip(evt));
                     break;
                 }
 
@@ -463,18 +464,28 @@ namespace UnityEngine.UIElements
         [EventInterest(typeof(TooltipEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
-
             if (evt.eventTypeId == TooltipEvent.TypeId())
             {
-                TooltipEvent e = (TooltipEvent)evt;
+                TooltipEvent e = (TooltipEvent) evt;
+                if (evt.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
+                {
+                    // When a label is present, set the tooltip position centered on the label, otherwise center it on the entire field.
+                    e.rect = !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
+                }
+                evt.StopImmediatePropagation();
+                return;
+            }
 
-                //When a label is present, set the tooltip position centered on the label, otherwise center it on the entire field.
+            base.ExecuteDefaultAction(evt);
+        }
+
+        void OnTooltip(TooltipEvent e)
+        {
+            if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
+            {
+                // When a label is present, set the tooltip position centered on the label, otherwise center it on the entire field.
                 e.rect = !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
-
-                if(!string.IsNullOrEmpty(tooltip))
-                    e.tooltip = tooltip;
-
+                e.tooltip = tooltip;
                 e.StopImmediatePropagation();
             }
         }

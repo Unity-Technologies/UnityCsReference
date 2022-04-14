@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEditor.Callbacks;
 using UnityEditor.Modules;
 using UnityEditorInternal;
@@ -245,20 +248,75 @@ namespace UnityEditor
 
         extern public string GetEditorData(string key);
 
-        public extern  bool isNativePlugin
+        public extern bool isNativePlugin
         {
             [NativeMethod("IsNativePlugin")]
             get;
         }
 
-        internal extern  DllType dllType
+        internal extern DllType dllType
         {
             get;
         }
 
-        extern public static  PluginImporter[] GetAllImporters();
+        internal extern AssemblyFullName assemblyFullName
+        {
+            get;
+        }
+
+        extern public static PluginImporter[] GetAllImporters();
 
         public extern void SetIcon([NotNull] string className, Texture2D icon);
         public extern Texture2D GetIcon([NotNull] string className);
+
+        private static void LogIgnoredDuplicateAssembly(PluginImporter usedPluginImporter, PluginImporter ignoredPluginImporter)
+        {
+            var assemblyName = Path.GetFileName(usedPluginImporter.assetPath);
+
+            // keep this message here in sync with PrecompiledAssemblies.cpp LogIgnoredDuplicateAssembly
+            var message = $"Duplicate assembly '{assemblyName}' with different versions detected, using '{usedPluginImporter.assetPath}, Version={usedPluginImporter.assemblyFullName.Version}' and ignoring '{ignoredPluginImporter.assetPath}, Version={ignoredPluginImporter.assemblyFullName.Version}'.";
+            Console.WriteLine(message);
+        }
+
+        internal static IEnumerable<PluginImporter> FilterAssembliesByAssemblyVersion(IEnumerable<PluginImporter> plugins)
+        {
+            var managedPlugins = new Dictionary<string, List<(PluginImporter PluginImporter, AssemblyFullName AssemblyFullName)>>();
+            foreach (var plugin in plugins)
+            {
+                if (plugin.dllType == DllType.Native || plugin.dllType == DllType.Unknown)
+                {
+                    yield return plugin;
+                    continue;
+                }
+
+                var assemblyFullName = plugin.assemblyFullName;
+                var assemblyKey = plugin.assemblyFullName.Name;
+                if (!managedPlugins.TryGetValue(assemblyKey, out var list))
+                {
+                    list = new List<(PluginImporter PluginImporter, AssemblyFullName AssemblyFullName)>();
+                    managedPlugins[assemblyKey] = list;
+                }
+                list.Add((plugin, assemblyFullName));
+            }
+
+            foreach (var managedPlugin in managedPlugins.Values)
+            {
+                var bestCandidate = managedPlugin[0];
+                for (int i = 1; i < managedPlugin.Count; i++)
+                {
+                    var currentCandidate = managedPlugin[i];
+                    if (currentCandidate.AssemblyFullName.Version > bestCandidate.AssemblyFullName.Version)
+                    {
+                        LogIgnoredDuplicateAssembly(currentCandidate.PluginImporter, bestCandidate.PluginImporter);
+                        bestCandidate = currentCandidate;
+                    }
+                    else if (currentCandidate.AssemblyFullName.Version != bestCandidate.AssemblyFullName.Version)
+                    {
+                        LogIgnoredDuplicateAssembly(bestCandidate.PluginImporter, currentCandidate.PluginImporter);
+                    }
+                }
+                yield return bestCandidate.PluginImporter;
+            }
+        }
     }
 }

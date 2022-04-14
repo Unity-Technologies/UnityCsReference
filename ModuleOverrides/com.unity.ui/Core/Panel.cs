@@ -175,6 +175,8 @@ namespace UnityEngine.UIElements
         VisualElement visualTree { get; }
         VisualElement debugContainer { get; }
 
+        bool hasAttachedDebuggers { get; }
+
         void AttachDebugger(IPanelDebugger debugger);
         void DetachDebugger(IPanelDebugger debugger);
         void DetachAllDebuggers();

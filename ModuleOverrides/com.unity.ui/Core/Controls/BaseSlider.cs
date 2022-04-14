@@ -326,6 +326,7 @@ namespace UnityEngine.UIElements
             dragContainer.AddManipulator(clampedDragger);
 
             RegisterCallback<KeyDownEvent>(OnKeyDown);
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
 
             UpdateTextFieldVisibility();
 
@@ -425,10 +426,32 @@ namespace UnityEngine.UIElements
                 if (Mathf.Approximately(pageSize, 0.0f))
                 {
                     // Jump drag element to current mouse position when user clicks on slider and pageSize == 0
-                    var x = (direction == SliderDirection.Horizontal)
-                        ? clampedDragger.startMousePosition.x - (dragElement.resolvedStyle.width / 2f)
-                        : dragElement.transform.position.x;
-                    var y = (direction == SliderDirection.Horizontal) ? dragElement.transform.position.y : clampedDragger.startMousePosition.y - (dragElement.resolvedStyle.height / 2f);
+                    float x, y, sliderLength, dragElementLength, dragElementStartPos;
+
+                    if (direction == SliderDirection.Horizontal)
+                    {
+                        sliderLength = dragContainer.resolvedStyle.width;
+                        dragElementLength = dragElement.resolvedStyle.width;
+
+                        var totalRange = sliderLength - dragElementLength;
+                        var targetXPos = clampedDragger.startMousePosition.x - (dragElementLength / 2f);
+
+                        x = Mathf.Max(0f, Mathf.Min(targetXPos, totalRange));
+                        y = dragElement.transform.position.y;
+                        dragElementStartPos = x;
+                    }
+                    else
+                    {
+                        sliderLength = dragContainer.resolvedStyle.height;
+                        dragElementLength = dragElement.resolvedStyle.height;
+
+                        var totalRange = sliderLength - dragElementLength;
+                        var targetYPos = clampedDragger.startMousePosition.y - (dragElementLength / 2f);
+
+                        x = dragElement.transform.position.x;
+                        y = Mathf.Max(0f, Mathf.Min(targetYPos, totalRange));
+                        dragElementStartPos = y;
+                    }
 
                     var pos = new Vector3(x, y, 0);
 
@@ -438,10 +461,7 @@ namespace UnityEngine.UIElements
 
                     // Manipulation becomes a free form drag
                     clampedDragger.dragDirection = ClampedDragger<TValueType>.DragDirection.Free;
-                    if (direction == SliderDirection.Horizontal)
-                        ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, m_DragElementStartPos.x);
-                    else
-                        ComputeValueAndDirectionFromDrag(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, m_DragElementStartPos.y);
+                    ComputeValueAndDirectionFromDrag(sliderLength, dragElementLength, dragElementStartPos);
                     return;
                 }
 
@@ -467,9 +487,22 @@ namespace UnityEngine.UIElements
                 sliderKey = inverted ? SliderKey.HigherPage : SliderKey.LowerPage;
             else if (isHorizontal && evt.keyCode == KeyCode.PageDown || !isHorizontal && evt.keyCode == KeyCode.PageUp)
                 sliderKey = inverted ? SliderKey.LowerPage : SliderKey.HigherPage;
-            else if (isHorizontal && evt.keyCode == KeyCode.LeftArrow || !isHorizontal && evt.keyCode == KeyCode.DownArrow)
+
+            if (sliderKey == SliderKey.None)
+                return;
+
+            ComputeValueFromKey(sliderKey, evt.shiftKey);
+            evt.StopPropagation();
+        }
+
+        void OnNavigationMove(NavigationMoveEvent evt)
+        {
+            SliderKey sliderKey = SliderKey.None;
+            bool isHorizontal = direction == SliderDirection.Horizontal;
+
+            if (evt.direction == (isHorizontal ? NavigationMoveEvent.Direction.Left : NavigationMoveEvent.Direction.Down))
                 sliderKey = inverted ? SliderKey.Higher : SliderKey.Lower;
-            else if (isHorizontal && evt.keyCode == KeyCode.RightArrow || !isHorizontal && evt.keyCode == KeyCode.UpArrow)
+            else if (evt.direction == (isHorizontal ? NavigationMoveEvent.Direction.Right : NavigationMoveEvent.Direction.Up))
                 sliderKey = inverted ? SliderKey.Lower : SliderKey.Higher;
 
             if (sliderKey == SliderKey.None)

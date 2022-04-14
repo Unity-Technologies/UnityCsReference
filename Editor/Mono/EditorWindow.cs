@@ -1334,7 +1334,7 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.BackQuote)]
+        [Shortcut("Overlays/Toggle All Overlays", typeof(OverlayShortcutContext), KeyCode.BackQuote, ShortcutModifiers.Shift)]
         static void ToggleAllOverlays(ShortcutArguments args)
         {
             if (!(args.context is OverlayShortcutContext context))
@@ -1350,7 +1350,7 @@ namespace UnityEditor
                 context.editorWindow.overlayCanvas.HideHoveredOverlay();
         }
 
-        [Shortcut("Overlays/Show Overlay Menu", typeof(OverlayShortcutContext), KeyCode.Space)]
+        [Shortcut("Overlays/Show Overlay Menu", typeof(OverlayShortcutContext),  KeyCode.BackQuote)]
         static void ShowOverlayMenu(ShortcutArguments args)
         {
             if(args.context is OverlayShortcutContext context)

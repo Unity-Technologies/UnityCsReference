@@ -102,6 +102,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct DispatchEventQueueEvents {}
         [RequiredByNativeCode]
+        public struct Physics2DEarlyUpdate {}
+        [RequiredByNativeCode]
         public struct PhysicsResetInterpolatedTransformPosition {}
         [RequiredByNativeCode]
         public struct SpriteAtlasManagerUpdate {}

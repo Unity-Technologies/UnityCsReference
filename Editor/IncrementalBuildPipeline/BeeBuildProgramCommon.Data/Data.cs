@@ -36,5 +36,6 @@ namespace BeeBuildProgramCommon.Data
         public bool AdvancedLicense;
         public bool Batchmode;
         public bool EmitDataForBeeWhy;
+        public string NamedPipeOrUnixSocket;
     }
 }

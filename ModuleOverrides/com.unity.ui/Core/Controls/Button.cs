@@ -163,26 +163,12 @@ namespace UnityEngine.UIElements
             focusable = true;
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         private void OnNavigationSubmit(NavigationSubmitEvent evt)
         {
             clickable?.SimulateSingleClick(evt);
             evt.StopPropagation();
-        }
-
-        private void OnKeyDown(KeyDownEvent evt)
-        {
-            if (panel?.contextType != ContextType.Editor)
-                return;
-
-            // KeyCodes are hardcoded in the Editor, but in runtime we should use the more versatile NavigationSubmit.
-            if (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.Space)
-            {
-                clickable?.SimulateSingleClick(evt);
-                evt.StopPropagation();
-            }
         }
 
         private static readonly string NonEmptyString = " ";

@@ -113,7 +113,7 @@ namespace UnityEditor.Compilation
             activeBeeBuild = new BeeScriptCompilationState
             {
                 assemblies = new[] { assembly },
-                Driver = UnityBeeDriver.Make(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", beeAssemblyBuilderDirectory),
+                Driver = UnityBeeDriver.Make(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", new ILPostProcessingProgram(), beeAssemblyBuilderDirectory),
                 editorCompilation = editorCompilation,
                 finishedCompiling = false,
             };
