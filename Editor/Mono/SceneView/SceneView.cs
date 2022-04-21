@@ -192,6 +192,16 @@ namespace UnityEditor
             s_ActiveEditorsDirty = true;
         }
 
+        internal static void SetActiveEditorsDirty(bool forceRepaint = false)
+        {
+            s_ActiveEditorsDirty = true;
+            //Needs to force repaint the scene in case the inspector :
+            //- switched from Normal to Debug mode (or inverse)
+            //- visible inspector changed and inspector modes changed
+            if(forceRepaint)
+                RepaintAll();
+        }
+
         static List<Editor> s_ActiveEditors = new List<Editor>();
 
         static bool s_ActiveEditorsDirty;
@@ -211,15 +221,9 @@ namespace UnityEditor
                 return;
 
             s_ActiveEditorsDirty = false;
-
             s_ActiveEditors.Clear();
 
-            if (s_SharedTracker == null)
-                s_SharedTracker = ActiveEditorTracker.sharedTracker;
-
-            foreach (var editor in s_SharedTracker.activeEditors)
-                s_ActiveEditors.Add(editor);
-
+            bool activeSharedTracker = false;
             foreach (var inspector in InspectorWindow.GetInspectors())
             {
                 if (inspector.isLocked)
@@ -227,6 +231,24 @@ namespace UnityEditor
                     foreach (var editor in inspector.tracker.activeEditors)
                         s_ActiveEditors.Add(editor);
                 }
+                else if(!activeSharedTracker
+                    &&  inspector.isVisible
+                    &&  inspector.inspectorMode == InspectorMode.Normal)
+                {
+                    activeSharedTracker = true;
+                    foreach (var editor in inspector.tracker.activeEditors)
+                        s_ActiveEditors.Add(editor);
+                }
+            }
+
+            //Just a fallback in case no editor is visible or locked
+            if(!activeSharedTracker)
+            {
+                if (s_SharedTracker == null)
+                    s_SharedTracker = ActiveEditorTracker.sharedTracker;
+
+                foreach (var editor in s_SharedTracker.activeEditors)
+                    s_ActiveEditors.Add(editor);
             }
         }
 

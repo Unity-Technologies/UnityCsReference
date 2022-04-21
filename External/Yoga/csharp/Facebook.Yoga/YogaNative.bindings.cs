@@ -53,7 +53,7 @@ namespace UnityEngine.Yoga
         [FreeFunction]
         public static extern void YGNodeSetConfig(IntPtr ygNode, IntPtr config);
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern IntPtr YGConfigGetDefault();
 
         [FreeFunction]

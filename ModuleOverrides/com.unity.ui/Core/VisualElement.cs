@@ -1119,6 +1119,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public VisualElement()
         {
+            UIElementsRuntimeUtilityNative.VisualElementCreation();
+
             m_Children = s_EmptyList;
             controlid = ++s_NextId;
 

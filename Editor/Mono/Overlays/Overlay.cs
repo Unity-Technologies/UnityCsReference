@@ -294,8 +294,11 @@ namespace UnityEditor.Overlays
             collapsedContent.RemoveFromHierarchy();
             m_CurrentContent = null;
 
-            if (!displayed)
+            if(!displayed)
+            {
+                container?.UpdateIsVisibleInContainer(this);
                 return;
+            }
 
             // An Overlay can collapsed by request, or by necessity. If collapsed due to invalid layout/container match,
             // the collapsed property is not modified. The next time a content rebuild is requested we'll try again to

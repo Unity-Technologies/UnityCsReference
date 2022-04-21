@@ -45,6 +45,7 @@ namespace UnityEditor.Rendering
         private ShaderRequirements m_ShaderRequirements;
         private GraphicsTier m_GraphicsTier;
         private ShaderCompilerPlatform m_ShaderCompilerPlatform;
+        private BuildTarget m_BuildTarget;
 
         public ShaderRequirements shaderRequirements
         {
@@ -60,6 +61,8 @@ namespace UnityEditor.Rendering
         {
             get { return m_ShaderCompilerPlatform; }
         }
+
+        public BuildTarget buildTarget { get { return m_BuildTarget; } }
     }
 
     public enum ShaderCompilerPlatform
