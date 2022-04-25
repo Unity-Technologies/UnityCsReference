@@ -381,7 +381,7 @@ namespace UnityEditor.ShortcutManagement
 
                 string invalidBindingMessage;
                 tempKeyCombinations[0] = prefKeyCurrentKeyCombination;
-                if (!bindingValidator.IsBindingValid(tempKeyCombinations, out invalidBindingMessage))
+                if (!bindingValidator.IsCombinationValid(tempKeyCombinations, out invalidBindingMessage))
                 {
                     Debug.LogWarning($"Could not migrate existing binding for shortcut \"{entry.identifier.path}\" with invalid binding.\n{invalidBindingMessage}.");
                     continue;

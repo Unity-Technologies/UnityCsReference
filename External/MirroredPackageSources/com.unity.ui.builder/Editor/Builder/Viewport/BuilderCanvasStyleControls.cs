@@ -23,7 +23,7 @@ namespace Unity.UI.Builder
         public const string k_VerticalTextAlignButtonName = "vertical-text-align-button";
         public const string k_TextWrapButtonName = "text-wrap-button";
         public const string k_TextOverflowButtonName = "text-overflow-button";
-        
+
         // Buttons
         List<Button> m_AllButtons = new List<Button>();
         List<Button> m_FlexAlignButtons = new List<Button>();

@@ -607,9 +607,9 @@ namespace UnityEngine
             if (IsValid())
             {
                 // Only check auto-simulation if simulating the default physics scene.
-                if (this == Physics.defaultPhysicsScene && Physics.autoSimulation)
+                if (this == Physics.defaultPhysicsScene && Physics.simulationMode != SimulationMode.Script)
                 {
-                    Debug.LogWarning("PhysicsScene.Simulate(...) was called but auto simulation is active. You should disable auto simulation first before calling this function therefore the simulation was not run.");
+                    Debug.LogWarning("PhysicsScene.Simulate(...) was called but simulation mode is not set to Script. You should set simulation mode to Script first before calling this function therefore the simulation was not run.");
                     return;
                 }
 
@@ -867,6 +867,13 @@ namespace UnityEngine
 
     #endregion
 
+    public enum SimulationMode
+    {
+        FixedUpdate = 0,
+        Update = 1,
+        Script = 2
+    }
+
     [NativeHeader("Modules/Physics/PhysicsManager.h")]
     [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
     public partial class Physics
@@ -887,6 +894,7 @@ namespace UnityEngine
         extern public static float defaultMaxDepenetrationVelocity { get; set; }
         extern public static int defaultSolverIterations { get; set; }
         extern public static int defaultSolverVelocityIterations { get; set; }
+        extern public static SimulationMode simulationMode { get; set; }
 
         extern static public float defaultMaxAngularSpeed { get; set; }
         extern static public bool improvedPatchFriction { get; set; }
@@ -1478,16 +1486,15 @@ namespace UnityEngine
 
         public static void Simulate(float step)
         {
-            if (autoSimulation)
+            if (simulationMode != SimulationMode.Script)
             {
-                Debug.LogWarning("Physics.Simulate(...) was called but auto simulation is active. You should disable auto simulation first before calling this function therefore the simulation was not run.");
+                Debug.LogWarning("Physics.Simulate(...) was called but simulation mode is not set to Script. You should set simulation mode to Script first before calling this function therefore the simulation was not run.");
                 return;
             }
 
             Simulate_Internal(defaultPhysicsScene, step);
         }
 
-        extern public static bool autoSimulation { get; set; }
         extern public static void SyncTransforms();
         extern public static bool autoSyncTransforms { get; set; }
         extern public static bool reuseCollisionCallbacks { get; set; }

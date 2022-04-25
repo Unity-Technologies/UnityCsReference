@@ -78,15 +78,17 @@ namespace UnityEngine.UIElements
                 {
                     var index = m_Tree[currentParentId].GetChildIndex(id);
                     if (index < childIndex)
-                    {
                         childIndex--;
-                    }
                 }
 
                 RemoveFromParent(child.id, currentParentId);
             }
             else
             {
+                var rootItemIdsPositionForId = m_RootItemIds.IndexOf(id);
+                if (rootItemIdsPositionForId < childIndex)
+                    childIndex--;
+
                 m_RootItemIds.Remove(id);
             }
 

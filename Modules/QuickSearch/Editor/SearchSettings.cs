@@ -7,54 +7,24 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditorInternal;
+using UnityEditor.SearchService;
 using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    class SearchProviderSettings : IDictionary
+    abstract class BaseDictionarySettings : IDictionary
     {
-        public bool active;
-        public int priority;
-        public string defaultAction;
+        public abstract int Count { get; }
+        public abstract ICollection Keys { get; }
+        public abstract ICollection Values { get; }
 
-        public int Count => 3;
-        public ICollection Keys => new string[] { nameof(active), nameof(priority), nameof(defaultAction) };
-        public ICollection Values => new object[] { active, priority, defaultAction };
-
-        public SearchProviderSettings()
+        public abstract object this[object key]
         {
-            active = true;
-            priority = 0;
-            defaultAction = null;
+            get;
+            set;
         }
 
-        public object this[object key]
-        {
-            get
-            {
-                switch ((string)key)
-                {
-                    case nameof(active): return active;
-                    case nameof(priority): return priority;
-                    case nameof(defaultAction): return defaultAction;
-                }
-                return null;
-            }
-
-            set => throw new NotSupportedException();
-        }
-
-        public IDictionaryEnumerator GetEnumerator()
-        {
-            var d = new Dictionary<string, object>()
-            {
-                {nameof(active), active},
-                {nameof(priority), priority},
-                {nameof(defaultAction), defaultAction}
-            };
-            return d.GetEnumerator();
-        }
+        public abstract IDictionaryEnumerator GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -71,6 +41,92 @@ namespace UnityEditor.Search
         public bool Contains(object key) { throw new NotSupportedException(); }
         public void CopyTo(Array array, int index) { throw new NotSupportedException(); }
         public void Remove(object key) { throw new NotSupportedException(); }
+    }
+
+    class SearchProviderSettings : BaseDictionarySettings
+    {
+        public bool active;
+        public int priority;
+        public string defaultAction;
+
+        public override int Count => 3;
+        public override ICollection Keys => new string[] { nameof(active), nameof(priority), nameof(defaultAction) };
+        public override ICollection Values => new object[] { active, priority, defaultAction };
+
+        public SearchProviderSettings()
+        {
+            active = true;
+            priority = 0;
+            defaultAction = null;
+        }
+
+        public override object this[object key]
+        {
+            get
+            {
+                switch ((string)key)
+                {
+                    case nameof(active): return active;
+                    case nameof(priority): return priority;
+                    case nameof(defaultAction): return defaultAction;
+                }
+                return null;
+            }
+
+            set => throw new NotSupportedException();
+        }
+
+        public override IDictionaryEnumerator GetEnumerator()
+        {
+            var d = new Dictionary<string, object>()
+            {
+                {nameof(active), active},
+                {nameof(priority), priority},
+                {nameof(defaultAction), defaultAction}
+            };
+            return d.GetEnumerator();
+        }
+    }
+
+    class ObjectSelectorsSettings : BaseDictionarySettings
+    {
+        public bool active;
+        public int priority;
+
+        public override int Count => 3;
+        public override ICollection Keys => new string[] { nameof(active), nameof(priority) };
+        public override ICollection Values => new object[] { active, priority };
+
+        public ObjectSelectorsSettings()
+        {
+            active = true;
+            priority = 0;
+        }
+
+        public override object this[object key]
+        {
+            get
+            {
+                switch ((string)key)
+                {
+                    case nameof(active): return active;
+                    case nameof(priority): return priority;
+                }
+                return null;
+            }
+
+            set => throw new NotSupportedException();
+        }
+
+        public override IDictionaryEnumerator GetEnumerator()
+        {
+            var d = new Dictionary<string, object>()
+            {
+                {nameof(active), active},
+                {nameof(priority), priority}
+            };
+            return d.GetEnumerator();
+        }
     }
 
     public static class SearchSettings
@@ -94,6 +150,7 @@ namespace UnityEditor.Search
         internal static bool showSavedSearchPanel { get; set; }
         internal static Dictionary<string, string> scopes { get; private set; }
         internal static Dictionary<string, SearchProviderSettings> providers { get; private set; }
+        internal static Dictionary<string, ObjectSelectorsSettings> objectSelectors { get; private set; }
         internal static bool queryBuilder { get; set; }
         internal static string ignoredProperties { get; set; }
         internal static string helperWidgetCurrentArea { get; set; }
@@ -190,6 +247,7 @@ namespace UnityEditor.Search
 
             scopes = ReadProperties<string>(settings, nameof(scopes));
             providers = ReadProviderSettings(settings, nameof(providers));
+            objectSelectors = ReadPickerSettings(settings, nameof(objectSelectors));
 
             LoadFavorites();
         }
@@ -208,6 +266,7 @@ namespace UnityEditor.Search
                 [nameof(showStatusBar)] = showStatusBar,
                 [nameof(scopes)] = scopes,
                 [nameof(providers)] = providers,
+                [nameof(objectSelectors)] = objectSelectors,
                 [nameof(recentSearches)] = recentSearches,
                 [nameof(searchItemFavorites)] = searchItemFavorites.ToList(),
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
@@ -329,6 +388,7 @@ namespace UnityEditor.Search
                 if (searchEngines.Count == 0)
                     continue;
 
+                var activeEngine = api.GetActiveSearchEngine();
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     try
@@ -337,7 +397,6 @@ namespace UnityEditor.Search
                             searchEngines.Count == 1 ?
                             $"Search engine for {searchContextName}" :
                             $"Set search engine for {searchContextName}")).ToArray();
-                        var activeEngine = api.GetActiveSearchEngine();
                         var activeEngineIndex = Math.Max(searchEngines.FindIndex(engine => engine.name == activeEngine?.name), 0);
 
                         GUILayout.Space(20);
@@ -360,6 +419,142 @@ namespace UnityEditor.Search
                         Debug.LogException(ex);
                     }
                 }
+
+                activeEngine = api.GetActiveSearchEngine();
+                if (api.engineScope == SearchEngineScope.ObjectSelector && activeEngine.name == QuickSearchEngine.k_Name &&
+                    activeEngine is ObjectSelectorEngine)
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.Space(20);
+                        DrawAdvancedObjectSelectorsSettings();
+                    }
+                }
+            }
+        }
+
+        static void DrawAdvancedObjectSelectorsSettings()
+        {
+            using (new EditorGUILayout.VerticalScope())
+            {
+                GUILayout.Space(10);
+
+                foreach (var selector in SearchService.OrderedObjectSelectors)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Space(20);
+
+                    var wasActive = selector.active;
+                    if (GUILayout.Toggle(wasActive, Styles.toggleObjectSelectorActiveContent) != wasActive)
+                    {
+                        TogglePickerActive(selector);
+                    }
+
+                    using (new EditorGUI.DisabledGroupScope(!selector.active))
+                    {
+                        GUILayout.Label(new GUIContent(selector.displayName), GUILayout.Width(175));
+                    }
+
+                    if (GUILayout.Button(Styles.increaseObjectSelectorPriorityContent, Styles.priorityButton))
+                        DecreaseObjectSelectorPriority(selector, SearchService.ObjectSelectors);
+
+                    if (GUILayout.Button(Styles.decreaseObjectSelectorPriorityContent, Styles.priorityButton))
+                        IncreaseObjectSelectorPriority(selector, SearchService.ObjectSelectors);
+
+                    GUILayout.Space(20);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                if (GUILayout.Button(Styles.resetObjectSelectorContent, GUILayout.MaxWidth(170)))
+                    ResetObjectSelectorSettings();
+                GUILayout.EndHorizontal();
+            }
+        }
+
+        internal static ObjectSelectorsSettings GetObjectSelectorSettings(AdvancedObjectSelector selector)
+        {
+            if (TryGetObjectSelectorSettings(selector.id, out var settings))
+                return settings;
+
+            objectSelectors[selector.id] = new ObjectSelectorsSettings() { active = selector.active, priority = selector.priority };
+            return objectSelectors[selector.id];
+        }
+
+        internal static ObjectSelectorsSettings GetObjectSelectorSettings(string selectorId)
+        {
+            var selector = SearchService.GetObjectSelector(selectorId);
+            if (selector == null)
+                return new ObjectSelectorsSettings();
+            return GetObjectSelectorSettings(selector);
+        }
+
+        internal static bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
+        {
+            return objectSelectors.TryGetValue(selectorId, out settings);
+        }
+
+        static void ResetObjectSelectorSettings()
+        {
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.ObjectSelectorSettingsReset);
+            objectSelectors.Clear();
+            SearchService.RefreshObjectSelectors();
+        }
+
+        internal static void TogglePickerActive(AdvancedObjectSelector selector)
+        {
+            var newActive = !selector.active;
+            var settings = GetObjectSelectorSettings(selector);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "activateObjectSelector", selector.id, newActive.ToString());
+            settings.active = newActive;
+            selector.active = newActive;
+        }
+
+        internal static void DecreaseObjectSelectorPriority(AdvancedObjectSelector selector, IEnumerable<AdvancedObjectSelector> allSelectors)
+        {
+            var sortedPickers = allSelectors.OrderBy(p => p.priority).ToList();
+            for (int i = 1, end = sortedPickers.Count; i < end; ++i)
+            {
+                var cp = sortedPickers[i];
+                if (!cp.Equals(selector))
+                    continue;
+
+                var adj = sortedPickers[i - 1];
+                var temp = selector.priority;
+                if (cp.priority == adj.priority)
+                    temp++;
+
+                selector.priority = adj.priority;
+                adj.priority = temp;
+
+                GetObjectSelectorSettings(adj).priority = adj.priority;
+                GetObjectSelectorSettings(selector).priority = selector.priority;
+                break;
+            }
+        }
+
+        internal static void IncreaseObjectSelectorPriority(AdvancedObjectSelector selector, IEnumerable<AdvancedObjectSelector> allSelectors)
+        {
+            var sortedPickers = allSelectors.OrderBy(p => p.priority).ToList();
+            for (int i = 0, end = sortedPickers.Count - 1; i < end; ++i)
+            {
+                var cp = sortedPickers[i];
+                if (!cp.Equals(selector))
+                    continue;
+
+                var adj = sortedPickers[i + 1];
+                var temp = selector.priority;
+                if (cp.priority == adj.priority)
+                    temp--;
+
+                selector.priority = adj.priority;
+                adj.priority = temp;
+
+                GetObjectSelectorSettings(adj).priority = adj.priority;
+                GetObjectSelectorSettings(selector).priority = selector.priority;
+                break;
             }
         }
 
@@ -392,14 +587,14 @@ namespace UnityEditor.Search
 
                         GUILayout.Space(10);
                         DrawProviderSettings();
+
+                        GUILayout.Space(10);
+                        DrawSearchServiceSettings();
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
                         Save();
                     }
-
-                    GUILayout.Space(10);
-                    DrawSearchServiceSettings();
                 }
                 GUILayout.EndVertical();
             }
@@ -485,43 +680,54 @@ namespace UnityEditor.Search
 
         private static Dictionary<string, SearchProviderSettings> ReadProviderSettings(IDictionary settings, string fieldName)
         {
-            var properties = new Dictionary<string, SearchProviderSettings>();
-            if (SJSON.TryGetValue(settings, fieldName, out var _data) && _data is IDictionary dataDict)
+            return ReadDictionary<SearchProviderSettings>(settings, fieldName, vdict => new SearchProviderSettings()
             {
-                foreach (var p in dataDict)
-                {
-                    try
-                    {
-                        if (p is DictionaryEntry e && e.Value is IDictionary vdict)
-                        {
-                            properties[(string)e.Key] = new SearchProviderSettings()
-                            {
-                                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
-                                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)],
-                                defaultAction = vdict[nameof(SearchProviderSettings.defaultAction)] as string,
-                            };
-                        }
-                    }
-                    catch
-                    {
-                        // ignore copy
-                    }
-                }
-            }
-            return properties;
+                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
+                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)],
+                defaultAction = vdict[nameof(SearchProviderSettings.defaultAction)] as string,
+            });
+        }
+
+        private static Dictionary<string, ObjectSelectorsSettings> ReadPickerSettings(IDictionary settings, string fieldName)
+        {
+            return ReadDictionary<ObjectSelectorsSettings>(settings, fieldName, vdict => new ObjectSelectorsSettings()
+            {
+                active = Convert.ToBoolean(vdict[nameof(SearchProviderSettings.active)]),
+                priority = (int)(double)vdict[nameof(SearchProviderSettings.priority)]
+            });
         }
 
         private static Dictionary<string, T> ReadProperties<T>(IDictionary settings, string fieldName)
         {
-            var properties = new Dictionary<string, T>();
+            return ReadDictionary(settings, fieldName, o => (T)o);
+        }
+
+        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<object, T> valueCreator)
+        {
+            return ReadDictionary(settings, fieldName, e => true, valueCreator);
+        }
+
+        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<IDictionary, BaseDictionarySettings> valueCreator)
+            where T : BaseDictionarySettings
+        {
+            return ReadDictionary(settings, fieldName, e => e.Value is IDictionary, o =>
+            {
+                var vdict = o as IDictionary;
+                return (T)valueCreator(vdict);
+            });
+        }
+
+        static Dictionary<string, T> ReadDictionary<T>(IDictionary settings, string fieldName, Func<DictionaryEntry, bool> extraPredicate, Func<object, T> valueCreator)
+        {
+            var d = new Dictionary<string, T>();
             if (SJSON.TryGetValue(settings, fieldName, out var _data) && _data is IDictionary dataDict)
             {
                 foreach (var p in dataDict)
                 {
                     try
                     {
-                        if (p is DictionaryEntry e)
-                            properties[(string)e.Key] = (T)e.Value;
+                        if (p is DictionaryEntry e && extraPredicate(e))
+                            d[(string)e.Key] = valueCreator(e.Value);
                     }
                     catch
                     {
@@ -529,7 +735,7 @@ namespace UnityEditor.Search
                     }
                 }
             }
-            return properties;
+            return d;
         }
 
         private static void DrawProviderSettings()
@@ -543,7 +749,7 @@ namespace UnityEditor.Search
                 var settings = GetProviderSettings(p.id);
 
                 var wasActive = p.active;
-                p.active = GUILayout.Toggle(wasActive, Styles.toggleActiveContent);
+                p.active = GUILayout.Toggle(wasActive, Styles.toggleProviderActiveContent);
                 if (p.active != wasActive)
                 {
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "activateProvider", p.id, p.active.ToString());
@@ -560,16 +766,16 @@ namespace UnityEditor.Search
 
                 if (!p.isExplicitProvider)
                 {
-                    if (GUILayout.Button(Styles.increasePriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Styles.increaseProviderPriorityContent, Styles.priorityButton))
                         LowerProviderPriority(p);
 
-                    if (GUILayout.Button(Styles.decreasePriorityContent, Styles.priorityButton))
+                    if (GUILayout.Button(Styles.decreaseProviderPriorityContent, Styles.priorityButton))
                         UpperProviderPriority(p);
                 }
                 else
                 {
-                    GUILayoutUtility.GetRect(Styles.increasePriorityContent, Styles.priorityButton);
-                    GUILayoutUtility.GetRect(Styles.increasePriorityContent, Styles.priorityButton);
+                    GUILayoutUtility.GetRect(Styles.increaseProviderPriorityContent, Styles.priorityButton);
+                    GUILayoutUtility.GetRect(Styles.increaseProviderPriorityContent, Styles.priorityButton);
                 }
 
                 GUILayout.Space(20);
@@ -600,7 +806,7 @@ namespace UnityEditor.Search
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(Styles.resetDefaultsContent, GUILayout.MaxWidth(170)))
+            if (GUILayout.Button(Styles.resetProvidersContent, GUILayout.MaxWidth(170)))
                 ResetProviderSettings();
             GUILayout.EndHorizontal();
         }
@@ -738,10 +944,10 @@ namespace UnityEditor.Search
 
             public static GUIStyle browseBtn = new GUIStyle("Button") { fixedWidth = 70 };
 
-            public static GUIContent toggleActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
-            public static GUIContent resetDefaultsContent = EditorGUIUtility.TrTextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
-            public static GUIContent increasePriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the provider's priority");
-            public static GUIContent decreasePriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the provider's priority");
+            public static GUIContent toggleProviderActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
+            public static GUIContent resetProvidersContent = EditorGUIUtility.TrTextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
+            public static GUIContent increaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the provider's priority");
+            public static GUIContent decreaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the provider's priority");
             public static GUIContent trackSelectionContent = EditorGUIUtility.TrTextContent(
                 "Track the current selection in the search view.",
                 "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window.");
@@ -751,6 +957,11 @@ namespace UnityEditor.Search
             public static GUIContent dockableContent = EditorGUIUtility.TrTextContent("Open Search as dockable window");
             public static GUIContent debugContent = EditorGUIUtility.TrTextContent("[DEV] Display additional debugging information");
             public static GUIContent debounceThreshold = EditorGUIUtility.TrTextContent("Select the typing debounce threshold (ms)");
+
+            public static GUIContent toggleObjectSelectorActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this object selector. Disabled object selectors will be completely ignored.");
+            public static GUIContent resetObjectSelectorContent = EditorGUIUtility.TrTextContent("Reset Selector Settings", "All object selectors will restore their initial preferences (priority, active)");
+            public static GUIContent increaseObjectSelectorPriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the object selector's priority");
+            public static GUIContent decreaseObjectSelectorPriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the object selector's priority");
         }
 
         internal static void AddSearchFavorite(string searchText)

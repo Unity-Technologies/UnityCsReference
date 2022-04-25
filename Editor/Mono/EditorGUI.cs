@@ -479,8 +479,20 @@ namespace UnityEditor
         {
             internal static bool s_ActuallyEditing = false; // internal so we can save this state.
             internal static bool s_AllowContextCutOrPaste = true; // e.g. selectable labels only allow for copying
+            private long[] s_OriginalLongValues;
+            private double[] s_OriginalDoubleValues;
 
             IMECompositionMode m_IMECompositionModeBackup;
+
+            public long[] GetOriginalLongValues()
+            {
+                return s_OriginalLongValues;
+            }
+
+            public double[] GetOriginalDoubleValues()
+            {
+                return s_OriginalDoubleValues;
+            }
 
             internal bool IsEditingControl(int id)
             {
@@ -509,6 +521,29 @@ namespace UnityEditor
 
                 m_IMECompositionModeBackup = Input.imeCompositionMode;
                 Input.imeCompositionMode = IMECompositionMode.On;
+
+                if (EditorGUI.s_PropertyStack.Count > 0)
+                {
+                    var property = EditorGUI.s_PropertyStack.Peek().property;
+
+                    switch (property.propertyType)
+                    {
+                        case SerializedPropertyType.Integer:
+                            s_OriginalLongValues = new long[property.serializedObject.targetObjectsCount];
+                            property.allLongValues.CopyTo(s_OriginalLongValues, 0);
+                            break;
+
+                        case SerializedPropertyType.Float:
+                            s_OriginalDoubleValues = new double[property.serializedObject.targetObjectsCount];
+                            property.allDoubleValues.CopyTo(s_OriginalDoubleValues, 0);
+                            break;
+
+                        default:
+                            s_OriginalDoubleValues = null;
+                            s_OriginalLongValues = null;
+                            break;
+                    }
+                }
             }
 
             public virtual void EndEditing()
@@ -1187,6 +1222,17 @@ namespace UnityEditor
                                 if (style == EditorStyles.toolbarSearchField || style == EditorStyles.searchField)
                                 {
                                     s_OriginalText = "";
+                                }
+
+                                if (s_PropertyStack.Count > 0)
+                                {
+                                    if (s_RecycledEditor.GetOriginalDoubleValues() != null)
+                                        s_PropertyStack.Peek().property.allDoubleValues =
+                                            s_RecycledEditor.GetOriginalDoubleValues();
+
+                                    if (s_RecycledEditor.GetOriginalLongValues() != null)
+                                        s_PropertyStack.Peek().property.allLongValues =
+                                            s_RecycledEditor.GetOriginalLongValues();
                                 }
 
                                 editor.text = s_OriginalText;
@@ -2345,6 +2391,60 @@ namespace UnityEditor
             }
         }
 
+        internal static void StringToNumericValue(in string str, ref NumberFieldValue value)
+        {
+            if (value.isDouble)
+                StringToDouble(str, ref value);
+            else
+                StringToLong(str, ref value);
+        }
+
+        internal static void EvaluateExpressionOnNumberFieldValue(ref NumberFieldValue value)
+        {
+            if (value.isDouble)
+                value.success = value.expression.Evaluate(ref value.doubleVal);
+            else
+                value.success = value.expression.Evaluate(ref value.longVal);
+        }
+
+        internal static void GetInitialValue(ref NumberFieldValue value)
+        {
+            if (value.isDouble)
+            {
+                double oldValue = default;
+                if (UINumericFieldsUtils.StringToDouble(s_OriginalText, out oldValue) && oldValue != value.doubleVal)
+                {
+                    value.doubleVal = oldValue;
+                    return;
+                }
+            }
+            else
+            {
+                long oldValue = default;
+                if (UINumericFieldsUtils.StringToLong(s_OriginalText, out oldValue) && oldValue != value.longVal)
+                {
+                    value.longVal = oldValue;
+                    return;
+                }
+            }
+        }
+
+        internal static void UpdateNumberValueIfNeeded(ref NumberFieldValue value, in string str)
+        {
+            StringToNumericValue(str, ref value);
+
+            if (!value.success && value.expression != null)
+            {
+                using (s_EvalExpressionMarker.Auto())
+                {
+                    GetInitialValue(ref value);
+
+                    EvaluateExpressionOnNumberFieldValue(ref value);
+                }
+            }
+
+            GUI.changed = value.success || value.expression != null;
+        }
         internal static void DoNumberField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id,
             ref NumberFieldValue value, string formatString, GUIStyle style, bool draggable,
             double dragSensitivity)
@@ -2378,25 +2478,14 @@ namespace UnityEditor
                 str = value.isDouble ? value.doubleVal.ToString(formatString, CultureInfo.InvariantCulture) : value.longVal.ToString(formatString, CultureInfo.InvariantCulture);
             }
 
-            if (GUIUtility.keyboardControl == id)
-            {
-                str = DoTextField(editor, id, position, str, style, allowedCharacters, out changed, false, false, false);
+            str = DoTextField(editor, id, position, str, style, allowedCharacters, out changed, false, false, false);
 
+            if (GUIUtility.keyboardControl == id && changed)
+            {
                 // If we are still actively editing, return the input values
-                if (changed)
-                {
-                    GUI.changed = true;
-                    s_RecycledCurrentEditingString = str;
+                s_RecycledCurrentEditingString = str;
 
-                    if (value.isDouble)
-                        StringToDouble(str, ref value);
-                    else
-                        StringToLong(str, ref value);
-                }
-            }
-            else
-            {
-                DoTextField(editor, id, position, str, style, allowedCharacters, out changed, false, false, false);
+                UpdateNumberValueIfNeeded(ref value, str);
             }
         }
 
@@ -2622,11 +2711,7 @@ namespace UnityEditor
             }
             else
             {
-                GUI.changed = true;
-                if (value.isDouble)
-                    StringToDouble(str, ref value);
-                else
-                    StringToLong(str, ref value);
+                UpdateNumberValueIfNeeded(ref value, str);
             }
             GUI.changed |= wasChanged;
         }
@@ -6581,7 +6666,7 @@ namespace UnityEditor
                 Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
-            s_PropertyFieldTempContent.tooltip = (label == null) ? property.tooltip : label.tooltip;
+            s_PropertyFieldTempContent.tooltip = (label == null || string.IsNullOrEmpty(label.tooltip)) ? property.tooltip : label.tooltip;
             s_PropertyFieldTempContent.image = label?.image;
 
             // In inspector debug mode & when holding down alt. Show the property path of the property.
@@ -7265,9 +7350,14 @@ namespace UnityEditor
                             {
                                 using (s_EvalExpressionMarker.Auto())
                                 {
+                                    var originalValues = s_RecycledEditor.GetOriginalLongValues();
+
                                     var values = property.allLongValues;
                                     for (var i = 0; i < values.Length; ++i)
+                                    {
+                                        values[i] = originalValues[i];
                                         val.expression.Evaluate(ref values[i], i, values.Length);
+                                    }
                                     property.allLongValues = values;
                                 }
                             }
@@ -7296,14 +7386,24 @@ namespace UnityEditor
                             {
                                 using (s_EvalExpressionMarker.Auto())
                                 {
+                                    var originalValues = s_RecycledEditor.GetOriginalDoubleValues();
+
                                     var values = property.allDoubleValues;
+                                    bool changed = false;
                                     for (var i = 0; i < values.Length; ++i)
                                     {
-                                        val.expression.Evaluate(ref values[i], i, values.Length);
-                                        if (isFloat)
-                                            values[i] = MathUtils.ClampToFloat(values[i]);
+                                        values[i] = originalValues[i];
+                                        if (val.expression.Evaluate(ref values[i], i, values.Length))
+                                        {
+                                            if (isFloat)
+                                                values[i] = MathUtils.ClampToFloat(values[i]);
+
+                                            changed = true;
+                                        }
                                     }
-                                    property.allDoubleValues = values;
+
+                                    if (changed)
+                                        property.allDoubleValues = values;
                                 }
                             }
                             else

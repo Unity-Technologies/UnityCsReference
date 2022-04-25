@@ -115,8 +115,7 @@ namespace Unity.UI.Builder
                 if (attribute == null || attribute.name == null || IsAttributeIgnored(attribute))
                     continue;
 
-                var styleRow = CreateAttributeRow(attribute);
-                m_AttributesSection.Add(styleRow);
+                CreateAttributeRow(m_AttributesSection, attribute);
             }
         }
 
@@ -126,7 +125,7 @@ namespace Unity.UI.Builder
             return attribute.name == "show-horizontal-scroller" || attribute.name == "show-vertical-scroller";
         }
 
-        BuilderStyleRow CreateAttributeRow(UxmlAttributeDescription attribute)
+        BuilderStyleRow CreateAttributeRow(VisualElement parent, UxmlAttributeDescription attribute)
         {
             var attributeType = attribute.GetType();
 
@@ -337,7 +336,10 @@ namespace Unity.UI.Builder
             // Link the field.
             fieldElement.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, styleRow);
             fieldElement.SetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName, attribute);
-
+            
+            // Ensure the row is added to the inspector hierarchy before refreshing
+            parent.Add(styleRow);
+            
             // Set initial value.
             RefreshAttributeField(fieldElement);
 
@@ -346,8 +348,15 @@ namespace Unity.UI.Builder
             fieldElement.tooltip = attribute.name;
 
             // Context menu.
-            fieldElement.AddManipulator(new ContextualMenuManipulator(BuildAttributeFieldContextualMenu));
+            styleRow.AddManipulator(new ContextualMenuManipulator((evt) => BuildAttributeFieldContextualMenu(evt.menu, fieldElement)));
+            
+            if (fieldElement.GetFieldStatusIndicator() != null)
+            {
+                fieldElement.GetFieldStatusIndicator().populateMenuItems =
+                    (menu) => BuildAttributeFieldContextualMenu(menu, fieldElement);
+            }
 
+            m_Inspector.UpdateFieldStatus(fieldElement, null);
             return styleRow;
         }
 
@@ -596,6 +605,8 @@ namespace Unity.UI.Builder
             styleRow.RemoveFromClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
             if (IsAttributeOverriden(attribute))
                 styleRow.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
+            
+            m_Inspector.UpdateFieldStatus(fieldElement, null);
         }
 
         string GetAttributeStringValue(object attributeValue)
@@ -616,6 +627,11 @@ namespace Unity.UI.Builder
         }
 
         bool IsAttributeOverriden(UxmlAttributeDescription attribute)
+        {
+            return IsAttributeOverriden(currentVisualElement, attribute);
+        }
+        
+        public static bool IsAttributeOverriden(VisualElement currentVisualElement, UxmlAttributeDescription attribute)
         {
             var vea = currentVisualElement.GetVisualElementAsset();
             if (vea != null && attribute.name == "picking-mode")
@@ -750,7 +766,12 @@ namespace Unity.UI.Builder
 
         void BuildAttributeFieldContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction(
+            BuildAttributeFieldContextualMenu(evt.menu, evt.target as VisualElement);
+        }
+
+        void BuildAttributeFieldContextualMenu(DropdownMenu menu, VisualElement fieldElement)
+        {
+            menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetMessage,
                 UnsetAttributeProperty,
                 action =>
@@ -768,11 +789,11 @@ namespace Unity.UI.Builder
                     ? DropdownMenuAction.Status.Normal
                     : DropdownMenuAction.Status.Disabled;
                 },
-                evt.target);
+                fieldElement);
 
-            evt.menu.AppendAction(
+            menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetAllMessage,
-                UnsetAllAttributes,
+                (action) => UnsetAllAttributes(),
                 action =>
                 {
                     var attributeList = currentVisualElement.GetAttributeDescriptions();
@@ -793,10 +814,10 @@ namespace Unity.UI.Builder
 
                     return DropdownMenuAction.Status.Disabled;
                 },
-                evt.target);
+                fieldElement);
         }
 
-        void UnsetAllAttributes(DropdownMenuAction action)
+        internal void UnsetAllAttributes()
         {
             // Undo/Redo
             Undo.RegisterCompleteObjectUndo(m_Inspector.visualTreeAsset, BuilderConstants.ChangeAttributeValueUndoMessage);
@@ -842,6 +863,7 @@ namespace Unity.UI.Builder
                 {
                     // Reset UI value.
                     ResetAttributeFieldToDefault(fieldElement);
+                    m_Inspector.UpdateFieldStatus(fieldElement, null);
                 }
 
                 // Call Init();
@@ -874,7 +896,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void UnsetAttributeProperty(BindableElement fieldElement)
+        public void UnsetAttributeProperty(BindableElement fieldElement)
         {
             var attributeName = fieldElement.bindingPath;
             // Undo/Redo
@@ -914,6 +936,8 @@ namespace Unity.UI.Builder
 
                 // Notify of changes.
                 m_Selection.NotifyOfHierarchyChange(m_Inspector);
+
+                m_Inspector.UpdateFieldStatus(fieldElement, null);
                 Refresh();
             }
         }
@@ -1133,6 +1157,8 @@ namespace Unity.UI.Builder
 
             // Notify of changes.
             m_Selection.NotifyOfHierarchyChange(m_Inspector);
+            
+            m_Inspector.UpdateFieldStatus(field, null);
         }
 
         void CallInitOnElement()

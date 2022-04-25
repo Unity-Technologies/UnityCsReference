@@ -1,9 +1,11 @@
+using System;
+using System.IO;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using System;
 using UnityEngine.Pool;
+using UnityEditor.UIElements.Debugger;
 
 namespace Unity.UI.Builder
 {
@@ -320,6 +322,142 @@ namespace Unity.UI.Builder
 
             foreach (var section in m_Sections)
                 ResetSection(section);
+        }
+
+        public void UpdateFieldStatus(VisualElement field, StyleProperty property)
+        {
+            var valueInfo = FieldValueInfo.Get(this, field, property);
+            
+            field.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
+            UpdateFieldStatusIconAndStyling(field, valueInfo);
+            UpdateFieldTooltip(field, valueInfo);
+        }
+
+        void UpdateFieldStatusIconAndStyling(VisualElement field, FieldValueInfo valueInfo)
+        {
+            var statusIndicator = field.GetFieldStatusIndicator();
+
+            void ClearClassLists(VisualElement ve)
+            {
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleDefaultStatusClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleInheritedClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleSelectorClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleUnresolvedVariableClassName);
+            };
+
+            ClearClassLists(field);
+            ClearClassLists(statusIndicator);
+
+            var statusClassName = valueInfo.valueBinding.type switch
+            {
+                FieldValueBindingInfoType.USSVariable => valueInfo.valueBinding.variable.sheet != null
+                    ? BuilderConstants.InspectorLocalStyleVariableClassName
+                    : BuilderConstants.InspectorLocalStyleUnresolvedVariableClassName,
+                _ => valueInfo.valueSource.type switch
+                {
+                    FieldValueSourceInfoType.Inherited => BuilderConstants.InspectorLocalStyleInheritedClassName,
+                    FieldValueSourceInfoType.MatchingUSSSelector => BuilderConstants.InspectorLocalStyleSelectorClassName,
+                    _ => BuilderConstants.InspectorLocalStyleDefaultStatusClassName
+                }
+            };
+
+            statusIndicator.AddToClassList(statusClassName);
+            field.AddToClassList(statusClassName);
+        }
+
+        void UpdateFieldTooltip(VisualElement field, FieldValueInfo valueInfo)
+        {
+            field.tooltip = GetFieldTooltip(field, valueInfo);
+            field.GetFieldStatusIndicator().tooltip = GetFieldStatusIndicatorTooltip(valueInfo);
+        }
+
+        static string GetFieldStatusIndicatorTooltip(FieldValueInfo info)
+        { 
+            if (info.valueSource.type == FieldValueSourceInfoType.Default)
+                return BuilderConstants.FieldStatusIndicatorDefaultTooltip;
+            if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
+                return info.valueBinding.variable.sheet != null ? BuilderConstants.FieldStatusIndicatorVariableTooltip : BuilderConstants.FieldStatusIndicatorUnresolvedVariableTooltip;
+
+            return info.valueSource.type switch
+            {
+                FieldValueSourceInfoType.Inline => BuilderConstants.FieldStatusIndicatorInlineTooltip,
+                FieldValueSourceInfoType.Inherited => BuilderConstants.FieldStatusIndicatorInheritedTooltip,
+                FieldValueSourceInfoType.MatchingUSSSelector => BuilderConstants.FieldStatusIndicatorFromSelectorTooltip,
+                FieldValueSourceInfoType.LocalUSSSelector => BuilderConstants.FieldStatusIndicatorLocalTooltip,
+                _ => null
+            };
+        }
+
+        static string GetFieldTooltip(VisualElement field, FieldValueInfo info)
+        {
+            if (info.type == FieldValueInfoType.None)
+                return "";
+            
+            var tooltipFormat = BuilderConstants.FieldTooltipWithoutValueFormatString;
+            var valueDataText = "";
+            var valueDefinitionDataText = "";
+
+            // binding
+            if (info.valueSource.type != FieldValueSourceInfoType.Default
+                && info.valueSource.type != FieldValueSourceInfoType.Inherited)
+            {
+                tooltipFormat = BuilderConstants.FieldTooltipFormatString;
+
+                    // if the value is bound to variable then display the variable info
+                if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
+                    valueDataText = $"\n{GetVariableTooltip(info.valueBinding.variable)}";
+            }
+                
+            // source
+            if (info.valueSource.type.IsFromUSSSelector())
+                valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
+
+            return string.Format(tooltipFormat, info.type.ToDisplayString(), info.name, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
+        }
+
+        static string GetMatchingStyleSheetRuleSourceTooltip(MatchedRule matchedRule)
+        {
+            var displayPath = matchedRule.displayPath;
+            
+            // Remove line number
+            var index = displayPath.IndexOf(':');
+
+            if (index != -1)
+            {
+                displayPath = displayPath.Substring(0, index);
+            }
+
+            return string.Format(BuilderConstants.MatchingStyleSheetRuleSourceTooltipFormatString, StyleSheetToUss.ToUssSelector(matchedRule.matchRecord.complexSelector), displayPath);
+        }
+
+        static string GetVariableTooltip(VariableInfo info)
+        {
+            string variableName = "";
+            string sourceStyleSheet = "";
+
+            if (info.sheet)
+            {
+                var varStyleSheetOrigin = info.sheet;
+                var fullPath = AssetDatabase.GetAssetPath(varStyleSheetOrigin);
+
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    sourceStyleSheet = varStyleSheetOrigin.name;
+                }
+                else
+                {
+                    sourceStyleSheet = fullPath == BuilderConstants.EditorResourcesBundlePath ? varStyleSheetOrigin.name : Path.GetFileName(fullPath);
+                }
+            }
+            else
+            {
+                sourceStyleSheet = BuilderConstants.FileNotFoundMessage;
+            }
+
+            variableName = info.name;
+
+            return string.Format(BuilderConstants.VariableBindingTooltipFormatString, variableName, sourceStyleSheet);
         }
 
         internal override void OnViewDataReady()

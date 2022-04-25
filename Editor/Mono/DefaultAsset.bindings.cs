@@ -2,9 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -12,7 +11,7 @@ namespace UnityEditor
     // This class is public for users to be able to make custom editors for this type (see case 656580)
     public class DefaultAsset : UnityEngine.Object
     {
-        private DefaultAsset() {}
+        private protected DefaultAsset() {}
         internal extern string message { get; }
         internal extern bool isWarning {[NativeName("IsWarning")] get; }
     }
@@ -20,15 +19,20 @@ namespace UnityEditor
     [CustomEditor(typeof(DefaultAsset), isFallback = true)] // fallback so broad-matching user inspectors always win (e.g. case #656580)
     class DefaultAssetInspector : Editor
     {
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
+            var container = new VisualElement();
+
             var defaultAsset = (DefaultAsset)target;
             if (defaultAsset.message.Length > 0)
             {
-                EditorGUILayout.HelpBox(
+                var helpBox = new HelpBox(
                     defaultAsset.message,
-                    defaultAsset.isWarning ? MessageType.Warning : MessageType.Info);
+                    defaultAsset.isWarning ? HelpBoxMessageType.Warning : HelpBoxMessageType.Info);
+                container.Add(helpBox);
             }
+
+            return container;
         }
     }
 }

@@ -301,7 +301,7 @@ namespace UnityEditor.Profiling.ModuleEditor
                 }
 
                 // Is the name valid?
-                if (string.IsNullOrEmpty(module.name))
+                if (!ProfilerModule.IsValidDisplayName(module.name))
                 {
                     localizedErrorDescription = LocalizationDatabase.GetLocalizedString($"All modules must have a name.");
                     break;

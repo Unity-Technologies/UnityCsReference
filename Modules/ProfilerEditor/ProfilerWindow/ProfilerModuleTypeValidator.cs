@@ -35,7 +35,7 @@ namespace Unity.Profiling.Editor
 
             // Fail non-abstract, attributed types that haven't defined a valid name. User error.
             var moduleDisplayName = moduleMetadata.DisplayName;
-            if (string.IsNullOrEmpty(moduleDisplayName))
+            if (!ProfilerModule.IsValidDisplayName(moduleDisplayName))
             {
                 errorDescription = $"The module '{moduleType}' does not provide a valid display name. This is required for it to be displayed in the Profiler Window.";
                 return false;

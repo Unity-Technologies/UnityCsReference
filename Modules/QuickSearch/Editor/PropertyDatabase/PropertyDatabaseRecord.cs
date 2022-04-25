@@ -811,6 +811,8 @@ namespace UnityEditor.Search
 
         public static int size => PropertyDatabaseRecordKey.size + sizeof(byte) + PropertyDatabaseRecordValue.size;
 
+        public static PropertyDatabaseRecord invalid => new PropertyDatabaseRecord();
+
         public PropertyDatabaseRecord(ulong documentKey, Hash128 propertyKey, in PropertyDatabaseRecordValue recordValue)
             : this(new PropertyDatabaseRecordKey(documentKey, propertyKey), recordValue)
         {}

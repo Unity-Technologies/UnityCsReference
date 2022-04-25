@@ -69,6 +69,20 @@ namespace UnityEngine
         private AndroidJavaRunnable mRunnable;
         public AndroidJavaRunnableProxy(AndroidJavaRunnable runnable) : base("java/lang/Runnable") { mRunnable = runnable; }
         public void run() { mRunnable(); }
+
+        public override IntPtr Invoke(string methodName, IntPtr javaArgs)
+        {
+            int arrayLen = 0;
+            if (javaArgs != IntPtr.Zero)
+                arrayLen = AndroidJNISafe.GetArrayLength(javaArgs);
+            if (arrayLen == 0 && methodName == "run")
+            {
+                run();
+                return IntPtr.Zero;
+            }
+
+            return base.Invoke(methodName, javaArgs);
+        }
     }
 
     public class AndroidJavaProxy
@@ -138,6 +152,38 @@ namespace UnityEngine
             return Invoke(methodName, args);
         }
 
+        public virtual IntPtr Invoke(string methodName, IntPtr javaArgs)
+        {
+            int arrayLen = 0;
+            if (javaArgs != IntPtr.Zero)
+                arrayLen = AndroidJNISafe.GetArrayLength(javaArgs);
+
+            if (arrayLen == 1 && methodName == "equals")
+            {
+                IntPtr o = AndroidJNISafe.GetObjectArrayElement(javaArgs, 0);
+                AndroidJavaObject obj = o == IntPtr.Zero ? null : new AndroidJavaObject(o);
+                return AndroidJNIHelper.Box(equals(obj));
+            }
+            else if (arrayLen == 0 && methodName == "hashCode")
+            {
+                return AndroidJNIHelper.Box(hashCode());
+            }
+
+            AndroidJavaObject[] args = new AndroidJavaObject[arrayLen];
+            for (int i = 0; i < arrayLen; ++i)
+            {
+                IntPtr objectRef = AndroidJNISafe.GetObjectArrayElement(javaArgs, i);
+                args[i] = objectRef != IntPtr.Zero ? AndroidJavaObject.AndroidJavaObjectDeleteLocalRef(objectRef) : null;
+            }
+            using (AndroidJavaObject result = Invoke(methodName, args))
+            {
+                if (result == null)
+                    return IntPtr.Zero;
+
+                return AndroidJNI.NewLocalRef(result.GetRawObject());
+            }
+        }
+
         // implementing equals, hashCode and toString which should be implemented by all java objects
         // these methods must be in camel case, because that's how they are defined in java.
         public virtual bool equals(AndroidJavaObject obj)
@@ -148,9 +194,9 @@ namespace UnityEngine
 
         public virtual int hashCode()
         {
-            jvalue[] jniArgs = new jvalue[1];
+            Span<jvalue> jniArgs = stackalloc jvalue[1];
             jniArgs[0].l = GetRawProxy();
-            return (int)AndroidJNISafe.CallStaticIntMethod(s_JavaLangSystemClass, s_HashCodeMethodID, jniArgs);
+            return AndroidJNISafe.CallStaticIntMethod(s_JavaLangSystemClass, s_HashCodeMethodID, jniArgs);
         }
 
         public virtual string toString()
@@ -221,6 +267,25 @@ namespace UnityEngine
             _AndroidJavaObject(className, args);
         }
 
+        public AndroidJavaObject(IntPtr jobject) : this()
+        {
+            if (jobject == IntPtr.Zero)
+            {
+                throw new Exception("JNI: Init'd AndroidJavaObject with null ptr!");
+            }
+
+            IntPtr jclass = AndroidJNISafe.GetObjectClass(jobject);
+            m_jobject = new GlobalJavaObjectRef(jobject);
+            m_jclass = new GlobalJavaObjectRef(jclass);
+            AndroidJNISafe.DeleteLocalRef(jclass);
+        }
+
+        public AndroidJavaObject(IntPtr clazz, IntPtr constructorID, params object[] args)
+        {
+            m_jclass = new GlobalJavaObjectRef(clazz);
+            _AndroidJavaObject(constructorID, args);
+        }
+
         //===================================================================
 
         // IDisposable callback
@@ -238,9 +303,19 @@ namespace UnityEngine
             _Call(methodName, (object)args);
         }
 
+        public void Call<T>(IntPtr methodID, T[] args)
+        {
+            _Call(methodID, (object)args);
+        }
+
         public void Call(string methodName, params object[] args)
         {
             _Call(methodName, args);
+        }
+
+        public void Call(IntPtr methodID, params object[] args)
+        {
+            _Call(methodID, args);
         }
 
         //===================================================================
@@ -251,9 +326,19 @@ namespace UnityEngine
             _CallStatic(methodName, (object)args);
         }
 
+        public void CallStatic<T>(IntPtr methodID, T[] args)
+        {
+            _CallStatic(methodID, (object)args);
+        }
+
         public void CallStatic(string methodName, params object[] args)
         {
             _CallStatic(methodName, args);
+        }
+
+        public void CallStatic(IntPtr methodID, params object[] args)
+        {
+            _CallStatic(methodID, args);
         }
 
         //===================================================================
@@ -264,10 +349,20 @@ namespace UnityEngine
             return _Get<FieldType>(fieldName);
         }
 
+        public FieldType Get<FieldType>(IntPtr fieldID)
+        {
+            return _Get<FieldType>(fieldID);
+        }
+
         // Set the value of a field in an object (non-static).
         public void Set<FieldType>(string fieldName, FieldType val)
         {
             _Set<FieldType>(fieldName, val);
+        }
+
+        public void Set<FieldType>(IntPtr fieldID, FieldType val)
+        {
+            _Set<FieldType>(fieldID, val);
         }
 
         //===================================================================
@@ -278,10 +373,20 @@ namespace UnityEngine
             return _GetStatic<FieldType>(fieldName);
         }
 
+        public FieldType GetStatic<FieldType>(IntPtr fieldID)
+        {
+            return _GetStatic<FieldType>(fieldID);
+        }
+
         // Set the value of a static field in an object type.
         public void SetStatic<FieldType>(string fieldName, FieldType val)
         {
             _SetStatic<FieldType>(fieldName, val);
+        }
+
+        public void SetStatic<FieldType>(IntPtr fieldID, FieldType val)
+        {
+            _SetStatic<FieldType>(fieldID, val);
         }
 
         //===================================================================
@@ -324,9 +429,19 @@ namespace UnityEngine
             return _Call<ReturnType>(methodName, (object)args);
         }
 
+        public ReturnType Call<ReturnType, T>(IntPtr methodID, T[] args)
+        {
+            return _Call<ReturnType>(methodID, (object)args);
+        }
+
         public ReturnType Call<ReturnType>(string methodName, params object[] args)
         {
             return _Call<ReturnType>(methodName, args);
+        }
+
+        public ReturnType Call<ReturnType>(IntPtr methodID, params object[] args)
+        {
+            return _Call<ReturnType>(methodID, args);
         }
 
         // Call a static Java method on a class.
@@ -335,9 +450,19 @@ namespace UnityEngine
             return _CallStatic<ReturnType>(methodName, (object)args);
         }
 
+        public ReturnType CallStatic<ReturnType, T>(IntPtr methodID, T[] args)
+        {
+            return _CallStatic<ReturnType>(methodID, (object)args);
+        }
+
         public ReturnType CallStatic<ReturnType>(string methodName, params object[] args)
         {
             return _CallStatic<ReturnType>(methodName, args);
+        }
+
+        public ReturnType CallStatic<ReturnType>(IntPtr methodID, params object[] args)
+        {
+            return _CallStatic<ReturnType>(methodID, args);
         }
 
         //===================================================================
@@ -369,14 +494,19 @@ namespace UnityEngine
         private void _AndroidJavaObject(string className, params object[] args)
         {
             DebugPrint("Creating AndroidJavaObject from " + className);
-            if (args == null) args = new object[] { null };
             var clazz = AndroidJNISafe.FindClass(className.Replace('.', '/'));
             m_jclass = new GlobalJavaObjectRef(clazz);
             AndroidJNISafe.DeleteLocalRef(clazz);
-            jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
+            IntPtr constructorID = AndroidJNIHelper.GetConstructorID(m_jclass, args);
+            _AndroidJavaObject(constructorID, args);
+        }
+
+        private void _AndroidJavaObject(IntPtr constructorID, params object[] args)
+        {
+            Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
-                IntPtr constructorID = AndroidJNIHelper.GetConstructorID(m_jclass, args);
                 IntPtr jobject = AndroidJNISafe.NewObject(m_jclass, constructorID, jniArgs);
                 m_jobject = new GlobalJavaObjectRef(jobject);
                 AndroidJNISafe.DeleteLocalRef(jobject);
@@ -385,19 +515,6 @@ namespace UnityEngine
             {
                 AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
             }
-        }
-
-        internal AndroidJavaObject(IntPtr jobject) : this()  // should be protected and friends with AndroidJNIHelper..
-        {
-            if (jobject == IntPtr.Zero)
-            {
-                throw new Exception("JNI: Init'd AndroidJavaObject with null ptr!");
-            }
-
-            IntPtr jclass = AndroidJNISafe.GetObjectClass(jobject);
-            m_jobject = new GlobalJavaObjectRef(jobject);
-            m_jclass = new GlobalJavaObjectRef(jclass);
-            AndroidJNISafe.DeleteLocalRef(jclass);
         }
 
         internal AndroidJavaObject()
@@ -427,9 +544,14 @@ namespace UnityEngine
 
         protected void _Call(string methodName, params object[] args)
         {
-            if (args == null) args = new object[] { null };
             IntPtr methodID = AndroidJNIHelper.GetMethodID(m_jclass, methodName, args, false);
-            jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
+            _Call(methodID, args);
+        }
+
+        protected void _Call(IntPtr methodID, params object[] args)
+        {
+            Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
                 AndroidJNISafe.CallVoidMethod(m_jobject, methodID, jniArgs);
@@ -442,9 +564,14 @@ namespace UnityEngine
 
         protected ReturnType _Call<ReturnType>(string methodName, params object[] args)
         {
-            if (args == null) args = new object[] { null };
             IntPtr methodID = AndroidJNIHelper.GetMethodID<ReturnType>(m_jclass, methodName, args, false);
-            jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
+            return _Call<ReturnType>(methodID, args);
+        }
+
+        protected ReturnType _Call<ReturnType>(IntPtr methodID, params object[] args)
+        {
+            Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
                 if (AndroidReflection.IsPrimitive(typeof(ReturnType)))
@@ -505,6 +632,11 @@ namespace UnityEngine
         protected FieldType _Get<FieldType>(string fieldName)
         {
             IntPtr fieldID = AndroidJNIHelper.GetFieldID<FieldType>(m_jclass, fieldName, false);
+            return _Get<FieldType>(fieldID);
+        }
+
+        protected FieldType _Get<FieldType>(IntPtr fieldID)
+        {
             if (AndroidReflection.IsPrimitive(typeof(FieldType)))
             {
                 if (typeof(FieldType) == typeof(Int32))
@@ -556,6 +688,11 @@ namespace UnityEngine
         protected void _Set<FieldType>(string fieldName, FieldType val)
         {
             IntPtr fieldID = AndroidJNIHelper.GetFieldID<FieldType>(m_jclass, fieldName, false);
+            _Set(fieldID, val);
+        }
+
+        protected void _Set<FieldType>(IntPtr fieldID, FieldType val)
+        {
             if (AndroidReflection.IsPrimitive(typeof(FieldType)))
             {
                 if (typeof(FieldType) == typeof(Int32))
@@ -605,9 +742,14 @@ namespace UnityEngine
 
         protected void _CallStatic(string methodName, params object[] args)
         {
-            if (args == null) args = new object[] { null };
             IntPtr methodID = AndroidJNIHelper.GetMethodID(m_jclass, methodName, args, true);
-            jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
+            _CallStatic(methodID, args);
+        }
+
+        protected void _CallStatic(IntPtr methodID, params object[] args)
+        {
+            Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
                 AndroidJNISafe.CallStaticVoidMethod(m_jclass, methodID, jniArgs);
@@ -620,9 +762,14 @@ namespace UnityEngine
 
         protected ReturnType _CallStatic<ReturnType>(string methodName, params object[] args)
         {
-            if (args == null) args = new object[] { null };
             IntPtr methodID = AndroidJNIHelper.GetMethodID<ReturnType>(m_jclass, methodName, args, true);
-            jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
+            return _CallStatic<ReturnType>(methodID, args);
+        }
+
+        protected ReturnType _CallStatic<ReturnType>(IntPtr methodID, params object[] args)
+        {
+            Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
                 if (AndroidReflection.IsPrimitive(typeof(ReturnType)))
@@ -684,6 +831,11 @@ namespace UnityEngine
         protected FieldType _GetStatic<FieldType>(string fieldName)
         {
             IntPtr fieldID = AndroidJNIHelper.GetFieldID<FieldType>(m_jclass, fieldName, true);
+            return _GetStatic<FieldType>(fieldID);
+        }
+
+        protected FieldType _GetStatic<FieldType>(IntPtr fieldID)
+        {
             if (AndroidReflection.IsPrimitive(typeof(FieldType)))
             {
                 if (typeof(FieldType) == typeof(Int32))
@@ -735,6 +887,11 @@ namespace UnityEngine
         protected void _SetStatic<FieldType>(string fieldName, FieldType val)
         {
             IntPtr fieldID = AndroidJNIHelper.GetFieldID<FieldType>(m_jclass, fieldName, true);
+            _SetStatic(fieldID, val);
+        }
+
+        protected void _SetStatic<FieldType>(IntPtr fieldID, FieldType val)
+        {
             if (AndroidReflection.IsPrimitive(typeof(FieldType)))
             {
                 if (typeof(FieldType) == typeof(Int32))
@@ -988,24 +1145,7 @@ namespace UnityEngine
         {
             try
             {
-                int arrayLen = 0;
-                if (jargs != IntPtr.Zero)
-                {
-                    arrayLen = AndroidJNISafe.GetArrayLength(jargs);
-                }
-                AndroidJavaObject[] args = new AndroidJavaObject[arrayLen];
-                for (int i = 0; i < arrayLen; ++i)
-                {
-                    IntPtr objectRef = AndroidJNISafe.GetObjectArrayElement(jargs, i);
-                    args[i] = objectRef != IntPtr.Zero ? new AndroidJavaObject(objectRef) : null;
-                }
-                using (AndroidJavaObject result = proxy.Invoke(AndroidJNI.GetStringChars(jmethodName), args))
-                {
-                    if (result == null)
-                        return IntPtr.Zero;
-
-                    return AndroidJNI.NewLocalRef(result.GetRawObject());
-                }
+                return proxy.Invoke(AndroidJNI.GetStringChars(jmethodName), jargs);
             }
             catch (Exception e)
             {
@@ -1014,9 +1154,8 @@ namespace UnityEngine
             }
         }
 
-        public static jvalue[] CreateJNIArgArray(object[] args)
+        public static void CreateJNIArgArray(object[] args, Span<jvalue> ret)
         {
-            jvalue[] ret = new jvalue[args.GetLength(0)];
             int i = 0;
             foreach (object obj in args)
             {
@@ -1076,7 +1215,6 @@ namespace UnityEngine
                 }
                 ++i;
             }
-            return ret;
         }
 
         public static object UnboxArray(AndroidJavaObject obj)
@@ -1218,8 +1356,10 @@ namespace UnityEngine
             }
         }
 
-        public static void DeleteJNIArgArray(object[] args, jvalue[] jniArgs)
+        public static void DeleteJNIArgArray(object[] args, Span<jvalue> jniArgs)
         {
+            if (args == null)
+                return;
             int i = 0;
             foreach (object obj in args)
             {
@@ -1571,6 +1711,8 @@ namespace UnityEngine
 
         public static string GetSignature(object[] args)
         {
+            if (args == null || args.Length == 0)
+                return "()V";
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             sb.Append('(');
             foreach (object obj in args)
@@ -1583,6 +1725,8 @@ namespace UnityEngine
 
         public static string GetSignature<ReturnType>(object[] args)
         {
+            if (args == null || args.Length == 0)
+                return "()" + GetSignature(typeof(ReturnType));
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             sb.Append('(');
             foreach (object obj in args)

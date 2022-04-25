@@ -10,7 +10,9 @@ namespace UnityEditor.ShortcutManagement
 {
     interface IBindingValidator
     {
-        bool IsBindingValid(IEnumerable<KeyCombination> keyCombinations, out string invalidBindingMessage);
+        bool IsKeyValid(KeyCode key, out string invalidKeyMessage);
+        bool IsCombinationValid(IEnumerable<KeyCombination> keyCombinations, out string invalidBindingMessage);
+        bool IsBindingValid(ShortcutEntry shortcut, out string invalidBindingMessage);
     }
 
     class BindingValidator : IBindingValidator
@@ -31,22 +33,30 @@ namespace UnityEditor.ShortcutManagement
             KeyCode.LeftCommand,
         };
 
-        public bool IsBindingValid(IEnumerable<KeyCombination> keyCombinations, out string invalidBindingMessage)
+        public bool IsKeyValid(KeyCode key, out string invalidKeyMessage)
+        {
+            if (s_InvalidKeyCodes.Contains(key) || (int)key >= Directory.MaxIndexedEntries)
+            {
+                invalidKeyMessage = $"Binding uses invalid key code {key}";
+                return false;
+            }
+
+            invalidKeyMessage = null;
+            return true;
+        }
+
+        public bool IsCombinationValid(IEnumerable<KeyCombination> keyCombinations, out string invalidBindingMessage)
         {
             foreach (var keyCombination in keyCombinations)
             {
-                if (s_InvalidKeyCodes.Contains(keyCombination.keyCode) || (int)keyCombination.keyCode >= Directory.MaxIndexedEntries)
-                {
-                    invalidBindingMessage = $"Binding uses invalid key code {keyCombination.keyCode}";
-                    return false;
-                }
+                if (!IsKeyValid(keyCombination.keyCode, out invalidBindingMessage)) return false;
 
                 for (int i = 0; i < 32; i++)
                 {
                     int flag = (int)keyCombination.modifiers & (1 << i);
                     if (flag != 0 && !Enum.IsDefined(typeof(ShortcutModifiers), flag))
                     {
-                        invalidBindingMessage = $"Binding uses invalid modifier {flag}";
+                        invalidBindingMessage = $"Binding of shortcut uses invalid modifier {flag}";
                         return false;
                     }
                 }
@@ -55,14 +65,22 @@ namespace UnityEditor.ShortcutManagement
             invalidBindingMessage = null;
             return true;
         }
-    }
 
-    static class BindingValidatorHelper
-    {
-        public static bool IsBindingValid(this IBindingValidator bindingValidator, KeyCode keyCode)
+        public bool IsBindingValid(ShortcutEntry shortcut, out string invalidBindingMessage)
         {
-            string invalidBindingMessage;
-            return bindingValidator.IsBindingValid(new[] { new KeyCombination(keyCode) }, out invalidBindingMessage);
+            if (!IsCombinationValid(shortcut.combinations, out invalidBindingMessage)) return false;
+
+            foreach (var keyCombination in shortcut.combinations)
+            {
+                if((keyCombination.keyCode == KeyCode.Mouse0 || keyCombination.keyCode == KeyCode.Mouse1) && shortcut.context == ContextManager.globalContextType)
+                {
+                    invalidBindingMessage = $"Binding of global shortcut '{shortcut.displayName}' uses key code {keyCombination.keyCode} that is not allowed for shortcut with this context type";
+                    return false;
+                }
+            }
+
+            invalidBindingMessage = null;
+            return true;
         }
     }
 }

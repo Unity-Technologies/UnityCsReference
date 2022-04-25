@@ -48,7 +48,15 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.F9, "F9" },
             { KeyCode.F10, "F10" },
             { KeyCode.F11, "F11" },
-            { KeyCode.F12, "F12" }
+            { KeyCode.F12, "F12" },
+
+            { KeyCode.Mouse0, "M0" },
+            { KeyCode.Mouse1, "M1" },
+            { KeyCode.Mouse2, "M2" },
+            { KeyCode.Mouse3, "M3" },
+            { KeyCode.Mouse4, "M4" },
+            { KeyCode.Mouse5, "M5" },
+            { KeyCode.Mouse6, "M6" },
         };
 
         static Dictionary<string, KeyCode> s_MenuItemKeyCodeStringToKeyCode;
@@ -67,6 +75,12 @@ namespace UnityEditor.ShortcutManagement
         {
             m_KeyCode = keyCode;
             m_Modifiers = shortcutModifiers;
+        }
+
+        internal static KeyCombination FromInput(Event evt)
+        {
+            KeyCode keyCode = evt.isMouse ? evt.button + KeyCode.Mouse0 : evt.keyCode;
+            return FromKeyboardInput(keyCode, evt.modifiers);
         }
 
         internal static KeyCombination FromKeyboardInput(Event evt)
@@ -402,6 +416,13 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.KeypadPlus, "Num +" },
             { KeyCode.KeypadEnter, "Num Enter" },
             { KeyCode.KeypadEquals, "Num =" },
+            { KeyCode.Mouse0, "Mouse 0"},
+            { KeyCode.Mouse1, "Mouse 1"},
+            { KeyCode.Mouse2, "Mouse 2"},
+            { KeyCode.Mouse3, "Mouse 3"},
+            { KeyCode.Mouse4, "Mouse 4"},
+            { KeyCode.Mouse5, "Mouse 5"},
+            { KeyCode.Mouse6, "Mouse 6"},
         };
 
         static bool TryFormatKeycode(KeyCode code, StringBuilder builder)

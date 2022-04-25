@@ -68,7 +68,7 @@ namespace UnityEditor.ShortcutManagement
                     }
 
                     string invalidBindingMessage;
-                    if (!m_BindingValidator.IsBindingValid(shortcutEntry.combinations, out invalidBindingMessage))
+                    if (!m_BindingValidator.IsBindingValid(shortcutEntry, out invalidBindingMessage))
                     {
                         m_InvalidShortcutReporter?.ReportInvalidBinding(discoveredEntry, invalidBindingMessage);
 

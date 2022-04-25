@@ -85,8 +85,6 @@ namespace UnityEditor
         [NonSerialized]
         bool m_OverlaysInitialized;
 
-        internal bool overlaysInitialized => m_OverlaysInitialized;
-
         private bool m_EnableViewDataPersistence;
 
         private bool m_RequestedViewDataSave;

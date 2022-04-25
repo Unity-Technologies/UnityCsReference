@@ -553,6 +553,8 @@ namespace UnityEditor.VFX
         extern public int GetShaderIndex(UnityObject shader);
         public extern void ShowGeneratedShaderFile(int index, int line = 0);
 
+        extern public Material FindMaterial(ScriptableObject model);
+
         extern public void ClearSourceDependencies();
         extern public void AddSourceDependency(string dep);
         extern public void ClearImportDependencies();

@@ -392,8 +392,13 @@ namespace UnityEditor.SceneManagement
             var assetRoot = AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) as GameObject;
             if (assetRoot == null)
             {
-                Debug.LogError(string.Format("Opening Prefab Mode failed: The Prefab at '{0}' is broken.", prefabAssetPath));
-                return null;
+                if (rootsAfterLoadingPrefab.Length > 0)
+                    return rootsAfterLoadingPrefab[0];
+                else
+                {
+                    Debug.LogError(string.Format("Opening Prefab Mode failed: The Prefab at '{0}' is broken.", prefabAssetPath));
+                    return null;
+                }
             }
 
             // Find the prefab root or variant root among the roots of the scene (or as a child)

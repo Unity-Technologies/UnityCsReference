@@ -317,11 +317,17 @@ namespace UnityEditor.Profiling
         {
             [NativeName("name")]
             readonly string m_Name;
+            [NativeName("relatedGameObjectInstanceId")]
+            readonly int m_RelatedGameObjectInstanceId;
             [NativeName("nativeTypeIndex")]
             readonly int m_NativeTypeIndex;
+            [NativeName("rootId")]
+            readonly ulong m_RootId;
 
             public string name => m_Name;
             public int nativeTypeIndex => m_NativeTypeIndex;
+            public int relatedGameObjectInstanceId => m_RelatedGameObjectInstanceId;
+            public ulong allocationRootId => m_RootId;
         }
 
         [NativeMethod(IsThreadSafe = true)]
@@ -345,5 +351,21 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(IsThreadSafe = true)]
         public extern int GetUnityObjectNativeTypeInfoCount();
+
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        public struct GfxResourceInfo
+        {
+            [NativeName("rootId")]
+            readonly ulong m_RootId;
+            [NativeName("rootId")]
+            readonly int m_InstanceId;
+
+            public ulong relatedAllocationRootId => m_RootId;
+            public int relatedInstanceId => m_InstanceId;
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool GetGfxResourceInfo(ulong gfxResourceId, out GfxResourceInfo info);
     }
 }

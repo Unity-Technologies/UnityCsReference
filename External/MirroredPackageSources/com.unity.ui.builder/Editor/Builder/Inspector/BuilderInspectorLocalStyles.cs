@@ -84,8 +84,10 @@ namespace Unity.UI.Builder
 
         void StyleCategoryContextualMenu(ContextualMenuPopulateEvent evt)
         {
+            bool isSelector = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
+            
             evt.menu.AppendAction(
-                BuilderConstants.ContextMenuSetMessage,
+                isSelector ? BuilderConstants.ContextMenuSetAsValueMessage : BuilderConstants.ContextMenuSetAsInlineValueMessage,
                 action => {},
                 action => DropdownMenuAction.Status.Disabled,
                 evt.target);
@@ -98,7 +100,7 @@ namespace Unity.UI.Builder
 
             evt.menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetAllMessage,
-                m_StyleFields.UnsetAllStyleProperties,
+                (action) => m_StyleFields.UnsetAllStyleProperties(),
                 m_StyleFields.UnsetAllActionStatus,
                 evt.target);
         }

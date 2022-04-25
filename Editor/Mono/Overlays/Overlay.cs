@@ -58,6 +58,7 @@ namespace UnityEditor.Overlays
         // Temporary Variables
         bool m_LockAnchor = false;
         bool m_ContentsChanged = true;
+        internal bool m_DisableContentModification = false;
 
         // Connections
         public EditorWindow containerWindow => canvas.containerWindow;
@@ -133,6 +134,12 @@ namespace UnityEditor.Overlays
 
             internal set
             {
+                if(m_DisableContentModification)
+                {
+                    Debug.LogError(GetEventTypeErrorMessage("Overlay.layout"));
+                    return;
+                }
+
                 if (m_Layout == value)
                     return;
 
@@ -150,6 +157,12 @@ namespace UnityEditor.Overlays
 
             set
             {
+                if(m_DisableContentModification)
+                {
+                    Debug.LogError(GetEventTypeErrorMessage("Overlay.collapsed"));
+                    return;
+                }
+
                 m_Collapsed = value;
                 if (m_Collapsed != (collapsedContent.parent == contentRoot))
                     RebuildContent();
@@ -210,7 +223,14 @@ namespace UnityEditor.Overlays
             {
                 if (rootVisualElement.style.display != (value ? DisplayStyle.Flex : DisplayStyle.None))
                 {
+                    if(m_DisableContentModification)
+                    {
+                        Debug.LogError(GetEventTypeErrorMessage("Overlay.displayed"));
+                        return;
+                    }
+
                     rootVisualElement.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
+
                     RebuildContent();
                     displayedChanged?.Invoke(value);
                 }
@@ -351,6 +371,11 @@ namespace UnityEditor.Overlays
                 maxSizeChanged?.Invoke();
                 UpdateSize();
             }
+        }
+
+        internal static string GetEventTypeErrorMessage(string errorEvent)
+        {
+            return L10n.Tr($"Cannot modify {errorEvent} during event of type EventType.Layout");
         }
 
         internal void ResetSize()

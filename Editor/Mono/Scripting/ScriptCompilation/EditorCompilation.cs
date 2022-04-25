@@ -1670,7 +1670,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 references.Add(monolithicEngineAssemblyPath);
             }
 
-            references.AddRange(unityReferences.Values); // unity references paths
+            references.AddRange(unityReferences.Select(a => a.Path)); // unity references paths
             references.AddRange(customReferences);
             references.AddRange(precompiledReferences);
             references.AddRange(editorReferences);

@@ -38,6 +38,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // as that acts on the same ScriptAssemblies, and modifies them with different build settings.
             var cachedAssemblies = AssemblyDataFrom(assemblies);
 
+            AssemblyData[] codeGenAssemblies;
+            using (new ProfilerMarker("GetScriptAssembliesForCodeGen").Auto())
+            {
+                codeGenAssemblies = buildingForEditor
+                    ? null
+                    : AssemblyDataFrom(CodeGenAssemblies(CompilationPipeline.GetScriptAssemblies(editorCompilation, AssembliesType.Editor, extraScriptingDefines)));
+            }
+
             var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
             var dotNetSdkRoslynPath = EditorApplication.applicationContentsPath + $"/DotNetSdkRoslyn";
 
@@ -86,6 +94,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 DotnetRoslynPath = dotNetSdkRoslynPath,
                 MovedFromExtractorPath = movedFromExtractorPath,
                 Assemblies = cachedAssemblies,
+                CodegenAssemblies = codeGenAssemblies,
                 Debug = debug,
                 BuildTarget = buildTarget.ToString(),
                 Localization = localization,
@@ -96,6 +105,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray()
             });
         }
+
+        private static ScriptAssembly[] CodeGenAssemblies(ScriptAssembly[] assemblies) =>
+            assemblies
+                .Where(assembly => UnityCodeGenHelpers.IsCodeGen(FileUtil.GetPathWithoutExtension(assembly.Filename)))
+                .SelectMany(assembly => assembly.AllRecursiveScripAssemblyReferencesIncludingSelf())
+                .Distinct()
+                .OrderBy(a => a.Filename)
+                .ToArray();
 
         private static AssemblyData[] AssemblyDataFrom(ScriptAssembly[] assemblies)
         {

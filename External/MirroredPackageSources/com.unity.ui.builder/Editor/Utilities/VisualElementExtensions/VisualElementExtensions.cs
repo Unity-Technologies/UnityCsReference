@@ -410,6 +410,50 @@ namespace Unity.UI.Builder
 
             return visualInput;
         }
+
+        public static FieldStatusIndicator GetFieldStatusIndicator(this VisualElement field)
+        {
+            FieldStatusIndicator statusIndicator = null;
+            
+            if (field.HasProperty(FieldStatusIndicator.s_FieldStatusIndicatorVEPropertyName))
+            {
+               statusIndicator = field.GetProperty(FieldStatusIndicator.s_FieldStatusIndicatorVEPropertyName) as FieldStatusIndicator;
+            }
+
+            if (statusIndicator == null)
+            {
+                var row = field.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
+
+                if (row == null)
+                    return null;
+
+                // If the field has a name then look for a FieldStatusIndicator in the same containing row that has 
+                // targetFieldName matching the field's name.
+                if (!string.IsNullOrEmpty(field.name))
+                {
+                    statusIndicator = row.Query<FieldStatusIndicator>().Where((b) => b.targetFieldName == field.name);
+                }
+
+                // If a status indicator matching the field's name could not be found then pick the first FieldMenuButton in the row.
+                if (statusIndicator == null)
+                {
+                    statusIndicator = row.Q<FieldStatusIndicator>();
+                }
+
+                // If no status indicator could not be found in the row then create a new one and insert it to
+                // the row right after the Override indicators container.
+                if (statusIndicator == null)
+                {
+                    statusIndicator = new FieldStatusIndicator();
+
+                    row.hierarchy.Insert(1, statusIndicator);
+                }
+
+                statusIndicator.targetField = field;
+            }
+
+            return statusIndicator;
+        }
     }
 
     enum BuilderElementStyle

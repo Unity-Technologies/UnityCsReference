@@ -22,8 +22,8 @@ namespace UnityEditor.PackageManager
         private bool m_IsAllowed;
 
         [SerializeField]
-        [NativeName("licenseType")]
-        private EntitlementLicenseType m_LicenseType;
+        [NativeName("licensingModel")]
+        private EntitlementLicensingModel m_LicensingModel;
 
         [SerializeField]
         [NativeName("status")]
@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager
 
         public bool isAllowed { get { return m_IsAllowed;  } }
 
-        public EntitlementLicenseType licenseType { get { return m_LicenseType;  } }
+        public EntitlementLicensingModel licensingModel { get { return m_LicensingModel;  } }
 
         public EntitlementStatus status { get { return m_Status;  } }
     }

@@ -1545,6 +1545,18 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
 
+        [FreeFunction("GetPlayerSettings().GetLoadStoreDebugModeEnabled")]
+        internal static extern bool GetLoadStoreDebugModeEnabledForPlatformGroup(BuildTargetGroup platformGroup);
+
+        [FreeFunction("GetPlayerSettings().SetLoadStoreDebugModeEnabled")]
+        internal static extern void SetLoadStoreDebugModeEnabledForPlatformGroup(BuildTargetGroup platformGroup, bool loadStoreDebugModeEnabled);
+
+        [FreeFunction("GetPlayerSettings().GetLoadStoreDebugModeEditorOnly")]
+        internal static extern bool GetLoadStoreDebugModeEditorOnlyForPlatformGroup(BuildTargetGroup platformGroup);
+
+        [FreeFunction("GetPlayerSettings().SetLoadStoreDebugModeEditorOnly")]
+        internal static extern void SetLoadStoreDebugModeEditorOnlyForPlatformGroup(BuildTargetGroup platformGroup, bool loadStoreDebugModeEnabled);
+
         [FreeFunction("GetPlayerSettings().GetDisableOldInputManagerSupport")]
         internal static extern bool GetDisableOldInputManagerSupport();
 

@@ -14,6 +14,7 @@ namespace ScriptCompilationBuildProgram.Data
     public class ScriptCompilationData
     {
         public AssemblyData[] Assemblies;
+        public AssemblyData[] CodegenAssemblies;
         public string DotnetRuntimePath;
         public string DotnetRoslynPath;
         public string MovedFromExtractorPath;

@@ -241,6 +241,8 @@ namespace UnityEditor
             public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture*");
             public static readonly GUIContent forceSRGBBlit = EditorGUIUtility.TrTextContent("Force SRGB blit", "Force SRGB blit for Linear color space.");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
+            public static readonly GUIContent loadStoreDebugModeCheckbox = EditorGUIUtility.TrTextContent("Load/Store Action Debug Mode", "Initializes Framebuffer such that errors in the load/store actions will be visually apparent. (Removed in Release Builds)");
+            public static readonly GUIContent loadStoreDebugModeEditorOnlyCheckbox = EditorGUIUtility.TrTextContent("Editor Only", "Load/Store Action Debug Mode will only affect the Editor");
 
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
@@ -402,6 +404,8 @@ namespace UnityEditor
         SerializedProperty m_CaptureSingleScreen;
 
         SerializedProperty m_SkinOnGPU;
+
+        SerializedProperty m_EnableLoadStoreDebugMode;
 
         // OpenGL ES 3.1+
         SerializedProperty m_RequireES31;
@@ -2239,6 +2243,29 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
             Stereo360CaptureGUI(platform.namedBuildTarget.ToBuildTargetGroup());
+
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
+            {
+                var target = platform.namedBuildTarget.ToBuildTargetGroup();
+                bool debugModeEnabled = PlayerSettings.GetLoadStoreDebugModeEnabledForPlatformGroup(target);
+                bool debugModeEditorOnly = PlayerSettings.GetLoadStoreDebugModeEditorOnlyForPlatformGroup(target);
+
+                EditorGUI.BeginChangeCheck();
+                debugModeEnabled = EditorGUILayout.Toggle(SettingsContent.loadStoreDebugModeCheckbox, debugModeEnabled);
+                if(debugModeEnabled)
+                {
+                    EditorGUI.indentLevel++;
+                    debugModeEditorOnly = EditorGUILayout.Toggle(SettingsContent.loadStoreDebugModeEditorOnlyCheckbox, debugModeEditorOnly);
+                    EditorGUI.indentLevel--;
+                }
+                if(EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.SetLoadStoreDebugModeEnabledForPlatformGroup(target, debugModeEnabled);
+                    PlayerSettings.SetLoadStoreDebugModeEditorOnlyForPlatformGroup(target, debugModeEditorOnly);
+
+                    GUIUtility.ExitGUI();
+                }
+            }
 
             EditorGUILayout.Space();
         }

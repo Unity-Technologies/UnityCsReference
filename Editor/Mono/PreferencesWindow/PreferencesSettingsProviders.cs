@@ -1054,7 +1054,8 @@ namespace UnityEditor
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("SaveScenesBeforeBuilding", m_AutoSaveScenesBeforeBuilding);
-            EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)m_ScriptCompilationDuringPlay);
+
+            ScriptCompilationDuringPlayEditorPref = m_ScriptCompilationDuringPlay;
 
             // The Preferences window always writes all preferences, we don't want this behavior since we
             // want the default value to just match "IsSourceBuild" until the developer has explicitly changed it.
@@ -1098,7 +1099,24 @@ namespace UnityEditor
 
         private int CurrentEditorScalingValue
         {
-            get {return Mathf.RoundToInt(GUIUtility.pixelsPerPoint * 100); }
+            get { return Mathf.RoundToInt(GUIUtility.pixelsPerPoint * 100); }
+        }
+
+        private ScriptChangesDuringPlayOptions ScriptCompilationDuringPlayEditorPref
+        {
+            get
+            {
+                var scriptCompilationDuringPlay = EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
+
+                // Upgrade old RecompileAfterFinishedPlaying setting (1) to RecompileAndContinuePlaying
+                if (scriptCompilationDuringPlay == 1)
+                    return ScriptChangesDuringPlayOptions.RecompileAndContinuePlaying;
+                return (ScriptChangesDuringPlayOptions)scriptCompilationDuringPlay;
+            }
+            set
+            {
+                EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)value);
+            }
         }
 
         private void ReadPreferences()
@@ -1144,7 +1162,8 @@ namespace UnityEditor
 
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalyticsV2", EditorPrefs.GetBool("EnableEditorAnalytics", true));
 
-            m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
+            m_ScriptCompilationDuringPlay = ScriptCompilationDuringPlayEditorPref;
+
             m_DeveloperMode = Unsupported.IsDeveloperMode();
             m_ShowRepaintDots = EditorGUI.s_ShowRepaintDots.value;
 

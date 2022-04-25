@@ -6,7 +6,6 @@ using System;
 using UnityEditor.AnimatedValues;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace UnityEditor
 {
@@ -24,6 +23,7 @@ namespace UnityEditor
         static float s_TotalMotion = 0f;
         static float s_FPSScrollWheelMultiplier = .01f;
         static bool s_Moving;
+        static bool s_Drag;
         static AnimVector3 s_FlySpeed = new AnimVector3(Vector3.zero);
 
         internal static Vector3 cameraSpeed
@@ -49,9 +49,8 @@ namespace UnityEditor
         {
             get
             {
-                var evt = Event.current;
-                if (evt != null)
-                    UpdateViewToolState(evt);
+                if (Event.current != null)
+                    UpdateViewToolState(Event.current);
                 return s_ViewToolActive;
             }
         }
@@ -61,7 +60,57 @@ namespace UnityEditor
         {
             if (s_Initialized)
                 return;
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new Context2D());
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new Context3D());
             s_Initialized = true;
+        }
+
+        class Context2D : IShortcutToolContext
+        {
+            public bool active => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
+                && ((SceneView.lastActiveSceneView?.in2DMode ?? false) || (SceneView.lastActiveSceneView?.isRotationLocked ?? false));
+        }
+
+        class Context3D : IShortcutToolContext
+        {
+            public bool active => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
+                && ((!SceneView.lastActiveSceneView?.in2DMode ?? false) && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
+        }
+
+        [ClutchShortcut("Scene View/Temporary Pan Tool for 2D Mode", typeof(Context2D), KeyCode.Mouse1)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneView), KeyCode.Mouse2)]
+        static void TemporaryPan(ShortcutArguments args)
+        {
+            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Pan);
+        }
+
+        [ClutchShortcut("Scene View/Temporary Zoom Tool", typeof(SceneView), KeyCode.Mouse1, ShortcutModifiers.Alt)]
+        static void TemporaryZoom(ShortcutArguments args)
+        {
+            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Zoom);
+        }
+
+        [ClutchShortcut("Scene View/Temporary Orbit Tool", typeof(SceneView), KeyCode.Mouse2, ShortcutModifiers.Alt)]
+        static void TemporaryOrbit(ShortcutArguments args)
+        {
+            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Orbit);
+        }
+
+        [ClutchShortcut("Scene View/Temporary FPS Tool", typeof(Context3D), KeyCode.Mouse1)]
+        static void TemporaryFPS(ShortcutArguments args)
+        {
+            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.FPS);
+        }
+
+        static KeyCode shortcutKey;
+        static void TemporaryTool(ViewTool tool)
+        {
+            Tools.s_LockedViewTool = Tools.viewTool = tool;
+            s_CurrentState = MotionState.kDragging;
+            HandleMouseDown(SceneView.lastActiveSceneView, s_ViewToolID, Event.current?.button ?? 0);
+            UpdateViewToolState(Event.current);
+            if(Event.current != null) shortcutKey = Event.current.isMouse ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode;
+            else shortcutKey = KeyCode.None;
         }
 
         public static void DoViewTool(SceneView view)
@@ -78,9 +127,6 @@ namespace UnityEditor
 
             // Ensure we always call the GetControlID the same number of times
             int id = s_ViewToolID;
-
-            UpdateViewToolState(evt);
-            UpdateViewToolMode(evt);
 
             EventType eventType = evt.GetTypeForControl(id);
 
@@ -100,20 +146,20 @@ namespace UnityEditor
 
             switch (eventType)
             {
-                case EventType.ScrollWheel:     HandleScrollWheel(view, view.in2DMode == evt.alt); break; // Default to zooming to mouse position in 2D mode without alt
-                case EventType.MouseDown:       HandleMouseDown(view, id, evt.button); break;
-                case EventType.MouseUp:         HandleMouseUp(view, id, evt.button, evt.clickCount); break;
-                case EventType.MouseDrag:       HandleMouseDrag(view, id); break;
-                case EventType.KeyDown:         HandleKeyDown(view); break;
+                case EventType.ScrollWheel: HandleScrollWheel(view, view.in2DMode == evt.alt); break; // Default to zooming to mouse position in 2D mode without alt
+                case EventType.MouseDown: HandleMouseDown(view, id, evt.button); break;
+                case EventType.KeyUp:
+                case EventType.MouseUp: HandleMouseUp(view, id, evt.button, evt.clickCount); break;
+                case EventType.KeyDown: HandleKeyDown(view, id); break;
+                case EventType.MouseMove:
+                case EventType.MouseDrag: HandleMouseDrag(view, id); break;
                 case EventType.Layout:
-                {
                     if (GUIUtility.hotControl == id || s_FlySpeed.isAnimating || s_Moving)
                     {
                         view.pivot = view.pivot + view.rotation * GetMovementDirection();
                         view.Repaint();
                     }
-                }
-                break;
+                    break;
                 case EventType.Used:
                     // since FPS tool acts on right click, nothing prevents a regular control
                     // from taking the control ID on left click, so some cleanup is necessary
@@ -124,58 +170,22 @@ namespace UnityEditor
                     }
                     break;
             }
+
+            if (s_CurrentState == MotionState.kDragging && evt.type == EventType.Repaint)
+            {
+                HandleMouseDrag(view, id);
+            }
+
+            if (shortcutKey != KeyCode.None) GUIUtility.hotControl = s_ViewToolID;
         }
 
         static void UpdateViewToolState(Event evt)
         {
-            bool shouldBeActive = false;
-            if (GUIUtility.hotControl == 0 || Tools.s_LockedViewTool != ViewTool.None)
-            {
-                bool viewShortcut = evt.type != EventType.Used && (evt.alt || evt.button == 1 || evt.button == 2);
-                shouldBeActive = Tools.s_LockedViewTool != ViewTool.None || Tools.current == Tool.View || viewShortcut;
-            }
+            bool shouldBeActive = Tools.s_LockedViewTool != ViewTool.None;
             if (shouldBeActive != s_ViewToolActive)
             {
                 s_ViewToolActive = shouldBeActive;
                 viewToolActiveChanged?.Invoke();
-            }
-        }
-
-        static void UpdateViewToolMode(Event evt)
-        {
-            if (evt != null && s_ViewToolActive)
-            {
-                if (Tools.s_LockedViewTool == ViewTool.None)
-                {
-                    bool controlKeyOnMac = (evt.control && Application.platform == RuntimePlatform.OSXEditor);
-                    bool actionKey = EditorGUI.actionKey;
-                    bool noModifiers = (!actionKey && !controlKeyOnMac && !evt.alt);
-                    if ((Tools.s_ButtonDown <= 0 && noModifiers)
-                        || (Tools.s_ButtonDown <= 0 && actionKey)
-                        || Tools.s_ButtonDown == 2
-                        || SceneView.lastActiveSceneView != null && (SceneView.lastActiveSceneView.in2DMode || SceneView.lastActiveSceneView.isRotationLocked) && !(Tools.s_ButtonDown == 1 && evt.alt || Tools.s_ButtonDown <= 0 && controlKeyOnMac)
-                    )
-                    {
-                        Tools.viewTool = ViewTool.Pan;
-                    }
-                    else if ((Tools.s_ButtonDown <= 0 && controlKeyOnMac)
-                             || (Tools.s_ButtonDown == 1 && evt.alt))
-                    {
-                        Tools.viewTool = ViewTool.Zoom;
-                    }
-                    else if (Tools.s_ButtonDown <= 0 && evt.alt)
-                    {
-                        Tools.viewTool = ViewTool.Orbit;
-                    }
-                    else if (Tools.s_ButtonDown == 1 && !evt.alt)
-                    {
-                        Tools.viewTool = ViewTool.FPS;
-                    }
-                }
-            }
-            else
-            {
-                Tools.viewTool = ViewTool.Pan;
             }
         }
 
@@ -215,41 +225,27 @@ namespace UnityEditor
 
         private static void HandleMouseDown(SceneView view, int id, int button)
         {
-            s_CurrentState = MotionState.kInactive;
+            Event evt = Event.current;
 
-            if (s_ViewToolActive)
+            // Set up zoom parameters
+            s_StartZoom = view.size;
+            s_ZoomSpeed = Mathf.Max(Mathf.Abs(s_StartZoom), .3f);
+            s_TotalMotion = 0;
+
+            if (view)
+                view.Focus();
+
+            if (Toolbar.get)
+                Toolbar.get.Repaint();
+            EditorGUIUtility.SetWantsMouseJumping(1);
+            s_ActiveSceneView = s_CurrentSceneView;
+
+            if (Tools.s_LockedViewTool == ViewTool.None && Tools.current == Tool.View)
             {
-                ViewTool wantedViewTool = Tools.viewTool;
-
-                // Check if we want to lock a view tool
-                if (Tools.s_LockedViewTool != wantedViewTool)
-                {
-                    Event evt = Event.current;
-
-                    // Set the hotcontrol and then lock the viewTool (important to set the hotControl AFTER the Tools.viewTool has been evaluated)
-                    GUIUtility.hotControl = id;
-                    Tools.s_LockedViewTool = wantedViewTool;
-
-                    // Set up zoom parameters
-                    s_StartZoom = view.size;
-                    s_ZoomSpeed = Mathf.Max(Mathf.Abs(s_StartZoom), .3f);
-                    s_TotalMotion = 0;
-
-                    if (view)
-                        view.Focus();
-
-                    if (Toolbar.get)
-                        Toolbar.get.Repaint();
-                    EditorGUIUtility.SetWantsMouseJumping(1);
-                    s_ActiveSceneView = s_CurrentSceneView;
-                    evt.Use();
-
-                    // we're not dragging yet, but enter this state so we can cleanup correctly
-                    s_CurrentState = MotionState.kActive;
-
-                    // This prevents camera from moving back on mousedown... find out why... and write a comment
-                    GUIUtility.ExitGUI();
-                }
+                bool controlKeyOnMac = (evt.control && Application.platform == RuntimePlatform.OSXEditor);
+                bool actionKey = EditorGUI.actionKey;
+                bool noModifiers = (!actionKey && !controlKeyOnMac && !evt.alt);
+                if (evt.button == 0 && noModifiers) TemporaryPan(new ShortcutArguments() { stage = ShortcutStage.Begin});
             }
         }
 
@@ -264,6 +260,7 @@ namespace UnityEditor
             if (Toolbar.get)
                 Toolbar.get.Repaint();
             EditorGUIUtility.SetWantsMouseJumping(0);
+            s_Drag = false;
         }
 
         internal static void ResetMotion()
@@ -275,12 +272,10 @@ namespace UnityEditor
 
         private static void HandleMouseUp(SceneView view, int id, int button, int clickCount)
         {
-            if (GUIUtility.hotControl == id)
+            if (GUIUtility.hotControl == id && (shortcutKey == KeyCode.None || shortcutKey == (Event.current.keyCode == KeyCode.None ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode)))
             {
-                GUIUtility.hotControl = 0;
-
                 // Move pivot to clicked point.
-                if (button == 2 && s_CurrentState != MotionState.kDragging)
+                if (Tools.s_LockedViewTool == ViewTool.Pan && !s_Drag)
                 {
                     RaycastHit hit;
                     if (RaycastWorld(Event.current.mousePosition, out hit))
@@ -293,8 +288,11 @@ namespace UnityEditor
                     }
                 }
 
+                Tools.viewTool = ViewTool.Pan;
+                Tools.s_LockedViewTool = ViewTool.None;
+                shortcutKey = KeyCode.None;
                 ResetDragState();
-                Event.current.Use();
+                viewToolActiveChanged?.Invoke();
             }
         }
 
@@ -371,94 +369,90 @@ namespace UnityEditor
 
         private static void HandleMouseDrag(SceneView view, int id)
         {
-            // we now are dragging for real
-            s_CurrentState = MotionState.kDragging;
+            if (!Event.current.isMouse || GUIUtility.hotControl != id) return;
 
-            if (GUIUtility.hotControl == id)
+            s_Drag = true;
+            Event evt = Event.current;
+            switch (Tools.s_LockedViewTool)
             {
-                Event evt = Event.current;
-                switch (Tools.s_LockedViewTool)
+                case ViewTool.Orbit:
                 {
-                    case ViewTool.Orbit:
+                    if (!view.in2DMode && !view.isRotationLocked)
                     {
-                        if (!view.in2DMode && !view.isRotationLocked)
-                        {
-                            OrbitCameraBehavior(view);
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
-                        }
+                        OrbitCameraBehavior(view);
+                        // todo gizmo update label
+                        // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
                     }
-                    break;
-                    case ViewTool.FPS:
+                }
+                break;
+                case ViewTool.FPS:
+                {
+                    if (!view.in2DMode && !view.isRotationLocked)
                     {
-                        if (!view.in2DMode && !view.isRotationLocked)
+                        if (!view.orthographic)
                         {
-                            if (!view.orthographic)
-                            {
-                                view.viewIsLockedToObject = false;
+                            view.viewIsLockedToObject = false;
 
-                                // The reason we calculate the camera position from the pivot, rotation and distance,
-                                // rather than just getting it from the camera transform is that the camera transform
-                                // is the *output* of camera motion calculations. It shouldn't be input and output at the same time,
-                                // otherwise we easily get accumulated error.
-                                // We did get accumulated error before when we did this - the camera would continuously move slightly in FPS mode
-                                // even when not holding down any arrow/ASDW keys or moving the mouse.
-                                Vector3 camPos = view.pivot - view.rotation * Vector3.forward * view.cameraDistance;
+                            // The reason we calculate the camera position from the pivot, rotation and distance,
+                            // rather than just getting it from the camera transform is that the camera transform
+                            // is the *output* of camera motion calculations. It shouldn't be input and output at the same time,
+                            // otherwise we easily get accumulated error.
+                            // We did get accumulated error before when we did this - the camera would continuously move slightly in FPS mode
+                            // even when not holding down any arrow/ASDW keys or moving the mouse.
+                            Vector3 camPos = view.pivot - view.rotation * Vector3.forward * view.cameraDistance;
 
-                                // Normal FPS camera behavior
-                                Quaternion rotation = view.rotation;
-                                rotation = Quaternion.AngleAxis(evt.delta.y * .003f * Mathf.Rad2Deg, rotation * Vector3.right) * rotation;
-                                rotation = Quaternion.AngleAxis(evt.delta.x * .003f * Mathf.Rad2Deg, Vector3.up) * rotation;
-                                view.rotation = rotation;
+                            // Normal FPS camera behavior
+                            Quaternion rotation = view.rotation;
+                            rotation = Quaternion.AngleAxis(evt.delta.y * .003f * Mathf.Rad2Deg, rotation * Vector3.right) * rotation;
+                            rotation = Quaternion.AngleAxis(evt.delta.x * .003f * Mathf.Rad2Deg, Vector3.up) * rotation;
+                            view.rotation = rotation;
 
-                                view.pivot = camPos + rotation * Vector3.forward * view.cameraDistance;
-                            }
-                            else
-                            {
-                                // We want orbit behavior in orthograpic when using FPS
-                                OrbitCameraBehavior(view);
-                            }
-
-                            // todo gizmo update label
-                            // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
-                        }
-                    }
-                    break;
-                    case ViewTool.Pan:
-                    {
-                        view.viewIsLockedToObject = false;
-                        view.FixNegativeSize();
-
-                        Vector2 screenDelta = Event.current.delta;
-                        Vector3 worldDelta = ScreenToWorldDistance(view, new Vector2(-screenDelta.x, screenDelta.y));
-
-                        if (evt.shift)
-                            worldDelta *= 4;
-
-                        view.pivot += worldDelta;
-                    }
-                    break;
-                    case ViewTool.Zoom:
-                    {
-                        float zoomDelta = HandleUtility.niceMouseDeltaZoom * (evt.shift ? 9 : 3);
-
-                        if (view.orthographic)
-                        {
-                            view.size = Mathf.Max(.0001f, view.size * (1 + zoomDelta * .001f));
+                            view.pivot = camPos + rotation * Vector3.forward * view.cameraDistance;
                         }
                         else
                         {
-                            s_TotalMotion += zoomDelta;
-
-                            if (s_TotalMotion < 0)
-                                view.size = s_StartZoom * (1 + s_TotalMotion * .001f);
-                            else
-                                view.size = view.size + zoomDelta * s_ZoomSpeed * .003f;
+                            // We want orbit behavior in orthograpic when using FPS
+                            OrbitCameraBehavior(view);
                         }
+
+                        // todo gizmo update label
+                        // view.m_OrientationGizmo.UpdateGizmoLabel(view, view.rotation * Vector3.forward, view.m_Ortho.target);
                     }
-                    break;
                 }
-                evt.Use();
+                break;
+                case ViewTool.Pan:
+                {
+                    view.viewIsLockedToObject = false;
+                    view.FixNegativeSize();
+
+                    Vector2 screenDelta = Event.current.delta;
+                    Vector3 worldDelta = ScreenToWorldDistance(view, new Vector2(-screenDelta.x, screenDelta.y));
+
+                    if (evt.shift)
+                        worldDelta *= 4;
+
+                    view.pivot += worldDelta;
+                }
+                break;
+                case ViewTool.Zoom:
+                {
+                    float zoomDelta = HandleUtility.niceMouseDeltaZoom * (evt.shift ? 9 : 3);
+
+                    if (view.orthographic)
+                    {
+                        view.size = Mathf.Max(.0001f, view.size * (1 + zoomDelta * .001f));
+                    }
+                    else
+                    {
+                        s_TotalMotion += zoomDelta;
+
+                        if (s_TotalMotion < 0)
+                            view.size = s_StartZoom * (1 + s_TotalMotion * .001f);
+                        else
+                            view.size = view.size + zoomDelta * s_ZoomSpeed * .003f;
+                    }
+                }
+                break;
             }
         }
 
@@ -499,7 +493,7 @@ namespace UnityEditor
             return worldDelta;
         }
 
-        private static void HandleKeyDown(SceneView sceneView)
+        private static void HandleKeyDown(SceneView sceneView, int id)
         {
             if (Event.current.keyCode == KeyCode.Escape && GUIUtility.hotControl == s_ViewToolID)
             {

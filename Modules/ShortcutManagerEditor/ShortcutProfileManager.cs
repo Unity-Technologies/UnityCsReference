@@ -291,14 +291,21 @@ namespace UnityEditor.ShortcutManagement
             if (activeProfile == null)
                 throw new InvalidOperationException("No active profile");
 
-            string invalidBindingMessage;
-            if (!m_BindingValidator.IsBindingValid(combinationSequence, out invalidBindingMessage))
+            if (!m_BindingValidator.IsCombinationValid(combinationSequence, out string invalidBindingMessage))
                 throw new ArgumentException(invalidBindingMessage, nameof(combinationSequence));
 
             var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
             var oldBinding = new ShortcutBinding(shortcutEntry.combinations);
 
             shortcutEntry.SetOverride(combinationSequence);
+
+            if (!m_BindingValidator.IsBindingValid(shortcutEntry, out invalidBindingMessage))
+            {
+                shortcutEntry.ResetToDefault();
+                Debug.LogError(invalidBindingMessage);
+                shortcutBindingChanged?.Invoke(this, identifier, oldBinding, oldBinding);
+                return;
+            }
 
             SerializableShortcutEntry profileEntry = null;
             foreach (var activeProfileEntry in m_ActiveProfile.entries)
@@ -410,8 +417,7 @@ namespace UnityEditor.ShortcutManagement
                 var entry = m_Entries.FirstOrDefault(e => e.identifier.Equals(shortcutOverride.identifier));
                 if (entry != null)
                 {
-                    string invalidBindingMessage;
-                    if (!m_BindingValidator.IsBindingValid(shortcutOverride.combinations, out invalidBindingMessage))
+                    if (!m_BindingValidator.IsCombinationValid(shortcutOverride.combinations, out string invalidBindingMessage))
                     {
                         var nameSnippet = entry.displayName == entry.identifier.path
                             ? $"\"{entry.displayName}\""
@@ -421,6 +427,16 @@ namespace UnityEditor.ShortcutManagement
                     }
 
                     entry.ApplyOverride(shortcutOverride);
+
+                    if (!m_BindingValidator.IsBindingValid(entry, out invalidBindingMessage))
+                    {
+                        var nameSnippet = entry.displayName == entry.identifier.path
+                            ? $"\"{entry.displayName}\""
+                            : $"with ID \"{entry.identifier.path}\" and name \"{entry.displayName}\"";
+                        Debug.LogWarning($"Cannot apply override to shortcut {nameSnippet} in profile \"{shortcutProfile.id}\" with invalid binding.\n{invalidBindingMessage}.");
+                        entry.ResetToDefault();
+                        continue;
+                    }
                 }
             }
             m_ActiveProfile = shortcutProfile;

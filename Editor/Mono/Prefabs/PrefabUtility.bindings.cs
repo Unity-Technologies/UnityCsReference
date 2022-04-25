@@ -38,6 +38,9 @@ namespace UnityEditor
         extern public static Object GetPrefabInstanceHandle(Object instanceComponentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static string GetAssetPathOfSourcePrefab(Object targetObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static Object GetPrefabAssetHandle(Object assetComponentOrGameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
@@ -376,6 +379,13 @@ namespace UnityEditor
         extern internal static void ShowCyclicNestingWarningDialog();
 
         [NativeMethod("PrefabUtilityBindings::GetVariantParentGUID_Internal", IsFreeFunction = true, ThrowsException = true)]
-        extern internal static string GetVariantParentGUID(int instanceID);
+        extern internal static string GetVariantParentGUID(int prefabAssetInstanceID);
+
+        internal static string GetVariantParentGUID(GameObject prefabAsset)
+        {
+            if (prefabAsset == null)
+                throw new ArgumentNullException(nameof(prefabAsset));
+            return GetVariantParentGUID(prefabAsset.GetInstanceID());
+        }
     }
 }

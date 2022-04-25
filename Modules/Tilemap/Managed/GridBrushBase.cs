@@ -6,7 +6,7 @@ namespace UnityEngine
 {
     public abstract class GridBrushBase : ScriptableObject
     {
-        public enum Tool { Select, Move, Paint, Box, Pick, Erase, FloodFill }
+        public enum Tool { Select, Move, Paint, Box, Pick, Erase, FloodFill, Other }
         public enum RotationDirection { Clockwise = 0, CounterClockwise = 1 }
         public enum FlipAxis { X = 0, Y = 1 }
 
