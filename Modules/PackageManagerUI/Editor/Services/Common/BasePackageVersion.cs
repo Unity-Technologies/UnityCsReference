@@ -66,7 +66,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return (m_Tag & tag) != 0;
         }
 
-        public bool hasEntitlements => entitlements != null && (entitlements.licenseType != EntitlementLicenseType.Public || entitlements.status == EntitlementStatus.NotGranted || entitlements.status == EntitlementStatus.Granted);
+        public bool hasEntitlements => entitlements != null &&
+                (entitlements.licensingModel == EntitlementLicensingModel.AssetStore
+                || entitlements.licensingModel == EntitlementLicensingModel.Enterprise
+                || entitlements.status == EntitlementStatus.NotGranted
+                || entitlements.status == EntitlementStatus.Granted);
 
         public bool hasEntitlementsError
         {

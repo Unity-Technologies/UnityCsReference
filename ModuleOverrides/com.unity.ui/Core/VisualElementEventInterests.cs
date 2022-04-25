@@ -184,10 +184,13 @@ namespace UnityEngine.UIElements
             m_CachedEventCallbackParentCategories |= nextParent.eventCallbackParentCategories;
 
             // Fill in the gap between this and the next parent with non-identical callback info.
-            for (var ve = hierarchy.parent; ve != nextParent; ve = ve.hierarchy.parent)
+            if (hierarchy.parent != null)
             {
-                ve.m_CachedEventCallbackParentCategories = m_CachedEventCallbackParentCategories;
-                ve.isEventCallbackParentCategoriesDirty = false;
+                for (var ve = hierarchy.parent; ve != nextParent; ve = ve.hierarchy.parent)
+                {
+                    ve.m_CachedEventCallbackParentCategories = m_CachedEventCallbackParentCategories;
+                    ve.isEventCallbackParentCategoriesDirty = false;
+                }
             }
         }
 

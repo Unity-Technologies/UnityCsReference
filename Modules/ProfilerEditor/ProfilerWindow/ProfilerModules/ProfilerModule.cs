@@ -54,6 +54,11 @@ namespace Unity.Profiling.Editor
             return new StandardDetailsViewController(ProfilerWindow, ChartCounters);
         }
 
+        internal static bool IsValidDisplayName(string displayName)
+        {
+            return !string.IsNullOrWhiteSpace(displayName);
+        }
+
         internal void Initialize(InitializationArgs args)
         {
             m_Identifier = args.Identifier;
@@ -76,7 +81,7 @@ namespace Unity.Profiling.Editor
             if (string.IsNullOrEmpty(Identifier))
                 throw new InvalidOperationException($"The Profiler module '{DisplayName}' has an invalid identifier.");
 
-            if (string.IsNullOrEmpty(DisplayName))
+            if (!IsValidDisplayName(DisplayName))
                 throw new InvalidOperationException($"The Profiler module '{DisplayName}' has an invalid name.");
 
             if (string.IsNullOrEmpty(IconPath))

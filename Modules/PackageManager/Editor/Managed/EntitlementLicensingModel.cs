@@ -4,8 +4,9 @@
 
 namespace UnityEditor.PackageManager
 {
-    internal enum EntitlementLicenseType
+    internal enum EntitlementLicensingModel
     {
+        None,
         Public,
         AssetStore,
         Enterprise,

@@ -1441,6 +1441,9 @@ namespace UnityEditor
                     if (s_RaySnapHits[i].distance < nearestHitDist)
                     {
                         Transform tr = s_RaySnapHits[i].transform;
+                        if (SceneVisibilityManager.instance.IsHidden(tr.gameObject))
+                            continue;
+
                         if (ignorePrefabInstance && GameObjectUtility.IsPrefabInstanceHiddenForInContextEditing(tr.gameObject))
                             continue;
 
@@ -1465,7 +1468,11 @@ namespace UnityEditor
             {
                 for (int i = 0; i < numHits; i++)
                 {
-                    if (s_RaySnapHits[i].distance < nearestHitDist)
+                    RaycastHit raySnapHit = s_RaySnapHits[i];
+                    if (SceneVisibilityManager.instance.IsHidden(raySnapHit.transform.gameObject))
+                        continue;
+
+                    if (raySnapHit.distance < nearestHitDist)
                     {
                         nearestHitDist = s_RaySnapHits[i].distance;
                         nearestHitIndex = i;

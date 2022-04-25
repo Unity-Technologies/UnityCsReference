@@ -123,7 +123,10 @@ namespace UnityEngine.UIElements
                 var childCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childCount; ++i)
                 {
-                    UpdateSubTree(ve.hierarchy[i], isDisplayed, changeEvents);
+                    var child = ve.hierarchy[i];
+
+                    if(child.yogaNode.HasNewLayout)
+                        UpdateSubTree(child, isDisplayed, changeEvents);
                 }
             }
 

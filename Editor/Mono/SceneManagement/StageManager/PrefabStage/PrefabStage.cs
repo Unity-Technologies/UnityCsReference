@@ -157,7 +157,13 @@ namespace UnityEditor.SceneManagement
                 throw new ArgumentNullException(nameof(prefabAssetPath));
 
             if (PrefabUtility.GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, prefabAssetPath) == null)
-                throw new ArgumentException($"'{nameof(prefabInstanceObject)}' is not related to the Prefab at path: '{prefabAssetPath}'");
+            {
+                //Variants with broken parents
+                if (AssetDatabase.LoadMainAssetAtPath(prefabAssetPath) is BrokenPrefabAsset)
+                    return prefabInstanceObject;
+                else
+                    throw new ArgumentException($"'{nameof(prefabInstanceObject)}' is not related to the Prefab at path: '{prefabAssetPath}'");
+            }
 
             Transform transform = prefabInstanceObject.transform;
             while (transform != null)
@@ -1095,6 +1101,10 @@ namespace UnityEditor.SceneManagement
             if (perform)
             {
                 var prefabAssetThatIsAddedTo = AssetDatabase.LoadMainAssetAtPath(prefabStage.assetPath);
+
+                if (prefabAssetThatIsAddedTo is BrokenPrefabAsset)
+                    return DragAndDropVisualMode.None;
+
                 foreach (var dragged in DragAndDrop.objectReferences)
                 {
                     if (dragged is GameObject && EditorUtility.IsPersistent(dragged))

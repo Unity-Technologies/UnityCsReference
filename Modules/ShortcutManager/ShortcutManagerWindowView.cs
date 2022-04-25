@@ -25,10 +25,12 @@ namespace UnityEditor.ShortcutManagement
 
         TextElement m_ActiveProfileDropdownButton;
         Keyboard m_KeyboardElement;
+        Mouse m_MouseElement;
         ListView m_ShortcutsTable;
         ToolbarPopupSearchField m_SearchTextField;
 
         bool m_StartedDrag;
+        bool m_IgnoreContext;
         Vector2 m_MouseDownStartPos;
         ListView m_CategoryTreeView;
         ShortcutPopupSearchField m_KeyBindingSearchField;
@@ -53,14 +55,14 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshAll()
         {
             RefreshKeyboard();
+            RefreshMouse();
             RefreshShortcutList();
             RefreshProfiles();
         }
 
-        public void RefreshKeyboard()
-        {
-            m_KeyboardElement.Refresh();
-        }
+        public void RefreshKeyboard() => m_KeyboardElement.Refresh();
+
+        public void RefreshMouse() => m_MouseElement.Refresh();
 
         public void RefreshCategoryList()
         {
@@ -214,6 +216,16 @@ namespace UnityEditor.ShortcutManagement
 
         void EditingShortcutEntryBindingChanged(ChangeEvent<List<KeyCombination>> evt)
         {
+            if (Event.current != null && Event.current.type == EventType.MouseDown)
+            {
+                m_IgnoreContext = Event.current.button == 1;
+                evt.newValue.Add(KeyCombination.FromInput(Event.current));
+                Event.current.Use();
+
+                var e = new Event(Event.current) { type = EventType.MouseUp };
+                using (var mouseUpEvent = MouseUpEvent.GetPooled(e)) m_Root.ExecuteDefaultActionDisabled(mouseUpEvent);
+            }
+
             m_ViewController.RequestRebindOfSelectedEntry(evt.newValue);
             EndRebind();
         }
@@ -444,7 +456,8 @@ namespace UnityEditor.ShortcutManagement
             var headerTemplate = EditorResources.Load("UXML/ShortcutManager/ShortcutManagerView.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
             headerTemplate.CloneTree(m_Root);
             var header = m_Root.Q("header");
-            var keyboardContainer = m_Root.Q("headerAndKeyboardContainer");
+            var headerAndDeviceContainer = m_Root.Q("headerAndDeviceContainer");
+            var deviceContainer = m_Root.Q("deviceContainer");
             var searchRowContainer = m_Root.Q("searchRowContainer");
             var categoryContainer = m_Root.Q("categoryContainer");
             var shortcutsTableContainer = m_Root.Q("shortcutsTableContainer");
@@ -459,6 +472,12 @@ namespace UnityEditor.ShortcutManagement
             m_KeyboardElement.TooltipProvider += GetToolTipForKey;
             m_KeyboardElement.ContextMenuProvider += GetContextMenuForKey;
 
+            m_MouseElement = new Mouse(m_BindingStateProvider, m_ViewController.GetSelectedKey(), m_ViewController.GetSelectedEventModifiers());
+            m_MouseElement.DragPerformed += OnKeyboardKeyDragPerformed;
+            m_MouseElement.CanDrop += CanEntryBeAssignedToKey;
+            //m_MouseElement.KeySelectedAction += KeySelected;
+            m_MouseElement.TooltipProvider += GetToolTipForKey;
+            m_MouseElement.ContextMenuProvider += GetContextMenuForKey;
 
             m_CategoryTreeView = new ListView((IList)m_ViewController.GetCategories(), k_ListItemHeight, MakeItemForCategoriesTable, BindCategoriesTableItem) { name = "categoryTreeView"};
             m_ShortcutsTable = new ListView((IList)m_ViewController.GetShortcutList(), k_ListItemHeight,  MakeItemForShortcutTable, BindShortcutEntryItem) {name = "shortcutsTable"};
@@ -491,10 +510,34 @@ namespace UnityEditor.ShortcutManagement
 
             shortcutsTableContainer.Add(m_ShortcutsTable);
 
+            deviceContainer.RegisterCallback<KeyDownEvent>(HandleKeyboardEvent);
+            deviceContainer.RegisterCallback<KeyUpEvent>(HandleKeyboardEvent);
+            deviceContainer.RegisterCallback<ExecuteCommandEvent>(HandleModifierKeysCommand);
+            deviceContainer.RegisterCallback<ValidateCommandEvent>(HandleModifierKeysCommand);
+
             categoryContainer.Add(m_CategoryTreeView);
-            keyboardContainer.Add(m_KeyboardElement);
+            deviceContainer.Add(m_KeyboardElement);
+            deviceContainer.Add(m_MouseElement);
+            headerAndDeviceContainer.Add(deviceContainer);
 
             SetLocalizedText();
+        }
+
+        void HandleKeyboardEvent<T>(KeyboardEventBase<T> e) where T : KeyboardEventBase<T>, new()
+        {
+            m_KeyboardElement.SetModifiers(e.modifiers);
+            m_MouseElement.SetModifiers(e.modifiers);
+            e.StopPropagation();
+        }
+
+        void HandleModifierKeysCommand<T>(CommandEventBase<T> e) where T : CommandEventBase<T>, new()
+        {
+            if (e.commandName == EventCommandNames.ModifierKeysChanged)
+            {
+                m_KeyboardElement.SetModifiers(e.imguiEvent.modifiers);
+                m_MouseElement.SetModifiers(e.imguiEvent.modifiers);
+                e.StopPropagation();
+            }
         }
 
         void SetLocalizedText()
@@ -507,8 +550,11 @@ namespace UnityEditor.ShortcutManagement
 
         GenericMenu GetContextMenuForEntries(IEnumerable<ShortcutEntry> entries)
         {
-            if (entries == null || !entries.Any())
+            if (entries == null || !entries.Any() || m_IgnoreContext)
+            {
+                m_IgnoreContext = false;
                 return null;
+            }
 
             var menu = new GenericMenu();
 
@@ -671,7 +717,7 @@ namespace UnityEditor.ShortcutManagement
             if (evt.button != 1 || m_ViewController.selectedEntry == null)
                 return;
             GenericMenu menu = GetContextMenuForEntries(new[] { m_ViewController.selectedEntry });
-            menu.ShowAsContext();
+            menu?.ShowAsContext();
         }
 
         void ShortcutTableGeometryChanged(GeometryChangedEvent evt)
@@ -735,6 +781,23 @@ namespace UnityEditor.ShortcutManagement
             DragAndDrop.StartDrag("Assign command to key");
         }
     }
+    struct KeyDef
+    {
+        public KeyCode keycode;
+        public string displayName;
+
+        public KeyDef(KeyCode kc)
+        {
+            keycode = kc;
+            displayName = kc.ToString();
+        }
+
+        public KeyDef(KeyCode kc, string name)
+        {
+            keycode = kc;
+            displayName = name;
+        }
+    }
 
     class Key : TextElement
     {
@@ -748,40 +811,31 @@ namespace UnityEditor.ShortcutManagement
 
             //StyleUtility.StyleKey(this);
         }
+
+        public Key(KeyCode k) : this(k, k.ToString()) {}
     }
 
-    class Keyboard : VisualElement
+    abstract class Device : VisualElement
     {
-        struct KeyDef
-        {
-            public KeyCode keycode;
-            public string displayName;
+        protected const int k_HorizontalPadding = 10;
+        protected const string k_ActiveClass = "active";
+        protected const string k_ContextBoundClass = "contextuallyBound";
+        protected const string k_FirstClass = "first";
+        protected const string k_FlexibleClass = "flexible";
+        protected const string k_GlobalClass = "global";
+        protected const string k_KeyRowClass = "keyRow";
+        protected const string k_LastClass = "last";
+        protected const string k_MixedBoundClass = "mixedBound";
+        protected const string k_ModifierClass = "modifier";
+        protected const string k_ReservedClass = "reserved";
+        protected const string k_SelectedClass = "selected";
+        protected const string k_SpaceClass = "space";
 
-            public KeyDef(KeyCode kc)
-            {
-                keycode = kc;
-                displayName = kc.ToString();
-            }
+        static int s_TabIndex = 0;
 
-            public KeyDef(KeyCode kc, string name)
-            {
-                keycode = kc;
-                displayName = name;
-            }
-        }
-
-        const int k_KeySize = 34;
-
-        EventModifiers m_CurrentModifiers;
         Key m_SelectedKey;
-
-        [NonSerialized]
-        Dictionary<EventModifiers, List<Key>> m_ModifierKeys = new Dictionary<EventModifiers, List<Key>>();
-
-        [NonSerialized]
-        List<Key> m_AllKeys = new List<Key>();
-
-        IKeyBindingStateProvider m_KeyBindingStateProvider;
+        EventModifiers m_CurrentModifiers;
+        protected IKeyBindingStateProvider m_KeyBindingStateProvider;
 
         internal event Action<KeyCode, EventModifiers> KeySelectedAction;
         internal event Action<KeyCode, EventModifiers, ShortcutEntry> DragPerformed;
@@ -789,10 +843,287 @@ namespace UnityEditor.ShortcutManagement
         internal event Func<KeyCode, EventModifiers, string> TooltipProvider;
         internal event Func<KeyCode, EventModifiers, GenericMenu> ContextMenuProvider;
 
+        [NonSerialized] protected List<Key> m_AllKeys = new List<Key>();
+        [NonSerialized] protected Dictionary<EventModifiers, List<Key>> m_ModifierKeys = new Dictionary<EventModifiers, List<Key>>();
 
-        public Keyboard(IKeyBindingStateProvider keyBindingStateProvider, KeyCode initiallySelectedKey = KeyCode.None, EventModifiers initiallyActiveModifiers = EventModifiers.None)
+        protected Device(IKeyBindingStateProvider keyBindingStateProvider, KeyCode initiallySelectedKey = KeyCode.None, EventModifiers initiallyActiveModifiers = EventModifiers.None)
         {
             m_KeyBindingStateProvider = keyBindingStateProvider;
+            m_CurrentModifiers = initiallyActiveModifiers;
+
+            var keyElement = m_AllKeys.Find(el => el.key == initiallySelectedKey);
+            m_SelectedKey = keyElement;
+
+            focusable = true;
+            tabIndex = s_TabIndex++;
+
+            RegisterCallback<DragEnterEvent>(OnDragEnter);
+            RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
+            RegisterCallback<DragPerformEvent>(OnDragPerfom);
+
+            RegisterCallback<TooltipEvent>(OnTooltip);
+        }
+
+        void OnTooltip(TooltipEvent evt)
+        {
+            if (TooltipProvider == null)
+                return;
+
+            var keyElement = evt.target as Key;
+            if (keyElement == null)
+                return;
+
+            evt.rect = keyElement.worldBound;
+            evt.tooltip = TooltipProvider(keyElement.key, m_CurrentModifiers);
+        }
+
+        void OnDragEnter(DragEnterEvent evt)
+        {
+            DoDragUpdate(evt.target);
+        }
+
+        void OnDragUpdated(DragUpdatedEvent evt)
+        {
+            DoDragUpdate(evt.target);
+        }
+
+        void DoDragUpdate(IEventHandler target)
+        {
+            var keyElement = target as Key;
+            if (keyElement == null)
+                return;
+
+            var shortcutEntry = (ShortcutEntry)DragAndDrop.GetGenericData("ShortcutCommandItem");
+            if (shortcutEntry == null)
+                return;
+
+            if (CanDrop != null && CanDrop(keyElement.key, m_CurrentModifiers, shortcutEntry))
+                DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+        }
+
+        void OnDragPerfom(DragPerformEvent evt)
+        {
+            var keyElement = (Key)evt.target;
+            var shortcutEntry = (ShortcutEntry)DragAndDrop.GetGenericData("ShortcutCommandItem");
+            if (DragPerformed != null)
+                DragPerformed(keyElement.key, m_CurrentModifiers, shortcutEntry);
+        }
+
+        protected void OnMouseDown(MouseDownEvent evt)
+        {
+            panel.focusController.SwitchFocus(this);
+            var keyElement = evt.target as Key;
+            if (keyElement != null)
+            {
+                switch (evt.button)
+                {
+                    case 0:
+                        SetKeySelected(keyElement);
+                        break;
+                    case 1:
+                        var menu = ContextMenuProvider?.Invoke(keyElement.key, m_CurrentModifiers);
+                        menu?.DropDown(keyElement.worldBound);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        public void SetModifiers(EventModifiers modifiers)
+        {
+            if (modifiers == m_CurrentModifiers)
+                return;
+
+            m_CurrentModifiers = modifiers;
+
+            foreach (var modifierPair in m_ModifierKeys)
+            {
+                var modifierPressed = (m_CurrentModifiers & modifierPair.Key) == modifierPair.Key;
+                foreach (var modifierKey in modifierPair.Value)
+                {
+                    if (modifierPressed)
+                        modifierKey.AddToClassList(k_ActiveClass);
+                    else
+                        modifierKey.RemoveFromClassList(k_ActiveClass);
+                }
+            }
+
+            Refresh();
+            var selectedKey = m_SelectedKey != null ? m_SelectedKey.key : KeyCode.None;
+            KeySelectedAction?.Invoke(selectedKey, m_CurrentModifiers);
+        }
+
+        void StyleKey(Key key)
+        {
+            if (!m_KeyBindingStateProvider.CanBeSelected(key.key))
+                return;
+
+            var bindingState = m_KeyBindingStateProvider.GetBindingStateForKeyWithModifiers(key.key, m_CurrentModifiers);
+
+            key.RemoveFromClassList(k_GlobalClass);
+            key.RemoveFromClassList(k_ContextBoundClass);
+            key.RemoveFromClassList(k_MixedBoundClass);
+
+            if (bindingState.HasFlag(BindingState.BoundMixed))
+                key.AddToClassList(k_MixedBoundClass);
+            else if (bindingState == BindingState.BoundGlobally)
+                key.AddToClassList(k_GlobalClass);
+            else if (bindingState == BindingState.BoundToContext)
+                key.AddToClassList(k_ContextBoundClass);
+        }
+
+        void SetKeySelected(Key keyElement)
+        {
+            if (!m_KeyBindingStateProvider.CanBeSelected(keyElement.key))
+            {
+                EventModifiers modifier = m_KeyBindingStateProvider.ModifierFromKeyCode(keyElement.key);
+                if (modifier != EventModifiers.None)
+                {
+                    var newModifiers = m_CurrentModifiers ^ modifier;
+                    SetModifiers(newModifiers);
+                }
+
+                return;
+            }
+
+            if (KeySelectedAction == null)
+                return;
+
+            var prevSelectedKey = m_SelectedKey;
+            m_SelectedKey = keyElement;
+
+            if (prevSelectedKey != null)
+            {
+                prevSelectedKey.RemoveFromClassList("selected");
+            }
+
+            KeySelectedAction(m_SelectedKey.key, m_CurrentModifiers);
+            m_SelectedKey.AddToClassList(k_SelectedClass);
+        }
+
+        public void Refresh()
+        {
+            foreach (var key in m_AllKeys) StyleKey(key);
+        }
+
+        protected void AssignButtonClasses(Key key)
+        {
+            if (m_KeyBindingStateProvider.IsModifier(key.key))
+            {
+                EventModifiers modifier = m_KeyBindingStateProvider.ModifierFromKeyCode(key.key);
+                List<Key> keyList;
+                if (!m_ModifierKeys.TryGetValue(modifier, out keyList))
+                {
+                    keyList = new List<Key>(2);
+                    m_ModifierKeys.Add(modifier, keyList);
+                }
+                keyList.Add(key);
+                key.AddToClassList(k_ModifierClass);
+            }
+
+            if (m_KeyBindingStateProvider.IsReservedKey(key.key))
+            {
+                key.AddToClassList(k_ReservedClass);
+            }
+
+            m_AllKeys.Add(key);
+        }
+    }
+
+    class Mouse : Device
+    {
+        public Mouse(IKeyBindingStateProvider keyBindingStateProvider, KeyCode initiallySelectedKey = KeyCode.None, EventModifiers initiallyActiveModifiers = EventModifiers.None)
+            : base(keyBindingStateProvider, initiallySelectedKey, initiallyActiveModifiers)
+        {
+            var mainContainer = new VisualElement() { name = "mouseContainer" };
+
+            var mouseButtons = new VisualElement() { name = "mouseButtons" };
+            mouseButtons.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
+
+            var mouse0 = new Key(KeyCode.Mouse0, "M0");
+            mouse0.style.width = 50;
+            mouse0.style.height = 96;
+            mouse0.style.borderTopLeftRadius = new StyleLength(25f);
+            mouse0.style.borderBottomRightRadius = new StyleLength(8);
+            mouse0.style.borderTopRightRadius = mouse0.style.borderBottomLeftRadius = new StyleLength(0f);
+            mouse0.style.borderBottomWidth = mouse0.style.borderRightWidth = 2f;
+            mouse0.style.borderTopWidth = mouse0.style.borderLeftWidth = 0f;
+            mouse0.style.marginTop = mouse0.style.marginRight = 0f;
+
+            var mouseButtonMiddle = new VisualElement() { name = "mouseButtonMiddle" };
+            mouseButtonMiddle.style.paddingLeft = mouseButtonMiddle.style.paddingRight = 3f;
+            mouseButtonMiddle.style.paddingTop = mouseButtonMiddle.style.paddingBottom = 24f;
+
+            var mouse2 = new Key(KeyCode.Mouse2, "M2");
+            mouse2.style.borderTopRightRadius = mouse2.style.borderTopLeftRadius = mouse2.style.borderBottomLeftRadius = mouse2.style.borderBottomRightRadius = new StyleLength(8f);
+            mouse2.style.borderBottomWidth = mouse2.style.borderRightWidth = mouse2.style.borderLeftWidth = mouse2.style.borderTopWidth = 2f;
+            mouse2.style.marginTop = mouse2.style.marginRight = 0f;
+            mouse2.style.width = new StyleLength(StyleKeyword.Auto);
+            mouse2.style.flexGrow = 1f;
+            mouseButtonMiddle.Add(mouse2);
+
+            var mouse1 = new Key(KeyCode.Mouse1, "M1");
+            mouse1.style.width = 50;
+            mouse1.style.height = 96;
+            mouse1.style.borderTopRightRadius = new StyleLength(25f);
+            mouse1.style.borderBottomLeftRadius = new StyleLength(8);
+            mouse1.style.borderTopLeftRadius = mouse1.style.borderBottomRightRadius = new StyleLength(0f);
+            mouse1.style.borderBottomWidth = mouse1.style.borderLeftWidth = 2f;
+            mouse1.style.borderTopWidth = mouse1.style.borderRightWidth = 0f;
+            mouse1.style.marginTop = mouse1.style.marginRight = 0f;
+
+            var mouseBody = new Key(KeyCode.None, "") { name = "mouseBody" };
+            mouseBody.style.width = 124;
+            mouseBody.style.height = 226;
+            mouseBody.style.borderTopRightRadius = mouseBody.style.borderTopLeftRadius = new StyleLength(25f);
+            mouseBody.style.borderBottomLeftRadius = mouseBody.style.borderBottomRightRadius = new StyleLength(67f);
+            mouseBody.AddToClassList(k_ReservedClass);
+            mouseBody.Add(mouseButtons);
+
+            var mouse3 = new Key(KeyCode.Mouse3, "M3");
+            var mouse4 = new Key(KeyCode.Mouse4, "M4");
+            mouse3.style.width = mouse4.style.width = 28;
+            mouse3.style.height = mouse4.style.height = 32;
+            mouse3.style.marginLeft = mouse4.style.marginLeft = 3;
+            mouse3.style.borderBottomWidth = mouse3.style.borderLeftWidth = mouse3.style.borderRightWidth = mouse3.style.borderTopWidth =
+                mouse4.style.borderBottomWidth = mouse4.style.borderLeftWidth = mouse4.style.borderRightWidth = mouse4.style.borderTopWidth = 2f;
+            mouse3.style.borderBottomRightRadius = mouse3.style.borderBottomLeftRadius = mouse3.style.borderTopRightRadius = mouse3.style.borderTopLeftRadius =
+                mouse4.style.borderBottomRightRadius = mouse4.style.borderBottomLeftRadius = mouse4.style.borderTopRightRadius = mouse4.style.borderTopLeftRadius = 8;
+
+            mouse4.style.marginTop = 8;
+            mouse3.style.marginTop = 2;
+            mouseBody.Add(mouse4);
+            mouseBody.Add(mouse3);
+
+            AssignButtonClasses(mouse0);
+            AssignButtonClasses(mouse1);
+            AssignButtonClasses(mouse2);
+            AssignButtonClasses(mouse3);
+            AssignButtonClasses(mouse4);
+
+            mouseButtons.Add(mouse0);
+            mouseButtons.Add(mouseButtonMiddle);
+            mouseButtons.Add(mouse1);
+
+            mainContainer.Add(mouseBody);
+
+            mainContainer.style.paddingLeft = mainContainer.style.paddingRight = k_HorizontalPadding;
+
+            Add(mainContainer);
+
+            mainContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            Refresh();
+        }
+    }
+
+    class Keyboard : Device
+    {
+        const int k_KeySize = 34;
+
+        public Keyboard(IKeyBindingStateProvider keyBindingStateProvider, KeyCode initiallySelectedKey = KeyCode.None, EventModifiers initiallyActiveModifiers = EventModifiers.None)
+            : base(keyBindingStateProvider, initiallySelectedKey, initiallyActiveModifiers)
+        {
             KeyDef[] bottomRow;
 
             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
@@ -948,22 +1279,22 @@ namespace UnityEditor.ShortcutManagement
 
             var dictionaryKeyStyle = new Dictionary<KeyCode, string>()
             {
-                {KeyCode.Backspace, "flexible"},
-                {KeyCode.Tab, "flexible"},
-                {KeyCode.Slash, "flexible"},
-                {KeyCode.CapsLock, "flexible"},
-                {KeyCode.Return, "flexible"},
-                {KeyCode.LeftShift, "flexible"},
-                {KeyCode.RightShift, "flexible"},
-                {KeyCode.LeftControl, "flexible"},
-                {KeyCode.LeftWindows, "flexible"},
-                {KeyCode.LeftCommand, "flexible"},
-                {KeyCode.LeftAlt, "flexible"},
-                {KeyCode.Space, "space"},
-                {KeyCode.RightAlt, "flexible"},
-                {KeyCode.RightWindows, "flexible"},
-                {KeyCode.RightControl, "flexible"},
-                {KeyCode.RightCommand, "flexible"},
+                {KeyCode.Backspace, k_FlexibleClass},
+                {KeyCode.Tab, k_FlexibleClass},
+                {KeyCode.Slash, k_FlexibleClass},
+                {KeyCode.CapsLock, k_FlexibleClass},
+                {KeyCode.Return, k_FlexibleClass},
+                {KeyCode.LeftShift, k_FlexibleClass},
+                {KeyCode.RightShift, k_FlexibleClass},
+                {KeyCode.LeftControl, k_FlexibleClass},
+                {KeyCode.LeftWindows, k_FlexibleClass},
+                {KeyCode.LeftCommand, k_FlexibleClass},
+                {KeyCode.LeftAlt, k_FlexibleClass},
+                {KeyCode.Space, k_SpaceClass},
+                {KeyCode.RightAlt, k_FlexibleClass},
+                {KeyCode.RightWindows, k_FlexibleClass},
+                {KeyCode.RightControl, k_FlexibleClass},
+                {KeyCode.RightCommand, k_FlexibleClass},
             };
 
             var mainContainer = new VisualElement() { name = "fullKeyboardContainer" };
@@ -972,90 +1303,18 @@ namespace UnityEditor.ShortcutManagement
             var cursorControlContainer = new VisualElement() { name = "cursorControlKeyboardContainer" };
 
             BuildKeyboardVisualTree(keysList, dictionaryKeyStyle, compactContainer);
-
             BuildKeyboardVisualTree(cursorControlKeysList, dictionaryKeyStyle, cursorControlContainer);
 
+            mainContainer.style.paddingLeft = mainContainer.style.paddingRight = k_HorizontalPadding;
             compactContainer.style.width = (keysList[0].Length) * k_KeySize;
-
-            focusable = true;
-            tabIndex = 0;
 
             mainContainer.Add(compactContainer);
             mainContainer.Add(cursorControlContainer);
 
             Add(mainContainer);
 
-            m_CurrentModifiers = initiallyActiveModifiers;
-            var keyElement = m_AllKeys.Find(el => el.key == initiallySelectedKey);
-            m_SelectedKey = keyElement;
-
             mainContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            RegisterCallback<KeyDownEvent>(OnKeyDown);
-            RegisterCallback<KeyUpEvent>(OnKeyUp);
-            RegisterCallback<ExecuteCommandEvent>(HandleModifierKeysCommand);
-            RegisterCallback<ValidateCommandEvent>(HandleModifierKeysCommand);
-
-            RegisterCallback<DragEnterEvent>(OnDragEnter);
-            RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
-            RegisterCallback<DragPerformEvent>(OnDragPerfom);
-
-            RegisterCallback<TooltipEvent>(OnTooltip);
-
-            RefreshKeyboardBoundVisuals();
-        }
-
-        void HandleModifierKeysCommand<T>(CommandEventBase<T> evt) where T : CommandEventBase<T>, new()
-        {
-            if (evt.commandName == EventCommandNames.ModifierKeysChanged)
-            {
-                SetModifiers(evt.imguiEvent.modifiers);
-                evt.StopPropagation();
-            }
-        }
-
-        void OnTooltip(TooltipEvent evt)
-        {
-            if (TooltipProvider == null)
-                return;
-
-            var keyElement = evt.target as Key;
-            if (keyElement == null)
-                return;
-
-            evt.rect = keyElement.worldBound;
-            evt.tooltip = TooltipProvider(keyElement.key, m_CurrentModifiers);
-        }
-
-        void OnDragEnter(DragEnterEvent evt)
-        {
-            DoDragUpdate(evt.target);
-        }
-
-        void OnDragUpdated(DragUpdatedEvent evt)
-        {
-            DoDragUpdate(evt.target);
-        }
-
-        void DoDragUpdate(IEventHandler target)
-        {
-            var keyElement = target as Key;
-            if (keyElement == null)
-                return;
-
-            var shortcutEntry = (ShortcutEntry)DragAndDrop.GetGenericData("ShortcutCommandItem");
-            if (shortcutEntry == null)
-                return;
-
-            if (CanDrop != null && CanDrop(keyElement.key, m_CurrentModifiers, shortcutEntry))
-                DragAndDrop.visualMode = DragAndDropVisualMode.Link;
-        }
-
-        void OnDragPerfom(DragPerformEvent evt)
-        {
-            var keyElement = (Key)evt.target;
-            var shortcutEntry = (ShortcutEntry)DragAndDrop.GetGenericData("ShortcutCommandItem");
-            if (DragPerformed != null)
-                DragPerformed(keyElement.key, m_CurrentModifiers, shortcutEntry);
+            Refresh();
         }
 
         void BuildKeyboardVisualTree(List<KeyDef[]> keysList, Dictionary<KeyCode, string> dictionaryKeyStyle, VisualElement container)
@@ -1076,164 +1335,28 @@ namespace UnityEditor.ShortcutManagement
                             keyElement.AddToClassList(klass);
                         }
 
-                        if (m_KeyBindingStateProvider.IsModifier(keyDef.keycode))
-                        {
-                            EventModifiers modifier = m_KeyBindingStateProvider.ModifierFromKeyCode(keyDef.keycode);
-                            List<Key> keyList;
-                            if (!m_ModifierKeys.TryGetValue(modifier, out keyList))
-                            {
-                                keyList = new List<Key>(2);
-                                m_ModifierKeys.Add(modifier, keyList);
-                            }
-                            keyList.Add(keyElement);
-                            keyElement.AddToClassList("modifier");
-                        }
-
-                        if (m_KeyBindingStateProvider.IsReservedKey(keyDef.keycode))
-                        {
-                            keyElement.AddToClassList("reserved");
-                        }
-
+                        AssignButtonClasses(keyElement);
                         keyRow.Add(keyElement);
-                        m_AllKeys.Add(keyElement);
                     }
                     else
                     {
                         var spacer = new VisualElement();
-                        spacer.AddToClassList("flexible");
+                        spacer.AddToClassList(k_FlexibleClass);
                         keyRow.Add(spacer);
                     }
                 }
 
-                keyRow.Children().Last().AddToClassList("last");
+                keyRow.Children().Last().AddToClassList(k_LastClass);
 
                 container.Add(keyRow);
             }
 
-            container.Children().First().AddToClassList("first");
+            container.Children().First().AddToClassList(k_FirstClass);
 
             foreach (var child in container.Children())
             {
-                child.AddToClassList("keyRow");
+                child.AddToClassList(k_KeyRowClass);
             }
-        }
-
-        void RefreshKeyboardBoundVisuals()
-        {
-            foreach (var key in m_AllKeys)
-            {
-                StyleKey(key);
-            }
-        }
-
-        void StyleKey(Key key)
-        {
-            if (!m_KeyBindingStateProvider.CanBeSelected(key.key))
-                return;
-
-            var bindingState = m_KeyBindingStateProvider.GetBindingStateForKeyWithModifiers(key.key, m_CurrentModifiers);
-
-            key.RemoveFromClassList("global");
-            key.RemoveFromClassList("contextuallyBound");
-            key.RemoveFromClassList("mixedBound");
-
-            if (bindingState.HasFlag(BindingState.BoundMixed))
-                key.AddToClassList("mixedBound");
-            else if (bindingState.HasFlag(BindingState.BoundGlobally))
-                key.AddToClassList("global");
-            else if (bindingState.HasFlag(BindingState.BoundToContext))
-                key.AddToClassList("contextuallyBound");
-        }
-
-        void OnKeyDown(KeyDownEvent evt)
-        {
-            SetModifiers(evt.modifiers);
-            evt.StopPropagation();
-        }
-
-        void OnKeyUp(KeyUpEvent evt)
-        {
-            SetModifiers(evt.modifiers);
-            evt.StopPropagation();
-        }
-
-        void SetModifiers(EventModifiers modifiers)
-        {
-            if (modifiers == m_CurrentModifiers)
-                return;
-
-            m_CurrentModifiers = modifiers;
-
-            foreach (var modifierPair in m_ModifierKeys)
-            {
-                var modifierPressed = (m_CurrentModifiers & modifierPair.Key) == modifierPair.Key;
-                foreach (var modifierKey in modifierPair.Value)
-                {
-                    if (modifierPressed)
-                        modifierKey.AddToClassList("active");
-                    else
-                        modifierKey.RemoveFromClassList("active");
-                }
-            }
-
-            RefreshKeyboardBoundVisuals();
-            var selectedKey = m_SelectedKey != null ? m_SelectedKey.key : KeyCode.None;
-            KeySelectedAction?.Invoke(selectedKey, m_CurrentModifiers);
-        }
-
-        void OnMouseDown(MouseDownEvent evt)
-        {
-            panel.focusController.SwitchFocus(this);
-            var keyElement = evt.target as Key;
-            if (keyElement != null)
-            {
-                switch (evt.button)
-                {
-                    case 0:
-                        SetKeySelected(keyElement);
-                        break;
-                    case 1:
-                        var menu = ContextMenuProvider?.Invoke(keyElement.key, m_CurrentModifiers);
-                        menu?.DropDown(keyElement.worldBound);
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-        void SetKeySelected(Key keyElement)
-        {
-            if (!m_KeyBindingStateProvider.CanBeSelected(keyElement.key))
-            {
-                EventModifiers modifier = m_KeyBindingStateProvider.ModifierFromKeyCode(keyElement.key);
-                if (modifier != EventModifiers.None)
-                {
-                    var newModifiers = m_CurrentModifiers ^ modifier;
-                    SetModifiers(newModifiers);
-                }
-
-                return;
-            }
-
-            if (KeySelectedAction == null)
-                return;
-
-            var prevSelectedKey = m_SelectedKey;
-            m_SelectedKey = keyElement;
-
-            if (prevSelectedKey != null)
-            {
-                prevSelectedKey.RemoveFromClassList("selected");
-            }
-
-            KeySelectedAction(m_SelectedKey.key, m_CurrentModifiers);
-            m_SelectedKey.AddToClassList("selected");
-        }
-
-        public void Refresh()
-        {
-            RefreshKeyboardBoundVisuals();
         }
     }
 
@@ -1265,6 +1388,8 @@ namespace UnityEditor.ShortcutManagement
         {
             input.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             input.RegisterCallback<KeyUpEvent>(OnKeyUp, TrickleDown.TrickleDown);
+            input.RegisterCallback<MouseDownEvent>(OnMouse, TrickleDown.TrickleDown);
+            input.RegisterCallback<MouseUpEvent>(OnMouse, TrickleDown.TrickleDown);
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
@@ -1317,6 +1442,16 @@ namespace UnityEditor.ShortcutManagement
             m_KeyDown.Remove(kue.keyCode);
             kue.StopPropagation();
             textSelection.MoveTextEnd();
+        }
+
+        void OnMouse<T>(MouseEventBase<T> evt) where T : MouseEventBase<T>, new()
+        {
+            if (evt.GetType() == typeof(MouseDownEvent))
+            {
+                m_KeyDown.Add(KeyCode.Mouse0 + evt.button);
+                Apply();
+            }
+            evt.StopPropagation();
         }
 
         void InvokeWorkingValueChanged()

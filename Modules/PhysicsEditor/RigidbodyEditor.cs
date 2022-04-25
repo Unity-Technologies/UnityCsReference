@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.AnimatedValues;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -139,6 +140,14 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_IsKinematic, Styles.isKinematic);
             EditorGUILayout.PropertyField(m_Interpolate, Styles.interpolate);
             EditorGUILayout.PropertyField(m_CollisionDetection, Styles.collisionDetection);
+
+            if (targets.Any(x => (x as Rigidbody).interpolation != RigidbodyInterpolation.None))
+            {
+                if (Physics.simulationMode == SimulationMode.Update)
+                    EditorGUILayout.HelpBox("The physics simulation mode is set to run per-frame. Any interpolation mode will be ignored and can be set to 'None'.", MessageType.Info);
+                else if (Physics.simulationMode == SimulationMode.Script)
+                    EditorGUILayout.HelpBox("The physics simulation mode is set to run manually in the scripts. Some or all selected Rigidbodies are using an interpolation mode other than 'None' which will be executed per-frame. If the manual simulation is being run per-frame then the interpolation mode should be set to 'None'.", MessageType.Info);
+            }
 
             Rect position = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(position, null, m_Constraints);

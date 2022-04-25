@@ -90,7 +90,7 @@ namespace Unity.UI.Builder
             m_CanvasThemeMenu = this.Q<ToolbarMenu>("canvas-theme-menu");
 
             InitCanvasTheme();
-            
+
             SetViewportSubTitle();
 
             // Track unsaved changes state change.
@@ -143,7 +143,7 @@ namespace Unity.UI.Builder
                 }
 
                 if (defaultTssAsset != null)
-                {   
+                {
                     currentTheme = BuilderDocument.CanvasTheme.Custom;
                     currentThemeSheet = defaultTssAsset;
                 }
@@ -735,7 +735,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            m_CanvasThemeMenu.tooltip = document.fileSettings.editorExtensionMode ? 
+            m_CanvasThemeMenu.tooltip = document.fileSettings.editorExtensionMode ?
                 BuilderConstants.ToolbarCanvasThemeMenuEditorTooltip :
                 BuilderConstants.ToolbarCanvasThemeMenuTooltip;
 

@@ -113,6 +113,11 @@ namespace UnityEngine
 
         public static IntPtr NewObject(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            return NewObject(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static IntPtr NewObject(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.NewObject(clazz, methodID, args); } finally { CheckException(); }
         }
 
@@ -218,55 +223,110 @@ namespace UnityEngine
 
         public static void CallStaticVoidMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            CallStaticVoidMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static void CallStaticVoidMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { AndroidJNI.CallStaticVoidMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static IntPtr CallStaticObjectMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
+        {
+            return CallStaticObjectMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static IntPtr CallStaticObjectMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallStaticObjectMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static string CallStaticStringMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            return CallStaticStringMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static string CallStaticStringMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallStaticStringMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static Char CallStaticCharMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
+        {
+            return CallStaticCharMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static Char CallStaticCharMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallStaticCharMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static double CallStaticDoubleMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            return CallStaticDoubleMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static double CallStaticDoubleMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallStaticDoubleMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static float CallStaticFloatMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
+        {
+            return CallStaticFloatMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static float CallStaticFloatMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallStaticFloatMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static Int64 CallStaticLongMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            return CallStaticLongMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static Int64 CallStaticLongMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallStaticLongMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static Int16 CallStaticShortMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
+        {
+            return CallStaticShortMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static Int16 CallStaticShortMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallStaticShortMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static SByte CallStaticSByteMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            return CallStaticSByteMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static SByte CallStaticSByteMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallStaticSByteMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static bool CallStaticBooleanMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
+            return CallStaticBooleanMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static bool CallStaticBooleanMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallStaticBooleanMethod(clazz, methodID, args); } finally { CheckException(); }
         }
 
         public static Int32 CallStaticIntMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
+        {
+            return CallStaticIntMethod(clazz, methodID, new Span<jvalue>(args));
+        }
+
+        public static Int32 CallStaticIntMethod(IntPtr clazz, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallStaticIntMethod(clazz, methodID, args); } finally { CheckException(); }
         }
@@ -373,55 +433,110 @@ namespace UnityEngine
 
         public static void CallVoidMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
+            CallVoidMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static void CallVoidMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
+        {
             try { AndroidJNI.CallVoidMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static IntPtr CallObjectMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
+        {
+            return CallObjectMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static IntPtr CallObjectMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallObjectMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static string CallStringMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
+            return CallStringMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static string CallStringMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallStringMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static Char CallCharMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
+        {
+            return CallCharMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static Char CallCharMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallCharMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static double CallDoubleMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
+            return CallDoubleMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static double CallDoubleMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallDoubleMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static float CallFloatMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
+        {
+            return CallFloatMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static float CallFloatMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallFloatMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static Int64 CallLongMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
+            return CallLongMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static Int64 CallLongMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallLongMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static Int16 CallShortMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
+        {
+            return CallShortMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static Int16 CallShortMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallShortMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static SByte CallSByteMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
+            return CallSByteMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static SByte CallSByteMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallSByteMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static bool CallBooleanMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
+            return CallBooleanMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static bool CallBooleanMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
+        {
             try { return AndroidJNI.CallBooleanMethod(obj, methodID, args); } finally { CheckException(); }
         }
 
         public static Int32 CallIntMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
+        {
+            return CallIntMethod(obj, methodID, new Span<jvalue>(args));
+        }
+
+        public static Int32 CallIntMethod(IntPtr obj, IntPtr methodID, Span<jvalue> args)
         {
             try { return AndroidJNI.CallIntMethod(obj, methodID, args); } finally { CheckException(); }
         }

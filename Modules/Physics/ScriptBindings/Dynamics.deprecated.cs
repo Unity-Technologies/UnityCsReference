@@ -143,6 +143,14 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("penetrationPenaltyForce has no effect.", true)]
         public static float penetrationPenaltyForce { get { return 0f; } set {} }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Physics.autoSimulation has been replaced by Physics.simulationMode", false)]
+        public static bool autoSimulation
+        {
+            get { return simulationMode != SimulationMode.Script; }
+            set { simulationMode = value ? SimulationMode.FixedUpdate : SimulationMode.Script; }
+        }
     }
 
     // The [[ConfigurableJoint]] attempts to attain position / velocity targets based on this flag

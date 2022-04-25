@@ -29,17 +29,20 @@ namespace UnityEditor.ShortcutManagement
 
         public void HandleKeyEvent(Event evt, IContextManager contextManager)
         {
-            if (evt == null || !evt.isKey || evt.keyCode == KeyCode.None)
-                return;
+            if (evt == null) return;
 
-            if (evt.type == EventType.KeyUp)
+            KeyCode keyCode = evt.isMouse ? evt.button + KeyCode.Mouse0 : evt.keyCode;
+
+            if (keyCode == KeyCode.None) return;
+
+            if (evt.type == EventType.KeyUp || evt.type == EventType.MouseUp)
             {
                 KeyValuePair<ShortcutEntry, object> clutchKeyValuePair;
-                if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchKeyValuePair))
+                if (m_ActiveClutches.TryGetValue(keyCode, out clutchKeyValuePair))
                 {
-                    var clutchContext = m_ActiveClutches[evt.keyCode].Value;
+                    var clutchContext = m_ActiveClutches[keyCode].Value;
 
-                    m_ActiveClutches.Remove(evt.keyCode);
+                    m_ActiveClutches.Remove(keyCode);
                     var args = new ShortcutArguments
                     {
                         context = clutchContext,
@@ -47,18 +50,19 @@ namespace UnityEditor.ShortcutManagement
                     };
                     invokingAction?.Invoke(clutchKeyValuePair.Key, args);
                     clutchKeyValuePair.Key.action(args);
+                    evt.Use();
                 }
                 return;
             }
 
             // Use the event and return if the key is currently used in an active clutch
-            if (m_ActiveClutches.ContainsKey(evt.keyCode))
+            if (m_ActiveClutches.ContainsKey(keyCode))
             {
                 evt.Use();
                 return;
             }
 
-            var keyCodeCombination = KeyCombination.FromKeyboardInput(evt);
+            var keyCodeCombination = KeyCombination.FromInput(evt);
             m_KeyCombinationSequence.Add(keyCodeCombination);
 
             // Ignore event if sequence is empty
@@ -87,7 +91,7 @@ namespace UnityEditor.ShortcutManagement
                     var shortcutEntry = entries.Single();
                     if (ShortcutFullyMatchesKeyCombination(shortcutEntry))
                     {
-                        if (evt.keyCode != m_KeyCombinationSequence.Last().keyCode)
+                        if (keyCode != m_KeyCombinationSequence.Last().keyCode)
                             break;
 
                         var args = new ShortcutArguments();
@@ -103,9 +107,9 @@ namespace UnityEditor.ShortcutManagement
                                 break;
 
                             case ShortcutType.Clutch:
-                                if (!m_ActiveClutches.ContainsKey(evt.keyCode))
+                                if (!m_ActiveClutches.ContainsKey(keyCode))
                                 {
-                                    m_ActiveClutches.Add(evt.keyCode, new KeyValuePair<ShortcutEntry, object>(shortcutEntry, args.context));
+                                    m_ActiveClutches.Add(keyCode, new KeyValuePair<ShortcutEntry, object>(shortcutEntry, args.context));
                                     args.stage = ShortcutStage.Begin;
                                     invokingAction?.Invoke(shortcutEntry, args);
                                     shortcutEntry.action(args);

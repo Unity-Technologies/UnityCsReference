@@ -46,7 +46,11 @@ namespace UnityEditor.Overlays
             if (!displayed)
                 return;
 
+            m_DisableContentModification = Event.current.type == EventType.Layout;
+
             OnGUI();
+
+            m_DisableContentModification = false;
 
             if (Event.current.isMouse)
                 Event.current.Use();

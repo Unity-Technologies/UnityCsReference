@@ -188,7 +188,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleLength minWidth { get; set; }
         /// <summary>
-        /// Specifies the transparency of an element.
+        /// Specifies the transparency of an element and of its children.
         /// </summary>
         /// <remarks>
         /// The opacity can be between 0.0 and 1.0. The lower value, the more transparent.
@@ -278,14 +278,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
         /// <summary>
-        /// Font to draw the element's text.
+        /// Font to draw the element's text, defined as a Font object.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
         /// </remarks>
         StyleFont unityFont { get; set; }
         /// <summary>
-        /// Font to draw the element's text.
+        /// Font to draw the element's text, defined as a FontDefinition structure. It takes precedence over `-unity-font`.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.

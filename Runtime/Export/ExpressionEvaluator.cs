@@ -220,11 +220,6 @@ namespace UnityEngine
                 if (TryParse(stack.Pop(), out value))
                     return true;
             }
-            else if (tokens.Length == 0)
-            {
-                value = 0;
-                return true;
-            }
 
             return false;
         }
@@ -470,12 +465,19 @@ namespace UnityEngine
 
         static bool TryParse<T>(string expression, out T result)
         {
-            expression = expression.Replace(',', '.');
-            expression = expression.TrimEnd('f');
+            expression = expression.Replace(',', '.'); // any actual reason for that? CultureInfo.InvariantCulture.NumberFormat used below
             var expressionLowerCase = expression.ToLowerInvariant();
+            if (expressionLowerCase.Length > 1 && Char.IsDigit(expressionLowerCase[expressionLowerCase.Length-2]))
+            {
+                char[] numberDesignator = {'f','d','l'};
+                expressionLowerCase = expressionLowerCase.TrimEnd(numberDesignator);
+            }
 
             bool success = false;
             result = default;
+            if (expressionLowerCase.Length == 0)
+                return true;
+
             if (typeof(T) == typeof(float))
             {
                 if (expressionLowerCase == "pi")
@@ -485,13 +487,13 @@ namespace UnityEngine
                 }
                 else
                 {
-                    success = float.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    success = float.TryParse(expressionLowerCase, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                     result = (T)(object)temp;
                 }
             }
             else if (typeof(T) == typeof(int))
             {
-                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                success = int.TryParse(expressionLowerCase, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             else if (typeof(T) == typeof(double))
@@ -503,13 +505,13 @@ namespace UnityEngine
                 }
                 else
                 {
-                    success = double.TryParse(expression, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                    success = double.TryParse(expressionLowerCase, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                     result = (T)(object)temp;
                 }
             }
             else if (typeof(T) == typeof(long))
             {
-                success = long.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                success = long.TryParse(expressionLowerCase, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             return success;

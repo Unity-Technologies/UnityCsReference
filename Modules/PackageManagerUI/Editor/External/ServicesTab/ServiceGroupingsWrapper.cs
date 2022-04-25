@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public string name;
         public int index;
+        public string id;
         public List<string> packages;
     }
 }

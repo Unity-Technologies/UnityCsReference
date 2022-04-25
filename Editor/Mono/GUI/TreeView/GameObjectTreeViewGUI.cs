@@ -653,17 +653,26 @@ namespace UnityEditor
             if (!PrefabUtility.IsAnyPrefabInstanceRoot(go))
                 return;
 
-            // Don't show button for disconnected prefab instances and if prefab asset is missing
-            if (PrefabUtility.GetPrefabInstanceStatus(go) != PrefabInstanceStatus.Connected)
-                return;
+            // Don't show button if prefab asset is missing
+            if (PrefabUtility.GetPrefabInstanceStatus(go) == PrefabInstanceStatus.Connected)
+            {
+                var source = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
+                if (source == null)
+                    return;
 
-            var source = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
-            if (source == null)
+                // Don't show buttons for model prefabs but allow buttons for other immutables
+                if (PrefabUtility.IsPartOfModelPrefab(source))
+                    return;
+            }
+            else if (PrefabUtility.GetPrefabInstanceHandle(go) == null)
                 return;
-
-            // Don't show buttons for model prefabs but allow buttons for other immutables
-            if (PrefabUtility.IsPartOfModelPrefab(source))
-                return;
+            else
+            {
+                var assetPath = PrefabUtility.GetAssetPathOfSourcePrefab(go);
+                var broken = AssetDatabase.LoadMainAssetAtPath(assetPath) as BrokenPrefabAsset;
+                if (broken == null || !broken.isPrefabFileValid)
+                    return;
+            }
 
             item.showPrefabModeButton = true;
         }
@@ -832,6 +841,9 @@ namespace UnityEditor
                 {
                     GameObject go = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
                     string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+                    if (string.IsNullOrWhiteSpace(assetPath)) //In case its a broken prefab
+                        assetPath = PrefabUtility.GetAssetPathOfSourcePrefab(go);
+
                     Object originalSource = AssetDatabase.LoadMainAssetAtPath(assetPath);
                     if (originalSource != null)
                     {

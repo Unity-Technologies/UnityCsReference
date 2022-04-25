@@ -288,8 +288,14 @@ namespace UnityEditor.Search
 
         private void SetContext(SearchContext newContext)
         {
+            SetContext(newContext, true);
+        }
+
+        private void SetContext(SearchContext newContext, bool disposeOldContext)
+        {
             var searchText = context?.searchText ?? string.Empty;
-            context?.Dispose();
+            if (disposeOldContext)
+                context?.Dispose();
             m_ViewState.context = newContext ?? SearchService.CreateContext(searchText);
 
             context.searchView = this;
@@ -583,7 +589,7 @@ namespace UnityEditor.Search
             InitializeSplitters();
             InitializeSavedSearches();
 
-            SetContext(m_ViewState.context);
+            SetContext(m_ViewState.context, false);
             LoadSessionSettings(m_ViewState);
 
             SearchSettings.SortActionsPriority();
@@ -640,7 +646,9 @@ namespace UnityEditor.Search
             resized = null;
             nextFrame = null;
             m_DebounceOff?.Invoke();
+            m_DebounceOff = null;
             m_WaitAsyncResults?.Invoke();
+            m_WaitAsyncResults = null;
             EditorApplication.delayCall -= DelayTrackSelection;
             SearchSettings.providerActivationChanged -= OnProviderActivationChanged;
 
@@ -651,11 +659,11 @@ namespace UnityEditor.Search
             m_DetailView?.Dispose();
             m_ResultView?.Dispose();
 
+            m_SearchMonitorView.Dispose();
+
             // End search session
             context.asyncItemReceived -= OnAsyncItemsReceived;
             context.Dispose();
-
-            m_SearchMonitorView.Dispose();
         }
 
         internal void OnGUI()

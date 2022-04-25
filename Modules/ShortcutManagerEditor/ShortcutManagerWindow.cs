@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -23,6 +22,7 @@ namespace UnityEditor.ShortcutManagement
         VisualElement GetVisualElementHierarchyRoot();
         void RefreshAll();
         void RefreshKeyboard();
+        void RefreshMouse();
         void RefreshCategoryList();
         void RefreshShortcutList();
         void RefreshProfiles();
@@ -176,7 +176,7 @@ namespace UnityEditor.ShortcutManagement
             rootElement.StretchToParentSize();
 
             titleContent = new GUIContent("Shortcuts");
-            minSize = new Vector2(700, 570);
+            minSize = new Vector2(850, 570);
             maxSize = new Vector2(10000, 10000);
 
             var directory = ShortcutIntegration.instance.directory;

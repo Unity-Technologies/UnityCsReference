@@ -53,11 +53,12 @@ namespace Unity.UI.Builder
                     var transition = builderTransitions[i];
                     var foldoutTransitionField = GetPooledTransitionField(transitionsListView, transition, i);
                     foldoutTransitionField.index = i;
-                    UpdateOverrideStyles(foldoutTransitionField.propertyField, setData.transitionProperty.styleProperty);
-                    UpdateOverrideStyles(foldoutTransitionField.durationField, setData.transitionDuration.styleProperty);
-                    UpdateOverrideStyles(foldoutTransitionField.timingFunctionField, setData.transitionTimingFunction.styleProperty);
-                    UpdateOverrideStyles(foldoutTransitionField.delayField, setData.transitionDelay.styleProperty);
+                    
                     SetTransitionVariableEditors(foldoutTransitionField, i);
+                    UpdateFieldStatus(foldoutTransitionField.propertyField, setData.transitionProperty.styleProperty);
+                    UpdateFieldStatus(foldoutTransitionField.durationField, setData.transitionDuration.styleProperty);
+                    UpdateFieldStatus(foldoutTransitionField.timingFunctionField, setData.transitionTimingFunction.styleProperty);
+                    UpdateFieldStatus(foldoutTransitionField.delayField, setData.transitionDelay.styleProperty);
                 }
             }
             finally
@@ -248,18 +249,18 @@ namespace Unity.UI.Builder
             // Configure a new element
             else if (transitionsListView.GetOrCreateTransitionField(out foldoutField))
             {
-                foldoutField.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
-                foldoutField.propertyField.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
+                foldoutField.header.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
+                SetUpContextualMenuOnStyleField(foldoutField.propertyField);
                 foldoutField.propertyField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.Property));
                 foldoutField.propertyField.getContent = GetTransitionPropertyContent;
 
-                foldoutField.durationField.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
+                SetUpContextualMenuOnStyleField(foldoutField.durationField);
                 foldoutField.durationField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.Duration));
 
-                foldoutField.timingFunctionField.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
+                SetUpContextualMenuOnStyleField(foldoutField.timingFunctionField);
                 foldoutField.timingFunctionField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.TimingFunction));
 
-                foldoutField.delayField.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
+                SetUpContextualMenuOnStyleField(foldoutField.delayField);
                 foldoutField.delayField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.Delay));
             }
 
@@ -440,7 +441,7 @@ namespace Unity.UI.Builder
                 else
                 {
                     for (var i = 0; i < foldouts.Count; ++i)
-                        PostStyleFieldSteps(foldouts[i].propertyField, TransitionConstants.Property, false, setData.transitionProperty.IsVariableAtIndex(i));
+                        PostStyleFieldSteps(foldouts[i].propertyField, setData.transitionProperty.styleProperty, TransitionConstants.Property, false, setData.transitionProperty.IsVariableAtIndex(i));
                 }
 
                 s_StyleChangeList.Add(TransitionConstants.Property);
@@ -453,7 +454,7 @@ namespace Unity.UI.Builder
                 else
                 {
                     for (var i = 0; i < foldouts.Count; ++i)
-                        PostStyleFieldSteps(foldouts[i].durationField, TransitionConstants.Duration, false, setData.transitionDuration.IsVariableAtIndex(i));
+                        PostStyleFieldSteps(foldouts[i].durationField, setData.transitionDuration.styleProperty, TransitionConstants.Duration, false, setData.transitionDuration.IsVariableAtIndex(i));
                 }
 
                 s_StyleChangeList.Add(TransitionConstants.Duration);
@@ -466,7 +467,7 @@ namespace Unity.UI.Builder
                 else
                 {
                     for (var i = 0; i < foldouts.Count; ++i)
-                        PostStyleFieldSteps(foldouts[i].timingFunctionField, TransitionConstants.TimingFunction, false,
+                        PostStyleFieldSteps(foldouts[i].timingFunctionField, setData.transitionTimingFunction.styleProperty, TransitionConstants.TimingFunction, false,
                             setData.transitionTimingFunction.IsVariableAtIndex(i));
                 }
 
@@ -480,7 +481,7 @@ namespace Unity.UI.Builder
                 else
                 {
                     for (var i = 0; i < foldouts.Count; ++i)
-                        PostStyleFieldSteps(foldouts[i].delayField, TransitionConstants.Delay, false,
+                        PostStyleFieldSteps(foldouts[i].delayField, setData.transitionDelay.styleProperty, TransitionConstants.Delay, false,
                             setData.transitionDelay.IsVariableAtIndex(i));
                 }
 

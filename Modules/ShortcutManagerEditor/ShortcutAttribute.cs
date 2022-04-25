@@ -89,7 +89,7 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     // TODO: Find better name
     public class ClutchShortcutAttribute : ShortcutAttribute
     {

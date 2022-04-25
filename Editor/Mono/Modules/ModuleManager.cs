@@ -424,7 +424,16 @@ namespace UnityEditor.Modules
             IPlatformSupportModule module;
             if (platformSupportModules.TryGetValue(target, out module))
             {
-                return platformSupportModules[target].CreatePluginImporterExtension();
+                try
+                {
+                    return platformSupportModules[target].CreatePluginImporterExtension();
+                }
+                // Handle exception since otherwise creating extension from other platforms will also stop
+                catch (Exception ex)
+                {
+                    Debug.LogError(ex);
+                    return null;
+                }
             }
 
             return null;

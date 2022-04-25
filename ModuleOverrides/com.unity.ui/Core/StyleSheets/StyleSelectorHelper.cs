@@ -84,15 +84,14 @@ namespace UnityEngine.UIElements.StyleSheets
                         match = element.ClassListContains(parts[i].value);
                         break;
                     case StyleSelectorType.ID:
-                        match = (element.name == parts[i].value);
+                        match = string.Equals(element.name, parts[i].value, StringComparison.Ordinal);
                         break;
                     case StyleSelectorType.Type:
                         //TODO: This tests fails to capture instances of sub-classes
-                        match = element.typeName == parts[i].value;
+                        match = string.Equals(element.typeName, parts[i].value, StringComparison.Ordinal);
                         break;
                     case StyleSelectorType.Predicate:
-                        UQuery.IVisualPredicateWrapper w = parts[i].tempData as UQuery.IVisualPredicateWrapper;
-                        match = w != null && w.Predicate(element);
+                        match = parts[i].tempData is UQuery.IVisualPredicateWrapper w && w.Predicate(element);
                         break;
                     case StyleSelectorType.PseudoClass:
                         break;

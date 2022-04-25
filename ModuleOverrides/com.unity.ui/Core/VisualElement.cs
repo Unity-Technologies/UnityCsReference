@@ -1923,6 +1923,9 @@ namespace UnityEngine.UIElements
         /// <param name="className">The name of the class to add to the list.</param>
         public void AddToClassList(string className)
         {
+            if (string.IsNullOrEmpty(className))
+                return;
+
             if (m_ClassList == s_EmptyClassList)
             {
                 m_ClassList = StringObjectListPool.Get();
@@ -2002,7 +2005,7 @@ namespace UnityEngine.UIElements
         {
             for (int i = 0; i < m_ClassList.Count; i++)
             {
-                if (m_ClassList[i] == cls)
+                if (m_ClassList[i].Equals(cls, StringComparison.Ordinal))
                     return true;
             }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -23,6 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             public string projectId => UnityEditor.CloudProjectSettings.projectId;
         }
 
+        public const string defaultServiceGroupingName = "Others";
+        const string k_GroupIdField = "groupId";
         const string k_GameService = "gameService";
         const string k_ConfigurePath = "configurePath";
         const string k_UseCasesUrl = "useCasesUrl";
@@ -37,6 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_ServicesPriority = 200;
 
         internal static Dictionary<string, int> groupIndexes = new Dictionary<string, int>();
+        internal static Dictionary<string, string> groupNames = new Dictionary<string, string>();
         static Dictionary<string, string> s_GroupMap = new Dictionary<string, string>();
         internal static ICloudProjectSettings cloudProjectSettings = new CloudProjectSettings();
 
@@ -47,9 +51,40 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static string GetServicesPackageGroupName(IPackage package)
         {
+            var packageGameServiceField = GetLatestEditorGameServiceField(package);
+            var hasServiceGroupingId = HasDynamicServiceGroupId(packageGameServiceField);
+            if (hasServiceGroupingId)
+            {
+                return GetDynamicServiceGroupId(packageGameServiceField);
+            }
+
             if (s_GroupMap == null || string.IsNullOrWhiteSpace(package.name) || !s_GroupMap.ContainsKey(package.name))
+            {
                 return string.Empty;
+            }
+
             return s_GroupMap[package.name];
+        }
+
+        internal static bool HasDynamicServiceGroupId(Dictionary<string, object> packageGameServiceField)
+        {
+            return packageGameServiceField?.ContainsKey(k_GroupIdField) ?? false;
+        }
+
+        internal static string GetDynamicServiceGroupId(Dictionary<string, object> packageGameServiceField)
+        {
+            var key = (string)packageGameServiceField[k_GroupIdField];
+            if (!groupNames.ContainsKey(key))
+            {
+                return defaultServiceGroupingName;
+            }
+
+            return groupNames[key];
+        }
+
+        internal static Dictionary<string, object> GetLatestEditorGameServiceField(IPackage package)
+        {
+            return GetEditorGameServiceField(package?.versions?.latest?.packageInfo);
         }
 
         internal static Dictionary<string, object> GetEditorGameServiceField(PackageInfo packageInfo)
@@ -103,12 +138,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                         foreach (var serviceGrouping in configuration.serviceGroupings)
                         {
                             groupIndexes[serviceGrouping.name] = serviceGrouping.index;
+                            groupNames[serviceGrouping.id] = serviceGrouping.name;
                             foreach (var package in serviceGrouping.packages)
                             {
                                 s_GroupMap[package] = serviceGrouping.name;
                             }
                         }
                     }
+
+                    SetDefaultGroupsAsLargestIndex();
                 }
                 catch (Exception)
                 {
@@ -117,6 +155,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             return configLoaded;
+        }
+
+        internal void SetDefaultGroupsAsLargestIndex()
+        {
+            if (!groupIndexes.ContainsKey(defaultServiceGroupingName))
+            {
+                var largestIndex = groupIndexes.Values.Max();
+                groupIndexes[defaultServiceGroupingName] = largestIndex + 1;
+            }
         }
 
         public void OnPackageSelectionChanged(PackageSelectionArgs args)

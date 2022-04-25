@@ -5,9 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Search;
+
+using System.Reflection;
 
 namespace UnityEditor.Search
 {
@@ -53,9 +56,14 @@ namespace UnityEditor.Search
             }
         }
 
+        internal static List<AdvancedObjectSelector> ObjectSelectors { get; private set; }
+
+        internal static IEnumerable<AdvancedObjectSelector> OrderedObjectSelectors => ObjectSelectors.OrderBy(p => p.priority);
+
         static SearchService()
         {
             Refresh();
+            RefreshObjectSelectors();
             SetupSearchFirstUse();
         }
 
@@ -158,11 +166,68 @@ namespace UnityEditor.Search
             }
         }
 
+        internal static void RefreshObjectSelectors()
+        {
+            var validators = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator>(
+                (loaded, mi, attribute, handler) =>
+                    LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorValidatorAttribute, AdvancedObjectSelectorValidator, AdvancedObjectSelectorValidatorHandler>(
+                    loaded, mi, attribute, handler, "Advanced Object Selector Validator", (a, h) => GenerateAdvancedObjectSelectorValidatorWrapper(a, h)),
+                MethodSignature.FromDelegate<AdvancedObjectSelectorValidatorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToDictionary(validator => validator.id.GetHashCode());
+
+            ObjectSelectors = ReflectionUtils.LoadAllMethodsWithAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector>(
+                (loaded, mi, attribute, handler) =>
+                    LoadAdvancedObjectSelectorAttribute<AdvancedObjectSelectorAttribute, AdvancedObjectSelector, AdvancedObjectSelectorHandler>(
+                    loaded, mi, attribute, handler, "Advanced Object Selector", (a, h) => GenerateAdvancedObjectSelectorWrapper(validators, a, h)),
+                MethodSignature.FromDelegate<AdvancedObjectSelectorHandler>(), ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation).ToList();
+        }
+
+        static THandlerWrapper LoadAdvancedObjectSelectorAttribute<TAttribute, THandlerWrapper, TDelegate>(IReadOnlyCollection<THandlerWrapper> loaded, MethodInfo mi, TAttribute attribute, Delegate handler, string attributeName, Func<TAttribute, TDelegate, THandlerWrapper> wrapperGenerator)
+        where TAttribute : Attribute, IAdvancedObjectSelectorAttribute
+        where THandlerWrapper : IAdvancedObjectSelector
+        {
+            if (string.IsNullOrEmpty(attribute.id))
+                throw new CustomAttributeFormatException($"Null or empty {attributeName} id for handler \"{ReflectionUtils.GetMethodFullName(mi)}\"");
+
+            if (handler is TDelegate selectorHandler)
+            {
+                if (loaded.Any(p => p.id.Equals(attribute.id, StringComparison.Ordinal)))
+                    throw new CustomAttributeFormatException($"{attributeName} id \"{attribute.id}\" for \"{ReflectionUtils.GetMethodFullName(mi)}\" is already used by another handler.");
+                return wrapperGenerator(attribute, selectorHandler);
+            }
+            throw new CustomAttributeFormatException($"Invalid {attributeName} handler \"{attribute.id}\" using \"{ReflectionUtils.GetMethodFullName(mi)}\"");
+        }
+
+        static AdvancedObjectSelectorValidator GenerateAdvancedObjectSelectorValidatorWrapper(AdvancedObjectSelectorValidatorAttribute attribute, AdvancedObjectSelectorValidatorHandler handler)
+        {
+            return new AdvancedObjectSelectorValidator(attribute.id, handler);
+        }
+
+        static AdvancedObjectSelector GenerateAdvancedObjectSelectorWrapper(Dictionary<int, AdvancedObjectSelectorValidator> validators, AdvancedObjectSelectorAttribute attribute, AdvancedObjectSelectorHandler handler)
+        {
+            if (!validators.TryGetValue(attribute.id.GetHashCode(), out var validator))
+                throw new CustomAttributeFormatException($"Advanced Object Selector id \"{attribute.id}\" does not have a matching validator.");
+
+            var priority = attribute.defaultPriority;
+            var active = attribute.defaultActive;
+            var displayName = string.IsNullOrEmpty(attribute.displayName) ? SearchUtils.ToPascalWithSpaces(attribute.id) : attribute.displayName;
+            if (SearchSettings.TryGetObjectSelectorSettings(attribute.id, out var settings))
+            {
+                priority = settings.priority;
+                active = settings.active;
+            }
+            return new AdvancedObjectSelector(attribute.id, displayName, priority, active, handler, validator);
+        }
+
+        internal static AdvancedObjectSelector GetObjectSelector(string selectorId)
+        {
+            return ObjectSelectors.Find(p => p.id.Equals(selectorId, StringComparison.Ordinal));
+        }
+
         /// <summary>
         /// Create context from a list of provider id.
         /// </summary>
         /// <param name="providerIds">List of provider id</param>
-        /// <param name="searchText">seach Query</param>
+        /// <param name="searchText">Search Query</param>
         /// <param name="flags">Options defining how the query will be performed</param>
         /// <returns>New SearchContext</returns>
         public static SearchContext CreateContext(IEnumerable<string> providerIds, string searchText = "", SearchFlags flags = SearchFlags.Default)
@@ -174,7 +239,7 @@ namespace UnityEditor.Search
         /// Create context from a list of providers.
         /// </summary>
         /// <param name="providers">List of providers</param>
-        /// <param name="searchText">seach Query</param>
+        /// <param name="searchText">Search Query</param>
         /// <param name="flags">Options defining how the query will be performed</param>
         /// <returns>New SearchContext</returns>
         public static SearchContext CreateContext(IEnumerable<SearchProvider> providers, string searchText = "", SearchFlags flags = SearchFlags.Default)

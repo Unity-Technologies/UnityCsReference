@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.source != p2.source ||
                 p1.resolvedPath != p2.resolvedPath ||
                 p1.entitlements.isAllowed != p2.entitlements.isAllowed ||
-                p1.entitlements.licenseType != p2.entitlements.licenseType ||
+                p1.entitlements.licensingModel != p2.entitlements.licensingModel ||
                 p1.registry?.id != p2.registry?.id ||
                 p1.registry?.name != p2.registry?.name ||
                 p1.registry?.url != p2.registry?.url ||

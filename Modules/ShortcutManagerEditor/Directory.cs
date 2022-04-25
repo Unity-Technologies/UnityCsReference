@@ -14,7 +14,7 @@ namespace UnityEditor.ShortcutManagement
         List<ShortcutEntry>[] m_IndexedShortcutEntries;
         List<ShortcutEntry> m_ShortcutEntries;
 
-        public const int MaxIndexedEntries = (int)KeyCode.Mouse0;
+        public const int MaxIndexedEntries = (int)KeyCode.Mouse6 + 1;
 
         public Directory(IEnumerable<ShortcutEntry> entries)
         {

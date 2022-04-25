@@ -127,22 +127,25 @@ namespace Unity.UI.Builder
         void OnVariableEditingFinished()
         {
             var newVarName = variableField.value;
-
             if (m_InitialText != newVarName)
             {
-                if (string.IsNullOrEmpty(newVarName))
-                {
-                    m_Inspector.styleFields.UnsetStylePropertyForElement(targetField);
-                }
-                else
-                {
-                    m_Inspector.styleFields.OnFieldVariableChange(newVarName, targetField, styleName, index);
-                    m_Inspector.RefreshUI();
-                }
+                SetVariable(newVarName);
             }
-
             HideStyleVariableField();
             variableInfoTooltip?.Hide();
+        }
+
+        internal void SetVariable(string variableName)
+        {
+            if (string.IsNullOrEmpty(variableName))
+            {
+                m_Inspector.styleFields.UnsetStylePropertyForElement(targetField);
+            }
+            else
+            {
+                m_Inspector.styleFields.OnFieldVariableChange(variableName, targetField, styleName, index);
+                m_Inspector.RefreshUI();
+            }
         }
 
         public void ShowVariableField()
@@ -200,76 +203,23 @@ namespace Unity.UI.Builder
             }
         }
 
+        public StyleProperty GetStyleProperty()
+        {
+            var cSharpStyleName = BuilderInspectorStyleFields.ConvertUssStyleNameToCSharpStyleName(styleName);
+            return BuilderInspectorStyleFields.GetLastStyleProperty(m_Inspector.currentRule, cSharpStyleName);
+        }
+        
         public void RefreshField()
         {
             if (m_Row == null || m_Inspector == null)
                 return;
-
-            var cShartStyleName = BuilderInspectorStyleFields.ConvertUssStyleNameToCSharpStyleName(styleName);
-
+            
             // Disable completion on text field-based property fields when editing inline styles
             if (m_CompleterOnTarget != null)
                 m_CompleterOnTarget.enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
-
-            var property = BuilderInspectorStyleFields.GetLastStyleProperty(m_Inspector.currentRule, cShartStyleName);
-
-            if (property != null)
-            {
-                using (var manipulator = m_Inspector.styleSheet.GetStylePropertyManipulator(
-                    m_Inspector.currentVisualElement, m_Inspector.currentRule, property.name,
-                    m_Inspector.document.fileSettings.editorExtensionMode))
-                {
-                    var displayIndex = index;
-                    displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
-
-                    if (displayIndex >= 0 &&  manipulator.IsVariableAtIndex(displayIndex))
-                    {
-                        targetField.AddToClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
-                    }
-                    else
-                    {
-                        targetField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
-                    }
-                }
-            }
-            else if (!string.IsNullOrEmpty(styleName))
-            {
-                bool found = false;
-                var styleSheet = m_Inspector.styleSheet;
-                var matchedRules = m_Inspector.matchingSelectors.matchedRulesExtractor.selectedElementRules;
-
-                // Search for a variable in the best matching rule
-                for (var i = matchedRules.Count - 1; i >= 0; --i)
-                {
-                    var matchRecord = matchedRules.ElementAt(i).matchRecord;
-                    var ruleProperty = styleSheet.FindLastProperty(matchRecord.complexSelector.rule, styleName);
-
-                    if (ruleProperty != null)
-                    {
-                        using (var manipulator = matchRecord.sheet.GetStylePropertyManipulator(
-                            m_Inspector.currentVisualElement, matchRecord.complexSelector.rule, ruleProperty.name,
-                            m_Inspector.document.fileSettings.editorExtensionMode))
-                        {
-                            var displayIndex = index;
-                            displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
-
-                            if (displayIndex >= 0 &&  manipulator.IsVariableAtIndex(displayIndex))
-                            {
-                                targetField.AddToClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
-                                found = true;
-                            }
-                        }
-
-                        break;
-                    }
-                }
-
-                if (!found)
-                    targetField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
-            }
         }
 
-        static string GetBoundVariableName(VariableEditingHandler handler)
+        public static string GetBoundVariableName(VariableEditingHandler handler)
         {
             var styleName = handler.targetField.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
             var property = BuilderInspectorStyleFields.GetLastStyleProperty(handler.m_Inspector.currentRule, styleName);

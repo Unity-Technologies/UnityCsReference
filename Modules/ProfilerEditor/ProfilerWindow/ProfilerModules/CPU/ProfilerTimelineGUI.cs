@@ -1984,7 +1984,15 @@ namespace UnityEditorInternal
                             {
                                 var name = string.IsNullOrEmpty(info.name) ? styles.localizedStringUnnamedObject : info.name;
                                 var typeName = frameData.GetUnityObjectNativeTypeInfo(info.nativeTypeIndex, out var typeInfo) ? typeInfo.name : "Object";
-                                text.Append(string.Format("\n{0}: {1}", typeName, name));
+                                // For components we display the information about GameObject as usually components are unnamed.
+                                if (info.relatedGameObjectInstanceId != 0 && frameData.GetUnityObjectInfo(info.relatedGameObjectInstanceId, out var goInfo) && !string.IsNullOrEmpty(goInfo.name))
+                                {
+                                    text.Append(string.Format("\n{0}: {1}", typeName, goInfo.name));
+                                }
+                                else
+                                {
+                                    text.Append(string.Format("\n{0}: {1}", typeName, name));
+                                }
                             }
                         }
 

@@ -172,10 +172,22 @@ namespace UnityEditor
         Vector2 m_PreviewDir;
         Vector2 m_StaticPreviewLabelSize;
         Rect m_PreviewRect;
+
+        [Flags]
+        enum ButtonStates
+        {
+            None = 0,
+            Openable = 1 << 0,
+            Selectable = 1 << 1,
+            CanShowOverrides = 1 << 2,
+        }
+
+        ButtonStates m_ButtonStates;
         bool m_PlayModeObjects;
         bool m_IsAsset;
         bool m_ImmutableSelf;
-        bool m_IsMissing;
+        bool m_IsMissingArtifact;
+        bool m_IsVariantParentMissingOrCorrupted;
         bool m_IsPrefabInstanceAnyRoot;
         bool m_IsPrefabInstanceOutermostRoot;
         bool m_IsAssetRoot;
@@ -215,7 +227,9 @@ namespace UnityEditor
             m_PlayModeObjects = false;
             m_IsAsset = false;
             m_ImmutableSelf = false;
-            m_IsMissing = false;
+            m_IsMissingArtifact = false;
+            m_ButtonStates = ButtonStates.Openable | ButtonStates.Selectable | ButtonStates.CanShowOverrides;
+            m_IsVariantParentMissingOrCorrupted = false;
             m_IsPrefabInstanceAnyRoot = true;
             m_IsPrefabInstanceOutermostRoot = true;
             m_AllOfSamePrefabType = true;
@@ -266,8 +280,24 @@ namespace UnityEditor
                         m_ImmutableSelf = true; // Conservative is true if any is true
                     }
                 }
+
                 if (PrefabUtility.IsPrefabAssetMissing(go))
-                    m_IsMissing = true;
+                {
+                    m_IsMissingArtifact = true;
+
+                    m_ButtonStates &= ~ButtonStates.CanShowOverrides;
+
+                    var brokenAsset = GetMainAssetFromBrokenPrefabInstanceRoot(go) as BrokenPrefabAsset;
+                    if(brokenAsset == null)
+                        m_ButtonStates = ButtonStates.None;
+                    else
+                    {
+                        if (brokenAsset.isVariant)
+                            m_IsVariantParentMissingOrCorrupted = true;
+                        else if (!brokenAsset.isPrefabFileValid)
+                            m_ButtonStates &= ~ButtonStates.Openable;
+                    }
+                }
             }
         }
 
@@ -515,7 +545,7 @@ namespace UnityEditor
                 {
                     EditorGUILayout.BeginHorizontal(GUILayout.Width(kIconSize + Styles.tagFieldWidth));
                     GUILayout.FlexibleSpace();
-                    if (m_IsMissing)
+                    if (m_IsMissingArtifact)
                     {
                         GUI.contentColor = GUI.skin.GetStyle("CN StatusWarn").normal.textColor;
                         DoPrefixLabel(prefixLabel, EditorStyles.whiteLabel);
@@ -528,9 +558,9 @@ namespace UnityEditor
                     EditorGUILayout.EndHorizontal();
                 }
 
-                if (!m_IsMissing)
+                if (m_ButtonStates != ButtonStates.None)
                 {
-                    using (new EditorGUI.DisabledScope(targets.Length > 1))
+                    using (new EditorGUI.DisabledScope(targets.Length > 1 || !m_ButtonStates.HasFlag(ButtonStates.Openable)))
                     {
                         if (singlePrefabType == PrefabAssetType.Model)
                         {
@@ -547,34 +577,47 @@ namespace UnityEditor
                             // Open non-Model Prefab
                             if (GUILayout.Button(m_OpenPrefabContent, EditorStyles.miniButtonLeft))
                             {
-                                GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
                                 var prefabStageMode = PrefabStageUtility.GetPrefabStageModeFromModifierKeys();
+                                UnityObject asset = null;
+                                if (!m_IsVariantParentMissingOrCorrupted)
+                                    asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
+                                else
+                                    asset = GetMainAssetFromBrokenPrefabInstanceRoot(target as GameObject);
                                 PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(asset), (GameObject)target, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceInspectorOpenButton);
                                 GUIUtility.ExitGUI();
                             }
                         }
                     }
 
-                    // Select prefab
+                    // Select prefab asset
                     if (GUILayout.Button(Styles.selectString, EditorStyles.miniButtonRight))
                     {
-                        HashSet<GameObject> selectedAssets = new HashSet<GameObject>();
+                        HashSet<UnityObject> selectedAssets = new HashSet<UnityObject>();
                         for (int i = 0; i < targets.Length; i++)
                         {
-                            GameObject prefabGo = PrefabUtility.GetOriginalSourceOrVariantRoot(targets[i]);
-
-                            // Because of legacy prefab references we have to have this extra step
-                            // to make sure we ping the prefab asset correctly.
-                            // Reason is that scene files created prior to making prefabs CopyAssets
-                            // will reference prefabs as if they are serialized assets. Those references
-                            // works fine but we are not able to ping objects loaded directly from the asset
-                            // file, so we have to make sure we ping the metadata version of the prefab.
-                            var assetPath = AssetDatabase.GetAssetPath(prefabGo);
-                            selectedAssets.Add((GameObject)AssetDatabase.LoadMainAssetAtPath(assetPath));
+                            GameObject targetGo = targets[i] as GameObject;
+                            GameObject prefabGo = PrefabUtility.GetOriginalSourceOrVariantRoot(targetGo);
+                            if (prefabGo != null)
+                            {
+                                // Because of legacy prefab references we have to have this extra step
+                                // to make sure we ping the prefab asset correctly.
+                                // Reason is that scene files created prior to making prefabs CopyAssets
+                                // will reference prefabs as if they are serialized assets. Those references
+                                // works fine but we are not able to ping objects loaded directly from the asset
+                                // file, so we have to make sure we ping the metadata version of the prefab.
+                                var assetPath = AssetDatabase.GetAssetPath(prefabGo);
+                                selectedAssets.Add((GameObject)AssetDatabase.LoadMainAssetAtPath(assetPath));
+                            }
+                            else
+                            {
+                                UnityObject mainAsset = GetMainAssetFromBrokenPrefabInstanceRoot(targetGo);
+                                if (mainAsset != null)
+                                    selectedAssets.Add(mainAsset);
+                            }
                         }
 
                         Selection.objects = selectedAssets.ToArray();
-                        if (Selection.gameObjects.Length == 1)
+                        if (Selection.objects.Length != 0)
                             EditorGUIUtility.PingObject(Selection.activeObject);
                     }
 
@@ -584,7 +627,7 @@ namespace UnityEditor
 
                     // Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
                     Rect rect = GUILayoutUtility.GetRect(Styles.overridesContent, Styles.overridesDropdown);
-                    if (m_IsPrefabInstanceOutermostRoot)
+                    if (m_ButtonStates.HasFlag(ButtonStates.CanShowOverrides) && m_IsPrefabInstanceOutermostRoot)
                     {
                         if (EditorGUI.DropdownButton(rect, Styles.overridesContent, FocusType.Passive))
                         {
@@ -1216,6 +1259,14 @@ namespace UnityEditor
             if (!Application.IsPlaying(draggedObject))
                 draggedObject.name = uniqueName;
             s_CyclicNestingDetected = false;
+        }
+
+        internal UnityObject GetMainAssetFromBrokenPrefabInstanceRoot(GameObject targetGo)
+        {
+            //Handle cases where you have a variant with a parent that is missing
+            var path = PrefabUtility.GetAssetPathOfSourcePrefab(targetGo);
+            var asset = AssetDatabase.LoadMainAssetAtPath(path);
+            return asset;
         }
     }
 }

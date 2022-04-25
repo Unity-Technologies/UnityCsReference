@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditor.Search.Providers;
 using UnityEditor.SearchService;
 using UnityEngine;
@@ -108,7 +108,9 @@ namespace UnityEditor.Search
 
         public virtual void EndSearch(ISearchContext context) {}
 
-        public string name => "Advanced";
+        internal static string k_Name = "Advanced";
+
+        public string name => k_Name;
 
         public abstract string providerId { get; }
 
@@ -270,58 +272,73 @@ namespace UnityEditor.Search
     [ObjectSelectorEngine]
     class ObjectSelectorEngine : QuickSearchEngine, IObjectSelectorEngine
     {
-        // Internal for tests purposes.
-        internal QuickSearch qsWindow;
         public override string providerId => "asset";
 
+        AdvancedObjectSelector m_CurrentSelector;
+
         public override void BeginSearch(ISearchContext context, string query) {}
-        public override void BeginSession(ISearchContext context) {}
+
+        public override void BeginSession(ISearchContext context)
+        {
+            m_CurrentSelector = null;
+            var objectSelectorContext = context as ObjectSelectorSearchContext;
+            if (objectSelectorContext == null)
+                return;
+
+            if (!TryGetValidHandler(objectSelectorContext, out m_CurrentSelector))
+                return;
+
+            var selectorArgs = new AdvancedObjectSelectorParameters(objectSelectorContext);
+            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.BeginSession, selectorArgs);
+        }
         public override void EndSearch(ISearchContext context) {}
 
         public override void EndSession(ISearchContext context)
         {
-            qsWindow = null;
+            if (m_CurrentSelector == null)
+                return;
+            var selectorArgs = new AdvancedObjectSelectorParameters(context);
+            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.EndSession, selectorArgs);
+            m_CurrentSelector = null;
         }
 
         public bool SelectObject(ISearchContext context,
             Action<Object, bool> selectHandler, Action<Object> trackingHandler)
         {
-            var selectContext = (ObjectSelectorSearchContext)context;
-            var viewFlags = SearchFlags.OpenPicker;
-            if (Utils.IsRunningTests())
-                viewFlags |= SearchFlags.Dockable;
-            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, "", "object", "ObjectSelectorEngine");
-            var searchQuery = string.Join(" ", context.requiredTypeNames.Select(tn => tn == null ? "" : $"t:{tn.ToLowerInvariant()}"));
-            if (string.IsNullOrEmpty(searchQuery))
-                searchQuery = "";
-            else
-                searchQuery += " ";
-            var viewstate = new SearchViewState(
-                SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, viewFlags), selectHandler, trackingHandler,
-                selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
-
-            qsWindow = SearchService.ShowPicker(viewstate) as QuickSearch;
-            return qsWindow != null;
-        }
-
-        internal static IEnumerable<SearchProvider> GetObjectSelectorProviders(ObjectSelectorSearchContext context)
-        {
-            bool allowAssetObjects = (context.visibleObjects & VisibleObjects.Assets) == VisibleObjects.Assets;
-            bool allowSceneObjects = (context.visibleObjects & VisibleObjects.Scene) == VisibleObjects.Scene;
-
-            if (allowAssetObjects)
-            {
-                yield return SearchService.GetProvider(AdbProvider.type);
-                yield return SearchService.GetProvider(AssetProvider.type);
-            }
-            if (allowSceneObjects)
-                yield return SearchService.GetProvider(BuiltInSceneObjectsProvider.type);
+            if (m_CurrentSelector == null)
+                return false;
+            var selectorArgs = new AdvancedObjectSelectorParameters(context, selectHandler, trackingHandler);
+            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.OpenAndSearch, selectorArgs);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, m_CurrentSelector.id, "object", "ObjectSelectorEngine");
+            return true;
         }
 
         public void SetSearchFilter(ISearchContext context, string searchFilter)
         {
-            if (qsWindow)
-                qsWindow.SetSearchText(searchFilter);
+            if (m_CurrentSelector == null)
+                return;
+            var selectorArgs = new AdvancedObjectSelectorParameters(context, searchFilter);
+            m_CurrentSelector.handler(AdvancedObjectSelectorEventType.SetSearchFilter, selectorArgs);
+        }
+
+        static bool TryGetValidHandler(ObjectSelectorSearchContext context, out AdvancedObjectSelector selector)
+        {
+            selector = null;
+            foreach (var searchSelector in GetActiveSelectors())
+            {
+                if (searchSelector.validator.handler(context))
+                {
+                    selector = searchSelector;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static IEnumerable<AdvancedObjectSelector> GetActiveSelectors()
+        {
+            return SearchService.OrderedObjectSelectors.Where(p => p.active);
         }
     }
 }

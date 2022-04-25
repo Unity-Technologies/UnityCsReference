@@ -164,8 +164,9 @@ namespace UnityEditor
         // Invokes the menu item in the specified path.
         public static bool ExecuteMenuItem(string menuItemPath)
         {
+            var sanitizedPath = MenuService.SanitizeMenuItemName(menuItemPath);
             var isDefaultMode = ModeService.currentId == ModeService.k_DefaultModeId;
-            var result = ExecuteMenuItemInternal(menuItemPath, isDefaultMode);
+            var result = ExecuteMenuItemInternal(sanitizedPath, isDefaultMode);
             if (result)
                 return result;
 
@@ -175,7 +176,7 @@ namespace UnityEditor
                 foreach (var item in menuItems)
                 {
                     MenuItem itemData = (MenuItem)item.GetCustomAttributes(typeof(MenuItem), false)[0];
-                    if (!itemData.validate && itemData.menuItem == menuItemPath)
+                    if (!itemData.validate && itemData.menuItem == sanitizedPath)
                     {
                         if (item.GetParameters().Length == 0)
                         {

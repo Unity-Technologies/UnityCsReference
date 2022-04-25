@@ -42,14 +42,19 @@ namespace UnityEditor.Search
 
         public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
             where TAttribute : Attribute
-            where THandlerWrapper : struct
+        {
+            return LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>((_, mi, att, d) => generator(mi, att, d), supportedSignatures, behavior);
+        }
+
+        public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<IReadOnlyCollection<THandlerWrapper>, MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
+            where TAttribute : Attribute
         {
             return TypeCache.GetMethodsWithAttribute<TAttribute>()
-                .Select(mi =>
+                .Aggregate(new List<THandlerWrapper>(), (accumulated, mi) =>
                 {
                     try
                     {
-                        return LoadMethodWithAttribute(mi, generator, supportedSignatures).ToArray();
+                        LoadMethodWithAttribute(mi, generator, supportedSignatures, accumulated, behavior);
                     }
                     catch (Exception ex)
                     {
@@ -57,43 +62,68 @@ namespace UnityEditor.Search
                             throw ex;
                         else
                         {
-                            UnityEngine.Debug.LogWarning($"Cannot load method: \"{mi.Name}\" with attribute: \"{typeof(TAttribute).FullName}\" ({ex.Message})");
+                            LogError<TAttribute>(ex.Message, mi, AttributeLoaderBehavior.DoNotThrowOnValidation);
                         }
-                        return null;
+
+                        return accumulated;
                     }
+
+                    return accumulated;
                 })
-                .Where(generator => generator != null)
-                .SelectMany(generator => generator);
+                .Where(g => g != null);
         }
 
         public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature supportedSignature, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
             where TAttribute : Attribute
-            where THandlerWrapper : struct
         {
             return LoadAllMethodsWithAttribute(generator, new[] { supportedSignature }, behavior);
         }
 
-        public static IEnumerable<THandlerWrapper> LoadMethodWithAttribute<TAttribute, THandlerWrapper>(MethodInfo methodInfo, Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures)
+        public static IEnumerable<THandlerWrapper> LoadAllMethodsWithAttribute<TAttribute, THandlerWrapper>(Func<IReadOnlyCollection<THandlerWrapper>, MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature supportedSignature, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
             where TAttribute : Attribute
-            where THandlerWrapper : struct
         {
-            foreach (var attribute in methodInfo.GetCustomAttributes<TAttribute>())
+            return LoadAllMethodsWithAttribute(generator, new[] { supportedSignature }, behavior);
+        }
+
+        public static IEnumerable<THandlerWrapper> LoadMethodWithAttribute<TAttribute, THandlerWrapper>(MethodInfo methodInfo, Func<MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
+            where TAttribute : Attribute
+        {
+            var loaded = new List<THandlerWrapper>();
+            LoadMethodWithAttribute<TAttribute, THandlerWrapper>(methodInfo, (_, mi, att, handler) => generator(mi, att, handler), supportedSignatures, loaded, behavior);
+            return loaded;
+        }
+
+        public static void LoadMethodWithAttribute<TAttribute, THandlerWrapper>(MethodInfo methodInfo, Func<IReadOnlyCollection<THandlerWrapper>, MethodInfo, TAttribute, Delegate, THandlerWrapper> generator, MethodSignature[] supportedSignatures, List<THandlerWrapper> loaded, AttributeLoaderBehavior behavior = AttributeLoaderBehavior.ThrowOnValidation)
+            where TAttribute : Attribute
+        {
+            if (!methodInfo.IsStatic)
+                LogError<TAttribute>($"Method {methodInfo.Name} should be static.", methodInfo, behavior);
+
+            foreach (var supportedSignature in supportedSignatures)
             {
-                if (attribute == null)
-                    throw new Exception($"Method {methodInfo.Name} should have an attribute of type {typeof(TAttribute)}.");
-                int foundSignatures = 0;
-                for (int i = 0; i < supportedSignatures.Length; i++)
+                if (!ValidateMethodSignature(methodInfo, supportedSignature))
+                    continue;
+                var handler = CreateDelegate(methodInfo, supportedSignature.delegateType);
+                foreach (var attribute in methodInfo.GetCustomAttributes<TAttribute>())
                 {
-                    var supportedSignature = supportedSignatures[i];
-                    if (!ValidateMethodSignature(methodInfo, supportedSignature))
-                        continue;
-                    foundSignatures++;
-                    var handler = CreateDelegate(methodInfo, supportedSignature.delegateType);
-                    yield return generator(methodInfo, attribute, handler);
+                    try
+                    {
+                        if (attribute == null)
+                            LogGeneratorError($"Method {methodInfo.Name} should have an attribute of type {typeof(TAttribute)}.", attribute, methodInfo, behavior);
+                        var handlerWrapper = generator(loaded, methodInfo, attribute, handler);
+                        loaded.Add(handlerWrapper);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (behavior == AttributeLoaderBehavior.ThrowOnValidation)
+                            throw ex;
+                        LogGeneratorError(ex.Message, attribute, methodInfo, AttributeLoaderBehavior.DoNotThrowOnValidation);
+                    }
                 }
-                if (foundSignatures == 0)
-                    throw new ArgumentException($"Method {methodInfo.Name} doesn't have the correct signature.");
+
+                return;
             }
+            LogError<TAttribute>($"Method {methodInfo.Name} doesn't have the correct signature.", methodInfo, behavior);
         }
 
         public static Delegate CreateDelegate(MethodInfo mi, Type delegateType)
@@ -136,6 +166,27 @@ namespace UnityEditor.Search
             }
 
             return true;
+        }
+
+        static void LogError<TAttribute>(string message, MethodInfo mi, AttributeLoaderBehavior behavior)
+        {
+            if (behavior == AttributeLoaderBehavior.ThrowOnValidation)
+                throw new Exception(message);
+            UnityEngine.Debug.LogWarning($"Cannot load method \"{GetMethodFullName(mi)}\" with attribute \"{typeof(TAttribute).FullName}\": ({message})");
+        }
+
+        static void LogGeneratorError<TAttribute>(string message, TAttribute attribute, MethodInfo mi, AttributeLoaderBehavior behavior)
+        {
+            if (behavior == AttributeLoaderBehavior.ThrowOnValidation)
+                throw new Exception(message);
+            UnityEngine.Debug.LogWarning($"Cannot load method \"{GetMethodFullName(mi)}\" with attribute \"{attribute}\": ({message})");
+        }
+
+        public static string GetMethodFullName(MethodInfo mi)
+        {
+            if (mi.DeclaringType == null)
+                return mi.Name;
+            return $"{mi.DeclaringType.FullName}.{mi.Name}";
         }
     }
 }
