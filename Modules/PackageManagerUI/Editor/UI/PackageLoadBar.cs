@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
@@ -28,6 +27,7 @@ namespace UnityEditor.PackageManager.UI
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
+        private PackageFiltering m_PackageFiltering;
         private PageManager m_PageManager;
         private void ResolveDependencies()
         {
@@ -35,6 +35,7 @@ namespace UnityEditor.PackageManager.UI
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
+            m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_PageManager = container.Resolve<PageManager>();
         }
 
@@ -54,8 +55,10 @@ namespace UnityEditor.PackageManager.UI
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+            m_PackageFiltering.onFilterTabChanged += SetFilter;
             m_PageManager.onRefreshOperationFinish += Refresh;
-            Refresh();
+
+            SetFilter(m_PackageFiltering.currentFilterTab);
 
             loadMinLabel.SetEnabled(m_Application.isInternetReachable);
             loadMaxLabel.SetEnabled(m_Application.isInternetReachable);
@@ -65,8 +68,14 @@ namespace UnityEditor.PackageManager.UI
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
-
+            m_PackageFiltering.onFilterTabChanged -= SetFilter;
             m_PageManager.onRefreshOperationFinish -= Refresh;
+        }
+
+        private void SetFilter(PackageFilterTab filterTab)
+        {
+            UIUtils.SetElementDisplay(this, filterTab == PackageFilterTab.AssetStore);
+            Refresh();
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
@@ -82,6 +91,8 @@ namespace UnityEditor.PackageManager.UI
 
         public void Refresh()
         {
+            if (!UIUtils.IsElementVisible(this))
+                return;
             var page = m_PageManager.GetCurrentPage();
             Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
         }

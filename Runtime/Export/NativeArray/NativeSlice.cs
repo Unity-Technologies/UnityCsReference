@@ -186,7 +186,6 @@ namespace Unity.Collections
         {
             get
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
                 CheckReadIndex(index);
                 return UnsafeUtility.ReadArrayElementWithStride<T>(m_Buffer, index, m_Stride);
             }
@@ -194,7 +193,6 @@ namespace Unity.Collections
             [WriteAccessRequired]
             set
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
                 CheckWriteIndex(index);
                 UnsafeUtility.WriteArrayElementWithStride(m_Buffer, index, m_Stride, value);
             }
@@ -277,8 +275,6 @@ namespace Unity.Collections
         {
             get
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
-
                 return m_Length;
             }
         }
@@ -306,8 +302,6 @@ namespace Unity.Collections
 
             public Enumerator(ref NativeSlice<T> array)
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in array.m_Safety);
-
                 m_Array = array;
                 m_Index = -1;
             }
@@ -318,11 +312,6 @@ namespace Unity.Collections
 
             public bool MoveNext()
             {
-                if (!AtomicSafetyHandle.IsValidNonDefaultHandle(m_Array.m_Safety))
-                {
-                    return false;
-                }
-
                 m_Index++;
                 return m_Index < m_Array.Length;
             }

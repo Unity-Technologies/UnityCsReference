@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI
 
         private PackageManagerWindowRoot m_Root;
 
-        void OnEnable()
+        void CreateGUI()
         {
             this.SetAntiAliasing(4);
             if (instance == null) instance = this;
@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI
             m_Root = new PackageManagerWindowRoot(resourceLoader, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy);
             rootVisualElement.Add(m_Root);
 
-            m_Root.OnEnable();
+            m_Root.CreateGUI();
         }
 
         void OnDisable()
