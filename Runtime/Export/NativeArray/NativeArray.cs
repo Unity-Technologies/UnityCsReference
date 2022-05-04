@@ -109,8 +109,6 @@ namespace Unity.Collections
         {
             get
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
-
                 return m_Length;
             }
         }
@@ -151,7 +149,6 @@ namespace Unity.Collections
         {
             get
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
                 CheckElementReadAccess(index);
                 return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
             }
@@ -159,7 +156,6 @@ namespace Unity.Collections
             [WriteAccessRequired]
             set
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
                 CheckElementWriteAccess(index);
                 UnsafeUtility.WriteArrayElement(m_Buffer, index, value);
             }
@@ -305,8 +301,6 @@ namespace Unity.Collections
 
             public Enumerator(ref NativeArray<T> array)
             {
-                AtomicSafetyHandle.ValidateNonDefaultHandle(in array.m_Safety);
-
                 m_Array = array;
                 m_Index = -1;
             }
@@ -317,11 +311,6 @@ namespace Unity.Collections
 
             public bool MoveNext()
             {
-                if (!AtomicSafetyHandle.IsValidNonDefaultHandle(m_Array.m_Safety))
-                {
-                    return false;
-                }
-
                 m_Index++;
                 return m_Index < m_Array.Length;
             }
@@ -689,8 +678,6 @@ namespace Unity.Collections
             {
                 get
                 {
-                    AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
-
                     return m_Length;
                 }
             }
@@ -716,7 +703,6 @@ namespace Unity.Collections
             {
                 get
                 {
-                    AtomicSafetyHandle.ValidateNonDefaultHandle(in m_Safety);
                     CheckElementReadAccess(index);
                     return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
                 }
@@ -734,6 +720,8 @@ namespace Unity.Collections
                 if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
                     AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
             }
+
+            public bool IsCreated => m_Buffer != null;
         }
     }
 

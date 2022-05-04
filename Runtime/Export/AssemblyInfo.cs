@@ -83,6 +83,7 @@ using System.Runtime.CompilerServices;
 // Needed for Baselib CSharp binding access.
 [assembly: InternalsVisibleTo("Unity.Networking.Transport")]
 [assembly: InternalsVisibleTo("Unity.ucg.QoS")] // TODO(andrews): Remove this when we fix transport
+[assembly: InternalsVisibleTo("Unity.Services.QoS")] // TODO: Remove this when we fix transport
 [assembly: InternalsVisibleTo("Unity.Logging")]
 [assembly: InternalsVisibleTo("Unity.Entities")]
 [assembly: InternalsVisibleTo("Unity.Entities.Tests")]

@@ -16,20 +16,26 @@ namespace UnityEditor.PackageManager.UI
         public virtual event Action<PackageFilterTab> onFilterTabChanged = delegate {};
         public virtual event Action<string> onSearchTextChanged = delegate {};
 
+        public const PackageFilterTab k_DefaultFilterTab = PackageFilterTab.InProject;
+
         public virtual PackageFilterTab? previousFilterTab { get; private set; } = null;
 
         [SerializeField]
         private PackageFilterTab m_CurrentFilterTab;
+
+        [SerializeField]
+        private bool m_CurrentFilterTabInitialized;
         public virtual PackageFilterTab currentFilterTab
         {
-            get { return m_CurrentFilterTab; }
+            get { return m_CurrentFilterTabInitialized ? m_CurrentFilterTab : k_DefaultFilterTab; }
 
             set
             {
-                if (value != m_CurrentFilterTab)
+                if (value != currentFilterTab)
                 {
-                    previousFilterTab = m_CurrentFilterTab;
+                    previousFilterTab = currentFilterTab;
                     m_CurrentFilterTab = value;
+                    m_CurrentFilterTabInitialized = true;
                     onFilterTabChanged?.Invoke(m_CurrentFilterTab);
                 }
             }

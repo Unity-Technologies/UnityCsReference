@@ -75,6 +75,9 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private bool m_DependenciesResolved;
 
+        [NonSerialized]
+        private bool m_Initialized;
+
         public ServicesContainer()
         {
             // In the constructor we only need to worry about creating a brand new instance.
@@ -113,6 +116,7 @@ namespace UnityEditor.PackageManager.UI
             RegisterDefaultServices();
 
             m_DependenciesResolved = false;
+            m_Initialized = false;
         }
 
         private void ResolveDependencies()
@@ -139,8 +143,11 @@ namespace UnityEditor.PackageManager.UI
             m_DependenciesResolved = true;
         }
 
-        void OnEnable()
+        private void Initialize()
         {
+            if (m_Initialized)
+                return;
+
             ResolveDependencies();
 
             // Some services has dependencies that requires some initialization in `OnEnable`.
@@ -156,6 +163,8 @@ namespace UnityEditor.PackageManager.UI
 
             m_PackageDatabase.OnEnable();
             m_PageManager.OnEnable();
+
+            m_Initialized = true;
         }
 
         void OnDisable()
@@ -212,8 +221,8 @@ namespace UnityEditor.PackageManager.UI
 
         public T Resolve<T>() where T : class
         {
-            object result;
-            return m_RegisteredObjects.TryGetValue(typeof(T), out result) ? result as T : null;
+            Initialize();
+            return m_RegisteredObjects.TryGetValue(typeof(T), out var result) ? result as T : null;
         }
 
         public void OnBeforeSerialize()
