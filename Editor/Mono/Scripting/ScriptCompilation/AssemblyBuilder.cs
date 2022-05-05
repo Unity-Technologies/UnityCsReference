@@ -56,11 +56,12 @@ namespace UnityEditor.Compilation
         private class BeeScriptCompilationState
         {
             public ScriptAssembly[] assemblies;
-            public BeeDriver Driver;
+            public ActiveBuild ActiveBuild;
             public EditorCompilation editorCompilation;
             public bool finishedCompiling;
         }
         private BeeScriptCompilationState activeBeeBuild;
+
 
         public AssemblyBuilder(string assemblyPath, params string[] scriptPaths)
         {
@@ -110,16 +111,19 @@ namespace UnityEditor.Compilation
                 Directory.Delete(beeAssemblyBuilderDirectoryInProjectDirectory, true);
 
             var debug = compilerOptions.CodeOptimization == CodeOptimization.Debug;
+
+            var buildRequest = UnityBeeDriver.BuildRequestFor(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", beeAssemblyBuilderDirectory);
+            buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(editorCompilation, assemblies, debug, assembly.OutputDirectory, assembly.BuildTarget, true));
+            buildRequest.Target = Constants.ScriptAssembliesTarget;
+
             activeBeeBuild = new BeeScriptCompilationState
             {
                 assemblies = new[] { assembly },
-                Driver = UnityBeeDriver.Make(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", new ILPostProcessingProgram(), beeAssemblyBuilderDirectory),
+                ActiveBuild =  BeeDriver.BuildAsync(buildRequest),
                 editorCompilation = editorCompilation,
-                finishedCompiling = false,
             };
-            BeeScriptCompilation.AddScriptCompilationData(activeBeeBuild.Driver, editorCompilation, assemblies, debug, assembly.OutputDirectory, assembly.BuildTarget, true);
-            activeBeeBuild.Driver.BuildAsync(Constants.ScriptAssembliesTarget);
-            activeBeeBuild.editorCompilation.AddAssemblyBuilder(this);
+
+            editorCompilation.AddAssemblyBuilder(this);
 
             InvokeBuildStarted();
             return true;
@@ -145,12 +149,16 @@ namespace UnityEditor.Compilation
                 if (activeBeeBuild.finishedCompiling)
                     return AssemblyBuilderStatus.Finished;
 
-                var result = activeBeeBuild.Driver.Tick();
-                if (result == null)
+                var activeBuildTaskObject = activeBeeBuild.ActiveBuild.TaskObject;
+                if (!activeBuildTaskObject.IsCompleted)
+                    return AssemblyBuilderStatus.IsCompiling;
+
+                var profileOutputWritingTask = activeBuildTaskObject.Result.ProfileOutputWritingTask;
+                if (!profileOutputWritingTask.IsCompleted)
                     return AssemblyBuilderStatus.IsCompiling;
 
                 activeBeeBuild.finishedCompiling = true;
-                InvokeBuildFinished(result);
+                InvokeBuildFinished(activeBuildTaskObject.Result);
 
                 return AssemblyBuilderStatus.Finished;
             }
@@ -175,7 +183,7 @@ namespace UnityEditor.Compilation
             try
             {
                 buildFinished?.Invoke(assemblyPath, EditorCompilation.ConvertCompilerMessages(BeeScriptCompilation
-                    .ParseAllResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeResults, EditorCompilationInterface.Instance)
+                    .ParseAllNodeResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeFinishedMessages, EditorCompilationInterface.Instance)
                     .SelectMany(a => a).ToArray()));
             }
             catch (Exception e)

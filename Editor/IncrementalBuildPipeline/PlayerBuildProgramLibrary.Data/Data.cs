@@ -33,6 +33,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string ApplicationIdentifier;
         public string Architecture;
         public bool UseIl2Cpp;
+        public bool UseCoreCLR;
         public bool InstallIntoBuildsFolder;
         public bool GenerateIdeProject;
         public bool Development;

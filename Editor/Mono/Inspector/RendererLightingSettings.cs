@@ -201,7 +201,9 @@ namespace UnityEditor
 
             ReceiveGI receiveGI = (ReceiveGI)m_ReceiveGI.intValue;
             bool contributeGI = isPreset ? true : (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
+            #pragma warning disable 618
             bool showEnlightenSettings = (isPreset || isPrefabAsset || realtimeGI || (bakedGI && lightmapper == LightingSettings.Lightmapper.Enlighten)) && SupportedRenderingFeatures.active.enlighten;
+            #pragma warning restore 618
 
             // m_ReceiveGI might still be set to Lightmaps, but LightProbes is shown in the inspector since the contributeGI if off.
             // In this case we still have to mark it as "multiple values" even though both have "Lightmaps" as the value, but one is showing a grayed out "Light Probes" in the UI
@@ -299,7 +301,9 @@ namespace UnityEditor
                 {
                     EditorGUI.indentLevel += 1;
 
+                    #pragma warning disable 618
                     bool showProgressiveSettings = isPreset || isPrefabAsset || (bakedGI && lightmapper != LightingSettings.Lightmapper.Enlighten);
+                    #pragma warning restore 618
 
                     LightmapScaleGUI(true, Styles.scaleInLightmap, false);
 
@@ -496,8 +500,10 @@ namespace UnityEditor
         {
             // SSDs (with the exception of those being computed with Enlighten) do not end up in a lightmap,
             // therefore we do not show clamping information.
+            #pragma warning disable 618
             if (isSSD && Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
                 return;
+            #pragma warning restore 618
 
             float lodScale = CalcLODScale(isMeshRenderer);
             float lightmapScale = lodScale * m_LightmapScale.floatValue;
@@ -585,7 +591,9 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
+            #pragma warning disable 618
             bool showProgressiveInfo = !isPreset && (settings.bakedGI && settings.lightmapper != LightingSettings.Lightmapper.Enlighten);
+            #pragma warning restore 618
 
             if (showProgressiveInfo && Unsupported.IsDeveloperMode())
             {
@@ -775,7 +783,10 @@ namespace UnityEditor
             Mesh mesh = GetSharedMesh(m_Renderers[0]);
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
+
+            #pragma warning disable 618
             bool showEnlightenSettings = isPrefabAsset || settings.realtimeGI || (settings.bakedGI && settings.lightmapper == LightingSettings.Lightmapper.Enlighten);
+            #pragma warning restore 618
 
             if (!HasSupportedTopologyForGI(mesh))
             {

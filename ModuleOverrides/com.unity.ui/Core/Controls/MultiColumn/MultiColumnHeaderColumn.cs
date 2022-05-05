@@ -208,7 +208,14 @@ namespace UnityEngine.UIElements.Internal
             };
             this.AddManipulator(clickable = new Clickable((Action)null));
             clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
-            clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control});
+
+            EventModifiers multiSortingModifier = EventModifiers.Control;
+
+            if (Application.platform is RuntimePlatform.OSXEditor or RuntimePlatform.OSXPlayer)
+            {
+                multiSortingModifier = EventModifiers.Command;
+            }
+            clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = multiSortingModifier });
         }
 
         void UpdateBindingFromColumn()

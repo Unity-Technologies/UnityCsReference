@@ -21,12 +21,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
     static class UnityBeeDriver
     {
         internal static readonly string BeeBackendExecutable = new NPath($"{EditorApplication.applicationContentsPath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
+
         [Serializable]
         internal class BeeBackendInfo
         {
             public string UnityVersion;
             public string BeeBackendHash;
         }
+
         internal static string BeeBackendHash
         {
             get
@@ -35,17 +37,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var hash = SessionState.GetString(nameof(BeeBackendHash), string.Empty);
                 if (!string.IsNullOrEmpty(hash))
                     return hash;
+
                 using var hasher = new SHA256Managed();
                 using var stream = File.OpenRead(BeeBackendExecutable);
                 var bytes = hasher.ComputeHash(stream);
+
                 var sb = new StringBuilder();
                 foreach (var b in bytes)
                     sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
                 hash = sb.ToString();
+
                 SessionState.SetString(nameof(BeeBackendHash), hash);
+
                 return hash;
             }
         }
+
         public static BeeBuildProgramCommon.Data.PackageInfo[] GetPackageInfos(string projectDirectory)
         {
             return PackageManager.PackageInfo.GetAllRegisteredPackages().Select(p =>
@@ -62,7 +69,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }).ToArray();
         }
 
-        private static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
+       private static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
         {
             var beeBackendInfoPath = dagDirectory.Combine("bee_backend.info");
             var currentInfo = new BeeBackendInfo()
@@ -109,64 +116,60 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static BeeDriver Make(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, ILPostProcessingProgram ilpp, string dagDirectory = null, bool useScriptUpdater = true)
+        public static BuildRequest BuildRequestFor(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, string dagDirectory = null, bool useScriptUpdater = true)
         {
-            return Make(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, ilpp, StdOutModeForScriptCompilation);
+            return BuildRequestFor(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, new ILPostProcessingProgram(), StdOutModeForScriptCompilation);
         }
 
         public const StdOutMode StdOutModeForScriptCompilation =
             StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.LogStdOutOnFinish;
         public const StdOutMode StdOutModeForPlayerBuilds =
             StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.Stream;
-
-        public static BeeDriver Make(
-            RunnableProgram buildProgram,
-            string dagName,
-            string dagDirectory,
-            bool useScriptUpdater,
-            string projectDirectory,
-            ILPostProcessingProgram ilpp,
-            StdOutMode stdoutMode,
-            ProgressAPI progressAPI = null,
-            RunnableProgram beeBackendProgram = null)
+        public static BuildRequest BuildRequestFor(RunnableProgram buildProgram, string dagName, string dagDirectory, bool useScriptUpdater, string projectDirectory, ILPostProcessingProgram ilpp,StdOutMode stdoutMode, RunnableProgram beeBackendProgram = null)
         {
-            var sourceFileUpdaters = useScriptUpdater
-                ? new[] {new UnityScriptUpdater(projectDirectory)}
-            : Array.Empty<SourceFileUpdaterBase>();
-
-            var processSourceFileUpdatersResult = new UnitySourceFileUpdatersResultHandler();
-
             NPath dagDir = dagDirectory ?? "Library/Bee";
-
             RecreateDagDirectoryIfNeeded(dagDir);
-            NPath profilerOutputFile = UnityBeeDriverProfilerSession.GetTraceEventsOutputForNewBeeDriver() ?? $"{dagDir}/fullprofile.json";
-            var result = new BeeDriver(buildProgram, beeBackendProgram ?? UnityBeeBackendProgram(stdoutMode), projectDirectory, dagName, dagDir.ToString(), sourceFileUpdaters, processSourceFileUpdatersResult, progressAPI ?? new UnityProgressAPI("Script Compilation"), profilerOutputFile: profilerOutputFile.ToString());
-
-            result.DataForBuildProgram.Add(new ConfigurationData
+            return new BuildRequest()
             {
-                Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
-                Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
-                UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
-                NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
-                EditorContentsPath = EditorApplication.applicationContentsPath,
-                Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
-                UnityVersion = Application.unityVersion,
-                UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
-                UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
-                AdvancedLicense = PlayerSettings.advancedLicense,
-                Batchmode = InternalEditorUtility.inBatchMode,
-                EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
-                NamedPipeOrUnixSocket = ilpp.NamedPipeOrUnixSocket,
-            });
-            return result;
+                BuildProgram = buildProgram,
+                BackendProgram = beeBackendProgram ?? UnityBeeBackendProgram(stdoutMode),
+                ProjectRoot = projectDirectory,
+                DagName = dagName,
+                BuildStateDirectory = dagDir.EnsureDirectoryExists().ToString(),
+                ProfilerOutputFile = (UnityBeeDriverProfilerSession.GetTraceEventsOutputForNewBeeDriver() ?? $"{dagDir.EnsureDirectoryExists()}/fullprofile.json").ToString(),
+                SourceFileUpdaters = useScriptUpdater
+                    ? new[] {new UnityScriptUpdater(projectDirectory)}
+                    : Array.Empty<SourceFileUpdaterBase>(),
+                ProcessSourceFileUpdatersResult = new UnitySourceFileUpdatersResultHandler(),
+
+                DataForBuildProgram =
+                {
+                    () => new ConfigurationData
+                    {
+                        Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
+                        Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
+                        UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
+                        NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
+                        EditorContentsPath = EditorApplication.applicationContentsPath,
+                        Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
+                        UnityVersion = Application.unityVersion,
+                        UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
+                        UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
+                        AdvancedLicense = PlayerSettings.advancedLicense,
+                        Batchmode = InternalEditorUtility.inBatchMode,
+                        EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
+                        NamedPipeOrUnixSocket = ilpp.NamedPipeOrUnixSocket,
+                    }
+                }
+            };
         }
 
         internal static RunnableProgram UnityBeeBackendProgram(StdOutMode stdoutMode)
         {
-            return new SystemProcessRunnableProgram(BeeBackendExecutable, alwaysEnvironmentVariables: new Dictionary<string, string>()
+            return new SystemProcessRunnableProgramDuplicate(BeeBackendExecutable, alwaysEnvironmentVariables: new Dictionary<string, string>()
             {
                 { "BEE_CACHE_BEHAVIOUR", "_"},
-                { "CHROMETRACE_TIMEOFFSET","unixepoch"}
+                { "CHROMETRACE_TIMEOFFSET", "unixepoch" }
             }, stdOutMode: stdoutMode);
         }
     }

@@ -7,6 +7,7 @@ using Debug = UnityEngine.Debug;
 using UnityEngine.Bindings;
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using UnityEditor.Build;
 
 namespace UnityEditor
@@ -336,6 +337,7 @@ namespace UnityEditor
     [StaticAccessor("GetEditorUserBuildSettings()", StaticAccessorType.Dot)]
     public partial class EditorUserBuildSettings : Object
     {
+        internal const string kSettingArchitecture = "Architecture";
         private const string kSettingWaitForManagedDebugger = "WaitForManagedDebugger";
         private const string kSettingManagedDebuggerFixedPort = "ManagedDebuggerFixedPort";
         private EditorUserBuildSettings() {}

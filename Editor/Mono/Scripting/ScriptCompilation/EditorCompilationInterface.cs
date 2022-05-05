@@ -218,11 +218,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines = null)
+        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines, bool allowBlocking)
         {
             try
             {
-                return Instance.TickCompilationPipeline(options, platformGroup, platform, subtarget, extraScriptingDefines);
+                return Instance.TickCompilationPipeline(options, platformGroup, platform, subtarget, extraScriptingDefines, allowBlocking);
             }
             catch (Exception e)
             {

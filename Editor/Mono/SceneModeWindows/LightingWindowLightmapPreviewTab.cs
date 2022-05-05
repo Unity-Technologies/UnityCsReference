@@ -55,7 +55,9 @@ namespace UnityEditor
         {
             get
             {
+                #pragma warning disable 618
                 return !isRealtimeLightmap && Unsupported.IsDeveloperMode() && Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten;
+                #pragma warning restore 618
             }
         }
 

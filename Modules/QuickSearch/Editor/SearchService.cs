@@ -518,7 +518,9 @@ namespace UnityEditor.Search
             context.asyncItemReceived += ReceiveItems;
             context.sessionStarted += OnSessionStarted;
             context.sessionEnded += OnSessionEnded;
-            GetItems(context, options | SearchFlags.FirstBatchAsync);
+            var firstResults = GetItems(context, options);
+            if (firstResults.Count > 0)
+                ReceiveItems(context, firstResults);
             firstBatchResolved = true;
             if (sessionCount == 0 && !completed)
             {

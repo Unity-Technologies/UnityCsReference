@@ -2229,7 +2229,7 @@ namespace UnityEditor
         public void SetDefaultGUIWidths()
         {
             EditorGUIUtility.fieldWidth = EditorGUI.kObjectFieldThumbnailHeight;
-            EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 25;
+            EditorGUIUtility.labelWidth = GUIClip.visibleRect.width - EditorGUIUtility.fieldWidth - 25 - EditorGUI.kIndentPerLevel;
         }
 
         internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)

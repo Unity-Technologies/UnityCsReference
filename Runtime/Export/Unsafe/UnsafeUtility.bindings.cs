@@ -82,6 +82,14 @@ namespace Unity.Collections.LowLevel.Unsafe
         [BurstAuthorizedExternalMethod]
         public static extern void SetLeakDetectionMode(NativeLeakDetectionMode value);
 
+        [ThreadSafe(ThrowsException = false)]
+        [BurstAuthorizedExternalMethod]
+        unsafe internal static extern int LeakRecord(IntPtr handle, LeakCategory category, int callstacksToSkip);
+
+        [ThreadSafe(ThrowsException = false)]
+        [BurstAuthorizedExternalMethod]
+        unsafe internal static extern int LeakErase(IntPtr handle, LeakCategory category);
+
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip);
 

@@ -22,17 +22,36 @@ namespace UnityEditor.PackageManager.UnityLifecycle
 
         [SerializeField]
         [NativeName("nextVersion")]
-        private string m_Nextversion;
+        private string m_NextVersion;
+
+        [SerializeField]
+        [NativeName("recommendedVersion")]
+        private string m_RecommendedVersion;
+
+        [SerializeField]
+        [NativeName("isDeprecated")]
+        private bool m_IsDeprecated;
+
+        [SerializeField]
+        [NativeName("deprecationMessage")]
+        private string m_DeprecationMessage;
 
         public string version => m_Version;
-        public string nextVersion => m_Nextversion;
+        public string nextVersion => m_NextVersion;
+        public string recommendedVersion => m_RecommendedVersion;
 
-        internal UnityLifecycleInfo() : this("", "") {}
+        public bool isDeprecated => m_IsDeprecated;
+        public string deprecationMessage => m_DeprecationMessage;
 
-        internal UnityLifecycleInfo(string version, string nextVersion)
+        internal UnityLifecycleInfo() : this("", "", "", false, "") {}
+
+        internal UnityLifecycleInfo(string version, string nextVersion, string recommendedVersion, bool isDeprecated, string deprecationMessage)
         {
             m_Version = version;
-            m_Nextversion = nextVersion;
+            m_NextVersion = nextVersion;
+            m_RecommendedVersion = recommendedVersion;
+            m_IsDeprecated = isDeprecated;
+            m_DeprecationMessage = deprecationMessage ?? "";
         }
     }
 }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
 using UnityEngine;
@@ -20,6 +21,53 @@ namespace UnityEditor
     {
         const string k_Id = "unity-transform-toolbar";
         public TransformToolsOverlayToolBar() : base("Tools/Builtin Tools") {}
+
+        public override void OnCreated()
+        {
+            base.OnCreated();
+            ToolManager.activeToolChanged += UpdateActiveToolIcon;
+            SceneViewMotion.viewToolActiveChanged += UpdateActiveToolIcon;
+            Tools.viewToolChanged += UpdateViewToolIcon;
+            UpdateActiveToolIcon();
+        }
+
+        public override void OnWillBeDestroyed()
+        {
+            ToolManager.activeToolChanged -= UpdateActiveToolIcon;
+            SceneViewMotion.viewToolActiveChanged -= UpdateActiveToolIcon;
+            Tools.viewToolChanged -= UpdateViewToolIcon;
+            base.OnWillBeDestroyed();
+        }
+
+        void UpdateActiveToolIcon()
+        {
+            if(Tools.viewToolActive)
+                UpdateViewToolIcon();
+            else
+                collapsedIcon = EditorToolUtility.IsManipulationTool(Tools.current) ?
+                                EditorToolUtility.GetToolbarIcon(EditorToolManager.activeTool)?.image as Texture2D :
+                                null;
+        }
+
+        void UpdateViewToolIcon()
+        {
+            if(!Tools.viewToolActive)
+                return;
+
+            switch (Tools.viewTool)
+            {
+                case ViewTool.Orbit:
+                case ViewTool.FPS:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("ViewToolOrbit");
+                    break;
+                case ViewTool.Pan:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("ViewToolMove");
+                    break;
+                case ViewTool.Zoom:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("ViewToolZoom");
+                    break;
+            }
+        }
     }
 
     [Overlay(typeof(SceneView), k_Id, "View Options", true)]

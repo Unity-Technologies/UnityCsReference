@@ -97,7 +97,6 @@ namespace UnityEditor
             private void DrawRigidbodyInfo(Rigidbody body)
             {
                 EditorGUI.indentLevel++;
-                EditorGUI.BeginDisabledGroup(true);
                 EditorGUILayout.FloatField(Style.infoSpeed                  , body.velocity.magnitude);
                 EditorGUILayout.Vector3Field(Style.infoVel                  , body.velocity);
                 EditorGUILayout.Vector3Field(Style.infoAngVel               , body.angularVelocity);
@@ -109,16 +108,14 @@ namespace UnityEditor
                 EditorGUILayout.FloatField(Style.infoSleepThreshold         , body.sleepThreshold);
                 EditorGUILayout.FloatField(Style.infoMaxLinVel              , body.maxLinearVelocity);
                 EditorGUILayout.FloatField(Style.infoMaxAngVel              , body.maxAngularVelocity);
-                EditorGUILayout.FloatField(Style.infoSolverIterations       , body.solverIterations);
-                EditorGUILayout.FloatField(Style.infoSolverVelIterations    , body.solverVelocityIterations);
-                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.IntField(Style.infoSolverIterations         , body.solverIterations);
+                EditorGUILayout.IntField(Style.infoSolverVelIterations      , body.solverVelocityIterations);
                 EditorGUI.indentLevel--;
             }
 
             private void DrawArticulationBodyInfo(ArticulationBody body)
             {
                 EditorGUI.indentLevel++;
-                EditorGUI.BeginDisabledGroup(true);
                 EditorGUILayout.FloatField(Style.infoSpeed                  , body.velocity.magnitude);
                 EditorGUILayout.Vector3Field(Style.infoVel                  , body.velocity);
                 EditorGUILayout.Vector3Field(Style.infoAngVel               , body.angularVelocity);
@@ -130,8 +127,8 @@ namespace UnityEditor
                 EditorGUILayout.FloatField(Style.infoSleepThreshold         , body.sleepThreshold);
                 EditorGUILayout.FloatField(Style.infoMaxLinVel              , body.maxLinearVelocity);
                 EditorGUILayout.FloatField(Style.infoMaxAngVel              , body.maxAngularVelocity);
-                EditorGUILayout.FloatField(Style.infoSolverIterations       , body.solverIterations);
-                EditorGUILayout.FloatField(Style.infoSolverVelIterations    , body.solverVelocityIterations);
+                EditorGUILayout.IntField(Style.infoSolverIterations         , body.solverIterations);
+                EditorGUILayout.IntField(Style.infoSolverVelIterations      , body.solverVelocityIterations);
                 EditorGUILayout.IntField(Style.infoBodyIndex, body.index);
 
                 if (!body.isRoot && body.jointType != ArticulationJointType.FixedJoint)
@@ -146,7 +143,6 @@ namespace UnityEditor
                     }
                 }
 
-                EditorGUI.EndDisabledGroup();
                 EditorGUI.indentLevel--;
             }
 

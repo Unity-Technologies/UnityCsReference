@@ -120,8 +120,14 @@ namespace UnityEditor.Search
             actions = new List<SearchAction> { new SearchAction("select", "select", null, null, (SearchItem item) => {}) }
         };
 
-        [Obsolete("Use SearchItem.clear instead. (UnityUpgradable) -> clear", error: false)]
-        public static readonly SearchItem none;
+        [Obsolete("Use SearchItem.clear instead.", error: false)]
+        public static readonly SearchItem none = new SearchItem(Guid.NewGuid().ToString())
+        {
+            label = "None",
+            description = "Clear the current value",
+            score = int.MinValue,
+            provider = defaultProvider
+        };
 
         /// <summary>
         /// A search item representing none, usually used to clear the selection.
@@ -133,15 +139,12 @@ namespace UnityEditor.Search
             {
                 if (s_ClearItem == null)
                 {
-                    s_ClearItem = new SearchItem(Guid.NewGuid().ToString())
-                    {
-                        label = "None",
-                        description = "Clear the current value",
-                        score = int.MinValue,
-                        thumbnail = Icons.clear,
-                        provider = defaultProvider
-                    };
+                    #pragma warning disable CS0618 // Type or member is obsolete
+                    s_ClearItem = none;
+                    #pragma warning restore CS0618 // Type or member is obsolete
                 }
+                if (s_ClearItem.thumbnail == null && UnityEditorInternal.InternalEditorUtility.CurrentThreadIsMainThread())
+                    s_ClearItem.thumbnail = Icons.clear;
                 return s_ClearItem;
             }
         }

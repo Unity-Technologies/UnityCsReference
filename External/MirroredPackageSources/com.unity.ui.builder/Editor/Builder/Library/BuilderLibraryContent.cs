@@ -146,6 +146,23 @@ namespace Unity.UI.Builder
             return null;
         }
 
+        public static Texture2D GetTypeLibraryLargeIcon(Type type)
+        {
+            if (s_ControlsTypeCache.TryGetValue(type, out var builderLibraryTreeItem))
+            {
+                if (builderLibraryTreeItem.largeIcon != null)
+                    return builderLibraryTreeItem.largeIcon;
+
+                return builderLibraryTreeItem.icon;
+            }
+
+            // Just in case to avoid infinity loop.
+            if (type != typeof(VisualElement))
+                return GetTypeLibraryIcon(typeof(VisualElement));
+
+            return null;
+        }
+
         internal static BuilderLibraryTreeItem GetLibraryItemForType(Type type)
         {
             return s_ControlsTypeCache.TryGetValue(type, out var builderLibraryTreeItem)
@@ -224,7 +241,7 @@ namespace Unity.UI.Builder
             var controlsTree = new List<TreeViewItem>();
             IList<TreeViewItem> containersItemList = new List<TreeViewItem>
             {
-                CreateItem("VisualElement", "VisualElement", typeof(VisualElement),
+                CreateItem("Visual Element", "VisualElement", typeof(VisualElement),
                     () => new VisualElement(),
                     (inVta, inParent, ve) =>
                     {
@@ -235,21 +252,21 @@ namespace Unity.UI.Builder
                             k_DefaultVisualElementFlexGrow);
                         BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "background-color",
                             k_DefaultVisualElementBackgroundColor);
-                        
+
                         inVta.AddElement(inParent, vea);
                         return vea;
                     }),
-                CreateItem("ScrollView", "ScrollView", typeof(ScrollView), () => new ScrollView()),
-                CreateItem("ListView", "ListView", typeof(ListView), () => new ListView()),
-                CreateItem("TreeView", "TreeView", typeof(TreeView), () => new TreeView()),
-                CreateItem("GroupBox", "VisualElement", typeof(GroupBox), () => new GroupBox()),
+                CreateItem("Scroll View", "ScrollView", typeof(ScrollView), () => new ScrollView()),
+                CreateItem("List View", "ListView", typeof(ListView), () => new ListView()),
+                CreateItem("Tree View", "TreeView", typeof(TreeView), () => new TreeView()),
+                CreateItem("Group Box", nameof(GroupBox), typeof(GroupBox), () => new GroupBox()),
             };
             containersItem.AddChildren(containersItemList);
             controlsTree.Add(containersItem);
 
             var editorContainersItemList = CreateItem(BuilderConstants.LibraryEditorContainersSectionHeaderName, null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                CreateItem("IMGUI Container", "VisualElement", typeof(IMGUIContainer), () => new IMGUIContainer()),
+                CreateItem("IMGUI Container", nameof(IMGUIContainer), typeof(IMGUIContainer), () => new IMGUIContainer()),
             }, id: 2, isEditorOnly: true, isHeader: true);
 
             var controlsItem = CreateItem(BuilderConstants.LibraryControlsSectionHeaderName, null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
@@ -264,7 +281,7 @@ namespace Unity.UI.Builder
                 CreateItem("Slider (Int)", nameof(SliderInt), typeof(SliderInt), () => new SliderInt("SliderInt", 0, 100) { value = 42 }),
                 CreateItem("Min-Max Slider", nameof(MinMaxSlider), typeof(MinMaxSlider), () => new MinMaxSlider("Min/Max Slider", 0, 20, -10, 40) { value = new Vector2(10, 12) }),
                 CreateItem("Progress Bar", nameof(ProgressBar), typeof(ProgressBar), () => new ProgressBar() { title = "my-progress", value = 22 }),
-                CreateItem("Dropdown", "Dropdown", typeof(DropdownField), () => new DropdownField("Dropdown")),
+                CreateItem("Dropdown", nameof(DropdownField), typeof(DropdownField), () => new DropdownField("Dropdown")),
                 CreateItem("Enum", nameof(EnumField), typeof(EnumField), () => new EnumField("Enum", TextAlignment.Center)),
                 CreateItem("Radio Button", nameof(RadioButton), typeof(RadioButton), () => new RadioButton("Radio Button")),
                 CreateItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
@@ -317,26 +334,26 @@ namespace Unity.UI.Builder
                 CreateItem("Tag", nameof(TagField), typeof(TagField), () => new TagField("Tag", "Player")),
                 CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
                 CreateItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
-                CreateItem("LayerMask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask")),
-                CreateItem("EnumFlags", nameof(EnumFlagsField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))
+                CreateItem("Layer Mask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask")),
+                CreateItem("Enum Flags", nameof(EnumField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))
             }, isEditorOnly: true, isHeader: true);
 
             var toolbar = CreateItem("Toolbar", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                CreateItem("Toolbar", "ToolbarElement", typeof(Toolbar), () => new Toolbar()),
-                CreateItem("Toolbar Menu", "ToolbarElement", typeof(ToolbarMenu), () => new ToolbarMenu()),
-                CreateItem("Toolbar Button", "ToolbarElement", typeof(ToolbarButton), () => new ToolbarButton { text = "Button" }),
-                CreateItem("Toolbar Spacer", "ToolbarElement", typeof(ToolbarSpacer), () => new ToolbarSpacer()),
-                CreateItem("Toolbar Toggle", "ToolbarElement", typeof(ToolbarToggle), () => new ToolbarToggle { label = "Toggle" }),
-                CreateItem("Toolbar Breadcrumbs", "ToolbarElement", typeof(ToolbarBreadcrumbs), () => new ToolbarBreadcrumbs()),
-                CreateItem("Toolbar Search Field", "ToolbarElement", typeof(ToolbarSearchField), () => new ToolbarSearchField()),
-                CreateItem("Toolbar Popup Search Field", "ToolbarElement", typeof(ToolbarPopupSearchField), () => new ToolbarPopupSearchField()),
+                CreateItem("Toolbar", nameof(Toolbar), typeof(Toolbar), () => new Toolbar()),
+                CreateItem("Toolbar Menu", nameof(ToolbarMenu), typeof(ToolbarMenu), () => new ToolbarMenu()),
+                CreateItem("Toolbar Button", nameof(ToolbarButton), typeof(ToolbarButton), () => new ToolbarButton { text = "Button" }),
+                CreateItem("Toolbar Spacer", nameof(ToolbarSpacer), typeof(ToolbarSpacer), () => new ToolbarSpacer()),
+                CreateItem("Toolbar Toggle", nameof(ToolbarToggle), typeof(ToolbarToggle), () => new ToolbarToggle { label = "Toggle" }),
+                CreateItem("Toolbar Breadcrumbs", nameof(ToolbarBreadcrumbs), typeof(ToolbarBreadcrumbs), () => new ToolbarBreadcrumbs()),
+                CreateItem("Toolbar Search Field", nameof(ToolbarSearchField), typeof(ToolbarSearchField), () => new ToolbarSearchField()),
+                CreateItem("Toolbar Popup Search Field", nameof(ToolbarPopupSearchField), typeof(ToolbarPopupSearchField), () => new ToolbarPopupSearchField()),
             }, isEditorOnly: true, isHeader: true);
 
             var inspectors = CreateItem("Inspectors", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                CreateItem("Object Field", nameof(ObjectField), typeof(ObjectField), () => new ObjectField("Object Field") { value = new Texture2D(10, 10) { name = "new_texture" } }),
-                CreateItem("PropertyField", nameof(PropertyField), typeof(PropertyField), () => new PropertyField())
+                CreateItem("Object Field", nameof(ObjectField), typeof(ObjectField), () => new ObjectField("Object Field")),
+                CreateItem("Property Field", nameof(PropertyField), typeof(PropertyField), () => new PropertyField())
             }, isEditorOnly: true, isHeader: true);
 
             controlsTree.Add(editorContainersItemList);

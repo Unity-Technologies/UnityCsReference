@@ -89,5 +89,7 @@ namespace UnityEditor
 
         // Removes all keys and values from the preferences. Use with caution.
         public static extern void DeleteAll();
+
+        internal static extern void Sync();
     }
 }

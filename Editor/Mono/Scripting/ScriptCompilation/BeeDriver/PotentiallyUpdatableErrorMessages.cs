@@ -5,6 +5,8 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using Bee.BeeDriver;
+using Bee.BinLog;
+using Bee.Serialization;
 using NiceIO;
 using ScriptCompilationBuildProgram.Data;
 using UnityEditor.Scripting.Compilers;
@@ -13,7 +15,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class PotentiallyUpdatableErrorMessages
     {
-        public static bool IsAnyPotentiallyUpdatable(CompilerMessage[] messages, NodeResult nodeResult, BeeDriver beeDriver)
+        public static bool IsAnyPotentiallyUpdatable(CompilerMessage[] messages, NodeFinishedMessage nodeResult, ObjectsFromDisk dataFromBuildProgram)
         {
             var matches = messages.Select(m => MicrosoftCSharpCompilerOutputParser.sCompilerOutput.Match(m.message)).Where(m => m.Success).ToArray();
             var typeNames = matches.Select(MissingTypeNameFor).Where(t => t != null).ToArray();
@@ -21,7 +23,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!typeNames.Any())
                 return false;
 
-            var assemblyData = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, beeDriver);
+            var assemblyData = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, dataFromBuildProgram);
             var lines = new NPath(assemblyData.MovedFromExtractorFile).ReadAllLines();
 
             return typeNames.Any(t => lines.Contains(t));

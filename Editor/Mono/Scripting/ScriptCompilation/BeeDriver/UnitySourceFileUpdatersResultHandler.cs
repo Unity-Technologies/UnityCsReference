@@ -6,12 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Bee.BeeDriver;
 using NiceIO;
 using UnityEditor.PackageManager;
 using UnityEditor.ScriptUpdater;
 using UnityEditorInternal.APIUpdating;
 using UnityEngine;
+using System.Threading.Tasks;
+using UnityEditorInternal;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -19,23 +22,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         bool m_HaveConsentToOverwriteUserScripts;
 
-        private readonly UnityScriptUpdaterConsentAPI ConstentAPI;
+        readonly UnityScriptUpdaterConsentAPI ConstentAPI;
 
-        public UnitySourceFileUpdatersResultHandler()
+        public UnitySourceFileUpdatersResultHandler() : base(captureSynchronizationContext: true)
         {
             ConstentAPI = new UnityScriptUpdaterConsentAPI();
+
+            if (!InternalEditorUtility.CurrentThreadIsMainThread())
+                throw new Exception($"{nameof(UnitySourceFileUpdatersResultHandler)} can only be created on the main thread");
         }
 
-        public override void ProcessUpdaterResults(SourceFileUpdaterBase.Update[] updates)
+
+        protected override bool ProcessUpdaterResults(SourceFileUpdaterBase.Update[] updates)
         {
             NPath libraryPackageCache = "Library/PackageCache";
-
             var problemUpdates = new List<(SourceFileUpdaterBase.Update update, Exception exception)>();
-
+            bool didUpdate = false;
             void ExecuteUpdates(IEnumerable<SourceFileUpdaterBase.Update> updates)
             {
                 foreach (var update in updates)
                 {
+                    didUpdate = true;
                     try
                     {
                         Console.WriteLine(update.originalFileWithError);
@@ -87,6 +94,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             Console.WriteLine("Finished running ScriptUpdaters");
+            return didUpdate;
         }
 
         bool MayOverwrite(NPath[] files)
@@ -108,7 +116,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        private bool PrepareForOverwritingUpdatedFiles(NPath[] destFiles)
+        bool PrepareForOverwritingUpdatedFiles(NPath[] destFiles)
         {
             if (!APIUpdaterManager.WaitForVCSServerConnection())
             {

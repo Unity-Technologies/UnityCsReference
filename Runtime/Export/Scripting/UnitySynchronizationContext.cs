@@ -71,7 +71,7 @@ namespace UnityEngine
         }
 
         // Exec will execute tasks off the task list
-        private void Exec()
+        public void Exec()
         {
             lock (m_AsyncWorkQueue)
             {

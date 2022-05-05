@@ -209,7 +209,6 @@ namespace UnityEngine.Jobs
         IntPtr              m_TransformArray;
 
         AtomicSafetyHandle  m_Safety;
-        DisposeSentinel     m_DisposeSentinel;
 
         public TransformAccessArray(Transform[] transforms, int desiredJobCount = -1)
         {
@@ -226,7 +225,7 @@ namespace UnityEngine.Jobs
         {
             array.m_TransformArray = Create(capacity, desiredJobCount);
 
-            DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, Allocator.Persistent);
+            AtomicSafetyHandle.CreateHandle(out array.m_Safety, Allocator.Persistent);
         }
 
         public bool isCreated
@@ -236,7 +235,8 @@ namespace UnityEngine.Jobs
 
         public void Dispose()
         {
-            DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+            UnsafeUtility.LeakErase(m_TransformArray, LeakCategory.TransformAccessArray);
+            AtomicSafetyHandle.DisposeHandle(ref m_Safety);
 
             DestroyTransformAccessArray(m_TransformArray);
             m_TransformArray = IntPtr.Zero;

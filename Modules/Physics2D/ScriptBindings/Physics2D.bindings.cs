@@ -662,32 +662,17 @@ namespace UnityEngine
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static float angularSleepTolerance { get; set; }
 
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static bool alwaysShowColliders { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static bool showColliderSleep { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static bool showColliderContacts { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static bool showColliderAABB { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static float contactArrowScale { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static Color colliderAwakeColor { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static Color colliderAsleepColor { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static Color colliderContactColor { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static Color colliderAABBColor { get; set; }
+        // Needs to match "Physics2DSettings.h"
+        [Flags]
+        internal enum GizmoOptions
+        {
+            AllColliders        = 1 << 0,
+            CollidersOutlined   = 1 << 1,
+            CollidersFilled     = 1 << 2,
+            CollidersSleeping   = 1 << 3,
+            ColliderContacts    = 1 << 4,
+            ColliderBounds      = 1 << 5
+        };
 
         #endregion
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Bee.BeeDriver;
 using UnityEditor.DeploymentTargets;
 using UnityEngine;
 using Mono.Cecil;
@@ -171,7 +172,7 @@ namespace UnityEditor.Modules
     {
         public virtual ScriptingImplementation[] Supported()
         {
-            if (Unsupported.IsSourceBuild())
+            if (Unsupported.IsSourceBuild())  // CORECLR_FIXME remove sourcebuild
             {
                 return new[]
                 {

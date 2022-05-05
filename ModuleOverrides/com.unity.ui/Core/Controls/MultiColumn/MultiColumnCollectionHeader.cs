@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements.Internal
 {
@@ -144,6 +145,21 @@ namespace UnityEngine.UIElements.Internal
         }
 
         /// <summary>
+        /// Used to determine whether the actual sorting has changed.
+        /// </summary>
+        struct SortedColumnState
+        {
+            public SortedColumnState(SortColumnDescription desc, SortDirection dir)
+            {
+                columnDesc = desc;
+                direction = dir;
+            }
+
+            public SortColumnDescription columnDesc;
+            public SortDirection direction;
+        }
+
+        /// <summary>
         /// The USS class name for MultiColumnCollectionHeader elements.
         /// </summary>
         public static readonly string ussClassName = "unity-multi-column-header";
@@ -162,6 +178,8 @@ namespace UnityEngine.UIElements.Internal
 
         bool m_SortingEnabled;
         List<SortColumnDescription> m_SortedColumns;
+        List<SortedColumnState> m_OldSortedColumnStates = new List<SortedColumnState>();
+        bool m_SortingUpdatesTemporarilyDisabled;
 
         ViewState m_ViewState;
         bool m_ApplyingViewState;
@@ -310,29 +328,43 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         void UpdateSortedColumns()
         {
-            m_SortedColumns.Clear();
+            if (m_SortingUpdatesTemporarilyDisabled)
+                return;
 
-            if (sortingEnabled)
+            using (ListPool<SortedColumnState>.Get(out var sortedColumnStates))
             {
-                foreach (var desc in sortDescriptions)
+                if (sortingEnabled)
                 {
-                    Column column = null;
-
-                    if (desc.columnIndex != -1)
-                        column = columns[desc.columnIndex];
-                    else if (!string.IsNullOrEmpty(desc.columnName))
-                        column = columns[desc.columnName];
-
-                    if (column != null && column.sortable)
+                    foreach (var desc in sortDescriptions)
                     {
-                        desc.column = column;
-                        m_SortedColumns.Add(desc);
-                    }
-                    else
-                    {
-                        desc.column = null;
+                        Column column = null;
+
+                        if (desc.columnIndex != -1)
+                            column = columns[desc.columnIndex];
+                        else if (!string.IsNullOrEmpty(desc.columnName))
+                            column = columns[desc.columnName];
+
+                        if (column != null && column.sortable)
+                        {
+                            desc.column = column;
+                            sortedColumnStates.Add(new SortedColumnState(desc, desc.direction));
+                        }
+                        else
+                        {
+                            desc.column = null;
+                        }
                     }
                 }
+
+                if (m_OldSortedColumnStates.SequenceEqual(sortedColumnStates))
+                    return;
+
+                m_SortedColumns.Clear();
+                foreach (var state in sortedColumnStates)
+                {
+                    m_SortedColumns.Add(state.columnDesc);
+                }
+                m_OldSortedColumnStates.CopyFrom(sortedColumnStates);
             }
 
             SaveViewState();
@@ -631,7 +663,7 @@ namespace UnityEngine.UIElements.Internal
 
             var columnControl = evt.currentTarget as MultiColumnHeaderColumn;
 
-            if (columnControl == null)
+            if (columnControl == null || !columnControl.column.sortable)
             {
                 return;
             }
@@ -645,11 +677,26 @@ namespace UnityEngine.UIElements.Internal
             else
                 return;
 
-            var column = columnControl.column;
+            m_SortingUpdatesTemporarilyDisabled = true;
 
-            if (!column.sortable)
-                return;
+            try
+            {
+                UpdateSortColumnDescriptionsOnClick(columnControl.column, modifiers);
+            }
+            finally
+            {
+                m_SortingUpdatesTemporarilyDisabled = false;
+            }
+            UpdateSortedColumns();
+        }
 
+        /// <summary>
+        /// Updates the list of sort column descriptions upon click on a column.
+        /// </summary>
+        /// <param name="column">The clicked column</param>
+        /// <param name="modifiers">The modifiers of the pointer event</param>
+        void UpdateSortColumnDescriptionsOnClick(Column column, EventModifiers modifiers)
+        {
             var desc = sortDescriptions.FirstOrDefault((d) => (d.column == column || (!string.IsNullOrEmpty(column.name) && d.columnName == column.name) || d.columnIndex == column.index));
 
             // If a sort description matching the column is found then ...
@@ -672,7 +719,14 @@ namespace UnityEngine.UIElements.Internal
             }
 
             // If multi sort is not active then clear
-            if (modifiers != EventModifiers.Control)
+            EventModifiers multiSortingModifier = EventModifiers.Control;
+
+            if (Application.platform is RuntimePlatform.OSXEditor or RuntimePlatform.OSXPlayer)
+            {
+                multiSortingModifier = EventModifiers.Command;
+            }
+
+            if (modifiers != multiSortingModifier)
             {
                 sortDescriptions.Clear();
             }

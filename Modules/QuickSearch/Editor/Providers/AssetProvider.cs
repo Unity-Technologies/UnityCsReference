@@ -137,6 +137,11 @@ namespace UnityEditor.Search.Providers
                 m_Object = null;
                 this.flags = flags;
             }
+
+            public override string ToString()
+            {
+                return $"{path} ({m_GID})";
+            }
         }
 
         internal const string type = "asset";
@@ -191,7 +196,7 @@ namespace UnityEditor.Search.Providers
             var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid);
             if (obj is GameObject go)
                 return Utils.GetSceneObjectPreview(go, size, options, item.thumbnail);
-            else if (obj)
+            else if (obj && options.HasAny(FetchPreviewOptions.Normal))
             {
                 var p = AssetPreview.GetAssetPreview(obj);
                 if (p)

@@ -68,6 +68,8 @@ namespace UnityEditor
         public MethodInfo validate;
         public Delegate commandExecute;
         public Delegate commandValidate;
+        public bool @checked;
+        public string shortcut;
 
         public string Name => name;
 

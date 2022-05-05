@@ -75,9 +75,11 @@ namespace UnityEditor
             }
 
             // baked settings
+            #pragma warning disable 618
             bool usesPathTracerBakeBackend = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten;
             bool usesEnlightenBackend = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten;
             bool bakedEnlightenSupported = SupportedRenderingFeatures.IsLightmapperSupported((int)LightingSettings.Lightmapper.Enlighten);
+            #pragma warning restore 618
 
             GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
 

@@ -105,6 +105,7 @@ namespace UnityEngine
         internal int m_RenderMode = 2;
         internal int m_UsePrototypeMesh = 0;
         internal int m_UseInstancing = 0;
+        internal int m_UseDensityScaling = 0;
         internal float m_AlignToGround = 0;
         internal float m_PositionOrderliness = 0;
 
@@ -141,6 +142,8 @@ namespace UnityEngine
 
         public bool useInstancing { get { return m_UseInstancing != 0; } set { m_UseInstancing = value ? 1 : 0; } }
 
+        public bool useDensityScaling { get { return m_UseDensityScaling != 0; } set { m_UseDensityScaling = value ? 1 : 0; } }
+
         public float alignToGround { get { return m_AlignToGround; } set { m_AlignToGround = value; } }
 
         public float positionOrderliness { get { return m_PositionOrderliness; } set { m_PositionOrderliness = value; } }
@@ -164,6 +167,7 @@ namespace UnityEngine
             m_RenderMode = other.m_RenderMode;
             m_UsePrototypeMesh = other.m_UsePrototypeMesh;
             m_UseInstancing = other.m_UseInstancing;
+            m_UseDensityScaling = other.m_UseDensityScaling;
             m_AlignToGround = other.m_AlignToGround;
             m_PositionOrderliness = other.m_PositionOrderliness;
         }
@@ -203,7 +207,8 @@ namespace UnityEngine
                 && m_HoleEdgePadding == other.m_HoleEdgePadding
                 && m_RenderMode == other.m_RenderMode
                 && m_UsePrototypeMesh == other.m_UsePrototypeMesh
-                && m_UseInstancing == other.m_UseInstancing;
+                && m_UseInstancing == other.m_UseInstancing
+                && m_UseDensityScaling == other.m_UseDensityScaling;
         }
 
         public bool Validate()
@@ -787,6 +792,10 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "ComputeDetailInstanceTransforms", HasExplicitThis = true)]
         extern public DetailInstanceTransform[] ComputeDetailInstanceTransforms(int patchX, int patchY, int layer, float density, out Bounds bounds);
 
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "ComputeDetailCoverage", HasExplicitThis = true)]
+        extern public float ComputeDetailCoverage(int detailPrototypeIndex);
+
         public void SetDetailLayer(int xBase, int yBase, int layer, int[,] details)
         {
             Internal_SetDetailLayer(xBase, yBase, details.GetLength(1), details.GetLength(0), layer, details);
@@ -1038,6 +1047,12 @@ namespace UnityEngine
 
         [NativeName(k_SplatDatabasePrefix + "SyncGPUModifications")]
         private extern void Internal_SyncAlphamaps();
+
+        extern internal TextureFormat atlasFormat
+        {
+            [NativeName(k_DetailDatabasePrefix + "GetAtlasTexture()->GetTextureFormat")]
+            get;
+        }
 
         internal extern Terrain[] users
         {

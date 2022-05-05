@@ -66,7 +66,7 @@ namespace UnityEditor.Search
         IEnumerable<TResult> Select<TResult>(Func<SearchItem, TResult> selector);
     }
 
-    abstract class BaseSearchList : ISearchList
+    abstract class BaseSearchList : ISearchList, IList
     {
         private bool m_Disposed = false;
 
@@ -84,6 +84,21 @@ namespace UnityEditor.Search
 
         public abstract int Count { get; }
         public virtual bool IsReadOnly => true;
+
+        bool IList.IsFixedSize => false;
+        bool ICollection.IsSynchronized => true;
+        object ICollection.SyncRoot => context;
+
+        object IList.this[int index]
+        {
+            get => this[index];
+            set
+            {
+                if (value is SearchItem item)
+                    this[index] = item;
+            }
+        }
+
         public abstract SearchItem this[int index] { get; set; }
 
         public BaseSearchList()
@@ -139,7 +154,7 @@ namespace UnityEditor.Search
 
         public virtual void InsertRange(int index, IEnumerable<SearchItem> items) { throw new NotSupportedException(); }
         public virtual IEnumerable<SearchItem> GetRange(int skipCount, int count) { throw new NotSupportedException(); }
-        public virtual int IndexOf(SearchItem item) { throw new NotImplementedException(); }
+        public virtual int IndexOf(SearchItem item) { throw new NotSupportedException(); }
         public virtual void Insert(int index, SearchItem item) { throw new NotSupportedException(); }
         public virtual void RemoveAt(int index) { throw new NotSupportedException(); }
         public virtual void Add(SearchItem item) { throw new NotSupportedException(); }
@@ -152,6 +167,37 @@ namespace UnityEditor.Search
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        int IList.Add(object value)
+        {
+            Add(value as SearchItem ?? throw new ArgumentNullException(nameof(value)));
+            return Count-1;
+        }
+
+        bool IList.Contains(object value)
+        {
+            return Contains(value as SearchItem ?? throw new ArgumentNullException(nameof(value)));
+        }
+
+        int IList.IndexOf(object value)
+        {
+            return IndexOf(value as SearchItem ?? throw new ArgumentNullException(nameof(value)));
+        }
+
+        void IList.Insert(int index, object value)
+        {
+            Insert(index, value as SearchItem ?? throw new ArgumentNullException(nameof(value)));
+        }
+
+        void IList.Remove(object value)
+        {
+            Remove(value as SearchItem ?? throw new ArgumentNullException(nameof(value)));
+        }
+
+        void ICollection.CopyTo(Array array, int index)
+        {
+            CopyTo(array as SearchItem[] ?? throw new ArgumentNullException(nameof(array)), index);
         }
     }
 
@@ -176,7 +222,7 @@ namespace UnityEditor.Search
         public override SearchItem this[int index]
         {
             get => ElementAt(index);
-            set => throw new NotImplementedException();
+            set => throw new NotSupportedException();
         }
 
         public SortedSearchList(SearchContext searchContext) : base(searchContext)
@@ -497,7 +543,7 @@ namespace UnityEditor.Search
         public override SearchItem this[int index]
         {
             get => ElementAt(index);
-            set => throw new NotImplementedException();
+            set => throw new NotSupportedException();
         }
 
         private bool UseAll()
@@ -524,7 +570,7 @@ namespace UnityEditor.Search
         public SearchItem ElementAt(int index)
         {
             if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+                throw new ArgumentOutOfRangeException($"Failed to access item {index} within {Count}/{TotalCount} items", nameof(index));
 
             if (UseAll())
             {
@@ -629,10 +675,6 @@ namespace UnityEditor.Search
 
         public override void AddItems(IEnumerable<SearchItem> items)
         {
-            // Initialize groups on first results
-            if (m_Groups.Count == 0 && context != null)
-                AddDefaultGroups();
-
             foreach (var item in items)
             {
                 var itemGroup = AddGroup(item.provider);
@@ -650,6 +692,7 @@ namespace UnityEditor.Search
             m_CurrentGroupIndex = -1;
             m_TotalCount = 0;
             m_Groups.Clear();
+            AddDefaultGroups();
         }
 
         public override IEnumerator<SearchItem> GetEnumerator()

@@ -506,10 +506,15 @@ namespace UnityEditor.Search
                 {
                     MergeStoresToFile();
                 }
+                catch (ThreadAbortException)
+                {
+                    // Rethrow but do not log.
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     Debug.LogException(ex);
-                    throw ex;
+                    throw;
                 }
             });
             return task;

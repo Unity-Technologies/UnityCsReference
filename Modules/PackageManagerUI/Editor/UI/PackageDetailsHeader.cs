@@ -369,7 +369,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We want to let users know when they are using a version different than the recommended.
             // The recommended version is the resolvedLifecycleVersion or the resolvedLifecycleNextVersion.
             // However, we don't want to show the info icon if the version currently installed
-            // is a higher patch version of the one in the editor manifest (still considered verified).
+            // is a higher patch version of the one in the editor manifest (still considered
+            // recommended).
             var recommended = m_Package.versions.recommended;
             if (m_Version.isInstalled
                 && m_Package.state != PackageState.InstalledAsDependency
@@ -378,7 +379,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 && installed.version?.IsEqualOrPatchOf(recommended.version) != true)
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
-                versionInfoIcon.tooltip = string.Format(L10n.Tr("This version is not verified for Unity {0}. We recommended using {1}."),
+                versionInfoIcon.tooltip = string.Format(L10n.Tr("This version is not the recommended for Unity {0}. The recommended version is {1}."),
                     unityVersionString, recommended.versionString);
                 return;
             }

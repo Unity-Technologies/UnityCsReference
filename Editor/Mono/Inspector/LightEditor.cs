@@ -839,8 +839,10 @@ namespace UnityEditor
             // Light type (shape and usage)
             settings.DrawLightType();
 
+            #pragma warning disable 618
             if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten && settings.light.type == LightType.Disc)
                 EditorGUILayout.HelpBox(StylesEx.noDiscLightInEnlighten.text, MessageType.Warning);
+            #pragma warning restore 618
 
             // When we are switching between two light types that don't show the range (directional lights don't)
             // we want the fade group to stay hidden.

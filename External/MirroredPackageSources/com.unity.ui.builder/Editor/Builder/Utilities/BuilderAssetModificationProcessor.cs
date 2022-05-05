@@ -81,7 +81,7 @@ namespace Unity.UI.Builder
             // the Duplicate command trigger its own callback and not OnWillSaveAssets.
             var evt = Event.current;
             if ((evt == null || evt.commandName != EventCommandNames.Duplicate) &&
-                (paths.Length == 0 || !paths.Any(x => x.Contains(".uxml"))))
+                (paths.Length == 0 || !paths.Any(x => x.Contains(".uxml") || x.Contains(".uss"))))
             {
                 var builder = Builder.ActiveWindow;
                 if (builder != null && builder.document.hasUnsavedChanges)

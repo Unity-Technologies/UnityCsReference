@@ -187,7 +187,7 @@ namespace UnityEditor
             public readonly GUIContent treeAndDetails = EditorGUIUtility.TrTextContent("Tree & Detail Objects");
             public readonly GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
             public readonly GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
-            public readonly GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density", "The number of detail/grass objects in a given unit of area. The value can be set lower to reduce rendering overhead.");
+            public readonly GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density Scale", "Scaling factor applied to the density of all details. Only affects details with the \"Affected by Density Scale\" option enabled.");
             public readonly GUIContent detailScatterMode = EditorGUIUtility.TrTextContent("Detail Scatter Mode", "The scatter mode type to be used while painting details. Coverage paints areas detail should be populated in based on their density setting, Instance Count paints the amount per sample.");
             public readonly GUIContent treeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "The distance (from camera) beyond which trees will be culled. For SpeedTree trees this parameter is controlled by the LOD group settings.");
             public readonly GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images. For SpeedTree trees this parameter is controlled by the LOD group settings.");
@@ -1218,10 +1218,10 @@ namespace UnityEditor
             var oldIndent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
 
-            int maxMeshes = m_Terrain.terrainData.detailPatchCount * m_Terrain.terrainData.detailPatchCount;
-            EditorGUILayout.LabelField($"Detail patches currently allocated: {maxMeshes}");
+            int totalPatches = m_Terrain.terrainData.detailPatchCount * m_Terrain.terrainData.detailPatchCount;
+            EditorGUILayout.LabelField($"Detail patches currently allocated: {totalPatches}");
 
-            int maxDetails = maxMeshes * PaintDetailsUtils.GetMaxDetailInstances(m_Terrain.terrainData);
+            int maxDetails = totalPatches * PaintDetailsUtils.GetMaxDetailInstancesPerPatch(m_Terrain.terrainData);
             EditorGUILayout.LabelField($"Detail instance density: {maxDetails}");
 
             EditorGUI.indentLevel = oldIndent;

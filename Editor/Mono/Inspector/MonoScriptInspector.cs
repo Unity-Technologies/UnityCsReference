@@ -125,7 +125,11 @@ namespace UnityEditor
 
                 if (field.FieldType.IsSubclassOf(typeof(Object)) || field.FieldType == typeof(Object))
                 {
-                    Object oldTarget = importer.GetDefaultReference(field.Name);
+                    Object oldTarget = importer.GetDefaultReference(field.Name, out var instanceID);
+                    if(oldTarget == null && instanceID != 0)
+                    {
+                        oldTarget = Object.CreateMissingReferenceObject(instanceID);
+                    }
                     Object newTarget = EditorGUILayout.ObjectField(ObjectNames.NicifyVariableName(field.Name), oldTarget, field.FieldType, false);
 
                     names.Add(field.Name);

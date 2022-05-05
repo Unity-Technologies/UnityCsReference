@@ -105,7 +105,7 @@ namespace UnityEditor.ShortcutManagement
         static ShortcutIntegration()
         {
             // There is cases where the ShortcutIntegration was not requested even after the project was initialized, such as running tests.
-            EditorApplication.delayCall += EnsureShortcutControllerCreated;
+            EditorApplication.delayCall += EnsureShortcutsAreInitialized;
         }
 
         static void EnsureShortcutControllerCreated()
@@ -113,6 +113,16 @@ namespace UnityEditor.ShortcutManagement
             if (s_Instance == null)
                 InitializeController();
             Debug.Assert(s_Instance != null);
+        }
+
+        static void EnsureShortcutsAreInitialized()
+        {
+            EnsureShortcutControllerCreated();
+            // If the ShortcutController instance was created before the menus are created,
+            // for example if accessed in an InitializeOnLoad method,
+            // the list of shortcuts is incomplete.
+            // This delayed call ensures that the shortcuts are always up to date when the editor becomes usable.
+            s_Instance.RebuildShortcuts();
         }
 
         static bool HasAnyEntriesHandler()

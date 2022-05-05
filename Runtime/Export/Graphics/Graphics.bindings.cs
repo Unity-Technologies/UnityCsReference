@@ -31,8 +31,6 @@ namespace UnityEngine
         internal Allocator m_AllocatorLabel;
 
         internal AtomicSafetyHandle m_Safety;
-        [NativeSetClassTypeToNullOnSchedule]
-        internal DisposeSentinel m_DisposeSentinel;
 
         public LightProbesQuery(Allocator allocator)
         {
@@ -40,7 +38,8 @@ namespace UnityEngine
 
             m_AllocatorLabel = allocator;
 
-            DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);
+            UnsafeUtility.LeakRecord(m_LightProbeContextWrapper, LeakCategory.LightProbesQuery, 0);
+            AtomicSafetyHandle.CreateHandle(out m_Safety, allocator);
         }
 
         public void Dispose()
@@ -57,7 +56,8 @@ namespace UnityEngine
 
             if (m_AllocatorLabel > Allocator.None)
             {
-                DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+                AtomicSafetyHandle.DisposeHandle(ref m_Safety);
+                UnsafeUtility.LeakErase(m_LightProbeContextWrapper, LeakCategory.LightProbesQuery);
                 Destroy(m_LightProbeContextWrapper);
                 m_AllocatorLabel = Allocator.Invalid;
             }
@@ -74,6 +74,7 @@ namespace UnityEngine
 
             public void Dispose()
             {
+                UnsafeUtility.LeakErase(m_LightProbeContextWrapper, LeakCategory.LightProbesQuery);
                 Destroy(m_LightProbeContextWrapper);
             }
         }
@@ -103,10 +104,9 @@ namespace UnityEngine
             if (m_AllocatorLabel > Allocator.None)
             {
                 // [DeallocateOnJobCompletion] is not supported on the m_LightProbeContextWrapper,
-                // but we want the deallocation to happen on a thread. DisposeSentinel needs to be cleared on main thread.
+                // but we want the deallocation to happen on a thread.
                 // AtomicSafetyHandle can be destroyed after the job was scheduled (Job scheduling
                 // will check that no jobs are writing to the container).
-                DisposeSentinel.Clear(ref m_DisposeSentinel);
 
                 var jobHandle = new LightProbesQueryDisposeJob { Data = new LightProbesQueryDispose { m_LightProbeContextWrapper = m_LightProbeContextWrapper, m_Safety = m_Safety } }.Schedule(inputDeps);
 

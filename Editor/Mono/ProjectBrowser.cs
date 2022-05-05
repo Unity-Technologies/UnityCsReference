@@ -2776,7 +2776,7 @@ namespace UnityEditor
             return pathName;
         }
 
-        internal void BeginPreimportedNameEditing(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
+        internal void BeginPreimportedNameEditing(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
         {
             if (!Initialized())
                 Init();
@@ -2796,7 +2796,7 @@ namespace UnityEditor
 
                 pathName = ValidateCreateNewAssetPath(pathName);
 
-                if (m_ListAreaState.m_CreateAssetUtility.BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile))
+                if (m_ListAreaState.m_CreateAssetUtility.BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated))
                 {
                     ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(m_ListAreaState.m_CreateAssetUtility.folder), true);
                     m_ListArea.BeginNamingNewAsset(m_ListAreaState.m_CreateAssetUtility.originalName, instanceID, isCreatingNewFolder);
@@ -2813,7 +2813,7 @@ namespace UnityEditor
                 // Create in tree
                 AssetsTreeViewGUI defaultTreeViewGUI = m_AssetTree.gui as AssetsTreeViewGUI;
                 if (defaultTreeViewGUI != null)
-                    defaultTreeViewGUI.BeginCreateNewAsset(instanceID, endAction, pathName, icon, resourceFile);
+                    defaultTreeViewGUI.BeginCreateNewAsset(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
                 else
                     Debug.LogError("Not valid defaultTreeViewGUI!");
             }

@@ -37,8 +37,15 @@ namespace Unity.Collections
         internal int                      m_MinIndex;
         internal int                      m_MaxIndex;
         internal AtomicSafetyHandle       m_Safety;
-        [NativeSetClassTypeToNullOnSchedule]
-        internal DisposeSentinel          m_DisposeSentinel;
+
+        internal unsafe ref DisposeSentinel.Dummy m_DisposeSentinel
+        {
+            get
+            {
+                void* pointer = UnsafeUtility.Malloc(sizeof(DisposeSentinel.Dummy), 8, Allocator.Temp);
+                return ref UnsafeUtility.AsRef<DisposeSentinel.Dummy>(pointer);
+            }
+        }
 
         // TODO: Use SharedStatic for burst compatible static id once we have typehash intrinsic for unity in burst 1.6.5 and 1.7.0
         static int                        s_staticSafetyId;
@@ -101,13 +108,13 @@ namespace Unity.Collections
 
             IsUnmanagedAndThrow();
 
-            array.m_Buffer = UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<T>(), allocator);
+            array.m_Buffer = UnsafeUtility.MallocTracked(totalSize, UnsafeUtility.AlignOf<T>(), allocator, 0);
             array.m_Length = length;
             array.m_AllocatorLabel = allocator;
 
             array.m_MinIndex = 0;
             array.m_MaxIndex = length - 1;
-            DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
+            AtomicSafetyHandle.CreateHandle(out array.m_Safety, allocator);
             InitStaticSafetyId(ref array.m_Safety);
             InitNestedNativeContainer(array.m_Safety);
         }
@@ -195,8 +202,8 @@ namespace Unity.Collections
 
             if (m_AllocatorLabel > Allocator.None)
             {
-                DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
-                UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
+                AtomicSafetyHandle.DisposeHandle(ref m_Safety);
+                UnsafeUtility.FreeTracked(m_Buffer, m_AllocatorLabel);
                 m_AllocatorLabel = Allocator.Invalid;
             }
 
@@ -221,7 +228,6 @@ namespace Unity.Collections
                 // to happen in a thread. DisposeSentinel needs to be cleared on main thread.
                 // AtomicSafetyHandle can be destroyed after the job was scheduled (Job scheduling
                 // will check that no jobs are writing to the container).
-                DisposeSentinel.Clear(ref m_DisposeSentinel);
 
                 var jobHandle = new NativeArrayDisposeJob { Data = new NativeArrayDispose { m_Buffer = m_Buffer, m_AllocatorLabel = m_AllocatorLabel, m_Safety = m_Safety } }.Schedule(inputDeps);
 
@@ -607,18 +613,8 @@ namespace Unity.Collections
             var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<U>(m_Buffer, length, m_AllocatorLabel);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
-            SetDisposeSentinel(ref result);
             return result;
         }
-
-        // DisposeSentinel is a class so that's not supported in Burst. However, in Burst it's guaranteed
-        // that the sentinel is null anyway, so we can just use BurstDiscard on the place that works on it.
-        [BurstDiscard]
-        void SetDisposeSentinel<U>(ref NativeArray<U> result) where U : struct
-        {
-            result.m_DisposeSentinel = m_DisposeSentinel;
-        }
-
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckReinterpretSize<U>() where U : struct
@@ -686,7 +682,6 @@ namespace Unity.Collections
             var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.None);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref result, m_Safety);
-            result.m_DisposeSentinel = null;
             return result;
         }
 
@@ -826,7 +821,7 @@ namespace Unity.Collections
 
         public void Dispose()
         {
-            UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
+            UnsafeUtility.FreeTracked(m_Buffer, m_AllocatorLabel);
         }
     }
 

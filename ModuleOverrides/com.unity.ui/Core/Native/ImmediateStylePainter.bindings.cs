@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements
 {
-    [NativeHeader("Modules/UIElementsNative/ImmediateStylePainter.h")]
+    [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/ImmediateStylePainter.h")]
     [StructLayout(LayoutKind.Sequential)]
     internal class ImmediateStylePainter
     {

@@ -115,7 +115,9 @@ namespace UnityEditor
 
         static class Styles
         {
+            #pragma warning disable 618
             public static readonly int[] bakeBackendValues = { (int)LightingSettings.Lightmapper.Enlighten, (int)LightingSettings.Lightmapper.ProgressiveCPU, (int)LightingSettings.Lightmapper.ProgressiveGPU };
+            #pragma warning restore 618
             public static readonly GUIContent[] bakeBackendStrings =
             {
                 EditorGUIUtility.TrTextContent("Enlighten"),
@@ -409,7 +411,9 @@ namespace UnityEditor
                     }
                 }
 
+                #pragma warning disable 618
                 using (new EditorGUI.DisabledScope((m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten) && !enableRealtimeGI))
+                #pragma warning restore 618
                 {
                     DrawPropertyFieldWithPostfixLabel(m_RealtimeResolution, Styles.indirectResolution, Styles.texelsPerUnit);
                 }
@@ -520,7 +524,9 @@ namespace UnityEditor
 
                             if (lightmapperSupported && !m_BakeBackend.hasMultipleDifferentValues)
                             {
+                                #pragma warning disable 618
                                 if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
+                                #pragma warning restore 618
                                 {
                                     EditorGUI.indentLevel++;
 
@@ -536,7 +542,9 @@ namespace UnityEditor
                                     EditorGUI.indentLevel--;
                                 }
 
+                                #pragma warning disable 618
                                 if (m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten)
+                                #pragma warning restore 618
                                 {
                                     EditorGUI.indentLevel++;
 
@@ -649,7 +657,9 @@ namespace UnityEditor
                     }
 
                     // Show the Indirect Resolution field if the user is using Enlighten baked and the backend is supported.
+                    #pragma warning disable 618
                     if (bakedGISupported && (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten) && lightmapperSupported)
+                    #pragma warning restore 618
                     {
                         DrawPropertyFieldWithPostfixLabel(m_RealtimeResolution, Styles.indirectResolution, Styles.texelsPerUnit);
                     }
@@ -730,7 +740,9 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_ForceWhiteAlbedo, Styles.forceWhiteAlbedo);
                 EditorGUILayout.PropertyField(m_ForceUpdates, Styles.forceUpdates);
 
+                #pragma warning disable 618
                 if (m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten)
+                #pragma warning restore 618
                 {
                     EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 
@@ -983,7 +995,9 @@ namespace UnityEditor
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
                 EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);
             }
+            #pragma warning disable 618
             else if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
+            #pragma warning restore 618
             {
                 EditorGUILayout.HelpBox(Styles.enlightenLightmapperWarning.text, MessageType.Info);
             }

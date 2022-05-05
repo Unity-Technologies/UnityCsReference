@@ -209,6 +209,45 @@ namespace UnityEditor.Search
             }
         }
 
+        internal bool showPackages
+        {
+            get => (options & SearchFlags.Packages) == SearchFlags.Packages;
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.Packages;
+                else
+                    options &= ~SearchFlags.Packages;
+            }
+        }
+
+        internal bool noIndexing
+        {
+            get => (options & SearchFlags.NoIndexing) == SearchFlags.NoIndexing;
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.NoIndexing;
+                else
+                    options &= ~SearchFlags.NoIndexing;
+            }
+        }
+
+        internal bool debug
+        {
+            get => (options & SearchFlags.Debug) == SearchFlags.Debug;
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.Debug;
+                else
+                    options &= ~SearchFlags.Debug;
+            }
+        }
+
         public bool empty => string.IsNullOrEmpty(m_SearchText);
 
         /// <summary>

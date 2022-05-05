@@ -33,7 +33,11 @@ namespace UnityEditor
 
         public extern MonoScript GetScript();
 
-        public extern Object GetDefaultReference(string name);
+        public Object GetDefaultReference(string name)
+        {
+            return GetDefaultReference(name, out _);
+        }
+        internal extern Object GetDefaultReference(string name, out int instanceId);
 
         public extern void SetIcon(Texture2D icon);
         public extern Texture2D GetIcon();

@@ -174,7 +174,7 @@ namespace UnityEditor.Search
             selectors = ReflectionUtils.LoadAllMethodsWithAttribute(generator, supportedSignatures, ReflectionUtils.AttributeLoaderBehavior.DoNotThrowOnValidation)
                 .Where(s => s.valid)
                 .OrderBy(s => s.priority)
-                .OrderBy(s => string.IsNullOrEmpty(s.provider))
+                .ThenBy(s => string.IsNullOrEmpty(s.provider))
                 .ToList();
         }
 

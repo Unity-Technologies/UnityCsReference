@@ -26,6 +26,9 @@ namespace UnityEditor
             remove => m_GameObjectsChanged.Remove(value);
         }
 
+        public static unsafe void PublishEvents(NativeArray<GameObjectChangeTrackerEvent> events)
+            => OnGameObjectsChanged((IntPtr)events.GetUnsafeReadOnlyPtr(), events.Length);
+
         private static EventWithPerformanceTracker<GameObjectChangeTrackerEventHandler> m_GameObjectsChanged = new EventWithPerformanceTracker<GameObjectChangeTrackerEventHandler>($"{nameof(GameObjectChangeTracker)}.{nameof(GameObjectsChanged)}");
 
         [RequiredByNativeCode(GenerateProxy = true)]
@@ -80,18 +83,25 @@ namespace UnityEditor
             EventType = eventType;
         }
 
+        public GameObjectChangeTrackerEvent(GameObjectChangeTrackerEventType eventType)
+        {
+            InstanceId = 0;
+            EventType = eventType;
+        }
+
         public readonly int InstanceId;
         public readonly GameObjectChangeTrackerEventType EventType;
     }
 
     [Flags]
-    internal enum GameObjectChangeTrackerEventType : byte
+    internal enum GameObjectChangeTrackerEventType : ushort
     {
         CreatedOrChanged = 1 << 0,
         Destroyed = 1 << 1,
         OrderChanged = 1 << 2,
         ChangedParent = 1 << 3,
-        ChangedScene = 1 << 4
+        ChangedScene = 1 << 4,
+        SceneOrderChanged = 1 << 5
     }
 
 }

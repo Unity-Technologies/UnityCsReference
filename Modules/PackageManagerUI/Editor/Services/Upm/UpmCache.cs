@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.registry?.name != p2.registry?.name ||
                 p1.registry?.url != p2.registry?.url ||
                 p1.registry?.isDefault != p2.registry?.isDefault ||
-                p1.versions.verified != p2.versions.verified ||
+                p1.versions.recommended != p2.versions.recommended ||
                 p1.versions.compatible.Length != p2.versions.compatible.Length || !p1.versions.compatible.SequenceEqual(p2.versions.compatible) ||
                 p1.versions.all.Length != p2.versions.all.Length || !p1.versions.all.SequenceEqual(p2.versions.all) ||
                 p1.errors.Length != p2.errors.Length || !p1.errors.SequenceEqual(p2.errors) ||

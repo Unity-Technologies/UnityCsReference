@@ -22,6 +22,11 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     protected bool m_HasServerPlayers;
     protected bool m_IsRunningOnHostPlatform;
 
+    public static void SetArchitectureForPlatform(BuildTarget buildTarget, OSArchitecture architecture)
+    {
+        EditorUserBuildSettings.SetPlatformSettings(BuildPipeline.GetBuildTargetName(buildTarget), EditorUserBuildSettings.kSettingArchitecture, architecture.ToString().ToLower());
+    }
+
     public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerPlayers)
     {
         SetupStandaloneSubtargets();
@@ -73,16 +78,30 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         return BuildTarget.StandaloneWindows64;
     }
 
-    private static Dictionary<GUIContent, BuildTarget> GetArchitecturesForPlatform(BuildTarget target)
+    struct BuildTargetInfo
+    {
+        public BuildTarget buildTarget;
+        public OSArchitecture architecture;
+    }
+
+    private static Dictionary<GUIContent, BuildTargetInfo> GetArchitecturesForPlatform(BuildTarget target)
     {
         switch (target)
         {
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
-                return new Dictionary<GUIContent, BuildTarget>
+                return new Dictionary<GUIContent, BuildTargetInfo>
                 {
-                    { EditorGUIUtility.TrTextContent("Intel 64-bit"), BuildTarget.StandaloneWindows64 },
-                    { EditorGUIUtility.TrTextContent("Intel 32-bit"), BuildTarget.StandaloneWindows },
+                    { EditorGUIUtility.TrTextContent("Intel 64-bit"), new BuildTargetInfo
+                        {
+                            buildTarget = BuildTarget.StandaloneWindows64,
+                            architecture = OSArchitecture.x64
+                        }},
+                    { EditorGUIUtility.TrTextContent("Intel 32-bit"), new BuildTargetInfo
+                        {
+                            buildTarget = BuildTarget.StandaloneWindows,
+                            architecture = OSArchitecture.x86
+                        }},
                 };
             default:
                 return null;
@@ -115,29 +134,45 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         }
     }
 
-    private static BuildTarget DefaultArchitectureForTarget(BuildTarget target)
+    private static BuildTargetInfo DefaultArchitectureForTarget(BuildTarget target)
     {
         switch (target)
         {
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
-                return BuildTarget.StandaloneWindows64;
+                return new BuildTargetInfo
+                {
+                    buildTarget = BuildTarget.StandaloneWindows64,
+                    architecture = OSArchitecture.x64
+                };
                 // Deprecated
 #pragma warning disable 612, 618
             case BuildTarget.StandaloneLinux:
             case BuildTarget.StandaloneLinuxUniversal:
 #pragma warning restore 612, 618
             case BuildTarget.StandaloneLinux64:
-                return BuildTarget.StandaloneLinux64;
+                return new BuildTargetInfo
+                {
+                    buildTarget = BuildTarget.StandaloneLinux64,
+                    architecture = OSArchitecture.x64
+                };
             case BuildTarget.StandaloneOSX:
                 // Deprecated
 #pragma warning disable 612, 618
             case BuildTarget.StandaloneOSXIntel:
             case BuildTarget.StandaloneOSXIntel64:
 #pragma warning restore 612, 618
-                return BuildTarget.StandaloneOSX;
+                return new BuildTargetInfo
+                {
+                    buildTarget = BuildTarget.StandaloneOSX,
+                    architecture = OSArchitecture.x64
+                };
             default:
-                return target;
+                return new BuildTargetInfo
+                {
+                    buildTarget = target,
+                    architecture = OSArchitecture.x64
+                };
         }
     }
 
@@ -146,14 +181,14 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     public override void ShowPlatformBuildOptions()
     {
         BuildTarget selectedTarget = GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
-        BuildTarget newTarget = EditorUserBuildSettings.selectedStandaloneTarget;
+        BuildTargetInfo newTarget = new BuildTargetInfo {buildTarget = EditorUserBuildSettings.selectedStandaloneTarget};
 
         int selectedIndex = Math.Max(0, Array.IndexOf(m_StandaloneSubtargets, DefaultTargetForPlatform(selectedTarget)));
         int newIndex = EditorGUILayout.Popup(m_StandaloneTarget, selectedIndex, m_StandaloneSubtargetStrings);
 
         if (newIndex == selectedIndex)
         {
-            Dictionary<GUIContent, BuildTarget> architectures = GetArchitecturesForPlatform(selectedTarget);
+            Dictionary<GUIContent, BuildTargetInfo> architectures = GetArchitecturesForPlatform(selectedTarget);
             if (null != architectures)
             {
                 // Display architectures for the current target platform
@@ -163,7 +198,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
                 // Grab m_Architecture index for currently selected target
                 foreach (var architecture in architectures)
                 {
-                    if (architecture.Value == selectedTarget)
+                    if (architecture.Value.buildTarget == selectedTarget)
                     {
                         selectedArchitecture = System.Math.Max(0, System.Array.IndexOf(architectureNames, architecture.Key));
                         break;
@@ -179,10 +214,11 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             newTarget = DefaultArchitectureForTarget(m_StandaloneSubtargets[newIndex]);
         }
 
-        if (newTarget != EditorUserBuildSettings.selectedStandaloneTarget)
+        if (newTarget.buildTarget != EditorUserBuildSettings.selectedStandaloneTarget)
         {
             // setting selectedStandaloneTarget has side-effect: stops playmode
-            EditorUserBuildSettings.selectedStandaloneTarget = newTarget;
+            EditorUserBuildSettings.selectedStandaloneTarget = newTarget.buildTarget;
+            SetArchitectureForPlatform(newTarget.buildTarget, newTarget.architecture);
             GUIUtility.ExitGUI();
         }
 
@@ -208,19 +244,20 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     protected virtual string GetCannotBuildPlayerInCurrentSetupError()
     {
         var namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+        var scriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget);
 
         if (namedBuildTarget == NamedBuildTarget.Server)
         {
             if(!m_HasServerPlayers)
                 return $"Dedicated Server support for {GetHostPlatformName()} is not installed.";
 
-            if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
+            if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
             return null;
         }
 
-        switch(PlayerSettings.GetScriptingBackend(namedBuildTarget))
+        switch(scriptingBackend)
         {
             case ScriptingImplementation.Mono2x:
             {
@@ -232,7 +269,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             case ScriptingImplementation.CoreCLR:
             {
                 if (!m_HasCoreCLRPlayers)
-                    return $"Currently selected scripting backend (CoreCLR) is not {(Unsupported.IsSourceBuild() ? "installed" : "supported")}.";
+                    return $"Currently selected scripting backend (CoreCLR) is not {(Unsupported.IsSourceBuild() ? "installed" : "supported")}."; // CORECLR_FIXME remove sourcebuild
                 break;
             }
             case ScriptingImplementation.IL2CPP:
@@ -245,7 +282,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             }
             default:
             {
-                return $"Unknown scripting backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}";
+                return $"Unknown scripting backend: {scriptingBackend}";
             }
         }
 

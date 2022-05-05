@@ -259,7 +259,7 @@ namespace UnityEditor
                     var platform = JsonUtils.JsonReadString(menu, k_MenuKeyPlatform);
 
                     // Check the menu item platform
-                    if (!String.IsNullOrEmpty(platform) && !Application.platform.ToString().ToLowerInvariant().StartsWith(platform.ToLowerInvariant()))
+                    if (!string.IsNullOrEmpty(platform) && !Application.platform.ToString().ToLowerInvariant().StartsWith(platform.ToLowerInvariant()))
                         continue;
 
                     // Check if we are a submenu
@@ -271,7 +271,7 @@ namespace UnityEditor
                     else
                     {
                         var commandId = JsonUtils.JsonReadString(menu, k_MenuKeyCommandId);
-                        if (!String.IsNullOrEmpty(commandId) && CommandService.Exists(commandId))
+                        if (!string.IsNullOrEmpty(commandId) && CommandService.Exists(commandId))
                         {
                             // Create a new menu item pointing to a command handler
                             var shortcut = JsonUtils.JsonReadString(menu, k_MenuKeyShortcut);
@@ -279,6 +279,8 @@ namespace UnityEditor
 
                             var validateCommandId = JsonUtils.JsonReadString(menu, k_MenuKeyValidateCommandId);
                             var commandMenuItem = MenuItemScriptCommand.InitializeFromCommand(fullMenuName, 100, commandId, validateCommandId);
+                            commandMenuItem.@checked = @checked;
+                            commandMenuItem.shortcut = shortcut;
                             menuItems[fullMenuName] = commandMenuItem;
                         }
                     }

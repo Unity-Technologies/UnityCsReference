@@ -486,7 +486,7 @@ namespace UnityEditor.Search
 
         private void IncrementalLoad(string indexPath)
         {
-            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => Setup(), this);
+            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => Setup(task, data), this);
             loadTask.RunThread(() =>
             {
                 loadTask.Report($"Loading {indexPath}...", -1);
@@ -753,6 +753,17 @@ namespace UnityEditor.Search
                 SaveIndex(data.bytes, Setup);
             else
                 Setup();
+        }
+
+        private void Setup(Task task, TaskData data)
+        {
+            if (task.error != null)
+            {
+                Debug.LogException(task.error);
+                return;
+            }
+
+            Setup();
         }
 
         private void Setup()

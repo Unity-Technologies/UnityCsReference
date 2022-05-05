@@ -32,6 +32,18 @@ namespace UnityEngine
 
         public static QueryParameters Default => new QueryParameters(Physics.DefaultRaycastLayers, false, QueryTriggerInteraction.UseGlobal, false);
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ColliderHit
+    {
+        private int m_ColliderInstanceID;
+
+        public int instanceID => m_ColliderInstanceID;
+
+        // note this is a main-thread only API
+        public Collider collider => Object.FindObjectFromInstanceID(instanceID) as Collider;
+    }
+
     [NativeHeader("Modules/Physics/BatchCommands/RaycastCommand.h")]
     [NativeHeader("Runtime/Jobs/ScriptBindings/JobsBindingsTypes.h")]
     public partial struct RaycastCommand
@@ -310,5 +322,152 @@ namespace UnityEngine
 
         [FreeFunction("ScheduleClosestPointCommandBatch", ThrowsException = true)]
         unsafe extern private static JobHandle ScheduleClosestPointCommandBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob);
+    }
+
+    [NativeHeader("Modules/Physics/BatchCommands/OverlapSphereCommand.h")]
+    public struct OverlapSphereCommand
+    {
+        public OverlapSphereCommand(Vector3 point, float radius, QueryParameters queryParameters)
+        {
+            this.point = point;
+            this.radius = radius;
+            this.queryParameters = queryParameters;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public OverlapSphereCommand(PhysicsScene physicsScene, Vector3 point, float radius, QueryParameters queryParameters)
+        {
+            this.physicsScene = physicsScene;
+            this.point = point;
+            this.radius = radius;
+            this.queryParameters = queryParameters;
+        }
+
+        public Vector3 point { get; set; }
+        public float radius {get; set; }
+        public PhysicsScene physicsScene { get; set; }
+        public QueryParameters queryParameters;
+
+        public unsafe static JobHandle ScheduleBatch(NativeArray<OverlapSphereCommand> commands, NativeArray<ColliderHit> results, int minCommandsPerJob, int maxHits, JobHandle dependsOn = new JobHandle())
+        {
+            if (maxHits < 1)
+            {
+                Debug.LogWarning("maxHits should be greater than 0.");
+                return new JobHandle();
+            }
+            else if (results.Length < maxHits * commands.Length)
+            {
+                Debug.LogWarning("The supplied results buffer is too small, there should be at least maxHits space per each command in the batch.");
+                return new JobHandle();
+            }
+
+            var jobData = new BatchQueryJob<OverlapSphereCommand, ColliderHit>(commands, results);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), BatchQueryJobStruct<BatchQueryJob<OverlapSphereCommand, ColliderHit>>.Initialize(), dependsOn, ScheduleMode.Parallel);
+
+            return ScheduleOverlapSphereBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob, maxHits);
+        }
+
+        [FreeFunction("ScheduleOverlapSphereCommandBatch", ThrowsException = true)]
+        unsafe extern private static JobHandle ScheduleOverlapSphereBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob, int maxHits);
+    }
+
+    [NativeHeader("Modules/Physics/BatchCommands/OverlapBoxCommand.h")]
+    public struct OverlapBoxCommand
+    {
+        public OverlapBoxCommand(Vector3 center, Vector3 halfExtents, Quaternion orientation, QueryParameters queryParameters)
+        {
+            this.center = center;
+            this.halfExtents = halfExtents;
+            this.orientation = orientation;
+            this.queryParameters = queryParameters;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public OverlapBoxCommand(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, QueryParameters queryParameters)
+        {
+            this.physicsScene = physicsScene;
+            this.center = center;
+            this.halfExtents = halfExtents;
+            this.orientation = orientation;
+            this.queryParameters = queryParameters;
+        }
+
+        public Vector3 center { get; set; }
+        public Vector3 halfExtents { get; set; }
+        public Quaternion orientation { get; set; }
+        public PhysicsScene physicsScene { get; set; }
+        public QueryParameters queryParameters;
+
+        public unsafe static JobHandle ScheduleBatch(NativeArray<OverlapBoxCommand> commands, NativeArray<ColliderHit> results, int minCommandsPerJob, int maxHits, JobHandle dependsOn = new JobHandle())
+        {
+            if (maxHits < 1)
+            {
+                Debug.LogWarning("maxHits should be greater than 0.");
+                return new JobHandle();
+            }
+            else if (results.Length < maxHits * commands.Length)
+            {
+                Debug.LogWarning("The supplied results buffer is too small, there should be at least maxHits space per each command in the batch.");
+                return new JobHandle();
+            }
+
+            var jobData = new BatchQueryJob<OverlapBoxCommand, ColliderHit>(commands, results);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), BatchQueryJobStruct<BatchQueryJob<OverlapBoxCommand, ColliderHit>>.Initialize(), dependsOn, ScheduleMode.Parallel);
+
+            return ScheduleOverlapBoxBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob, maxHits);
+        }
+
+        [FreeFunction("ScheduleOverlapBoxCommandBatch", ThrowsException = true)]
+        unsafe extern private static JobHandle ScheduleOverlapBoxBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob, int maxHits);
+    }
+
+    [NativeHeader("Modules/Physics/BatchCommands/OverlapCapsuleCommand.h")]
+    public struct OverlapCapsuleCommand
+    {
+        public OverlapCapsuleCommand(Vector3 point0, Vector3 point1, float radius, QueryParameters queryParameters)
+        {
+            this.point0 = point0;
+            this.point1 = point1;
+            this.radius = radius;
+            this.queryParameters = queryParameters;
+            this.physicsScene = Physics.defaultPhysicsScene;
+        }
+
+        public OverlapCapsuleCommand(PhysicsScene physicsScene, Vector3 point0, Vector3 point1, float radius, QueryParameters queryParameters)
+        {
+            this.physicsScene = physicsScene;
+            this.point0 = point0;
+            this.point1 = point1;
+            this.radius = radius;
+            this.queryParameters = queryParameters;
+        }
+
+        public Vector3 point0 { get; set; }
+        public Vector3 point1 { get; set; }
+        public float radius { get; set; }
+        public PhysicsScene physicsScene { get; set; }
+        public QueryParameters queryParameters;
+
+        public unsafe static JobHandle ScheduleBatch(NativeArray<OverlapCapsuleCommand> commands, NativeArray<ColliderHit> results, int minCommandsPerJob, int maxHits, JobHandle dependsOn = new JobHandle())
+        {
+            if (maxHits < 1)
+            {
+                Debug.LogWarning("maxHits should be greater than 0.");
+                return new JobHandle();
+            }
+            else if (results.Length < maxHits * commands.Length)
+            {
+                Debug.LogWarning("The supplied results buffer is too small, there should be at least maxHits space per each command in the batch.");
+                return new JobHandle();
+            }
+
+            var jobData = new BatchQueryJob<OverlapCapsuleCommand, ColliderHit>(commands, results);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), BatchQueryJobStruct<BatchQueryJob<OverlapCapsuleCommand, ColliderHit>>.Initialize(), dependsOn, ScheduleMode.Parallel);
+
+            return ScheduleOverlapCapsuleBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob, maxHits);
+        }
+
+        [FreeFunction("ScheduleOverlapCapsuleCommandBatch", ThrowsException = true)]
+        unsafe extern private static JobHandle ScheduleOverlapCapsuleBatch(ref JobsUtility.JobScheduleParameters parameters, void* commands, int commandLen, void* result, int resultLen, int minCommandsPerJob, int maxHits);
     }
 }
