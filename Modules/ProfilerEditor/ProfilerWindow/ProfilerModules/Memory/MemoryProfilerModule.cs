@@ -475,9 +475,6 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public override ProfilerModuleViewController CreateDetailsViewController() =>
-            MemoryProfilerOverrides.CreateDetailsViewController == null ? new MemoryProfilerModuleViewController(ProfilerWindow, this) : MemoryProfilerOverrides.CreateDetailsViewController(ProfilerWindow);
-
         internal static class Styles
         {
             public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
@@ -546,6 +543,39 @@ namespace UnityEditorInternal.Profiling
 
         bool wantsMemoryRefresh { get { return m_MemoryListView.RequiresRefresh; } }
 
+        System.Reflection.MethodInfo s_MemoryProfilerModuleBridgeCreateDetailsViewControllerPropertyGetter;
+
+        public override ProfilerModuleViewController CreateDetailsViewController()
+        {
+            ProfilerModuleViewController detailsViewController = null;
+
+            // Try to get a view controller from the Memory Profiler package first.
+            if (IsMemoryProfilerPackageInstalled())
+            {
+                // Old versions of the Memory Profiler package (before 1.0) will use reflection to bind their MemoryProfilerModuleBridge.CreateDetailsViewController callback to MemoryProfilerOverrides.CreateDetailsViewController. New versions of the Memory Profiler package (1.0+) cannot use reflection so instead wait to be called. Therefore, we call MemoryProfilerModuleBridge.CreateDetailsViewController callback manually from here, supporting both old and new versions. Note the callback itself cannot be cached, due to the Editor setting for enabling the functionality being respected in the package providing this callback or not.
+                Func<ProfilerWindow, ProfilerModuleViewController> createDetailsViewControllerCallback = null;
+                if (s_MemoryProfilerModuleBridgeCreateDetailsViewControllerPropertyGetter == null)
+                {
+                    try
+                    {
+                        var type = Type.GetType("Unity.MemoryProfiler.Editor.MemoryProfilerModule.MemoryProfilerModuleBridge, Unity.MemoryProfiler.Editor.MemoryProfilerModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+                        var property = type.GetProperty("CreateDetailsViewController");
+                        s_MemoryProfilerModuleBridgeCreateDetailsViewControllerPropertyGetter = property.GetMethod;
+                    }
+                    catch (Exception) { }
+                }
+
+                createDetailsViewControllerCallback = s_MemoryProfilerModuleBridgeCreateDetailsViewControllerPropertyGetter?.Invoke(null, null) as Func<ProfilerWindow, ProfilerModuleViewController>;
+                detailsViewController = createDetailsViewControllerCallback?.Invoke(ProfilerWindow);
+            }
+
+            // Fall back to the built-in view controller.
+            if (detailsViewController == null)
+                detailsViewController = new MemoryProfilerModuleViewController(ProfilerWindow, this);
+
+            return detailsViewController;
+        }
+
         internal override void OnEnable()
         {
             base.OnEnable();
@@ -587,17 +617,25 @@ namespace UnityEditorInternal.Profiling
 
         bool InitiateMemoryProfilerPackageAvailabilityCheck()
         {
+            if (IsMemoryProfilerPackageInstalled())
+            {
+                m_MemoryProfilerPackageStage = PackageStage.Installed;
+                return true;
+            }
+
+            m_MemoryProfilerSearchRequest = UnityEditor.PackageManager.Client.Search(m_MemoryProfilerPackageName, true);
+            return false;
+        }
+
+        bool IsMemoryProfilerPackageInstalled()
+        {
             var installedPackages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
             foreach (var package in installedPackages)
             {
                 if (package.name == m_MemoryProfilerPackageName)
-                {
-                    m_MemoryProfilerPackageStage = PackageStage.Installed;
                     return true;
-                }
             }
 
-            m_MemoryProfilerSearchRequest = UnityEditor.PackageManager.Client.Search(m_MemoryProfilerPackageName, true);
             return false;
         }
 

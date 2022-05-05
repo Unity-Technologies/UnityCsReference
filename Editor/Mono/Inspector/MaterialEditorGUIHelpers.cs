@@ -153,7 +153,9 @@ namespace UnityEditor
 
         public bool DoubleSidedGIField()
         {
+            #pragma warning disable 618
             bool isEnlightenLightMapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten;
+            #pragma warning restore 618
 
             Rect r = GetControlRectForSingleLine();
             if (isPrefabAsset || !isEnlightenLightMapper)

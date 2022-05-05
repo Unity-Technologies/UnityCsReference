@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [NativeHeader("Modules/UIElementsNative/Renderer/UIPainter2D.bindings.h")]
+    [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/Renderer/UIPainter2D.bindings.h")]
     internal static class UIPainter2D
     {
         public static extern IntPtr Create(float maxArcRadius);

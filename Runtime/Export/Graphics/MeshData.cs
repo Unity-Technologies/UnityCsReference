@@ -28,7 +28,6 @@ namespace UnityEngine
             internal int m_MinIndex;
             internal int m_MaxIndex;
             AtomicSafetyHandle m_Safety;
-            [NativeSetClassTypeToNullOnSchedule] DisposeSentinel m_DisposeSentinel;
 
 
             public int Length => m_Length;
@@ -46,7 +45,8 @@ namespace UnityEngine
 
             public void Dispose()
             {
-                DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+                AtomicSafetyHandle.DisposeHandle(ref m_Safety);
+                UnsafeUtility.LeakErase((IntPtr)m_Ptrs, LeakCategory.MeshDataArray);
                 if (m_Length != 0)
                 {
                     ReleaseMeshDatas(m_Ptrs, m_Length);
@@ -91,9 +91,10 @@ namespace UnityEngine
                 m_Ptrs = (IntPtr*)UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<IntPtr>(), Allocator.Persistent);
                 AcquireReadOnlyMeshData(mesh, m_Ptrs);
 
+                UnsafeUtility.LeakRecord((IntPtr)m_Ptrs, LeakCategory.MeshDataArray, 0);
                 m_MinIndex = 0;
                 m_MaxIndex = m_Length - 1;
-                DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 1, Allocator.TempJob);
+                AtomicSafetyHandle.CreateHandle(out m_Safety, Allocator.TempJob);
                 // secondary version with write disabled makes the NativeArrays returned
                 // by MeshData actually be read-only
                 AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, false);
@@ -121,7 +122,7 @@ namespace UnityEngine
 
                 m_MinIndex = 0;
                 m_MaxIndex = m_Length - 1;
-                DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 1, Allocator.TempJob);
+                AtomicSafetyHandle.CreateHandle(out m_Safety, Allocator.TempJob);
                 // secondary version with write disabled makes the NativeArrays returned
                 // by MeshData actually be read-only
                 AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, false);
@@ -139,7 +140,7 @@ namespace UnityEngine
 
                 m_MinIndex = 0;
                 m_MaxIndex = m_Length - 1;
-                DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 1, Allocator.TempJob);
+                AtomicSafetyHandle.CreateHandle(out m_Safety, Allocator.TempJob);
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

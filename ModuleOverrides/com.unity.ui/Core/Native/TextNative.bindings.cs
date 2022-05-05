@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
         public Vector2 uv0;
     }
 
-    [NativeHeader("Modules/UIElementsNative/TextNative.bindings.h")]
+    [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/TextNative.bindings.h")]
     internal static class TextNative
     {
         public static Vector2 GetCursorPosition(TextNativeSettings settings, Rect rect, int cursorIndex)

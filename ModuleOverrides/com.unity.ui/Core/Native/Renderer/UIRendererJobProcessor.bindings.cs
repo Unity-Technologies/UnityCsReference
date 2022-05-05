@@ -8,7 +8,7 @@ using Unity.Jobs;
 
 namespace UnityEngine.UIElements.UIR
 {
-    [NativeHeader("Modules/UIElementsNative/Renderer/UIRendererJobProcessor.h")]
+    [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/Renderer/UIRendererJobProcessor.h")]
     static class JobProcessor
     {
         internal extern static JobHandle ScheduleNudgeJobs(IntPtr buffer, int jobCount);

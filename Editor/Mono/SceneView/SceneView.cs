@@ -308,7 +308,7 @@ namespace UnityEditor
 
         SceneViewStageHandling m_StageHandling;
 
-        internal Rect cameraViewport => cameraViewVisualElement.rect;
+        public Rect cameraViewport => cameraViewVisualElement.rect;
 
         Transform m_CustomParentForNewGameObjects;
         protected internal Transform customParentForDraggedObjects

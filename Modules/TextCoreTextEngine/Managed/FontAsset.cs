@@ -591,7 +591,7 @@ namespace UnityEngine.TextCore.Text
             // Load Font Face
             if (FontEngine.LoadFontFace(font, samplingPointSize, faceIndex) != FontEngineError.Success)
             {
-                if (font.name == "Arial")
+                if (font.name == "LegacyRuntime")
                 {
                     return FontAsset.CreateFontAsset("Arial", "Regular");
                 }

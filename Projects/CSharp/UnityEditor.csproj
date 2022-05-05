@@ -661,6 +661,9 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\NamedBuildTarget.cs">
       <Link>Editor\Mono\BuildPipeline\NamedBuildTarget.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\OSArchitecture.cs">
+      <Link>Editor\Mono\BuildPipeline\OSArchitecture.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\PostProcessStandalonePlayer.cs">
       <Link>Editor\Mono\BuildPipeline\PostProcessStandalonePlayer.cs</Link>
     </Compile>
@@ -2236,9 +2239,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs">
       <Link>Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Physics2DSettingsInspector.cs">
-      <Link>Editor\Mono\Inspector\Physics2DSettingsInspector.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PlatformEffector2DEditor.cs">
       <Link>Editor\Mono\Inspector\PlatformEffector2DEditor.cs</Link>
     </Compile>
@@ -3271,14 +3271,14 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\SystemProcessRunnableProgramDuplicate.cs">
+      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\SystemProcessRunnableProgramDuplicate.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriver.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriver.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriverProfilerSession.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriverProfilerSession.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityProgressAPI.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityProgressAPI.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityScriptUpdater.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityScriptUpdater.cs</Link>
@@ -4069,6 +4069,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorCanvas.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorCanvas.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorHeader.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorHeader.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorInheritedStyles.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorInheritedStyles.cs</Link>
     </Compile>
@@ -4077,9 +4080,6 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorMatchingSelectors.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorMatchingSelectors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorSelector.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorSelector.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs</Link>
@@ -6349,8 +6349,17 @@
     <Compile Include="..\..\Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs">
       <Link>Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\LayerCollisionMatrix2D.cs">
+      <Link>Modules\Physics2DEditor\Managed\LayerCollisionMatrix2D.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs">
       <Link>Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DPreferences.cs">
+      <Link>Modules\Physics2DEditor\Managed\Physics2DPreferences.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DSettingsInspector.cs">
+      <Link>Modules\Physics2DEditor\Managed\Physics2DSettingsInspector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
       <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
@@ -8257,7 +8266,8 @@
     <Reference Include="../../External/Unity.Compiler.Client/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
-    <Reference Include="../../External/Bee/BeeAsALibrary/Bee.BeeDriver.dll" />
+    <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />
+    <Reference Include="../../External/Bee/BeeDriver2/Bee.BinLog.dll" />
     <Reference Include="../../External/NetStandardExtensions/System.CodeDom.dll" />
     <ProjectReference Include="UnityEngine.csproj" />
     <ProjectReference Include="../../Tools/Unity.CecilTools/Unity.CecilTools.gen.csproj" />

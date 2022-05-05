@@ -7,8 +7,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using NiceIO;
 using Bee.BeeDriver;
+using Bee.BinLog;
 using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
 using UnityEditor.Compilation;
@@ -107,13 +110,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         class BeeScriptCompilationState
         {
-            public BeeDriver Driver;
-            public ScriptAssembly[] assemblies;
+            public CancellationTokenSource CancellationTokenSource { get; set; }
+            public ScriptAssembly[] ScriptAssemblies { get; set; }
+            public ScriptAssemblySettings Settings { get; set; }
+            public ActiveBuild ActiveBuild { get; set; }
+            public NPath BeeDriverProfilerFile { get; set; }
 
-            public ScriptAssemblySettings settings { get; set; }
+            public int AsyncProgressBarToken { get; set; }
         }
 
-        BeeScriptCompilationState activeBeeBuild;
+        BeeScriptCompilationState _currentBeeScriptCompilationState;
+
         CompilerMessage[] _currentEditorCompilationCompilerMessages = new CompilerMessage[0];
         public bool IsRunningRoslynAnalysisSynchronously { get; private set; }
 
@@ -232,6 +239,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EditorUserBuildSettings.activeBuildTargetGroup,
                 EditorUserBuildSettings.activeBuildTarget);
         }
+
+
 
         public void GetAssemblyDefinitionReferencesWithMissingAssemblies(out List<CustomScriptAssemblyReference> referencesWithMissingAssemblies)
         {
@@ -741,7 +750,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         void CancelActiveBuild()
         {
-            activeBeeBuild?.Driver.CancelBuild();
+            _currentBeeScriptCompilationState?.CancellationTokenSource.Cancel();
         }
 
         void WarnIfThereAreAssembliesWithoutAnyScripts(ScriptAssemblySettings scriptAssemblySettings, ScriptAssembly[] scriptAssemblies)
@@ -827,44 +836,42 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 $"{(scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile) ? "SkipCompile" : "")}";
 
             BuildTarget buildTarget = scriptAssemblySettings.BuildTarget;
-            activeBeeBuild = new BeeScriptCompilationState()
+            var buildRequest = UnityBeeDriver.BuildRequestFor(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater);
+
+            buildRequest.DeferDagVerification = true;
+            buildRequest.ContinueBuildingAfterFirstFailure = true;
+            buildRequest.Target = scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingExtractTypeDB)
+                ? Constants.ScriptAssembliesAndTypeDBTarget
+                : Constants.ScriptAssembliesTarget;
+
+            buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(this, scriptAssemblies, debug, scriptAssemblySettings.OutputDirectory, buildTarget, scriptAssemblySettings.BuildingForEditor));
+
+            var cts = new CancellationTokenSource();
+
+            var activeBeeBuild = BeeDriver.BuildAsync(buildRequest, cts.Token);
+
+            _currentBeeScriptCompilationState = new BeeScriptCompilationState()
             {
-                Driver = UnityBeeDriver.Make(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater, ilpp: new ILPostProcessingProgram()),
-                settings = scriptAssemblySettings,
-                assemblies = scriptAssemblies,
+                ActiveBuild = activeBeeBuild,
+                CancellationTokenSource = cts,
+                ScriptAssemblies = scriptAssemblies,
+                Settings = scriptAssemblySettings,
+                BeeDriverProfilerFile = buildRequest.ProfilerOutputFile,
+                AsyncProgressBarToken = Progress.Start("Compiling Scripts")
             };
 
-            BeeScriptCompilation.AddScriptCompilationData(
-                activeBeeBuild.Driver,
-                this,
-                activeBeeBuild.assemblies,
-                debug,
-                scriptAssemblySettings.OutputDirectory,
-                buildTarget,
-                scriptAssemblySettings.BuildingForEditor,
-                scriptAssemblySettings.ExtraGeneralDefines
-            );
-
             InvokeCompilationStarted(activeBeeBuild);
-
-            if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingExtractTypeDB))
-                activeBeeBuild.Driver.BuildAsync(Constants.ScriptAssembliesAndTypeDBTarget);
-            else
-                activeBeeBuild.Driver.BuildAsync(Constants.ScriptAssembliesTarget);
 
             return CompileStatus.CompilationStarted;
         }
 
-        public static SystemProcessRunnableProgram ScriptCompilationBuildProgram { get; } = MakeScriptCompilationBuildProgram();
+        public static RunnableProgram ScriptCompilationBuildProgram { get; } = MakeScriptCompilationBuildProgram();
 
-        static SystemProcessRunnableProgram MakeScriptCompilationBuildProgram()
+        static RunnableProgram MakeScriptCompilationBuildProgram()
         {
             var buildProgramAssembly = new NPath($"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/ScriptCompilationBuildProgram.exe");
-            return new SystemProcessRunnableProgram(
-                $"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}",
-                new [] { buildProgramAssembly.InQuotes(SlashMode.Native) },
-                new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
-                );
+            return new SystemProcessRunnableProgramDuplicate($"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", new[] {buildProgramAssembly.InQuotes(SlashMode.Native)}, new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
+               );
         }
 
         public void InvokeCompilationStarted(object context)
@@ -1001,10 +1008,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public bool IsCompilationTaskCompiling()
         {
-            return activeBeeBuild != null;
+            return _currentBeeScriptCompilationState != null;
         }
 
-        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines)
+        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform, int subtarget, string[] extraScriptingDefines, bool allowBlocking)
         {
             // Return CompileStatus.Compiling if any compile task is still compiling.
             // This ensures that the compile tasks finish compiling before any
@@ -1030,30 +1037,66 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     Profiler.EndSample();
                 }
+                if (allowBlocking)
+                    return TickCompilationPipeline(options, platformGroup, platform, subtarget, extraScriptingDefines, allowBlocking);
 
                 return compileStatus;
             }
 
-            if (activeBeeBuild == null)
+            if (_currentBeeScriptCompilationState == null)
             {
                 return CompileStatus.Idle;
             }
 
-            var result = activeBeeBuild.Driver.Tick();
-            if (result == null)
+            var activeBuild = _currentBeeScriptCompilationState.ActiveBuild;
+            var activeBuildTaskObject = activeBuild.TaskObject;
+
+            if (!activeBuildTaskObject.IsCompleted)
             {
-                return CompileStatus.Compiling;
+                if (!allowBlocking)
+                {
+                    Progress.SetDescription(_currentBeeScriptCompilationState.AsyncProgressBarToken, activeBuild.Status.Description);
+                    return CompileStatus.Compiling;
+                }
+
+                CompleteActiveBuildWhilePumping();
             }
 
-            var compilerMessages = ProcessCompilationResult(activeBeeBuild.assemblies, result, activeBeeBuild.settings.BuildingForEditor, activeBeeBuild).SelectMany(m => m).ToArray();
+            Progress.Finish(_currentBeeScriptCompilationState.AsyncProgressBarToken);
 
-            int logIdentifier = activeBeeBuild.settings.BuildingForEditor
+            if (activeBuildTaskObject.IsCanceled || activeBuildTaskObject.IsFaulted)
+            {
+                if (activeBuildTaskObject.IsFaulted)
+                    Debug.LogError("Internal BuildSystem Error: " + activeBuildTaskObject.Exception);
+
+                _currentBeeScriptCompilationState = null;
+                return CompileStatus.CompilationFailed;
+            }
+
+            BeeDriverResult result = activeBuildTaskObject.Result;
+
+            if (!result.Success)
+            {
+                foreach (var msg in result.NodeFinishedMessages)
+                    if (msg.ExitCode != 0)
+                    {
+                        Console.WriteLine($"## Script Compilation Error for: {msg.Node.Annotation}");
+                        Console.WriteLine($"## CmdLine: {msg.CmdLine}");
+                        Console.WriteLine($"## Output:");
+                        Console.WriteLine(msg.Output);
+                    }
+            }
+
+            var messagesForNodeResults = ProcessCompilationResult(_currentBeeScriptCompilationState.ScriptAssemblies, result, _currentBeeScriptCompilationState.Settings.BuildingForEditor, _currentBeeScriptCompilationState.ActiveBuild);
+            var compilerMessages = messagesForNodeResults.SelectMany(a => a).ToArray();
+
+            int logIdentifier = _currentBeeScriptCompilationState.Settings.BuildingForEditor
                 //these numbers are "randomly picked". they are used to so that when you log a message with a certain identifier, later all messages with that identifier can be cleared.
                 //one means "compilation error for compiling-assemblies-for-editor"  the other means "compilation error for building a player".
                 ? kLogIdentifierFor_EditorMessages
                 : kLogIdentifierFor_PlayerMessages;
 
-            if (activeBeeBuild.settings.BuildingForEditor)
+            if (_currentBeeScriptCompilationState.Settings.BuildingForEditor)
             {
                 _currentEditorCompilationCompilerMessages = compilerMessages;
             }
@@ -1065,14 +1108,50 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     // Ensure that we don't emit info messages (user cannot do anything with these and they are generated by DiagnosticSuppressors)
                     if (message.type != CompilerMessageType.Information)
-                        Debug.LogCompilerMessage(message.message, message.file, message.line, message.column, activeBeeBuild.settings.BuildingForEditor, message.type == CompilerMessageType.Error, logIdentifier);
+                        Debug.LogCompilerMessage(message.message, message.file, message.line, message.column, _currentBeeScriptCompilationState.Settings.BuildingForEditor, message.type == CompilerMessageType.Error, logIdentifier);
                 }
             }
 
-            activeBeeBuild = null;
+            result.ProfileOutputWritingTask?.Wait();
+
+            _currentBeeScriptCompilationState = null;
             return result.Success
                 ? CompileStatus.CompilationComplete
                 : CompileStatus.CompilationFailed;
+        }
+
+        void CompleteActiveBuildWhilePumping()
+        {
+            var synchroContext = (UnitySynchronizationContext) SynchronizationContext.Current;
+
+            var activeBuild = _currentBeeScriptCompilationState.ActiveBuild;
+            while (true)
+            {
+                var activeBuildStatus = activeBuild.Status;
+                float progress = activeBuildStatus.Progress.HasValue
+                    ? activeBuildStatus.Progress.Value.nodesFinishedOrUpToDate / (float) activeBuildStatus.Progress.Value.totalNodesQeueued
+                    : 0f;
+
+                if (EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", "ScriptCompilation: "+activeBuildStatus.Description, progress))
+                {
+                    EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", "Canceling compilation", 1.0f);
+                    _currentBeeScriptCompilationState.CancellationTokenSource.Cancel();
+                }
+
+                try
+                {
+                    activeBuild.TaskObject.Wait(100);
+                }
+                catch (AggregateException)
+                {
+                    // ignored
+                }
+
+                if (activeBuild.TaskObject.IsCompleted)
+                    return;
+
+                synchroContext.Exec();
+            }
         }
 
         public void DisableLoggingEditorCompilerMessages()
@@ -1082,21 +1161,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CompilerMessage[][] ProcessCompilationResult(ScriptAssembly[] assemblies, BeeDriverResult result, bool buildingForEditor, object context)
         {
-            var compilerMessages = BeeScriptCompilation.ParseAllResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeResults, this);
-            InvokeAssemblyCompilationFinished(assemblies, result, buildingForEditor, compilerMessages);
+            var compilerMessagesForNodeResults = BeeScriptCompilation.ParseAllNodeResultsIntoCompilerMessages(result.BeeDriverMessages, result.NodeFinishedMessages, this);
+            InvokeAssemblyCompilationFinished(assemblies, result, buildingForEditor, compilerMessagesForNodeResults);
             InvokeCompilationFinished(context);
-            return compilerMessages;
+            return compilerMessagesForNodeResults;
         }
 
         void InvokeAssemblyCompilationFinished(ScriptAssembly[] assemblies, BeeDriverResult beeDriverResult, bool buildingForEditor, CompilerMessage[][] compilerMessagesForNodeResults)
         {
-            bool Belongs(ScriptAssembly scriptAssembly, NodeResult nodeResult) => new NPath(nodeResult.outputfile).FileName == scriptAssembly.Filename;
+            bool Belongs(ScriptAssembly scriptAssembly, NodeFinishedMessage nodeFinishedMessage) => new NPath(nodeFinishedMessage.Node.OutputFile).FileName == scriptAssembly.Filename;
 
             // We want to send callbacks for assemblies that were copied, for assemblies that failed to compile, but not for assemblies that were compiled but not copied (because they ended up identical).
             bool RequiresCallbackInvocation(ScriptAssembly scriptAssembly)
             {
-                var relatedNodes = beeDriverResult.NodeResults.Where(nodeResult => Belongs(scriptAssembly, nodeResult));
-                return relatedNodes.Any(n => n.exitcode != 0 || n.annotation.StartsWith("CopyFiles"));
+                var relatedNodes = beeDriverResult.NodeFinishedMessages.Where(nodeFinishedMessage => Belongs(scriptAssembly, nodeFinishedMessage));
+                return relatedNodes.Any(n => n.ExitCode != 0 || n.Node.Annotation.StartsWith("CopyFiles"));
             }
 
             foreach (var scriptAssembly in assemblies)
@@ -1112,7 +1191,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (buildingForEditor)
                     m_ScriptsForEditorHaveBeenCompiledSinceLastDomainReload = true;
 
-                var nodeResultIndicesRelatedToAssembly = beeDriverResult.NodeResults
+                var nodeResultIndicesRelatedToAssembly = beeDriverResult.NodeFinishedMessages
                     .Select((result, index) => (result, index))
                     .Where(c => Belongs(scriptAssembly, c.result))
                     .Select(c => c.index);

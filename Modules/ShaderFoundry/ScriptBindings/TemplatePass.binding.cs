@@ -17,6 +17,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_PassIdentifierHandle;
         internal FoundryHandle m_VertexStageElementListHandle;
         internal FoundryHandle m_FragmentStageElementListHandle;
+        internal FoundryHandle m_CommandDescriptorListHandle;
+        internal FoundryHandle m_PragmaDescriptorListHandle;
         internal FoundryHandle m_TagDescriptorListHandle;
 
         internal extern static TemplatePassInternal Invalid();
@@ -47,6 +49,26 @@ namespace UnityEditor.ShaderFoundry
             var localContainer = Container;
             var list = new FixedHandleListInternal(stageElementListHandle);
             return list.Select(localContainer, (handle) => (new TemplatePassStageElement(localContainer, handle)));
+        }
+
+        public IEnumerable<CommandDescriptor> CommandDescriptors
+        {
+            get
+            {
+                var localContainer = Container;
+                var list = new FixedHandleListInternal(templatePass.m_CommandDescriptorListHandle);
+                return list.Select(localContainer, (handle) => (new CommandDescriptor(localContainer, handle)));
+            }
+        }
+
+        public IEnumerable<PragmaDescriptor> PragmaDescriptors
+        {
+            get
+            {
+                var localContainer = Container;
+                var list = new FixedHandleListInternal(templatePass.m_PragmaDescriptorListHandle);
+                return list.Select(localContainer, (handle) => (new PragmaDescriptor(localContainer, handle)));
+            }
         }
 
         public IEnumerable<TagDescriptor> TagDescriptors
@@ -90,6 +112,8 @@ namespace UnityEditor.ShaderFoundry
             PassIdentifierInternal passIdentifier = new PassIdentifierInternal(uint.MaxValue, uint.MaxValue);
             List<StageElement> vertexStageElements = new List<StageElement>();
             List<StageElement> fragmentStageElements = new List<StageElement>();
+            List<CommandDescriptor> commandDescriptors;
+            List<PragmaDescriptor> pragmaDescriptors;
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
 
             public string DisplayName { get { return displayName; } set { displayName = value; }}
@@ -104,6 +128,20 @@ namespace UnityEditor.ShaderFoundry
             public void SetPassIdentifier(uint subShaderIndex, uint passIndex)
             {
                 passIdentifier = new PassIdentifierInternal(subShaderIndex, passIndex);
+            }
+
+            public void AddCommandDescriptor(CommandDescriptor commandDescriptor)
+            {
+                if (commandDescriptors == null)
+                    commandDescriptors = new List<CommandDescriptor>();
+                commandDescriptors.Add(commandDescriptor);
+            }
+
+            public void AddPragmaDescriptor(PragmaDescriptor pragmaDescriptor)
+            {
+                if (pragmaDescriptors == null)
+                    pragmaDescriptors = new List<PragmaDescriptor>();
+                pragmaDescriptors.Add(pragmaDescriptor);
             }
 
             public void AddTagDescriptor(TagDescriptor tagDescriptor)
@@ -154,6 +192,8 @@ namespace UnityEditor.ShaderFoundry
                 templatePassInternal.m_PassIdentifierHandle = container.AddPassIdentifier(passIdentifier.SubShaderIndex, passIdentifier.PassIndex);
                 templatePassInternal.m_VertexStageElementListHandle = FixedHandleListInternal.Build(container, vertexStageElements, (e) => BuildStageElement(e));
                 templatePassInternal.m_FragmentStageElementListHandle = FixedHandleListInternal.Build(container, fragmentStageElements, (e) => BuildStageElement(e));
+                templatePassInternal.m_CommandDescriptorListHandle = FixedHandleListInternal.Build(container, commandDescriptors, (o) => (o.handle));
+                templatePassInternal.m_PragmaDescriptorListHandle = FixedHandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
                 templatePassInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
 
                 var returnTypeHandle = container.AddTemplatePassInternal(templatePassInternal);

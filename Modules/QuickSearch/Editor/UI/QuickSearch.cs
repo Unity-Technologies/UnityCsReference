@@ -1082,27 +1082,50 @@ namespace UnityEditor.Search
 
         private void TogglePackages()
         {
-            if (context.options.HasAny(SearchFlags.Packages))
-                context.options &= ~SearchFlags.Packages;
+            if (context.showPackages)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.Packages;
+                context.showPackages = false;
+            }
             else
-                context.options |= SearchFlags.Packages;
+            {
+                SearchSettings.defaultFlags |= SearchFlags.Packages;
+                context.showPackages = true;
+            }
+
             SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(SearchFlags.Packages), context.wantsMore.ToString());
             Refresh(RefreshFlags.StructureChanged);
         }
 
         private void ToggleWantsMore()
         {
-            SearchSettings.wantsMore = context.wantsMore = !context?.wantsMore ?? false;
+            if (context.wantsMore)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.WantsMore;
+                context.wantsMore = false;
+            }
+            else
+            {
+                SearchSettings.defaultFlags |= SearchFlags.WantsMore;
+                context.wantsMore = true;
+            }
             SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(context.wantsMore), context.wantsMore.ToString());
             Refresh(RefreshFlags.StructureChanged);
         }
 
         private void ToggleDebugQuery()
         {
-            if (context.options.HasAny(SearchFlags.Debug))
-                context.options &= ~SearchFlags.Debug;
+            if (context.debug)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.Debug;
+                context.debug = false;
+            }
             else
-                context.options |= SearchFlags.Debug;
+            {
+                SearchSettings.defaultFlags |= SearchFlags.Debug;
+                context.debug = true;
+            }
+
             Refresh();
         }
 
@@ -2281,15 +2304,15 @@ namespace UnityEditor.Search
 
         private void LoadContext()
         {
-            var contextHash = context.GetHashCode();
+            m_ContextHash = context.GetHashCode();
             if (context.options.HasAny(SearchFlags.FocusContext))
             {
                 var contextualProvider = GetContextualProvider();
                 if (contextualProvider != null)
-                    contextHash ^= contextualProvider.id.GetHashCode();
+                    m_ContextHash ^= contextualProvider.id.GetHashCode();
             }
-            if (m_ContextHash == 0)
-                m_ContextHash = contextHash;
+
+            m_ContextHash ^= GetType().Name.GetHashCode();
         }
 
         protected void UpdateViewState(SearchViewState args)

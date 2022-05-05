@@ -21,6 +21,18 @@ namespace UnityEngine.Tilemaps
 
         internal ITilemap() { }
 
+        public ITilemap(Tilemap tilemap)
+        {
+            if (tilemap == null)
+                throw new ArgumentNullException("Argument tilemap cannot be null");
+            m_Tilemap = tilemap;
+        }
+
+        public static implicit operator ITilemap(Tilemap tilemap)
+        {
+            return new ITilemap(tilemap);
+        }
+
         internal void SetTilemapInstance(Tilemap tilemap)
         {
             m_Tilemap = tilemap;
@@ -83,6 +95,10 @@ namespace UnityEngine.Tilemaps
 
         public T GetComponent<T>()
         {
+            if (typeof(T) == typeof(Tilemap))
+            {
+                return (T)(System.Object)m_Tilemap;
+            }
             return m_Tilemap.GetComponent<T>();
         }
 

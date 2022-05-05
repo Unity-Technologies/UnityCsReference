@@ -128,11 +128,11 @@ namespace UnityEditor
         }
 
         // Not part of interface because it is very specific to creating assets
-        virtual public void BeginCreateNewAsset(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
+        virtual public void BeginCreateNewAsset(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated = true)
         {
             ClearRenameAndNewItemState();
 
-            if (GetCreateAssetUtility().BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile))
+            if (GetCreateAssetUtility().BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated))
             {
                 SyncFakeItem();
 

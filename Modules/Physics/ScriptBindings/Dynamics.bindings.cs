@@ -50,12 +50,13 @@ namespace UnityEngine
         public Vector3 normal { get { return m_Normal; } set { m_Normal = value; } }
         public Vector3 barycentricCoordinate { get { return new Vector3(1.0F - (m_UV.y + m_UV.x), m_UV.x, m_UV.y); } set { m_UV = value; } }
         public float distance { get { return m_Distance; } set { m_Distance = value; } }
-        public int triangleIndex { get { return (int)m_FaceID; }  }
+        public int triangleIndex { get { return (int)m_FaceID; } }
 
-        [FreeFunction] extern static private Vector2 CalculateRaycastTexCoord(Collider collider, Vector2 uv, Vector3 pos, uint face, int textcoord);
+        [NativeMethod("CalculateRaycastTexCoord", true, true)]
+        extern static private Vector2 CalculateRaycastTexCoord(int colliderInstanceID, Vector2 uv, Vector3 pos, uint face, int textcoord);
 
-        public Vector2 textureCoord { get { return CalculateRaycastTexCoord(collider, m_UV, m_Point, m_FaceID, 0); } }
-        public Vector2 textureCoord2 { get { return CalculateRaycastTexCoord(collider, m_UV, m_Point, m_FaceID, 1); } }
+        public Vector2 textureCoord { get { return CalculateRaycastTexCoord(m_Collider, m_UV, m_Point, m_FaceID, 0); } }
+        public Vector2 textureCoord2 { get { return CalculateRaycastTexCoord(m_Collider, m_UV, m_Point, m_FaceID, 1); } }
 
         public Transform transform
         {
@@ -78,7 +79,7 @@ namespace UnityEngine
         {
             get
             {
-                Vector2 coord = CalculateRaycastTexCoord(collider, m_UV, m_Point, m_FaceID, 1);
+                Vector2 coord = CalculateRaycastTexCoord(m_Collider, m_UV, m_Point, m_FaceID, 1);
                 if (collider.GetComponent<Renderer>() != null)
                 {
                     Vector4 st = collider.GetComponent<Renderer>().lightmapScaleOffset;
@@ -131,6 +132,22 @@ namespace UnityEngine
         extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
         extern public int solverVelocityIterations { get; set; }
+
+        extern public Vector3 GetAccumulatedForce([DefaultValue("Time.fixedDeltaTime")] float step);
+
+        [ExcludeFromDocs]
+        public Vector3 GetAccumulatedForce()
+        {
+            return GetAccumulatedForce(Time.fixedDeltaTime);
+        }
+
+        extern public Vector3 GetAccumulatedTorque([DefaultValue("Time.fixedDeltaTime")] float step);
+
+        [ExcludeFromDocs]
+        public Vector3 GetAccumulatedTorque()
+        {
+            return GetAccumulatedTorque(Time.fixedDeltaTime);
+        }
 
         extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
 

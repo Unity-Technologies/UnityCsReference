@@ -389,6 +389,9 @@ namespace Unity.UI.Builder
                     int index;
                     GetPickedElementFromHoverElement(out pickedElement, out index);
 
+                    if (pickedElement == null)
+                        return;
+                        
                     // Mirror final drag destination in the viewport using the placement indicator.
                     m_PlacementIndicator?.Activate(pickedElement, index);
 

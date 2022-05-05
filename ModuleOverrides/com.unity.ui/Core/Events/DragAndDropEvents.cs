@@ -16,6 +16,22 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class DragAndDropEventBase<T> : MouseEventBase<T>, IDragAndDropEvent where T : DragAndDropEventBase<T>, new()
     {
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+                          EventPropagation.SkipDisabledElements;
+        }
+
+        protected DragAndDropEventBase()
+        {
+            LocalInit();
+        }
     }
 
     /// <summary>
@@ -39,7 +55,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles;
+            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles |
+                          EventPropagation.SkipDisabledElements;
         }
 
         /// <summary>
@@ -101,7 +118,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown;
+            propagation = EventPropagation.TricklesDown | EventPropagation.SkipDisabledElements;
         }
 
         /// <summary>
@@ -134,7 +151,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown;
+            propagation = EventPropagation.TricklesDown | EventPropagation.SkipDisabledElements;
         }
 
         /// <summary>

@@ -17,7 +17,7 @@ namespace UnityEngine.Yoga
 {
     using YogaValueType = YogaValue;
 
-    [NativeHeader("Modules/UIElementsNative/YogaNative.bindings.h")]
+    [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/YogaNative.bindings.h")]
     internal static partial class Native
     {
         // We don't support setting custom C# logger (only use a default one in native code).

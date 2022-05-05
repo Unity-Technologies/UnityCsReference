@@ -627,6 +627,11 @@ namespace UnityEditor
 
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
         {
+            StartNameEditingIfProjectWindowExists(instanceID, endAction, pathName, icon, resourceFile, true);
+        }
+
+        public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
+        {
             // instanceID 0 is used for assets that haven't been imported, which can conflict with
             // asset under creations, which might also use instanceID 0. To avoid this conflict the instanceID
             // is changed if 0.
@@ -637,7 +642,7 @@ namespace UnityEditor
             if (pb)
             {
                 pb.Focus();
-                pb.BeginPreimportedNameEditing(instanceID, endAction, pathName, icon, resourceFile);
+                pb.BeginPreimportedNameEditing(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
                 pb.Repaint();
             }
             else
@@ -645,7 +650,8 @@ namespace UnityEditor
                 if (!pathName.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
                     pathName = "Assets/" + pathName;
                 EndNameEditAction(endAction, instanceID, pathName, resourceFile, true);
-                Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
+                if (selectAssetBeingCreated)
+                    Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
             }
         }
 

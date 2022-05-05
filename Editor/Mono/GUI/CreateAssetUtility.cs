@@ -77,7 +77,7 @@ namespace UnityEditor
         }
 
         // Selection changes when calling BeginNewAsset if it succeeds
-        public bool BeginNewAssetCreation(int instanceID, EndNameEditAction newAssetEndAction, string filePath, Texture2D icon, string newAssetResourceFile)
+        public bool BeginNewAssetCreation(int instanceID, EndNameEditAction newAssetEndAction, string filePath, Texture2D icon, string newAssetResourceFile, bool selectAssetBeingCreated = true)
         {
             //Sanitize input
             string sanitizedFilePath = filePath != null ? filePath.ConvertSeparatorsToUnity() : filePath;
@@ -107,8 +107,11 @@ namespace UnityEditor
             m_EndAction = newAssetEndAction;
             m_ResourceFile = sanitizedNewAssetResourceFile;
 
-            // Change selection to none or instanceID
-            Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
+            if (selectAssetBeingCreated)
+            {
+                // Change selection to none or instanceID
+                Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
+            }
             return true;
         }
 

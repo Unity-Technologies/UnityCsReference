@@ -105,6 +105,29 @@ namespace UnityEditor.Overlays
         internal bool hasMenuEntry => m_HasMenuEntry;
         internal Rect collapsedButtonRect => collapsedContent.worldBound;
 
+        Texture2D m_CollapsedIcon = null;
+        public Texture2D collapsedIcon
+        {
+            set
+            {
+                if(m_CollapsedIcon != null && m_CollapsedIcon.Equals(value))
+                    return;
+
+                m_CollapsedIcon = value;
+
+                var iconElement = collapsedContent.Q<Label>(classes: k_CollapsedIconButton);
+                if(iconElement != null)
+                {
+                    var iconTexture = m_CollapsedIcon == null ?
+                                        EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType())) :
+                                        m_CollapsedIcon;
+
+                    iconElement.style.backgroundImage = iconTexture;
+                    iconElement.text = iconTexture != null ? null : OverlayUtilities.GetSignificantLettersForIcon(displayName);
+                }
+            }
+        }
+
         VisualElement collapsedContent
         {
             get
@@ -116,13 +139,14 @@ namespace UnityEditor.Overlays
                 m_CollapsedContent.Q<Button>().clicked += ToggleCollapsedPopup;
 
                 var iconElement = rootVisualElement.Q<Label>(classes: k_CollapsedIconButton);
-                var iconTexture = EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType()));
-                var text = OverlayUtilities.GetSignificantLettersForIcon(displayName);
+                var iconTexture = m_CollapsedIcon == null ?
+                                    EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType())) :
+                                    m_CollapsedIcon;
 
                 if (iconTexture != null)
                     iconElement.style.backgroundImage = iconTexture;
                 else
-                    iconElement.text = text;
+                    iconElement.text = OverlayUtilities.GetSignificantLettersForIcon(displayName);
 
                 return m_CollapsedContent;
             }

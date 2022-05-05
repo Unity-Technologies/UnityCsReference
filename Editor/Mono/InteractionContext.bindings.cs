@@ -69,7 +69,7 @@ namespace UnityEditor
                 Assert.IsFalse(HasUnusedDialogResponses());
                 if (!IsUndoEnabled())
                 {
-                    Assert.IsFalse(WasAnyUndoOperationRegisteredSinceCreation());
+                    Assert.IsFalse(WasAnyUndoOperationRegisteredSinceCreation(), "InteractionContext has unused dialog responses");
                 }
             }
             finally

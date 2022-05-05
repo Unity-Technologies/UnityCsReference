@@ -629,22 +629,13 @@ namespace UnityEditor.Search
                 return t;
             if (!type.IsAbstract && typeof(MonoBehaviour) != type && typeof(MonoBehaviour).IsAssignableFrom(type))
             {
-                var go = new GameObject { hideFlags = HideFlags.HideAndDontSave };
-                try
-                {
-                    go.SetActive(false);
-                    var c = go.AddComponent(type);
-                    var p = AssetPreview.GetMiniThumbnail(c);
-                    if (p)
-                        return s_TypeIcons[type] = p;
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    UnityEngine.Object.DestroyImmediate(go);
-                }
+                var script = EditorGUIUtility.GetScript(type.Name);
+                if (!script)
+                    return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(DefaultAsset));
+
+                var obj = EditorUtility.InstanceIDToObject(script.GetInstanceID());
+                var customIcon = AssetPreview.GetMiniThumbnail(obj);
+                return s_TypeIcons[type] = customIcon;
             }
             return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(MonoScript));
         }

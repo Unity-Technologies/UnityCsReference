@@ -133,6 +133,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]
 [assembly: InternalsVisibleTo("com.unity.search.extensions.editor")]
 
+[assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
+
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
 [assembly: AssemblyIsEditorAssembly]

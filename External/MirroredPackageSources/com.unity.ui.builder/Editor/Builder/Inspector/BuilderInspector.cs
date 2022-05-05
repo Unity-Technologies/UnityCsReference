@@ -14,13 +14,14 @@ namespace Unity.UI.Builder
         enum Section
         {
             NothingSelected = 1 << 0,
-            StyleSheet = 1 << 1,
-            StyleSelector = 1 << 2,
-            ElementAttributes = 1 << 3,
-            ElementInheritedStyles = 1 << 4,
-            LocalStyles = 1 << 5,
-            VisualTreeAsset = 1 << 6,
-            MultiSelection = 1 << 7,
+            Header = 1 << 1,
+            StyleSheet = 1 << 2,
+            StyleSelector = 1 << 3,
+            ElementAttributes = 1 << 4,
+            ElementInheritedStyles = 1 << 5,
+            LocalStyles = 1 << 6,
+            VisualTreeAsset = 1 << 7,
+            MultiSelection = 1 << 8,
         }
 
         // View Data
@@ -57,14 +58,17 @@ namespace Unity.UI.Builder
         public BuilderInspectorMatchingSelectors matchingSelectors => m_MatchingSelectors;
         public BuilderInspectorStyleFields styleFields => m_StyleFields;
 
+        // Header
+        BuilderInspectorHeader m_HeaderSection;
+
         // Sections
         BuilderInspectorCanvas m_CanvasSection;
         BuilderInspectorAttributes m_AttributesSection;
         BuilderInspectorInheritedStyles m_InheritedStyleSection;
         BuilderInspectorLocalStyles m_LocalStylesSection;
-        BuilderInspectorSelector m_SelectorSection;
         BuilderInspectorStyleSheet m_StyleSheetSection;
         public BuilderInspectorCanvas canvasInspector => m_CanvasSection;
+        public BuilderInspectorAttributes attributesSection => m_AttributesSection;
 
         // Constants
         static readonly string s_UssClassName = "unity-builder-inspector";
@@ -216,6 +220,10 @@ namespace Unity.UI.Builder
             // Sections
             m_Sections = new List<VisualElement>();
 
+            // Header Section
+            m_HeaderSection = new BuilderInspectorHeader(this);
+            m_Sections.Add(m_HeaderSection.header);
+
             // Nothing Selected Section
             m_NothingSelectedSection = this.Q<Label>("nothing-selected-label");
             m_Sections.Add(m_NothingSelectedSection);
@@ -233,10 +241,6 @@ namespace Unity.UI.Builder
             // StyleSheet Section
             m_StyleSheetSection = new BuilderInspectorStyleSheet(this);
             m_Sections.Add(m_StyleSheetSection.root);
-
-            // Style Selector Section
-            m_SelectorSection = new BuilderInspectorSelector(this);
-            m_Sections.Add(m_SelectorSection.root);
 
             // Attributes Section
             m_AttributesSection = new BuilderInspectorAttributes(this);
@@ -282,7 +286,7 @@ namespace Unity.UI.Builder
 
         void EnableFields()
         {
-            m_SelectorSection.Enable();
+            m_HeaderSection.Enable();
             m_AttributesSection.Enable();
             m_InheritedStyleSection.Enable();
             m_LocalStylesSection.Enable();
@@ -290,7 +294,7 @@ namespace Unity.UI.Builder
 
         void DisableFields()
         {
-            m_SelectorSection.Disable();
+            m_HeaderSection.Disable();
             m_AttributesSection.Disable();
             m_InheritedStyleSection.Disable();
             m_LocalStylesSection.Disable();
@@ -300,10 +304,10 @@ namespace Unity.UI.Builder
         {
             if (section.HasFlag(Section.NothingSelected))
                 EnableSection(m_NothingSelectedSection);
+            if (section.HasFlag(Section.Header))
+                EnableSection(m_HeaderSection.header);
             if (section.HasFlag(Section.StyleSheet))
                 EnableSection(m_StyleSheetSection.root);
-            if (section.HasFlag(Section.StyleSelector))
-                EnableSection(m_SelectorSection.root);
             if (section.HasFlag(Section.ElementAttributes))
                 EnableSection(m_AttributesSection.root);
             if (section.HasFlag(Section.ElementInheritedStyles))
@@ -570,6 +574,7 @@ namespace Unity.UI.Builder
                 case BuilderSelectionType.ParentStyleSelector:
                 case BuilderSelectionType.StyleSelector:
                     EnableSections(
+                        Section.Header |
                         Section.StyleSelector |
                         Section.LocalStyles);
                     break;
@@ -578,6 +583,7 @@ namespace Unity.UI.Builder
                 case BuilderSelectionType.ElementInParentDocument:
                 case BuilderSelectionType.Element:
                     EnableSections(
+                        Section.Header |
                         Section.ElementAttributes |
                         Section.ElementInheritedStyles |
                         Section.LocalStyles);
@@ -598,11 +604,12 @@ namespace Unity.UI.Builder
             }
             if (selectionInTemplateInstance && !string.IsNullOrEmpty(currentVisualElement.name))
             {
+                m_HeaderSection.Enable();
                 m_AttributesSection.Enable();
             }
 
-            // Bind the style selector controls.
-            m_SelectorSection.Refresh();
+            // Reselect Icon, Type & Name in Header
+            m_HeaderSection.Refresh();
 
             // Recreate Attribute Fields
             m_AttributesSection.Refresh();
@@ -621,7 +628,7 @@ namespace Unity.UI.Builder
 
             if (selectionInTemplateInstance)
             {
-                m_AttributesSection.DisableNameRow();
+                m_HeaderSection.Disable();
             }
         }
 
@@ -632,6 +639,8 @@ namespace Unity.UI.Builder
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
+            m_HeaderSection.Refresh();
+
             if (changeType == BuilderHierarchyChangeType.Attributes)
             {
                 m_AttributesSection.Refresh();
@@ -672,6 +681,52 @@ namespace Unity.UI.Builder
             {
                 RefreshUI();
             }
+        }
+
+        private UnityEngine.UIElements.UxmlTraits GetCurrentElementTraits()
+        {
+            var currentVisualElementTypeName = currentVisualElement.GetType().ToString();
+
+            if (!VisualElementFactoryRegistry.TryGetValue(currentVisualElementTypeName, out var factoryList))
+            {
+                // We fallback on the BindableElement factory if we don't find any so
+                // we can update the modified attributes. This fixes the TemplateContainer
+                // factory not found.
+                if (!VisualElementFactoryRegistry.TryGetValue(BuilderConstants.UxmlBindableElementTypeName,
+                        out factoryList))
+                {
+                    return null;
+                }
+            }
+
+            var traits = factoryList[0].GetTraits();
+            return traits;
+        }
+
+        internal void CallInitOnElement()
+        {
+            var traits = GetCurrentElementTraits();
+
+            if (traits == null)
+                return;
+
+            var context = new CreationContext(null, null, visualTreeAsset, currentVisualElement);
+            var vea = currentVisualElement.GetVisualElementAsset();
+
+            traits.Init(currentVisualElement, vea, context);
+        }
+
+        internal void CallInitOnTemplateChild(VisualElement visualElement, VisualElementAsset vea,
+            List<TemplateAsset.AttributeOverride> attributeOverrides)
+        {
+            var traits = GetCurrentElementTraits();
+
+            if (traits == null)
+                return;
+
+            var context = new CreationContext(null, attributeOverrides, null, null);
+
+            traits.Init(visualElement, vea, context);
         }
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType = BuilderStylingChangeType.Default)

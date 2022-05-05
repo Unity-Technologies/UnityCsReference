@@ -141,6 +141,11 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLinkedAttributeDescriptionVEPropertyName = "__unity-ui-builder-attribute-description";
         public static readonly string InspectorFieldValueInfoVEPropertyName = "__unity-ui-builder-property-value-info";
 
+        // Inspector Header
+        public static readonly string BuilderInspectorSelector = "Selector";
+        public static readonly string BuilderInspectorTemplateInstance = "Template Instance";
+        public static readonly string BuilderAttributesHeader = "Attributes";
+
         // Inspector Messages
         public static readonly string AddStyleClassValidationSpaces = "Class names cannot contain spaces.";
         public static readonly string AddStyleClassValidationSpacialCharacters = "Class names can only contain letters, numbers, underscores, and dashes.";
@@ -166,7 +171,8 @@ namespace Unity.UI.Builder
         public static readonly string TransitionWillNotBeVisibleBecauseOfDuration = "In order to be visible, at least one transition on this element should have a duration greater than 0.";
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string FileNotFoundMessage = "File not found";
-
+        public static readonly string HeaderSectionHelpBoxMessage = "This control is not supported in Runtime UI. Remove it, or enable Editor Extension Authoring in the Library.";
+        
         // Tooltip Messages
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default value";
         public static readonly string FieldStatusIndicatorInlineTooltip = "Inline value";
@@ -188,7 +194,7 @@ namespace Unity.UI.Builder
         public static readonly string FieldTooltipFormatString = "{0}: {1}\n\nValue: {2}{3}\n\nValue definition: {4}{5}";
         public static readonly string FieldTooltipWithoutValueFormatString = "{0}: {1}\n\nValue definition: {4}{5}";
         public static readonly string MatchingStyleSheetRuleSourceTooltipFormatString = "    Selector: {0}\n    Sheet: {1}";
-        public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";
+        public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";        
 
         //
         // Explorer

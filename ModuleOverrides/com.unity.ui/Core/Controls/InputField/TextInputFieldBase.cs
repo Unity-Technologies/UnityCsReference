@@ -813,11 +813,11 @@ namespace UnityEngine.UIElements
                 const int leftScrollOffsetPadding = 5;
 
                 // Update scrollOffset when cursor moves right.
-                if ((cursorPos.x + cursorWidth - xOffset) > contentViewportWidth)
+                if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth)
                     newXOffset = cursorPos.x + cursorWidth - contentViewportWidth;
                 // Update scrollOffset when cursor moves left.
-                else if (cursorPos.x - xOffset - leftScrollOffsetPadding < contentViewportWidth && xOffset > 0)
-                    newXOffset = Mathf.Max(cursorPos.x - contentViewportWidth + leftScrollOffsetPadding, 0);
+                else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
+                    newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
 
                 if (textEdition.multiline)
                 {

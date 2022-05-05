@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+
 namespace UnityEngine
 {
     partial class CircleCollider2D
@@ -70,5 +71,35 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Physics2D.autoSimulation is deprecated. Use Physics2D.simulationMode instead.", false)]
         public static bool autoSimulation { get { return simulationMode != SimulationMode2D.Script; } set { simulationMode = value ? SimulationMode2D.FixedUpdate : SimulationMode2D.Script; } }
+
+        [Obsolete("Physics2D.colliderAwakeColor is deprecated. This options has been moved to 2D Preferences.", true)]
+        public static Color colliderAwakeColor { get { return Color.magenta; } set { } }
+
+        [Obsolete("Physics2D.colliderAsleepColor is deprecated. This options has been moved to 2D Preferences.", true)]
+        public static Color colliderAsleepColor { get { return Color.magenta; } set { } }
+
+        [Obsolete("Physics2D.colliderContactColor is deprecated. This options has been moved to 2D Preferences.", true)]
+        public static Color colliderContactColor { get { return Color.magenta; } set { } }
+
+        [Obsolete("Physics2D.colliderAABBColor is deprecated. All Physics 2D colors moved to Preferences. This is now known as 'Collider Bounds Color'.", true)]
+        public static Color colliderAABBColor { get { return Color.magenta; } set { } }
+
+        [Obsolete("Physics2D.contactArrowScale is deprecated. This options has been moved to 2D Preferences.", true)]
+        public static float contactArrowScale { get { return 0.2f; } set { } }
+
+        [Obsolete("Physics2D.alwaysShowColliders is deprecated. It is no longer available in the Editor or Builds.", true)]
+        public static bool alwaysShowColliders { get; set; }
+
+        [Obsolete("Physics2D.showCollidersFilled is deprecated. It is no longer available in the Editor or Builds.", true)]
+        public static bool showCollidersFilled { get; set; }
+
+        [Obsolete("Physics2D.showColliderSleep is deprecated. It is no longer available in the Editor or Builds.", true)]
+        public static bool showColliderSleep { get; set; }
+
+        [Obsolete("Physics2D.showColliderContacts is deprecated. It is no longer available in the Editor or Builds.", true)]
+        public static bool showColliderContacts { get; set; }
+
+        [Obsolete("Physics2D.showColliderAABB is deprecated. It is no longer available in the Editor or Builds.", true)]
+        public static bool showColliderAABB { get { return false; } set { } }
     }
 }

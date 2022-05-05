@@ -77,6 +77,9 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static void ClearPrefabInstanceUnusedOverridesCache_Internal(GameObject gameObject);
 
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static InstanceOverridesInfo GetPrefabInstanceOverridesInfo_Internal(GameObject gameObject);
+
         // Extract all modifications that are applied to the prefab instance compared to the parent prefab.
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern public static PropertyModification[] GetPropertyModifications(Object targetPrefab);
@@ -387,5 +390,8 @@ namespace UnityEditor
                 throw new ArgumentNullException(nameof(prefabAsset));
             return GetVariantParentGUID(prefabAsset.GetInstanceID());
         }
+
+        [FreeFunction]
+        extern internal static bool IsPathInStreamingAssets(string path);
     }
 }

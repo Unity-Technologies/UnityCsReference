@@ -50,6 +50,7 @@ namespace UnityEngine.Rendering
 
         public LightmapsMode lightmapsModes { get; set; } =
             LightmapsMode.NonDirectional | LightmapsMode.CombinedDirectional;
+        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is deprecated.", false)]
         public bool enlightenLightmapper { get; set; } = true;
         public bool enlighten { get; set; } = true;
         public bool lightProbeProxyVolumes { get; set; } = true;
@@ -215,7 +216,9 @@ namespace UnityEngine.Rendering
             var isSupported = (bool*)isSupportedPtr;
 
             // 0 = Enlighten
+            #pragma warning disable 618
             *isSupported = lightmapper != 0 || active.enlightenLightmapper;
+            #pragma warning restore 618
         }
 
         [RequiredByNativeCode]

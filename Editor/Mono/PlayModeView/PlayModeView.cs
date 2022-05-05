@@ -497,6 +497,9 @@ namespace UnityEditor
 
         protected void SetFocus(bool focused)
         {
+            if (suppressRenderingForFullscreen)
+                return; //suppressed views should not grab "play mode" focus
+
             if (!focused && s_LastFocused == this)
             {
                 InternalEditorUtility.OnGameViewFocus(false);

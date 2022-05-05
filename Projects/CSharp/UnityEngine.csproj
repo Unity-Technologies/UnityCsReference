@@ -664,6 +664,24 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\MouseManipulator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\MouseManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRendererJobProcessor.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRendererJobProcessor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\TextNative.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\TextNative.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\UIElementsUtility.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\UIElementsUtility.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ObjectPool.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ObjectPool.cs</Link>
     </Compile>
@@ -2022,24 +2040,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\ImmediateStylePainter.bindings.cs">
-      <Link>Modules\UIElementsNative\ImmediateStylePainter.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIPainter2D.bindings.cs">
-      <Link>Modules\UIElementsNative\Renderer\UIPainter2D.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs">
-      <Link>Modules\UIElementsNative\Renderer\UIRenderer.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\Renderer\UIRendererJobProcessor.bindings.cs">
-      <Link>Modules\UIElementsNative\Renderer\UIRendererJobProcessor.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\TextNative.bindings.cs">
-      <Link>Modules\UIElementsNative\TextNative.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElementsNative\UIElementsUtility.bindings.cs">
-      <Link>Modules\UIElementsNative\UIElementsUtility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>

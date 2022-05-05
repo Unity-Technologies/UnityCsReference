@@ -79,9 +79,10 @@ namespace UnityEditor
                 assemblyPath.IndexOf("platform.dll") != -1;
         }
 
-        static private bool IgnoreAssembly(string assemblyPath, BuildTarget target)
+        static private bool IgnoreAssembly(string assemblyPath, BuildTarget target, ScriptingImplementation scriptingImplementation)
         {
-            if (target == BuildTarget.WSAPlayer)
+#pragma warning disable 618
+            if (target == BuildTarget.WSAPlayer || scriptingImplementation == ScriptingImplementation.CoreCLR)
             {
                 if (CouldBelongToDotNetOrWindowsRuntime(assemblyPath))
                     return true;
@@ -99,9 +100,9 @@ namespace UnityEditor
             return IsInternalAssembly(assemblyPath);
         }
 
-        static private void AddReferencedAssembliesRecurse(string assemblyPath, List<string> alreadyFoundAssemblies, string[] allAssemblyPaths, string[] foldersToSearch, Dictionary<string, AssemblyDefinition> cache, BuildTarget target)
+        static private void AddReferencedAssembliesRecurse(string assemblyPath, List<string> alreadyFoundAssemblies, string[] allAssemblyPaths, string[] foldersToSearch, Dictionary<string, AssemblyDefinition> cache, BuildTarget target, ScriptingImplementation scriptingImplementation)
         {
-            if (IgnoreAssembly(assemblyPath, target))
+            if (IgnoreAssembly(assemblyPath, target, scriptingImplementation))
                 return;
 
             if (!File.Exists(assemblyPath))
@@ -130,7 +131,7 @@ namespace UnityEditor
                 if (referencedAssembly.Name == "BridgeInterface") continue;
                 if (referencedAssembly.Name == "WinRTBridge") continue;
                 if (referencedAssembly.Name == "UnityEngineProxy") continue;
-                if (IgnoreAssembly(referencedAssembly.Name + ".dll", target)) continue;
+                if (IgnoreAssembly(referencedAssembly.Name + ".dll", target, scriptingImplementation)) continue;
 
                 string foundPath = FindAssemblyName(referencedAssembly.FullName, referencedAssembly.Name, allAssemblyPaths, foldersToSearch, cache);
 
@@ -154,7 +155,7 @@ namespace UnityEditor
                         assemblyPath));
                 }
 
-                AddReferencedAssembliesRecurse(foundPath, alreadyFoundAssemblies, allAssemblyPaths, foldersToSearch, cache, target);
+                AddReferencedAssembliesRecurse(foundPath, alreadyFoundAssemblies, allAssemblyPaths, foldersToSearch, cache, target, scriptingImplementation);
             }
         }
 
@@ -182,14 +183,14 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static public string[] FindAssembliesReferencedBy(string[] paths, string[] foldersToSearch, BuildTarget target)
+        static public string[] FindAssembliesReferencedBy(string[] paths, string[] foldersToSearch, BuildTarget target, ScriptingImplementation scriptingImplementation)
         {
             List<string> unique = new List<string>();
             string[] allAssemblyPaths = paths;
 
             var cache = new Dictionary<string, AssemblyDefinition>();
             for (int i = 0; i < paths.Length; i++)
-                AddReferencedAssembliesRecurse(paths[i], unique, allAssemblyPaths, foldersToSearch, cache, target);
+                AddReferencedAssembliesRecurse(paths[i], unique, allAssemblyPaths, foldersToSearch, cache, target, scriptingImplementation);
 
             for (int i = 0; i < paths.Length; i++)
                 unique.Remove(paths[i]);

@@ -133,8 +133,6 @@ namespace UnityEngine.Experimental.AI
         const string                k_NoBufferAllocatedErrorMessage = "This query has no buffer allocated for pathfinding operations. " +
             "Create a different NavMeshQuery with an explicit node pool size.";
         internal AtomicSafetyHandle m_Safety;
-        [NativeSetClassTypeToNullOnSchedule]
-        DisposeSentinel             m_DisposeSentinel;
 
         public NavMeshQuery(NavMeshWorld world, Allocator allocator, int pathNodePoolSize = 0)
         {
@@ -145,7 +143,8 @@ namespace UnityEngine.Experimental.AI
                 throw new ArgumentException($"The path node pool size ({pathNodePoolSize}) must be greater than or equal to 0 and less than {ushort.MaxValue + 1}.");
             m_NavMeshQuery = Create(world, pathNodePoolSize);
 
-            DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);
+            UnsafeUtility.LeakRecord(m_NavMeshQuery, LeakCategory.NavMeshQuery, 0);
+            AtomicSafetyHandle.CreateHandle(out m_Safety, allocator);
             AddQuerySafety(m_NavMeshQuery, m_Safety);
         }
 
@@ -158,10 +157,11 @@ namespace UnityEngine.Experimental.AI
             // because the atomic safety handle stores that state.
             var removeQuery = AtomicSafetyHandle.GetAllowReadOrWriteAccess(m_Safety);
 
-            DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+            AtomicSafetyHandle.DisposeHandle(ref m_Safety);
 
             if (removeQuery)
                 RemoveQuerySafety(m_NavMeshQuery, m_Safety);
+            UnsafeUtility.LeakErase(m_NavMeshQuery, LeakCategory.NavMeshQuery);
             Destroy(m_NavMeshQuery);
             m_NavMeshQuery = IntPtr.Zero;
         }

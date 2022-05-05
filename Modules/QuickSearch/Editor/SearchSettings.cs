@@ -140,7 +140,7 @@ namespace UnityEditor.Search
         // Per project settings
         internal static bool trackSelection { get; set; }
         internal static bool fetchPreview { get; set; }
-        internal static bool wantsMore { get; set; }
+        internal static SearchFlags defaultFlags { get; set; }
         internal static bool keepOpen { get; set; }
         internal static string queryFolder { get; set; }
         internal static bool onBoardingDoNotAskAgain { get; set; }
@@ -217,7 +217,7 @@ namespace UnityEditor.Search
 
             trackSelection = ReadSetting(settings, nameof(trackSelection), true);
             fetchPreview = ReadSetting(settings, nameof(fetchPreview), true);
-            wantsMore = ReadSetting(settings, nameof(wantsMore), false);
+            defaultFlags = (SearchFlags)ReadSetting(settings, nameof(defaultFlags), (int)SearchFlags.None);
             keepOpen = ReadSetting(settings, nameof(keepOpen), false);
             queryFolder = ReadSetting(settings, nameof(queryFolder), "Assets");
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
@@ -258,7 +258,7 @@ namespace UnityEditor.Search
             {
                 [nameof(trackSelection)] = trackSelection,
                 [nameof(fetchPreview)] = fetchPreview,
-                [nameof(wantsMore)] = wantsMore,
+                [nameof(defaultFlags)] = (int)defaultFlags,
                 [nameof(keepOpen)] = keepOpen,
                 [nameof(queryFolder)] = queryFolder,
                 [nameof(onBoardingDoNotAskAgain)] = onBoardingDoNotAskAgain,
@@ -329,18 +329,12 @@ namespace UnityEditor.Search
 
         internal static SearchFlags GetContextOptions()
         {
-            SearchFlags options = SearchFlags.Default;
-            if (wantsMore)
-                options |= SearchFlags.WantsMore;
-            return options;
+            return SearchFlags.Default | defaultFlags;
         }
 
         internal static SearchFlags ApplyContextOptions(SearchFlags options)
         {
-            if (wantsMore)
-                options |= SearchFlags.WantsMore;
-
-            return options;
+            return options | defaultFlags;
         }
 
         internal static void ApplyContextOptions(SearchContext context)

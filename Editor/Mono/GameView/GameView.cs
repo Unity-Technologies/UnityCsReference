@@ -442,7 +442,8 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoEvent += UndoRedoPerformed;
 
-            targetSize = targetRenderSize;
+            if (!suppressRenderingForFullscreen)
+                targetSize = targetRenderSize;
 
             PlayModeAnalytics.GameViewEnableEvent();
         }
@@ -469,6 +470,9 @@ namespace UnityEditor
 
         private void UpdateZoomAreaAndParent()
         {
+            if (suppressRenderingForFullscreen)
+                return;
+
             // Configure ZoomableArea for new resolution so that old resolution doesn't restrict scale
             bool oldScaleWasDefault = Mathf.Approximately(m_ZoomArea.scale.y, m_defaultScale);
             ConfigureZoomArea();
@@ -495,7 +499,8 @@ namespace UnityEditor
         private void OnFocus()
         {
             SetFocus(true);
-            targetSize = targetRenderSize;
+            if (!suppressRenderingForFullscreen)
+                targetSize = targetRenderSize;
         }
 
         private void OnLostFocus()
@@ -513,13 +518,17 @@ namespace UnityEditor
 
         internal override void OnResized()
         {
-            targetSize = targetRenderSize;
+            if (!suppressRenderingForFullscreen)
+                targetSize = targetRenderSize;
         }
 
         internal override void OnBackgroundViewResized(Rect pos)
         {
             // Should only update the game view size if it's in Aspect Ratio mode, otherwise
             // we keep the static size
+
+            if (suppressRenderingForFullscreen)
+                return;
 
             Rect viewInWindow = GetViewInWindow(pos);
             Rect viewPixelRect = GetViewPixelRect(viewInWindow);
@@ -1094,7 +1103,7 @@ namespace UnityEditor
             m_ZoomArea.BeginViewGUI();
 
             // Window size might change on Layout event
-            if (type == EventType.Layout)
+            if (type == EventType.Layout && !suppressRenderingForFullscreen)
                 targetSize = targetRenderSize;
 
             // Setup game view dimensions, so that player loop can use it for input
@@ -1115,7 +1124,7 @@ namespace UnityEditor
             var editorMousePosition = Event.current.mousePosition;
             var gameMousePosition = (editorMousePosition + gameMouseOffset) * gameMouseScale;
 
-            if (type == EventType.Repaint)
+            if (type == EventType.Repaint && !suppressRenderingForFullscreen)
             {
                 GUI.Box(m_ZoomArea.drawRect, GUIContent.none, Styles.gameViewBackgroundStyle);
 

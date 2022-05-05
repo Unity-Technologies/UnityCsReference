@@ -191,6 +191,22 @@ namespace UnityEngine
         extern public float angularDamping { get; set; }
         extern public float jointFriction { get; set; }
 
+        extern public Vector3 GetAccumulatedForce([DefaultValue("Time.fixedDeltaTime")] float step);
+
+        [ExcludeFromDocs]
+        public Vector3 GetAccumulatedForce()
+        {
+            return GetAccumulatedForce(Time.fixedDeltaTime);
+        }
+
+        extern public Vector3 GetAccumulatedTorque([DefaultValue("Time.fixedDeltaTime")] float step);
+
+        [ExcludeFromDocs]
+        public Vector3 GetAccumulatedTorque()
+        {
+            return GetAccumulatedTorque(Time.fixedDeltaTime);
+        }
+
         extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
 
         [ExcludeFromDocs]

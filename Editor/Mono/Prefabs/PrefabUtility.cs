@@ -7,14 +7,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEditor.Utils;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using UnityEditor.VersionControl;
-using UnityEngine.Scripting;
+using UnityEngine.Bindings;
+using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -1733,6 +1732,9 @@ namespace UnityEditor
         {
             SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath);
 
+            if (IsPathInStreamingAssets(assetPath))
+                throw new ArgumentException("Can't connect a Prefab in the StreamingAssets folder to GameObjects in the scene. To save a Prefab to the StreamingAssets folder use SaveAsPrefabAsset instead.");
+
             var actionName = "Connect to Prefab";
 
             if (action == InteractionMode.UserAction)
@@ -2728,16 +2730,11 @@ namespace UnityEditor
             return dependencies;
         }
 
-        internal readonly struct InstanceOverridesInfo
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        [NativeAsStruct]
+        internal sealed class InstanceOverridesInfo
         {
-            public InstanceOverridesInfo(GameObject prefabInstance, PropertyModification[] usedMods, PropertyModification[] unusedMods, int unusedRemovedComponentCount)
-            {
-                this.instance = prefabInstance;
-                this.usedMods = usedMods;
-                this.unusedMods = unusedMods;
-                this.unusedRemovedComponentCount = unusedRemovedComponentCount;
-            }
-
             public GameObject instance { get; }
             public PropertyModification[] usedMods { get; }
             public PropertyModification[] unusedMods { get; }
@@ -2785,61 +2782,7 @@ namespace UnityEditor
 
         internal static InstanceOverridesInfo GetPrefabInstanceOverridesInfo(GameObject selectedGameObject)
         {
-            if (selectedGameObject == null)
-                return new InstanceOverridesInfo();
-
-            List<PropertyModification> invalidModifications = new List<PropertyModification>();
-            List<PropertyModification> validModifications = new List<PropertyModification>();
-            SerializedObject serializedObject = null;
-            Object prevTarget = null;
-            HashSet<string> propertyPathSet = new HashSet<string>();
-
-            PropertyModification[] mods = PrefabUtility.GetPropertyModifications(selectedGameObject);
-
-            foreach (PropertyModification mod in mods)
-            {
-                if (mod.target == null)
-                {
-                    invalidModifications.Add(mod);
-                    continue;
-                }
-
-                if (PrefabUtility.IsDefaultOverride(mod))
-                {
-                    validModifications.Add(mod);
-                    continue;
-                }
-
-                if (serializedObject == null || mod.target != prevTarget)
-                {
-                    serializedObject = new SerializedObject(mod.target);
-                    prevTarget = mod.target;
-
-                    propertyPathSet.Clear();
-
-                    SerializedProperty property = serializedObject.GetIterator();
-                    while (property.Next(property.hasChildren))
-                        propertyPathSet.Add(property.propertyPath);
-                }
-
-                if (!propertyPathSet.Contains(mod.propertyPath))
-                {
-                    string currPath = TryGetCurrentPropertyPathFromOldPropertyPath_Internal(selectedGameObject, mod.target, mod.propertyPath);
-
-                    if (currPath != null && currPath.Length > 0)
-                        validModifications.Add(mod);
-                    else
-                        invalidModifications.Add(mod);
-                }
-                else
-                {
-                    validModifications.Add(mod);
-                }
-            }
-
-            int unusedRemovedComponentCount = GetPrefabInstanceUnusedRemovedComponentCount_Internal(selectedGameObject);
-
-            return new InstanceOverridesInfo(selectedGameObject, validModifications.ToArray(), invalidModifications.ToArray(), unusedRemovedComponentCount);
+            return GetPrefabInstanceOverridesInfo_Internal(selectedGameObject);
         }
 
         internal static bool DoRemovePrefabInstanceUnusedOverridesDialog(InstanceOverridesInfo[] instanceOverridesInfos)

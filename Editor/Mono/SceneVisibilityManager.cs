@@ -362,6 +362,9 @@ namespace UnityEditor
 
         public bool IsHidden(Scene scene)
         {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return false;
+
             scene.GetRootGameObjects(m_RootBuffer);
             foreach (var rootGameObject in m_RootBuffer)
             {
@@ -392,6 +395,9 @@ namespace UnityEditor
 
         public bool IsPickingDisabled(Scene scene)
         {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return false;
+
             scene.GetRootGameObjects(m_RootBuffer);
             foreach (var rootGameObject in m_RootBuffer)
             {
@@ -411,6 +417,9 @@ namespace UnityEditor
 
         public bool AreAllDescendantsHidden(Scene scene)
         {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return false;
+
             if (scene.rootCount == 0)
                 return false;
 
@@ -429,6 +438,9 @@ namespace UnityEditor
 
         public bool IsPickingDisabledOnAllDescendants(Scene scene)
         {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return false;
+
             if (scene.rootCount == 0)
                 return false;
 
@@ -447,11 +459,17 @@ namespace UnityEditor
 
         public bool AreAnyDescendantsHidden(Scene scene)
         {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return false;
+
             return SceneVisibilityState.HasHiddenGameObjects(scene);
         }
 
         public bool IsPickingDisabledOnAnyDescendant(Scene scene)
         {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return false;
+
             return SceneVisibilityState.ContainsGameObjectsWithPickingDisabled(scene);
         }
 

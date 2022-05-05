@@ -554,8 +554,6 @@ namespace UnityEditor
             hostView.name = $"HostView {setting.displayName}";
             hostView.actualView = playModeView;
             playModeView.m_Parent = hostView;
-            playModeView.m_Parent.SetAsStartView();
-            playModeView.m_Parent.SetAsLastPlayModeView();
             playModeView.isFullscreen = true;
 
             var containerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
@@ -579,6 +577,8 @@ namespace UnityEditor
             containerWindow.ToggleFullscreen(displayIndex);
             hostView.Focus();
 
+            playModeView.m_Parent.SetAsStartView();
+            playModeView.m_Parent.SetAsLastPlayModeView();
             SuppressViewsFromRendering(containerWindow.GetDisplayId(), true);
 
             if (instance.m_showNotificationOnFullscreen && setting == instance.m_mainDisplaySetting)
@@ -600,6 +600,14 @@ namespace UnityEditor
             {
                 w.Close();
                 m_FullscreenContainerWindows.Remove(w);
+            }
+
+            // Refocus main window after ending fullscreen.
+            var mainWindow = WindowLayout.FindMainWindow();
+            if (mainWindow != null && mainWindow.rootView != null) {
+                var hostView = mainWindow.rootView as HostView;
+                if (hostView != null)
+                    hostView.Focus();
             }
         }
 
@@ -642,6 +650,7 @@ namespace UnityEditor
                 {
                     // The fullscreen window should never suppress rendering.
                     playModeView.suppressRenderingForFullscreen = false;
+                    playModeView.SetPlayModeView(true);
                     continue;
                 }
 
@@ -650,6 +659,7 @@ namespace UnityEditor
                 {
                     // This play mode view is rendering on the same display we're going to fullscreen on. Always suppress.
                     playModeView.suppressRenderingForFullscreen = suppress;
+                    playModeView.SetPlayModeView(!suppress);
                     continue;
                 }
 
@@ -658,6 +668,7 @@ namespace UnityEditor
                     // This play mode view is going to spawn another fullscreen view. We should suppress rendering
                     // from this game view so as to not duplicate/double our number of rendered views.
                     playModeView.suppressRenderingForFullscreen = suppress;
+                    playModeView.SetPlayModeView(!suppress);
                     continue;
                 }
             }
@@ -673,6 +684,8 @@ namespace UnityEditor
         private const string kShowToolbarOnFullscreenMenu = kBaseMenuPath + "/Show Toolbar on Fullscreen";
         private const string kProfilePath = kBaseMenuPath + "/Profiles/";
         public const string kFullscreenToggle = "Window/Fullscreen Game View";
+        private static float sLastToggleShortcutTriggerTime = 0f;
+        private static float kToggleShortcutTriggerTimeoutInSeconds = 1f;
 
         void ToggleFullscreen()
         {
@@ -738,10 +751,16 @@ namespace UnityEditor
             if (ctrlNecessary && !containCtrl)
                 return;
 
-            ToggleFullscreen();
-            evt.Use();
+            // OSX will animate windows moving to fullscreen and toggling fullscreen again during this animation will
+            // cause a slew of bugs. Rather than lock this shortcut until the op is completed, instead provide a reasonable
+            // timeout for triggering this shortcut again.
+            if (sLastToggleShortcutTriggerTime + kToggleShortcutTriggerTimeoutInSeconds < Time.realtimeSinceStartup)
+            {
+                sLastToggleShortcutTriggerTime = Time.realtimeSinceStartup;
+                ToggleFullscreen();
+                evt.Use();
+            }
         }
-
 
         [ClutchShortcutAttribute(kFullscreenToggle, KeyCode.F7, ShortcutModifiers.Shift | ShortcutModifiers.Control)]
         internal static void FullscreenKeyHandler(ShortcutArguments args)

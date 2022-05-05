@@ -45,15 +45,12 @@ namespace UnityEditor.Search
                 SelectGroup(firstProvider.type);
         }
 
-        protected override void SaveSessionSettings()
-        {
-            SaveGlobalSettings();
-        }
-
         protected override IEnumerable<SearchItem> FetchItems()
         {
             if (!viewState.excludeClearItem)
                 yield return SearchItem.clear;
+
+            SearchSettings.ApplyContextOptions(context);
             foreach (var item in SearchService.GetItems(context))
             {
                 if (filterCallback != null && !filterCallback(item))

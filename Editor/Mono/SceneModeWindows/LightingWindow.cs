@@ -388,8 +388,10 @@ namespace UnityEditor
                     {
                         var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
                         // Only show Force Stop when using the PathTracer backend
+                        #pragma warning disable 618
                         if (settings.lightmapper != LightingSettings.Lightmapper.Enlighten && settings.bakedGI &&
                             GUILayout.Button("Force Stop", GUILayout.Width(Styles.ButtonWidth)))
+                        #pragma warning restore 618
                         {
                             Lightmapping.ForceStop();
                         }
@@ -495,7 +497,9 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
+            #pragma warning disable 618
             if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
+            #pragma warning restore 618
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.labelStyle);

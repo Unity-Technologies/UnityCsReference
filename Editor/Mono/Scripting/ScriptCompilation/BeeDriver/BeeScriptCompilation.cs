@@ -4,9 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.IO;
 using Bee.BeeDriver;
+using Bee.BinLog;
 using NiceIO;
 using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
@@ -25,7 +26,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal static string ExecutableExtension => Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "";
         private static string projectPath = Path.GetDirectoryName(Application.dataPath);
 
-        public static void AddScriptCompilationData(BeeDriver beeDriver,
+        public static ScriptCompilationData ScriptCompilationDataFor(
             EditorCompilation editorCompilation,
             ScriptAssembly[] assemblies,
             bool debug,
@@ -87,7 +88,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            beeDriver.DataForBuildProgram.Add(new ScriptCompilationData
+            return new ScriptCompilationData()
             {
                 OutputDirectory = outputDirectory,
                 DotnetRuntimePath = NetCoreProgram.DotNetRuntimePath.ToString(),
@@ -103,7 +104,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ExtractRuntimeInitializeOnLoads = !buildingForEditor,
                 AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
                 SearchPaths = searchPaths.OrderBy(p => p).ToArray()
-            });
+            };
         }
 
         private static ScriptAssembly[] CodeGenAssemblies(ScriptAssembly[] assemblies) =>
@@ -129,7 +130,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Array.Sort(a.Files, StringComparer.InvariantCulture);
             var references = a.ScriptAssemblyReferences.Select(r => Array.IndexOf(allAssemblies, r)).ToArray();
             Array.Sort(references);
-
             return new AssemblyData
             {
                 Name = new NPath(a.Filename).FileNameWithoutExtension,
@@ -170,7 +170,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         /// We return them as an array of arrays, so on the caller side you're still able to map a compilermessage to the noderesult where it originated from,
         /// which we need when invoking per assembly compilation callbacks.
         /// </summary>
-        public static CompilerMessage[][] ParseAllResultsIntoCompilerMessages(BeeDriverResult.Message[] beeDriverMessages, NodeResult[] nodeResults, EditorCompilation editorCompilation)
+        public static CompilerMessage[][] ParseAllNodeResultsIntoCompilerMessages(BeeDriverResult.Message[] beeDriverMessages, NodeFinishedMessage[] nodeResults, EditorCompilation editorCompilation)
         {
             // If there's any messages from the bee driver, we add one additional array to the result which contains all of the driver messages converted and augmented like the nodes messages arrays.
             bool hasBeeDriverMessages = beeDriverMessages.Length > 0;
@@ -202,12 +202,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return result;
         }
 
-        public static CompilerMessage[] ParseCompilerOutput(NodeResult nodeResult)
+        public static CompilerMessage[] ParseCompilerOutput(NodeFinishedMessage nodeResult)
         {
             // TODO: future improvement opportunity: write a single parser that can parse warning, errors files from all tools that we use.
-            if (nodeResult.annotation.StartsWith("CopyFiles"))
+            if (nodeResult.Node.Annotation.StartsWith("CopyFiles"))
             {
-                if (nodeResult.exitcode == 0)
+                if (nodeResult.ExitCode == 0)
                 {
                     return Array.Empty<CompilerMessage>();
                 }
@@ -215,21 +215,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     new CompilerMessage
                     {
-                        file = nodeResult.outputfile,
-                        message = $"{nodeResult.outputfile}: {nodeResult.stdout}",
+                        file = nodeResult.Node.OutputFile,
+                        message = $"{nodeResult.Node.OutputFile}: {nodeResult.Output}",
                         type = CompilerMessageType.Error
                     }
                 };
             }
-            var parser = nodeResult.annotation.StartsWith("ILPostProcess")
+            var parser = nodeResult.Node.Annotation.StartsWith("ILPostProcess")
                 ? (CompilerOutputParserBase) new PostProcessorOutputParser()
                 : (CompilerOutputParserBase) new MicrosoftCSharpCompilerOutputParser();
 
             return parser
                 .Parse(
-                (nodeResult.stdout ?? string.Empty).Split(new[] {'\r', '\n'},
+                (nodeResult.Output ?? string.Empty).Split(new[] {'\r', '\n'},
                     StringSplitOptions.RemoveEmptyEntries),
-                nodeResult.exitcode != 0).ToArray();
+                nodeResult.ExitCode != 0).ToArray();
         }
     }
 }

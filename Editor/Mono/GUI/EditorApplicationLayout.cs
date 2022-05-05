@@ -138,7 +138,7 @@ namespace UnityEditor
                     {
                         if (((IGameViewOnPlayMenuUser)playModeView).playFocused)
                         {
-                            playModeView.m_Parent.Focus();
+                            playModeView.Focus();
                         }
                     }
                 }

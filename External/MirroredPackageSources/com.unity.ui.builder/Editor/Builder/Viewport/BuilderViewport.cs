@@ -223,6 +223,10 @@ namespace Unity.UI.Builder
             ResetViewTransform();
             canvas.ResetSize();
             CenterCanvas();
+
+            // Clear selection state
+            m_PickedElements.Clear();
+            m_PreviousPickMousePosition.Set(0,0);
         }
 
         [EventInterest(EventInterestOptions.Inherit)]

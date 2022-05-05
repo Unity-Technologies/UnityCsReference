@@ -18,7 +18,7 @@ namespace UnityEditor
         RectOffset k_TreeViewPadding = new RectOffset(0, 0, 4, 4);
         const float k_HeaderHeight = 60f;
         const float k_ButtonWidth = 120;
-        const float k_ButtonWidthVariant = 135;
+        const float k_ButtonWidthPadding = 10; //Padding in case the text is long to give the window a bit of margins around the buttons
         const float k_HeaderLeftMargin = 6;
         const float k_NoOverridesLabelHeight = 26f;
         const float k_UnusedOverridesButtonHeight = 26f;
@@ -38,6 +38,7 @@ namespace UnityEditor
         GUIContent m_ApplySelectedContent = new GUIContent();
 
         float m_ButtonWidth;
+        float m_ApplyButtonWidth;
         bool m_AnyOverrides;
         bool m_HasApplicableOverrides;
         bool m_InvalidComponentOnInstance;
@@ -283,6 +284,9 @@ namespace UnityEditor
 
             height += m_ApplyButtonHeight + k_RowPadding;
 
+            //In case the text is long
+            width = Mathf.Max(width, m_ApplyButtonWidth + m_ButtonWidth + k_ButtonWidthPadding);
+
             return new Vector2(width, height);
         }
 
@@ -456,7 +460,7 @@ namespace UnityEditor
 
                     using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance || !m_HasApplicableOverrides))
                     {
-                        if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(m_ButtonWidth)))
+                        if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(m_ApplyButtonWidth)))
                         {
                             if (ApplyAll() && editorWindow != null)
                             {
@@ -643,13 +647,14 @@ namespace UnityEditor
             m_RevertSelectedContent = Styles.revertSelectedContent;
 
             m_ButtonWidth = k_ButtonWidth;
+            m_ApplyButtonWidth = k_ButtonWidth;
             var applyAllContent = new GUIContent(Styles.applyAllContent);
             var revertAllContent = new GUIContent(Styles.revertAllContent);
             var applySelectedContent = Styles.applySelectedContent;
             if (stage is PrefabStage && PrefabUtility.IsPartOfVariantPrefab(AssetDatabase.LoadAssetAtPath<Object>(stage.assetPath)))
             {
-                m_ButtonWidth = k_ButtonWidthVariant;
                 applyAllContent = Styles.applyAllToBaseContent;
+                m_ApplyButtonWidth = GUI.skin.button.CalcSize(applyAllContent).x;
                 applySelectedContent = Styles.applySelectedToBaseContent;
 
             }

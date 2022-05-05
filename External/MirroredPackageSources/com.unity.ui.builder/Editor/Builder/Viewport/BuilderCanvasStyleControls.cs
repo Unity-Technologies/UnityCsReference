@@ -15,6 +15,7 @@ namespace Unity.UI.Builder
         const string k_TextAlignName = "-unity-text-align";
         const string k_TextOverflowName = "text-overflow";
         const string k_TextWrapName = "white-space";
+        const string k_AlignSelfName = "align-self";
 
         public const string k_FlexDirectionButtonName = "flex-direction-button";
         public const string k_AlignItemsButtonName = "align-items-button";
@@ -23,6 +24,7 @@ namespace Unity.UI.Builder
         public const string k_VerticalTextAlignButtonName = "vertical-text-align-button";
         public const string k_TextWrapButtonName = "text-wrap-button";
         public const string k_TextOverflowButtonName = "text-overflow-button";
+        public const string k_AlignSelfButtonName = "align-self-button";
 
         // Buttons
         List<Button> m_AllButtons = new List<Button>();
@@ -34,6 +36,7 @@ namespace Unity.UI.Builder
         Button m_VerticalTextAlignButton;
         Button m_TextWrapButton;
         Button m_TextOverflowButton;
+        Button m_AlignSelfButton;
 
         BuilderSelection m_Selection;
         VisualTreeAsset m_VisualTreeAsset;
@@ -63,11 +66,13 @@ namespace Unity.UI.Builder
             m_VerticalTextAlignButton = QueryAndBindButton(k_VerticalTextAlignButtonName, VerticalTextAlignOnToggle);
             m_TextWrapButton = QueryAndBindButton(k_TextWrapButtonName, TextWrapOnToggle);
             m_TextOverflowButton = QueryAndBindButton(k_TextOverflowButtonName, TextOverflowOnToggle);
+            m_AlignSelfButton = QueryAndBindButton(k_AlignSelfButtonName, AlignSelfOnToggle);
 
             // Group special buttons.
             m_FlexAlignButtons.Add(m_FlexDirectionButton);
             m_FlexAlignButtons.Add(m_AlignItemsButton);
             m_FlexAlignButtons.Add(m_JustifyContentButton);
+            m_FlexAlignButtons.Add(m_AlignSelfButton);
         }
 
         void RefreshAfterFirstInit(GeometryChangedEvent evt)
@@ -116,6 +121,9 @@ namespace Unity.UI.Builder
 
                 m_JustifyContentButton.style.display = DisplayStyle.Flex;
                 JustifyContentUpdateToggleIcon();
+                
+                m_AlignSelfButton.style.display = DisplayStyle.Flex;
+                AlignSelfUpdateToggleIcon();
             }
 
             // Text elements.
@@ -151,6 +159,7 @@ namespace Unity.UI.Builder
                     case k_FlexDirectionName: FlexDirectionUpdateToggleIcon(); break;
                     case k_AlignItemsName: AlignItemsUpdateToggleIcon(); break;
                     case k_JustifyContentName: JustifyContentUpdateToggleIcon(); break;
+                    case k_AlignSelfName: AlignSelfUpdateToggleIcon(); break;
                     case k_TextAlignName:
                         HorizontalTextAlignUpdateToggleIcon();
                         VerticalTextAlignUpdateToggleIcon();
@@ -473,6 +482,43 @@ namespace Unity.UI.Builder
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextWrapName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextWrapName });
+        }
+        
+        //
+        // Align Self
+        //
+
+        void AlignSelfUpdateToggleIcon()
+        {
+            AlignSelfUpdateToggleIcon(m_Target.resolvedStyle.alignSelf);
+        }
+
+        void AlignSelfUpdateToggleIcon(Align resolvedStyle)
+        {
+            var button = m_AlignSelfButton;
+            
+            button.EnableInClassList("auto", resolvedStyle == Align.Auto);
+            button.EnableInClassList("flex-start", resolvedStyle == Align.FlexStart);
+            button.EnableInClassList("center", resolvedStyle == Align.Center);
+            button.EnableInClassList("flex-end", resolvedStyle == Align.FlexEnd);
+            button.EnableInClassList("stretch", resolvedStyle == Align.Stretch);
+        }
+
+        void AlignSelfOnToggle()
+        {
+            var result = Align.Auto;
+            switch (m_Target.resolvedStyle.alignSelf)
+            {
+                case Align.Auto: result = Align.FlexStart; break;
+                case Align.FlexStart: result = Align.Center; break;
+                case Align.Center: result = Align.FlexEnd; break;
+                case Align.FlexEnd: result = Align.Stretch; break;
+                case Align.Stretch: result = Align.Auto; break;
+            }
+            AlignSelfUpdateToggleIcon(result);
+            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_AlignSelfName, result);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfStylingChange(null, new List<string>() { k_AlignSelfName });
         }
     }
 }

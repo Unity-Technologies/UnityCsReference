@@ -38,7 +38,8 @@ namespace Unity.UI.Builder
 
         protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
-            if (pane == DestinationPane.Viewport && !IsPickedElementValid(m_TargetElementToReparent))
+            // Only accept destination with index if it already contains some children
+            if (pane == DestinationPane.Viewport && (!IsPickedElementValid(destination) || (index == -1 && destination.childCount > 0)))
                 return;
 
             base.PerformAction(destination, pane, localMousePosition, index);
@@ -80,9 +81,6 @@ namespace Unity.UI.Builder
                 return true;
 
             if (element.contentContainer == null)
-                return false;
-
-            if (element.GetVisualElementAsset() == null)
                 return false;
 
             if (!element.IsPartOfActiveVisualTreeAsset(paneWindow.document))

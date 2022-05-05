@@ -12,7 +12,7 @@ namespace UnityEditor.AssetImporters
     [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class FBXMaterialDescriptionPreprocessor : AssetPostprocessor
     {
-        static readonly uint k_Version = 2;
+        static readonly uint k_Version = 3;
         static readonly int k_Order = -990;
         public override uint GetVersion()
         {
@@ -139,7 +139,7 @@ namespace UnityEditor.AssetImporters
             }
             else if (description.TryGetProperty("base_color", out vectorProperty))
             {
-                if (QualitySettings.activeColorSpace == ColorSpace.Gamma)
+                if (QualitySettings.activeColorSpace == ColorSpace.Linear)
                 {
                     vectorProperty.x = Mathf.LinearToGammaSpace(vectorProperty.x);
                     vectorProperty.y = Mathf.LinearToGammaSpace(vectorProperty.y);
@@ -215,7 +215,7 @@ namespace UnityEditor.AssetImporters
             }
             else if (description.TryGetProperty("baseColor", out vectorProperty))
             {
-                if (QualitySettings.activeColorSpace == ColorSpace.Gamma)
+                if (QualitySettings.activeColorSpace == ColorSpace.Linear)
                 {
                     vectorProperty.x = Mathf.LinearToGammaSpace(vectorProperty.x);
                     vectorProperty.y = Mathf.LinearToGammaSpace(vectorProperty.y);
@@ -846,7 +846,7 @@ namespace UnityEditor.AssetImporters
                 diffuseColor.a = opacity;
 
                 SetMaterialTextureProperty("_MainTex", material, textureProperty);
-                material.SetColor("_Color", PlayerSettings.colorSpace == ColorSpace.Gamma ? diffuseColor.gamma : diffuseColor);
+                material.SetColor("_Color", diffuseColor);
             }
             else if (description.TryGetProperty("DiffuseColor", out vectorProperty))
             {
@@ -854,7 +854,7 @@ namespace UnityEditor.AssetImporters
                 if (description.TryGetProperty("DiffuseFactor", out floatProperty))
                     diffuseColor *= floatProperty;
                 diffuseColor.a = opacity;
-                material.SetColor("_Color", PlayerSettings.colorSpace == ColorSpace.Gamma ? diffuseColor.gamma : diffuseColor);
+                material.SetColor("_Color", PlayerSettings.colorSpace == ColorSpace.Linear ? diffuseColor.gamma : diffuseColor);
             }
 
             if (description.TryGetProperty("Bump", out textureProperty))
@@ -910,7 +910,7 @@ namespace UnityEditor.AssetImporters
             else
                 material.SetFloat("_Glossiness", 0.0f);
 
-            if (PlayerSettings.colorSpace == ColorSpace.Gamma)
+            if (PlayerSettings.colorSpace == ColorSpace.Linear)
                 RemapAndTransformColorCurves(description, clips, "DiffuseColor", "_Color", ConvertFloatLinearToGamma);
             else
                 RemapColorCurves(description, clips, "DiffuseColor", "_Color");

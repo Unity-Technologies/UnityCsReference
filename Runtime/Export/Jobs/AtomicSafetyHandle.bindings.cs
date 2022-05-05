@@ -71,6 +71,12 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         public static extern bool IsDefaultValue(in AtomicSafetyHandle handle);
 
+        [ThreadSafe]
+        internal static extern void SetExclusiveWeak(ref AtomicSafetyHandle handle, bool enabled);
+
+        [ThreadSafe]
+        internal static extern bool GetExclusiveWeak(in AtomicSafetyHandle handle);
+
         // Marks the AtomicSafetyHandle so that it cannot be disposed of.
         [ThreadSafe]
         public static extern void PrepareUndisposable(ref AtomicSafetyHandle handle);
@@ -245,6 +251,34 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             handle.staticSafetyId = staticSafetyId;
         }
+
+        internal static void CreateHandle(out AtomicSafetyHandle safety, Allocator allocator)
+        {
+            safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
+            if(!Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
+                return;
+            switch(allocator)
+            {
+                case Allocator.TempJob:
+                case Allocator.Persistent:
+                    throw new InvalidOperationException("Jobs can only create Temp memory");
+            }
+        }
+
+        internal static void DisposeHandle(ref AtomicSafetyHandle safety)
+        {
+            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            // If the safety handle is for a temp allocation, create a new safety handle for this instance which can be marked as invalid
+            // Setting it to new AtomicSafetyHandle is not enough since the handle needs a valid node pointer in order to give the correct errors
+            if (AtomicSafetyHandle.IsTempMemoryHandle(safety))
+            {
+                int staticSafetyId = safety.staticSafetyId;
+                safety = AtomicSafetyHandle.Create();
+                safety.staticSafetyId = staticSafetyId;
+            }
+            AtomicSafetyHandle.Release(safety);
+        }
+
     }
 }
 

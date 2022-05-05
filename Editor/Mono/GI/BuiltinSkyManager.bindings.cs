@@ -11,7 +11,6 @@ namespace UnityEditor
     internal class BuiltinSkyManager
     {
         private BuiltinSkyManager() {}
-        extern public static bool StaticIsOnAutoMode();
         extern public static bool StaticIsDone();
     }
 }

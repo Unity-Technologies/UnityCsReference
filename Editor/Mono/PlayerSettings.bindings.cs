@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using UnityEditor.Build;
@@ -32,7 +33,8 @@ namespace UnityEditor
         Mono2x = 0,
         IL2CPP = 1,
         WinRTDotNET = 2,
-        [Obsolete("CoreCLR support is still a work in progress and is disabled for now.")] // Hide from intellisense while WIP
+        [Obsolete("CoreCLR support is still a work in progress and is disabled for now.")] // Hide from intellisense while CORECLR_FIXME
+        [EditorBrowsable(EditorBrowsableState.Never)]
         CoreCLR = 3,
     }
 

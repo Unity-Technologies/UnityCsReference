@@ -2975,7 +2975,7 @@ namespace UnityEditor
 
                 // Only display the custom apply/revert menu for GameObjects/Components that are not part of a Prefab instance & variant.
                 var shouldDisplayApplyRevertProviderContextMenuItems = targetObject is IApplyRevertPropertyContextMenuItemProvider
-                    && PrefabUtility.GetPrefabInstanceHandle(targetObject) == null;
+                    && PrefabUtility.HasApplicableObjectOverrides(targetObject, false);
 
                 if (shouldDisplayPrefabContextMenuItems || shouldDisplayApplyRevertProviderContextMenuItems)
                 {

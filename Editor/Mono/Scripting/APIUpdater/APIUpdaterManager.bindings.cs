@@ -73,6 +73,7 @@ namespace UnityEditorInternal.APIUpdating
 
         // Sets/gets a regular expression used to filter configuration sources assemblies
         // by name.
+
         public static extern string ConfigurationSourcesFilter { get; set; }
 
         internal static extern bool AskForConsent(string[] assemblyPaths);

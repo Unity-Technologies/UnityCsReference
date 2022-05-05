@@ -11,7 +11,7 @@ using Unity.Profiling;
 namespace UnityEngine.UIElements
 {
     // This is the required interface to UIElementsUtility for Runtime game components.
-    [NativeHeader("Modules/UIElementsNative/UIElementsRuntimeUtilityNative.h")]
+    [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/UIElementsRuntimeUtilityNative.h")]
     [VisibleToOtherModules("Unity.UIElements")]
     internal static class UIElementsRuntimeUtilityNative
     {

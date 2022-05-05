@@ -26,7 +26,7 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
             UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", defaultValue = true };
-            UxmlTypeAttributeDescription<Object> m_ObjectType = new UxmlTypeAttributeDescription<Object> { name = "type" };
+            UxmlTypeAttributeDescription<Object> m_ObjectType = new UxmlTypeAttributeDescription<Object> { name = "type", defaultValue = typeof(Object)};
 
             /// <summary>
             /// Initialize <see cref="ObjectField"/> properties using values from the attribute bag.
@@ -333,6 +333,7 @@ namespace UnityEditor.UIElements
             labelElement.AddToClassList(labelUssClassName);
 
             allowSceneObjects = true;
+            m_objectType = typeof(Object);
 
             m_ObjectFieldDisplay = new ObjectFieldDisplay(this) { focusable = true };
             m_ObjectFieldDisplay.AddToClassList(objectUssClassName);

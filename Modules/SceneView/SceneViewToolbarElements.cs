@@ -44,10 +44,12 @@ namespace UnityEditor.Toolbars
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
 
-        readonly Texture2D m_ShadedIcon;
-        readonly Texture2D m_WireframeIcon;
-        readonly Texture2D m_ShadedWireframeIcon;
-        readonly Texture2D m_DebugIcon;
+        static readonly string s_UssClassName_Shaded = "cameramode-shaded";
+        static readonly string s_UssClassName_ShadedWireframe = "cameramode-shadedwireframe";
+        static readonly string s_UssClassName_Wireframe = "cameramode-wireframe";
+        static readonly string s_UssClassName_Debug = "cameramode-debug";
+
+        string currentUssClassName;
 
         public CameraModeElement()
         {
@@ -56,19 +58,20 @@ namespace UnityEditor.Toolbars
 
             clicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
 
-            m_ShadedIcon = EditorGUIUtility.IconContent("Toolbars/Shaded").image as Texture2D;
-            m_ShadedWireframeIcon = EditorGUIUtility.IconContent("Toolbars/ShadedWireframe").image as Texture2D;;
-            m_WireframeIcon = EditorGUIUtility.IconContent("Toolbars/Wireframe").image as Texture2D;;
-            m_DebugIcon = EditorGUIUtility.IconContent("Toolbars/debug").image as Texture2D;;
-
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            AddToClassList(s_UssClassName_Debug);
+            currentUssClassName = s_UssClassName_Debug;
             SceneViewToolbarElements.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
             SceneViewOnCameraModeChanged(sceneView.cameraMode);
+            //Settings the icon display explicitly as this is set to DisplayStyle.Flex when icon = null
+            //Here the icon is set using USS so on the C# side icon = null
+            var iconElement = this.Q<Image>();
+            iconElement.style.display = DisplayStyle.Flex;
             sceneView.onCameraModeChanged += SceneViewOnCameraModeChanged;
         }
 
@@ -79,24 +82,26 @@ namespace UnityEditor.Toolbars
 
         void SceneViewOnCameraModeChanged(SceneView.CameraMode mode)
         {
+            RemoveFromClassList(currentUssClassName);
             switch (mode.name)
             {
                 case "Shaded":
-                    icon = m_ShadedIcon;
+                    currentUssClassName = s_UssClassName_Shaded;
                     break;
 
                 case "Wireframe":
-                    icon = m_WireframeIcon;
+                    currentUssClassName = s_UssClassName_Wireframe;
                     break;
 
                 case "Shaded Wireframe":
-                    icon = m_ShadedWireframeIcon;
+                    currentUssClassName = s_UssClassName_ShadedWireframe;
                     break;
 
                 default:
-                    icon = m_DebugIcon;
+                    currentUssClassName = s_UssClassName_Debug;
                     break;
             }
+            AddToClassList(currentUssClassName);
         }
     }
 
@@ -111,8 +116,6 @@ namespace UnityEditor.Toolbars
             name = "SceneView2D";
             tooltip = L10n.Tr("When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
             this.RegisterValueChangedCallback(evt => sceneView.in2DMode = evt.newValue);
-            onIcon = EditorGUIUtility.FindTexture("SceneView2D On");
-            offIcon = EditorGUIUtility.FindTexture("SceneView2D");
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             SceneViewToolbarElements.AddStyleSheets(this);
@@ -145,8 +148,6 @@ namespace UnityEditor.Toolbars
         {
             name = "SceneviewLighting";
             tooltip = L10n.Tr("When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
-            onIcon = EditorGUIUtility.FindTexture("SceneViewLighting On");
-            offIcon = EditorGUIUtility.FindTexture("SceneViewLighting");
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -181,8 +182,6 @@ namespace UnityEditor.Toolbars
         {
             name = "SceneviewAudio";
             tooltip = "Toggle audio on or off.";
-            onIcon = EditorGUIUtility.FindTexture("SceneViewAudio On");
-            offIcon = EditorGUIUtility.FindTexture("SceneViewAudio");
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -264,8 +263,6 @@ namespace UnityEditor.Toolbars
         {
             name = "SceneViewVisibility";
             tooltip = "Number of hidden objects, click to toggle scene visibility";
-            onIcon = EditorGUIUtility.FindTexture("SceneViewVisibility On");
-            offIcon = EditorGUIUtility.FindTexture("SceneViewVisibility");
 
             this.RegisterValueChangedCallback(evt => sceneView.sceneVisActive = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
@@ -453,7 +450,6 @@ namespace UnityEditor.Toolbars
         {
             name = "SceneViewCamera";
             tooltip = "Settings for the Scene view camera.";
-            icon = EditorGUIUtility.FindTexture("SceneViewCamera");
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -462,6 +458,10 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
+            //Settings the icon display explicitly as this is set to DisplayStyle.Flex when icon = null
+            //Here the icon is set using USS so on the C# side icon = null
+            var iconElement = this.Q<Image>();
+            iconElement.style.display = DisplayStyle.Flex;
             clickable.clickedWithEventInfo += OnClickableOnclickedWithEventInfo;
         }
 

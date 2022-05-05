@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Bee.BeeDriver;
+using Bee.BinLog;
 using NiceIO;
 using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
@@ -24,6 +26,7 @@ namespace UnityEditor.Modules
 {
     internal abstract class BeeBuildPostprocessor : DefaultBuildPostprocessor
     {
+        protected BeeDriverResult BeeDriverResult { get; set; }
         protected static bool isBuildingPlayer { get; set; }
 
         [RequiredByNativeCode]
@@ -56,10 +59,8 @@ namespace UnityEditor.Modules
             UnityBeeDriverProfilerSession.EndSection();
         }
 
-        protected BeeDriver Driver { get; private set; }
         protected virtual IPluginImporterExtension GetPluginImpExtension() => new EditorPluginImporterExtension();
 
-        PlayerBuildProgressAPI progressAPI = null;
 
 
         protected virtual PluginsData PluginsDataFor(BuildPostProcessArgs args)
@@ -214,6 +215,7 @@ namespace UnityEditor.Modules
                 yield return args.Substring(startIndex, i - startIndex);
         }
 
+
         protected virtual string Il2CppSysrootPathFor(BuildPostProcessArgs args)
         {
             return null;
@@ -234,6 +236,7 @@ namespace UnityEditor.Modules
             return null;
         }
 
+
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
             if (!GetUseIl2Cpp(args))
@@ -248,7 +251,6 @@ namespace UnityEditor.Modules
             var playerSettingsArgs = PlayerSettings.GetAdditionalIl2CppArgs();
             if (!string.IsNullOrEmpty(playerSettingsArgs))
                 additionalArgs.AddRange(SplitArgs(playerSettingsArgs));
-
             var sysrootPath = Il2CppSysrootPathFor(args);
             var toolchainPath = Il2CppToolchainPathFor(args);
             var compilerFlags = Il2CppCompilerFlagsFor(args);
@@ -314,6 +316,7 @@ namespace UnityEditor.Modules
             GenerateIdeProject = GetCreateSolution(args),
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
             UseIl2Cpp = GetUseIl2Cpp(args),
+            UseCoreCLR = GetUseCoreCLR(args),
             Architecture = GetArchitecture(args),
             DataFolder = GetDataFolderFor(args),
             Services = new Services()
@@ -353,9 +356,9 @@ namespace UnityEditor.Modules
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();
         protected virtual string GetArchitecture(BuildPostProcessArgs args) => EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(args.target), "Architecture");
 
-        protected Dictionary<string, Action<NodeResult>> ResultProcessors { get; } = new Dictionary<string, Action<NodeResult>>();
+        protected Dictionary<string, Action<NodeFinishedMessage>> ResultProcessors { get; } = new Dictionary<string, Action<NodeFinishedMessage>>();
 
-        private SystemProcessRunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
+        private RunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
             var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
             NPath buildPipelineFolder = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline";
@@ -367,49 +370,13 @@ namespace UnityEditor.Modules
                 searchPaths = $"{il2cppPath}{Path.PathSeparator}";
             }
 
-            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
+            return new SystemProcessRunnableProgramDuplicate(NetCoreRunProgram.NetCoreRunPath,
                 new[]
                 {
                     buildProgramAssembly.InQuotes(SlashMode.Native),
                     $"\"{searchPaths}{buildPipelineFolder}\""
                 },
                 new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }});
-        }
-
-        class PlayerBuildProgressAPI : ProgressAPI
-        {
-            private string message;
-            public string CurrentProgressInfo { get; protected set; }
-            public float CurrentProgress { get; protected set; }
-
-            public PlayerBuildProgressAPI(string _message)
-            {
-                message = _message;
-            }
-
-            public override ProgressToken Start() => new PlayerBuildProgressAPIToken(this);
-
-            private class PlayerBuildProgressAPIToken : UnityProgressAPI.UnityProgressAPIToken
-            {
-                private PlayerBuildProgressAPI _progressAPI;
-                public PlayerBuildProgressAPIToken(PlayerBuildProgressAPI progressAPI) :
-                    base(progressAPI.message)
-                {
-                    _progressAPI = progressAPI;
-                }
-
-                public override void Report(string msg)
-                {
-                    _progressAPI.CurrentProgressInfo = msg;
-                    base.Report(msg);
-                }
-
-                public override void Report(float progress)
-                {
-                    _progressAPI.CurrentProgress = progress;
-                    base.Report(progress);
-                }
-            }
         }
 
         private static NPath DagDirectory => "Library/Bee";
@@ -426,39 +393,35 @@ namespace UnityEditor.Modules
             yield return LinkerConfigFor(args);
             yield return Il2CppConfigFor(args);
         }
-
         protected virtual RunnableProgram BeeBackendProgram(BuildPostProcessArgs args)
         {
             return null;
         }
 
-        void SetupBeeDriver(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
+        BuildRequest SetupBuildRequest(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
-            progressAPI = new PlayerBuildProgressAPI($"Building {args.productName}");
-            Driver = UnityBeeDriver.Make(buildProgram, DagName(args), DagDirectory.ToString(), false, "", ilpp, UnityBeeDriver.StdOutModeForPlayerBuilds, progressAPI, BeeBackendProgram(args));
 
-            foreach (var o in GetDataForBuildProgramFor(args))
-            {
-                if (o != null)
-                    Driver.DataForBuildProgram.Add(o.GetType(), o);
-            }
+            var buildRequest = UnityBeeDriver.BuildRequestFor(buildProgram, DagName(args), DagDirectory.ToString(), false, "",ilpp, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
+            buildRequest.DataForBuildProgram.Add(() => GetDataForBuildProgramFor(args).Where(o=> o is not null));
+
+            return buildRequest;
         }
 
         // Some node types produce meaningful, human readable error messages,
         // but the output files names are Unity internals, not helpful to users.
         // For such nodes, directly print the output if the action fails.
-        void PrintStdoutOnErrorProcessor(NodeResult node)
+        void PrintStdoutOnErrorProcessor(NodeFinishedMessage node)
         {
-            if (node.exitcode != 0)
-                Debug.LogError(node.stdout);
+            if (node.ExitCode != 0)
+                Debug.LogError(node.Output);
             else
                 DefaultResultProcessor(node);
         }
 
-        void UnityLinkerResultProcessor(NodeResult node)
+        void UnityLinkerResultProcessor(NodeFinishedMessage node)
         {
-            if (node.exitcode != 0 && node.stdout.Contains("UnityEditor"))
+            if (node.ExitCode != 0 && node.Output.Contains("UnityEditor"))
                 Debug.LogError($"UnityEditor.dll assembly is referenced by user code, but this is not allowed.");
             else
                 DefaultResultProcessor(node);
@@ -472,13 +435,13 @@ namespace UnityEditor.Modules
 
         }
 
-        protected void DefaultResultProcessor(NodeResult node, bool printErrors = true, bool printWarnings = true)
+        protected void DefaultResultProcessor(NodeFinishedMessage node, bool printErrors = true, bool printWarnings = true)
         {
-            var output = node.outputfile;
+            var output = node.Node.OutputFile;
             if (string.IsNullOrEmpty(output))
-                output = node.outputdirectory;
+                output = node.Node.OutputDirectory;
 
-            var lines = (node.stdout ?? string.Empty).Split(new[] {'\r', '\n'},
+            var lines = (node.Output ?? string.Empty).Split(new[] {'\r', '\n'},
                 StringSplitOptions.RemoveEmptyEntries);
 
             if (printErrors)
@@ -497,22 +460,22 @@ namespace UnityEditor.Modules
                     Debug.LogWarning($"{output}: {warning.Substring(warningKey.Length).TrimStart()}");
             }
 
-            if (node.exitcode != 0)
-                Debug.LogError($"Building {output} failed with output:\n{node.stdout}");
+            if (node.ExitCode != 0)
+                Debug.LogError($"Building {output} failed with output:\n{node.Output}");
         }
 
-        void ReportBuildResults(BeeDriverResult result)
+        void ReportBuildResults()
         {
-            foreach (var node in result.NodeResults)
+            foreach (var node in BeeDriverResult.NodeFinishedMessages)
             {
-                var annotationAction = node.annotation.Split(' ')[0];
+                var annotationAction = node.Node.Annotation.Split(' ')[0];
                 if (ResultProcessors.TryGetValue(annotationAction, out var processor))
                     processor(node);
                 else
                     DefaultResultProcessor(node);
             }
 
-            foreach (var resultBeeDriverMessage in result.BeeDriverMessages)
+            foreach (var resultBeeDriverMessage in BeeDriverResult.BeeDriverMessages)
             {
                 if (resultBeeDriverMessage.Kind == BeeDriverResult.MessageKind.Warning)
                     Debug.LogWarning(resultBeeDriverMessage.Text);
@@ -523,7 +486,13 @@ namespace UnityEditor.Modules
 
         void ReportBuildOutputFiles(BuildPostProcessArgs args)
         {
-            var filesOutput = Driver.DataFromBuildProgram?.Get<BuiltFilesOutput>() ?? new BuiltFilesOutput();
+            // Remove any previous file entries in the build report.
+            // We can track any file written by the backend ourselves.
+            // Once all platforms use the Bee backend, we can remove a lot
+            // of code to add file entries in the native build pipeline.
+            args.report.DeleteAllFileEntries();
+
+            var filesOutput = BeeDriverResult.DataFromBuildProgram.Get<BuiltFilesOutput>();
             foreach (var outputfile in filesOutput.Files.ToNPaths().Where(f => f.FileExists() && !f.IsSymbolicLink))
                 args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
         }
@@ -568,46 +537,50 @@ namespace UnityEditor.Modules
 
                 var buildStep = args.report.BeginBuildStep("Setup incremental player build");
 
-                SetupBeeDriver(args, new ILPostProcessingProgram());
+                var buildRequest = SetupBuildRequest(args,new ILPostProcessingProgram());
                 args.report.EndBuildStep(buildStep);
-
-                // Remove any previous file entries in the build report.
-                // We can track any file written by the backend ourselves.
-                // Once all platforms use the Bee backend, we can remove a lot
-                // of code to add file entries in the native build pipeline.
-                args.report.DeleteAllFileEntries();
 
                 buildStep = args.report.BeginBuildStep("Incremental player build");
 
-                Driver.BuildAsync("Player");
+                var cancellationTokenSource = new CancellationTokenSource();
+
+                buildRequest.Target = "Player";
+                var activeBuild = BeeDriver.BuildAsync(buildRequest, cancellationToken: cancellationTokenSource.Token);
 
                 {
-                    BeeDriverResult result = null;
-                    while (result == null)
+                    while (!activeBuild.TaskObject.IsCompleted)
                     {
-                        Thread.Sleep(1);
-                        result = Driver.Tick();
-                        if (EditorUtility.DisplayCancelableProgressBar("Incremental Player Build",
-                            progressAPI.CurrentProgressInfo, progressAPI.CurrentProgress))
+                        activeBuild.TaskObject.Wait(100);
+
+                        //important to keep on pumping the execution context here, as there might be async tasks being kicked off by the bee driver build that have to run on the main thread.
+                        ((UnitySynchronizationContext) SynchronizationContext.Current).Exec();
+
+                        var activeBuildStatus = activeBuild.Status;
+                        float progress = activeBuildStatus.Progress.HasValue
+                            ? activeBuildStatus.Progress.Value.nodesFinishedOrUpToDate / (float) activeBuildStatus.Progress.Value.totalNodesQeueued
+                            : 0f;
+                        if (EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", activeBuildStatus.Description, progress))
                         {
-                            EditorUtility.DisplayCancelableProgressBar("Incremental Player Build",
-                                "Canceling build", 1.0f);
-                            Driver.CancelBuild();
-                            Driver.WaitForResult();
+                            EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", "Canceling build", 1.0f);
+                            cancellationTokenSource.Cancel();
                             throw new OperationCanceledException();
                         }
                     }
                     args.report.EndBuildStep(buildStep);
 
-                    if (result.Success)
+                    BeeDriverResult = activeBuild.TaskObject.Result;
+                    if (BeeDriverResult.Success)
+                    {
                         PostProcessCompletedBuild(args);
-                    ReportBuildResults(result);
+                    }
+                    ReportBuildResults();
 
-                    buildStep = args.report.BeginBuildStep("Report output files");
-                    ReportBuildOutputFiles(args);
-                    args.report.EndBuildStep(buildStep);
-
-                    if (!result.Success)
+                    if (BeeDriverResult.Success)
+                    {
+                        buildStep = args.report.BeginBuildStep("Report output files");
+                        ReportBuildOutputFiles(args);
+                        args.report.EndBuildStep(buildStep);
+                    } else
                         throw new BuildFailedException("Incremental Player build failed!");
                 }
             }
@@ -633,17 +606,17 @@ namespace UnityEditor.Modules
                 return;
 
             var strippingInfo = GetStrippingInfoFromBuild(args);
-            if (strippingInfo != null && EditorBuildOutputPath != null)
+            if (strippingInfo != null && EditorBuildOutputPathFor(args) != null)
             {
                 args.report.AddAppendix(strippingInfo);
-                var linkerToEditorData = AssemblyStripper.ReadLinkerToEditorData(EditorBuildOutputPath.ToString());
+                var linkerToEditorData = AssemblyStripper.ReadLinkerToEditorData(EditorBuildOutputPathFor(args).ToString());
                 AssemblyStripper.UpdateBuildReport(linkerToEditorData, strippingInfo);
             }
         }
 
         protected virtual bool GetCreateSolution(BuildPostProcessArgs args) => false;
 
-        protected virtual NPath EditorBuildOutputPath => null;
+        protected virtual NPath EditorBuildOutputPathFor(BuildPostProcessArgs buildPostProcessArgs) => null;
 
         protected virtual StrippingInfo GetStrippingInfoFromBuild(BuildPostProcessArgs args) => null;
 
