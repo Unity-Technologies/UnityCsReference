@@ -85,8 +85,6 @@ namespace UnityEditor
         [NonSerialized]
         bool m_OverlaysInitialized;
 
-        internal bool overlaysInitialized => m_OverlaysInitialized;
-
         private bool m_EnableViewDataPersistence;
 
         private bool m_RequestedViewDataSave;
@@ -176,6 +174,8 @@ namespace UnityEditor
         }
 
         internal virtual void OnResized()  {}
+
+        internal virtual void OnBackgroundViewResized(Rect pos) { }
 
         // Does the GUI in this editor window want MouseMove events?
         public bool wantsMouseMove
@@ -1120,6 +1120,13 @@ namespace UnityEditor
         {
             if (m_Parent != null)
                 m_Parent.SetDisplayViewSize(displayId, targetSize);
+        }
+
+        internal Vector2 GetDisplayViewSize(int displayId)
+        {
+            if (m_Parent != null)
+               return m_Parent.GetDisplayViewSize(displayId);
+            return new Vector2(640, 480);
         }
 
         internal void SetPlayModeView(bool value)

@@ -570,6 +570,7 @@ namespace UnityEditor
         public static bool protectGraphicsMemory { get { return false; } set {} }
 
         public static extern bool enableFrameTimingStats { get; set; }
+        public static extern bool enableOpenGLProfilerGPURecorders { get; set; }
 
         public static extern bool useHDRDisplay { get; set; }
 

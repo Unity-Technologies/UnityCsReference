@@ -6540,7 +6540,7 @@ namespace UnityEditor
                 Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
-            s_PropertyFieldTempContent.tooltip = (label == null) ? property.tooltip : label.tooltip;
+            s_PropertyFieldTempContent.tooltip = (label == null || string.IsNullOrEmpty(label.tooltip)) ? property.tooltip : label.tooltip;
             s_PropertyFieldTempContent.image = label?.image;
 
             // In inspector debug mode & when holding down alt. Show the property path of the property.
@@ -10962,6 +10962,7 @@ namespace UnityEditor
         {
             if (s_TabOnlyOne == null)
             {
+                // Keep in sync with Tests/EditModeAndPlayModeTests/PlayerSettings/Assets/Editor/PlayerSettingsApplicationIdentifierTests.cs.
                 s_TabOnlyOne = "Tab onlyOne";
                 s_TabFirst = "Tab first";
                 s_TabMiddle = "Tab middle";

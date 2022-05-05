@@ -188,6 +188,18 @@ namespace UnityEditor
 
         GameViewSize currentGameViewSize => GameViewSizes.instance.currentGroup.GetGameViewSize(selectedSizeIndex);
 
+        Rect GetViewInWindow(Rect pos)
+        {
+            if (showToolbar)
+                return new Rect(0, EditorGUI.kWindowToolbarHeight, pos.width, pos.height - EditorGUI.kWindowToolbarHeight);
+            return new Rect(0, 0, pos.width, pos.height);
+        }
+
+        Rect GetViewPixelRect(Rect viewRectInWindow)
+        {
+            return lowResolutionForAspectRatios ? viewRectInWindow : EditorGUIUtility.PointsToPixels(viewRectInWindow);
+        }
+
         // The area of the window that the rendered game view is limited to
         Rect viewInWindow
         {
@@ -376,6 +388,22 @@ namespace UnityEditor
         internal override void OnResized()
         {
             targetSize = targetRenderSize;
+        }
+
+        internal override void OnBackgroundViewResized(Rect pos)
+        {
+            // Should only update the game view size if it's in Aspect Ratio mode, otherwise
+            // we keep the static size
+
+            Rect viewInWindow = GetViewInWindow(pos);
+            Rect viewPixelRect = GetViewPixelRect(viewInWindow);
+            var newTargetSize =
+                GameViewSizes.GetRenderTargetSize(viewPixelRect, currentSizeGroupType, selectedSizeIndex, out m_TargetClamped);
+
+            if (newTargetSize == GetDisplayViewSize(targetDisplay) && currentGameViewSize.sizeType != GameViewSizeType.AspectRatio)
+                return;
+            SetDisplayViewSize(targetDisplay, new Vector2(newTargetSize.x, newTargetSize.y));
+            UpdateZoomAreaAndParent();
         }
 
         // Call when number of available aspects can have changed (after deserialization or gui change)

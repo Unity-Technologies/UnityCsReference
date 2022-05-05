@@ -93,6 +93,7 @@ namespace UnityEditorInternal
         NotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = 1 << 8,
         NotSupportedWithVulkan = 1 << 9,
         NotSupportedWithMetal = 1 << 10,
+        NotSupportedWithOpenGLGPURecorders = 1 << 11,
     }
 
 

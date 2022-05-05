@@ -43,6 +43,7 @@ namespace UnityEditor
         internal extern void SetInternalGameViewDimensions(Rect rect, Rect clippedRect, Vector2 targetSize);
         internal extern void SetMainPlayModeViewSize(Vector2 targetSize);
         internal extern void SetDisplayViewSize(int displayId, Vector2 targetSize);
+        internal extern Vector2 GetDisplayViewSize(int displayId);
         internal extern void SetAsStartView();
         internal extern void SetAsLastPlayModeView();
         internal extern void SetPlayModeView(bool value);

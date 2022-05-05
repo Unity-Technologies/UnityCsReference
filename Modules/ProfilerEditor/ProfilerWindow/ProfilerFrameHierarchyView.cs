@@ -5,8 +5,10 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.MPE;
 using UnityEditor.Profiling;
 using Unity.Profiling;
 
@@ -429,6 +431,26 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        // Open hyperlinks directing users to specific settings in the Player Settings window.
+        static void EditorGUI_OpenSettingsOnHyperlinkClicked(EditorWindow window, HyperLinkClickedEventArgs args)
+        {
+            if (window.GetType() == typeof(ProfilerWindow) && args.hyperLinkData.ContainsKey("playersettingslink"))
+            {
+                var settings = SettingsWindow.Show(SettingsScope.Project, "Project/Player");
+                if (settings == null)
+                {
+                    Debug.LogError("Could not find Preferences for 'Project/Player'");
+                }
+                else
+                {
+                    string linkString;
+                    args.hyperLinkData.TryGetValue("playersettingssearchstring", out linkString);
+
+                    settings.FilterProviders(linkString);
+                }
+            }
+        }
+
         public void DoGUI(HierarchyFrameDataView frameDataView, bool fetchData, ref bool updateViewLive, ProfilerViewType viewType)
         {
             using (m_DoGUIMarker.Auto())
@@ -458,7 +480,25 @@ namespace UnityEditorInternal.Profiling
 
                 if (!string.IsNullOrEmpty(dataAvailabilityMessage))
                 {
-                    GUILayout.Label(dataAvailabilityMessage, BaseStyles.label);
+                    GUIStyle style = BaseStyles.label;
+
+                    if (dataAvailabilityMessage.Contains("PlayerSettings."))
+                    {
+                        // Don't do hyperlinks if we're in standalone profiler since we can't easily connect back to the main process.
+                        if(UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Secondary)
+                        {
+                            dataAvailabilityMessage = Regex.Replace(dataAvailabilityMessage, @"\(<a playersettingslink=.*<\/a>\)", "");
+                        }
+                        else
+                        {
+                            style.richText = true;
+                            EditorGUI.hyperLinkClicked -= EditorGUI_OpenSettingsOnHyperlinkClicked;
+                            EditorGUI.hyperLinkClicked += EditorGUI_OpenSettingsOnHyperlinkClicked;
+                        }
+                    }
+
+                    var rect = GUILayoutUtility.GetRect(GUIContent.Temp(dataAvailabilityMessage), style);
+                    EditorGUI.SelectableLabel(rect, dataAvailabilityMessage, style);
                 }
                 else if (!isDataAvailable)
                 {

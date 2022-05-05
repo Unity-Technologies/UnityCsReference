@@ -256,6 +256,9 @@ namespace UnityEditor
         string m_WindowGUID;
         internal string windowGUID => m_WindowGUID;
 
+        //Used internally to set the overlay layout to the same than the previous sceneview
+        SceneView m_PreviousScene = null;
+
         [SerializeField] bool m_Gizmos = true;
         public bool drawGizmos
         {
@@ -1171,12 +1174,26 @@ namespace UnityEditor
                 SceneViewMotion.ResetMotion();
         }
 
+        private void OnBeforeRemovedAsTab()
+        {
+            m_PreviousScene = null;
+        }
+
+        //Internal for tests
+        internal void OnAddedAsTab()
+        {
+            //OnAddedAsTab is called after the lastActiveSceneView has been updated, so m_PreviousScene is there to keep this reference
+            if (m_PreviousScene != null && s_SceneViews.Count > 0)
+            {
+                m_PreviousScene.overlayCanvas.CopySaveData(out var overlaySaveData);
+                overlayCanvas.ApplySaveData(overlaySaveData);
+            }
+        }
+
         public override void OnEnable()
         {
             baseRootVisualElement.Insert(0, prefabToolbar);
-            bool overlaysInitializedBefore = overlaysInitialized;
             rootVisualElement.Add(cameraViewVisualElement);
-            CopyOverlaysLayoutIfNeeded(overlaysInitializedBefore);
 
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
@@ -1309,15 +1326,6 @@ namespace UnityEditor
             gridVisibilityChanged?.Invoke(visible);
         }
 
-        void CopyOverlaysLayoutIfNeeded(bool overlaysInitialized)
-        {
-            if (!overlaysInitialized && s_SceneViews.Count > 0)
-            {
-                lastActiveSceneView.overlayCanvas.CopySaveData(out var overlaySaveData);
-                overlayCanvas.ApplySaveData(overlaySaveData);
-            }
-        }
-
         protected virtual bool SupportsStageHandling()
         {
             return true;
@@ -1375,7 +1383,6 @@ namespace UnityEditor
                 }
             }
 
-
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
             {
                 m_LastSceneViewRotation = Quaternion.LookRotation(new Vector3(-1, -.7f, -1));
@@ -1392,6 +1399,8 @@ namespace UnityEditor
                 if (Tools.current == Tool.Move)
                     Tools.current = Tool.Rect;
             }
+
+            m_PreviousScene = lastActiveSceneView;
         }
 
         internal static void PlaceGameObjectInFrontOfSceneView(GameObject go)

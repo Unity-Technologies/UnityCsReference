@@ -92,6 +92,10 @@ namespace UnityEditor
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
             public static readonly GUIContent mipStripping = EditorGUIUtility.TrTextContent("Texture MipMap Stripping*", "Remove unused texture levels from package builds, reducing package size on disk. Limits the texture quality settings to the highest mip that was included during the build.");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
+            public static readonly GUIContent enableOpenGLProfilerGPURecorders = EditorGUIUtility.TrTextContent("OpenGL: Profiler GPU Recorders","Enable Profiler Recorders when rendering with OpenGL. Always enabled with other rendering APIs. Optional on OpenGL due to potential incompatibility with Frame Timing Stats and the GPU Profiler.");
+            public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
+            public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
+            public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
@@ -2034,9 +2038,9 @@ namespace UnityEditor
                 }
             }
 
-            // Light map settings
             if (!isPreset)
             {
+                // Light map settings
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
                     bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
@@ -2063,6 +2067,7 @@ namespace UnityEditor
                     }
                 }
 
+                // Tickbox for Frame Timing Stats.
                 if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
                 {
                     PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
@@ -2073,6 +2078,37 @@ namespace UnityEditor
                         {
                             EditorGUILayout.HelpBox(SettingsContent.frameTimingStatsWebGLWarning.text, MessageType.Warning);
                         }
+                    }
+                }
+
+                // Tickbox for OpenGL-only option to toggle Profiler GPU Recorders.
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android)
+                {
+                    EditorGUI.BeginDisabledGroup(PlayerSettings.enableFrameTimingStats);
+                    if(PlayerSettings.enableFrameTimingStats)
+                    {
+                        EditorGUILayout.Toggle(SettingsContent.enableOpenGLProfilerGPURecorders, false);
+                    }
+                    else
+                        PlayerSettings.enableOpenGLProfilerGPURecorders = EditorGUILayout.Toggle(SettingsContent.enableOpenGLProfilerGPURecorders, PlayerSettings.enableOpenGLProfilerGPURecorders);
+                    EditorGUI.EndDisabledGroup();
+
+                    // Add different notes/warnings depending on the tickbox combinations.
+                    // These concern Frame Timing Stats as well as Profiler GPU Recorders,
+                    // so are listed below both to (hopefully) highlight that they're linked.
+                    //
+                    // Prior to 2022, FTM may disable GPU ProfilerRecorders, so we disable the
+                    // tickbox and (if both are enabled) combine to one warning label.
+                    if (PlayerSettings.enableOpenGLProfilerGPURecorders)
+                    {
+                        if(PlayerSettings.enableFrameTimingStats)
+                            EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOnGPURecordersOnWarning.text, MessageType.Warning);
+                        else
+                            EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOffGPURecordersOnInfo.text, MessageType.Info);
+                    }
+                    else if(PlayerSettings.enableFrameTimingStats)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOnGPURecordersOffInfo.text, MessageType.Info);
                     }
                 }
 
@@ -2223,7 +2259,6 @@ namespace UnityEditor
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
 
                 EditorGUILayout.PropertyField(m_OverrideDefaultApplicationIdentifier, EditorGUIUtility.TrTextContent("Override Default Bundle Identifier"));
-                string defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
 
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
@@ -2231,7 +2266,7 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.IndentLevelScope())
                         {
-                            PlayerSettingsEditor.ShowApplicationIdentifierUI(m_ApplicationIdentifier, BuildTargetGroup.Standalone, m_OverrideDefaultApplicationIdentifier.boolValue, defaultIdentifier, "Bundle Identifier", "'CFBundleIdentifier'");
+                            ShowApplicationIdentifierUI(BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'");
                         }
                     }
                 }
@@ -2280,17 +2315,33 @@ namespace UnityEditor
             return SettingsContent.applicationIdentifierError;
         }
 
-        internal static void ShowApplicationIdentifierUI(SerializedProperty prop, BuildTargetGroup targetGroup, bool overrideDefaultID, string defaultID, string label, string tooltip)
+        internal void ShowApplicationIdentifierUI(BuildTargetGroup targetGroup, string label, string tooltip)
         {
+            var overrideDefaultID = m_OverrideDefaultApplicationIdentifier.boolValue;
+            var defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
             var oldIdentifier = "";
-            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultID, targetGroup);
+            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultIdentifier, targetGroup);
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
             var warningMessage = SettingsContent.applicationIdentifierWarning.text;
             var errorMessage = GetApplicationIdentifierError(targetGroup).text;
 
-            if (!prop.serializedObject.isEditingMultipleObjects)
+            string GetSanitizedApplicationIdentifier()
             {
-                prop.TryGetMapEntry(buildTargetGroup, out var entry);
+                var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
+
+                if (currentIdentifier != oldIdentifier) {
+                    if (!overrideDefaultID && !PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
+                        Debug.LogError(errorMessage);
+                    else if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
+                        Debug.LogWarning(warningMessage);
+                }
+
+                return sanitizedIdentifier;
+            }
+
+            if (!m_ApplicationIdentifier.serializedObject.isEditingMultipleObjects)
+            {
+                m_ApplicationIdentifier.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                     oldIdentifier = entry.FindPropertyRelative("second").stringValue;
@@ -2300,7 +2351,7 @@ namespace UnityEditor
                     if (overrideDefaultID)
                         currentIdentifier = oldIdentifier;
                     else
-                        prop.SetMapValue(buildTargetGroup, currentIdentifier);
+                        m_ApplicationIdentifier.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
 
                 EditorGUILayout.BeginVertical();
@@ -2308,25 +2359,21 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(!overrideDefaultID))
                 {
-                    var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
-                        Debug.LogError("Invalid characters have been removed from the Applicaton Identifier");
-                    currentIdentifier = sanitizedIdentifier;
+                    currentIdentifier = GetSanitizedApplicationIdentifier();
                     currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-                    if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
-                        Debug.LogError("Invalid characters have been removed from the Applicaton Identifier");
-                    currentIdentifier = sanitizedIdentifier;
-                    prop.SetMapValue(buildTargetGroup, currentIdentifier);
+                    currentIdentifier = GetSanitizedApplicationIdentifier();
+                    m_ApplicationIdentifier.SetMapValue(buildTargetGroup, currentIdentifier);
                 }
 
-                if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
+                if (currentIdentifier == "com.Company.ProductName" || currentIdentifier == "com.unity3d.player")
+                    EditorGUILayout.HelpBox("Don't forget to set the Application Identifier.", MessageType.Warning);
+                else if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
                     EditorGUILayout.HelpBox(errorMessage, MessageType.Error);
-                else if (!overrideDefaultID && currentIdentifier != defaultID)
+                else if (!overrideDefaultID && currentIdentifier != defaultIdentifier)
                     EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
 
                 EditorGUILayout.EndVertical();

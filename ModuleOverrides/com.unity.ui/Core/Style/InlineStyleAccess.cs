@@ -751,9 +751,8 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                RemoveInlineStyle(StylePropertyId.Cursor);
                 m_HasInlineCursor = false;
-                return m_HasInlineCursor;
+                return RemoveInlineStyle(StylePropertyId.Cursor);
             }
 
             m_InlineCursor = styleCursor;
@@ -789,9 +788,8 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                RemoveInlineStyle(StylePropertyId.TextShadow);
                 m_HasInlineTextShadow = false;
-                return m_HasInlineTextShadow;
+                return RemoveInlineStyle(StylePropertyId.TextShadow);
             }
 
             m_InlineTextShadow = styleTextShadow;
@@ -840,9 +838,8 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                RemoveInlineStyle(StylePropertyId.TransformOrigin);
                 m_HasInlineTransformOrigin = false;
-                return m_HasInlineTransformOrigin;
+                return RemoveInlineStyle(StylePropertyId.TransformOrigin);
             }
 
             m_InlineTransformOrigin = inlineValue;
@@ -892,9 +889,8 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                RemoveInlineStyle(StylePropertyId.Translate);
                 m_HasInlineTranslate = false;
-                return m_HasInlineTranslate;
+                return RemoveInlineStyle(StylePropertyId.Translate);
             }
 
             m_InlineTranslateOperation = inlineValue;
@@ -942,9 +938,9 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                RemoveInlineStyle(StylePropertyId.Scale);
+
                 m_HasInlineScale = false;
-                return m_HasInlineScale;
+                return RemoveInlineStyle(StylePropertyId.Scale);
             }
 
             m_InlineScale = inlineValue;
@@ -994,9 +990,8 @@ namespace UnityEngine.UIElements
 
             if (inlineValue.keyword == StyleKeyword.Null)
             {
-                RemoveInlineStyle(StylePropertyId.Rotate);
                 m_HasInlineRotate = false;
-                return m_HasInlineRotate;
+                return RemoveInlineStyle(StylePropertyId.Rotate);
             }
 
             m_InlineRotateOperation = inlineValue;
