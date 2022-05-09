@@ -150,6 +150,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
+        private string PrependProtocolIfNotPresent(string url)
+        {
+            if (!url.StartsWith("http:") && !url.StartsWith("https:"))
+                return "http:" + url;
+            return url;
+        }
+
         private List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)
         {
             int imageLimit = 3;
@@ -163,15 +170,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 mainImageThumbnailUrl = mainImageThumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
 
-                var imageUrl = "http:" +  mainImageDictionary.GetString("big");
-
-                result.Add(new PackageImage
+                var mainImageBig = mainImageDictionary.GetString("big");
+                var mainImageBig_v2 = mainImageDictionary.GetString("big_v2");
+                var imageUrl = !string.IsNullOrEmpty(mainImageBig) ?  mainImageBig : mainImageBig_v2;
+                if (!string.IsNullOrEmpty(imageUrl))
                 {
-                    type = PackageImage.ImageType.Main,
-                    thumbnailUrl = "http:" + mainImageThumbnailUrl,
-                    url = imageUrl
-                });
-                ++imagesLoaded;
+                    result.Add(new PackageImage
+                    {
+                        type = PackageImage.ImageType.Main,
+                        thumbnailUrl = PrependProtocolIfNotPresent(mainImageThumbnailUrl),
+                        url = PrependProtocolIfNotPresent(imageUrl)
+                    });
+                    ++imagesLoaded;
+                }
             }
 
             var images = productDetail.GetList<IDictionary<string, object>>("images") ?? Enumerable.Empty<IDictionary<string, object>>();
@@ -197,14 +208,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     imageType = PackageImage.ImageType.Vimeo;
 
                 var imageUrl = image.GetString("imageUrl");
-                if (imageType == PackageImage.ImageType.Screenshot)
-                    imageUrl = "http:" + imageUrl;
+                if (string.IsNullOrEmpty(imageUrl))
+                    continue;
 
                 result.Add(new PackageImage
                 {
                     type = imageType,
-                    thumbnailUrl = "http:" + thumbnailUrl,
-                    url = imageUrl
+                    thumbnailUrl = PrependProtocolIfNotPresent(thumbnailUrl),
+                    url = imageType == PackageImage.ImageType.Screenshot ? PrependProtocolIfNotPresent(imageUrl) : imageUrl
                 });
                 ++imagesLoaded;
             }

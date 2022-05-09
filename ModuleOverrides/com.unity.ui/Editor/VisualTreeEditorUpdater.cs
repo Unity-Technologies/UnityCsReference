@@ -96,10 +96,7 @@ namespace UnityEditor.UIElements
             for (int i = 0; i < (int)VisualTreeEditorUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
-                using (updater.profilerMarker.Auto())
-                {
-                    updater.OnVersionChanged(ve, versionChangeType);
-                }
+                updater.OnVersionChanged(ve, versionChangeType);
             }
         }
 

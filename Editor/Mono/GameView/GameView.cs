@@ -512,13 +512,14 @@ namespace UnityEditor
         {
             // Should only update the game view size if it's in Aspect Ratio mode, otherwise
             // we keep the static size
-            if (currentGameViewSize.sizeType != GameViewSizeType.AspectRatio)
-                return;
 
             Rect viewInWindow = GetViewInWindow(pos);
             Rect viewPixelRect = GetViewPixelRect(viewInWindow);
             var newTargetSize =
                 GameViewSizes.GetRenderTargetSize(viewPixelRect, currentSizeGroupType, selectedSizeIndex, out m_TargetClamped);
+
+            if (newTargetSize == GetDisplayViewSize(targetDisplay) && currentGameViewSize.sizeType != GameViewSizeType.AspectRatio)
+                return;
             SetDisplayViewSize(targetDisplay, new Vector2(newTargetSize.x, newTargetSize.y));
             UpdateZoomAreaAndParent();
         }

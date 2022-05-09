@@ -1132,6 +1132,13 @@ namespace UnityEditor
                 m_Parent.SetDisplayViewSize(displayId, targetSize);
         }
 
+        internal Vector2 GetDisplayViewSize(int displayId)
+        {
+            if (m_Parent != null)
+               return m_Parent.GetDisplayViewSize(displayId);
+            return new Vector2(640, 480);
+        }
+
         internal void SetPlayModeView(bool value)
         {
             m_IsPlayModeView = value;
