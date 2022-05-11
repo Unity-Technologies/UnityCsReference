@@ -1205,7 +1205,7 @@ namespace UnityEngine
             int i = 0;
             foreach (object obj in args)
             {
-                if (obj is System.String || obj is AndroidJavaRunnable || obj is System.Array)
+                if (obj is System.String || obj is AndroidJavaRunnable || obj is AndroidJavaProxy || obj is System.Array)
                     AndroidJNISafe.DeleteLocalRef(jniArgs[i].l);
 
                 ++i;

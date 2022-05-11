@@ -8,7 +8,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEditor.Compilation;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.Modules
@@ -151,38 +151,40 @@ namespace UnityEditor.Modules
             return Path.GetFileName(imp.assetPath);
         }
 
-        protected Dictionary<string, List<PluginImporter>> GetCompatiblePlugins(string buildTargetName)
+        private static bool IsPluginDefinesCompatible(PluginImporter pluginImporter, string buildTargetName, string[] defines)
         {
-            var assemblies = CompilationPipeline.GetAssemblies();
-            var assemblyDefines = new Dictionary<string, string[]>(assemblies.Length);
-            foreach (var assembly in assemblies)
-            {
-                assemblyDefines.Add(assembly.name, assembly.defines);
-            }
+            var defineConstraints = pluginImporter.DefineConstraints;
+            return DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, defineConstraints);
+        }
 
-            IEnumerable<PluginImporter> plugins = PluginImporter.GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(buildTargetName) && imp.IsCompatibleWithDefines(assemblyDefines.ContainsKey(imp.name) ? assemblyDefines[imp.name] : null));
-            Dictionary<string, List<PluginImporter>> matchingPlugins = new Dictionary<string, List<PluginImporter>>();
+        protected Dictionary<string, List<PluginImporter>> GetCompatiblePlugins(string buildTargetName, string[] defines)
+        {
+            var pluginImporters = PluginImporter.GetImporters(buildTargetName);
+            var plugins = pluginImporters
+                .Where(pluginImporter => IsPluginDefinesCompatible(pluginImporter, buildTargetName, defines));
 
+            var matchingPlugins = new Dictionary<string, List<PluginImporter>>();
             foreach (var plugin in plugins)
             {
                 string finalPluginPath = CalculateFinalPluginPath(buildTargetName, plugin);
                 if (string.IsNullOrEmpty(finalPluginPath))
                     continue;
 
-                List<PluginImporter> temp = null;
-                if (matchingPlugins.TryGetValue(finalPluginPath, out temp) == false)
+                List<PluginImporter> pluginsList;
+                if (!matchingPlugins.TryGetValue(finalPluginPath, out pluginsList))
                 {
-                    temp = new List<PluginImporter>();
-                    matchingPlugins[finalPluginPath] = temp;
+                    pluginsList = new List<PluginImporter>();
+                    matchingPlugins[finalPluginPath] = pluginsList;
                 }
-                temp.Add(plugin);
+                pluginsList.Add(plugin);
             }
+
             return matchingPlugins;
         }
 
-        public virtual bool CheckFileCollisions(string buildTargetName)
+        public virtual bool CheckFileCollisions(string buildTargetName, string[] defineConstraints)
         {
-            Dictionary<string, List<PluginImporter>> matchingPlugins = GetCompatiblePlugins(buildTargetName);
+            Dictionary<string, List<PluginImporter>> matchingPlugins = GetCompatiblePlugins(buildTargetName, defineConstraints);
 
             bool foundCollisions = false;
 
