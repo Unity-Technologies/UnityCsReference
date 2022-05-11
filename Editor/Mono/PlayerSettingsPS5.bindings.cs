@@ -9,6 +9,17 @@ using System.Runtime.CompilerServices;
 
 namespace UnityEditor
 {
+
+    public enum PS5VRRSupport
+    {
+        /// Disabled but end users can override in the system software for unsupported titles.
+        Disabled,
+        /// Forced Disabled, even if end users select to force it on it will NOT be enabled.
+        ForceDisabled,
+        /// Enabled with type A behaviour. 60Hz titles can do 48Hz-60Hz. 120Hz titles can do 48Hz-120Hz. Enable every other v-blank mode for a 60Hz display mode title targeting 30Hz to allow 27Hz-30Hz.
+        EnabledTypeA
+    }
+
     public sealed partial class PlayerSettings
     {
         [NativeHeader("Runtime/Misc/PlayerSettings.h")]
@@ -69,6 +80,17 @@ namespace UnityEditor
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }
             [NativeProperty("ps5OperatingSystemCanDisableSplashScreen", false, TargetType.Field)] extern public static bool operatingSystemCanDisableSplashScreen { get; set; }
+
+
+            [NativeProperty("ps5VrrSupport")]
+            private extern static int  vrrSupportInternal { get; set; }
+
+            public static PS5VRRSupport  vrrSupport
+            {
+                get { return (PS5VRRSupport )vrrSupportInternal; }
+                set { vrrSupportInternal = (int)value; }
+            }
+
         }
     }
 }

@@ -353,7 +353,7 @@ namespace UnityEditor.Modules
 
         // Called before building the player, checks if plugins don't overwrite each other
         string CalculateFinalPluginPath(string buildTargetName, PluginImporter imp);
-        bool CheckFileCollisions(string buildTargetName);
+        bool CheckFileCollisions(string buildTargetName, string[] buildDefineConstraints);
     }
 
     internal struct BuildLaunchPlayerArgs

@@ -11,7 +11,7 @@ namespace UnityEditorInternal
 {
     internal class PluginsHelper
     {
-        public static bool CheckFileCollisions(BuildTarget buildTarget)
+        public static bool CheckFileCollisions(BuildTarget buildTarget, string[] defineConstraints)
         {
             // Checks that plugins don't collide with each other
             IPluginImporterExtension pluginImporterExtension = null;
@@ -26,7 +26,7 @@ namespace UnityEditorInternal
                     pluginImporterExtension = new DefaultPluginImporterExtension(null);
             }
 
-            if (pluginImporterExtension.CheckFileCollisions(BuildPipeline.GetBuildTargetName(buildTarget)))
+            if (pluginImporterExtension.CheckFileCollisions(BuildPipeline.GetBuildTargetName(buildTarget), defineConstraints))
                 return true;
 
             return false;
