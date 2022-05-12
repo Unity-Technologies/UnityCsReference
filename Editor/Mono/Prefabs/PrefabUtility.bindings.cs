@@ -63,6 +63,9 @@ namespace UnityEditor
         extern internal static int GetPrefabInstanceUnusedRemovedComponentCount_Internal(GameObject gameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static int GetPrefabInstanceUnusedRemovedGameObjectCount_Internal([NotNull] GameObject gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static string TryGetCurrentPropertyPathFromOldPropertyPath_Internal(GameObject gameObject, Object target, string propertyPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
@@ -299,6 +302,14 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
         extern static void SetRemovedComponents([NotNull] Object prefabInstance, [NotNull] Component[] removedComponents);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern internal static GameObject[] GetRemovedGameObjects([NotNull] Object prefabInstance);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern static void SetRemovedGameObjects([NotNull] Object prefabInstance, [NotNull] GameObject[] removedGameObjects);
 
         // Returns true if the object is part of a any type of prefab, asset or instance
         [FreeFunction]

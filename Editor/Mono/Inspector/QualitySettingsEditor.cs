@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor.Build;
 using System.Linq;
+using UnityEditor.Build;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -472,6 +472,27 @@ namespace UnityEditor
             }
         }
 
+        static List<string> s_PlatformsWithDifferentRPAssets = new();
+
+        void CheckSameRenderPipelineAssetForOverridenQualityLevels()
+        {
+            s_PlatformsWithDifferentRPAssets.Clear();
+
+            foreach (var platform in m_ValidPlatforms)
+            {
+                var buildTarget = BuildPipeline.GetBuildTargetByName(platform.namedBuildTarget.TargetName);
+                var buildTargetGroupName = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+
+                if (!QualitySettings.SamePipelineAssetsForPlatform(buildTargetGroupName))
+                    s_PlatformsWithDifferentRPAssets.Add(platform.title.ToString());
+            }
+
+            if (s_PlatformsWithDifferentRPAssets.Any())
+            {
+                EditorGUILayout.HelpBox($"The following platforms have assets in its associated Quality levels that belong to different render pipelines: {string.Join(", ", s_PlatformsWithDifferentRPAssets)}", MessageType.Error);
+            }
+        }
+
         public override void OnInspectorGUI()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -531,6 +552,8 @@ namespace UnityEditor
             var resolutionScalingFixedDPIFactorProperty = currentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
 
             var customRenderPipeline = currentSettings.FindPropertyRelative("customRenderPipeline");
+
+            CheckSameRenderPipelineAssetForOverridenQualityLevels();
 
             bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
 

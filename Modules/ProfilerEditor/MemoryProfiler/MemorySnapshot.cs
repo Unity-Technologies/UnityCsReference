@@ -4,22 +4,27 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Profiling.Memory.Experimental;
+using Unity.Profiling.Memory;
 using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
-using ExperimentalMemoryProfiler = UnityEngine.Profiling.Memory.Experimental.MemoryProfiler;
+using MemoryProfilerAPI = Unity.Profiling.Memory.MemoryProfiler;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Profiling.Memory.Experimental
 {
+
+    [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
     public class PackedMemorySnapshot : IDisposable
     {
+
+        [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
         // !!!!! NOTE: Keep in sync with Runtime/Profiler/MemorySnapshots.h/.cpp
         internal enum FormatHistory : uint
         {
             SnapshotMinSupportedFormatVersion = 8, //Added metadata to file, min supported version for capture
             NativeConnectionsAsInstanceIdsVersion = 10, //native object collection reworked, added new gchandleIndex array to native objects for fast managed object access
             ProfileTargetInfoAndMemStatsVersion = 11, //added profile target info and memory summary struct
-            MemLabelSizeAndHeapIdVersion = 12 //current version, added gc heap / vm heap identification encoded within each heap address and memory label size reporting
+            MemLabelSizeAndHeapIdVersion = 12, //current version, added gc heap / vm heap identification encoded within each heap address and memory label size reporting
         };
 
         public static PackedMemorySnapshot Load(string path)
@@ -63,13 +68,13 @@ namespace UnityEditor.Profiling.Memory.Experimental
             byte[] metaDataBytes = new byte[stringDataLength + (sizeof(int) * 3)]; // add space for serializing the lengths of the strings
 
             int offset = 0;
-            offset = ExperimentalMemoryProfiler.WriteIntToByteArray(metaDataBytes, offset, content.Length);
-            offset = ExperimentalMemoryProfiler.WriteStringToByteArray(metaDataBytes, offset, content);
+            offset = MemoryProfilerAPI.WriteIntToByteArray(metaDataBytes, offset, content.Length);
+            offset = MemoryProfilerAPI.WriteStringToByteArray(metaDataBytes, offset, content);
 
-            offset = ExperimentalMemoryProfiler.WriteIntToByteArray(metaDataBytes, offset, platform.Length);
-            offset = ExperimentalMemoryProfiler.WriteStringToByteArray(metaDataBytes, offset, platform);
+            offset = MemoryProfilerAPI.WriteIntToByteArray(metaDataBytes, offset, platform.Length);
+            offset = MemoryProfilerAPI.WriteStringToByteArray(metaDataBytes, offset, platform);
 
-            offset = ExperimentalMemoryProfiler.WriteIntToByteArray(metaDataBytes, offset, 0);
+            offset = MemoryProfilerAPI.WriteIntToByteArray(metaDataBytes, offset, 0);
 
             // Write metadata
             writer.WriteEntryArray(EntryType.Metadata_UserMetadata, metaDataBytes);
@@ -240,32 +245,16 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 return m_Reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
             }
         }
-        public MetaData metadata
+
+        // No replacement. This was experimental API and being able to access the MetaData is not critical
+        [Obsolete("PackedMemorySnapshot.metadata has been deprecated")]
+        public MemorySnapshotMetadata metadata
         {
             get
             {
-                byte[] array = m_Reader.GetDataSingle(EntryType.Metadata_UserMetadata, ConversionFunctions.ToByteArray);
-                // decoded as
-                //   content_data_length
-                //   content_data
-                //   platform_data_length
-                //   platform_data
-                var data = new UnityEngine.Profiling.Memory.Experimental.MetaData();
-
-                if (array.Length == 0)
-                {
-                    data.content = "";
-                    data.platform = "";
-                    return data;
-                }
-
-                int offset = 0;
-                int dataLength = 0;
-                offset = ReadIntFromByteArray(array, offset, out dataLength);
-                offset = ReadStringFromByteArray(array, offset, dataLength, out data.content);
-                offset = ReadIntFromByteArray(array, offset, out dataLength);
-                offset = ReadStringFromByteArray(array, offset, dataLength, out data.platform);
-
+                var data = new MemorySnapshotMetadata();
+                data.Description = "";
+                data.Data = null;
                 return data;
             }
         }
@@ -377,6 +366,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
     [Flags]
     public enum ObjectFlags
     {
@@ -385,6 +375,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         IsManager = 0x4,
     }
 
+    [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
     public static class ObjectFlagsExtensions
     {
         public static bool IsDontDestroyOnLoad(this ObjectFlags flags)
@@ -403,6 +394,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
     [Flags]
     public enum TypeFlags
     {
@@ -412,6 +404,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         kArrayRankMask = unchecked((int)0xFFFF0000)
     }
 
+    [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
     public static class TypeFlagsExtensions
     {
         public static bool IsValueType(this TypeFlags flags)
@@ -430,6 +423,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete(UnityEditor.MemoryProfiler.PackedMemorySnapshot.ObsoleteMessage)]
     public struct VirtualMachineInformation
     {
         public int pointerSize { get; internal set; }

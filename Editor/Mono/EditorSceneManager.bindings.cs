@@ -145,6 +145,10 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("IsPreviewSceneObject")]
         public extern static bool IsPreviewSceneObject(UnityEngine.Object obj);
 
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("IsAuthoringScene")]
+        internal extern static bool IsAuthoringScene(Scene scene);
+
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("ReloadScene")]

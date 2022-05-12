@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     [NativeHeader("Modules/Profiler/Public/MemorySnapshot/MemorySnapshotFileWriter.h")]
     public class MemorySnapshotFileWriter : IDisposable
     {

@@ -5,11 +5,24 @@
 using System;
 using System.IO;
 using UnityEngine;
+using Unity.Profiling.Memory;
+using MemoryProfilerAPI = Unity.Profiling.Memory.MemoryProfiler;
 
+// The entire API in this file is deprecated and will likely be removed in 2023.x.
+// A new API for taking memory snapshots exists in Unity.Profiling.Memory.MemoryProfiler.TakeSnaphshot.
+// A new API for reading the snapshots will eventually be exposed through the Memory Profiler Package (com.unity.memoryprofiler).
 namespace UnityEditor.MemoryProfiler
 {
+    // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+    // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
+    // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
+    [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler instead")]
     public static class MemorySnapshot
     {
+        // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+        // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
+        // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
+        [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
         public static event Action<PackedMemorySnapshot> OnSnapshotReceived;
 
         private static void SnapshotFinished(string path, bool result)
@@ -33,24 +46,34 @@ namespace UnityEditor.MemoryProfiler
             }
         }
 
+        // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+        // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
+        // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
+        [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
         internal static string GetTemporarySnapshotPath()
         {
             string[] s = Application.dataPath.Split('/');
             string projectName = s[s.Length - 2];
             return Path.Combine(Application.temporaryCachePath, projectName + ".snap");
         }
-
+        // Not automatically Upgradeable as the new API won't fire an event but calls a callback instead.
+        // Also that callback gets called with an "Experimental.PackedMemorySnapshot" object,
+        // not the non-experimental one that MemorySnapshot.OnSnapshotReceived uses.
+        [Obsolete("Use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead")]
         public static void RequestNewSnapshot()
         {
-            UnityEngine.Profiling.Memory.Experimental.MemoryProfiler.TakeSnapshot(GetTemporarySnapshotPath(), SnapshotFinished, UnityEngine.Profiling.Memory.Experimental.CaptureFlags.NativeObjects | UnityEngine.Profiling.Memory.Experimental.CaptureFlags.ManagedObjects);
+            MemoryProfilerAPI.TakeSnapshot(GetTemporarySnapshotPath(), SnapshotFinished, CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects);
         }
     }
 
     // Note: this snapshot is completely serializable by unity's serializer.
     // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public class PackedMemorySnapshot
     {
+        internal const string ObsoleteMessage = "This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)";
+
         [SerializeField]
         internal PackedNativeType[] m_NativeTypes = null;
 
@@ -243,6 +266,7 @@ namespace UnityEditor.MemoryProfiler
         public VirtualMachineInformation virtualMachineInformation { get { return m_VirtualMachineInformation; } }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct PackedNativeType
     {
@@ -265,6 +289,7 @@ namespace UnityEditor.MemoryProfiler
         public int nativeBaseTypeArrayIndex { get { return m_NativeBaseTypeArrayIndex; } }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct PackedNativeUnityEngineObject
     {
@@ -313,6 +338,7 @@ namespace UnityEditor.MemoryProfiler
         public UnityEngine.HideFlags hideFlags { get { return m_HideFlags; } }
         public long nativeObjectAddress { get { return m_NativeObjectAddress; } }
 
+        [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
         public enum ObjectFlags
         {
             IsDontDestroyOnLoad = 0x1,
@@ -321,6 +347,7 @@ namespace UnityEditor.MemoryProfiler
         }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct PackedGCHandle
     {
@@ -335,6 +362,7 @@ namespace UnityEditor.MemoryProfiler
         public UInt64 target { get { return m_Target; } }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct Connection
     {
@@ -354,6 +382,7 @@ namespace UnityEditor.MemoryProfiler
         public int to { get { return m_To; } set { m_To = value; } }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct MemorySection
     {
@@ -372,6 +401,7 @@ namespace UnityEditor.MemoryProfiler
         public UInt64 startAddress { get { return m_StartAddress; } }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct TypeDescription
     {
@@ -439,6 +469,7 @@ namespace UnityEditor.MemoryProfiler
         public UInt64 typeInfoAddress { get { return m_TypeInfoAddress; } }
         public int typeIndex { get { return m_TypeIndex; } }
 
+        [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
         public enum TypeFlags
         {
             kNone = 0,
@@ -448,6 +479,7 @@ namespace UnityEditor.MemoryProfiler
         }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct FieldDescription
     {
@@ -477,6 +509,7 @@ namespace UnityEditor.MemoryProfiler
         public bool isStatic { get { return m_IsStatic; } }
     }
 
+    [Obsolete(PackedMemorySnapshot.ObsoleteMessage)]
     [Serializable]
     public struct VirtualMachineInformation
     {

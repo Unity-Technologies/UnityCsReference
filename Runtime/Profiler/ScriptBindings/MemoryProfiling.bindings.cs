@@ -6,10 +6,11 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
-using UnityEngine.Profiling.Experimental;
+using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Profiling.Memory.Experimental
+namespace Unity.Profiling.Memory
 {
     [Flags]
     public enum CaptureFlags : uint
@@ -21,21 +22,21 @@ namespace UnityEngine.Profiling.Memory.Experimental
         NativeStackTraces     = 1 << 4,
     }
 
-    public class MetaData
+    public class MemorySnapshotMetadata
     {
-        [NonSerialized]
-        public string    content;
-        [NonSerialized]
-        public string    platform;
+        public string    Description { get; set; }
+        // Not part of the public API for now, but Memory Profiler Package may choose to use and expose this
+        // via unsafe code, the MetaDataInjector and extension methods.
+        internal byte[]  Data { get; set; }
     }
 
     [NativeHeader("Modules/Profiler/Runtime/MemorySnapshotManager.h")]
-    public sealed class MemoryProfiler
+    public static class MemoryProfiler
     {
         private static event Action<string, bool> m_SnapshotFinished;
         private static event Action<string, bool, DebugScreenCapture> m_SaveScreenshotToDisk;
 
-        public static event Action<MetaData>     createMetaData;
+        public static event Action<MemorySnapshotMetadata>     CreatingMetadata;
 
         static bool isCompiling = false;
         internal static void StartedCompilationCallback(object msg)
@@ -47,7 +48,6 @@ namespace UnityEngine.Profiling.Memory.Experimental
         {
             isCompiling = false;
         }
-
 
 
         [StaticAccessor("profiling::memory::GetMemorySnapshotManager()", StaticAccessorType.Dot)]
@@ -92,35 +92,42 @@ namespace UnityEngine.Profiling.Memory.Experimental
         [RequiredByNativeCode]
         static byte[] PrepareMetadata()
         {
-            if (createMetaData == null)
+            if (CreatingMetadata == null)
             {
                 return new byte[0];
             }
 
-            MetaData data = new MetaData();
-            createMetaData(data);
+            MemorySnapshotMetadata data = new MemorySnapshotMetadata();
+            data.Description = string.Empty;
+            CreatingMetadata(data);
 
-            if (data.content == null) data.content = "";
-            if (data.platform == null) data.platform = "";
+            if (data.Description == null) data.Description = "";
 
-            int contentLength = sizeof(char) * data.content.Length;
-            int platformLength = sizeof(char) * data.platform.Length;
+            int contentLength = sizeof(char) * data.Description.Length;
+            int dataLength = (data.Data == null ? 0 : data.Data.Length);
 
-            int metaDataSize = contentLength + platformLength + sizeof(int) * 3 /*content.Length + data.platform.Length*/;
+            int metaDataSize = contentLength + dataLength + sizeof(int) * 3 /*data.Description.Length + data.Data.Length*/;
 
             byte[] metaDataBytes = new byte[metaDataSize];
             // encoded as
-            //   content_data_length
-            //   content_data
-            //   platform_data_length
-            //   platform_data
+            //   description_data_length
+            //   description_data
+            //   bytearraydata_data_length
+            //   bytearraydata_data
 
             int offset = 0;
-            offset = WriteIntToByteArray(metaDataBytes, offset, data.content.Length);
-            offset = WriteStringToByteArray(metaDataBytes, offset, data.content);
+            offset = WriteIntToByteArray(metaDataBytes, offset, data.Description.Length);
+            offset = WriteStringToByteArray(metaDataBytes, offset, data.Description);
 
-            offset = WriteIntToByteArray(metaDataBytes, offset, data.platform.Length);
-            offset = WriteStringToByteArray(metaDataBytes, offset, data.platform);
+            offset = WriteIntToByteArray(metaDataBytes, offset, dataLength);
+            unsafe
+            {
+                fixed(byte* src = data.Data, dst = metaDataBytes)
+                {
+                    var start = dst + offset;
+                    UnsafeUtility.MemCpy(start, src, dataLength);
+                }
+            }
 
             return metaDataBytes;
         }
@@ -193,12 +200,12 @@ namespace UnityEngine.Profiling.Memory.Experimental
                     unsafe
                     {
                         var nonOwningNativeArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixelsPtr.ToPointer(), pixelsCount, Allocator.Persistent);
-                        debugScreenCapture.rawImageDataReference = nonOwningNativeArray;
+                        debugScreenCapture.RawImageDataReference = nonOwningNativeArray;
                     }
 
-                    debugScreenCapture.height = height;
-                    debugScreenCapture.width = width;
-                    debugScreenCapture.imageFormat = format;
+                    debugScreenCapture.Height = height;
+                    debugScreenCapture.Width = width;
+                    debugScreenCapture.ImageFormat = format;
                 }
 
                 saveScreenshotToDisk(path, result, debugScreenCapture);

@@ -206,6 +206,50 @@ namespace UnityEditor.SceneManagement
             return true;
         }
 
+        public static List<RemovedGameObject> GetRemovedGameObjects(GameObject prefabInstance)
+        {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
+            var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
+
+            // From root of asset traverse all children and detect any GameObjects that are not present on the instance object (these must be deleted)
+            var removedGameObjects = new List<RemovedGameObject>();
+            TransformVisitor transformVisitor = new TransformVisitor();
+            transformVisitor.VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, CheckForRemovedGameObjects, removedGameObjects);
+            return removedGameObjects;
+        }
+
+        // Return value indicates if caller should traverse children of the the input transform or not
+        static bool CheckForRemovedGameObjects(Transform transform, object userData)
+        {
+            // Look for removed children GameObjects of instanceGameObject
+            GameObject instanceGameObject = transform.gameObject;
+            GameObject assetGameObject = PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
+            if (assetGameObject == null)
+                return false; // skip added GameObjects
+
+            Transform assetTransform = assetGameObject.GetComponent<Transform>();
+            foreach (Transform assetChild in assetTransform)
+            {
+                bool found = false;
+                foreach (Transform instanceChild in transform)
+                {
+                    if (PrefabUtility.GetCorrespondingObjectFromSource(instanceChild.gameObject) == assetChild.gameObject)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    List<RemovedGameObject> removedGameObjects = (List<RemovedGameObject>)userData;
+                    removedGameObjects.Add(new RemovedGameObject() { parentOfRemovedGameObjectInInstance = instanceGameObject, assetGameObject = assetChild.gameObject });
+                }
+            }
+            return true;
+        }
+
         internal class AddedGameObjectUserData
         {
             public List<AddedGameObject> addedGameObjects;

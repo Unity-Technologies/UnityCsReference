@@ -9,6 +9,8 @@ using UnityEngine.Rendering;
 
 using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEngine
 {
@@ -133,6 +135,8 @@ namespace UnityEngine
 
         extern public static SkinWeights skinWeights { get; set; }
 
+        extern public static int count { [NativeName("GetQualitySettingsCount")] get; }
+
         extern public static bool streamingMipmapsActive { get; set; }
         extern public static float streamingMipmapsMemoryBudget { get; set; }
         extern public static int streamingMipmapsRenderersPerFrame { get; set; }
@@ -149,6 +153,89 @@ namespace UnityEngine
         [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }
 
         [NativeName("IsTextureResReducedOnAnyPlatform")] extern internal static bool IsTextureResReducedOnAnyPlatform();
+
+        [NativeName("IsPlatformIncluded")] extern public static bool IsPlatformIncluded(string buildTargetGroupName, int index);
+        [NativeName("IncludePlatform")] extern internal static void IncludePlatformAt(string buildTargetGroupName, int index);
+        [NativeName("ExcludePlatform")] extern internal static void ExcludePlatformAt(string buildTargetGroupName, int index);
+        public static bool TryIncludePlatformAt(string buildTargetGroupName, int index, out Exception error)
+        {
+            if (index < 0 || index >= count)
+            {
+                error = new ArgumentOutOfRangeException($"{nameof(index)} must be greater than 0 and lower than {count}");
+                return false;
+            }
+
+            error = null;
+            IncludePlatformAt(buildTargetGroupName, index);
+            return true;
+        }
+
+        public static bool TryExcludePlatformAt(string buildTargetGroupName, int index, out Exception error)
+        {
+            if (index < 0 || index >= count)
+            {
+                error = new ArgumentOutOfRangeException($"{nameof(index)} must be greater than 0 and lower than {count}");
+                return false;
+            }
+
+            error = null;
+            ExcludePlatformAt(buildTargetGroupName, index);
+            return true;
+        }
+
+        [NativeName("GetActiveQualityLevelsForPlatform")] extern public static int[] GetActiveQualityLevelsForPlatform(string buildTargetGroupName);
+        [NativeName("GetActiveQualityLevelsForPlatformCount")] extern public static int GetActiveQualityLevelsForPlatformCount(string buildTargetGroupName);
+
+        [NativeName("GetRenderPipelineAssetsForPlatform")] extern internal static ScriptableObject[] InternalGetRenderPipelineAssetsForPlatform(string buildTargetGroupName);
+        public static void GetRenderPipelineAssetsForPlatform<T>(string buildTargetGroupName, out HashSet<T> uniqueRenderPipelineAssets)
+            where T : RenderPipelineAsset
+        {
+            var scriptableObjects = InternalGetRenderPipelineAssetsForPlatform(buildTargetGroupName);
+            uniqueRenderPipelineAssets = new HashSet<T>(scriptableObjects.Length);
+            for (int i = 0; i < scriptableObjects.Length; ++i)
+            {
+                if (scriptableObjects[i] is T rpAsset)
+                    uniqueRenderPipelineAssets.Add(rpAsset);
+            }
+        }
+
+        public static void GetAllRenderPipelineAssetsForPlatform(string buildTargetGroupName, ref List<RenderPipelineAsset> renderPipelineAssets)
+        {
+            if (renderPipelineAssets == null)
+                renderPipelineAssets = new List<RenderPipelineAsset>();
+
+            var scriptableObjects = InternalGetRenderPipelineAssetsForPlatform(buildTargetGroupName);
+            for (int i = 0; i < scriptableObjects.Length; ++i)
+            {
+                if (scriptableObjects[i] is RenderPipelineAsset rpAsset)
+                    renderPipelineAssets.Add(rpAsset);
+                else
+                    renderPipelineAssets.Add(GraphicsSettings.defaultRenderPipeline);
+            }
+        }
+
+        static HashSet<Type> s_RenderPipelineAssetsTypes = new();
+        static List<RenderPipelineAsset> s_RenderPipelineAssets = new();
+
+        internal static bool SamePipelineAssetsForPlatform(string buildTargetGroupName)
+        {
+            s_RenderPipelineAssetsTypes.Clear();
+            s_RenderPipelineAssets.Clear();
+
+            GetAllRenderPipelineAssetsForPlatform(buildTargetGroupName, ref s_RenderPipelineAssets);
+            if (!s_RenderPipelineAssets.Any())
+                return true;
+
+            for (int i = 0; i < s_RenderPipelineAssets.Count; i++)
+            {
+                if (s_RenderPipelineAssets[i] != null)
+                    s_RenderPipelineAssetsTypes.Add(s_RenderPipelineAssets[i].GetType());
+                else
+                    s_RenderPipelineAssetsTypes.Add(null);
+            }
+
+            return s_RenderPipelineAssetsTypes.Count == 1;
+        }
     }
 
     // both desiredColorSpace/activeColorSpace should be deprecated

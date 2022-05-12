@@ -72,11 +72,13 @@ namespace UnityEditor
             List<AddedComponent> m_AddedComponents = new List<AddedComponent>();
             List<RemovedComponent> m_RemovedComponents = new List<RemovedComponent>();
             List<AddedGameObject> m_AddedGameObjects = new List<AddedGameObject>();
+            List<RemovedGameObject> m_RemovedGameObjects = new List<RemovedGameObject>();
 
             public List<ObjectOverride> objectOverrides { get { return m_ObjectOverrides; } set { m_ObjectOverrides = value; } }
             public List<AddedComponent> addedComponents { get { return m_AddedComponents; } set { m_AddedComponents = value; } }
             public List<RemovedComponent> removedComponents { get { return m_RemovedComponents; } set { m_RemovedComponents = value; } }
             public List<AddedGameObject> addedGameObjects { get { return m_AddedGameObjects; } set { m_AddedGameObjects = value; } }
+            public List<RemovedGameObject> removedGameObjects { get { return m_RemovedGameObjects; } set { m_RemovedGameObjects = value; } }
         }
 
         static PrefabOverrides GetPrefabOverrides(GameObject prefabInstance, bool includeDefaultOverrides = false)
@@ -92,6 +94,7 @@ namespace UnityEditor
             mods.addedComponents = PrefabOverridesUtility.GetAddedComponents(prefabInstance);
             mods.removedComponents = PrefabOverridesUtility.GetRemovedComponents(prefabInstance);
             mods.addedGameObjects = PrefabOverridesUtility.GetAddedGameObjects(prefabInstance);
+            mods.removedGameObjects = PrefabOverridesUtility.GetRemovedGameObjects(prefabInstance);
             return mods;
         }
 
@@ -163,6 +166,13 @@ namespace UnityEditor
                 modificationsForObject.addedGameObjects.Add(addedGameObject);
             }
 
+            foreach (var removedGameObject in m_AllModifications.removedGameObjects)
+            {
+                int instanceID = removedGameObject.parentOfRemovedGameObjectInInstance.gameObject.GetInstanceID();
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(instanceID, instanceIDToPrefabOverridesMap);
+                modificationsForObject.removedGameObjects.Add(removedGameObject);
+            }
+
             foreach (var addedComponent in m_AllModifications.addedComponents)
             {
                 // This is possible if there's a component with a missing script.
@@ -231,7 +241,7 @@ namespace UnityEditor
             {
                 bool CanAnyPropertiesBeApplied()
                 {
-                    if (m_AllModifications.addedComponents.Count != 0 || m_AllModifications.removedComponents.Count != 0 || m_AllModifications.addedGameObjects.Count != 0)
+                    if (m_AllModifications.addedComponents.Count != 0 || m_AllModifications.removedComponents.Count != 0 || m_AllModifications.addedGameObjects.Count != 0 || m_AllModifications.removedGameObjects.Count != 0)
                         return true;
 
                     foreach (var objectOverride in m_AllModifications.objectOverrides)
@@ -257,6 +267,8 @@ namespace UnityEditor
             var debugItem = new TreeViewItem(idSequence.get(), 0, "<Debug raw list of modifications>");
             foreach (var mod in m_AllModifications.addedGameObjects)
                 debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.instanceGameObject.name + " (Added GameObject)"));
+            foreach (var mod in m_AllModifications.removedGameObjects)
+                debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.assetGameObject.name + " (Removed GameObject)"));
             foreach (var mod in m_AllModifications.addedComponents)
                 debugItem.AddChild(new TreeViewItem(idSequence.get(), debugItem.depth + 1, mod.instanceComponent.GetType() + " (Added Component)"));
             foreach (var mod in m_AllModifications.removedComponents)
@@ -386,6 +398,36 @@ namespace UnityEditor
             {
                 var childGameObject = childTransform.gameObject;
                 shouldAddGameObjectItemToParent |= AddTreeViewItemRecursive(gameObjectItem, childGameObject, prefabOverrideMap, idSequence);
+            }
+
+            if (objectModifications != null)
+            {
+                // Removed GameObjects
+                foreach (var removedGameObject in objectModifications.removedGameObjects)
+                {
+                    string objectName = removedGameObject.assetGameObject.name;
+                    var instanceModifications = PrefabUtility.GetPropertyModifications(gameObject);
+                    foreach (var mod in instanceModifications)
+                    {
+                        if (mod.target == removedGameObject.assetGameObject && mod.propertyPath == "m_Name")
+                        {
+                            objectName = mod.value;
+                            break;
+                        }
+                    }
+
+                    var removedGameObjectItem = new PrefabOverridesTreeViewItem
+                        (
+                        idSequence.get(),
+                        gameObjectItem.depth + 1,
+                        objectName
+                        );
+                    removedGameObjectItem.obj = removedGameObject.assetGameObject;
+                    removedGameObjectItem.singleModification = removedGameObject;
+                    removedGameObjectItem.type = ItemType.REMOVED_OBJECT;
+                    gameObjectItem.AddChild(removedGameObjectItem);
+                    shouldAddGameObjectItemToParent = true;
+                }
             }
 
             if (shouldAddGameObjectItemToParent)

@@ -427,6 +427,16 @@ namespace UnityEditor.Search
             }
         }
 
+        static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
+        {
+            var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
+            var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
+            var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
+            orderedSearchEngines.AddRange(overrides);
+            return orderedSearchEngines;
+        }
+
+
         static void DrawAdvancedObjectSelectorsSettings()
         {
             using (new EditorGUILayout.VerticalScope())
@@ -483,11 +493,6 @@ namespace UnityEditor.Search
             if (selector == null)
                 return new ObjectSelectorsSettings();
             return GetObjectSelectorSettings(selector);
-        }
-
-        internal static bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
-        {
-            return objectSelectors.TryGetValue(selectorId, out settings);
         }
 
         static void ResetObjectSelectorSettings()
@@ -552,15 +557,10 @@ namespace UnityEditor.Search
             }
         }
 
-        static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
+        internal static bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
         {
-            var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
-            var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
-            var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
-            orderedSearchEngines.AddRange(overrides);
-            return orderedSearchEngines;
+            return objectSelectors.TryGetValue(selectorId, out settings);
         }
-
 
         private static void DrawSearchSettings(string searchContext)
         {

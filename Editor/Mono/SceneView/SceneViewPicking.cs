@@ -20,11 +20,12 @@ namespace UnityEditor
     // Example: Scene from back to front (visually): Panel(base), Label, Image, Button(base), Image2, Label2
     // Selection order: Button, Label2, Image2, Image, Label, Panel, goto start
 
-    internal class SceneViewPicking
+    class SceneViewPicking
     {
-        private static bool s_RetainHashes = false;
-        private static int s_PreviousTopmostHash = 0;
-        private static int s_PreviousPrefixHash = 0;
+        static bool s_RetainHashes = false;
+        static int s_PreviousTopmostHash = 0;
+        static int s_PreviousPrefixHash = 0;
+        static List<PickingObject> s_ActiveObjectFilter = new List<PickingObject>(1);
 
         static SceneViewPicking()
         {
@@ -42,23 +43,26 @@ namespace UnityEditor
             s_RetainHashes = false;
         }
 
-        public static GameObject PickGameObject(Vector2 mousePosition)
+        public static PickingObject PickGameObject(Vector2 mousePosition)
         {
             s_RetainHashes = true;
 
             var enumerator = GetAllOverlapping(mousePosition).GetEnumerator();
 
             if (!enumerator.MoveNext())
-                return null;
+                return PickingObject.Empty;
 
-            var topmost = enumerator.Current;
-            // Selection base is only interesting if it's not the topmost or if it's part of a prefab
-            var selectionBase = HandleUtility.FindSelectionBaseForPicking(topmost);
-            var first = (selectionBase == null ? topmost : selectionBase);
+            PickingObject topmost = enumerator.Current;
+            var pickingBase = topmost.TryGetComponent(out Transform trs)
+                ? HandleUtility.FindSelectionBaseForPicking(trs)
+                : null;
+            // Selection base is only interesting if it's not the topmost
+            PickingObject selectionBase = new PickingObject(pickingBase);
+            PickingObject first = selectionBase.target == null ? topmost : selectionBase;
             int topmostHash = topmost.GetHashCode();
             int prefixHash = topmostHash;
 
-            if (Selection.activeGameObject == null)
+            if (Selection.activeObject == null)
             {
                 // Nothing selected
                 // Return selection base if it exists, otherwise topmost game object
@@ -73,13 +77,13 @@ namespace UnityEditor
                 // Return selection base if exists and is not already selected, otherwise topmost game object
                 s_PreviousTopmostHash = topmostHash;
                 s_PreviousPrefixHash = prefixHash;
-                return (Selection.activeGameObject == selectionBase ? topmost : first);
+                return Selection.activeObject == selectionBase.target ? topmost : first;
             }
 
             s_PreviousTopmostHash = topmostHash;
 
             // Pick potential selection base before topmost game object
-            if (Selection.activeGameObject == selectionBase)
+            if (Selection.activeObject == selectionBase.target)
             {
                 if (prefixHash == s_PreviousPrefixHash)
                     return topmost;
@@ -87,12 +91,16 @@ namespace UnityEditor
                 return selectionBase;
             }
 
+            s_ActiveObjectFilter.Clear();
+            s_ActiveObjectFilter.Add((PickingObject)Selection.activeObject);
+
             // Check if active game object will appear in selection stack
-            var picked = HandleUtility.PickGameObject(mousePosition, false, null, new GameObject[] { Selection.activeGameObject });
-            if (picked == Selection.activeGameObject)
+            PickingObject picked = HandleUtility.PickObject(mousePosition, false, null, s_ActiveObjectFilter);
+
+            if (picked == ((PickingObject)Selection.activeObject))
             {
                 // Advance enumerator to active game object
-                while (enumerator.Current != Selection.activeGameObject)
+                while (enumerator.Current != ((PickingObject)Selection.activeObject))
                 {
                     if (!enumerator.MoveNext())
                     {
@@ -137,31 +145,40 @@ namespace UnityEditor
         }
 
         // Use picking system to get us ordered list of all visually overlapping gameobjects in screen position from top to bottom
-        private static IEnumerable<GameObject> GetAllOverlapping(Vector2 position)
+        static IEnumerable<PickingObject> GetAllOverlapping(Vector2 position)
         {
-            var allOverlapping = new List<GameObject>();
-            var ignoreList = new List<GameObject>();
+            var allOverlapping = new List<PickingObject>();
+            var ignoreList = new List<PickingObject>();
 
             while (true)
             {
-                var go = HandleUtility.PickGameObject(position, false, ignoreList.ToArray());
-                if (go == null)
+                PickingObject res = HandleUtility.PickObject(position, false, ignoreList, null);
+
+                if (res.target == null)
                     break;
-                // Prevent infinite loop if game object cannot be ignored when picking (This needs to fixed so print an error)
-                if (allOverlapping.Count > 0 && go == allOverlapping.Last())
+
+                if (res.TryGetGameObject(out var go) && SceneVisibilityManager.instance.IsPickingDisabled(go))
                 {
-                    Debug.LogError("GetAllOverlapping failed, could not ignore game object '" + go.name + "' when picking");
+                    ignoreList.Add(res);
+                    continue;
+                }
+
+                // Prevent infinite loop if object cannot be ignored (this needs to be fixed so print an error)
+                if (allOverlapping.Count > 0 && res == allOverlapping.Last())
+                {
+                    Debug.LogError($"GetAllOverlapping failed, could not ignore game object '{res}' when picking");
                     break;
                 }
 
-                yield return go;
+                allOverlapping.Add(res);
+                ignoreList.Add(res);
 
-                allOverlapping.Add(go);
-                ignoreList.Add(go);
+                yield return res;
+
             }
         }
 
-        private static void UpdateHash(ref int hash, object obj)
+        static void UpdateHash(ref int hash, PickingObject obj)
         {
             hash = unchecked(hash * 33 + obj.GetHashCode());
         }

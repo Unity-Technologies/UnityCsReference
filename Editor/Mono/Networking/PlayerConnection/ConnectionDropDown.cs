@@ -704,8 +704,8 @@ namespace UnityEditor.Networking.PlayerConnection
             rect.y += ConnectionDropDownStyles.troubleShootBtnPadding / 2f;
             if (EditorGUI.Button(rect, Content.TroubleShoot, ConnectionDropDownStyles.sConnectionTrouble))
             {
-                var version = $"{Application.unityVersionVer}.{Application.unityVersionMaj}";
-                Application.OpenURL($"https://docs.unity3d.com/{version}/Documentation/Manual/profiler-profiling-applications.html");
+                var help = Help.FindHelpNamed("profiler-profiling-applications");
+                Application.OpenURL(help);
             }
 
             if(Event.current.type == EventType.MouseMove)

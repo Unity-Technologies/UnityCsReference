@@ -673,6 +673,8 @@ namespace UnityEditor.Overlays
                     data.index = attrib.defaultDockIndex;
                     data.dockPosition = attrib.defaultDockPosition;
                     data.floating = attrib.defaultDockZone == DockZone.Floating;
+                    data.snapOffset = new Vector2(48, 48);
+                    data.snapCorner = SnapCorner.TopLeft;
                     data.layout = attrib.defaultLayout;
                     data.displayed = attrib.defaultDisplay;
                 }

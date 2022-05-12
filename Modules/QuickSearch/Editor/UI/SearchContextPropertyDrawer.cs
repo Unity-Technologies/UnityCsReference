@@ -6,12 +6,15 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Search;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
     [CustomPropertyDrawer(typeof(SearchContextAttribute))]
     sealed class SearchContextPropertyDrawer : PropertyDrawer
     {
+        static readonly string kVisualElementName = "SearchContext";
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var searchContextAttribute = (SearchContextAttribute)attribute;
@@ -19,6 +22,23 @@ namespace UnityEditor.Search
             var searchContextFlags = searchContextAttribute.flags;
             var context = CreateContextFromAttribute(searchContextAttribute);
             ObjectField.DoObjectField(position, property, objType, label, context, searchContextFlags);
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty prop)
+        {
+            var searchContextAttribute = (SearchContextAttribute)attribute;
+
+            ObjectField obj = new ObjectField()
+            {
+                name = kVisualElementName,
+                label = prop.localizedDisplayName,
+                bindingPath = prop.propertyPath,
+                objectType = fieldInfo.FieldType,
+                searchViewFlags = searchContextAttribute.flags,
+                searchContext = CreateContextFromAttribute(searchContextAttribute)
+            };
+
+            return obj;
         }
 
         static SearchContext CreateContextFromAttribute(SearchContextAttribute attribute)

@@ -11,6 +11,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Profiling.Memory.Experimental
 {
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class ArrayEntries<T>
     {
         internal MemorySnapshotFileReader m_Reader;
@@ -51,6 +52,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     internal class ByteArrayEntries : ArrayEntries<byte[]>
     {
         public ByteArrayEntries(MemorySnapshotFileReader reader, EntryType entryType)
@@ -64,6 +66,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class ConnectionEntries
     {
         public ArrayEntries<int> from { get; }
@@ -81,6 +84,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class GCHandleEntries
     {
         public ArrayEntries<ulong> target { get; }
@@ -96,6 +100,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class ManagedMemorySectionEntries
     {
         public ArrayEntries<byte[]> bytes { get; }
@@ -121,6 +126,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeObjectEntries
     {
         public ArrayEntries<string> objectName { get; }
@@ -155,6 +161,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeTypeEntries
     {
         public ArrayEntries<string> typeName { get; }
@@ -172,6 +179,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class TypeDescriptionEntries
     {
         public ArrayEntries<TypeFlags> flags { get; }
@@ -203,6 +211,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class FieldDescriptionEntries
     {
         public ArrayEntries<string> fieldDescriptionName { get; }
@@ -224,6 +233,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeMemoryLabelEntries
     {
         public ArrayEntries<string> memoryLabelName { get; }
@@ -239,6 +249,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeRootReferenceEntries
     {
         public ArrayEntries<long> id { get; }
@@ -260,6 +271,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeAllocationEntries
     {
         public ArrayEntries<int> memoryRegionIndex { get; }
@@ -287,6 +299,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeMemoryRegionEntries
     {
         public ArrayEntries<string> memoryRegionName { get; }
@@ -312,6 +325,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeAllocationSiteEntries
     {
         public ArrayEntries<long> id { get; }
@@ -331,6 +345,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     public class NativeCallstackSymbolEntries
     {
         public ArrayEntries<ulong> symbol { get; }
@@ -348,6 +363,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     internal class ConversionFunctions
     {
         public static VirtualMachineInformation ToVirtualMachineInformation(byte[] data, uint startIndex, uint numBytes)

@@ -43,6 +43,8 @@ namespace UnityEditor
         private SerializedProperty m_ExcludeLayers;
         private SerializedProperty m_ForceSendLayers;
         private SerializedProperty m_ForceReceiveLayers;
+        private SerializedProperty m_ContactCaptureLayers;
+        private SerializedProperty m_CallbackLayers;
 
         private readonly AnimBool m_ShowCompositeRedundants = new AnimBool();
 
@@ -76,6 +78,8 @@ namespace UnityEditor
             m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
             m_ForceSendLayers = serializedObject.FindProperty("m_ForceSendLayers");
             m_ForceReceiveLayers = serializedObject.FindProperty("m_ForceReceiveLayers");
+            m_ContactCaptureLayers = serializedObject.FindProperty("m_ContactCaptureLayers");
+            m_CallbackLayers = serializedObject.FindProperty("m_CallbackLayers");
 
             m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
             m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
@@ -161,6 +165,11 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_ForceSendLayers);
                     EditorGUILayout.PropertyField(m_ForceReceiveLayers);
                 }
+
+                EditorGUILayout.Space();
+                EditorGUILayout.PropertyField(m_ContactCaptureLayers);
+                EditorGUILayout.PropertyField(m_CallbackLayers);
+
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
@@ -218,6 +227,9 @@ namespace UnityEditor
                 {
                     m_ContactScrollPosition = EditorGUILayout.BeginScrollView(m_ContactScrollPosition, GUILayout.Height(180));
                     EditorGUI.BeginDisabledGroup(true);
+
+                    EditorGUILayout.IntField("Contact Count", contactCount);
+                    EditorGUILayout.Space();
 
                     for (var i = 0; i < contactCount; ++i)
                     {

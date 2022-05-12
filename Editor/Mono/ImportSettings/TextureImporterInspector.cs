@@ -8,6 +8,7 @@ using UnityEditor.Build;
 using System.Collections.Generic;
 using System;
 using UnityEditor.AssetImporters;
+using UnityEngine.Experimental.Rendering;
 using Object = UnityEngine.Object;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 
@@ -1583,7 +1584,7 @@ namespace UnityEditor
             for (int i = 0; i < texFormatValues.Length; i++)
             {
                 int val = texFormatValues[i];
-                retval[i] = " " + (val < 0 ? "Auto" : TextureUtil.GetTextureFormatString((TextureFormat)val));
+                retval[i] = " " + (val < 0 ? "Auto" : GraphicsFormatUtility.GetFormatString((TextureFormat)val));
             }
             return retval;
         }
@@ -1678,7 +1679,7 @@ namespace UnityEditor
             for (int i = 0; i < targets.Length; i++)
             {
                 //Is preview currently Alpha-only format? Skip if not.
-                bool wasAlphaOnlyTextureFormat = textureInspector.targets[i] is Texture2D texture && TextureUtil.IsAlphaOnlyTextureFormat(texture.format);
+                bool wasAlphaOnlyTextureFormat = textureInspector.targets[i] is Texture2D texture && GraphicsFormatUtility.IsAlphaOnlyFormat(texture.format);
                 if (!wasAlphaOnlyTextureFormat)
                     continue;
 
@@ -1690,7 +1691,7 @@ namespace UnityEditor
                 TextureFormat textureFormat = textureImporterFormat == TextureImporterFormat.Automatic ? (TextureFormat)t.GetAutomaticFormat(platformName) : (TextureFormat)textureImporterFormat;
 
                 //Where the preview is no-longer alpha only, reset all previews to RGB - Note: It is not possible to mix channel selection in TextureInspector.
-                if (!TextureUtil.IsAlphaOnlyTextureFormat(textureFormat))
+                if (!GraphicsFormatUtility.IsAlphaOnlyFormat(textureFormat))
                 {
                     textureInspector.m_PreviewMode = TextureInspector.PreviewMode.RGB;
                     break;

@@ -583,7 +583,7 @@ namespace UnityEngine
             }
             // If a compressed format is not supported natively, we check for decompressor support here.
             // If we are able to decompress, the data is decoded into a raw format. Otherwise, validation fails.
-            else if (GraphicsFormatUtility.IsCompressedTextureFormat(format) && GraphicsFormatUtility.CanDecompressFormat(GraphicsFormatUtility.GetGraphicsFormat(format, false)))
+            else if (GraphicsFormatUtility.IsCompressedFormat(format) && GraphicsFormatUtility.CanDecompressFormat(GraphicsFormatUtility.GetGraphicsFormat(format, false)))
             {
                 return true;
             }

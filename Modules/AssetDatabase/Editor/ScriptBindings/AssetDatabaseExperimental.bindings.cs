@@ -10,6 +10,8 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Experimental
 {
@@ -159,6 +161,29 @@ namespace UnityEditor.Experimental
         public extern static ArtifactID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null);
         public extern static ArtifactID ForceProduceArtifact(ArtifactKey artifactKey);
 
+        extern internal static void LookupArtifacts(IntPtr guidsPtr, IntPtr hashesPtr, int len, [uei.DefaultValue("null")] Type importerType = null);
+        public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ArtifactID> hashes, Type importerType)
+        {
+            if (guids.Length != hashes.Length)
+                throw new ArgumentException("guids and hashes size mismatch!");
+
+            LookupArtifacts((IntPtr)guids.GetUnsafePtr(), (IntPtr)hashes.GetUnsafePtr(), guids.Length, importerType);
+        }
+
+        extern internal static void LookupPrimaryArtifacts(IntPtr guidsPtr, IntPtr hashesPtr, int len);
+        public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ArtifactID> hashesOut)
+        {
+            if (!guids.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(guids));
+
+            if (!hashesOut.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(hashesOut));
+
+            if (guids.Length != hashesOut.Length)
+                throw new ArgumentException("guids and hashesOut size mismatch!");
+
+            LookupPrimaryArtifacts((IntPtr)guids.GetUnsafePtr(), (IntPtr)hashesOut.GetUnsafePtr(), guids.Length);
+        }
 
         [Obsolete("GetArtifactHash() has been removed. Use LookupArtifact(), ProduceArtifact() or ForceProduceArtifact() instead.")]
         [uei.ExcludeFromDocs]

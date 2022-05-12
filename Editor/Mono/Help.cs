@@ -335,6 +335,11 @@ namespace UnityEditor
                 return "class-EditorManager";
             }
 
+            if (obj is SceneAsset)
+            {
+                return "CreatingScenes";
+            }
+
             return $"class-{obj.GetType().Name}";
         }
 

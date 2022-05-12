@@ -136,7 +136,7 @@ namespace UnityEditor.Search
                 return;
 
             var transaction = Transactions[index];
-            var date = DateTime.FromBinary(transaction.timestamp);
+            var date = DateTime.FromBinary(transaction.timestamp).ToUniversalTime();
             var assetPath = AssetDatabase.GUIDToAssetPath(transaction.guid.ToString());
 
             var dateLabel = element.Q<Label>(k_DateLabelName);

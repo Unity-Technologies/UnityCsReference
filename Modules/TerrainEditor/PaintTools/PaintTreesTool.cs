@@ -73,10 +73,35 @@ namespace UnityEditor.TerrainTools
 
     internal class PaintTreesTool : TerrainPaintTool<PaintTreesTool>
     {
+        internal const string kToolName = "Paint Trees";
         public const int kInvalidTree = -1;
+
+        static class Styles
+        {
+            // Trees
+            public static readonly GUIContent trees = EditorGUIUtility.TrTextContent("Trees");
+            public static readonly GUIContent editTrees = EditorGUIUtility.TrTextContent("Edit Trees...", "Add/remove tree types.");
+            public static readonly GUIContent treeDensity = EditorGUIUtility.TrTextContent("Tree Density", "How dense trees are you painting");
+            public static readonly GUIContent treeHeight = EditorGUIUtility.TrTextContent("Tree Height", "The height scale of the planted trees");
+            public static readonly GUIContent treeHeightRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree height (variation)");
+            public static readonly GUIContent treeHeightRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree height (variation)");
+            public static readonly GUIContent lockWidthToHeight = EditorGUIUtility.TrTextContent("Lock Width to Height", "Let the tree width scale be equal to the tree height scale");
+            public static readonly GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "The width scale of the planted trees");
+            public static readonly GUIContent treeWidthRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree width (variation)");
+            public static readonly GUIContent treeWidthRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree width (variation)");
+            public static readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees. This only works if the shader supports _TreeInstanceColor (for example, Speedtree shaders do not use this)");
+            public static readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Randomize tree rotation. This only works when the tree has an LOD group.");
+            public static readonly GUIContent treeRotationDisabled = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, so it will use the default impostor system and will not support rotation.");
+            public static readonly GUIContent treeHasChildRenderers = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, but has a hierarchy of MeshRenderers, only MeshRenderer on root GameObject in the trees hierarchy will be used. Use a tree with LOD group if you want a tree with hierarchy of MeshRenderers.");
+            public static readonly GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
+            public static readonly GUIContent treeContributeGI = EditorGUIUtility.TrTextContent("Tree Contribute Global Illumination", "The state of the Contribute GI flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the value of the flag, each tree instance receives its own light probe and no lightmap texels.");
+            public static readonly GUIContent noTreesDefined = EditorGUIUtility.TrTextContent("No trees defined.");
+        }
 
         private TreePrototype m_LastSelectedTreePrototype;
         private Terrain       m_TargetTerrain;
+
+        GUIContent[] m_TreeContents = null;
 
         public float brushSize { get; set; } = 40;
         public float spacing { get; set; } = .8f;
@@ -168,12 +193,12 @@ namespace UnityEditor.TerrainTools
                 }
             }
 
-            for (int i = 0; i < ctx.terrains.Length; ++i)
+            for (int i = 0; i < ctx.neighborTerrains.Length; ++i)
             {
-                Terrain ctxTerrain = ctx.terrains[i];
+                Terrain ctxTerrain = ctx.neighborTerrains[i];
                 if (ctxTerrain != null)
                 {
-                    Vector2 ctxUV = ctx.uvs[i];
+                    Vector2 ctxUV = ctx.neighborUvs[i];
 
                     treePrototype = PaintTreesUtils.FindTreePrototype(ctxTerrain, m_TargetTerrain, selectedTree);
                     if (treePrototype == kInvalidTree)
@@ -214,12 +239,12 @@ namespace UnityEditor.TerrainTools
         {
             PaintTreesDetailsContext ctx = PaintTreesDetailsContext.Create(terrain, editContext.uv);
 
-            for (int i = 0; i < ctx.terrains.Length; ++i)
+            for (int i = 0; i < ctx.neighborTerrains.Length; ++i)
             {
-                Terrain ctxTerrain = ctx.terrains[i];
+                Terrain ctxTerrain = ctx.neighborTerrains[i];
                 if (ctxTerrain != null)
                 {
-                    Vector2 ctxUV = ctx.uvs[i];
+                    Vector2 ctxUV = ctx.neighborUvs[i];
                     float radius = 0.5f * brushSize / ctxTerrain.terrainData.size.x;
 
                     int treePrototype = kInvalidTree;
@@ -341,12 +366,12 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return "Paint Trees";
+            return kToolName;
         }
 
         public override string GetDescription()
         {
-            return "Paints the selected tree prototype onto the terrain";
+            return "Click to paint trees.\n\nHold shift and click to erase trees.\n\nHold Ctrl and click to erase only trees of the selected type.";
         }
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
@@ -361,6 +386,179 @@ namespace UnityEditor.TerrainTools
                 PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
                 TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainBrushPreviewMode.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
+            }
+        }
+
+        void LoadTreeIcons(Terrain terrain)
+        {
+            // Locate the proto types asset preview textures
+            TreePrototype[] trees = terrain.terrainData.treePrototypes;
+
+            m_TreeContents = new GUIContent[trees.Length];
+            for (int i = 0; i < m_TreeContents.Length; i++)
+            {
+                m_TreeContents[i] = new GUIContent();
+                Texture tex = AssetPreview.GetAssetPreview(trees[i].prefab);
+                m_TreeContents[i].image = tex != null ? tex : null;
+                m_TreeContents[i].text = m_TreeContents[i].tooltip = trees[i].prefab != null ? trees[i].prefab.name : "Missing";
+            }
+        }
+
+        void ShowUpgradeTreePrototypeScaleUI(Terrain terrain)
+        {
+            if (terrain.terrainData != null && terrain.terrainData.NeedUpgradeScaledTreePrototypes())
+            {
+                var msgContent = EditorGUIUtility.TempContent(
+                    "Some of your prototypes have scaling values on the prefab. Since Unity 5.2 these scalings will be applied to terrain tree instances. Do you want to upgrade to this behaviour?",
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                GUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label(msgContent, EditorStyles.wordWrappedLabel);
+                GUILayout.Space(3);
+                if (GUILayout.Button("Upgrade", GUILayout.ExpandWidth(false)))
+                {
+                    terrain.terrainData.UpgradeScaledTreePrototype();
+                    TerrainMenus.RefreshPrototypes();
+                }
+                GUILayout.Space(3);
+                GUILayout.EndVertical();
+            }
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            LoadTreeIcons(terrain);
+
+            // Tree picker
+            GUI.changed = false;
+
+            ShowUpgradeTreePrototypeScaleUI(terrain);
+
+            GUILayout.Label(Styles.trees, EditorStyles.boldLabel);
+            selectedTree = TerrainInspector.AspectSelectionGridImageAndText(selectedTree, m_TreeContents, 64, Styles.noTreesDefined, out var doubleClick);
+
+            if (selectedTree >= m_TreeContents.Length)
+                selectedTree = PaintTreesTool.kInvalidTree;
+
+            if (doubleClick)
+            {
+                TerrainTreeContextMenus.EditTree(new MenuCommand(terrain, selectedTree));
+                GUIUtility.ExitGUI();
+            }
+
+            GUILayout.BeginHorizontal();
+            using (new EditorGUI.DisabledScope(selectedTree == PaintTreesTool.kInvalidTree))
+            {
+                if (GUILayout.Button(Styles.massPlaceTrees))
+                {
+                    TerrainMenus.MassPlaceTrees();
+                }
+            }
+            GUILayout.FlexibleSpace();
+            TerrainInspector.MenuButton(Styles.editTrees, "CONTEXT/TerrainEngineTrees", terrain, selectedTree);
+            TerrainInspector.ShowRefreshPrototypes();
+            GUILayout.EndHorizontal();
+
+            GUILayout.Label(TerrainInspector.styles.settings, EditorStyles.boldLabel);
+            // Placement distance
+            brushSize = TerrainInspectorUtility.PowerSlider(TerrainInspector.styles.brushSize, brushSize, 1, Mathf.Min(terrain.terrainData.size.x, terrain.terrainData.size.z), 4.0f);
+            float oldDens = (3.3f - spacing) / 3f;
+            float newDens = TerrainInspectorUtility.ScaledSliderWithRounding(Styles.treeDensity, oldDens, 0.1f, 1.0f, 100.0f, 1.0f);
+            // Only set spacing when value actually changes. Otherwise
+            // it will lose precision because we're constantly doing math
+            // back and forth with it.
+            if (newDens != oldDens)
+                spacing = (1.1f - newDens) * 3f;
+
+            GUILayout.Space(5);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(Styles.treeHeight, GUILayout.Width(EditorGUIUtility.labelWidth - 6));
+            GUILayout.Label(Styles.treeHeightRandomLabel, GUILayout.ExpandWidth(false));
+            allowHeightVar = GUILayout.Toggle(allowHeightVar, Styles.treeHeightRandomToggle, GUILayout.ExpandWidth(false));
+            if (allowHeightVar)
+            {
+                EditorGUI.BeginChangeCheck();
+                float min = treeHeight * (1.0f - treeHeightVariation);
+                float max = treeHeight * (1.0f + treeHeightVariation);
+                EditorGUILayout.MinMaxSlider(ref min, ref max, 0.01f, 2.0f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    treeHeight = (min + max) * 0.5f;
+                    treeHeightVariation = (max - min) / (min + max);
+                }
+            }
+            else
+            {
+                treeHeight = EditorGUILayout.Slider(treeHeight, 0.01f, 2.0f);
+                treeHeightVariation = 0.0f;
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(5);
+
+            lockWidthToHeight = EditorGUILayout.Toggle(Styles.lockWidthToHeight, lockWidthToHeight);
+
+            GUILayout.Space(5);
+
+            using (new EditorGUI.DisabledScope(lockWidthToHeight))
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(Styles.treeWidth, GUILayout.Width(EditorGUIUtility.labelWidth - 6));
+                GUILayout.Label(Styles.treeWidthRandomLabel, GUILayout.ExpandWidth(false));
+                allowWidthVar = GUILayout.Toggle(allowWidthVar, Styles.treeWidthRandomToggle, GUILayout.ExpandWidth(false));
+                if (allowWidthVar)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    float min = treeWidth * (1.0f - treeWidthVariation);
+                    float max = treeWidth * (1.0f + treeWidthVariation);
+                    EditorGUILayout.MinMaxSlider(ref min, ref max, 0.01f, 2.0f);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        treeWidth = (min + max) * 0.5f;
+                        treeWidthVariation = (max - min) / (min + max);
+                    }
+                }
+                else
+                {
+                    treeWidth = EditorGUILayout.Slider(treeWidth, 0.01f, 2.0f);
+                    treeWidthVariation = 0.0f;
+                }
+                GUILayout.EndHorizontal();
+            }
+
+            if (selectedTree == PaintTreesTool.kInvalidTree)
+                return;
+
+            GUILayout.Space(5);
+
+            GameObject prefab = terrain.terrainData.treePrototypes[selectedTree].m_Prefab;
+            string treePrototypeWarning;
+            terrain.terrainData.treePrototypes[selectedTree].Validate(out treePrototypeWarning);
+            bool isLodTreePrototype = TerrainEditorUtility.IsLODTreePrototype(prefab);
+            using (new EditorGUI.DisabledScope(!isLodTreePrototype))
+            {
+                randomRotation = EditorGUILayout.Toggle(Styles.treeRotation, randomRotation);
+            }
+
+            if (!isLodTreePrototype)
+            {
+                EditorGUILayout.HelpBox(Styles.treeRotationDisabled.text, MessageType.Info);
+            }
+
+            if (!string.IsNullOrEmpty(treePrototypeWarning))
+            {
+                EditorGUILayout.HelpBox(treePrototypeWarning, MessageType.Warning);
+            }
+
+            // TODO: we should check if the shaders assigned to this 'tree' support _TreeInstanceColor or not..  complicated check though
+            treeColorAdjustment = EditorGUILayout.Slider(Styles.treeColorVar, treeColorAdjustment, 0, 1);
+
+            if (prefab != null)
+            {
+                StaticEditorFlags staticEditorFlags = GameObjectUtility.GetStaticEditorFlags(prefab);
+                bool contributeGI = (staticEditorFlags & StaticEditorFlags.ContributeGI) != 0;
+                using (new EditorGUI.DisabledScope(true))   // Always disabled, because we don't want to edit the prefab.
+                    contributeGI = EditorGUILayout.Toggle(Styles.treeContributeGI, contributeGI);
             }
         }
     }

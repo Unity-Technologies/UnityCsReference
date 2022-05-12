@@ -116,6 +116,7 @@ namespace UnityEditor.Search
 
             var fileName = Path.GetFileName(path);
             IndexWordComponents(documentIndex, fileName);
+            IndexProperty(documentIndex, "name", Path.GetFileNameWithoutExtension(fileName), saveKeyword: true, exact: true);
 
             if (path.StartsWith("Packages/", StringComparison.Ordinal))
                 IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);

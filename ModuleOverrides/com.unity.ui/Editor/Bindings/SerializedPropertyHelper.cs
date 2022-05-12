@@ -10,36 +10,6 @@ namespace UnityEditor.UIElements.Bindings
 {
     internal static class SerializedPropertyHelper
     {
-        public static bool IsPropertyValid(SerializedProperty prop)
-        {
-            return prop != null && prop.isValid;
-        }
-
-        public static bool IsPropertyValidFaster(HashSet<int> knownPropertyPaths, SerializedProperty p)
-        {
-            if (p == null)
-            {
-                return false;
-            }
-
-            if (knownPropertyPaths.Contains(p.hashCodeForPropertyPath))
-            {
-                return true;
-            }
-            else
-            {
-                // Property might be HideInInspector, let's use the slower path
-                if (IsPropertyValid(p))
-                {
-                    //let's add it to the known valid properties
-                    knownPropertyPaths.Add(p.hashCodeForPropertyPath);
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
         /// Property getters
         public static int GetIntPropertyValue(SerializedProperty p)
         {
@@ -372,12 +342,5 @@ namespace UnityEditor.UIElements.Bindings
             return EqualityComparer<string>.Default.Equals(value, propVal);
         }
 
-        public static void ForceSync(SerializedProperty p)
-        {
-            bool wasUnsafe = p.unsafeMode;
-            p.unsafeMode = false;
-            p.Verify(SerializedProperty.VerifyFlags.None);
-            p.unsafeMode = wasUnsafe;
-        }
     }
 }

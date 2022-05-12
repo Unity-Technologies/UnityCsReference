@@ -554,6 +554,8 @@ namespace UnityEditorInternal
             }
         }
 
+        // Not auto-upgradable as MemoryProfiler.TakeSnapshot() needs parameters
+        [Obsolete("ProfilerDriver.RequestMemorySnapshot() is deprecated, use Unity.Profiling.Memory.MemoryProfiler.TakeSnapshot() instead.")]
         static public void RequestMemorySnapshot()
         {
             UnityEditor.MemoryProfiler.MemorySnapshot.RequestNewSnapshot();

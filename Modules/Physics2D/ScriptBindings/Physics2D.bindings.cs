@@ -3919,6 +3919,12 @@ namespace UnityEngine
         // Get/Set the Force Receive Layers.
         extern public LayerMask forceReceiveLayers { get; set; }
 
+        // Get/Set the Contact Capture Layers,
+        extern public LayerMask contactCaptureLayers { get; set; }
+
+        // Get/Set the Callback Layers,
+        extern public LayerMask callbackLayers { get; set; }
+
         // Gets the effective friction used by the collider.
         extern public float friction { get; }
 

@@ -299,18 +299,25 @@ namespace UnityEditor
 
             foreach (OnPostprocessAllAssetsCallbackCollection.MethodInfoCallback assetPostProcessor in s_OnPostprocessAllAssetsCallbacks.sortedCallbacks)
             {
-                if (assetPostProcessor.MethodDomainReload)
+                try
                 {
-                    using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
-                        InvokeMethod(assetPostProcessor.Method, argsWithDidDomainReload);
-                }
-                else
-                {
-                    if (containsNoAssets)
-                        continue;
+                    if (assetPostProcessor.MethodDomainReload)
+                    {
+                        using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
+                            InvokeMethod(assetPostProcessor.Method, argsWithDidDomainReload);
+                    }
+                    else
+                    {
+                        if (containsNoAssets)
+                            continue;
 
-                    using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
-                        InvokeMethod(assetPostProcessor.Method, args);
+                        using (new EditorPerformanceMarker($"{assetPostProcessor.classType.Name}.OnPostprocessAllAssets", assetPostProcessor.classType).Auto())
+                            InvokeMethod(assetPostProcessor.Method, args);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
                 }
             }
 

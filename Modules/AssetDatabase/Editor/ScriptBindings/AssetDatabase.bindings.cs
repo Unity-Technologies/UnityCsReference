@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -268,6 +270,23 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetMainAssetObject")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern internal static Object LoadMainAssetAtGUID(GUID assetGUID);
+
+        [FreeFunction("AssetDatabase::InstanceIDsToGUIDs")]
+        extern internal static void InstanceIDsToGUIDs(IntPtr instanceIDsPtr, IntPtr guidsPtr, int len);
+
+        public unsafe static void InstanceIDsToGUIDs(NativeArray<int> instanceIDs, NativeArray<GUID> guidsOut)
+        {
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+
+            if (!guidsOut.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(guidsOut));
+
+            if (instanceIDs.Length != guidsOut.Length)
+                throw new ArgumentException("instanceIDs and guidsOut size mismatch!");
+
+            InstanceIDsToGUIDs((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)guidsOut.GetUnsafePtr(), instanceIDs.Length);
+        }
 
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 

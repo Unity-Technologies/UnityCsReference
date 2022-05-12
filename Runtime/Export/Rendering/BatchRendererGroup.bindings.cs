@@ -173,6 +173,7 @@ namespace UnityEngine.Rendering
         Camera = 1,
         Light = 2,
         Picking = 3,
+        SelectionOutline = 4,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -486,6 +487,8 @@ namespace UnityEngine.Rendering
         public extern void SetPickingMaterial(Material material);
         public extern void SetErrorMaterial(Material material);
         public extern void SetLoadingMaterial(Material material);
+
+        public extern void SetEnabledViewTypes(BatchCullingViewType[] viewTypes);
 
         static extern unsafe IntPtr Create(BatchRendererGroup group, void* userContext);
         static extern void Destroy(IntPtr groupHandle);

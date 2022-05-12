@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using Bee.Core;
 using NiceIO;
-using Unity.TinyProfiling;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -13,38 +13,56 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         private static NPath m_CurrentPlayerBuildProfilerOutputFile;
         private static int m_BeeDriverForCurrentPlayerBuildIndex;
+        private static TinyProfiler2 _tinyProfiler;
         private static Stack<IDisposable> m_ProfilerSections = new Stack<IDisposable>();
 
         static public void Start(NPath path)
         {
             m_CurrentPlayerBuildProfilerOutputFile = path;
             m_BeeDriverForCurrentPlayerBuildIndex = 0;
-            TinyProfiler.ConfigureOutput(m_CurrentPlayerBuildProfilerOutputFile, "Unity", -100);
+            _tinyProfiler = new TinyProfiler2();
         }
 
         static public void Finish()
         {
+            if (m_CurrentPlayerBuildProfilerOutputFile == null)
+                return;
+
+            _tinyProfiler.Write(m_CurrentPlayerBuildProfilerOutputFile.ToString(), new ChromeTraceOptions
+            {
+                ProcessName = "Unity",
+                ProcessId = System.Diagnostics.Process.GetCurrentProcess().Id,
+                ProcessSortIndex = -100
+            });
             m_CurrentPlayerBuildProfilerOutputFile = null;
+            _tinyProfiler = null;
         }
 
         static public void BeginSection(string name)
         {
             if (m_CurrentPlayerBuildProfilerOutputFile != null)
-                m_ProfilerSections.Push(TinyProfiler.Section(name));
+            {
+                m_ProfilerSections.Push(_tinyProfiler.Section(name));
+            }
         }
 
         static public void EndSection()
         {
             if (m_CurrentPlayerBuildProfilerOutputFile != null)
+            {
                 m_ProfilerSections.Pop().Dispose();
+            }
         }
 
-        static public NPath GetTraceEventsOutputForNewBeeDriver()
+        static public bool PerformingPlayerBuild => m_CurrentPlayerBuildProfilerOutputFile != null;
+
+        static public NPath GetTraceEventsOutputForPlayerBuild()
         {
-            if (m_CurrentPlayerBuildProfilerOutputFile == null)
-                return null;
+            if (!PerformingPlayerBuild)
+                throw new ArgumentException();
+
             NPath path = $"{m_CurrentPlayerBuildProfilerOutputFile.Parent}/{m_CurrentPlayerBuildProfilerOutputFile.FileName}_{m_BeeDriverForCurrentPlayerBuildIndex++}.traceevents";
-            TinyProfiler.AddExternalTraceEventFile(path);
+            _tinyProfiler.AddExternalTraceEventsFile(path.ToString());
             return path;
         }
     }

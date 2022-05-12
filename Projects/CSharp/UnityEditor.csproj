@@ -625,6 +625,9 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs">
       <Link>Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\EnsureSinglePipelineOnBuild.cs">
+      <Link>Editor\Mono\BuildPipeline\EnsureSinglePipelineOnBuild.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\FileMirroring.cs">
       <Link>Editor\Mono\BuildPipeline\Il2Cpp\FileMirroring.cs</Link>
     </Compile>
@@ -2725,6 +2728,12 @@
     <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerTreeView.cs">
       <Link>Editor\Mono\PerformanceTools\FrameDebuggerTreeView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Picking\PickingIncludeExcludeList.cs">
+      <Link>Editor\Mono\Picking\PickingIncludeExcludeList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Picking\PickingObject.cs">
+      <Link>Editor\Mono\Picking\PickingObject.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PlatformSupport\PlatformIconField.cs">
       <Link>Editor\Mono\PlatformSupport\PlatformIconField.cs</Link>
     </Compile>
@@ -4494,12 +4503,6 @@
     </Compile>
     <Compile Include="..\..\External\NiceIO\NiceIO.cs">
       <Link>External\NiceIO\NiceIO.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\TinyProfiler\TinyProfiler.cs">
-      <Link>External\TinyProfiler\TinyProfiler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\External\TinyProfiler\TraceMaker.cs">
-      <Link>External\TinyProfiler\TraceMaker.cs</Link>
     </Compile>
     <Compile Include="..\..\External\il2cpp\builds\Il2CppEditorIntegration\SharedWithEditor.cs">
       <Link>External\il2cpp\builds\Il2CppEditorIntegration\SharedWithEditor.cs</Link>
@@ -7669,6 +7672,9 @@
     <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintDetailsTool.cs">
       <Link>Modules\TerrainEditor\PaintTools\PaintDetailsTool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintDetailsToolUtility.cs">
+      <Link>Modules\TerrainEditor\PaintTools\PaintDetailsToolUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintHeightTool.cs">
       <Link>Modules\TerrainEditor\PaintTools\PaintHeightTool.cs</Link>
     </Compile>
@@ -8268,6 +8274,7 @@
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />
     <Reference Include="../../External/Bee/BeeDriver2/Bee.BinLog.dll" />
+    <Reference Include="../../External/Bee/BeeTinyProfiler2/Bee.TinyProfiler2.dll" />
     <Reference Include="../../External/NetStandardExtensions/System.CodeDom.dll" />
     <ProjectReference Include="UnityEngine.csproj" />
     <ProjectReference Include="../../Tools/Unity.CecilTools/Unity.CecilTools.gen.csproj" />

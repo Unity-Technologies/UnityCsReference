@@ -69,7 +69,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }).ToArray();
         }
 
-       private static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
+        private static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
         {
             var beeBackendInfoPath = dagDirectory.Combine("bee_backend.info");
             var currentInfo = new BeeBackendInfo()
@@ -129,6 +129,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             NPath dagDir = dagDirectory ?? "Library/Bee";
             RecreateDagDirectoryIfNeeded(dagDir);
+            var performingPlayerBuild = UnityBeeDriverProfilerSession.PerformingPlayerBuild;
+            NPath profilerOutputFile =  performingPlayerBuild ? UnityBeeDriverProfilerSession.GetTraceEventsOutputForPlayerBuild() : $"{dagDir}/fullprofile.json";
             return new BuildRequest()
             {
                 BuildProgram = buildProgram,
@@ -136,7 +138,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ProjectRoot = projectDirectory,
                 DagName = dagName,
                 BuildStateDirectory = dagDir.EnsureDirectoryExists().ToString(),
-                ProfilerOutputFile = (UnityBeeDriverProfilerSession.GetTraceEventsOutputForNewBeeDriver() ?? $"{dagDir.EnsureDirectoryExists()}/fullprofile.json").ToString(),
+                ProfilerOutputFile = profilerOutputFile.ToString(),
+                // Use a null process name during a player build to avoid writing process metadata.  The player profiler will take care of writing the process metadata
+                ProfilerProcessName = performingPlayerBuild ? null : "BeeDriver",
                 SourceFileUpdaters = useScriptUpdater
                     ? new[] {new UnityScriptUpdater(projectDirectory)}
                     : Array.Empty<SourceFileUpdaterBase>(),
@@ -145,19 +149,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 DataForBuildProgram =
                 {
                     () => new ConfigurationData
-                    {
-                        Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
-                        Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
-                        UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
-                        NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
-                        EditorContentsPath = EditorApplication.applicationContentsPath,
-                        Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
-                        UnityVersion = Application.unityVersion,
-                        UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
-                        UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
-                        AdvancedLicense = PlayerSettings.advancedLicense,
-                        Batchmode = InternalEditorUtility.inBatchMode,
-                        EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
+            {
+                Il2CppDir = IL2CPPUtils.GetIl2CppFolder(),
+                Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
+                UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
+                NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
+                EditorContentsPath = EditorApplication.applicationContentsPath,
+                Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
+                UnityVersion = Application.unityVersion,
+                UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),
+                UnitySourceCodePath = Unsupported.IsSourceBuild(false) ? Unsupported.GetBaseUnityDeveloperFolder() : null,
+                AdvancedLicense = PlayerSettings.advancedLicense,
+                Batchmode = InternalEditorUtility.inBatchMode,
+                EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
                         NamedPipeOrUnixSocket = ilpp.NamedPipeOrUnixSocket,
                     }
                 }

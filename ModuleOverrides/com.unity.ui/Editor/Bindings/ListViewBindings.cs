@@ -38,15 +38,17 @@ namespace UnityEditor.UIElements.Bindings
         protected void SetBinding(ListView listView, SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            bindingContext = context;
-            boundProperty = prop;
-            boundPropertyPath = prop.propertyPath;
-
             m_DataList = new SerializedObjectList(prop, listView.sourceIncludesArraySize);
             m_ArraySize = m_DataList.ArraySize;
+
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
             m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
             SetListView(listView);
+            SetContext(context, m_ArraySize);
+
+
+            if (m_ListViewArraySize == -1)
+                UpdateArraySize();
         }
 
         private void SetListView(ListView lv)
@@ -91,9 +93,6 @@ namespace UnityEditor.UIElements.Bindings
                 listView.SetViewController(new EditorListViewController());
                 listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
                 listView.itemsSource = m_DataList;
-
-                if (m_ListViewArraySize == -1)
-                    UpdateArraySize();
             }
         }
 
@@ -155,7 +154,7 @@ namespace UnityEditor.UIElements.Bindings
 
         void UpdateArraySize()
         {
-            m_DataList.RefreshProperties(boundProperty, listView.sourceIncludesArraySize);
+            m_DataList.RefreshProperties(listView.sourceIncludesArraySize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
             m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
@@ -168,23 +167,40 @@ namespace UnityEditor.UIElements.Bindings
 
             SetListView(null);
 
-            bindingContext = null;
-            boundProperty = null;
+            ResetContext();
             m_DataList = null;
-
             m_ArraySize = null;
             m_ListViewArraySize = -1;
         }
 
-        private UInt64 m_LastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
         private bool m_LastSourceIncludesArraySize;
 
         protected override void ResetCachedValues()
         {
             m_ListViewArraySize = -1;
-            m_LastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
-            lastContentHash = UInt32.MaxValue;
             UpdateFieldIsAttached();
+        }
+
+        public override void OnPropertyValueChanged(SerializedProperty currentPropertyIterator)
+        {
+            if (isReleased)
+            {
+                return;
+            }
+
+            try
+            {
+                isUpdating = true;
+                UpdateArraySize();
+            }
+            catch (ArgumentNullException)
+            {
+                //this can happen when serializedObject has been disposed of
+            }
+            finally
+            {
+                isUpdating = false;
+            }
         }
 
         public override void Update()
@@ -197,24 +213,18 @@ namespace UnityEditor.UIElements.Bindings
             try
             {
                 ResetUpdate();
+
+                if (!IsSynced())
+                    return;
+
                 isUpdating = true;
 
-                if (m_LastUpdatedRevision == bindingContext.lastRevision && listView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
-                    return;
-
-                if (bindingContext.IsValid() && IsPropertyValid())
+                if (listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
                 {
-                    m_LastUpdatedRevision = bindingContext.lastRevision;
-
-                    int currentArraySize = m_ArraySize.intValue;
-                    if (currentArraySize != m_ListViewArraySize ||
-                        listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
-                    {
-                        UpdateArraySize();
-                    }
-
-                    return;
+                    UpdateArraySize();
                 }
+
+                return;
             }
             catch (ArgumentNullException)
             {
@@ -262,12 +272,13 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectList(SerializedProperty parentProperty, bool includeArraySize)
         {
-            RefreshProperties(parentProperty, includeArraySize);
+            ArrayProperty = parentProperty.Copy();
+            RefreshProperties(includeArraySize);
         }
 
-        public void RefreshProperties(SerializedProperty parentProperty, bool includeArraySize)
+        public void RefreshProperties(bool includeArraySize)
         {
-            ArrayProperty = parentProperty.Copy();
+
             var property = ArrayProperty.Copy();
             var endProperty = property.GetEndProperty();
 

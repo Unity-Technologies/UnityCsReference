@@ -11,15 +11,15 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Mono/GradientPreviewCache.bindings.h")]
     internal partial class GradientPreviewCache
     {
-        public static extern Texture2D GenerateGradientPreview(Gradient gradient, Texture2D existingTexture, ColorSpace colorSpace = ColorSpace.Gamma);
+        public static extern Texture2D GenerateGradientPreview(Gradient gradient, Texture2D existingTexture, bool linearGradientKeys);
 
         [StaticAccessor("GradientPreviewCache::Get()", StaticAccessorType.Dot)]
         public static extern void ClearCache();
 
         [FreeFunction("GradientPreviewCache_GetPreview_Internal<SerializedProperty>")]
-        public static extern Texture2D GetPropertyPreview(SerializedProperty property, ColorSpace colorSpace = ColorSpace.Gamma);
+        public static extern Texture2D GetPropertyPreview(SerializedProperty property, bool linearGradientKeys);
 
         [FreeFunction("GradientPreviewCache_GetPreview_Internal<Gradient>")]
-        public static extern Texture2D GetGradientPreview(Gradient curve, ColorSpace colorSpace = ColorSpace.Gamma);
+        public static extern Texture2D GetGradientPreview(Gradient curve, bool linearGradientKeys);
     }
 }

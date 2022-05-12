@@ -11,7 +11,10 @@ using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEditor.SceneManagement;
+using UnityObject = UnityEngine.Object;
 using System.Linq;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor
 {
@@ -969,95 +972,289 @@ namespace UnityEditor
         internal delegate GameObject PickClosestGameObjectFunc(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
 
         // Important! Where possible you should prefer to use pickGameObjectCustomPasses. See above for explanation.
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal static PickClosestGameObjectFunc pickClosestGameObjectDelegate;
+
+        // Add the ability to select objects that are not selectable through the usual rendering method
+        public delegate GameObject PickGameObjectCallback(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
+        public static event PickGameObjectCallback pickGameObjectCustomPasses;
+
+        static List<PickingObject> s_IgnorePickResultsCache = new List<PickingObject>();
+        static List<PickingObject> s_FilterPickResultsCache = new List<PickingObject>();
+
+        static void SetPickingObjectList<T>(List<PickingObject> list, T[] array) where T : UnityObject
+        {
+            list.Clear();
+            for (int i = 0, c = array?.Length ?? 0; i < c; ++i)
+                list.Add(new PickingObject(array[i]));
+        }
+
+        static GameObject[] CreatePickingObjectArray(List<PickingObject> list)
+        {
+            if (list == null || list.Count < 1)
+                return null;
+
+            int c = list.Count, n = 0;
+            var array = new GameObject[c];
+            for (int i = 0; i < c; ++i)
+                if (list[i].TryGetGameObject(out var go))
+                    array[n++] = go;
+            if (n < c)
+                Array.Resize(ref array, n);
+            return array;
+        }
 
         public static GameObject PickGameObject(Vector2 position, out int materialIndex)
         {
-            return PickGameObjectDelegated(position, null, null, out materialIndex);
+            return PickGameObject(position, false, null, null, out materialIndex);
         }
 
         public static GameObject PickGameObject(Vector2 position, GameObject[] ignore, out int materialIndex)
         {
-            return PickGameObjectDelegated(position, ignore, null, out materialIndex);
-        }
-
-        public static GameObject PickGameObject(Vector2 position, GameObject[] ignore, GameObject[] selection, out int materialIndex)
-        {
-            return PickGameObjectDelegated(position, ignore, selection, out materialIndex);
-        }
-
-        public delegate GameObject PickGameObjectCallback(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
-        public static event PickGameObjectCallback pickGameObjectCustomPasses;
-
-        internal static GameObject PickGameObjectDelegated(Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex)
-        {
-            Camera cam = Camera.current;
-            int layers = cam.cullingMask;
-            position = GUIClip.Unclip(position);
-            position = EditorGUIUtility.PointsToPixels(position);
-            position.y = cam.pixelHeight - position.y - cam.pixelRect.yMin;
-
-            materialIndex = -1; // default
-            GameObject picked = null;
-
-            // deprecated version
-            if (pickClosestGameObjectDelegate != null)
-                picked = pickClosestGameObjectDelegate(cam, layers, position, ignore, filter, out materialIndex);
-
-            bool drawGizmos = SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.drawGizmos;
-
-            if (picked == null)
-                picked = Internal_PickClosestGO(cam, layers, position, ignore, filter, drawGizmos, out materialIndex);
-
-            if (picked == null && pickGameObjectCustomPasses != null)
-            {
-                foreach (var method in pickGameObjectCustomPasses.GetInvocationList())
-                {
-                    picked = ((PickGameObjectCallback)method)(cam, layers, position, ignore, filter, out materialIndex);
-                    // don't trust this method to respect the ignore or filter argument, because in the event that it
-                    // does not it will break pick cycling in SceneViewPicking.GetAllOverlapping.
-                    if (picked != null
-                        && (ignore == null || !Array.Exists(ignore, go => go.Equals(picked)))
-                        && (filter == null || Array.Exists(filter, go => go.Equals(picked))))
-                        break;
-                    picked = null;
-                }
-            }
-
-            return picked;
+            return PickGameObject(position, false, ignore, null, out materialIndex);
         }
 
         public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot)
         {
-            return PickGameObject(position, selectPrefabRoot, null);
+            return PickGameObject(position, selectPrefabRoot, null, null, out _);
         }
 
         public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore)
         {
-            int dummyMaterialIndex;
-            return PickGameObject(position, selectPrefabRoot, ignore, null, out dummyMaterialIndex);
+            return PickGameObject(position, selectPrefabRoot, ignore, null, out _);
         }
 
         public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore, GameObject[] filter)
         {
-            int dummyMaterialIndex;
-            return PickGameObject(position, selectPrefabRoot, ignore, filter, out dummyMaterialIndex);
+            return PickGameObject(position, selectPrefabRoot, ignore, filter, out _);
+        }
+
+        public static GameObject PickGameObject(Vector2 position, GameObject[] ignore, GameObject[] selection, out int materialIndex)
+        {
+            return PickGameObject(position, false, ignore, selection, out materialIndex);
         }
 
         public static GameObject PickGameObject(Vector2 position, bool selectPrefabRoot, GameObject[] ignore, GameObject[] filter, out int materialIndex)
         {
-            GameObject picked = PickGameObjectDelegated(position, ignore, filter, out materialIndex);
-            if (picked && selectPrefabRoot)
+            SetPickingObjectList(s_IgnorePickResultsCache, ignore);
+            SetPickingObjectList(s_FilterPickResultsCache, filter);
+            var res = PickObject(position, selectPrefabRoot, s_IgnorePickResultsCache, s_FilterPickResultsCache);
+            res.TryGetGameObject(out var gameObject);
+            s_IgnorePickResultsCache.Clear();
+            s_FilterPickResultsCache.Clear();
+            materialIndex = res.materialIndex;
+            return gameObject;
+        }
+
+        static GameObject[] s_PickingGameObjectIgnore = new GameObject[16];
+        static GameObject[] s_PickingGameObjectFilter = new GameObject[16];
+
+        // this exists to pass picking parameters to hybrid renderer. these fields are only valid within the scope of
+        // the PickObject method
+        static List<PickingObject> s_PickingInclude, s_PickingExclude;
+        static List<int> s_RendererIncludeBuffer = new List<int>(), s_EntityIncludeBuffer = new List<int>();
+        static List<int> s_RendererExcludeBuffer = new List<int>(), s_EntityExcludeBuffer = new List<int>();
+
+        public static PickingIncludeExcludeList GetPickingIncludeExcludeList(Allocator allocator = Allocator.Persistent)
+        {
+            s_RendererIncludeBuffer.Clear();
+            s_RendererExcludeBuffer.Clear();
+            s_EntityIncludeBuffer.Clear();
+            s_EntityExcludeBuffer.Clear();
+            GetPickingIds(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            GetPickingIds(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
+            return new PickingIncludeExcludeList(s_RendererIncludeBuffer, s_RendererExcludeBuffer, s_EntityIncludeBuffer, s_EntityExcludeBuffer, allocator);
+        }
+
+        public static PickingIncludeExcludeList GetSelectionOutlineIncludeExcludeList(Allocator allocator = Allocator.Persistent)
+        {
+            s_RendererIncludeBuffer.Clear();
+            s_RendererExcludeBuffer.Clear();
+            s_EntityIncludeBuffer.Clear();
+            s_EntityExcludeBuffer.Clear();
+            GetPickingIds(Selection.objects, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            return new PickingIncludeExcludeList(s_RendererIncludeBuffer, null, s_EntityIncludeBuffer, null, allocator);
+        }
+
+        internal static PickingObject PickObject(Vector2 guiPosition,
+            bool selectPrefabRoot = false,
+            List<PickingObject> ignore = null,
+            List<PickingObject> filter = null)
+        {
+            Camera cam = Camera.current;
+            int layers = cam.cullingMask;
+            var screenPosition = GUIPointToScreenPixelCoordinate(guiPosition);
+            var sceneView = SceneView.lastActiveSceneView;
+            bool drawGizmos = sceneView != null && sceneView.drawGizmos;
+            PickingObject picked = PickingObject.Empty;
+
+            s_PickingInclude = filter;
+            s_PickingExclude = ignore;
+
+            if (pickClosestGameObjectDelegate != null)
             {
-                GameObject pickedRoot = FindSelectionBaseForPicking(picked) ?? picked;
+                // todo remove callbacks accepting GameObject[] arrays
+                s_PickingGameObjectIgnore = CreatePickingObjectArray(ignore);
+                s_PickingGameObjectFilter = CreatePickingObjectArray(filter);
+
+                var gameObject = pickClosestGameObjectDelegate(cam,
+                    layers,
+                    screenPosition,
+                    s_PickingGameObjectIgnore,
+                    s_PickingGameObjectFilter,
+                    out int materialIndex);
+
+                picked = new PickingObject(gameObject, materialIndex);
+            }
+
+            if (picked == PickingObject.Empty)
+            {
+                int materialIndex = 0;
+                bool isEntity = false;
+                uint pickingID = Internal_GetClosestPickingID(cam,
+                        layers,
+                        screenPosition,
+                        NoAllocHelpers.ExtractArrayFromListT(ignore),
+                        NoAllocHelpers.ExtractArrayFromListT(filter),
+                        drawGizmos,
+                        ref materialIndex,
+                        ref isEntity);
+
+                if (pickingID != 0)
+                {
+                    UnityObject pickedObject;
+
+                    if (isEntity)
+                    {
+                        // The render target stores entityIndex + 1
+                        int entityIndex = (int)pickingID - 1;
+                        pickedObject = GetAuthoringObjectForEntity(entityIndex);
+                    }
+                    else
+                    {
+                        int instanceID = (int)pickingID;
+                        pickedObject = EditorUtility.InstanceIDToObject(instanceID);
+                    }
+
+                    picked = new PickingObject(pickedObject, materialIndex);
+                }
+
+                s_PickingInclude = null;
+                s_PickingExclude = null;
+            }
+
+            if (picked == PickingObject.Empty && pickGameObjectCustomPasses != null)
+            {
+                if(s_PickingGameObjectIgnore == null)
+                    s_PickingGameObjectIgnore = CreatePickingObjectArray(ignore);
+                if(s_PickingGameObjectFilter == null)
+                    s_PickingGameObjectFilter = CreatePickingObjectArray(filter);
+
+                foreach (var method in pickGameObjectCustomPasses.GetInvocationList())
+                {
+                    var gameObject = ((PickGameObjectCallback)method)(cam, layers, screenPosition, s_PickingGameObjectIgnore, s_PickingGameObjectFilter, out int materialIndex);
+
+                    // don't trust this method to respect the ignore or filter argument, because in the event that it
+                    // does not it will break pick cycling in SceneViewPicking.GetAllOverlapping.
+                    if (gameObject != null)
+                    {
+                        var tmp = new PickingObject(gameObject, materialIndex);
+
+                        if ((ignore == null || !ignore.Contains(tmp)) && (filter == null || filter.Contains(tmp)))
+                        {
+                            picked = tmp;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // for now selectPrefabRoot won't be respected for entities
+            if (selectPrefabRoot && picked.TryGetGameObject(out var go))
+            {
+                GameObject selectionBase = FindSelectionBaseForPicking(go);
+                GameObject pickedRoot = selectionBase != null ? selectionBase : go;
                 Transform atc = Selection.activeTransform;
-                GameObject selectionRoot = atc ? (FindSelectionBaseForPicking(atc.gameObject) ?? atc.gameObject) : null;
+
+                GameObject selectionRoot = null;
+                if (atc != null)
+                {
+                    GameObject atcSelectionBase = FindSelectionBaseForPicking(atc.gameObject);
+                    selectionRoot = atcSelectionBase != null ? atcSelectionBase : atc.gameObject;
+                }
+
                 if (pickedRoot == selectionRoot)
                     return picked;
-                return pickedRoot;
+                return new PickingObject(pickedRoot);
             }
+
             return picked;
+        }
+
+        static void GetPickingIds(List<PickingObject> objects, List<int> ren, List<int> ent)
+        {
+            if (objects == null)
+                return;
+
+            for (int i = 0; i < objects.Count; ++i)
+            {
+                if (objects[i] == null)
+                    continue;
+
+                if (objects[i].target is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
+                    ren.Add(renderer.GetInstanceID());
+                else
+                    GetEntitiesForAuthoringObject(objects[i].target, ent);
+            }
+        }
+
+        static void GetPickingIds(UnityEngine.Object[] objects, List<int> ren, List<int> ent)
+        {
+            if (objects == null)
+                return;
+
+            for (int i = 0; i < objects.Length;  ++i)
+            {
+                if (objects[i] == null)
+                    continue;
+
+                if (objects[i] is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
+                    ren.Add(renderer.GetInstanceID());
+                else
+                    GetEntitiesForAuthoringObject(objects[i], ent);
+            }
+        }
+
+        public static event Func<UnityEngine.Object, IEnumerable<int>> getEntitiesForAuthoringObject = default;
+
+        public static event Func<int, UnityEngine.Object> getAuthoringObjectForEntity = default;
+
+        static UnityEngine.Object GetAuthoringObjectForEntity(int entityIndex)
+        {
+            var delegates = getAuthoringObjectForEntity?.GetInvocationList();
+
+            if (delegates == null)
+                return null;
+
+            foreach (var del in delegates)
+            {
+                var ret = ((Func<int, UnityEngine.Object>)del)(entityIndex);
+                if (ret != null)
+                    return ret;
+            }
+
+            return null;
+        }
+
+        static void GetEntitiesForAuthoringObject(UnityEngine.Object authoring, List<int> entities)
+        {
+            var delegates = getEntitiesForAuthoringObject?.GetInvocationList();
+
+            if (delegates == null)
+                return;
+
+            foreach (var del in delegates)
+                foreach (var ent in ((Func<UnityEngine.Object, IEnumerable<int>>)del)(authoring))
+                    entities.Add(ent);
         }
 
         // Get the selection base object, taking into account user enabled picking filter

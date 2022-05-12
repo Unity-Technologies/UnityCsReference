@@ -180,12 +180,10 @@ namespace UnityEditor
             foreach (var component in components)
             {
                 if (component == null)
-                {
-                    throw new Exception(String.Format("Component on GameObject '{0}' is invalid", gameObject.name));
-                }
+                    continue; //Missing scripts will be null and no instanceid either
 
-                if (component is Transform)
-                    transform = component as Transform;
+                if (component is Transform t)
+                    transform = t;
                 else
                     hierarchyInstanceIDs.Add(component.GetInstanceID());
             }
@@ -1276,6 +1274,87 @@ namespace UnityEditor
             }
         }
 
+        private static void RemoveRemovedGameObjectOverridesWhichAreNull(Object prefabInstanceObject)
+        {
+            var removedGameObjects = PrefabUtility.GetRemovedGameObjects(prefabInstanceObject);
+            var filteredRemovedGameObjects = (from go in removedGameObjects where go != null select go).ToArray();
+            PrefabUtility.SetRemovedGameObjects(prefabInstanceObject, filteredRemovedGameObjects);
+        }
+
+        public static void ApplyRemovedGameObject(GameObject gameObjectInInstance, GameObject assetGameObject, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            ThrowExceptionIfNotValidPrefabInstanceObject(gameObjectInInstance, true);
+
+            if (assetGameObject == null)
+                throw new ArgumentNullException(nameof(assetGameObject), "Prefab source must not be null.");
+            if (!IsPrefabInstanceObjectOf(gameObjectInInstance, PrefabUtility.GetPrefabAssetHandle(assetGameObject)))
+                throw new ArgumentException("Prefab instance must match Prefab source.");
+            if(assetGameObject.transform.root == assetGameObject.transform)
+                throw new ArgumentException("The asset GameObject cannot be the root as the root cannot be removed as an override.");
+
+            var actionName = "Apply Prefab removed GameObject";
+            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(gameObjectInInstance);
+            GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(gameObjectInInstance);
+
+            if (prefabInstanceObject == null)
+                throw new ArgumentNullException(nameof(prefabInstanceObject), "Prefab instance must not be null.");
+
+            string assetPath = AssetDatabase.GetAssetPath(assetGameObject);
+            GameObject assetRoot = GetRootGameObject(assetGameObject);
+            byte[] originalFileContent = null;
+
+            if (action == InteractionMode.UserAction)
+            {
+                if (!FileUtil.ReadFileContentBinary(assetPath, out originalFileContent, out string errorMessage))
+                    Debug.LogError($"No undo was registered when removing GameObject {assetGameObject.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
+            }
+
+            using (var scope = new EditPrefabContentsScope(assetPath))
+            {
+                var assetGOId = Unsupported.GetFileIDHint(assetGameObject);
+                var transformsInAsset = scope.prefabContentsRoot.GetComponentsInChildren(typeof(Transform), true);
+
+                bool success = false;
+                foreach (var transform in transformsInAsset)
+                {
+                    if (Unsupported.GetOrGenerateFileIDHint(transform.gameObject) == assetGOId)
+                    {
+                        Object.DestroyImmediate(transform.gameObject);
+                        success = true;
+                        break;
+                    }
+                }
+
+                if(!success)
+                    Debug.LogError($"GameObject {assetGameObject} could not be found and deleted from corresponding asset.");
+            }
+
+            if (action == InteractionMode.UserAction && originalFileContent != null)
+            {
+                var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
+                if (FileUtil.ReadFileContentBinary(assetPath, out byte[] newFileContent, out string errorMessage))
+                {
+                    Undo.RegisterFileChangeUndo(guid, originalFileContent, newFileContent);
+                    Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
+                }
+                else
+                    Debug.LogError($"No undo was registered when removing GameObject {assetGameObject.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
+            }
+
+            RemoveRemovedGameObjectOverridesWhichAreNull(prefabInstanceObject);
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.RemovedGameObject,
+                gameObjectInInstance,
+                AssetDatabase.GetAssetPath(assetGameObject),
+                action,
+                startTime,
+                false
+            );
+        }
+
         public static void ApplyAddedGameObject(GameObject gameObject, string assetPath, InteractionMode action)
         {
             ApplyAddedGameObjects(new GameObject[] { gameObject}, assetPath, action);
@@ -1319,17 +1398,29 @@ namespace UnityEditor
                 return;
 
             var sourceRoot = prefabSourceGameObjectParent.transform.root.gameObject;
+            byte[] originalFileContent = null;
 
             var actionName = "Apply Added GameObject";
             if (action == InteractionMode.UserAction)
             {
-                Undo.RegisterFullObjectHierarchyUndo(sourceRoot, actionName);
-                Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
+                if (!FileUtil.ReadFileContentBinary(assetPath, out originalFileContent, out string errorMessage))
+                    Debug.LogError($"No undo was registered when removing GameObjects from '{sourceRoot.name}'. \nError: {errorMessage}", sourceRoot);
+                else
+                    Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
             }
 
             AddGameObjectsToPrefabAndConnect(gameObjects, prefabSourceGameObjectParent);
 
             SavePrefabAsset(sourceRoot);
+
+            if (action == InteractionMode.UserAction && originalFileContent != null)
+            {
+                var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
+                if (!FileUtil.ReadFileContentBinary(assetPath, out byte[] newFileContent, out string errorMessage))
+                    Debug.LogError($"No undo was registered when removing GameObjects from '{sourceRoot.name}'. \nError: {errorMessage}", sourceRoot);
+                else
+                    Undo.RegisterFileChangeUndo(guid, originalFileContent, newFileContent);
+            }
 
             for (int i = 0; i < gameObjects.Length; i++)
             {
@@ -1376,6 +1467,57 @@ namespace UnityEditor
             return true;
         }
 
+        private static void RemoveRemovedGameObjectOverride(Object instanceObject, GameObject assetGameObject)
+        {
+            var removedGameObjects = PrefabUtility.GetRemovedGameObjects(instanceObject);
+            int index = -1;
+            for (int i = 0; i < removedGameObjects.Length; i++)
+            {
+                //Walk the inheritance chain as you can give the base of a variant as the source asset
+                if (IsPrefabInstanceObjectOf(removedGameObjects[i], assetGameObject))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index != -1)
+            {
+                var filteredRemovedGameObjects = (from go in removedGameObjects where go != removedGameObjects[index] select go).ToArray();
+                PrefabUtility.SetRemovedGameObjects(instanceObject, filteredRemovedGameObjects);
+            }
+        }
+
+        public static void RevertRemovedGameObject(GameObject gameObjectInInstance, GameObject assetGameObject, InteractionMode action)
+        {
+            ThrowExceptionIfNotValidPrefabInstanceObject(gameObjectInInstance, false);
+
+            if (assetGameObject == null)
+                throw new ArgumentNullException(nameof(assetGameObject), "Prefab source may not be null.");
+            if (!IsPrefabInstanceObjectOf(gameObjectInInstance, PrefabUtility.GetPrefabAssetHandle(assetGameObject)))
+                throw new ArgumentException("Prefab instance should match Prefab source.");
+            if (assetGameObject.transform.root == assetGameObject.transform)
+                throw new ArgumentException("The asset GameObject cannot be the root as the root cannot be removed as an override.");
+
+            var actionName = "Revert Prefab removed GameObject";
+            var prefabInstanceHandle = PrefabUtility.GetPrefabInstanceHandle(gameObjectInInstance);
+
+            GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(gameObjectInInstance);
+
+            HashSet<int> hierarchy = null;
+            if (action == InteractionMode.UserAction)
+            {
+                hierarchy = new HashSet<int>();
+                GetObjectListFromHierarchy(hierarchy, prefabInstanceRoot);
+                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
+            }
+
+            RemoveRemovedGameObjectOverride(prefabInstanceHandle, assetGameObject);
+
+            if (action == InteractionMode.UserAction)
+                RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
+        }
+
         public static void RevertAddedGameObject(GameObject gameObject, InteractionMode action)
         {
             if (gameObject == null)
@@ -1412,6 +1554,11 @@ namespace UnityEditor
             return PrefabOverridesUtility.GetAddedGameObjects(prefabInstance);
         }
 
+        public static List<RemovedGameObject> GetRemovedGameObjects(GameObject prefabInstance)
+        {
+            return PrefabOverridesUtility.GetRemovedGameObjects(prefabInstance);
+        }
+
         internal static void HandleApplyRevertMenuItems(
             string thingThatChanged,
             Object instanceObject,
@@ -1431,7 +1578,8 @@ namespace UnityEditor
             Object instanceOrAssetObject,
             AddApplyMenuItemDelegate addApplyMenuItemAction,
             bool isAllDefaultOverridesComparedToOriginalSource = false,
-            bool includeSelfAsTarget = false)
+            bool includeSelfAsTarget = false,
+            bool includeOriginalSelfAsTarget = true)
         {
             // If thingThatChanged word is empty, apply menu items directly into menu.
             // Otherwise, insert as sub-menu named after thingThatChanged.
@@ -1440,7 +1588,7 @@ namespace UnityEditor
             if (thingThatChanged != String.Empty)
                 thingThatChanged += "/";
 
-            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, isAllDefaultOverridesComparedToOriginalSource, includeSelfAsTarget);
+            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, isAllDefaultOverridesComparedToOriginalSource, includeSelfAsTarget, includeOriginalSelfAsTarget);
             if (applyTargets == null || applyTargets.Count == 0)
                 return;
 
@@ -2412,7 +2560,25 @@ namespace UnityEditor
             return goInAsset.transform.root == goInAsset.transform;
         }
 
-        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool isAllDefaultOverridesComparedToOriginalSource, bool includeSelfAsTarget = false)
+        internal static bool IsAssetANestedPrefabRoot(Object assetObject)
+        {
+            GameObject gameObject = assetObject as GameObject;
+            if (gameObject == null)
+                return false;
+
+            var correspondingGameObjectFromSource = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
+            while (correspondingGameObjectFromSource != null)
+            {
+                var rootGameObject = PrefabUtility.GetRootGameObject(correspondingGameObjectFromSource);
+                if (correspondingGameObjectFromSource == rootGameObject)
+                    return true;
+                correspondingGameObjectFromSource = PrefabUtility.GetCorrespondingObjectFromSource(correspondingGameObjectFromSource);
+            }
+
+            return false;
+        }
+
+        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool isAllDefaultOverridesComparedToOriginalSource, bool includeSelfAsTarget = false, bool includeOriginalSelfAsTarget = true)
         {
             List<Object> applyTargets = new List<Object>();
 
@@ -2448,7 +2614,8 @@ namespace UnityEditor
                         break;
                 }
 
-                applyTargets.Add(source);
+                if (includeOriginalSelfAsTarget || PrefabUtility.GetCorrespondingObjectFromSource(source) != null)
+                    applyTargets.Add(source);
 
                 source = PrefabUtility.GetCorrespondingObjectFromSource(source);
             }
@@ -2735,10 +2902,22 @@ namespace UnityEditor
         [NativeAsStruct]
         internal sealed class InstanceOverridesInfo
         {
+            public InstanceOverridesInfo(GameObject prefabInstance, PropertyModification[] usedMods, PropertyModification[] unusedMods, int unusedRemovedGameObjectCount, int unusedRemovedComponentCount)
+            {
+                this.instance = prefabInstance;
+                this.usedMods = usedMods;
+                this.unusedMods = unusedMods;
+                this.unusedRemovedGameObjectCount = unusedRemovedGameObjectCount;
+                this.unusedRemovedComponentCount = unusedRemovedComponentCount;
+            }
+
             public GameObject instance { get; }
             public PropertyModification[] usedMods { get; }
             public PropertyModification[] unusedMods { get; }
+            public int unusedRemovedGameObjectCount { get; }
             public int unusedRemovedComponentCount { get; }
+
+            public int unusedOverrideCount => unusedMods.Length + unusedRemovedGameObjectCount + unusedRemovedComponentCount;
         }
 
         internal static bool HavePrefabInstancesUnusedOverrides(GameObject[] gameObjects)
@@ -2820,11 +2999,11 @@ namespace UnityEditor
             {
                 foreach (PrefabUtility.InstanceOverridesInfo instanceMods in instanceOverridesInfos)
                 {
-                    if (!instanceMods.unusedMods.Any() && instanceMods.unusedRemovedComponentCount == 0)
+                    if (instanceMods.unusedOverrideCount == 0)
                         continue;
 
                     affectedInstanceCount++;
-                    unusedOverridesCount += instanceMods.unusedMods.Length + instanceMods.unusedRemovedComponentCount;
+                    unusedOverridesCount += instanceMods.unusedOverrideCount;
                     usedOverridesCount += instanceMods.usedMods.Length;
                     currInstanceWithUnusedMods = instanceMods;
                 }
@@ -2849,7 +3028,7 @@ namespace UnityEditor
             }
             else// Single selection
             {
-                unusedOverridesCount = currInstanceWithUnusedMods.unusedMods.Length + currInstanceWithUnusedMods.unusedRemovedComponentCount;
+                unusedOverridesCount = currInstanceWithUnusedMods.unusedOverrideCount;
                 usedOverridesCount = currInstanceWithUnusedMods.usedMods.Length;
                 if (unusedOverridesCount > 0)
                 {
@@ -2900,7 +3079,7 @@ namespace UnityEditor
                 throw new ArgumentNullException(nameof(iovInfo), "InstanceOverridesInfo.usedMods was null");
 
             bool updatedEditorLog = false;
-            if (iovInfo.unusedMods.Any() || iovInfo.unusedRemovedComponentCount > 0)
+            if (iovInfo.unusedOverrideCount != 0)
             {
                 Undo.RegisterCompleteObjectUndo(iovInfo.instance, "Remove unused overrides");
 
@@ -2908,6 +3087,12 @@ namespace UnityEditor
                 {
                     SetPropertyModifications(iovInfo.instance, iovInfo.usedMods);
                     updatedEditorLog |= PrefabUtility.LogRemovedPropertyOverrides(iovInfo.instance, iovInfo.unusedMods);
+                }
+
+                if (iovInfo.unusedRemovedGameObjectCount > 0)
+                {
+                    PrefabUtility.RemoveRemovedGameObjectOverridesWhichAreNull(iovInfo.instance);
+                    updatedEditorLog |= PrefabUtility.LogRemovedUnusedRemovedGameObjects(iovInfo.instance, iovInfo.unusedRemovedGameObjectCount);
                 }
 
                 if (iovInfo.unusedRemovedComponentCount > 0)
@@ -2940,6 +3125,23 @@ namespace UnityEditor
             }
 
             System.Console.Write(info.ToString(), instance);
+            return true;
+        }
+
+        internal static bool LogRemovedUnusedRemovedGameObjects(GameObject instance, int unusedRemovedGameObjectsCount)
+        {
+            if (unusedRemovedGameObjectsCount == 0)
+                return false;
+
+            System.Text.StringBuilder info = new System.Text.StringBuilder();
+
+            if (unusedRemovedGameObjectsCount > 1)
+                info.AppendLine("Removed " + unusedRemovedGameObjectsCount + " unused removed GameObjects from instance '" + instance.name + "'");
+            else
+                info.AppendLine("Removed 1 unused removed GameObject from instance '" + instance.name + "'");
+
+            System.Console.Write(info.ToString(), instance);
+
             return true;
         }
 
@@ -2988,6 +3190,7 @@ namespace UnityEditor
                 AddedComponent,
                 RemovedComponent,
                 AddedGameObject,
+                RemovedGameObject,
                 EntirePrefab
             }
 

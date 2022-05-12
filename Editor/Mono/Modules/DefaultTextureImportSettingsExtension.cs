@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using UnityEngine.Experimental.Rendering;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Modules
@@ -115,7 +116,7 @@ namespace UnityEditor.Modules
                         editor.model.buildTarget);
 
                     formatValues = new int[] { format };
-                    formatStrings = new string[] { TextureUtil.GetTextureFormatString((TextureFormat)format) };
+                    formatStrings = new string[] { GraphicsFormatUtility.GetFormatString((TextureFormat)format) };
                 }
                 else
                 {
@@ -197,7 +198,7 @@ namespace UnityEditor.Modules
 
             // compression quality
             bool isCrunchedFormat = false
-                || TextureUtil.IsCompressedCrunchTextureFormat((TextureFormat)formatForAll)
+                || GraphicsFormatUtility.IsCrunchFormat((TextureFormat)formatForAll)
             ;
 
             if (

@@ -24,6 +24,7 @@ using PreviewMaterialType = UnityEditor.EditorGUIUtility.PreviewType;
 using System.Linq;
 using System.Reflection;
 using Unity.Profiling;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -7140,7 +7141,7 @@ namespace UnityEditor
                 normalMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
                 return normalMat;
             }
-            else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
+            else if (GraphicsFormatUtility.IsAlphaOnlyFormat(format))
             {
                 var alphaOnlyMat = useVT ? alphaVTMaterial : alphaMaterial;
                 alphaOnlyMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
