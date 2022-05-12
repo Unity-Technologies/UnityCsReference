@@ -13,20 +13,8 @@ namespace UnityEditor
     [NativeHeader("Runtime/Graphics/Format.h")]
     internal static class TextureUtil
     {
-        [Obsolete("GetStorageMemorySize has been deprecated since it is limited to 2GB. Please use GetStorageMemorySizeLong() instead.")]
-        public static int GetStorageMemorySize(Texture t)
-        {
-            return (int)GetStorageMemorySizeLong(t);
-        }
-
         [FreeFunction]
         public static extern long GetStorageMemorySizeLong([NotNull("NullExceptionObject")] Texture t);
-
-        [Obsolete("GetRuntimeMemorySize has been deprecated since it is limited to 2GB. Please use GetRuntimeMemorySizeLong() instead.")]
-        public static int GetRuntimeMemorySize(Texture t)
-        {
-            return (int)GetRuntimeMemorySizeLong(t);
-        }
 
         [FreeFunction]
         public static extern long GetRuntimeMemorySizeLong([NotNull("NullExceptionObject")] Texture t);
@@ -55,33 +43,41 @@ namespace UnityEditor
         [FreeFunction]
         public static extern bool IsValidTextureFormat(TextureFormat format);
 
+        [Obsolete("IsCompressedTextureFormat has been moved to GraphicsFormatUtility.IsCompressedFormat(TextureFormat)")]
         [FreeFunction("IsAnyCompressedTextureFormat")]
         public static extern bool IsCompressedTextureFormat(TextureFormat format);
 
+        [Obsolete("IsCompressedCrunchTextureFormat has been moved to GraphicsFormatUtility.IsCrunchFormat(TextureFormat)")]
         [FreeFunction("IsCompressedCrunchTextureFormat")]
         public static extern bool IsCompressedCrunchTextureFormat(TextureFormat format);
 
         [FreeFunction]
         public static extern TextureFormat GetTextureFormat([NotNull("NullExceptionObject")] Texture texture);
 
+        [Obsolete("IsAlphaOnlyTextureFormat has been moved to GraphicsFormatUtility.IsAlphaOnlyFormat(TextureFormat)")]
         [FreeFunction]
         public static extern bool IsAlphaOnlyTextureFormat(TextureFormat format);
 
+        [Obsolete("IsHDRFormat has been moved to GraphicsFormatUtility.IsHDRFormat(TextureFormat)")]
         [FreeFunction]
         public static extern bool IsHDRFormat(TextureFormat format);
 
+        [Obsolete("IsHDRGraphicsFormat has been moved to GraphicsFormatUtility.IsHDRFormat(GraphicsFormat)")]
         [FreeFunction("IsHDRFormat")]
         public static extern bool IsHDRGraphicsFormat(GraphicsFormat format);
 
+        [Obsolete("HasAlphaTextureFormat has been moved to GraphicsFormatUtility.HasAlphaChannel(TextureFormat)")]
         [FreeFunction]
         public static extern bool HasAlphaTextureFormat(TextureFormat format);
 
+        [Obsolete("GetTextureFormatString has been moved to GraphicsFormatUtility.GetFormatString(TextureFormat)")]
         [FreeFunction]
         public static extern string GetTextureFormatString(TextureFormat format);
 
         [FreeFunction]
         public static extern string GetTextureColorSpaceString([NotNull("NullExceptionObject")] Texture texture);
 
+        [Obsolete("ConvertToAlphaTextureFormat has been moved to GraphicsFormatUtility.ConvertToAlphaFormat(TextureFormat)")]
         [FreeFunction]
         public static extern TextureFormat ConvertToAlphaTextureFormat(TextureFormat format);
 

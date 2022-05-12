@@ -804,7 +804,7 @@ namespace UnityEditor.U2D
 
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 
-                if (TextureUtil.HasAlphaTextureFormat(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
+                if (GraphicsFormatUtility.HasAlphaChannel(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
                     m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? styles.alphaIcon : styles.RGBIcon, styles.previewButton);
 
                 int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(t));

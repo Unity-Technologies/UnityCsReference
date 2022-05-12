@@ -48,6 +48,8 @@ namespace UnityEditor.UIElements
             return t;
         }
     }
+
+    [Obsolete("Please use PropertyField instead", false)]
     internal class PropertyControl<TType> : BaseField<TType>
     {
         public new class UxmlFactory : UxmlFactory<PropertyControl<TType>, UxmlTraits>

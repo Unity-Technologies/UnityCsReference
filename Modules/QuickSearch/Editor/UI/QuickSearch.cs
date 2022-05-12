@@ -1234,7 +1234,16 @@ namespace UnityEditor.Search
                 if (!ignoreErrors && GetAllVisibleErrors().FirstOrDefault(e => alwaysPrintError || e.provider.type == m_FilteredItems.currentGroup) is SearchQueryError err)
                 {
                     var errStyle = err.type == SearchQueryErrorType.Error ? Styles.statusError : Styles.statusWarning;
-                    EditorGUILayout.LabelField(Utils.GUIContentTemp(Utils.TrimText(err.reason), $"({err.provider.name}) {err.reason}"), errStyle, GUILayout.ExpandWidth(true));
+                    var firstLineReason = err.reason;
+                    var firstLineIndex = err.reason.IndexOf("\n");
+                    if (firstLineIndex >= 0)
+                        firstLineReason = err.reason.Substring(0, firstLineIndex);
+                    EditorGUILayout.LabelField(Utils.GUIContentTemp(Utils.TrimText(firstLineReason), $"({err.provider.name}) {err.reason}"), errStyle, GUILayout.ExpandWidth(true));
+                    var labelRect = GUILayoutUtility.GetLastRect();
+                    if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition))
+                    {
+                        Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, err.reason);
+                    }
                 }
                 else if (SearchSettings.showStatusBar && position.width >= 340f)
                 {
@@ -2589,7 +2598,7 @@ namespace UnityEditor.Search
         {
             var windowId = (window as QuickSearch)?.windowId ?? null;
             SearchAnalytics.SendEvent(windowId, SearchAnalytics.GenericEventType.QuickSearchOpenDocLink);
-            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/2022.1/Documentation/Manual/search-overview.html");
+            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/Manual/search-overview.html");
         }
 
 

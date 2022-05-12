@@ -66,6 +66,10 @@ namespace UnityEditor.SceneManagement
             Object obj = isObjectOverride ? GetObject() : GetAssetObject();
             bool isObjectOverrideAllDefaultOverridesComparedToOriginalSource =
                 isObjectOverride ? PrefabUtility.IsObjectOverrideAllDefaultOverridesComparedToOriginalSource(obj) : false;
+
+            bool isRemovedGameObjectOverride = this is RemovedGameObject;
+            bool isRemovedNestedPrefabRoot = isRemovedGameObjectOverride && PrefabUtility.IsAssetANestedPrefabRoot(obj);
+
             PrefabUtility.HandleApplyMenuItems(
                 null,
                 obj,
@@ -81,7 +85,8 @@ namespace UnityEditor.SceneManagement
                         menu.AddItem(menuItemContent, false, applyAction, prefabAssetPath);
                 },
                 isObjectOverrideAllDefaultOverridesComparedToOriginalSource,
-                !isObjectOverride);
+                !isObjectOverride,
+                !isRemovedNestedPrefabRoot);
         }
     }
 
@@ -207,6 +212,38 @@ namespace UnityEditor.SceneManagement
         internal override UnityObject GetObject()
         {
             return instanceGameObject;
+        }
+    }
+
+    public class RemovedGameObject : PrefabOverride
+    {
+        public GameObject parentOfRemovedGameObjectInInstance { get; set; }
+        public GameObject assetGameObject { get; set; }
+
+        public override void Apply(string prefabAssetPath, InteractionMode mode)
+        {
+            PrefabUtility.ApplyRemovedGameObject(
+                parentOfRemovedGameObjectInInstance,
+                (GameObject)FindApplyTargetAssetObject(prefabAssetPath),
+                mode);
+        }
+
+        public override void Revert(InteractionMode mode)
+        {
+            PrefabUtility.RevertRemovedGameObject(
+                parentOfRemovedGameObjectInInstance,
+                assetGameObject,
+                mode);
+        }
+
+        public override UnityObject GetAssetObject()
+        {
+            return assetGameObject;
+        }
+
+        internal override UnityObject GetObject()
+        {
+            return assetGameObject;
         }
     }
 }

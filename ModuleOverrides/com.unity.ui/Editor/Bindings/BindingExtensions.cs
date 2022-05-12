@@ -70,7 +70,7 @@ namespace UnityEditor.UIElements.Bindings
                 }
                 element.SetProperty(FindContextPropertyKey, null);
             }
-            RemoveBinding(element as IBindable);
+            RemoveBinding(element as IBindable, false);
 
             var childCount = element.hierarchy.childCount;
             for (int i = 0; i < childCount; ++i)
@@ -174,8 +174,6 @@ namespace UnityEditor.UIElements.Bindings
             if (property == null)
                 property = serializedObject?.FindProperty(field.bindingPath);
 
-            // we first remove any binding that were already present
-            RemoveBinding(field);
 
             var fieldElement = field as VisualElement;
             if (property == null || fieldElement == null)
@@ -197,6 +195,9 @@ namespace UnityEditor.UIElements.Bindings
                     }
                 }
             }
+
+            // If we intend on binding, we first remove any binding that were already present
+            RemoveBinding(field, true);
 
             CreateBindingObjectForProperty(fieldElement, property);
 
@@ -455,7 +456,7 @@ namespace UnityEditor.UIElements.Bindings
             return false;
         }
 
-        private void RemoveBinding(IBindable bindable)
+        private void RemoveBinding(IBindable bindable, bool forceRemove)
         {
             if (bindable == null || !bindable.IsBound())
             {
@@ -464,7 +465,7 @@ namespace UnityEditor.UIElements.Bindings
 
             if (bindable.binding is SerializedObjectBindingBase bindingBase)
             {
-                if (bindingBase.bindingContext == this)
+                if (forceRemove || bindingBase.bindingContext == this)
                 {
                     bindable.binding?.Release();
                     bindable.binding = null;
@@ -518,8 +519,7 @@ namespace UnityEditor.UIElements.Bindings
 
             if (previousRevision != lastRevision)
             {
-                UpdateValidProperties();
-                UpdateTrackedValues();
+                OnSerializedObjectChanged();
             }
         }
 
@@ -548,8 +548,19 @@ namespace UnityEditor.UIElements.Bindings
 
         internal void ResetUpdate()
         {
-            wasUpdated = false;
+            if (wasUpdated)
+            {
+                wasUpdated = false;
+                UpdateRevision(); //If somebody called Update() on our serializedObject, we need to revalidate properties
+
+            }
         }
+
+        void OnSerializedObjectChanged()
+        {
+            UpdateTrackedProperties();
+        }
+
 
         #endregion
 
@@ -558,75 +569,105 @@ namespace UnityEditor.UIElements.Bindings
         class TrackedValue
         {
             public uint contentHash;
-            public SerializedProperty prop;
-            public Action<object, SerializedProperty> callback;
+            public Action<object, SerializedProperty> onChangeCallback;
+            public Action<object, SerializedProperty> onUpdateCallback;
             public object cookie;
-            public bool isValid;
 
-            public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> cb)
+            public SerializedPropertyType originalPropType;
+            public int propertyHash;
+
+            public TrackedValue(SerializedProperty property, Action<object, SerializedProperty> changeCB, Action<object, SerializedProperty> updateCB)
             {
                 contentHash = property.contentHash;
-                prop = property.Copy();
-                callback = cb;
+                originalPropType = property.propertyType;
+                propertyHash = property.hashCodeForPropertyPath;
+                onChangeCallback = changeCB;
+                onUpdateCallback = updateCB;
             }
 
-            public void Update(SerializedObjectBindingContext context)
+            public bool Update(SerializedObjectBindingContext context, SerializedProperty  currentProp)
             {
-                var newContentHash = prop.contentHash;
+                if (currentProp.propertyType != originalPropType)
+                {
+                    return false;
+                }
+
+                onUpdateCallback?.Invoke(cookie, currentProp);
+
+                var newContentHash = currentProp.contentHash;
 
                 if (contentHash != newContentHash)
                 {
-                    callback(cookie, prop);
+                    contentHash = newContentHash;
+                    onChangeCallback(cookie, currentProp);
                 }
+
+                return true;
             }
         }
 
         class TrackedValues
         {
-            private List<TrackedValue> m_List = new List<TrackedValue>();
+            // MultiValueDictionary?
+            private Dictionary<int, List<TrackedValue> > m_TrackedValues = new Dictionary<int, List<TrackedValue>>();
 
             public TrackedValues()
             {
             }
 
-            public void Add(SerializedProperty prop, object cookie, Action<object, SerializedProperty> callback)
+            public void Add(SerializedProperty prop, object cookie, Action<object, SerializedProperty> onChangeCallback, Action<object, SerializedProperty> onUpdateCallback)
             {
-                var t = new TrackedValue(prop, callback);
+                var hash = prop.hashCodeForPropertyPath;
+
+                if (!m_TrackedValues.TryGetValue(hash, out var values))
+                {
+                    values = new List<TrackedValue>();
+                    m_TrackedValues.Add(hash, values);
+                }
+
+                var t = new TrackedValue(prop, onChangeCallback, onUpdateCallback);
                 t.cookie = cookie;
-                m_List.Add(t);
+                values.Add(t);
             }
 
             public void Remove(SerializedProperty prop, object cookie)
             {
-                for (int i = m_List.Count - 1; i >= 0; i--)
-                {
-                    var t = m_List[i];
+                var hash = prop.hashCodeForPropertyPath;
 
-                    if (ReferenceEquals(t.cookie, cookie) && SerializedProperty.EqualContents(prop, t.prop))
+                Remove(hash, cookie);
+            }
+
+            public void Remove(int propertyPathHash, object cookie)
+            {
+                if (m_TrackedValues.TryGetValue(propertyPathHash, out var values))
+                {
+                    for (int i = values.Count - 1; i >= 0; i--)
                     {
-                        m_List.RemoveAt(i);
+                        var t = values[i];
+
+                        if (ReferenceEquals(t.cookie, cookie))
+                        {
+                            values.RemoveAt(i);
+                        }
+                    }
+
+                    if (values.Count == 0)
+                    {
+                        m_TrackedValues.Remove(propertyPathHash);
                     }
                 }
             }
 
-            public void Update(SerializedObjectBindingContext context)
+            public void Update(SerializedObjectBindingContext context, SerializedProperty currentProperty)
             {
-                for (int i = 0; i < m_List.Count; i++)
-                {
-                    var t = m_List[i];
-                    if (t.isValid)
-                    {
-                        t.Update(context);
-                    }
-                }
-            }
+                var hash = currentProperty.hashCodeForPropertyPath;
 
-            public void UpdateValidProperties(HashSet<int> validPropertyPaths)
-            {
-                for (int i = 0; i < m_List.Count; i++)
+                if (m_TrackedValues.TryGetValue(hash, out var values))
                 {
-                    var t = m_List[i];
-                    t.isValid = SerializedPropertyHelper.IsPropertyValidFaster(validPropertyPaths,t.prop);
+                    for (int i = 0; i < values.Count; ++i)
+                    {
+                        values[i].Update(context, currentProperty);
+                    }
                 }
             }
         }
@@ -635,36 +676,18 @@ namespace UnityEditor.UIElements.Bindings
         /// Map of value trackers per serialized property type. WARNING: tracker may be null for some types.
         /// Check <see cref="GetOrCreateTrackedValues"/> for reference.
         /// </summary>
-        private TrackedValues m_ValueTracker;
-
-
-        void UpdateTrackedValues()
-        {
-            m_ValueTracker?.Update(this);
-        }
+        private TrackedValues m_ValueTracker = new TrackedValues();
 
         public bool RegisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property,
             Action<object, SerializedProperty> valueChangedCallback)
         {
-            var trackedValues = GetOrCreateTrackedValues();
-            trackedValues.Add(property, cookie, valueChangedCallback);
+            m_ValueTracker.Add(property, cookie, valueChangedCallback, null);
             return true;
         }
 
         public void UnregisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property)
         {
-            var trackedValues = GetOrCreateTrackedValues();
-            trackedValues.Remove(property, cookie);
-        }
-
-        TrackedValues GetOrCreateTrackedValues()
-        {
-            if (m_ValueTracker == null)
-            {
-                m_ValueTracker = new TrackedValues();
-            }
-
-            return m_ValueTracker;
+            m_ValueTracker.Remove(property, cookie);
         }
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
@@ -691,50 +714,87 @@ namespace UnityEditor.UIElements.Bindings
 
         #endregion
 
-        private static HashSet<int> m_ValidPropertyPaths;
-
         private HashSet<SerializedObjectBindingBase> m_RegisteredBindings = new HashSet<SerializedObjectBindingBase>();
 
+        private static void DefaultOnPropertyChange(object cookie, SerializedProperty changedProp)
+        {
+            if (cookie is SerializedObjectBindingBase binding)
+            {
+                binding.OnPropertyValueChanged(changedProp);
+            }
+        }
+
+        private static void OnPropertyUpdate(object cookie, SerializedProperty changedProp)
+        {
+            if (cookie is SerializedObjectBindingBase binding)
+            {
+                binding.SyncObjectVersion();
+            }
+        }
         internal void RegisterBindingObject(SerializedObjectBindingBase b)
         {
-            m_RegisteredBindings.Add(b);
+            if (!m_RegisteredBindings.Contains(b))
+            {
+                m_RegisteredBindings.Add(b);
 
-            //we assume binding is valid at registration time
-            b.SetPropertyValid(true);
+                if (b.ResolveProperty())
+                {
+                    m_ValueTracker.Add(b.boundProperty, b, (o, p) => DefaultOnPropertyChange(o,p), (o, p) => OnPropertyUpdate(o,p));
+                }
+            }
         }
 
         internal void UnregisterBindingObject(SerializedObjectBindingBase b)
         {
-            m_RegisteredBindings.Remove(b);
-            b.SetPropertyValid(false);
-        }
-
-        void UpdateValidProperties()
-        {
-            // Here we walk over the entire object, gathering paths in order to validate that all tracked properties are
-            // still valid. This is way faster than calling serializedProperty.isValid on all properties.
-            if (m_ValidPropertyPaths == null)
+            if (b.boundPropertyHash != 0)
             {
-                m_ValidPropertyPaths = new HashSet<int>();
+                m_ValueTracker.Remove(b.boundPropertyHash, b);
             }
 
-            m_ValidPropertyPaths.Clear();
+            m_RegisteredBindings.Remove(b);
+        }
 
-            // Iterating over the entire object, gathering valid property names hashes is faster than querying
+        HashSet<long> visited = new HashSet<long>();
+        void UpdateTrackedProperties()
+        {
+            // Iterating over the entire object, as gathering valid property names hashes is faster than querying
             // each saved SerializedProperty.isValid
             var iterator = serializedObject.GetIterator();
             iterator.unsafeMode = true;
-            while (iterator.NextVisible(true))
+
+            visited.Clear();
             {
-                m_ValidPropertyPaths.Add(iterator.hashCodeForPropertyPath);
+                bool visitChild = true;
+                while (iterator.Next(visitChild))
+                {
+                    visitChild = true;
+
+                    switch (iterator.propertyType)
+                    {
+                        case SerializedPropertyType.ManagedReference:
+                        {
+                            // Managed reference objects can form a cyclical graph, so need to track visited objects
+                            long refId = iterator.managedReferenceId;
+
+                            if (!visited.Add(refId))
+                            {
+                                visitChild = false;
+                            }
+
+                            break;
+                        }
+                        case SerializedPropertyType.String:
+                            visitChild = false;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    m_ValueTracker.Update(this, iterator);
+                }
             }
 
-            foreach (var b in m_RegisteredBindings)
-            {
-                b.SetPropertyValid(SerializedPropertyHelper.IsPropertyValidFaster(m_ValidPropertyPaths, b.boundProperty));
-            }
-
-            m_ValueTracker?.UpdateValidProperties(m_ValidPropertyPaths);
+            visited.Clear();
         }
     }
 
@@ -1005,7 +1065,7 @@ namespace UnityEditor.UIElements.Bindings
         {
             var bindable = element as IBindable;
             var binding = bindable?.binding as SerializedObjectBindingBase;
-            if (binding == null || binding.boundProperty == null)
+            if (binding?.boundProperty == null)
                 return;
 
             BindingsStyleHelpers.UpdateElementStyle(element, binding.boundProperty);
@@ -1103,7 +1163,7 @@ namespace UnityEditor.UIElements.Bindings
         public SerializedObjectBindingContext bindingContext
         {
             get => m_BindingContext;
-            set
+            private set
             {
                 if (m_BindingContext != null)
                 {
@@ -1115,19 +1175,58 @@ namespace UnityEditor.UIElements.Bindings
                 if (m_BindingContext != null)
                 {
                     m_BindingContext.RegisterBindingObject(this);
+                    SyncObjectVersion();
+                }
+                else
+                {
+                    boundProperty = null;
                 }
             }
         }
 
         public string boundPropertyPath;
-        public SerializedProperty boundProperty;
+        public int boundPropertyHash;
+        private SerializedProperty m_BoundProperty;
 
-        protected uint lastContentHash;
+        public SerializedProperty boundProperty
+        {
+            get => m_BoundProperty;
+            set
+            {
+                m_BoundProperty = value;
+
+                if (m_BoundProperty != null)
+                {
+                    boundPropertyPath = m_BoundProperty.propertyPath;
+                    boundPropertyHash = m_BoundProperty.hashCodeForPropertyPath;
+                }
+                else
+                {
+                    boundPropertyPath = null;
+                    boundPropertyHash = 0;
+                }
+            }
+        }
 
         protected bool isReleased { get; set; }
         protected bool isUpdating { get; set; }
         public abstract void Update();
         public abstract void Release();
+
+        protected void SetContext(SerializedObjectBindingContext context, SerializedProperty prop)
+        {
+            if (context != null)
+            {
+                boundProperty = prop;
+            }
+
+            bindingContext = context;
+        }
+
+        protected void ResetContext()
+        {
+            bindingContext = null;
+        }
 
         public void PreUpdate()
         {
@@ -1139,21 +1238,12 @@ namespace UnityEditor.UIElements.Bindings
             bindingContext?.ResetUpdate();
         }
 
-        private bool m_IsPropertyValid;
-        internal void SetPropertyValid(bool isValid)
-        {
-            m_IsPropertyValid = isValid;
-        }
-
-        protected bool IsPropertyValid()
-        {
-            return m_IsPropertyValid;
-        }
-
         protected IBindable m_Field;
         private SerializedObjectBindingContext m_BindingContext;
 
         private bool m_TooltipWasSet;
+        private bool m_IsFieldAttached;
+
         protected IBindable boundElement
         {
             get { return m_Field; }
@@ -1169,7 +1259,10 @@ namespace UnityEditor.UIElements.Bindings
                     m_TooltipWasSet = false;
                 }
 
+                FieldBinding = null;
+
                 m_Field = value;
+                FieldBinding = this;
                 UpdateFieldIsAttached();
                 if (m_Field != null)
                 {
@@ -1181,11 +1274,10 @@ namespace UnityEditor.UIElements.Bindings
 
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {
-                            ve.tooltip = boundProperty.tooltip;
+                            ve.tooltip = boundProperty?.tooltip;
                             m_TooltipWasSet = true;
                         }
                     }
-                    FieldBinding = this;
                 }
             }
         }
@@ -1199,8 +1291,7 @@ namespace UnityEditor.UIElements.Bindings
             }
             set
             {
-                var bindable = m_Field as IBindable;
-                if (bindable != null)
+                if (m_Field is IBindable bindable)
                 {
                     var previousBinding = bindable.binding;
                     bindable.binding = value;
@@ -1213,7 +1304,32 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        protected bool isFieldAttached { get; private set; }
+        protected bool isFieldAttached
+        {
+            get => m_IsFieldAttached;
+            private set
+            {
+                if (m_IsFieldAttached != value)
+                {
+                    m_IsFieldAttached = value;
+
+                    if (m_IsFieldAttached)
+                    {
+                        m_BindingContext?.RegisterBindingObject(this);
+                        if (boundProperty != null)
+                        {
+                            //we make sure the property value is applied
+                            OnPropertyValueChanged(boundProperty);
+                        }
+                    }
+                    else
+                    {
+                        m_BindingContext?.UnregisterBindingObject(this);
+                    }
+                }
+
+            }
+        }
 
         private void OnFieldAttached(AttachToPanelEvent evt)
         {
@@ -1228,9 +1344,7 @@ namespace UnityEditor.UIElements.Bindings
 
         protected void UpdateFieldIsAttached()
         {
-            VisualElement ve = m_Field as VisualElement;
-
-            if (ve != null)
+            if (m_Field is VisualElement ve)
             {
                 bool attached = ve.panel != null;
 
@@ -1251,10 +1365,40 @@ namespace UnityEditor.UIElements.Bindings
                     isFieldAttached = true;
                     ResetCachedValues();
                 }
+                else
+                {
+                    isFieldAttached = false;
+                }
             }
         }
 
         protected abstract void ResetCachedValues();
+
+        public virtual void OnPropertyValueChanged(SerializedProperty currentPropertyIterator)
+        {
+        }
+
+        public bool ResolveProperty()
+        {
+
+            boundProperty = (bindingContext != null && bindingContext.IsValid()) ? bindingContext.serializedObject.FindProperty(boundPropertyPath) : null;
+            return boundProperty != null;
+        }
+
+        private ulong m_LastSyncedVersion = 0;
+
+        public void SyncObjectVersion()
+        {
+            if (m_BindingContext != null)
+            {
+                m_LastSyncedVersion = m_BindingContext.lastRevision;
+            }
+        }
+
+        public bool IsSynced()
+        {
+            return m_BindingContext != null && m_LastSyncedVersion == m_BindingContext.lastRevision;
+        }
     }
 
     internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBindingBase
@@ -1264,16 +1408,18 @@ namespace UnityEditor.UIElements.Bindings
 
         private VisualElement owner;
 
-        private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+        private UInt64 lastTrackedObjectRevision = 0xFFFFFFFFFFFFFFFF;
 
         public event Action<object, SerializedObject> registeredCallbacks;
 
         public static SerializedObjectBindingContextUpdater Create(VisualElement owner, SerializedObjectBindingContext context)
         {
             var b = s_Pool.Get();
-            b.bindingContext = context;
+
+            b.isReleased = false;
+            b.SetContext(context, null);
             b.owner = owner;
-            b.lastUpdatedRevision = context.lastRevision;
+            b.lastTrackedObjectRevision = context.lastRevision;
             return b;
         }
 
@@ -1291,14 +1437,21 @@ namespace UnityEditor.UIElements.Bindings
 
         public override void Update()
         {
-            ResetUpdate();
-
-            if (lastUpdatedRevision != bindingContext.lastRevision)
-            {
-                lastUpdatedRevision = bindingContext.lastRevision;
-
-                registeredCallbacks?.Invoke(owner, bindingContext.serializedObject);
+            if (isReleased)
                 return;
+
+
+            if (bindingContext != null)
+            {
+                ResetUpdate();
+
+                if (lastTrackedObjectRevision != bindingContext.lastRevision)
+                {
+                    lastTrackedObjectRevision = bindingContext.lastRevision;
+
+                    registeredCallbacks?.Invoke(owner, bindingContext.serializedObject);
+                    return;
+                }
             }
         }
 
@@ -1307,7 +1460,7 @@ namespace UnityEditor.UIElements.Bindings
             if (isReleased)
                 return;
 
-            if (owner != null)
+            if (owner != null && bindingContext != null)
             {
                 foreach (var prop in trackedProperties)
                 {
@@ -1317,8 +1470,9 @@ namespace UnityEditor.UIElements.Bindings
 
             trackedProperties.Clear();
             owner = null;
-            bindingContext = null;
-            boundProperty = null;
+
+            ResetContext();
+
             registeredCallbacks = null;
             ResetCachedValues();
             isReleased = true;
@@ -1327,8 +1481,7 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override void ResetCachedValues()
         {
-            lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
-            lastContentHash = UInt32.MaxValue;
+            lastTrackedObjectRevision = 0xFFFFFFFFFFFFFFFF;
         }
     }
 
@@ -1340,7 +1493,7 @@ namespace UnityEditor.UIElements.Bindings
             set
             {
                 var ve = field as VisualElement;
-                ve?.UnregisterCallback<ChangeEvent<TValue>>(FieldValueChanged);
+                ve?.UnregisterCallback<ChangeEvent<TValue>>(FieldValueChanged, TrickleDown.TrickleDown);
                 boundElement = value as IBindable;
                 ve = field as VisualElement;
                 ve?.RegisterCallback<ChangeEvent<TValue>>(FieldValueChanged, TrickleDown.TrickleDown);
@@ -1359,7 +1512,7 @@ namespace UnityEditor.UIElements.Bindings
             var bindable = evt.target as IBindable;
             var binding = bindable?.binding;
 
-            if (binding == this && boundProperty != null && bindingContext.IsValid())
+            if (binding == this && ResolveProperty())
             {
                 if (!isFieldAttached)
                 {
@@ -1369,32 +1522,53 @@ namespace UnityEditor.UIElements.Bindings
                 }
 
                 UpdateLastFieldValue();
-                if (IsPropertyValid())
+
+                if (SyncFieldValueToProperty())
                 {
-                    SerializedPropertyHelper.ForceSync(boundProperty);
-                    if (SyncFieldValueToProperty())
-                    {
-                        lastContentHash = boundProperty.contentHash;
-                        bindingContext.UpdateRevision();     //we make sure to Poll the ChangeTracker here
-                        bindingContext.ResetUpdate();
-                    }
-                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
-                    return;
+                    bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
+                    bindingContext.ResetUpdate();
                 }
+
+                BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
+                return;
             }
 
             // Something was wrong
             Release();
         }
 
-        private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
-
         protected override void ResetCachedValues()
         {
-            lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
-            lastContentHash = UInt32.MaxValue;
             UpdateLastFieldValue();
             UpdateFieldIsAttached();
+        }
+
+        public override void OnPropertyValueChanged(SerializedProperty currentPropertyIterator)
+        {
+            if (isReleased)
+                return;
+            try
+            {
+                isUpdating = true;
+                var veField = field as VisualElement;
+                var bindable = field as IBindable;
+
+                if (bindable.binding == this)
+                {
+                    SyncPropertyToField(field, currentPropertyIterator);
+                    BindingsStyleHelpers.UpdateElementStyle(veField, currentPropertyIterator);
+                    return;
+                }
+            }catch (ArgumentNullException)
+            {
+                //this can happen when serializedObject has been disposed of
+            }
+            finally
+            {
+                isUpdating = false;
+            }
+            // We unbind here
+            Release();
         }
 
         public override void Update()
@@ -1404,41 +1578,21 @@ namespace UnityEditor.UIElements.Bindings
             try
             {
                 ResetUpdate();
+
+                if (!IsSynced())
+                    return;
+
                 isUpdating = true;
 
                 if (FieldBinding == this)
                 {
                     var veField = field as VisualElement;
-                    if (lastUpdatedRevision == bindingContext.lastRevision)
-                    {
-                        // Value might not have changed but prefab state could have been reverted, so we need to
-                        // at least update the prefab override visual if necessary. Happens when user reverts a
-                        // field where the value is the same as the prefab registered value. Case 1276154.
-                        BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
-                        return;
-                    }
 
-                    if (bindingContext.IsValid() && IsPropertyValid())
-                    {
-                        lastUpdatedRevision = bindingContext.lastRevision;
-                        // Here we somehow need to make sure the property internal object version is synced with its serializedObject
-                        SerializedPropertyHelper.ForceSync(boundProperty);
-
-                        uint newContentHash = boundProperty.contentHash;
-
-                        if (newContentHash != lastContentHash)
-                        {
-                            lastContentHash = newContentHash;
-                            SyncPropertyToField(field, boundProperty);
-                            BindingsStyleHelpers.UpdateElementStyle(veField, boundProperty);
-                        }
-                        else
-                        {
-                            BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
-                        }
-
-                        return;
-                    }
+                    // Value might not have changed but prefab state could have been reverted, so we need to
+                    // at least update the prefab override visual if necessary. Happens when user reverts a
+                    // field where the value is the same as the prefab registered value. Case 1276154.
+                    BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
+                    return;
                 }
             }
             catch (ArgumentNullException)
@@ -1449,7 +1603,8 @@ namespace UnityEditor.UIElements.Bindings
             {
                 isUpdating = false;
             }
-            // We unbind here
+
+            // Something failed, we unbind here
             Release();
         }
 
@@ -1505,11 +1660,13 @@ namespace UnityEditor.UIElements.Bindings
                 if (field is BaseField<TValue> bf)
                 {
                     BindingsStyleHelpers.UnregisterRightClickMenu(bf);
+                }else if (field is Foldout foldout)
+                {
+                    BindingsStyleHelpers.UnregisterRightClickMenu(foldout);
                 }
             }
 
-            bindingContext = null;
-            boundProperty = null;
+            ResetContext();
             field = null;
             propGetValue = null;
             propSetValue = null;
@@ -1543,26 +1700,25 @@ namespace UnityEditor.UIElements.Bindings
             Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> compareValues)
         {
             property.unsafeMode = true;
-            this.boundPropertyPath = property.propertyPath;
-            this.bindingContext = context;
-            this.boundProperty = property;
+
             this.propGetValue = getValue;
             this.propSetValue = setValue;
             this.propCompareValues = compareValues;
 
-            this.field = c;
+            SetContext(context, property);
+
             var originalValue = this.lastFieldValue = c.value;
 
-            if (field is BaseField<TValue> bf)
+            if (c is BaseField<TValue> bf)
             {
                 BindingsStyleHelpers.RegisterRightClickMenu(bf, property);
             }
-            else if (field is Foldout foldout)
+            else if (c is Foldout foldout)
             {
                 BindingsStyleHelpers.RegisterRightClickMenu(foldout, property);
             }
 
-            Update();
+            this.field = c;
 
             if (compareValues(originalValue, property, getValue)) //the value hasn't changed, but we want the binding to send an event no matter what
             {
@@ -1642,11 +1798,10 @@ namespace UnityEditor.UIElements.Bindings
         private void SetBinding(BaseField<Enum> c, SerializedObjectBindingContext context,
             SerializedProperty property, Type manageType)
         {
-            this.bindingContext = context;
             this.managedType = manageType;
             property.unsafeMode = true;
-            this.boundPropertyPath = property.propertyPath;
-            this.boundProperty = property;
+
+            SetContext(context, property);
 
             int enumValueAsInt = property.intValue;
 
@@ -1667,13 +1822,11 @@ namespace UnityEditor.UIElements.Bindings
 
             c.value = value;
 
+            BindingsStyleHelpers.RegisterRightClickMenu(c, property);
+
             // Make sure to write this property only after setting a first value into the field
             // This avoid any null checks in regular update methods
             this.field = c;
-
-            BindingsStyleHelpers.RegisterRightClickMenu(c, property);
-
-            Update();
 
             if (!EqualityComparer<Enum>.Default.Equals(previousValue, c.value))
             {
@@ -1780,8 +1933,8 @@ namespace UnityEditor.UIElements.Bindings
                 FieldBinding = null;
             }
 
-            bindingContext = null;
-            boundProperty = null;
+            ResetContext();
+
             field = null;
             managedType = null;
             isReleased = true;
@@ -1819,12 +1972,10 @@ namespace UnityEditor.UIElements.Bindings
             SerializedProperty property)
         {
             property.unsafeMode = true;
-            this.boundPropertyPath = property.propertyPath;
-            this.boundProperty = property;
-            this.bindingContext = context;
-            this.field = c;
-            this.originalChoices = field.choices;
-            this.originalIndex = field.index;
+            SetContext(context, property);
+
+            this.originalChoices = c.choices;
+            this.originalIndex = c.index;
 
             // We need to keep bidirectional lists of indices to translate between Popup choice index and
             // SerializedProperty enumValueIndex because the Popup choices might be displayed in another language
@@ -1846,7 +1997,7 @@ namespace UnityEditor.UIElements.Bindings
             if (enumType != null)
             {
                 var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
-                field.choices = new List<string>(enumData.displayNames);
+                c.choices = new List<string>(enumData.displayNames);
 
                 // The call to EditorGUI.EnumNamesCache.GetEnumNames returns an ordered version of the enum. We use the
                 // actual enum values, not the display names, in order to make sure we can compare them to the values in
@@ -1860,24 +2011,25 @@ namespace UnityEditor.UIElements.Bindings
             }
             else
             {
-                field.choices = new List<string>(property.enumLocalizedDisplayNames);
+                c.choices = new List<string>(property.enumLocalizedDisplayNames);
 
-                for (int i = 0; i < field.choices.Count; i++)
+                for (int i = 0; i < c.choices.Count; i++)
                 {
                     displayIndexToEnumIndex.Add(i);
                     enumIndexToDisplayIndex.Add(i);
                 }
             }
 
+
             var originalValue = this.lastFieldValueIndex = c.index;
 
             BindingsStyleHelpers.RegisterRightClickMenu(c, property);
 
-            Update();
+            this.field = c;
 
             if (originalValue == c.index) //the value hasn't changed, but we want the binding to send an event no matter what
             {
-                if (this.field is VisualElement handler)
+                if (c is VisualElement handler)
                 {
                     using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(c.value, c.value))
                     {
@@ -1960,8 +2112,7 @@ namespace UnityEditor.UIElements.Bindings
             }
 
 
-            bindingContext = null;
-            boundProperty = null;
+            ResetContext();
             field = null;
             lastFieldValueIndex = kDefaultValueIndex;
             isReleased = true;
@@ -1998,19 +2149,19 @@ namespace UnityEditor.UIElements.Bindings
             Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> compareValues)
         {
             property.unsafeMode = true;
-            this.boundPropertyPath = property.propertyPath;
-            this.boundProperty = property;
-            this.bindingContext = context;
+
             this.propGetValue = getValue;
             this.propSetValue = setValue;
             this.propCompareValues = compareValues;
+
+            SetContext(context, property);
+
             this.field = c;
 
             if (c is BaseField<TValue> bf)
             {
                 BindingsStyleHelpers.RegisterRightClickMenu(bf, property);
             }
-
 
             var previousFieldValue = field.value;
 

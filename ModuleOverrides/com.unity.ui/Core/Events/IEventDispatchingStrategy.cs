@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Pool;
+
 namespace UnityEngine.UIElements
 {
     // determines in which event phase an event handler wants to handle events
@@ -217,12 +219,21 @@ namespace UnityEngine.UIElements
 
             if (root.imguiContainerDescendantCount > 0)
             {
-                var childCount = root.hierarchy.childCount;
-                for (int i = 0; i < childCount; i++)
+                using (ListPool<VisualElement>.Get(out var childrenToNotify))
                 {
-                    PropagateToIMGUIContainer(root.hierarchy[i], evt);
-                    if (evt.isPropagationStopped)
-                        break;
+                    childrenToNotify.AddRange(root.hierarchy.children);
+
+                    foreach (var child in childrenToNotify)
+                    {
+                        // if child is no longer in the hierarchy (removed when notified another child. See issue 1413477)
+                        // , then ignore it.
+                        if (child.hierarchy.parent != root)
+                            continue;
+
+                        PropagateToIMGUIContainer(child, evt);
+                        if (evt.isPropagationStopped)
+                            break;
+                    }
                 }
             }
         }

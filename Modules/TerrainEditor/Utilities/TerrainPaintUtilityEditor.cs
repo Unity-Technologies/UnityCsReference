@@ -75,7 +75,7 @@ namespace UnityEditor.TerrainTools
             };
         }
 
-        internal static void UpdateTerrainDataUndo(TerrainData terrainData, string undoName)
+        public static void UpdateTerrainDataUndo(TerrainData terrainData, string undoName)
         {
             // if we are in a new undo group (new operation) then start with an empty list
             if (Undo.GetCurrentGroup() != s_CurrentOperationUndoGroup)

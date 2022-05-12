@@ -78,28 +78,33 @@ namespace UnityEditor
         }
 
         [ClutchShortcut("Scene View/Temporary Pan Tool for 2D Mode", typeof(Context2D), KeyCode.Mouse1)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneView), KeyCode.Mouse2)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 1", typeof(SceneView), KeyCode.Mouse2)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneView), KeyCode.Mouse2, ShortcutModifiers.Alt)]
         static void TemporaryPan(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Pan);
+            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
         [ClutchShortcut("Scene View/Temporary Zoom Tool", typeof(SceneView), KeyCode.Mouse1, ShortcutModifiers.Alt)]
         static void TemporaryZoom(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Zoom);
+            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary Orbit Tool", typeof(SceneView), KeyCode.Mouse2, ShortcutModifiers.Alt)]
+        [ClutchShortcut("Scene View/Temporary Orbit Tool", typeof(SceneView), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Orbit);
+            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
         [ClutchShortcut("Scene View/Temporary FPS Tool", typeof(Context3D), KeyCode.Mouse1)]
         static void TemporaryFPS(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.FPS);
+            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
         static KeyCode shortcutKey;
@@ -160,15 +165,6 @@ namespace UnityEditor
                         view.Repaint();
                     }
                     break;
-                case EventType.Used:
-                    // since FPS tool acts on right click, nothing prevents a regular control
-                    // from taking the control ID on left click, so some cleanup is necessary
-                    // to not get locked into FPS mode (case 777346)
-                    if (GUIUtility.hotControl != id && s_CurrentState != MotionState.kInactive)
-                    {
-                        ResetDragState();
-                    }
-                    break;
             }
 
             if (s_CurrentState == MotionState.kDragging && evt.type == EventType.Repaint)
@@ -176,7 +172,7 @@ namespace UnityEditor
                 HandleMouseDrag(view, id);
             }
 
-            if (shortcutKey != KeyCode.None) GUIUtility.hotControl = s_ViewToolID;
+            if (shortcutKey != KeyCode.None && Tools.viewTool != ViewTool.None) GUIUtility.hotControl = s_ViewToolID;
         }
 
         static void UpdateViewToolState(Event evt)

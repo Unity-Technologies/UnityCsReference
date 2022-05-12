@@ -153,19 +153,17 @@ namespace UnityEditor.Modules
             return Path.GetFileName(imp.assetPath);
         }
 
-        private static bool IsPluginCompatible(PluginImporter pluginImporter, string buildTargetName, string[] defines)
+        private static bool IsPluginDefinesCompatible(PluginImporter pluginImporter, string buildTargetName, string[] defines)
         {
             var defineConstraints = pluginImporter.DefineConstraints;
-            var isCompatibleWithPlatform = pluginImporter.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(buildTargetName);
-            return isCompatibleWithPlatform
-                && DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, defineConstraints);
+            return DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, defineConstraints);
         }
 
         protected Dictionary<string, List<PluginImporter>> GetCompatiblePlugins(string buildTargetName, string[] defines)
         {
-            var pluginImporters = PluginImporter.GetAllImporters();
+            var pluginImporters = PluginImporter.GetImporters(buildTargetName);
             var plugins = pluginImporters
-                .Where(pluginImporter => IsPluginCompatible(pluginImporter, buildTargetName, defines));
+                .Where(pluginImporter => IsPluginDefinesCompatible(pluginImporter, buildTargetName, defines));
 
             plugins = PluginImporter.FilterAssembliesByAssemblyVersion(plugins);
 

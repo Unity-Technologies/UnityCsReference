@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -10,6 +11,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using System.Text;
 using static UnityEditor.GameObjectTreeViewGUI;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -701,6 +703,8 @@ namespace UnityEditor
             public static GUIContent headerContent = EditorGUIUtility.TrTextContent("{0} unused overrides");
             public static GUIContent unusedRemovedComponentsContentSingular = EditorGUIUtility.TrTextContent("{0} has 1 unused removed component");
             public static GUIContent unusedRemovedComponentsContentPlural = EditorGUIUtility.TrTextContent("{0} has {1} unused removed components");
+            public static GUIContent unusedRemovedGameObjectsContentSingular = EditorGUIUtility.TrTextContent("{0} has 1 unused removed GameObject");
+            public static GUIContent unusedRemovedGameObjectsContentPlural = EditorGUIUtility.TrTextContent("{0} has {1} unused removed GameObjects");
             public static GUIContent headerContentSingular = EditorGUIUtility.TrTextContent("1 unused override");
             public static GUIContent extraOverridesContent = EditorGUIUtility.TrTextContent("and {0} others");
             public static GUIContent extraInstancesContent = EditorGUIUtility.TrTextContent("on {0} instances");
@@ -738,6 +742,7 @@ namespace UnityEditor
         int m_AffectedInstanceCount = 0;
         int m_UnusedOverridesCount = 0;
         int m_UsedOverridesCount = 0;
+        int m_UnusedRemovedGameObjectsCount = 0;
         int m_UnusedRemovedComponentsCount = 0;
 
         public UnusedOverridesViewPopup(GameObject[] selectedGameObjects, PrefabOverridesWindow owner)
@@ -841,12 +846,13 @@ namespace UnityEditor
             {
                 foreach (PrefabUtility.InstanceOverridesInfo instanceMods in m_InstanceOverridesInfos)
                 {
-                    if (!instanceMods.unusedMods.Any() && instanceMods.unusedRemovedComponentCount == 0)
+                    if (instanceMods.unusedOverrideCount == 0)
                         continue;
 
                     m_AffectedInstanceCount++;
                     m_UnusedOverridesCount += instanceMods.unusedMods.Length;
                     m_UsedOverridesCount += instanceMods.usedMods.Length;
+                    m_UnusedRemovedGameObjectsCount += instanceMods.unusedRemovedGameObjectCount;
                     m_UnusedRemovedComponentsCount += instanceMods.unusedRemovedComponentCount;
                     m_SingleInstanceWithUnusedMods = instanceMods;
                 }
@@ -856,10 +862,12 @@ namespace UnityEditor
                 m_AffectedInstanceCount = 1;
                 m_UnusedOverridesCount = m_SingleInstanceWithUnusedMods.unusedMods.Length;
                 m_UsedOverridesCount = m_SingleInstanceWithUnusedMods.usedMods.Length;
+                m_UnusedRemovedGameObjectsCount = m_SingleInstanceWithUnusedMods.unusedRemovedGameObjectCount;
                 m_UnusedRemovedComponentsCount = m_SingleInstanceWithUnusedMods.unusedRemovedComponentCount;
             }
 
             m_UnusedOverridesCount += m_UnusedRemovedComponentsCount;
+            m_UnusedOverridesCount += m_UnusedRemovedGameObjectsCount;
         }
 
         float BuildHeaderText()
@@ -876,56 +884,54 @@ namespace UnityEditor
         {
             m_OverridesContent = new List<GUIContent>();
             int remainingAffectedInstanceCount = m_AffectedInstanceCount;
-            int totalLineEntries = 0;
             float maxLineWidth = 0;
-            string summaryItems = string.Empty;
 
             foreach (PrefabUtility.InstanceOverridesInfo instanceMods in m_InstanceOverridesInfos)
             {
-                int entriesFromThisInstance = 0;
-                bool addedLines = false;
+                int initialOverridesCount = m_OverridesContent.Count;
+
                 foreach (PropertyModification mod in instanceMods.unusedMods)
                 {
-                    if (totalLineEntries >= k_MaxEntries)
+                    if (m_OverridesContent.Count >= k_MaxEntries)
                         break;
 
                     string itemText = mod.propertyPath + " " + Styles.pathOnInstanceContent.text + " " + instanceMods.instance.name;
-
-                    GUIContent lineContent = new GUIContent(itemText);
-                    m_OverridesContent.Add(lineContent);
-
-                    float w = GetTextWidth(lineContent.text, Styles.bodyStyle);
-                    if (w > maxLineWidth)
-                        maxLineWidth = w;
-
-                    entriesFromThisInstance++;
-                    totalLineEntries++;
-                    addedLines = true;
+                    m_OverridesContent.Add(new GUIContent(itemText));
                 }
 
-                if (instanceMods.unusedRemovedComponentCount > 0 && totalLineEntries < k_MaxEntries)
+                if (instanceMods.unusedRemovedGameObjectCount > 0 && m_OverridesContent.Count < k_MaxEntries)
                 {
                     string itemText = string.Empty;
+                    if (instanceMods.unusedRemovedGameObjectCount > 1)
+                        itemText = string.Format(Styles.unusedRemovedGameObjectsContentPlural.text, instanceMods.instance.name, instanceMods.unusedRemovedGameObjectCount);
+                    else
+                        itemText = string.Format(Styles.unusedRemovedGameObjectsContentSingular.text, instanceMods.instance.name);
 
+                    m_OverridesContent.Add(new GUIContent(itemText));
+                }
+
+                if (instanceMods.unusedRemovedComponentCount > 0 && m_OverridesContent.Count < k_MaxEntries)
+                {
+                    string itemText = string.Empty;
                     if (instanceMods.unusedRemovedComponentCount > 1)
                         itemText = string.Format(Styles.unusedRemovedComponentsContentPlural.text, instanceMods.instance.name, instanceMods.unusedRemovedComponentCount);
                     else
                         itemText = string.Format(Styles.unusedRemovedComponentsContentSingular.text, instanceMods.instance.name);
 
-                    GUIContent lineContent = new GUIContent(itemText);
-                    m_OverridesContent.Add(lineContent);
-
-                    float w = GetTextWidth(lineContent.text, Styles.bodyStyle);
-                    if (w > maxLineWidth)
-                        maxLineWidth = w;
-
-                    entriesFromThisInstance++;
-                    totalLineEntries++;
-                    addedLines = true;
+                    m_OverridesContent.Add(new GUIContent(itemText));
                 }
 
+                int entriesFromThisInstance = m_OverridesContent.Count - initialOverridesCount;
+
+                bool addedLines = entriesFromThisInstance > 0;
                 if (addedLines && instanceMods.unusedMods.Length <= entriesFromThisInstance)
                     remainingAffectedInstanceCount--;
+            }
+
+            foreach (var content in m_OverridesContent)
+            {
+                float w = GetTextWidth(content.text, Styles.bodyStyle);
+                maxLineWidth = Math.Max(w, maxLineWidth);
             }
 
             int remainingUnusedOverridesCount = m_UnusedOverridesCount - k_MaxEntries;
@@ -940,8 +946,7 @@ namespace UnityEditor
                 m_RemainingOverridesInfo = new GUIContent(remainingOverridesInfo);
 
                 float w = GetTextWidth(m_RemainingOverridesInfo.text, Styles.bodyStyle);
-                if (w > maxLineWidth)
-                    maxLineWidth = w;
+                maxLineWidth = Math.Max(w, maxLineWidth);
             }
 
             return maxLineWidth;

@@ -7,9 +7,27 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using UnityEngine;
 
 namespace UnityEditor.Search
 {
+    readonly struct SearchSessionContext
+    {
+        public readonly SearchContext searchContext;
+        public readonly StackTrace stackTrace;
+
+        public SearchSessionContext(SearchContext context, StackTrace stackTrace)
+        {
+            this.searchContext = context;
+            this.stackTrace = stackTrace;
+        }
+
+        public SearchSessionContext(SearchContext context)
+            : this(context, new StackTrace(2, true))
+        {}
+    }
+
     class BaseAsyncIEnumerableHandler<T>
     {
         protected SearchEnumerator<T> m_ItemsEnumerator = new SearchEnumerator<T>();
@@ -29,6 +47,11 @@ namespace UnityEditor.Search
         public virtual void OnUpdate()
         {
             var newItems = new List<T>();
+            Update(newItems);
+        }
+
+        public virtual void Update(List<T> newItems)
+        {
             var atEnd = !FetchSome(newItems, maxFetchTimePerUpdate);
 
             if (newItems.Count > 0)
@@ -168,16 +191,21 @@ namespace UnityEditor.Search
         /// </summary>
         public event Action<SearchContext> sessionEnded;
 
-        private SearchContext m_Context;
+        private SearchSessionContext m_Context;
+        private SearchProvider m_Provider;
+        private Stopwatch m_SessionTimer = new Stopwatch();
+        private const long k_DefaultSessionTimeOut = 10000;
+        private long m_SessionTimeOut = k_DefaultSessionTimeOut;
 
         /// <summary>
         /// Checks if this async search session is active.
         /// </summary>
         public bool searchInProgress { get; set; } = false;
 
-        public SearchSession(SearchContext context)
+        public SearchSession(SearchSessionContext context, SearchProvider provider)
         {
             m_Context = context;
+            m_Provider = provider;
         }
 
         /// <summary>
@@ -186,7 +214,7 @@ namespace UnityEditor.Search
         /// <param name="items"></param>
         public override void SendItems(IEnumerable<SearchItem> items)
         {
-            asyncItemReceived?.Invoke(m_Context, items);
+            asyncItemReceived?.Invoke(m_Context.searchContext, items);
         }
 
         /// <summary>
@@ -195,13 +223,15 @@ namespace UnityEditor.Search
         /// <param name="itemEnumerator">The enumerator that will yield new search results. This object can be an IEnumerator or IEnumerable</param>
         /// <param name="maxFetchTimePerProviderMs">The amount of time allowed to yield new results.</param>
         /// <remarks>Normally async search sessions are re-used per search provider.</remarks>
-        public void Reset(SearchContext context, object itemEnumerator, long maxFetchTimePerProviderMs = k_MaxTimePerUpdate)
+        public void Reset(SearchSessionContext context, object itemEnumerator, long maxFetchTimePerProviderMs = k_MaxTimePerUpdate, long sessionTimeOutMs = k_DefaultSessionTimeOut)
         {
             // Remove and add the event handler in case it was already removed.
             Stop();
             searchInProgress = true;
             m_Context = context;
             maxFetchTimePerUpdate = maxFetchTimePerProviderMs;
+            m_SessionTimeOut = sessionTimeOutMs;
+            m_SessionTimer.Reset();
             if (itemEnumerator != null)
             {
                 lock (this)
@@ -212,7 +242,8 @@ namespace UnityEditor.Search
 
         internal override void Start()
         {
-            sessionStarted?.Invoke(m_Context);
+            sessionStarted?.Invoke(m_Context.searchContext);
+            m_SessionTimer.Start();
             base.Start();
         }
 
@@ -222,10 +253,59 @@ namespace UnityEditor.Search
         public override void Stop()
         {
             if (searchInProgress)
-                sessionEnded?.Invoke(m_Context);
+                sessionEnded?.Invoke(m_Context.searchContext);
 
             searchInProgress = false;
+            m_SessionTimer.Stop();
             base.Stop();
+        }
+
+        public override void Update(List<SearchItem> newItems)
+        {
+            base.Update(newItems);
+            if (!searchInProgress)
+                return;
+            if (newItems.Count > 0)
+            {
+                m_SessionTimer.Restart();
+            }
+
+            if (m_SessionTimer.ElapsedMilliseconds > m_SessionTimeOut)
+            {
+                // Do this before stopping to get target IEnumerator
+                var timeOutError = BuildSessionContextTimeOutError();
+                Stop();
+                if (m_Context.searchContext.searchView != null)
+                {
+                    m_Context.searchContext.AddSearchQueryError(new SearchQueryError(0, m_Context.searchContext.searchText.Length, timeOutError, m_Context.searchContext, m_Provider, false));
+                }
+                else
+                {
+                    UnityEngine.Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, timeOutError);
+                }
+            }
+        }
+
+        private string BuildSessionContextTimeOutError()
+        {
+            var sb = new StringBuilder();
+            if (string.IsNullOrEmpty(m_Context.searchContext.searchText))
+                sb.AppendLine($"Search session timeout for provider \"{m_Provider.id}\".");
+            else
+                sb.AppendLine($"Search session timeout for provider \"{m_Provider.id}\" and query \"{m_Context.searchContext.searchText}\".");
+            sb.AppendLine("Source:");
+            for (var i = 0; i < m_Context.stackTrace.FrameCount; ++i)
+                sb.AppendLine($"\t{m_Context.stackTrace.GetFrame(i)}");
+            if (m_ItemsEnumerator.enumeratorStack.Count > 0)
+            {
+                sb.AppendLine("Target:");
+                foreach (var enumerator in m_ItemsEnumerator.enumeratorStack)
+                {
+                    var enumeratorType = enumerator.GetType();
+                    sb.AppendLine($"\t{enumeratorType}");
+                }
+            }
+            return sb.ToString();
         }
     }
 
@@ -259,24 +339,26 @@ namespace UnityEditor.Search
 
         internal System.Threading.CancellationToken cancelToken => m_CancelSource?.Token ?? default(System.Threading.CancellationToken);
 
+        internal SearchSessionContext currentSessionContext { get; private set; }
+
         /// <summary>
         /// Returns the specified provider's async search session.
         /// </summary>
-        /// <param name="providerId"></param>
+        /// <param name="provider"></param>
         /// <returns>The provider's async search session.</returns>
-        public SearchSession GetProviderSession(SearchContext context, string providerId)
+        public SearchSession GetProviderSession(SearchProvider provider)
         {
-            if (!m_SearchSessions.TryGetValue(providerId, out var session))
+            if (!m_SearchSessions.TryGetValue(provider.id, out var session))
             {
-                session = new SearchSession(context);
-                if (m_SearchSessions.TryAdd(providerId, session))
+                session = new SearchSession(currentSessionContext, provider);
+                if (m_SearchSessions.TryAdd(provider.id, session))
                 {
                     session.sessionStarted += OnProviderAsyncSessionStarted;
                     session.sessionEnded += OnProviderAsyncSessionEnded;
                     session.asyncItemReceived += OnProviderAsyncItemReceived;
                 }
                 else
-                    throw new Exception($"Failed to add session for {providerId}");
+                    throw new Exception($"Failed to add session for {provider.id}");
             }
 
             return session;
@@ -297,7 +379,7 @@ namespace UnityEditor.Search
             asyncItemReceived?.Invoke(context, items);
         }
 
-        public void StartSessions()
+        public void StartSessions(SearchContext context)
         {
             if (m_CancelSource != null)
             {
@@ -305,6 +387,8 @@ namespace UnityEditor.Search
                 m_CancelSource = null;
             }
             m_CancelSource = new System.Threading.CancellationTokenSource();
+
+            currentSessionContext = new SearchSessionContext(context);
         }
 
         /// <summary>

@@ -82,7 +82,8 @@ namespace UnityEditor.Overlays
         internal bool DockAt(OverlayContainer container, OverlayContainerSection section, int index)
         {
             //If the overlay is staying in the same container
-            if (container.GetOverlayIndex(this, out var originSection, out var originIndex))
+            var existsInContainer = container.GetOverlayIndex(this, out var originSection, out var originIndex);
+            if (existsInContainer)
             {
                 if (originSection == section && originIndex == index)
                     return true;
@@ -99,7 +100,8 @@ namespace UnityEditor.Overlays
 
             floating = container is FloatingOverlayContainer;
 
-            RebuildContent();
+            if(!existsInContainer)
+                RebuildContent();
 
             return true;
         }

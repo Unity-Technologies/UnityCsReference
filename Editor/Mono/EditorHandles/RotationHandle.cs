@@ -147,6 +147,8 @@ namespace UnityEditor
 
             var isHot = ids.Has(GUIUtility.hotControl);
 
+            VertexSnapping.HandleMouseMove(ids.xyz);
+
             // Draw free rotation first to give it the lowest priority
             if (!isDisabled
                 && param.ShouldShow(RotationHandleParam.Handle.XYZ)

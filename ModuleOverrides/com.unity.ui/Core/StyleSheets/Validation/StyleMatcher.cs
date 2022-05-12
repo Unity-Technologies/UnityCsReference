@@ -477,7 +477,7 @@ namespace UnityEngine.UIElements.StyleSheets
         static readonly Regex s_NumberRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?$", RegexOptions.Compiled);
         protected override bool MatchKeyword(string keyword)
         {
-            return current != null && keyword == current.ToLower();
+            return String.Compare(current, keyword, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
         protected override bool MatchNumber()

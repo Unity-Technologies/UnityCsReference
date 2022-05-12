@@ -3457,6 +3457,9 @@
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\MemoryProfiling.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\MemoryProfiling.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\MemoryProfiling.deprecated.cs">
+      <Link>Runtime\Profiler\ScriptBindings\MemoryProfiling.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Profiler.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\Profiler.bindings.cs</Link>
     </Compile>

@@ -4,7 +4,7 @@
 
 namespace UnityEditor.Build
 {
-    internal enum OSArchitecture
+    public enum OSArchitecture
     {
         x64,
         ARM64,

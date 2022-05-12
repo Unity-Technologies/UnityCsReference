@@ -507,6 +507,7 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerator SearchIndexes(string searchQuery, SearchContext context, SearchProvider provider, SearchDatabase db)
         {
+            var cancelToken = context.sessions.cancelToken;
             if (!db.ready)
             {
                 if (!Utils.IsRunningTests())
@@ -524,7 +525,7 @@ namespace UnityEditor.Search.Providers
 
                 while (!db.ready)
                 {
-                    if (!db || context.options.HasAny(SearchFlags.Synchronous))
+                    if (!db || cancelToken.IsCancellationRequested || context.options.HasAny(SearchFlags.Synchronous))
                         yield break;
                     yield return null;
                 }
@@ -551,6 +552,8 @@ namespace UnityEditor.Search.Providers
         private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e)
         {
             var doc = db.index.GetDocument(e.index);
+            if (string.IsNullOrEmpty(doc.id))
+                return null;
             var score = ComputeSearchDocumentScore(context, doc, e.score);
 
             var flags = doc.flags;

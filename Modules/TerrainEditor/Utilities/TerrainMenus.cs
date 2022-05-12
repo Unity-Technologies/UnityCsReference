@@ -46,19 +46,19 @@ namespace UnityEditor
         internal static void ExportHeightmapRaw()
         {
             ExportRawHeightmap wizard = TerrainWizard.DisplayTerrainWizard<ExportRawHeightmap>("Export Heightmap", "Export");
-            wizard.InitializeDefaults(GetActiveTerrain());
+            wizard.ResetDefaults(GetActiveTerrain());
         }
 
         internal static void MassPlaceTrees()
         {
             PlaceTreeWizard wizard = TerrainWizard.DisplayTerrainWizard<PlaceTreeWizard>("Place Trees", "Place");
-            wizard.InitializeDefaults(GetActiveTerrain());
+            wizard.ResetDefaults(GetActiveTerrain());
         }
 
         internal static void Flatten()
         {
             FlattenHeightmap wizard = TerrainWizard.DisplayTerrainWizard<FlattenHeightmap>("Flatten Heightmap", "Flatten");
-            wizard.InitializeDefaults(GetActiveTerrain());
+            wizard.ResetDefaults(GetActiveTerrain());
         }
 
         internal static void RefreshPrototypes()
@@ -92,13 +92,13 @@ namespace UnityEditor
         [MenuItem("CONTEXT/TerrainEngineDetails/Add Detail Mesh")]
         static internal void AddDetailMesh(MenuCommand item)
         {
-            TerrainWizard.DisplayTerrainWizard<DetailMeshWizard>("Add Detail Mesh", "Add").InitializeDefaults((Terrain)item.context, -1);
+            TerrainWizard.DisplayTerrainWizard<TerrainDetailMeshWizard>("Add Detail Mesh", "Add").ResetDefaults((Terrain)item.context, -1);
         }
 
         [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture")]
         static internal void AddDetailTexture(MenuCommand item)
         {
-            TerrainWizard.DisplayTerrainWizard<DetailTextureWizard>("Add Grass Texture", "Add").InitializeDefaults((Terrain)item.context, -1);
+            TerrainWizard.DisplayTerrainWizard<TerrainDetailTextureWizard>("Add Grass Texture", "Add").ResetDefaults((Terrain)item.context, -1);
         }
 
         [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture", validate = true)]
@@ -117,11 +117,11 @@ namespace UnityEditor
 
             if (prototype.usePrototypeMesh)
             {
-                TerrainWizard.DisplayTerrainWizard<DetailMeshWizard>("Edit Detail Mesh", "Apply").InitializeDefaults((Terrain)item.context, item.userData);
+                TerrainWizard.DisplayTerrainWizard<TerrainDetailMeshWizard>("Edit Detail Mesh", "Apply").ResetDefaults((Terrain)item.context, item.userData);
             }
             else
             {
-                TerrainWizard.DisplayTerrainWizard<DetailTextureWizard>("Edit Grass Texture", "Apply").InitializeDefaults((Terrain)item.context, item.userData);
+                TerrainWizard.DisplayTerrainWizard<TerrainDetailTextureWizard>("Edit Grass Texture", "Apply").ResetDefaults((Terrain)item.context, item.userData);
             }
         }
 

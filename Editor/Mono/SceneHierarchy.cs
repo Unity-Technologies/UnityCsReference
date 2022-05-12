@@ -1378,7 +1378,7 @@ namespace UnityEditor
             // Save
             if (scene.isLoaded)
             {
-                if (!EditorApplication.isPlaying)
+                if (!EditorApplication.isPlaying || EditorSceneManager.IsAuthoringScene(scene))
                 {
                     menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene"), false, SaveSelectedScenes, scene);
                     if (!scene.isSubScene)

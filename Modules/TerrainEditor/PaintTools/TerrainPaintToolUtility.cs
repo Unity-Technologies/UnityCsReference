@@ -6,13 +6,17 @@ using UnityEngine;
 
 namespace UnityEditor.TerrainTools
 {
-    internal class PaintTreesDetailsContext
+    public class PaintTreesDetailsContext
     {
-        private static Terrain[] s_Nbrs = new Terrain[8];
-        private static Vector2[] s_Uvs = new Vector2[8];
+        static Terrain[] s_Nbrs = new Terrain[8];
+        static Vector2[] s_Uvs = new Vector2[8];
+        Terrain[] m_Terrains = new Terrain[4];
+        Vector2[] m_Uvs = new Vector2[4];
 
-        public Terrain[] terrains = new Terrain[4];
-        public Vector2[] uvs = new Vector2[4];
+        public Terrain[] neighborTerrains { get => m_Terrains; set => m_Terrains = value; }
+        public Vector2[] neighborUvs { get => m_Uvs; set => m_Uvs = value; }
+
+
 
         private PaintTreesDetailsContext() {}
 
@@ -37,8 +41,8 @@ namespace UnityEditor.TerrainTools
             s_Uvs[7] = new Vector2(uv.x + 1.0f, uv.y + 1.0f);
 
             PaintTreesDetailsContext ctx = new PaintTreesDetailsContext();
-            ctx.terrains[0] = terrain;
-            ctx.uvs[0] = uv;
+            ctx.neighborTerrains[0] = terrain;
+            ctx.neighborUvs[0] = uv;
 
             bool left = uv.x < 0.5f;
             bool right = !left;
@@ -55,8 +59,8 @@ namespace UnityEditor.TerrainTools
 
             for (int i = 1; i < 4; ++i, t = (t + 1) % 8)
             {
-                ctx.terrains[i] = s_Nbrs[t];
-                ctx.uvs[i] = s_Uvs[t];
+                ctx.neighborTerrains[i] = s_Nbrs[t];
+                ctx.neighborUvs[i] = s_Uvs[t];
             }
 
             return ctx;

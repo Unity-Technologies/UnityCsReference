@@ -327,6 +327,12 @@ namespace UnityEditor.UIElements.Bindings
             fieldLabelElement?.UnregisterCallback<MouseUpEvent>(RightClickFieldMenuEvent);
         }
 
+        internal static void UnregisterRightClickMenu(Foldout field)
+        {
+            var toggle = field.Q<Toggle>(className: Foldout.toggleUssClassName);
+            toggle?.UnregisterCallback<MouseUpEvent>(RightClickFieldMenuEvent);
+        }
+
         internal static void RightClickFieldMenuEvent(MouseUpEvent evt)
         {
             if (evt.button != (int)MouseButton.RightMouse)

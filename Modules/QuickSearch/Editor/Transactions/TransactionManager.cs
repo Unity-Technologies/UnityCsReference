@@ -120,7 +120,7 @@ namespace UnityEditor.Search
             {
                 m_Fs.Seek(transactionOffset * transactionSize + m_HeaderSize, SeekOrigin.Begin);
                 var dateTimeBinary = m_Br.ReadInt64();
-                return DateTime.FromBinary(dateTimeBinary);
+                return DateTime.FromBinary(dateTimeBinary).ToUniversalTime();
             }
         }
     }
@@ -425,7 +425,7 @@ namespace UnityEditor.Search
         protected TransactionReader m_Reader;
         protected bool m_Initialized;
 
-        const short k_Version = 2;
+        const short k_Version = 3;
 
         public const int Header = (0x54 << 24) | (0x4D << 16) | k_Version;
         public static int HeaderSize { get; } = sizeof(int);

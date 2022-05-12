@@ -164,6 +164,7 @@ namespace UnityEditor
             }
 
             var isCenterIsHot = ids.xyz == GUIUtility.hotControl;
+            VertexSnapping.HandleMouseMove(ids.xyz);
 
             switch (Event.current.type)
             {

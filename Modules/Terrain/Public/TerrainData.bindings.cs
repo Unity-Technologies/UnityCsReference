@@ -108,6 +108,7 @@ namespace UnityEngine
         internal int m_UseDensityScaling = 0;
         internal float m_AlignToGround = 0;
         internal float m_PositionOrderliness = 0;
+        internal float m_TargetCoverage = 1.0F;
 
         public GameObject prototype { get { return m_Prototype; } set { m_Prototype = value; } }
 
@@ -140,7 +141,14 @@ namespace UnityEngine
 
         public bool usePrototypeMesh { get { return m_UsePrototypeMesh != 0; } set { m_UsePrototypeMesh = value ? 1 : 0; } }
 
-        public bool useInstancing { get { return m_UseInstancing != 0; } set { m_UseInstancing = value ? 1 : 0; } }
+        public bool useInstancing {
+            get { return m_UseInstancing != 0; }
+            set { m_UseInstancing = value ? 1 : 0; }
+        }
+
+        public float targetCoverage {
+            get { return m_TargetCoverage; }
+            set { m_TargetCoverage = value; } }
 
         public bool useDensityScaling { get { return m_UseDensityScaling != 0; } set { m_UseDensityScaling = value ? 1 : 0; } }
 
@@ -170,6 +178,7 @@ namespace UnityEngine
             m_UseDensityScaling = other.m_UseDensityScaling;
             m_AlignToGround = other.m_AlignToGround;
             m_PositionOrderliness = other.m_PositionOrderliness;
+            m_TargetCoverage = other.m_TargetCoverage;
         }
 
         public override bool Equals(object obj)
@@ -208,6 +217,7 @@ namespace UnityEngine
                 && m_RenderMode == other.m_RenderMode
                 && m_UsePrototypeMesh == other.m_UsePrototypeMesh
                 && m_UseInstancing == other.m_UseInstancing
+                && m_TargetCoverage == other.m_TargetCoverage
                 && m_UseDensityScaling == other.m_UseDensityScaling;
         }
 
@@ -786,8 +796,18 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "GetSupportedLayers", HasExplicitThis = true)]
         extern public int[] GetSupportedLayers(int xBase, int yBase, int totalWidth, int totalHeight);
 
+        public int[] GetSupportedLayers(Vector2Int positionBase, Vector2Int size)
+        {
+            return GetSupportedLayers(positionBase.x, positionBase.y, size.x, size.y);
+        }
+
         [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailLayer", HasExplicitThis = true)]
         extern public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer);
+
+        public int[,] GetDetailLayer(Vector2Int positionBase, Vector2Int size, int layer)
+        {
+            return GetDetailLayer(positionBase.x, positionBase.y, size.x, size.y, layer);
+        }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "ComputeDetailInstanceTransforms", HasExplicitThis = true)]
         extern public DetailInstanceTransform[] ComputeDetailInstanceTransforms(int patchX, int patchY, int layer, float density, out Bounds bounds);
@@ -799,6 +819,11 @@ namespace UnityEngine
         public void SetDetailLayer(int xBase, int yBase, int layer, int[,] details)
         {
             Internal_SetDetailLayer(xBase, yBase, details.GetLength(1), details.GetLength(0), layer, details);
+        }
+
+        public void SetDetailLayer(Vector2Int basePosition, int layer, int[,] details)
+        {
+            SetDetailLayer(basePosition.x, basePosition.y, layer, details);
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailLayer", HasExplicitThis = true)]
@@ -860,7 +885,7 @@ namespace UnityEngine
         extern internal void RemoveTreePrototype(int index);
 
         [NativeName(k_DetailDatabasePrefix + "RemoveDetailPrototype")]
-        extern internal void RemoveDetailPrototype(int index);
+        extern public void RemoveDetailPrototype(int index);
 
         [NativeName(k_TreeDatabasePrefix + "NeedUpgradeScaledPrototypes")]
         extern internal bool NeedUpgradeScaledTreePrototypes();

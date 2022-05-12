@@ -138,9 +138,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             foreach (var source in sources)
             {
                 var sourceSpan = source.AsSpan();
-                var currentMatchingAssemblyDefinition = _npp.MatchClosest(sourceSpan);
+                var currentMatchingAssemblyDefinition = _npp.MatchClosest(sourceSpan, out var matchedBy);
                 currentMatchingAssemblyDefinition =
-                    CheckAndUpdateEditorSpecialFolder(currentMatchingAssemblyDefinition, sourceSpan);
+                    CheckAndUpdateEditorSpecialFolder(currentMatchingAssemblyDefinition, sourceSpan, matchedBy);
 
                 if (currentMatchingAssemblyDefinition == null)
                 {
@@ -166,14 +166,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return Guid.NewGuid().ToString(_guidFormat);
         }
 
-        private CustomScriptAssembly CheckAndUpdateEditorSpecialFolder(
-            CustomScriptAssembly currentMatchingAssemblyDefinition, ReadOnlySpan<char> sourceSpan)
+        internal static ReadOnlySpan<char> GetRelativePathFromAsmdefOrAsmref(CustomScriptAssembly currentMatchingAssemblyDefinition, ReadOnlySpan<char> sourceSpan, string matchedBy)
         {
-            int offset = currentMatchingAssemblyDefinition == null
-                ? 0
-                : currentMatchingAssemblyDefinition.PathPrefix.Length;
+            if(currentMatchingAssemblyDefinition == null)
+            {
+                return sourceSpan;
+            }
+            return sourceSpan[matchedBy.Length..];
+        }
 
-            if (HasEditorSpecialFolder(sourceSpan[offset..]))
+        private CustomScriptAssembly CheckAndUpdateEditorSpecialFolder(
+            CustomScriptAssembly currentMatchingAssemblyDefinition, ReadOnlySpan<char> sourceSpan, string matchedBy)
+        {
+            var relativeSourceSpan = GetRelativePathFromAsmdefOrAsmref(currentMatchingAssemblyDefinition, sourceSpan, matchedBy);
+
+            if (HasEditorSpecialFolder(relativeSourceSpan))
             {
                 if (currentMatchingAssemblyDefinition == null ||
                     currentMatchingAssemblyDefinition == _globalAssemblyDefinition)

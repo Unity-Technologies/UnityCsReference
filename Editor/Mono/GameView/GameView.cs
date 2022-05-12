@@ -1066,6 +1066,9 @@ namespace UnityEditor
             if (showToolbar)
                 DoToolbarGUI();
 
+            if (type == EventType.MouseDown || type == EventType.MouseUp)
+                EditorApplication.globalEventHandler?.Invoke();
+
             // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
             // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.
             // This has been noted for Cursors tech debt.
@@ -1131,7 +1134,6 @@ namespace UnityEditor
                 Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
                 GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
                 SavedGUIState oldState = SavedGUIState.Create();
-
 
                 var clearTexture = m_ClearInEditMode && !EditorApplication.isPlaying;
 
@@ -1202,7 +1204,7 @@ namespace UnityEditor
 
                 // Placed after event queueing above to ensure scripts can react on mouse up events.
                 bool isKey = Event.current.rawType == EventType.KeyDown || Event.current.rawType == EventType.KeyUp;
-                bool useEvent = isKey;
+                bool useEvent = mousePosInGameViewRect || isKey;
 
                 // Don't use command events, or they won't be sent to other views.
                 if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)

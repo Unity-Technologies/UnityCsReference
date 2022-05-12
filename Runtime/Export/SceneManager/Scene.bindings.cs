@@ -37,7 +37,6 @@ namespace UnityEngine.SceneManagement
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static void SetIsSubScene(int sceneHandle, bool value);
 
-
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static bool GetIsLoadedInternal(int sceneHandle);
 

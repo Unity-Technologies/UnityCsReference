@@ -12,6 +12,8 @@ namespace UnityEditor.TerrainTools
 {
     internal class CreateTerrainTool : TerrainPaintTool<CreateTerrainTool>
     {
+        internal const string kToolName = "Create Neighbor Terrains";
+
         private class Styles
         {
             public GUIContent fillHeightmapUsingNeighbors = EditorGUIUtility.TrTextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of its neighbors.");
@@ -48,7 +50,7 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return "Create Neighbor Terrains";
+            return kToolName;
         }
 
         public override string GetDescription()

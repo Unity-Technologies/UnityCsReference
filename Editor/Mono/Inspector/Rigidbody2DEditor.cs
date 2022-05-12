@@ -249,6 +249,10 @@ namespace UnityEditor
                 {
                     m_ContactScrollPosition = EditorGUILayout.BeginScrollView(m_ContactScrollPosition, GUILayout.Height(180));
                     EditorGUI.BeginDisabledGroup(true);
+
+                    EditorGUILayout.IntField("Contact Count", contactCount);
+                    EditorGUILayout.Space();
+
                     for (var i = 0; i < contactCount; ++i)
                     {
                         var contact = m_Contacts[i];

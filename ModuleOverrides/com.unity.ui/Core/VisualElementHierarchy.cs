@@ -417,6 +417,8 @@ namespace UnityEngine.UIElements
                 get { return m_Owner.m_PhysicalParent; }
             }
 
+            internal List<VisualElement> children => m_Owner.m_Children;
+
             internal Hierarchy(VisualElement element)
             {
                 m_Owner = element;

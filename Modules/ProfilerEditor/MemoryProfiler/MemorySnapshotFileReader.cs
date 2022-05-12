@@ -12,7 +12,8 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
     // keep in sync with MemorySnapshot/MemorySnapshotFileEntryNames.h
     namespace FileFormat
     {
-        public enum EntryType : UInt16
+         [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
+         public enum EntryType : UInt16
         {
             Metadata_Version,
             Metadata_RecordDate,
@@ -76,6 +77,7 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
         }
     }
 
+    [Obsolete("This API is outdated and will be removed. Please check out the Memory Profiler Package (https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/)")]
     [Serializable]
     public class MemorySnapshotFileReader : ISerializationCallbackReceiver
     {

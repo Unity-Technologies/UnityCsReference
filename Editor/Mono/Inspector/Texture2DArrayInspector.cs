@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -14,7 +15,7 @@ namespace UnityEditor
         public override string GetInfoString()
         {
             var tex = (Texture2DArray)target;
-            var info = $"{tex.width}x{tex.height} {tex.depth} slice{(tex.depth != 1 ? "s" : "")} {TextureUtil.GetTextureFormatString(tex.format)} {EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex))}";
+            var info = $"{tex.width}x{tex.height} {tex.depth} slice{(tex.depth != 1 ? "s" : "")} {GraphicsFormatUtility.GetFormatString(tex.format)} {EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex))}";
             return info;
         }
 

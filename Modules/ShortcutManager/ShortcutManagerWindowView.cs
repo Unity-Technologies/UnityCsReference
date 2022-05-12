@@ -37,7 +37,6 @@ namespace UnityEditor.ShortcutManagement
         ShortcutEntry m_EditingBindings;
         VisualElement m_SearchFiltersContainer;
         VisualElement m_ShortcutsTableSearchFilterContainer;
-        HorizontalColumnDragger m_HorizontalColumnDragger;
 
         public ShortcutManagerWindowView(IShortcutManagerWindowViewController viewController, IKeyBindingStateProvider bindingStateProvider)
         {
@@ -73,7 +72,6 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshShortcutList()
         {
             m_ShortcutsTable.Rebuild();
-            m_HorizontalColumnDragger.RequestUpdatePositions();
         }
 
         public void UpdateSearchFilterOptions()
@@ -113,10 +111,20 @@ namespace UnityEditor.ShortcutManagement
         {
             //TODO: Read from a uxml
             var shortcutNameCell = new TextElement();
+            var contextContainer = new VisualElement();
+            var contextType = new TextElement();
+            var tag = new TextElement();
             var bindingContainer = new VisualElement();
             var shortcutBinding = new TextElement();
             var rebindControl = new ShortcutTextField();
             var warningIcon = new VisualElement();
+
+            shortcutNameCell.AddToClassList("nameColumn");
+            contextContainer.AddToClassList("contextColumn");
+            tag.AddToClassList("tag");
+
+            contextContainer.Add(contextType);
+            contextContainer.Add(tag);
 
             bindingContainer.AddToClassList("binding-container");
             bindingContainer.Add(shortcutBinding);
@@ -136,18 +144,13 @@ namespace UnityEditor.ShortcutManagement
             var rowElement = new VisualElement();
             rowElement.AddToClassList("shortcut-row");
             rowElement.Add(shortcutNameCell);
+            rowElement.Add(contextContainer);
             rowElement.Add(bindingContainer);
 
             rowElement.RegisterCallback<MouseDownEvent>(OnMouseDownCategoryTable);
             rowElement.RegisterCallback<MouseUpEvent>(OnMouseUpCategoryTable);
-            rowElement.RegisterCallback<GeometryChangedEvent>(OnGeometryChangedShortcutRow);
 
             return rowElement;
-        }
-
-        void OnGeometryChangedShortcutRow(GeometryChangedEvent evt)
-        {
-            m_HorizontalColumnDragger.UpdatePositionsIfRequested();
         }
 
         void RebindControl_OnCancel()
@@ -172,13 +175,20 @@ namespace UnityEditor.ShortcutManagement
             var shortcutEntry = m_ViewController.GetShortcutList()[index];
 
             var nameElement = (TextElement)shortcutElementTemplate[0];
-            var bindingContainer = shortcutElementTemplate[1];
+            var contextElement = shortcutElementTemplate[1];
+            var contextType = (TextElement)contextElement.Children().ElementAt(0);
+            var tag = (TextElement)contextElement.Children().ElementAt(1);
+            var bindingContainer = shortcutElementTemplate[2];
             var bindingTextElement = bindingContainer.Q<TextElement>();
             var bindingField = bindingContainer.Q<ShortcutTextField>();
             var warningIcon = shortcutElementTemplate.Q(null, "warning-icon");
 
             nameElement.text = m_ViewController.GetShortcutPathList()[index];
             nameElement.tooltip = nameElement.text;
+            contextType.text = shortcutEntry.context != ContextManager.globalContextType ? shortcutEntry.context.Name : string.Empty;
+            tag.text = shortcutEntry.tag;
+            contextElement.tooltip = contextType.text;
+            if (!string.IsNullOrWhiteSpace(tag.text)) contextElement.tooltip += $" ({tag.text})";
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
             bindingField.RegisterValueChangedCallback(EditingShortcutEntryBindingChanged);
@@ -471,6 +481,7 @@ namespace UnityEditor.ShortcutManagement
             //m_KeyboardElement.KeySelectedAction += KeySelected;
             m_KeyboardElement.TooltipProvider += GetToolTipForKey;
             m_KeyboardElement.ContextMenuProvider += GetContextMenuForKey;
+            m_KeyboardElement.ModifierSet += KeyboardModiferSet;
 
             m_MouseElement = new Mouse(m_BindingStateProvider, m_ViewController.GetSelectedKey(), m_ViewController.GetSelectedEventModifiers());
             m_MouseElement.DragPerformed += OnKeyboardKeyDragPerformed;
@@ -490,18 +501,11 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutsTable.itemsChosen += ShortcutTableEntryChosen;
             m_ShortcutsTable.RegisterCallback<MouseDownEvent>(ShortcutTableRightClickDown);
             m_ShortcutsTable.RegisterCallback<MouseUpEvent>(ShortcutTableRightClickUp);
-            m_ShortcutsTable.RegisterCallback<GeometryChangedEvent>(ShortcutTableGeometryChanged);
 
             m_Root.AddToClassList("ShortcutManagerView");
             if (EditorGUIUtility.isProSkin)
                 m_Root.AddToClassList("isProSkin");
             m_Root.AddStyleSheetPath("StyleSheets/ShortcutManager/ShortcutManagerView.uss");
-
-            // Set up resize handle manipulator
-            // TODO: replace k_PixelsPadding with width of the text from the left header element after UXML/USS migration.
-            m_HorizontalColumnDragger = new HorizontalColumnDragger(k_PixelsPadding, m_ShortcutsTable);
-            var shortcutsTableResizeHandle = m_Root.Q("shortcutResizeHandle");
-            shortcutsTableResizeHandle.AddManipulator(m_HorizontalColumnDragger);
 
             BuildProfileManagementRow(header);
             BuildLegendRow(header);
@@ -530,6 +534,11 @@ namespace UnityEditor.ShortcutManagement
             e.StopPropagation();
         }
 
+        void KeyboardModiferSet(EventModifiers modifiers)
+        {
+            m_MouseElement.SetModifiers(modifiers, false);
+        }
+
         void HandleModifierKeysCommand<T>(CommandEventBase<T> e) where T : CommandEventBase<T>, new()
         {
             if (e.commandName == EventCommandNames.ModifierKeysChanged)
@@ -544,6 +553,7 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Root.Q<TextElement>("categoryTableHeaderName").text = L10n.Tr("Category");
             m_Root.Q<TextElement>("shortcutsTableHeaderName").text = L10n.Tr("Command");
+            m_Root.Q<TextElement>("shortcutsTableHeaderContext").text = L10n.Tr("Context");
             m_Root.Q<TextElement>("shortcutsTableHeaderBindings").text = L10n.Tr("Shortcut");
             m_Root.Q<TextElement>("searchLabel").text = L10n.Tr("Search:");
         }
@@ -642,10 +652,6 @@ namespace UnityEditor.ShortcutManagement
             //TODO: this refresh causes issues when trying to double click another binding, while a binding is being edited.
             if (refresh)
                 m_ShortcutsTable.Rebuild();
-
-            // Rows are recreated when exiting the text field
-            // Request update of positions to ensure rows match the column headers
-            m_HorizontalColumnDragger.RequestUpdatePositions();
         }
 
         void OnSearchStringChanged(ChangeEvent<string> evt)
@@ -718,11 +724,6 @@ namespace UnityEditor.ShortcutManagement
                 return;
             GenericMenu menu = GetContextMenuForEntries(new[] { m_ViewController.selectedEntry });
             menu?.ShowAsContext();
-        }
-
-        void ShortcutTableGeometryChanged(GeometryChangedEvent evt)
-        {
-            m_HorizontalColumnDragger.UpdatePositions();
         }
 
         bool CanEntryBeAssignedToKey(KeyCode keyCode, EventModifiers eventModifier, ShortcutEntry entry)
@@ -837,6 +838,7 @@ namespace UnityEditor.ShortcutManagement
         EventModifiers m_CurrentModifiers;
         protected IKeyBindingStateProvider m_KeyBindingStateProvider;
 
+        internal event Action<EventModifiers> ModifierSet;
         internal event Action<KeyCode, EventModifiers> KeySelectedAction;
         internal event Action<KeyCode, EventModifiers, ShortcutEntry> DragPerformed;
         internal event Func<KeyCode, EventModifiers, ShortcutEntry, bool> CanDrop;
@@ -930,7 +932,7 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public void SetModifiers(EventModifiers modifiers)
+        public void SetModifiers(EventModifiers modifiers, bool allowCallback = true)
         {
             if (modifiers == m_CurrentModifiers)
                 return;
@@ -948,6 +950,8 @@ namespace UnityEditor.ShortcutManagement
                         modifierKey.RemoveFromClassList(k_ActiveClass);
                 }
             }
+
+            if (allowCallback) ModifierSet.Invoke(m_CurrentModifiers);
 
             Refresh();
             var selectedKey = m_SelectedKey != null ? m_SelectedKey.key : KeyCode.None;
@@ -1078,7 +1082,6 @@ namespace UnityEditor.ShortcutManagement
             mouseBody.style.height = 226;
             mouseBody.style.borderTopRightRadius = mouseBody.style.borderTopLeftRadius = new StyleLength(25f);
             mouseBody.style.borderBottomLeftRadius = mouseBody.style.borderBottomRightRadius = new StyleLength(67f);
-            mouseBody.AddToClassList(k_ReservedClass);
             mouseBody.Add(mouseButtons);
 
             var mouse3 = new Key(KeyCode.Mouse3, "M3");
@@ -1569,142 +1572,6 @@ namespace UnityEditor.ShortcutManagement
 
             menu = new DropdownMenu();
             searchButton.clickable.clicked += this.ShowMenu;
-        }
-    }
-
-    internal class HorizontalColumnDragger : MouseManipulator
-    {
-        const string k_ShortcutmanagerColumnposition = "ShortcutManager_ColumnPosition";
-        Vector2 m_Start;
-        bool m_Active;
-        float m_ClampPositionPadding;
-        ListView m_Elements;
-        float m_TargetPosition;
-        float m_VerticalScrollbarWidth;
-        bool m_UpdatePositionsRequested;
-
-        public HorizontalColumnDragger(float clampPositionPadding, ListView elements)
-        {
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-            m_Active = false;
-
-            // TODO: Replace this with the maximum text width of the left and right TextElements
-            m_ClampPositionPadding = clampPositionPadding;
-            m_Elements = elements;
-
-            m_Elements.Q(className: ScrollView.vScrollerUssClassName).RegisterCallback<GeometryChangedEvent>(ShortcutsTableGeometryChanged);
-        }
-
-        void ShortcutsTableGeometryChanged(GeometryChangedEvent evt)
-        {
-            var element = (VisualElement)evt.target;
-            m_VerticalScrollbarWidth = element.layout.width;
-        }
-
-        protected override void RegisterCallbacksOnTarget()
-        {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-        }
-
-        protected override void UnregisterCallbacksFromTarget()
-        {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-        }
-
-        void OnMouseDown(MouseDownEvent e)
-        {
-            if (m_Active)
-            {
-                e.StopImmediatePropagation();
-                return;
-            }
-
-            if (CanStartManipulation(e))
-            {
-                m_Start = e.localMousePosition;
-                m_Active = true;
-                target.CaptureMouse();
-                e.StopPropagation();
-            }
-        }
-
-        void PersistHandlePosition()
-        {
-            EditorPrefs.SetFloat(k_ShortcutmanagerColumnposition, m_TargetPosition);
-        }
-
-        public void UpdatePositions()
-        {
-            if (m_TargetPosition == 0)
-            {
-                m_TargetPosition = EditorPrefs.GetFloat(k_ShortcutmanagerColumnposition, target.parent.layout.width / 2);
-            }
-
-            m_TargetPosition = Mathf.Clamp(m_TargetPosition, m_ClampPositionPadding, target.parent.layout.width - m_ClampPositionPadding - target.style.width.value.value);
-            UpdateElements(m_TargetPosition);
-
-            m_UpdatePositionsRequested = false;
-        }
-
-        public void RequestUpdatePositions()
-        {
-            m_UpdatePositionsRequested = true;
-        }
-
-        public void UpdatePositionsIfRequested()
-        {
-            if (m_UpdatePositionsRequested)
-                UpdatePositions();
-        }
-
-        void OnMouseMove(MouseMoveEvent e)
-        {
-            if (!m_Active || !target.HasMouseCapture())
-                return;
-
-            Vector2 diff = e.localMousePosition - m_Start;
-
-            m_TargetPosition = target.layout.x + diff.x;
-            m_TargetPosition = Mathf.Clamp(m_TargetPosition, m_ClampPositionPadding, target.parent.layout.width - m_ClampPositionPadding - target.style.width.value.value);
-
-            UpdateElements(m_TargetPosition);
-
-            e.StopPropagation();
-        }
-
-        void OnMouseUp(MouseUpEvent e)
-        {
-            if (!m_Active || !target.HasMouseCapture() || !CanStopManipulation(e))
-                return;
-
-            m_Active = false;
-            target.ReleaseMouse();
-            e.StopPropagation();
-            PersistHandlePosition();
-        }
-
-        void UpdateElements(float handlePosition)
-        {
-            target.style.left = m_TargetPosition;
-            UpdateElement(target.parent, handlePosition, 0);
-
-            foreach (var el in m_Elements.Q<ScrollView>().Children())
-            {
-                UpdateElement(el, handlePosition, m_VerticalScrollbarWidth);
-            }
-        }
-
-        void UpdateElement(VisualElement el, float handlePosition, float offset)
-        {
-            var totalPadding = el.ElementAt(0).resolvedStyle.paddingLeft + el.ElementAt(0).resolvedStyle.paddingRight + el.ElementAt(1).resolvedStyle.paddingLeft + el.ElementAt(1).resolvedStyle.paddingRight;
-            var percentage = (handlePosition + (target.resolvedStyle.width) / 2 - totalPadding / 2) / (target.parent.layout.width - (totalPadding + offset));
-
-            el.ElementAt(0).style.flexGrow = percentage;
-            el.ElementAt(1).style.flexGrow = 1 - percentage;
         }
     }
 }

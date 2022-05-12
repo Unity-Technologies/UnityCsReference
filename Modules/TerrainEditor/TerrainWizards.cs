@@ -13,17 +13,17 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
-    internal class TerrainWizard : ScriptableWizard
+    public class TerrainWizard : ScriptableWizard
     {
         internal const int kMaxResolution = 4097;
 
-        protected Terrain      m_Terrain;
-        protected TerrainData    terrainData
+        internal Terrain      terrain;
+        internal TerrainData    terrainData
         {
             get
             {
-                if (m_Terrain != null)
-                    return m_Terrain.terrainData;
+                if (terrain != null)
+                    return terrain.terrainData;
                 else
                     return null;
             }
@@ -36,26 +36,26 @@ namespace UnityEditor
         {
             isValid = true;
             errorString = "";
-            if (m_Terrain == null || m_Terrain.terrainData == null)
+            if (terrain == null || terrain.terrainData == null)
             {
                 isValid = false;
                 errorString = "Terrain does not exist";
             }
         }
 
-        internal void InitializeDefaults(Terrain terrain)
+        public void ResetDefaults(Terrain terrain)
         {
-            m_Terrain = terrain;
+            this.terrain = terrain;
             OnWizardUpdate();
         }
 
         internal void FlushHeightmapModification()
         {
             //@TODO:        m_Terrain.treeDatabase.RecalculateTreePosition();
-            m_Terrain.Flush();
+            terrain.Flush();
         }
 
-        internal static T DisplayTerrainWizard<T>(string title, string button) where T : TerrainWizard
+        public static T DisplayTerrainWizard<T>(string title, string button) where T : TerrainWizard
         {
             var treeWizards = Resources.FindObjectsOfTypeAll<T>();
             if (treeWizards.Length > 0)
@@ -135,7 +135,7 @@ namespace UnityEditor
 
         internal void OnWizardCreate()
         {
-            if (m_Terrain == null)
+            if (terrain == null)
             {
                 isValid = false;
                 errorString = "Terrain does not exist";
@@ -218,7 +218,7 @@ namespace UnityEditor
 
         internal void InitializeImportRaw(Terrain terrain, string path)
         {
-            m_Terrain = terrain;
+            base.terrain = terrain;
             m_Path = path;
             PickRawDefaults(m_Path);
             helpString = "Raw files must use a single channel and be either 8 or 16 bit.";
@@ -242,7 +242,7 @@ namespace UnityEditor
 
         internal void OnWizardCreate()
         {
-            if (m_Terrain == null)
+            if (terrain == null)
             {
                 isValid = false;
                 errorString = "Terrain does not exist";
@@ -318,9 +318,9 @@ namespace UnityEditor
             fs.Close();
         }
 
-        new void InitializeDefaults(Terrain terrain)
+        new void ResetDefaults(Terrain terrain)
         {
-            m_Terrain = terrain;
+            base.terrain = terrain;
             helpString = "Resolution " + terrain.terrainData.heightmapResolution;
             OnWizardUpdate();
         }
@@ -365,7 +365,7 @@ namespace UnityEditor
 
         internal void InitializeDefaults(Terrain terrain, int index)
         {
-            m_Terrain = terrain;
+            base.terrain = terrain;
             m_PrototypeIndex = index;
 
             if (m_PrototypeIndex == -1)
@@ -376,7 +376,7 @@ namespace UnityEditor
             }
             else
             {
-                TreePrototype  treePrototype = m_Terrain.terrainData.treePrototypes[m_PrototypeIndex];
+                TreePrototype treePrototype = base.terrain.terrainData.treePrototypes[m_PrototypeIndex];
                 m_Tree =       treePrototype.prefab;
                 m_BendFactor = treePrototype.bendFactor;
                 m_NavMeshLod = treePrototype.navMeshLod;
@@ -391,7 +391,7 @@ namespace UnityEditor
         {
             if (terrainData == null)
                 return;
-            TreePrototype[] trees = m_Terrain.terrainData.treePrototypes;
+            TreePrototype[] trees = terrain.terrainData.treePrototypes;
             if (m_PrototypeIndex == -1)
             {
                 TreePrototype[] newTrees = new TreePrototype[trees.Length + 1];
@@ -402,7 +402,7 @@ namespace UnityEditor
                 newTrees[trees.Length].bendFactor = m_BendFactor;
                 newTrees[trees.Length].navMeshLod = m_NavMeshLod;
                 m_PrototypeIndex = trees.Length;
-                m_Terrain.terrainData.treePrototypes = newTrees;
+                terrain.terrainData.treePrototypes = newTrees;
                 PaintTreesTool.instance.selectedTree = m_PrototypeIndex;
             }
             else
@@ -411,10 +411,10 @@ namespace UnityEditor
                 trees[m_PrototypeIndex].bendFactor = m_BendFactor;
                 trees[m_PrototypeIndex].navMeshLod = m_NavMeshLod;
 
-                m_Terrain.terrainData.treePrototypes = trees;
+                terrain.terrainData.treePrototypes = trees;
             }
-            m_Terrain.Flush();
-            EditorUtility.SetDirty(m_Terrain);
+            terrain.Flush();
+            EditorUtility.SetDirty(terrain);
         }
 
         void OnWizardCreate()
@@ -431,7 +431,7 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
 
-            bool allowSceneObjects = !EditorUtility.IsPersistent(m_Terrain.terrainData); // sometimes user prefers saving terrainData with the scene file
+            bool allowSceneObjects = !EditorUtility.IsPersistent(terrain.terrainData); // sometimes user prefers saving terrainData with the scene file
             m_Tree = (GameObject)EditorGUILayout.ObjectField("Tree Prefab", m_Tree, typeof(GameObject), allowSceneObjects);
             if (m_Tree)
             {
@@ -474,7 +474,7 @@ namespace UnityEditor
             bool changed = EditorGUI.EndChangeCheck();
 
             if (changed)
-                m_IsValidTree = IsValidTree(m_Tree, m_PrototypeIndex, m_Terrain);
+                m_IsValidTree = IsValidTree(m_Tree, m_PrototypeIndex, terrain);
             return changed;
         }
 
@@ -531,41 +531,41 @@ namespace UnityEditor
         }
     };
 
-    enum DetailMeshRenderMode
+    public enum TerrainDetailMeshRenderMode
     {
         VertexLit,
         Grass
     }
 
-    class DetailMeshWizard : TerrainWizard
+    public class TerrainDetailMeshWizard : TerrainWizard
     {
-        public GameObject   m_DetailPrefab;
-        public float        m_MinWidth;
-        public float        m_MaxWidth;
-        public float        m_MinHeight;
-        public float        m_MaxHeight;
-        public int          m_NoiseSeed;
-        public float        m_NoiseSpread;
-        public float        m_DetailDensity;
-        public float        m_HoleEdgePadding;
-        public Color        m_HealthyColor;
-        public Color        m_DryColor;
-        public DetailMeshRenderMode m_RenderMode;
-        public bool         m_UseInstancing;
-        public bool         m_UseDensityScaling;
-        public float        m_AlignToGround;
-        public float        m_PositionOrderliness;
-
-        private int     m_PrototypeIndex = -1;
+        GameObject   m_DetailPrefab;
+        float        m_MinWidth;
+        float        m_MaxWidth;
+        float        m_MinHeight;
+        float        m_MaxHeight;
+        int          m_NoiseSeed;
+        float        m_NoiseSpread;
+        float        m_DetailDensity;
+        float        m_HoleEdgePadding;
+        Color        m_HealthyColor;
+        Color        m_DryColor;
+        TerrainDetailMeshRenderMode m_RenderMode;
+        bool         m_UseInstancing;
+        bool         m_UseDensityScaling;
+        float        m_AlignToGround;
+        float        m_PositionOrderliness;
+        float        m_TargetCoverage;
+        int          m_PrototypeIndex = -1;
 
         public void OnEnable()
         {
             minSize = new Vector2(400, 400);
         }
 
-        internal void InitializeDefaults(Terrain terrain, int index)
+        public void ResetDefaults(Terrain terrain, int index)
         {
-            m_Terrain = terrain;
+            base.terrain = terrain;
             m_PrototypeIndex = index;
             DetailPrototype prototype;
             if (m_PrototypeIndex == -1)
@@ -579,7 +579,7 @@ namespace UnityEditor
                 };
             }
             else
-                prototype = m_Terrain.terrainData.detailPrototypes[m_PrototypeIndex];
+                prototype = base.terrain.terrainData.detailPrototypes[m_PrototypeIndex];
 
             m_DetailPrefab = prototype.prototype;
             m_MinWidth = prototype.minWidth;
@@ -596,25 +596,26 @@ namespace UnityEditor
             {
                 case DetailRenderMode.GrassBillboard:
                     Debug.LogError("Detail meshes can't be rendered as billboards");
-                    m_RenderMode = DetailMeshRenderMode.Grass;
+                    m_RenderMode = TerrainDetailMeshRenderMode.Grass;
                     break;
                 case DetailRenderMode.Grass:
-                    m_RenderMode = DetailMeshRenderMode.Grass;
+                    m_RenderMode = TerrainDetailMeshRenderMode.Grass;
                     break;
                 case DetailRenderMode.VertexLit:
-                    m_RenderMode = DetailMeshRenderMode.VertexLit;
+                    m_RenderMode = TerrainDetailMeshRenderMode.VertexLit;
                     break;
             }
             m_UseInstancing = prototype.useInstancing;
             m_UseDensityScaling = prototype.useDensityScaling;
             m_AlignToGround = Mathf.Clamp01(prototype.alignToGround) * 100.0f;
             m_PositionOrderliness = Mathf.Clamp01(prototype.positionOrderliness) * 100.0f;
+            m_TargetCoverage = prototype.targetCoverage;
 
             OnWizardUpdate();
         }
 
         private DetailRenderMode ComputeRenderMode()
-            => m_RenderMode == DetailMeshRenderMode.Grass && !m_UseInstancing ? DetailRenderMode.Grass : DetailRenderMode.VertexLit;
+            => m_RenderMode == TerrainDetailMeshRenderMode.Grass && !m_UseInstancing ? DetailRenderMode.Grass : DetailRenderMode.VertexLit;
 
         DetailPrototype MakePrototype()
         {
@@ -637,7 +638,8 @@ namespace UnityEditor
                 useInstancing = m_UseInstancing,
                 useDensityScaling = m_UseDensityScaling,
                 alignToGround = m_AlignToGround / 100.0f,
-                positionOrderliness = m_PositionOrderliness / 100.0f
+                positionOrderliness = m_PositionOrderliness / 100.0f,
+                targetCoverage = m_TargetCoverage
             };
         }
 
@@ -694,6 +696,9 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             m_DetailPrefab = EditorGUILayout.ObjectField("Detail Prefab", m_DetailPrefab, typeof(GameObject), !TerrainDataIsPersistent) as GameObject;
+            GUI.enabled = terrainData.detailScatterMode == DetailScatterMode.CoverageMode;
+            m_DetailDensity = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.detailDensity, m_DetailDensity, 0, 3);
+            GUI.enabled = true;
             m_AlignToGround = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.alignToGround, m_AlignToGround, 0, 100);
             m_PositionOrderliness = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionOrderliness, m_PositionOrderliness, 0, 100);
             m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
@@ -717,11 +722,11 @@ namespace UnityEditor
             if (m_UseInstancing)
             {
                 EditorGUI.BeginDisabled(true);
-                EditorGUILayout.EnumPopup("Render Mode", DetailMeshRenderMode.VertexLit);
+                EditorGUILayout.EnumPopup("Render Mode", TerrainDetailMeshRenderMode.VertexLit);
                 EditorGUI.EndDisabled();
             }
             else
-                m_RenderMode = (DetailMeshRenderMode)EditorGUILayout.EnumPopup("Render Mode", m_RenderMode);
+                m_RenderMode = (TerrainDetailMeshRenderMode)EditorGUILayout.EnumPopup("Render Mode", m_RenderMode);
 
             m_UseInstancing = EditorGUILayout.Toggle("Use GPU Instancing", m_UseInstancing);
             if (m_UseInstancing)
@@ -736,34 +741,34 @@ namespace UnityEditor
         }
     }
 
-    class DetailTextureWizard : TerrainWizard
+    public class TerrainDetailTextureWizard : TerrainWizard
     {
-        public Texture2D    m_DetailTexture;
-        public float        m_MinWidth;
-        public float        m_MaxWidth;
-        public float        m_MinHeight;
-        public float        m_MaxHeight;
-        public int          m_NoiseSeed;
-        public float        m_NoiseSpread;
-        public float        m_DetailDensity;
-        public float        m_HoleEdgePadding;
-        public Color        m_HealthyColor;
-        public Color        m_DryColor;
-        public bool         m_Billboard;
-        public bool         m_UseDensityScaling;
-        public float        m_AlignToGround;
-        public float        m_PositionOrderliness;
+        Texture2D    m_DetailTexture;
+        float        m_MinWidth;
+        float        m_MaxWidth;
+        float        m_MinHeight;
+        float        m_MaxHeight;
+        int          m_NoiseSeed;
+        float        m_NoiseSpread;
+        float        m_DetailDensity;
+        float        m_HoleEdgePadding;
+        Color        m_HealthyColor;
+        Color        m_DryColor;
+        bool         m_Billboard;
+        bool         m_UseDensityScaling;
+        float        m_AlignToGround;
+        float        m_PositionOrderliness;
 
-        private int      m_PrototypeIndex = -1;
+        int      m_PrototypeIndex = -1;
 
         public void OnEnable()
         {
             minSize = new Vector2(400, 400);
         }
 
-        internal void InitializeDefaults(Terrain terrain, int index)
+        public void ResetDefaults(Terrain terrain, int index)
         {
-            m_Terrain = terrain;
+            base.terrain = terrain;
 
             m_PrototypeIndex = index;
             DetailPrototype prototype;
@@ -777,7 +782,7 @@ namespace UnityEditor
                     prototype.renderMode = DetailRenderMode.Grass;
             }
             else
-                prototype = m_Terrain.terrainData.detailPrototypes[m_PrototypeIndex];
+                prototype = base.terrain.terrainData.detailPrototypes[m_PrototypeIndex];
 
             m_DetailTexture = prototype.prototypeTexture;
             m_MinWidth = prototype.minWidth;
@@ -798,8 +803,8 @@ namespace UnityEditor
             OnWizardUpdate();
         }
 
-        DetailRenderMode ComputeRenderMode()
-            => m_Billboard ? DetailRenderMode.GrassBillboard : DetailRenderMode.Grass;
+        private static DetailRenderMode ComputeRenderMode(bool billboard)
+            => billboard ? DetailRenderMode.GrassBillboard : DetailRenderMode.Grass;
 
         DetailPrototype MakePrototype()
         {
@@ -817,7 +822,7 @@ namespace UnityEditor
                 holeEdgePadding = m_HoleEdgePadding / 100.0f,
                 healthyColor = m_HealthyColor,
                 dryColor = m_DryColor,
-                renderMode = ComputeRenderMode(),
+                renderMode = ComputeRenderMode(m_Billboard),
                 usePrototypeMesh = false,
                 useInstancing = false,
                 useDensityScaling = m_UseDensityScaling,
@@ -906,7 +911,7 @@ namespace UnityEditor
 
             m_UseDensityScaling = EditorGUILayout.Toggle(DetailWizardSharedStyles.Instance.useDensityScaling, m_UseDensityScaling);
 
-            if (!DetailPrototype.IsModeSupportedByRenderPipeline(ComputeRenderMode(), false, out var message))
+            if (!DetailPrototype.IsModeSupportedByRenderPipeline(ComputeRenderMode(m_Billboard), false, out var message))
                 EditorGUILayout.LabelField(EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(MessageType.Error)), DetailWizardSharedStyles.Instance.helpBoxBig);
 
             return EditorGUI.EndChangeCheck();
@@ -933,8 +938,8 @@ namespace UnityEditor
                 Debug.LogError(errorString);
                 return;
             }
-            PaintTreesTool.instance.MassPlaceTrees(m_Terrain.terrainData, numberOfTrees, true, keepExistingTrees);
-            m_Terrain.Flush();
+            PaintTreesTool.instance.MassPlaceTrees(terrain.terrainData, numberOfTrees, true, keepExistingTrees);
+            terrain.Flush();
         }
     }
 

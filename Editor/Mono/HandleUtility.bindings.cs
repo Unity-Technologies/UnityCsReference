@@ -17,8 +17,16 @@ namespace UnityEditor
         internal static extern GameObject[] Internal_PickRectObjects(Camera cam, Rect rect, bool selectPrefabRoots, bool drawGizmos);
 
         internal static extern GameObject Internal_FindNearestVertex(Camera cam, Vector2 screenPoint, Transform[] objectsToSearch, Transform[] ignoreObjects, out Vector3 vertex, out bool found);
-        internal static extern GameObject Internal_PickClosestGO(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, bool drawGizmos, out int materialIndex);
 
+        internal static extern uint Internal_GetClosestPickingID(
+            Camera cam,
+            int layers,
+            Vector2 position,
+            PickingObject[] ignore,
+            PickingObject[] filter,
+            bool drawGizmos,
+            ref int materialIndex,
+            ref bool isEntity);
 
         private static extern void Internal_SetHandleWireTextureIndex(int textureIndex, int samplerIndex);
 

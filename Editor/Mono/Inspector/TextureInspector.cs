@@ -564,7 +564,7 @@ namespace UnityEditor
         protected bool NeedsExposureControl(Texture t)
         {
             TextureUsageMode usageMode = TextureUtil.GetUsageMode(t);
-            return TextureUtil.IsHDRGraphicsFormat(t.graphicsFormat) || TextureUtil.IsRGBMUsageMode(usageMode) || TextureUtil.IsDoubleLDRUsageMode(usageMode);
+            return GraphicsFormatUtility.IsHDRFormat(t.graphicsFormat) || TextureUtil.IsRGBMUsageMode(usageMode) || TextureUtil.IsDoubleLDRUsageMode(usageMode);
         }
 
         public override void OnPreviewSettings()
@@ -999,7 +999,7 @@ namespace UnityEditor
                     int dummyComressionQuality;
                     textureImporter.ReadTextureImportInstructions(EditorUserBuildSettings.activeBuildTarget, out desiredFormat, out dummyColorSpace, out dummyComressionQuality);
 
-                    info += "\n " + GraphicsFormatUtility.GetFormatString(format) + "(Original) " + TextureUtil.GetTextureFormatString(desiredFormat) + "(Atlas)";
+                    info += "\n " + GraphicsFormatUtility.GetFormatString(format) + "(Original) " + GraphicsFormatUtility.GetFormatString(desiredFormat) + "(Atlas)";
                 }
                 else
                     info += "  " + GraphicsFormatUtility.GetFormatString(format);

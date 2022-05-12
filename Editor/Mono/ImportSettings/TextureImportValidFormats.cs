@@ -61,7 +61,7 @@ namespace UnityEditor
             for (int i = 0; i < texFormatValues.Length; i++)
             {
                 int val = texFormatValues[i];
-                retval[i] = (val < 0 ? "Automatic" : TextureUtil.GetTextureFormatString((TextureFormat)val));
+                retval[i] = (val < 0 ? "Automatic" : GraphicsFormatUtility.GetFormatString((TextureFormat)val));
             }
             return retval;
         }

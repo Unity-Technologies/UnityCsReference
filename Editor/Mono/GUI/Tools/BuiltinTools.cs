@@ -915,7 +915,7 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == id)
                     {
                         if (!s_Moving)
-                            Selection.activeGameObject = SceneViewPicking.PickGameObject(evt.mousePosition);
+                            Selection.activeObject = SceneViewPicking.PickGameObject(evt.mousePosition).target;
                         GUIUtility.hotControl = 0;
                         EditorGUIUtility.SetWantsMouseJumping(0);
                         HandleUtility.ignoreRaySnapObjects = null;

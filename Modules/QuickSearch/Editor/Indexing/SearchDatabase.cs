@@ -498,7 +498,7 @@ namespace UnityEditor.Search
                 var deletedAssets = new HashSet<string>();
                 foreach (var d in index.GetDocuments())
                 {
-                    if (d.valid && !File.Exists(d.source))
+                    if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
                         deletedAssets.Add(d.source);
                 }
 
@@ -687,7 +687,7 @@ namespace UnityEditor.Search
             if (task.Canceled())
                 return;
 
-            task.Report($"Sorting {combineIndexer.indexCount} indexes...", -1f);
+            task.Report($"Sorting indexes...", -1f);
             byte[] bytes = autoResolve ? combineIndexer.SaveBytes() : null;
             Dispatcher.Enqueue(() => task.Resolve(new TaskData(bytes, combineIndexer), completed: autoResolve));
         }
@@ -905,7 +905,8 @@ namespace UnityEditor.Search
         {
             if (indexer != null)
                 AddIndexNameArea(documentIndex, indexer, indexName);
-            task.Report(documentIndex + 1, documentCount);
+            else
+                task.Report(documentIndex + 1, documentCount);
         }
 
         private void ResolveIncrementalUpdate(Task task)

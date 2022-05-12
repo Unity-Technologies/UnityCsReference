@@ -36,10 +36,10 @@ namespace UnityEngine
         // The object will not be unloaded by UnloadUnusedAssets
         DontUnloadUnusedAsset = 32,
 
-        DontSave = 4 + 16 + 32,
+        DontSave = DontSaveInEditor | DontSaveInBuild | DontUnloadUnusedAsset,
 
         // A combination of not shown in the hierarchy and not saved to to scenes.
-        HideAndDontSave = 1 + 4 + 8 + 16 + 32
+        HideAndDontSave = HideInHierarchy | DontSaveInEditor | NotEditable | DontSaveInBuild | DontUnloadUnusedAsset
     }
 
     [StructLayout(LayoutKind.Sequential)]

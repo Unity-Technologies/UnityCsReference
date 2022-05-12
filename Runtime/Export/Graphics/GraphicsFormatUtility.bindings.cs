@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -41,7 +42,8 @@ namespace UnityEngine
                     return GetGraphicsFormat_Native_RenderTextureFormat(format, isSRGB);
                 }
 
-                [FreeFunction]
+                // Explicitly NOT thread safe. It accesses the GraphicsCaps. That object has some properties that can be changed at runtime (default formats).
+                [FreeFunction(IsThreadSafe = false)]
                 extern private static GraphicsFormat GetGraphicsFormat_Native_RenderTextureFormat(RenderTextureFormat format, bool isSRGB);
 
                 public static GraphicsFormat GetGraphicsFormat(RenderTextureFormat format, RenderTextureReadWrite readWrite)
@@ -128,6 +130,11 @@ namespace UnityEngine
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSwizzleFormat(GraphicsFormat format);
 
+                public static bool IsSwizzleFormat(TextureFormat format)
+                {
+                    return IsSwizzleFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static GraphicsFormat GetSRGBFormat(GraphicsFormat format);
 
@@ -140,20 +147,54 @@ namespace UnityEngine
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetColorComponentCount(GraphicsFormat format);
 
+                public static UInt32 GetColorComponentCount(TextureFormat format)
+                {
+                    return GetColorComponentCount(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetAlphaComponentCount(GraphicsFormat format);
 
+                public static UInt32 GetAlphaComponentCount(TextureFormat format)
+                {
+                    return GetAlphaComponentCount(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetComponentCount(GraphicsFormat format);
+
+                public static UInt32 GetComponentCount(TextureFormat format)
+                {
+                    return GetComponentCount(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static string GetFormatString(GraphicsFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]
+                extern private static string GetFormatString_Native_TextureFormat(TextureFormat format);
+
+                public static string GetFormatString(TextureFormat format)
+                {
+                    return GetFormatString_Native_TextureFormat(format);
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsCompressedFormat(GraphicsFormat format);
 
-                [FreeFunction("IsAnyCompressedTextureFormat", true)]
-                extern internal static bool IsCompressedTextureFormat(TextureFormat format);
+                [FreeFunction(IsThreadSafe = true)]
+                extern private static bool IsCompressedFormat_Native_TextureFormat(TextureFormat format);
+
+                [Obsolete("IsCompressedTextureFormat is obsolete, please use IsCompressedFormat instead.")]
+                internal static bool IsCompressedTextureFormat(TextureFormat format)
+                {
+                    return IsCompressedFormat(format);
+                }
+
+                public static bool IsCompressedFormat(TextureFormat format)
+                {
+                    return IsCompressedFormat_Native_TextureFormat(format);
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern private static bool CanDecompressFormat(GraphicsFormat format, bool wholeImage);
@@ -167,20 +208,59 @@ namespace UnityEngine
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsPackedFormat(GraphicsFormat format);
 
+                public static bool IsPackedFormat(TextureFormat format)
+                {
+                    return IsPackedFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool Is16BitPackedFormat(GraphicsFormat format);
+
+                public static bool Is16BitPackedFormat(TextureFormat format)
+                {
+                    return Is16BitPackedFormat(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static GraphicsFormat ConvertToAlphaFormat(GraphicsFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]
+                extern private static TextureFormat ConvertToAlphaFormat_Native_TextureFormat(TextureFormat format);
+
+                public static TextureFormat ConvertToAlphaFormat(TextureFormat format)
+                {
+                    return ConvertToAlphaFormat_Native_TextureFormat(format);
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsAlphaOnlyFormat(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern private static bool IsAlphaOnlyFormat_Native_TextureFormat(TextureFormat format);
+
+                public static bool IsAlphaOnlyFormat(TextureFormat format)
+                {
+                    return IsAlphaOnlyFormat_Native_TextureFormat(format);
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsAlphaTestFormat(GraphicsFormat format);
 
+                public static bool IsAlphaTestFormat(TextureFormat format)
+                {
+                    return IsAlphaTestFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool HasAlphaChannel(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern private static bool HasAlphaChannel_Native_TextureFormat(TextureFormat format);
+
+                public static bool HasAlphaChannel(TextureFormat format)
+                {
+                    return HasAlphaChannel_Native_TextureFormat(format);
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsDepthFormat(GraphicsFormat format);
@@ -203,8 +283,18 @@ namespace UnityEngine
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsUnsignedFormat(GraphicsFormat format);
 
+                public static bool IsUnsignedFormat(TextureFormat format)
+                {
+                    return IsUnsignedFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsSignedFormat(GraphicsFormat format);
+
+                public static bool IsSignedFormat(TextureFormat format)
+                {
+                    return IsSignedFormat(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsNormFormat(GraphicsFormat format);
@@ -230,68 +320,182 @@ namespace UnityEngine
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsDXTCFormat(GraphicsFormat format);
 
+                public static bool IsDXTCFormat(TextureFormat format)
+                {
+                    return IsDXTCFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsRGTCFormat(GraphicsFormat format);
+
+                public static bool IsRGTCFormat(TextureFormat format)
+                {
+                    return IsRGTCFormat(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsBPTCFormat(GraphicsFormat format);
 
+                public static bool IsBPTCFormat(TextureFormat format)
+                {
+                    return IsBPTCFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsBCFormat(GraphicsFormat format);
+
+                public static bool IsBCFormat(TextureFormat format)
+                {
+                    return IsBCFormat(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsPVRTCFormat(GraphicsFormat format);
 
+                public static bool IsPVRTCFormat(TextureFormat format)
+                {
+                    return IsPVRTCFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsETCFormat(GraphicsFormat format);
+
+                public static bool IsETCFormat(TextureFormat format)
+                {
+                    return IsETCFormat(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsEACFormat(GraphicsFormat format);
 
+                public static bool IsEACFormat(TextureFormat format)
+                {
+                    return IsEACFormat(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static bool IsASTCFormat(GraphicsFormat format);
 
-                public static bool IsCrunchFormat(TextureFormat format)
+                public static bool IsASTCFormat(TextureFormat format)
                 {
-                    return format == TextureFormat.DXT1Crunched || format == TextureFormat.DXT5Crunched || format == TextureFormat.ETC_RGB4Crunched || format == TextureFormat.ETC2_RGBA8Crunched;
+                    return IsASTCFormat(GetGraphicsFormat(format, false));
                 }
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern public static bool IsHDRFormat(GraphicsFormat format);
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern private static bool IsHDRFormat_Native_TextureFormat(TextureFormat format);
+
+                public static bool IsHDRFormat(TextureFormat format)
+                {
+                    return IsHDRFormat_Native_TextureFormat(format);
+                }
+
+                [FreeFunction("IsCompressedCrunchTextureFormat", IsThreadSafe = true)]
+                extern public static bool IsCrunchFormat(TextureFormat format);
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static FormatSwizzle GetSwizzleR(GraphicsFormat format);
 
+                public static FormatSwizzle GetSwizzleR(TextureFormat format)
+                {
+                    return GetSwizzleR(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static FormatSwizzle GetSwizzleG(GraphicsFormat format);
+
+                public static FormatSwizzle GetSwizzleG(TextureFormat format)
+                {
+                    return GetSwizzleG(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static FormatSwizzle GetSwizzleB(GraphicsFormat format);
 
+                public static FormatSwizzle GetSwizzleB(TextureFormat format)
+                {
+                    return GetSwizzleB(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static FormatSwizzle GetSwizzleA(GraphicsFormat format);
+
+                public static FormatSwizzle GetSwizzleA(TextureFormat format)
+                {
+                    return GetSwizzleA(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetBlockSize(GraphicsFormat format);
 
+                public static UInt32 GetBlockSize(TextureFormat format)
+                {
+                    return GetBlockSize(GetGraphicsFormat(format, false));
+                }
+
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetBlockWidth(GraphicsFormat format);
+
+                public static UInt32 GetBlockWidth(TextureFormat format)
+                {
+                    return GetBlockWidth(GetGraphicsFormat(format, false));
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static UInt32 GetBlockHeight(GraphicsFormat format);
 
-                public static UInt32 ComputeMipmapSize(int width, int height, GraphicsFormat format)
+                public static UInt32 GetBlockHeight(TextureFormat format)
                 {
-                    return ComputeMipmapSize_Native_2D(width, height, format);
+                    return GetBlockHeight(GetGraphicsFormat(format, false));
                 }
 
-                [FreeFunction]
-                extern private static UInt32 ComputeMipmapSize_Native_2D(int width, int height, GraphicsFormat format);
+                public static UInt32 ComputeMipmapSize(int width, int height, GraphicsFormat format)
+                {
+                    return ComputeMipChainSize_Native_2D(width, height, format, 1);
+                }
+
+                public static UInt32 ComputeMipmapSize(int width, int height, TextureFormat format)
+                {
+                    return ComputeMipmapSize(width, height, GetGraphicsFormat(format, false));
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern private static UInt32 ComputeMipChainSize_Native_2D(int width, int height, GraphicsFormat format, int mipCount);
+
+                public static UInt32 ComputeMipChainSize(int width, int height, GraphicsFormat format, [uei.DefaultValue("-1")] int mipCount = -1)
+                {
+                    return ComputeMipChainSize_Native_2D(width, height, format, mipCount);
+                }
+
+                public static UInt32 ComputeMipChainSize(int width, int height, TextureFormat format, [uei.DefaultValue("-1")] int mipCount = -1)
+                {
+                    return ComputeMipChainSize_Native_2D(width, height, GetGraphicsFormat(format, false), mipCount);
+                }
 
                 public static UInt32 ComputeMipmapSize(int width, int height, int depth, GraphicsFormat format)
                 {
-                    return ComputeMipmapSize_Native_3D(width, height, depth, format);
+                    return ComputeMipChainSize_Native_3D(width, height, depth, format, 1);
                 }
 
-                [FreeFunction]
-                extern private static UInt32 ComputeMipmapSize_Native_3D(int width, int height, int depth, GraphicsFormat format);
+                public static UInt32 ComputeMipmapSize(int width, int height, int depth, TextureFormat format)
+                {
+                    return ComputeMipmapSize(width, height, depth, GetGraphicsFormat(format, false));
+                }
+
+                [FreeFunction(IsThreadSafe = true)]
+                extern private static UInt32 ComputeMipChainSize_Native_3D(int width, int height, int depth, GraphicsFormat format, int mipCount);
+
+                public static UInt32 ComputeMipChainSize(int width, int height, int depth, GraphicsFormat format, [uei.DefaultValue("-1")] int mipCount = -1)
+                {
+                    return ComputeMipChainSize_Native_3D(width, height, depth, format, mipCount);
+                }
+
+                public static UInt32 ComputeMipChainSize(int width, int height, int depth, TextureFormat format, [uei.DefaultValue("-1")] int mipCount = -1)
+                {
+                    return ComputeMipChainSize_Native_3D(width, height, depth, GetGraphicsFormat(format, false), mipCount);
+                }
             }
         } // namespace Rendering
     } // namespace Experimental

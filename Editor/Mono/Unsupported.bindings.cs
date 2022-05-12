@@ -270,6 +270,9 @@ namespace UnityEditor
         [NativeMethod("ClearPasteboard")]
         internal static extern void ClearPasteboard();
 
+        [NativeMethod("SetUsingAuthoringScenes")]
+        public static extern void SetUsingAuthoringScenes(bool enabled);
+
         public static UnityEngine.Object GetRenderSettings()
         {
             return RenderSettings.GetRenderSettings();

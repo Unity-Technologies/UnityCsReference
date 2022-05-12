@@ -8,8 +8,6 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.U2D;
-using System.Collections.Generic;
-using Unity.Collections;
 
 namespace UnityEngine.Tilemaps
 {
@@ -22,6 +20,15 @@ namespace UnityEngine.Tilemaps
         InstantiateGameObjectRuntimeOnly = 1 << 2,
         KeepGameObjectRuntimeOnly = 1 << 3,
         LockAll = LockColor | LockTransform,
+    }
+
+    [Flags]
+    public enum TileAnimationFlags
+    {
+        None = 0,
+        LoopOnce = 1 << 0,
+        PauseAnimation = 1 << 1,
+        UpdatePhysics = 1 << 2,
     }
 
     [RequireComponent(typeof(Transform))]
@@ -245,6 +252,11 @@ namespace UnityEngine.Tilemaps
         public extern float GetAnimationTime(Vector3Int position);
         [NativeMethod(Name = "SetTileAnimationTime")]
         public extern void SetAnimationTime(Vector3Int position, float time);
+
+        public extern TileAnimationFlags GetTileAnimationFlags(Vector3Int position);
+        public extern void SetTileAnimationFlags(Vector3Int position, TileAnimationFlags flags);
+        public extern void AddTileAnimationFlags(Vector3Int position, TileAnimationFlags flags);
+        public extern void RemoveTileAnimationFlags(Vector3Int position, TileAnimationFlags flags);
 
         public void FloodFill(Vector3Int position, TileBase tile)
         {
@@ -581,10 +593,12 @@ namespace UnityEngine.Tilemaps
         public Sprite[] animatedSprites { get { return m_AnimatedSprites; } set { m_AnimatedSprites = value; } }
         public float animationSpeed { get { return m_AnimationSpeed; } set { m_AnimationSpeed = value; } }
         public float animationStartTime { get { return m_AnimationStartTime; } set { m_AnimationStartTime = value; } }
+        public TileAnimationFlags flags { get { return m_Flags; } set { m_Flags = value; } }
 
         private Sprite[] m_AnimatedSprites;
         private float m_AnimationSpeed;
         private float m_AnimationStartTime;
+        private TileAnimationFlags m_Flags;
     }
 
     [RequireComponent(typeof(Tilemap))]
