@@ -505,12 +505,6 @@ namespace UnityEditor.Search
         {
             if (category != null)
             {
-                yield return new SearchProposition(
-                    priority: priority,
-                    category: null,
-                    label: category,
-                    icon: EditorGUIUtility.FindTexture("FilterByType"));
-
                 yield return new SearchProposition(category: category, label: "Prefabs", replacement: "t:prefab",
                     icon: GetTypeIcon(typeof(GameObject)), data: typeof(GameObject), type: blockType, priority: priority, color: QueryColors.type);
             }
@@ -547,6 +541,7 @@ namespace UnityEditor.Search
                     label: t.Name,
                     replacement: $"t:{t.Name}",
                     data: t,
+                    help: $"Search {t.Name}",
                     type: blockType,
                     icon: GetTypeIcon(t),
                     color: QueryColors.type);

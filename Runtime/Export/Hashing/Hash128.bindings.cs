@@ -22,49 +22,22 @@ namespace UnityEngine
     {
         public Hash128(uint u32_0, uint u32_1, uint u32_2, uint u32_3)
         {
-            m_u32_0 = u32_0;
-            m_u32_1 = u32_1;
-            m_u32_2 = u32_2;
-            m_u32_3 = u32_3;
+            u64_0 = ((ulong)u32_1) << 32 | u32_0;
+            u64_1 = ((ulong)u32_3) << 32 | u32_2;
         }
 
         public Hash128(ulong u64_0, ulong u64_1)
         {
-            var ptr0 = (uint*)&u64_0;
-            var ptr1 = (uint*)&u64_1;
-
-            m_u32_0 = *ptr0;
-            m_u32_1 = *(ptr0 + 1);
-            m_u32_2 = *ptr1;
-            m_u32_3 = *(ptr1 + 1);
+            this.u64_0 = u64_0;
+            this.u64_1 = u64_1;
         }
 
-        uint m_u32_0;
-        uint m_u32_1;
-        uint m_u32_2;
-        uint m_u32_3;
-
-        internal ulong u64_0
-        {
-            get
-            {
-                fixed(uint* ptr0 = &m_u32_0) return *(ulong*)ptr0;
-            }
-        }
-
-        internal ulong u64_1
-        {
-            get
-            {
-                fixed(uint* ptr1 = &m_u32_2) return *(ulong*)ptr1;
-            }
-        }
+        internal ulong u64_0;
+        internal ulong u64_1;
 
         public bool isValid =>
-            m_u32_0 != 0
-            || m_u32_1 != 0
-            || m_u32_2 != 0
-            || m_u32_3 != 0;
+            u64_0 != 0
+            || u64_1 != 0;
 
         public int CompareTo(Hash128 rhs)
         {
@@ -271,7 +244,7 @@ namespace UnityEngine
 
         public override int GetHashCode()
         {
-            return m_u32_0.GetHashCode() ^ m_u32_1.GetHashCode() ^ m_u32_2.GetHashCode() ^ m_u32_3.GetHashCode();
+            return u64_0.GetHashCode() ^ u64_1.GetHashCode();
         }
 
         public int CompareTo(object obj)
@@ -285,7 +258,7 @@ namespace UnityEngine
 
         public static bool operator==(Hash128 hash1, Hash128 hash2)
         {
-            return (hash1.m_u32_0 == hash2.m_u32_0 && hash1.m_u32_1 == hash2.m_u32_1 && hash1.m_u32_2 == hash2.m_u32_2 && hash1.m_u32_3 == hash2.m_u32_3);
+            return (hash1.u64_0 == hash2.u64_0 && hash1.u64_1 == hash2.u64_1);
         }
 
         public static bool operator!=(Hash128 hash1, Hash128 hash2)
@@ -295,13 +268,9 @@ namespace UnityEngine
 
         public static bool operator<(Hash128 x, Hash128 y)
         {
-            if (x.m_u32_0 != y.m_u32_0)
-                return x.m_u32_0 < y.m_u32_0;
-            if (x.m_u32_1 != y.m_u32_1)
-                return x.m_u32_1 < y.m_u32_1;
-            if (x.m_u32_2 != y.m_u32_2)
-                return x.m_u32_2 < y.m_u32_2;
-            return x.m_u32_3 < y.m_u32_3;
+            if (x.u64_0 != y.u64_0)
+                return x.u64_0 < y.u64_0;
+            return x.u64_1 < y.u64_1;
         }
 
         public static bool operator>(Hash128 x, Hash128 y)
@@ -329,10 +298,8 @@ namespace UnityEngine
             d += 4ul << 56;
             c += data;
             ShortEnd(ref a, ref b, ref c, ref d);
-            m_u32_0 = (uint)a;
-            m_u32_1 = (uint)(a >> 32);
-            m_u32_2 = (uint)b;
-            m_u32_3 = (uint)(b >> 32);
+            u64_0 = a;
+            u64_1 = b;
         }
 
         static unsafe void ShortEnd(ref ulong h0, ref ulong h1, ref ulong h2, ref ulong h3)

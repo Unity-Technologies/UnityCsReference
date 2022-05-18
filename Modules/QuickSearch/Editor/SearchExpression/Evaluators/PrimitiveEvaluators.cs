@@ -12,7 +12,7 @@ namespace UnityEditor.Search
     static partial class Evaluators
     {
         [Description("Return the first result for each expression."), Category("Primitives")]
-        [SearchExpressionEvaluator(SearchExpressionType.Function | SearchExpressionType.Literal)]
+        [SearchExpressionEvaluator(SearchExpressionType.Literal)]
         public static IEnumerable<SearchItem> Constant(SearchExpressionContext c)
         {
             if (c.expression.types.HasAny(SearchExpressionType.Function))

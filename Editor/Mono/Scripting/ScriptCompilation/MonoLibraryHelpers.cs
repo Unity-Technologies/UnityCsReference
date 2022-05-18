@@ -27,21 +27,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetCachedSystemLibraryReferences(apiCompatibilityLevel);
         }
 
-        static IEnumerable<string> FindAllFilesInDirectories(string[] directories, string pattern)
-        {
-            foreach (string dir in directories)
-            {
-                if (!Directory.Exists(dir)) { continue; }
 
-                var files = Directory.GetFiles(dir, pattern);
-                foreach (string file in files)
-                {
-                    yield return file;
-                }
-            }
-        }
-
-        static string[] FindReferencesInDirectories(this string[] references, string[] directories)
+        static string[] FindReferencesInDirectories(this IEnumerable<string> references, string[] directories)
         {
             return (
                 from reference in references
@@ -69,18 +56,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8)
             {
-                var systemReferences = GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories);
-                var net46References = GetNet46SystemReferences().FindReferencesInDirectories(monoAssemblyDirectories);
-                var additionalSystemReferences = FindAllFilesInDirectories(monoAssemblyDirectories, "System.*.dll");
-                var facades = Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll");
-
-                // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
-                // used later by the language compilers.
-                references.AddRange(systemReferences
-                    .Concat(net46References)
-                    .Concat(additionalSystemReferences)
-                    .Concat(facades)
-                    .Distinct());
+                var referenceFileNames = GetSystemReferences().Concat(GetNet46SystemReferences()).Concat(GetMonoProfileNetstandardFacadeReferences()).Distinct();
+                references.AddRange(referenceFileNames.FindReferencesInDirectories(monoAssemblyDirectories));
+                references.AddRange(Directory.GetFiles(Path.Combine(GetUnityReferenceProfileDirectory(), "Facades"), "*.dll"));
             }
             else
             {
@@ -178,6 +156,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "System.IO.Compression.dll",
                 "Microsoft.CSharp.dll",
                 "System.Data.dll",
+            };
+        }
+
+        static string[] GetMonoProfileNetstandardFacadeReferences()
+        {
+            return new[]
+            {
+                "mscorlib.dll",
+                "System.Core.dll",
+                "System.dll",
+                "System.Data.dll",
+                "System.Data.DataSetExtensions.dll",
+                "System.Drawing.dll",
+                "System.IO.Compression.dll",
+                "System.IO.Compression.FileSystem.dll",
+                "System.ComponentModel.Composition.dll",
+                "System.Net.Http.dll",
+                "System.Numerics.dll",
+                "System.Runtime.Serialization.dll",
+                "System.Transactions.dll",
+                "System.Xml.dll",
+                "System.Xml.Linq.dll",
             };
         }
     }

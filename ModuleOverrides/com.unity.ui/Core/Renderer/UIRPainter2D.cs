@@ -55,6 +55,60 @@ using UnityEngine.UIElements.UIR;
 namespace UnityEngine.UIElements
 {
     /// <summary>
+    /// The fill rule to use when filling shapes with <see cref="Painter2D.Fill(FillRule)"/>.
+    /// </summary>
+    public enum FillRule
+    {
+        /// <summary>The "non-zero" winding rule.</summary>
+        NonZero,
+
+        /// <summary>The "odd-even" winding rule.</summary>
+        OddEven
+    }
+
+    /// <summary>
+    /// Join types connecting two sub-paths (see <see cref="Painter2D.lineJoin"/>).
+    /// </summary>
+    public enum LineJoin
+    {
+        /// <summary>
+        /// Joins the sub-paths with a sharp corner.
+        /// The join converts to a beveled join when the <see cref="Painter2D.miterLimit"/> ratio is reached.
+        /// </summary>
+        Miter,
+
+        /// <summary>Joins the sub-paths with a beveled corner.</summary>
+        Bevel,
+
+        /// <summary>Joins the sub-paths with a round corner.</summary>
+        Round
+    }
+
+    /// <summary>
+    /// Cap types for the beginning and end of paths (see <see cref="Painter2D.lineCap"/>).
+    /// </summary>
+    public enum LineCap
+    {
+        /// <summary>Terminates the path with no tip.</summary>
+        Butt,
+
+        /// <summary>Terminates the path with a round tip.</summary>
+        Round
+    }
+
+    /// <summary>
+    /// Direction to use when defining an arc (see <see cref="Painter2D.Arc(Vector2, float, Angle, Angle, ArcDirection)"/>).
+    /// </summary>
+    public enum ArcDirection
+    {
+        /// <summary>A clockwise direction.</summary>
+        Clockwise,
+
+        /// <summary>A counter-clockwise direction.</summary>
+        CounterClockwise
+    }
+
+    /// <summary>
     /// Object to draw 2D vector graphics. Do not instantiate this class directly. Access it
     /// from the <see cref="MeshGenerationContext.painter2D"/> property.
     /// </summary>
@@ -114,8 +168,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public LineJoin lineJoin
         {
-            get => UIPainter2D.GetLineJoin(m_Handle);
-            set => UIPainter2D.SetLineJoin(m_Handle, value);
+            get => (LineJoin)UIPainter2D.GetLineJoin(m_Handle);
+            set => UIPainter2D.SetLineJoin(m_Handle, (int)value);
         }
 
         /// <summary>
@@ -123,8 +177,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public LineCap lineCap
         {
-            get => UIPainter2D.GetLineCap(m_Handle);
-            set => UIPainter2D.SetLineCap(m_Handle, value);
+            get => (LineCap)UIPainter2D.GetLineCap(m_Handle);
+            set => UIPainter2D.SetLineCap(m_Handle, (int)value);
         }
 
         /// <summary>
@@ -237,7 +291,7 @@ namespace UnityEngine.UIElements
             if (!ValidateState())
                 return;
 
-            UIPainter2D.Arc(m_Handle, center, radius, startAngle.ToRadians(), endAngle.ToRadians(), direction);
+            UIPainter2D.Arc(m_Handle, center, radius, startAngle.ToRadians(), endAngle.ToRadians(), (int)direction);
         }
 
         /// <summary>
@@ -309,7 +363,7 @@ namespace UnityEngine.UIElements
                 if (!ValidateState())
                     return;
 
-                var meshData = UIPainter2D.Fill(m_Handle, fillRule);
+                var meshData = UIPainter2D.Fill(m_Handle, (int)fillRule);
                 if (meshData.vertexCount == 0)
                     return;
 

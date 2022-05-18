@@ -128,9 +128,9 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddPropositionsFromFilterAttributes<GameObject, SceneQueryEngineFilterAttribute>(category: "Custom Scene Filters", icon: sceneIcon, color: QueryColors.filter, propositionTransformation: proposition =>
             {
                 return new SearchProposition(category: proposition.category,
-                    label: proposition.help ?? proposition.label,
+                    label: proposition.label,
                     replacement: proposition.replacement,
-                    help: proposition.help != null ? proposition.label : null,
+                    help: proposition.help,
                     data: proposition.data,
                     priority: proposition.priority,
                     icon: proposition.icon,

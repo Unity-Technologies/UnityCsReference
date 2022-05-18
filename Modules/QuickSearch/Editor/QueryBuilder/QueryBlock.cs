@@ -33,6 +33,7 @@ namespace UnityEditor.Search
         internal virtual bool canExclude => true;
         internal virtual bool canDisable => true;
         internal virtual bool canOpenEditorOnValueClicked => false;
+        internal virtual bool draggable => true;
         internal bool hideMenu { get; set; }
         internal bool disabled { get; set; }
         internal bool @readonly { get; set; }

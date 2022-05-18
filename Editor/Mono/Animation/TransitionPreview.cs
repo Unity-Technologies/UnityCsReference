@@ -36,6 +36,7 @@ namespace UnityEditor
 
         private bool m_MustResample = true;
         private bool m_MustSampleMotions = false;
+        private bool m_MustResetParameterInfoList = false;
         public bool mustResample { set { m_MustResample = value; } get { return m_MustResample; } }
         private float m_LastEvalTime = -1.0f;
         private bool m_IsResampling = false;
@@ -398,6 +399,8 @@ namespace UnityEditor
         public void SetTransition(AnimatorStateTransition transition, AnimatorState sourceState, AnimatorState destinationState, AnimatorControllerLayer srcLayer, Animator previewObject)
         {
             m_RefSrcState = sourceState;
+            m_MustResetParameterInfoList = m_RefDstState != destinationState;
+
             m_RefDstState = destinationState;
             TransitionInfo info = new TransitionInfo();
             info.Set(transition, sourceState, destinationState);
@@ -589,7 +592,12 @@ namespace UnityEditor
 
             CreateController();
 
-            CreateParameterInfoList();
+            if(m_ParameterInfoList == null || m_MustResetParameterInfoList)
+            {
+                m_MustResetParameterInfoList = false;
+                CreateParameterInfoList();
+            }
+
         }
 
         public void DoTransitionPreview()

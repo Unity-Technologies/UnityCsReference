@@ -272,7 +272,7 @@ namespace UnityEditor.Search
             var updated = new HashSet<string>();
             var moved = new HashSet<string>();
             var removed = new HashSet<string>(deletedAssets);
-            var transactions = s_TransactionManager.Read(TimeRange.From(DateTime.FromBinary(timestamp), false));
+            var transactions = s_TransactionManager.Read(TimeRange.From(DateTime.FromBinary(timestamp).ToUniversalTime(), false));
             foreach (var t in transactions)
             {
                 var state = (AssetModification)t.state;
@@ -361,11 +361,15 @@ namespace UnityEditor.Search
         {
             s_ContentRefreshedEnabled = false;
             s_TransactionManager?.Shutdown();
+            propertyDatabase?.Dispose();
+            propertyAliases?.Dispose();
         }
 
         static void OnBeforeAssemblyReload()
         {
             s_TransactionManager?.Shutdown();
+            propertyDatabase?.Dispose();
+            propertyAliases?.Dispose();
         }
 
         static void RaiseContentRefreshed()
@@ -385,7 +389,7 @@ namespace UnityEditor.Search
         {
             if (s_TransactionManager != null && s_TransactionManager.Initialized)
             {
-                var timestamp = DateTime.Now.ToBinary();
+                var timestamp = DateTime.UtcNow.ToBinary();
                 var transactions = updated.Select(path => new Transaction(AssetDatabase.AssetPathToGUID(path), AssetModification.Updated, timestamp))
                     .Concat(removed.Select(path => new Transaction(AssetDatabase.AssetPathToGUID(path), AssetModification.Removed, timestamp)))
                     .Concat(moved.Select(path => new Transaction(AssetDatabase.AssetPathToGUID(path), AssetModification.Moved, timestamp))).ToList();

@@ -481,6 +481,8 @@ namespace UnityEngine.UIElements
         private float m_ResolvedScale; // panel scaling factor (pixels <-> points)
 
         internal int m_EmptyPanelCounter = 0;
+        private StyleSheet m_OldThemeUss;
+
         private PanelSettings()
         {
             m_PanelAccess = new RuntimePanelAccess(this);
@@ -540,12 +542,20 @@ namespace UnityEngine.UIElements
                 root = visualTree;
             }
 
+            if (m_OldThemeUss != themeUss && m_OldThemeUss != null)
+            {
+                root?.styleSheets.Remove(m_OldThemeUss);
+            }
+
             if (themeUss != null)
             {
+
                 // Ensure that isDefaultStyleSheet is set to true even though isDefaultStyleSheet is defaulted to true for ThemeStyleSheet.
                 themeUss.isDefaultStyleSheet = true;
                 root?.styleSheets.Add(themeUss);
             }
+
+            m_OldThemeUss = themeUss;
         }
 
         void InitializeShaders()
@@ -721,7 +731,6 @@ namespace UnityEngine.UIElements
 
         private float m_OldReferenceDpi;
         private float m_OldFallbackDpi;
-        private StyleSheet m_OldThemeUss;
         private RenderTexture m_OldTargetTexture;
         private float m_OldSortingOrder;
         private bool m_IsLoaded = false;
@@ -753,15 +762,7 @@ namespace UnityEngine.UIElements
                 if (m_OldThemeUss != themeUss)
                 {
                     var root = visualTree;
-                    if (root != null)
-                    {
-                        if (m_OldThemeUss != null)
-                        {
-                            root.styleSheets.Remove(m_OldThemeUss);
-                        }
-
-                        ApplyThemeStyleSheet(root);
-                    }
+                    ApplyThemeStyleSheet(root); // m_OldThemeUss is updated in ApplyThemeStyleSheet
                     isDirty = true;
                 }
 
@@ -784,7 +785,6 @@ namespace UnityEngine.UIElements
 
             m_OldReferenceDpi = m_ReferenceDpi;
             m_OldFallbackDpi = m_FallbackDpi;
-            m_OldThemeUss = themeUss;
             m_OldTargetTexture = m_TargetTexture;
             m_OldSortingOrder = m_SortingOrder;
 

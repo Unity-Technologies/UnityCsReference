@@ -16,6 +16,7 @@ namespace UnityEditor.Search
 
         internal override bool canExclude => false;
         internal override bool canDisable => false;
+        internal override bool draggable => false;
 
         public QueryAreaBlock(IQuerySource source, in SearchProvider provider)
             : this(source, provider.name, provider.filterId)

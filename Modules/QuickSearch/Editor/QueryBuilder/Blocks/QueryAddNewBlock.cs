@@ -11,6 +11,8 @@ namespace UnityEditor.Search
     class QueryAddNewBlock : QueryBlock, IBlockSource
     {
         internal override bool wantsEvents => true;
+        internal override bool draggable => false;
+
         public override string ToString() => null;
         internal override IBlockEditor OpenEditor(in Rect rect) => AddBlock(rect);
 
@@ -60,5 +62,26 @@ namespace UnityEditor.Search
                     .Concat(QueryAndOrBlock.BuiltInQueryBuilderPropositions()).OrderBy(p => p);
             }
         }
+    }
+
+    class QueryInsertBlock : IBlockSource
+    {
+        private readonly IBlockSource insertAfter;
+        private readonly IBlockSource insertWith;
+
+        public QueryInsertBlock(IBlockSource insertAfter, IBlockSource insertWith)
+        {
+            this.insertAfter = insertAfter;
+            this.insertWith = insertWith;
+        }
+
+        public string name => insertAfter.name;
+        public string editorTitle => insertAfter.editorTitle;
+        public SearchContext context => insertAfter.context;
+        public bool formatNames => insertAfter.formatNames;
+
+        public IEnumerable<SearchProposition> FetchPropositions() => insertWith.FetchPropositions();
+        public void Apply(in SearchProposition searchProposition) => insertWith.Apply(searchProposition);
+        public void CloseEditor() => insertAfter.CloseEditor();
     }
 }

@@ -319,7 +319,7 @@ namespace UnityEditor.Search
         {
             foreach (var l in AssetDatabase.GetAllLabels())
             {
-                yield return CreateProposition(flags, ObjectNames.NicifyVariableName(l.Key), l.Key);
+                yield return CreateProposition(flags, ObjectNames.NicifyVariableName(l.Key), l.Key, $"Assets with label: {l.Key}");
             }
         }
     }
@@ -337,7 +337,7 @@ namespace UnityEditor.Search
         {
             foreach (var t in InternalEditorUtility.tags)
             {
-                yield return CreateProposition(flags, ObjectNames.NicifyVariableName(t), t);
+                yield return CreateProposition(flags, ObjectNames.NicifyVariableName(t), t, $"Assets with tag: {t}");
             }
         }
     }
@@ -363,7 +363,7 @@ namespace UnityEditor.Search
                 var layerName = InternalEditorUtility.GetLayerName(i);
                 if (!string.IsNullOrEmpty(layerName))
                 {
-                    yield return CreateProposition(flags, ObjectNames.NicifyVariableName(layerName), layerName);
+                    yield return CreateProposition(flags, ObjectNames.NicifyVariableName(layerName), layerName, $"Assets with layer: {layerName}");
                 }
             }
         }
