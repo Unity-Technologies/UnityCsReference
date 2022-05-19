@@ -110,8 +110,31 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
+            var packagePathsToSearchForAssemblies = new StringBuilder();
+
+            if (!EditorApplication.isPackageManagerDisabled)
+            {
+                var req = PackageManager.Client.List(offlineMode: true, includeIndirectDependencies: true);
+                while (!req.IsCompleted)
+                    System.Threading.Thread.Sleep(10);
+                if (req.Status == PackageManager.StatusCode.Success)
+                {
+                    foreach (var resolvedPackage in req.Result)
+                    {
+                        packagePathsToSearchForAssemblies.Append(
+                            $"{Path.PathSeparator}+{resolvedPackage.resolvedPath.Escape(Path.PathSeparator)}");
+                    }
+                }
+                else
+                {
+                    APIUpdaterLogger.WriteToFile(L10n.Tr(
+                        $"Unable to retrieve project configured packages; AssemblyUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})"));
+                }
+            }
+
             var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed").Escape(Path.PathSeparator) + Path.PathSeparator
-                + "+" + Application.dataPath.Escape(Path.PathSeparator);
+                + "+" + Application.dataPath.Escape(Path.PathSeparator)
+                + packagePathsToSearchForAssemblies.ToString();
 
             if (configurationSourceDirectories != null)
             {

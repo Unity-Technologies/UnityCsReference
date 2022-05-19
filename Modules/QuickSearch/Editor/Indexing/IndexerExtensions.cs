@@ -311,6 +311,7 @@ namespace UnityEditor.Search
         }
 
         [SceneQueryEngineFilter("material", supportedOperators = new[] { ":" })]
+        [System.ComponentModel.Description("Check if a MeshRenderer uses a specific material")]
         internal static bool FilterMeshRendererMaterials(GameObject go, string op, string value)
         {
             if (!go.TryGetComponent<MeshRenderer>(out var c))

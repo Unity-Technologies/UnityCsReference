@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Search;
+
 
 namespace UnityEditor.Search
 {
@@ -52,6 +54,7 @@ namespace UnityEditor.Search
                 return Providers.OrderBy(p => p.priority + (p.isExplicitProvider ? 100000 : 0));
             }
         }
+
 
         static SearchService()
         {
@@ -158,11 +161,12 @@ namespace UnityEditor.Search
             }
         }
 
+
         /// <summary>
         /// Create context from a list of provider id.
         /// </summary>
         /// <param name="providerIds">List of provider id</param>
-        /// <param name="searchText">seach Query</param>
+        /// <param name="searchText">Search Query</param>
         /// <param name="flags">Options defining how the query will be performed</param>
         /// <returns>New SearchContext</returns>
         public static SearchContext CreateContext(IEnumerable<string> providerIds, string searchText = "", SearchFlags flags = SearchFlags.Default)
@@ -174,7 +178,7 @@ namespace UnityEditor.Search
         /// Create context from a list of providers.
         /// </summary>
         /// <param name="providers">List of providers</param>
-        /// <param name="searchText">seach Query</param>
+        /// <param name="searchText">Search Query</param>
         /// <param name="flags">Options defining how the query will be performed</param>
         /// <returns>New SearchContext</returns>
         public static SearchContext CreateContext(IEnumerable<SearchProvider> providers, string searchText = "", SearchFlags flags = SearchFlags.Default)
@@ -229,7 +233,7 @@ namespace UnityEditor.Search
         {
             // Stop all search sessions every time there is a new search.
             context.sessions.StopAllAsyncSearchSessions();
-            context.searchFinishTime = context.searchStartTime = DateTime.Now.Ticks;
+            context.searchFinishTime = context.searchStartTime = DateTime.UtcNow.Ticks;
             context.sessionEnded -= OnSearchEnded;
             context.sessionEnded += OnSearchEnded;
 
@@ -453,7 +457,9 @@ namespace UnityEditor.Search
             context.asyncItemReceived += ReceiveItems;
             context.sessionStarted += OnSessionStarted;
             context.sessionEnded += OnSessionEnded;
-            GetItems(context, options | SearchFlags.FirstBatchAsync);
+            var firstResults = GetItems(context, options);
+            if (firstResults.Count > 0)
+                ReceiveItems(context, firstResults);
             firstBatchResolved = true;
             if (sessionCount == 0 && !completed)
             {
@@ -468,7 +474,7 @@ namespace UnityEditor.Search
 
         private static void OnSearchEnded(SearchContext context)
         {
-            context.searchFinishTime = DateTime.Now.Ticks;
+            context.searchFinishTime = DateTime.UtcNow.Ticks;
         }
 
         private static int SortItemComparer(SearchItem item1, SearchItem item2)
@@ -759,10 +765,23 @@ namespace UnityEditor.Search
             {
                 onIndexReady?.Invoke(indexName, indexPath.Replace("\\", "/"), () =>
                 {
-                    if (EditorUtility.IsPersistent(db))
-                        Resources.UnloadAsset(db);
-                    if (options.HasNone(IndexingOptions.Keep))
-                        AssetDatabase.DeleteAsset(indexPath);
+                    SearchDatabase.Unload(db);
+
+                    try
+                    {
+                        if (options.HasNone(IndexingOptions.Keep) && System.IO.File.Exists(indexPath))
+                        {
+                            if (options.HasAny(IndexingOptions.Temporary))
+                                System.IO.File.Delete(indexPath);
+                            else
+                                AssetDatabase.DeleteAsset(indexPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Ignore any file IO errors (for the user)
+                        Console.WriteLine(ex.Message);
+                    }
                 });
             }
             else

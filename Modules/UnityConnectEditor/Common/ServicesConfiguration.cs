@@ -45,6 +45,7 @@ namespace UnityEditor.Connect
         string m_CloudBuildApiStatusUrl;
 
         string m_CollabDashboardUrl;
+        string m_LegacyPurchasingDashboardUrl;
         string m_PurchasingDashboardUrl;
         string m_AnalyticsDashboardUrl;
 
@@ -90,6 +91,7 @@ namespace UnityEditor.Connect
             CloudBuildApiStatusUrl,
             CloudDiagCrashesDashboardUrl,
             CollabDashboardUrl,
+            LegacyPurchasingDashboardUrl,
             PurchasingDashboardUrl,
             AnalyticsDashboardUrl,
         }
@@ -155,7 +157,8 @@ namespace UnityEditor.Connect
 
             m_CloudDiagCrashesDashboardUrl = m_ServicesUrlsConfig["build"] + "/diagnostics/orgs/{0}/projects/{1}/crashes";
             m_CollabDashboardUrl = m_ServicesUrlsConfig["build"] + "/collab/orgs/{0}/projects/{1}/assets/";
-            m_PurchasingDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/projects/{0}/purchasing/";
+            m_LegacyPurchasingDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/projects/{0}/purchasing/";
+            m_PurchasingDashboardUrl = UnityEditor.Analytics.AnalyticsSettings.dashboardUrl + "/organizations/{0}/projects/{1}/analytics/v2/dashboards/revenue/";
             m_AnalyticsDashboardUrl = UnityEditor.Analytics.AnalyticsSettings.dashboardUrl + "/organizations/{0}/projects/{1}/analytics/about/";
 
             pathsReady = true;
@@ -442,6 +445,9 @@ namespace UnityEditor.Connect
                 case AsyncUrlId.CollabDashboardUrl:
                     asyncUrlCallback.callback(m_CollabDashboardUrl);
                     break;
+                case AsyncUrlId.LegacyPurchasingDashboardUrl:
+                    asyncUrlCallback.callback(m_LegacyPurchasingDashboardUrl);
+                    break;
                 case AsyncUrlId.PurchasingDashboardUrl:
                     asyncUrlCallback.callback(m_PurchasingDashboardUrl);
                     break;
@@ -712,6 +718,11 @@ namespace UnityEditor.Connect
         public void RequestBaseCollabDashboardUrl(Action<string> callback)
         {
             RequestAsyncUrl(AsyncUrlId.CollabDashboardUrl, callback);
+        }
+
+        public void RequestBaseLegacyPurchasingDashboardUrl(Action<string> callback)
+        {
+            RequestAsyncUrl(AsyncUrlId.LegacyPurchasingDashboardUrl, callback);
         }
 
         public void RequestBasePurchasingDashboardUrl(Action<string> callback)

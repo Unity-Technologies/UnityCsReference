@@ -24,7 +24,7 @@ namespace UnityEditor.Search.Providers
             };
             if (!string.IsNullOrEmpty(searchQuery))
                 SearchUtility.ParseSearchString(searchQuery, searchFilter);
-            if (filterType != null)
+            if (filterType != null && searchFilter.classNames.Length == 0)
                 searchFilter.classNames = new[] { filterType.Name };
             return EnumeratePaths(searchFilter);
         }

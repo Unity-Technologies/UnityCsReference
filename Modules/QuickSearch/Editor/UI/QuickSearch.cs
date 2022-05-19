@@ -246,8 +246,15 @@ namespace UnityEditor.Search
             QuickSearch qsWindow;
             if (flags.HasAny(SearchFlags.ReuseExistingWindow) && HasOpenInstances<T>())
             {
-                qsWindow = GetWindow<T>(false, null, false);
-                if (context != null)
+                qsWindow = Resources.FindObjectsOfTypeAll<QuickSearch>()
+                    .Where(w => w.viewState.searchFlags.HasAny(SearchFlags.ReuseExistingWindow)
+                        || (w.context?.options.HasAny(SearchFlags.ReuseExistingWindow) ?? false))
+                    .FirstOrDefault();
+                if (!qsWindow)
+                {
+                    qsWindow = CreateInstance<T>();
+                }
+                else if (context != null)
                 {
                     if (context.empty)
                         context.searchText = qsWindow.context?.searchText ?? string.Empty;
@@ -267,8 +274,14 @@ namespace UnityEditor.Search
 
         private void SetContext(SearchContext newContext)
         {
+            SetContext(newContext, true);
+        }
+
+        private void SetContext(SearchContext newContext, bool disposeOldContext)
+        {
             var searchText = context?.searchText ?? string.Empty;
-            context?.Dispose();
+            if (disposeOldContext)
+                context?.Dispose();
             m_ViewState.context = newContext ?? SearchService.CreateContext(searchText);
 
             context.searchView = this;
@@ -559,7 +572,7 @@ namespace UnityEditor.Search
             InitializeSplitters();
             InitializeSavedSearches();
 
-            SetContext(m_ViewState.context);
+            SetContext(m_ViewState.context, false);
             LoadSessionSettings(m_ViewState);
 
             SearchSettings.SortActionsPriority();
@@ -617,7 +630,9 @@ namespace UnityEditor.Search
             resized = null;
             nextFrame = null;
             m_DebounceOff?.Invoke();
+            m_DebounceOff = null;
             m_WaitAsyncResults?.Invoke();
+            m_WaitAsyncResults = null;
             EditorApplication.delayCall -= DelayTrackSelection;
             SearchSettings.providerActivationChanged -= OnProviderActivationChanged;
 
@@ -628,11 +643,11 @@ namespace UnityEditor.Search
             m_DetailView?.Dispose();
             m_ResultView?.Dispose();
 
+            m_SearchMonitorView.Dispose();
+
             // End search session
             context.asyncItemReceived -= OnAsyncItemsReceived;
             context.Dispose();
-
-            m_SearchMonitorView.Dispose();
         }
 
         internal void OnGUI()
@@ -1013,27 +1028,50 @@ namespace UnityEditor.Search
 
         private void TogglePackages()
         {
-            if (context.options.HasAny(SearchFlags.Packages))
-                context.options &= ~SearchFlags.Packages;
+            if (context.showPackages)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.Packages;
+                context.showPackages = false;
+            }
             else
-                context.options |= SearchFlags.Packages;
+            {
+                SearchSettings.defaultFlags |= SearchFlags.Packages;
+                context.showPackages = true;
+            }
+
             SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(SearchFlags.Packages), context.wantsMore.ToString());
             Refresh(RefreshFlags.StructureChanged);
         }
 
         private void ToggleWantsMore()
         {
-            SearchSettings.wantsMore = context.wantsMore = !context?.wantsMore ?? false;
+            if (context.wantsMore)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.WantsMore;
+                context.wantsMore = false;
+            }
+            else
+            {
+                SearchSettings.defaultFlags |= SearchFlags.WantsMore;
+                context.wantsMore = true;
+            }
             SendEvent(SearchAnalytics.GenericEventType.PreferenceChanged, nameof(context.wantsMore), context.wantsMore.ToString());
             Refresh(RefreshFlags.StructureChanged);
         }
 
         private void ToggleDebugQuery()
         {
-            if (context.options.HasAny(SearchFlags.Debug))
-                context.options &= ~SearchFlags.Debug;
+            if (context.debug)
+            {
+                SearchSettings.defaultFlags &= ~SearchFlags.Debug;
+                context.debug = false;
+            }
             else
-                context.options |= SearchFlags.Debug;
+            {
+                SearchSettings.defaultFlags |= SearchFlags.Debug;
+                context.debug = true;
+            }
+
             Refresh();
         }
 
@@ -1543,7 +1581,6 @@ namespace UnityEditor.Search
 
         public IEnumerable<IGroup> EnumerateGroups()
         {
-
             var groups = m_FilteredItems.EnumerateGroups(!viewState.hideAllGroup);
             if (!viewState.hideAllGroup)
                 groups = groups.Where(g => !string.Equals(g.id, "default", StringComparison.Ordinal));
@@ -2184,15 +2221,15 @@ namespace UnityEditor.Search
 
         private void LoadContext()
         {
-            var contextHash = context.GetHashCode();
+            m_ContextHash = context.GetHashCode();
             if (context.options.HasAny(SearchFlags.FocusContext))
             {
                 var contextualProvider = GetContextualProvider();
                 if (contextualProvider != null)
-                    contextHash ^= contextualProvider.id.GetHashCode();
+                    m_ContextHash ^= contextualProvider.id.GetHashCode();
             }
-            if (m_ContextHash == 0)
-                m_ContextHash = contextHash;
+
+            m_ContextHash ^= GetType().Name.GetHashCode();
         }
 
         protected void UpdateViewState(SearchViewState args)
@@ -2469,7 +2506,7 @@ namespace UnityEditor.Search
         {
             var windowId = (window as QuickSearch)?.windowId ?? null;
             SearchAnalytics.SendEvent(windowId, SearchAnalytics.GenericEventType.QuickSearchOpenDocLink);
-            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/2021.1/Documentation/Manual/search-overview.html");
+            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/2021.3/Documentation/Manual/search-overview.html");
         }
 
 

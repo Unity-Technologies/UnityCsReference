@@ -118,7 +118,7 @@ namespace UnityEditor.Search
         public static DateTime TimeStampFromByte(byte[] bytes)
         {
             var binaryTimeStamp = BitConverter.ToInt64(bytes, 0);
-            return DateTime.FromBinary(binaryTimeStamp);
+            return DateTime.FromBinary(binaryTimeStamp).ToUniversalTime();
         }
 
         public static void ReadWholeArray(FileStream fs, byte[] data)

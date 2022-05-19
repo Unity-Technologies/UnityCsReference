@@ -174,6 +174,7 @@ namespace UnityEditor.Search
 
             searchSession.context.searchText = query;
             searchSession.context.options &= ~SearchFlags.Packages;
+            searchSession.context.options &= ~SearchFlags.Sorted;
             if (projectSearchContext.searchFilter != null)
             {
                 searchSession.context.userData = projectSearchContext.searchFilter;
@@ -192,7 +193,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            var items = SearchService.GetItems(searchSession.context);
+            var items = SearchService.GetItems(searchSession.context/*, SearchFlags.Synchronous*/);
             return items.Select(item => ToPath(item));
         }
 

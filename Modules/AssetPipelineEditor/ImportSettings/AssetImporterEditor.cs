@@ -990,7 +990,8 @@ namespace UnityEditor.AssetImporters
                     // asset has changed...
                     // need to start rendering again.
                     if (applied)
-                        Repaint();
+                        //Prevent subsequent GUI calls because the Editor may be running on invalidated data at this point.
+                        GUIUtility.ExitGUI();
                 }
             }
             else

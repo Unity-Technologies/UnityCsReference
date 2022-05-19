@@ -4732,6 +4732,12 @@
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\PluginImporter.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\PluginImporter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\RoslynAdditionalFiles.binding.cs">
+      <Link>Modules\AssetPipelineEditor\Public\RoslynAdditionalFiles.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetPipelineEditor\Public\RoslynAnalyzerConfig.binding.cs">
+      <Link>Modules\AssetPipelineEditor\Public\RoslynAnalyzerConfig.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetPipelineEditor\Public\RuleSetCache.bindings.cs">
       <Link>Modules\AssetPipelineEditor\Public\RuleSetCache.bindings.cs</Link>
     </Compile>

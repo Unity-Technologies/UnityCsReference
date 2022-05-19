@@ -512,6 +512,9 @@ namespace UnityEditor
         // Use resizable window in standalone player builds.
         public static extern bool resizableWindow { get; set; }
 
+        // Should resolution be reset when native window size changes. Shared between iOS & Android platforms.
+        public static extern bool resetResolutionOnWindowResize { get; set; }
+
         /// Bake collision meshes into the mesh asset.
         public static extern bool bakeCollisionMeshes { get; set; }
 

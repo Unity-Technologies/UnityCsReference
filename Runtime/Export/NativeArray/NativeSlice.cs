@@ -273,7 +273,13 @@ namespace Unity.Collections
         }
 
         public int      Stride => m_Stride;
-        public int      Length => m_Length;
+        public int      Length
+        {
+            get
+            {
+                return m_Length;
+            }
+        }
 
         public Enumerator GetEnumerator()
         {

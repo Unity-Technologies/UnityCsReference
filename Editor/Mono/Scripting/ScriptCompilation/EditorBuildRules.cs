@@ -264,6 +264,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
 
                 scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = new string[0];
+                scriptAssembly.CompilerOptions.RoslynAdditionalFilePaths = new string[0];
                 scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = string.Empty;
                 scriptAssembly.CompilerOptions.AdditionalCompilerArguments = settings.AdditionalCompilerArguments;
 
@@ -330,10 +331,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         if (ShouldUseAnalyzerForScriptAssembly(scriptAssembly, targetAssemblyOwningAnalyzer))
                         {
                             scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths.Concat(new[] {a}).ToArray();
-                            scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath =
-                                scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined
-                                ? RuleSetFileCache.GetRuleSetFilePathInRootFolder(Path.ChangeExtension(scriptAssembly.Filename, null))
-                                : RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                            if(scriptAssembly.TargetAssemblyType == TargetAssemblyType.Predefined)
+                            {
+                                var originPath = Path.ChangeExtension(scriptAssembly.Filename, null);
+                                scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetRuleSetFilePathInRootFolder(originPath);
+                                scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigRootFolder(originPath);
+                            }
+                            else
+                            {
+                                scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = RuleSetFileCache.GetPathForAssembly(scriptAssembly.OriginPath);
+                                scriptAssembly.CompilerOptions.AnalyzerConfigPath = RoslynAnalyzerConfigFiles.GetAnalyzerConfigForAssembly(scriptAssembly.OriginPath);
+                            }
+                            scriptAssembly.CompilerOptions.RoslynAdditionalFilePaths = scriptAssembly.CompilerOptions.RoslynAdditionalFilePaths.Concat(
+                                RoslynAdditionalFiles.GetAnalyzerAdditionalFilesForTargetAssembly(a, scriptAssembly.OriginPath)).ToArray();
                         }
                     }
                 }

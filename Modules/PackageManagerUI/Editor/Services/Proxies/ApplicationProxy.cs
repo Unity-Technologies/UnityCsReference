@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool isBatchMode => Application.isBatchMode;
 
-        public virtual bool isUpmRunning => !Application.HasARGV("noUpm");
+        public virtual bool isUpmRunning => !EditorApplication.isPackageManagerDisabled;
 
         public virtual bool isCompiling
         {

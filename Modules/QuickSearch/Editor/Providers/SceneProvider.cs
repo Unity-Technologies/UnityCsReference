@@ -143,7 +143,10 @@ namespace UnityEditor.Search.Providers
             get
             {
                 if (m_SceneQueryEngine == null)
+                {
                     m_SceneQueryEngine = new SceneQueryEngine(SearchUtils.FetchGameObjects());
+                    m_SceneQueryEngine.SetupQueryEnginePropositions();
+                }
                 return m_SceneQueryEngine;
             }
         }
@@ -291,6 +294,7 @@ namespace UnityEditor.Search.Providers
                 if (m_HierarchyChanged)
                 {
                     m_SceneQueryEngine = new SceneQueryEngine(SearchUtils.FetchGameObjects());
+                    m_SceneQueryEngine.SetupQueryEnginePropositions();
                     m_HierarchyChanged = false;
                 }
 
@@ -384,50 +388,10 @@ namespace UnityEditor.Search.Providers
         private IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SearchContext context)
         {
 
-            var goIcon = Utils.LoadIcon("GameObject Icon");
-            yield return new SearchProposition(category: "GameObject", label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon, color: QueryColors.filter);
-            yield return new SearchProposition(category: "GameObject", label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon, color: QueryColors.filter);
-            yield return new SearchProposition(category: "GameObject", label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon, color: QueryColors.filter);
-            yield return new SearchProposition(category: "GameObject", label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon, color: QueryColors.filter);
-            yield return new SearchProposition(category: "GameObject", label: "Active", "active=true", "Search active objects", icon: goIcon, color: QueryColors.filter);
-
-            var filterIcon = Utils.LoadIcon("Filter Icon");
-
-
-            var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
-            var queryEngineFunctions = TypeCache.GetMethodsWithAttribute<SceneQueryEngineFilterAttribute>();
-            foreach (var mi in queryEngineFunctions)
-            {
-                var attr = mi.GetAttribute<SceneQueryEngineFilterAttribute>();
-                var op = attr.supportedOperators == null ? ">" : attr.supportedOperators[0];
-                var value = op == ":" ? "" : "1";
-                var label = attr.token;
-                string help = null;
-
-                if (mi.ReturnType == typeof(Vector4))
-                    value = "(,,,)";
-
-                var replacement = $"{attr.token}{op}{value}";
-
-                var descriptionAttr = mi.GetAttribute<System.ComponentModel.DescriptionAttribute>();
-                if (descriptionAttr != null)
-                {
-                    help = label;
-                    label = descriptionAttr.Description;
-                }
-
-                yield return new SearchProposition(category: "Custom Scene Filters", label: label, help: help, replacement: replacement, icon: sceneIcon, color: QueryColors.filter);
-            }
-
-            var sceneObjects = context.searchView?.results.Count > 0 ?
+            var sceneObjects = context.searchView?.results.Count > 0 && !context.searchInProgress ?
                 context.searchView.results.Select(r => r.ToObject()).Where(o => o) : SearchUtils.FetchGameObjects();
-            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects).Take(100))
+            foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects))
                 yield return p;
-
-
-            yield return new SearchProposition(category: "Reference", "Reference By Path (Object)", "ref=<$object:none,UnityEngine.Object$>", "Find all objects referencing a specific asset.", icon:sceneIcon, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Reference", "Reference By Instance ID (Number)", "ref=1000", "Find all objects referencing a specific instance ID (Number).", icon: sceneIcon, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Reference", "Reference By Asset Expression", "ref={p: }", "Find all objects referencing for a given asset search.", icon: sceneIcon, color: QueryColors.filter);
         }
     }
 

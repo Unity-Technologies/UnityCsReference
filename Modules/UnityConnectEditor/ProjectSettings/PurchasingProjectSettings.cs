@@ -51,6 +51,11 @@ namespace UnityEditor.Connect
         const string k_ServiceNameProperty = "serviceName";
         bool m_CallbacksInitialized;
 
+        const string k_WelcomeToIapBlock = "WelcomeToIapBlock";
+        const int k_UnityAnalyticsSupportMajorVersion = 4;
+        const int k_UnityAnalyticsSupportMinorVersion = 2;
+        public static bool requiresLegacyAnalytics = true;
+
         Toggle m_MainServiceToggle;
         VisualElement m_GoToDashboard;
 
@@ -155,7 +160,10 @@ namespace UnityEditor.Connect
             {
                 var clickable = new Clickable(() =>
                 {
-                    ServicesConfiguration.instance.RequestBasePurchasingDashboardUrl(OpenDashboardForProjectGuid);
+                    if (CheckMinimumVersion(m_EnabledState.CurPackageVersion(), k_UnityAnalyticsSupportMajorVersion, k_UnityAnalyticsSupportMinorVersion))
+                        ServicesConfiguration.instance.RequestBasePurchasingDashboardUrl(OpenDashboardForOrgKeyAndProjectGuid);
+                    else
+                        ServicesConfiguration.instance.RequestBaseLegacyPurchasingDashboardUrl(OpenDashboardForProjectGuid);
                 });
                 m_GoToDashboard.AddManipulator(clickable);
             }
@@ -253,6 +261,36 @@ namespace UnityEditor.Connect
             Enabled,
         }
 
+        static void VerifyAnalyticsRequired(PurchasingProjectSettings provider, string packageVersion)
+        {
+            VisualElement welcomeToIapBlock = provider.rootVisualElement.Q(k_WelcomeToIapBlock);
+            if (CheckMinimumVersion(packageVersion, k_UnityAnalyticsSupportMajorVersion, k_UnityAnalyticsSupportMinorVersion))
+            {
+                requiresLegacyAnalytics = false;
+                var analyticsNotice = welcomeToIapBlock.Q(className: "note-tag");
+                if (analyticsNotice != null)
+                {
+                    welcomeToIapBlock.Remove(analyticsNotice);
+                }
+            }
+            else
+            {
+                requiresLegacyAnalytics = true;
+            }
+        }
+
+        static bool CheckMinimumVersion(string packageVersion, int majorVersion, int minorVersion)
+        {
+            string[] versionSplits = packageVersion.Split(new[] {'.'});
+            if (versionSplits.Length < 2)
+                return false;
+
+            if (!int.TryParse(versionSplits[0], out var curMajorVersion) || curMajorVersion < majorVersion)
+                return false;
+
+            return curMajorVersion != majorVersion || (int.TryParse(versionSplits[1], out var curMinorVersion) && curMinorVersion >= minorVersion);
+        }
+
         class BasePurchasingState : GenericBaseState<PurchasingProjectSettings, ServiceEvent>
         {
             readonly string[] k_PresumedSupportedStores =
@@ -322,6 +360,13 @@ namespace UnityEditor.Connect
                 provider.UpdateServiceToggleAndDashboardLink(provider.serviceInstance.IsServiceEnabled());
 
                 provider.HandlePermissionRestrictedControls();
+
+                UpdatePackageInformation();
+            }
+
+            protected override void PackageInformationUpdated()
+            {
+                VerifyAnalyticsRequired(provider, currentPackageVersion);
             }
 
             SimpleStateMachine<ServiceEvent>.State HandleEnabling(ServiceEvent raisedEvent)
@@ -349,7 +394,6 @@ namespace UnityEditor.Connect
 
             //uxml element names
             const string k_MigrationMessage = "MigrateMessage";
-            const string k_WelcomeToIapBlock = "WelcomeToIapBlock";
             const string k_ImportIapBlock = "ImportIapBlock";
             const string k_IapOptionsBlock = "IapOptionsBlock";
             const string k_ImportBtn = "ImportBtn";
@@ -612,6 +656,8 @@ namespace UnityEditor.Connect
                         m_LookForAssetStoreImport = true;
                     }
                 }
+
+                VerifyAnalyticsRequired(provider, currentPackageVersion);
 
                 VerifyImportTag();
                 ToggleMigrateModeVisibility(m_MigrationMessage, m_EligibleForMigration);
@@ -915,6 +961,11 @@ namespace UnityEditor.Connect
             SimpleStateMachine<ServiceEvent>.State HandleDisabling(ServiceEvent raisedEvent)
             {
                 return stateMachine.GetStateByName(k_StateNameDisabled);
+            }
+
+            internal string CurPackageVersion()
+            {
+                return currentPackageVersion;
             }
         }
     }

@@ -38,17 +38,19 @@ namespace UnityEditor.Search
         {
             RefreshSearch();
             UpdateViewState(args);
-        }
 
-        protected override void SaveSessionSettings()
-        {
-            SaveGlobalSettings();
+            if (!string.IsNullOrEmpty(args.group))
+                SelectGroup(args.group);
+            else if (args.hideAllGroup && context.providers.FirstOrDefault() is SearchProvider firstProvider)
+                SelectGroup(firstProvider.type);
         }
 
         protected override IEnumerable<SearchItem> FetchItems()
         {
             if (!viewState.excludeClearItem)
                 yield return SearchItem.clear;
+
+            SearchSettings.ApplyContextOptions(context);
             foreach (var item in SearchService.GetItems(context))
             {
                 if (filterCallback != null && !filterCallback(item))

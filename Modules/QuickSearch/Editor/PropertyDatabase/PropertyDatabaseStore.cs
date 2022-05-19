@@ -694,10 +694,17 @@ namespace UnityEditor.Search
         {
             using (LockWrite())
             {
-                NotifyFileStoreAboutToChange();
-                File.Copy(filePathToSwap, filePath, true);
-                File.Delete(filePathToSwap);
-                NotifyFileStoreChanged();
+                try
+                {
+                    NotifyFileStoreAboutToChange();
+                    File.Copy(filePathToSwap, filePath, true);
+                    File.Delete(filePathToSwap);
+                }
+                finally
+                {
+                    // Make sure the views reopen if there is an exception
+                    NotifyFileStoreChanged();
+                }
             }
         }
 

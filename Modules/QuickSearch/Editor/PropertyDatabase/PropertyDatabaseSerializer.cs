@@ -149,6 +149,8 @@ namespace UnityEditor.Search
 
         public static bool SerializerExists(Type type)
         {
+            if (type == null)
+                return false;
             return s_Serializers.ContainsKey(type);
         }
 

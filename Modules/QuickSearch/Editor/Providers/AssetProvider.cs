@@ -137,6 +137,11 @@ namespace UnityEditor.Search.Providers
                 m_Object = null;
                 this.flags = flags;
             }
+
+            public override string ToString()
+            {
+                return $"{path} ({m_GID})";
+            }
         }
 
         internal const string type = "asset";
@@ -190,15 +195,15 @@ namespace UnityEditor.Search.Providers
 
             var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid);
             if (obj is GameObject go)
-                return (item.preview = Utils.GetSceneObjectPreview(go, size, options, item.thumbnail));
-            else if (obj)
+                return Utils.GetSceneObjectPreview(go, size, options, item.thumbnail);
+            else if (obj && options.HasAny(FetchPreviewOptions.Normal))
             {
                 var p = AssetPreview.GetAssetPreview(obj);
                 if (p)
                     return p;
             }
 
-            return (item.preview = Utils.GetAssetPreviewFromPath(info.source, size, options));
+            return Utils.GetAssetPreviewFromPath(info.source, size, options);
         }
 
         private static Texture2D FetchThumbnail(in SearchItem item)
@@ -372,9 +377,9 @@ namespace UnityEditor.Search.Providers
                 yield return p;
 
 
-            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "File size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
-            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Sub Asset", replacement: "is:subasset", help: "Yield nested assets (i.e. media from FBX files)", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Name", replacement: "name=", help: "Search asset by object name", icon: Icons.quicksearch, color: QueryColors.filter);
@@ -395,6 +400,7 @@ namespace UnityEditor.Search.Providers
                     category: "Area",
                     label: db.name,
                     replacement: $"a:{db.name}",
+                    help: $"Search assets index by {db.name}.index",
                     color: QueryColors.type,
                     icon: Icons.quicksearch);
 
@@ -481,6 +487,7 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerator SearchIndexes(string searchQuery, SearchContext context, SearchProvider provider, SearchDatabase db)
         {
+            var cancelToken = context.sessions.cancelToken;
             if (!db.ready)
             {
                 if (!Utils.IsRunningTests())
@@ -498,7 +505,7 @@ namespace UnityEditor.Search.Providers
 
                 while (!db.ready)
                 {
-                    if (!db || context.options.HasAny(SearchFlags.Synchronous))
+                    if (!db || cancelToken.IsCancellationRequested || context.options.HasAny(SearchFlags.Synchronous))
                         yield break;
                     yield return null;
                 }
@@ -525,6 +532,8 @@ namespace UnityEditor.Search.Providers
         private static SearchItem CreateItem(in SearchContext context, in SearchProvider provider, in SearchDatabase db, in SearchResult e)
         {
             var doc = db.index.GetDocument(e.index);
+            if (string.IsNullOrEmpty(doc.id))
+                return null;
             var score = ComputeSearchDocumentScore(context, doc, e.score);
 
             var flags = doc.flags;

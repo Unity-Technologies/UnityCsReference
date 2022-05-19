@@ -259,7 +259,9 @@ namespace UnityEditor.Search
             QuickSearchPickerOpens,
 
             QuickSearchToggleBuilder,
-            QuickSearchHelperWidgetExecuted
+            QuickSearchHelperWidgetExecuted,
+
+            ObjectSelectorSettingsReset
         }
 
         public static readonly string Package = "com.unity.quicksearch";
@@ -416,7 +418,7 @@ namespace UnityEditor.Search
             var report = new SearchUsageReport();
             report.trackSelection = SearchSettings.trackSelection;
             report.fetchPreview = SearchSettings.fetchPreview;
-            report.wantsMore = SearchSettings.wantsMore;
+            report.wantsMore = SearchSettings.defaultFlags.HasAny(SearchFlags.WantsMore);
             report.keepOpen = SearchSettings.keepOpen;
             report.itemIconSize = SearchSettings.itemIconSize;
             report.showPackageIndexes = SearchSettings.showPackageIndexes;

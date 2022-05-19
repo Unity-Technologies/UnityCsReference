@@ -177,10 +177,17 @@ namespace UnityEditor
             get;
         }
 
-        // Retuns true if resources are being built
+        // Returns true if resources are being built
         internal static extern bool isBuildingAnyResources
         {
             [FreeFunction("IsBuildingAnyResources")]
+            get;
+        }
+
+        // Returns true if the Package Manager is disabled
+        internal static extern bool isPackageManagerDisabled
+        {
+            [FreeFunction("IsPackageManagerDisabled")]
             get;
         }
 

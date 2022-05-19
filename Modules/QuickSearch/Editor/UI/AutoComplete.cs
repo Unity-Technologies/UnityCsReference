@@ -16,8 +16,6 @@ namespace UnityEditor.Search
         private static string s_LastInput;
         private static int s_CurrentSelection = 0;
         private static List<SearchProposition> s_FilteredList = null;
-        private static List<float> s_ItemLabelWidths = null;
-        private static List<float> s_ItemTooltipWidths = null;
 
         private static Rect position;
         private static Rect parent { get; set; }
@@ -224,8 +222,6 @@ namespace UnityEditor.Search
             s_CurrentSelection = 0;
             s_LastInput = null;
             s_FilteredList = null;
-            s_ItemTooltipWidths = null;
-            s_ItemLabelWidths = null;
         }
 
         private static void UpdateCompleteList(in TextEditor te, in SearchPropositionOptions baseOptions = null)
@@ -236,9 +232,6 @@ namespace UnityEditor.Search
             var maxVisibleCount = Mathf.FloorToInt(position.height / EditorStyles.toolbarDropDown.fixedHeight);
             BuildCompleteList(options.tokens, maxVisibleCount, 0.4f);
 
-            s_ItemLabelWidths = new List<float>();
-            s_ItemTooltipWidths = new List<float>();
-
             var maxLabelSize = 100f;
             var gc = new GUIContent();
             foreach (var e in s_FilteredList)
@@ -246,14 +239,12 @@ namespace UnityEditor.Search
                 var sf = 5.0f;
                 gc.text = e.label;
                 Styles.autoCompleteItemLabel.CalcMinMaxWidth(gc, out var minWidth, out var maxWidth);
-                s_ItemLabelWidths.Add(maxWidth);
                 sf += maxWidth;
 
                 if (!string.IsNullOrEmpty(e.help))
                 {
                     gc.text = e.help;
                     Styles.autoCompleteTooltip.CalcMinMaxWidth(gc, out minWidth, out maxWidth);
-                    s_ItemTooltipWidths.Add(maxWidth);
                     sf += maxWidth;
                 }
 
@@ -347,7 +338,7 @@ namespace UnityEditor.Search
                 Rect lineRect = new Rect(1, 10, position.width - 2, Styles.autoCompleteItemLabel.fixedHeight);
                 for (int i = 0; i < cnt; i++)
                 {
-                    if (DrawItem(evt, lineRect, i == s_CurrentSelection, s_FilteredList[i], i))
+                    if (DrawItem(evt, lineRect, i == s_CurrentSelection, s_FilteredList[i]))
                     {
                         result = s_FilteredList[i];
                         return true;
@@ -377,13 +368,20 @@ namespace UnityEditor.Search
             return label;
         }
 
-        private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item, int index)
+        private static bool DrawItem(Event evt, Rect rect, bool selected, SearchProposition item)
         {
             var itemSelected = selected && evt.type == EventType.KeyDown && IsKeySelection(evt);
+            var tooltipSize = Styles.autoCompleteTooltip.CalcSize(new GUIContent(item.help));
+            var labelSize = Styles.autoCompleteItemLabel.CalcSize(new GUIContent(item.label));
+            var availableLabelWidth = position.width - tooltipSize.x;
             string trimmedLabel;
-            if (s_ItemLabelWidths[index] > position.width)
+
+            if (labelSize.x > availableLabelWidth)
             {
-                var width = position.width - s_ItemTooltipWidths[index] - 20f;
+                var width = availableLabelWidth - 20f;
+                if (width < 30f)
+                    width = position.width;
+
                 var numCharacters = Utils.GetNumCharactersThatFitWithinWidth(Styles.autoCompleteItemLabel, item.label, width);
                 trimmedLabel = Utils.TrimText(HightlightLabel(item.label), numCharacters);
             }
@@ -398,6 +396,14 @@ namespace UnityEditor.Search
                 GUI.changed = true;
                 return true;
             }
+
+            // If there is an overlap between the label and the tooltip, we don't show the tooltip.
+            labelSize = Styles.autoCompleteItemLabel.CalcSize(new GUIContent(trimmedLabel));
+            var labelRect = new Rect(position.x, position.y, labelSize.x, labelSize.y);
+            var tooltipRect = Rect.MinMaxRect(position.width + position.x, position.y, position.width + position.x - tooltipSize.x, position.y + tooltipSize.y);
+
+            if (labelRect.Overlaps(tooltipRect, true))
+                return false;
 
             if (!string.IsNullOrEmpty(item.help))
                 GUI.Label(rect, Utils.TrimText(item.help), Styles.autoCompleteTooltip);

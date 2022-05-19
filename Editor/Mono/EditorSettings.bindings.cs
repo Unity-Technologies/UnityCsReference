@@ -54,6 +54,14 @@ namespace UnityEditor
         Disabled = 2
     }
 
+    public enum CacheServerValidationMode
+    {
+        Disabled = 0,
+        UploadOnly = 1,
+        Enabled = 2,
+        Required = 3
+    }
+
     [Flags]
     public enum EnterPlayModeOptions
     {
@@ -278,6 +286,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableTls { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern CacheServerValidationMode cacheServerValidationMode { get; set; }
 
         public enum NamingScheme
         {

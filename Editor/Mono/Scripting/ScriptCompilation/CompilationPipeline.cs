@@ -31,6 +31,8 @@ namespace UnityEditor.Compilation
     {
         public string RoslynAnalyzerRulesetPath { get; set; }
         public string[] RoslynAnalyzerDllPaths { get; set; }
+        public string[] RoslynAdditionalFilePaths { get; set; }
+        public string AnalyzerConfigPath {get; set;}
         public bool AllowUnsafeCode { get; set; }
 
         [Obsolete("Use of reference assemblies is always enabled", true)]
@@ -53,6 +55,7 @@ namespace UnityEditor.Compilation
             ApiCompatibilityLevel = ApiCompatibilityLevel.NET_Unity_4_8;
             ResponseFiles = new string[0];
             RoslynAnalyzerDllPaths = new string[0];
+            RoslynAdditionalFilePaths = new string[0];
             LanguageVersion = "9.0";
         }
 
@@ -61,6 +64,8 @@ namespace UnityEditor.Compilation
             ResponseFiles = new List<string>(scriptCompilerOptions.ResponseFiles).ToArray();
             RoslynAnalyzerDllPaths = new List<string>(scriptCompilerOptions.RoslynAnalyzerDllPaths).ToArray();
             RoslynAnalyzerRulesetPath = scriptCompilerOptions.RoslynAnalyzerRulesetPath;
+            AnalyzerConfigPath = scriptCompilerOptions.AnalyzerConfigPath;
+            RoslynAdditionalFilePaths = scriptCompilerOptions.RoslynAdditionalFilePaths;
             UseDeterministicCompilation = scriptCompilerOptions.UseDeterministicCompilation;
             AllowUnsafeCode = scriptCompilerOptions.AllowUnsafeCode;
             CodeOptimization = scriptCompilerOptions.CodeOptimization;

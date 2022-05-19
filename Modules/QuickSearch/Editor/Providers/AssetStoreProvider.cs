@@ -267,7 +267,7 @@ namespace UnityEditor.Search.Providers
         private static IEnumerable<SearchItem> SearchStore(SearchContext context, SearchProvider provider)
         {
             if (s_RequestCheckPurchases)
-                CheckPurchases();
+                CheckPurchases(null);
 
             if (string.IsNullOrEmpty(context.searchQuery))
                 yield break;
@@ -400,6 +400,19 @@ namespace UnityEditor.Search.Providers
         static void OnEnable()
         {
             s_RequestCheckPurchases = true;
+            UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
+            UnityConnect.instance.UserStateChanged += OnUserStateChanged;
+        }
+
+        static void OnDisable()
+        {
+            UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
+        }
+
+        private static void OnUserStateChanged(Connect.UserInfo state)
+        {
+            ClearUserInfo();
+            CheckPurchases(() => Refresh());
         }
 
         static bool HasAccessToken()
@@ -407,17 +420,28 @@ namespace UnityEditor.Search.Providers
             return !string.IsNullOrEmpty(Utils.GetConnectAccessToken());
         }
 
-        static void CheckPurchases()
+        static void CheckPurchases(Action done)
         {
             if (!HasAccessToken())
+            {
+                done?.Invoke();
                 return;
+            }
 
-            if (s_PackagesKey == null)
+            if (string.IsNullOrEmpty(s_PackagesKey))
                 s_PackagesKey = Utils.GetPackagesKey();
+            if (string.IsNullOrEmpty(s_PackagesKey))
+            {
+                done?.Invoke();
+                return;
+            }
 
             s_RequestCheckPurchases = false;
             if (s_StartPurchaseRequest)
+            {
+                done?.Invoke();
                 return;
+            }
 
             s_StartPurchaseRequest = true;
             var startRequest = System.Diagnostics.Stopwatch.StartNew();
@@ -427,6 +451,7 @@ namespace UnityEditor.Search.Providers
                 if (error != null)
                 {
                     Debug.LogError($"Error in fetching user purchases: {error}");
+                    done?.Invoke();
                     return;
                 }
                 startRequest.Stop();
@@ -436,6 +461,8 @@ namespace UnityEditor.Search.Providers
                 {
                     purchasePackageIds.Add(purchaseInfo.packageId.ToString());
                 }
+
+                done?.Invoke();
             });
         }
 
@@ -450,6 +477,7 @@ namespace UnityEditor.Search.Providers
                 isExplicitProvider = true,
                 filterId = "store:",
                 onEnable = OnEnable,
+                onDisable = OnDisable,
                 showDetails = true,
                 fetchItems = (context, items, provider) => SearchStore(context, provider),
                 fetchThumbnail = (item, context) => FetchImage(((AssetDocument)item.data).icon, false, s_Previews) ?? Icons.store,
@@ -561,6 +589,7 @@ namespace UnityEditor.Search.Providers
                         {
                             BrowseAssetStoreItem(item);
                         }
+
                     },
                     enabled = IsItemOwned
                 }
@@ -571,7 +600,7 @@ namespace UnityEditor.Search.Providers
         {
             var doc = (AssetDocument)item.data;
             Utils.OpenInBrowser(doc.url);
-            CheckPurchases();
+            CheckPurchases(null);
         }
 
         static void GetAuthCode(Action<string, Exception> done)
@@ -860,6 +889,25 @@ namespace UnityEditor.Search.Providers
             qs.itemIconSize = (int)DisplayMode.Grid;
             qs.SetSearchText(string.Empty);
             qs.ShowWindow();
+        }
+
+        static void Refresh()
+        {
+            EditorApplication.delayCall -= SearchService.RefreshWindows;
+            EditorApplication.delayCall += SearchService.RefreshWindows;
+        }
+
+        static void ClearUserInfo()
+        {
+            s_UserInfo = null;
+            s_TokenInfo = null;
+            s_AccessTokenData = null;
+            s_AuthCode = null;
+            s_Purchases?.Clear();
+            purchasePackageIds?.Clear();
+            s_PackagesKey = null;
+            s_StartPurchaseRequest = false;
+            s_RequestCheckPurchases = true;
         }
     }
 }

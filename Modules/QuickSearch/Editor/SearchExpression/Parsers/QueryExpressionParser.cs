@@ -31,7 +31,7 @@ namespace UnityEditor.Search
                 var paramText = args.With(text.Substring(expression.startIndex - text.startIndex - exprName.Length, expression.length + exprName.Length));
                 var nestedExpression = ParserManager.Parse(paramText);
                 nestedExpressions.Add(nestedExpression);
-                lastExpressionEndIndex = expression.startIndex + expression.length;
+                lastExpressionEndIndex = expression.startIndex + expression.length - text.startIndex;
             }
 
             return new SearchExpression(SearchExpressionType.QueryString, args.text, text, QueryEvaluator, nestedExpressions.ToArray());

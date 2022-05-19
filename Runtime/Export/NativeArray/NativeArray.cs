@@ -105,7 +105,13 @@ namespace Unity.Collections
             InitStaticSafetyId(ref array.m_Safety);
         }
 
-        public int Length => m_Length;
+        public int Length
+        {
+            get
+            {
+                return m_Length;
+            }
+        }
 
         [BurstDiscard]
         internal static void IsUnmanagedAndThrow()
@@ -178,7 +184,6 @@ namespace Unity.Collections
             }
 
             m_Buffer = null;
-            m_Length = 0;
         }
 
         /// <summary>
@@ -217,14 +222,12 @@ namespace Unity.Collections
                 AtomicSafetyHandle.Release(m_Safety);
 
                 m_Buffer = null;
-                m_Length = 0;
                 m_AllocatorLabel = Allocator.Invalid;
 
                 return jobHandle;
             }
 
             m_Buffer = null;
-            m_Length = 0;
 
             return inputDeps;
         }
@@ -679,7 +682,13 @@ namespace Unity.Collections
             }
 
 
-            public int Length => m_Length;
+            public int Length
+            {
+                get
+                {
+                    return m_Length;
+                }
+            }
 
             public void CopyTo(T[] array) => Copy(this, array);
 
@@ -719,6 +728,8 @@ namespace Unity.Collections
                 if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
                     AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
             }
+
+            public bool IsCreated => m_Buffer != null;
 
             [ExcludeFromDocs]
             public struct Enumerator : IEnumerator<T>

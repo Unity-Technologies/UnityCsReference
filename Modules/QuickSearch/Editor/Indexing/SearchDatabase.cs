@@ -390,6 +390,15 @@ namespace UnityEditor.Search
             return currentDb;
         }
 
+        public static void Unload(SearchDatabase db)
+        {
+            s_DBs?.Remove(db);
+            if (EditorUtility.IsPersistent(db))
+                Resources.UnloadAsset(db);
+            else
+                DestroyImmediate(db);
+        }
+
         internal void OnEnable()
         {
             if (settings == null)
@@ -477,7 +486,7 @@ namespace UnityEditor.Search
 
         private void IncrementalLoad(string indexPath)
         {
-            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => Setup(), this);
+            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => Setup(task, data), this);
             loadTask.RunThread(() =>
             {
                 loadTask.Report($"Loading {indexPath}...", -1);
@@ -489,7 +498,7 @@ namespace UnityEditor.Search
                 var deletedAssets = new HashSet<string>();
                 foreach (var d in index.GetDocuments())
                 {
-                    if (d.valid && !File.Exists(d.source))
+                    if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
                         deletedAssets.Add(d.source);
                 }
 
@@ -678,7 +687,7 @@ namespace UnityEditor.Search
             if (task.Canceled())
                 return;
 
-            task.Report($"Sorting {combineIndexer.indexCount} indexes...", -1f);
+            task.Report($"Sorting indexes...", -1f);
             byte[] bytes = autoResolve ? combineIndexer.SaveBytes() : null;
             Dispatcher.Enqueue(() => task.Resolve(new TaskData(bytes, combineIndexer), completed: autoResolve));
         }
@@ -744,6 +753,17 @@ namespace UnityEditor.Search
                 SaveIndex(data.bytes, Setup);
             else
                 Setup();
+        }
+
+        private void Setup(Task task, TaskData data)
+        {
+            if (task.error != null)
+            {
+                Debug.LogException(task.error);
+                return;
+            }
+
+            Setup();
         }
 
         private void Setup()
@@ -885,7 +905,8 @@ namespace UnityEditor.Search
         {
             if (indexer != null)
                 AddIndexNameArea(documentIndex, indexer, indexName);
-            task.Report(documentIndex + 1, documentCount);
+            else
+                task.Report(documentIndex + 1, documentCount);
         }
 
         private void ResolveIncrementalUpdate(Task task)

@@ -12,6 +12,8 @@ using UnityEditor.Scripting.ScriptCompilation;
 using System.Globalization;
 using Unity.CodeEditor;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
+using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEditorInternal
 {
@@ -33,6 +35,31 @@ namespace UnityEditorInternal
         ManagedNET40 = 4,
         WinMDNative = 5,
         WinMDNET40 = 6
+    }
+
+    [RequiredByNativeCode]
+    internal class LoadFileAndForgetOperationHelper
+    {
+        // When the load operation completes this is invoked to hold the result so that it doesn't
+        // get garbage collected
+        [RequiredByNativeCode]
+        public static void SetObjectResult(LoadFileAndForgetOperation op, UnityEngine.Object result)
+        {
+            op.m_ObjectReference = result;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode]
+    public class LoadFileAndForgetOperation : AsyncOperation
+    {
+        internal UnityEngine.Object m_ObjectReference;
+
+        public extern UnityEngine.Object Result
+        {
+            [NativeMethod("GetRequestedObject")]
+            get;
+        }
     }
 
     [NativeHeader("Editor/Src/InternalEditorUtility.bindings.h")]
@@ -57,6 +84,7 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/Gizmos/GizmoUtil.h")]
     [NativeHeader("Editor/Src/HierarchyState.h")]
     [NativeHeader("Editor/Src/InspectorExpandedState.h")]
+    [NativeHeader("Editor/Src/LoadFileAndForgetOperation.h")]
     [NativeHeader("Runtime/Interfaces/ILicensing.h")]
     [NativeHeader("Editor/Src/RemoteInput/RemoteInput.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
@@ -240,6 +268,9 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::LoadSerializedFileAndForget")]
         extern public static Object[] LoadSerializedFileAndForget(string path);
+
+        [FreeFunction("LoadFileAndForgetOperation::LoadSerializedFileAndForgetAsync")]
+        extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1);
 
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
         extern public static DragAndDropVisualMode ProjectWindowDrag(HierarchyProperty property, bool perform);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Linq;
 using Bee.BeeDriver;
 using NiceIO;
@@ -20,6 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     internal static class BeeScriptCompilation
     {
         internal static string ExecutableExtension => Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "";
+        private static string projectPath = Path.GetDirectoryName(Application.dataPath);
 
         public static void AddScriptCompilationData(BeeDriver beeDriver,
             EditorCompilation editorCompilation,
@@ -95,12 +97,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 RuleSet = a.CompilerOptions.RoslynAnalyzerRulesetPath,
                 LanguageVersion = a.CompilerOptions.LanguageVersion,
                 Analyzers = a.CompilerOptions.RoslynAnalyzerDllPaths,
+                AdditionalFiles = a.CompilerOptions.RoslynAdditionalFilePaths,
+                AnalyzerConfigPath = a.CompilerOptions.AnalyzerConfigPath,
                 UseDeterministicCompilation = a.CompilerOptions.UseDeterministicCompilation,
                 Asmdef = a.AsmDefPath,
                 CustomCompilerOptions = a.CompilerOptions.AdditionalCompilerArguments,
                 BclDirectories = MonoLibraryHelpers.GetSystemReferenceDirectories(a.CompilerOptions.ApiCompatibilityLevel),
                 DebugIndex = index,
-                SkipCodeGen = a.SkipCodeGen
+                SkipCodeGen = a.SkipCodeGen,
+                Path = projectPath,
             };
         }
 
