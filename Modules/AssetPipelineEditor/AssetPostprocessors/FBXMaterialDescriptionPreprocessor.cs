@@ -12,8 +12,8 @@ namespace UnityEditor.AssetImporters
     [MovedFrom("UnityEditor.Experimental.AssetImporters")]
     public class FBXMaterialDescriptionPreprocessor : AssetPostprocessor
     {
-        static readonly uint k_Version = 1;
-        static readonly int k_Order = 1;
+        static readonly uint k_Version = 2;
+        static readonly int k_Order = -990;
         public override uint GetVersion()
         {
             return k_Version;
@@ -902,7 +902,13 @@ namespace UnityEditor.AssetImporters
                 }
             }
 
-            material.SetFloat("_Glossiness", 0.0f);
+            if (description.TryGetProperty("Shininess", out float shininess))
+            {
+                var glossiness = Mathf.Sqrt(shininess * 0.01f);
+                material.SetFloat("_Glossiness", glossiness);
+            }
+            else
+                material.SetFloat("_Glossiness", 0.0f);
 
             if (PlayerSettings.colorSpace == ColorSpace.Gamma)
                 RemapAndTransformColorCurves(description, clips, "DiffuseColor", "_Color", ConvertFloatLinearToGamma);
