@@ -16,6 +16,7 @@ using UnityEditor.PackageManager;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
 using UnityEditorInternal.APIUpdating;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -29,19 +30,24 @@ namespace UnityEditor.Scripting.Compilers
         {
             void PrepareFileWithTypesWithMovedFromAttribute(string filePath)
             {
-                var userAssemblySearchLocations  = CompilationPipeline.GetPrecompiledAssemblyPaths(CompilationPipeline.PrecompiledAssemblySources.UserAssembly).Select(Path.GetDirectoryName).Distinct();
+                var userAssemblySearchLocations = CompilationPipeline.GetPrecompiledAssemblyPaths(CompilationPipeline.PrecompiledAssemblySources.UserAssembly).Select(Path.GetDirectoryName).Distinct();
 
                 var sb1 = new StringBuilder();
-                var searchPaths = new[]
-                {
-                    Path.Combine(MonoFrameworkPath, "Managed"),
-                    Path.Combine(MonoFrameworkPath, "Managed/UnityEngine"),
-                    Application.dataPath,
-                    Path.Combine(Application.dataPath, "../Library/ScriptAssemblies/")
-                }.Concat(userAssemblySearchLocations).ToArray();
+                var searchPaths = MonoLibraryHelpers.GetSystemReferenceDirectories(PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.activeBuildTargetGroup)).ToList();
 
+                searchPaths.AddRange(
+                    new[]
+                    {
+                        Path.Combine(MonoFrameworkPath, "Managed"),
+                        Path.Combine(MonoFrameworkPath, "Managed/UnityEngine"),
+                        Application.dataPath,
+                        Path.Combine(Application.dataPath, "../Library/ScriptAssemblies/")
+                    });
 
-                sb1.AppendLine($"Search Paths:{searchPaths.Length}");
+                searchPaths.AddRange(userAssemblySearchLocations.ToArray());
+                searchPaths.AddRange(GetReferencedPackagePaths());
+
+                sb1.AppendLine($"Search Paths:{searchPaths.Count}");
                 foreach (var sp in searchPaths)
                     sb1.AppendLine(sp);
 
@@ -438,6 +444,29 @@ namespace UnityEditor.Scripting.Compilers
         {
             var name = assemblyName.Name;
             return _ignoredAssemblies.Any(candidate => Regex.IsMatch(name, candidate));
+        }
+
+        internal static List<string> GetReferencedPackagePaths()
+        {
+            var req = PackageManager.Client.List(offlineMode: true, includeIndirectDependencies: true);
+            while (!req.IsCompleted)
+                System.Threading.Thread.Sleep(10);
+
+            var packagePathsToSearchForAssemblies = new List<string>();
+
+            if (req.Status == PackageManager.StatusCode.Success)
+            {
+                foreach(var resolvedPackage in req.Result)
+                {
+                    packagePathsToSearchForAssemblies.Add(resolvedPackage.resolvedPath);
+                }
+            }
+            else
+            {
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Unable to retrieve project configured packages; ApiUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})"));
+            }
+
+            return packagePathsToSearchForAssemblies;
         }
 
         static string[] _ignoredAssemblies = { "^UnityScript$", "^System\\..*", "^mscorlib$" };

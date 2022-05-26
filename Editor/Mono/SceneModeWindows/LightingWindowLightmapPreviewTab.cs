@@ -28,7 +28,6 @@ namespace UnityEditor
         Hash128 m_ActiveGameObjectTextureHash   = new Hash128(); // the object the user selects in the scene
 
         SerializedObject m_LightmapSettings;
-        SerializedProperty m_LightingDataAsset;
 
         static class Styles
         {
@@ -117,7 +116,6 @@ namespace UnityEditor
             if (m_LightmapSettings == null || m_LightmapSettings.targetObject == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())
             {
                 m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
-                m_LightingDataAsset = m_LightmapSettings.FindProperty("m_LightingDataAsset");
             }
         }
 
@@ -127,8 +125,10 @@ namespace UnityEditor
 
             if (!Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate && !isRealtimeLightmap)
             {
-                EditorGUILayout.PropertyField(m_LightingDataAsset, Styles.LightingDataAsset);
-                m_LightmapSettings.ApplyModifiedProperties();
+                EditorGUI.BeginChangeCheck();
+                var lda = (LightingDataAsset)EditorGUILayout.ObjectField(Styles.LightingDataAsset, Lightmapping.lightingDataAsset, typeof(LightingDataAsset), true);
+                if (EditorGUI.EndChangeCheck())
+                    Lightmapping.lightingDataAsset = lda;
                 GUILayout.Space(10);
             }
             else

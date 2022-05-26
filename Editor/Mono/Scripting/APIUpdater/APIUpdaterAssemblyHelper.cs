@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-
 using UnityEditor.Utils;
 using UnityEngine;
 
@@ -110,23 +109,8 @@ namespace UnityEditor.Scripting
 
         private static string AssemblySearchPathArgument(IEnumerable<string> configurationSourceDirectories = null)
         {
-            var req = PackageManager.Client.List(offlineMode: true, includeIndirectDependencies: true);
-            while (!req.IsCompleted)
-                System.Threading.Thread.Sleep(10);
-
             var packagePathsToSearchForAssemblies = new StringBuilder();
-
-            if (req.Status == PackageManager.StatusCode.Success)
-            {
-                foreach(var resolvedPackage in req.Result)
-                {
-                    packagePathsToSearchForAssemblies.Append($"{Path.PathSeparator}+{resolvedPackage.resolvedPath.Escape(Path.PathSeparator)}");
-                }
-            }
-            else
-            {
-                APIUpdaterLogger.WriteToFile(L10n.Tr($"Unable to retrieve project configured packages; AssemblyUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})"));
-            }
+            APIUpdaterHelper.GetReferencedPackagePaths().ForEach(path => packagePathsToSearchForAssemblies.Append($"{Path.PathSeparator}+{path.Escape(Path.PathSeparator)}"));
 
             var searchPath = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Managed").Escape(Path.PathSeparator) + Path.PathSeparator
                 + "+" + Application.dataPath.Escape(Path.PathSeparator)

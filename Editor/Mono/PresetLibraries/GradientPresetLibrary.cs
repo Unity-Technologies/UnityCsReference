@@ -85,7 +85,7 @@ namespace UnityEditor
         {
             if (gradient == null)
                 return;
-            GradientEditor.DrawGradientWithBackground(rect, gradient, colorSpace);
+            GradientEditor.DrawGradientWithBackground(rect, gradient, colorSpace == ColorSpace.Linear);
         }
 
         public override string GetName(int index)

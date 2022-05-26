@@ -549,7 +549,7 @@ namespace UnityEditorInternal
             Array.Resize(ref m_PropertyCache, count);
 
             SerializedProperty property = null;
-            float height = elementHeightCallback?.Invoke(0) ?? elementHeight;
+            float height = 0;
             float offset = 0;
 
             if (m_Count > 0)
@@ -560,6 +560,7 @@ namespace UnityEditorInternal
                     TryOverrideElementHeightWithPropertyDrawer(property, ref height);
                 }
 
+                height = elementHeightCallback?.Invoke(0) ?? elementHeight;
                 m_ScheduleGUIChanged |= m_PropertyCache[0].Set(property, height + Defaults.ElementPadding(height), offset);
             }
 

@@ -765,6 +765,8 @@ namespace UnityEditor.U2D
             if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
+                if (null == t)
+                    return "";
                 GraphicsFormat format = GraphicsFormatUtility.GetFormat(t);
 
                 return string.Format("{0}x{1} {2}\n{3}", t.width, t.height, GraphicsFormatUtility.GetFormatString(format), EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t)));
@@ -791,7 +793,8 @@ namespace UnityEditor.U2D
                 m_PreviewPage = Mathf.Min(m_PreviewPage, m_PreviewTextures.Length - 1);
 
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
-
+                if (null == t)
+                    return;
                 if (TextureUtil.HasAlphaTextureFormat(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
                     m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? styles.alphaIcon : styles.RGBIcon, styles.previewButton);
 
@@ -812,6 +815,9 @@ namespace UnityEditor.U2D
             if (m_ShowAlpha && m_PreviewAlphaTextures != null && m_PreviewPage < m_PreviewAlphaTextures.Length)
             {
                 var at = m_PreviewAlphaTextures[m_PreviewPage];
+                if (null == at)
+                    return;
+
                 var bias = m_MipLevel - (float)(System.Math.Log(at.width / r.width) / System.Math.Log(2));
 
                 EditorGUI.DrawTextureTransparent(r, at, ScaleMode.ScaleToFit, 0, bias);
@@ -819,7 +825,8 @@ namespace UnityEditor.U2D
             else if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
-
+                if (null == t)
+                    return;
                 float bias = m_MipLevel - (float)(System.Math.Log(t.width / r.width) / System.Math.Log(2));
 
                 if (m_ShowAlpha)

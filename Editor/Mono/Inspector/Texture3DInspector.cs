@@ -301,7 +301,7 @@ namespace UnityEditor
 
             if (customColorRamp != null)
             {
-                material.SetTexture(MaterialProps.colorRamp, GradientPreviewCache.GetGradientPreview(customColorRamp));
+                material.SetTexture(MaterialProps.colorRamp, GradientPreviewCache.GetGradientPreview(customColorRamp, false));
             }
             else
             {

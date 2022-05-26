@@ -178,6 +178,9 @@ namespace UnityEditor
 
         public void RealToRelativeSizes()
         {
+            if (relativeSizes.Length == 0)
+                return;
+
             float check = 1.0f; // try to avoid rounding issues
             float total = 0;
             int k;
@@ -186,13 +189,23 @@ namespace UnityEditor
             for (k = 0; k < realSizes.Length; k++)
                 total += realSizes[k];
 
-            for (k = 0; k < realSizes.Length; k++)
+            if (total > 0.001f)
             {
-                relativeSizes[k] = realSizes[k] / total;
-                check -= relativeSizes[k];
-            }
-            if (relativeSizes.Length > 0)
+                for (k = 0; k < realSizes.Length; k++)
+                {
+                    relativeSizes[k] = realSizes[k] / total;
+                    check -= relativeSizes[k];
+                }
+
                 relativeSizes[relativeSizes.Length - 1] += check;
+            }
+            else
+            {
+                // Distribute evenly
+                float relativeSize = 1f / relativeSizes.Length;
+                for (k = 0; k < relativeSizes.Length; k++)
+                    relativeSizes[k] = relativeSize;
+            }
         }
 
         public void RelativeToRealSizes(float totalSpace)

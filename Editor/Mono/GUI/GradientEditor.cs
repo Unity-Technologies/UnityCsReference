@@ -113,9 +113,9 @@ namespace UnityEditor
             m_GradientMode = m_Gradient.mode;
         }
 
-        public static void DrawGradientWithBackground(Rect position, Gradient gradient, ColorSpace colorSpace)
+        public static void DrawGradientWithBackground(Rect position, Gradient gradient, bool linearGradientKeys)
         {
-            Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GetGradientPreview(gradient, colorSpace);
+            Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GetGradientPreview(gradient, linearGradientKeys);
             Rect r2 = new Rect(position.x + 1, position.y + 1, position.width - 2, position.height - 2);
 
             // Background checkers
@@ -164,7 +164,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
             {
                 position.height = gradientTextureHeight;
-                DrawGradientWithBackground(position, m_Gradient, m_ColorSpace);
+                DrawGradientWithBackground(position, m_Gradient, m_ColorSpace == ColorSpace.Linear);
             }
             position.y += gradientTextureHeight;
             position.height = swatchHeight;
@@ -567,14 +567,21 @@ namespace UnityEditor
             // DrawTexture
             Texture2D preview = null;
             float maxColorComponent;
+
+            bool linearGradientKeys = colorSpace == ColorSpace.Linear;
+            if(colorSpace == ColorSpace.Uninitialized)
+            {
+                Debug.LogError("GradientEditor color space is not initialized, assuming linear gradient keys to build the gradient preview.");
+                linearGradientKeys = true;
+            }
             if (property != null)
             {
-                preview = GradientPreviewCache.GetPropertyPreview(property, colorSpace);
+                preview = GradientPreviewCache.GetPropertyPreview(property, linearGradientKeys);
                 maxColorComponent = GetMaxColorComponent(property.gradientValue);
             }
             else
             {
-                preview = GradientPreviewCache.GetGradientPreview(gradient, colorSpace);
+                preview = GradientPreviewCache.GetGradientPreview(gradient, linearGradientKeys);
                 maxColorComponent = GetMaxColorComponent(gradient);
             }
 

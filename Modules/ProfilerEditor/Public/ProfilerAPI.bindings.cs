@@ -157,14 +157,27 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
         static public extern bool IsAreaEnabled(ProfilerArea area);
 
-        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
-        static public extern bool enabled
+        static public bool enabled
         {
-            [NativeMethod("IsProfilingEnabled")]
-            get;
-            [NativeMethod("SetProfilingEnabled")]
-            set;
+            get
+            {
+                return IsProfilingEnabled();
+            }
+
+            set
+            {
+                ProfilerWindowAnalytics.ProfilingStateChange(value);
+                SetProfilingEnabled(value);
+            }
         }
+
+        [NativeMethod("IsProfilingEnabled")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static private extern bool IsProfilingEnabled();
+
+        [NativeMethod("SetProfilingEnabled")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static private extern void SetProfilingEnabled(bool enabled);
 
         static public bool profileGPU
         {
