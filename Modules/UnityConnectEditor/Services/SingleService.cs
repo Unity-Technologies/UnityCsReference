@@ -217,6 +217,7 @@ namespace UnityEditor.Connect
                     var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
                     var serviceFlagRequest = new UnityWebRequest(currentProjectServiceFlagsApiUrl,
                         UnityWebRequest.kHttpVerbPUT) { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler };
+                    serviceFlagRequest.downloadHandler = new DownloadHandlerBuffer();
                     serviceFlagRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                     serviceFlagRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
                     serviceFlagRequest.SendWebRequest().completed += OnServiceFlagRequestCompleted;

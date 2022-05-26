@@ -299,20 +299,34 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         var assemblySourcePath = AssetPath.Combine(buildOutputDirectory, assembly.Filename);
                         var pdbSourcePath = AssetPath.Combine(buildOutputDirectory, assembly.PdbFilename);
 
-                        try
+                        // Temporary work around for IL post processing problem (case 1340012)
+                        bool isDone = false;
+                        for (int i = 0; i < 100; i++)
                         {
-                            if (assemblySourcePath != assembly.FullPath)
-                                File.Copy(assemblySourcePath, assembly.FullPath, true);
+                            try
+                            {
+                                if (assemblySourcePath != assembly.FullPath)
+                                    File.Copy(assemblySourcePath, assembly.FullPath, true);
 
-                            if (pdbSourcePath != assembly.PdbFullPath)
-                                File.Copy(pdbSourcePath, assembly.PdbFullPath, true);
+                                if (pdbSourcePath != assembly.PdbFullPath)
+                                    File.Copy(pdbSourcePath, assembly.PdbFullPath, true);
+                                isDone = true;
+                                break;
+                            }
+                            catch (IOException)
+                            {
+                            }
+                            System.Threading.Thread.Sleep(100);
+                        }
 
+                        if (isDone)
+                        {
                             var postProcessorTask = new PostProcessorTask(assembly, messagesList, buildOutputDirectory, ilPostProcessing);
                             pendingPostProcessorTasks.Add(postProcessorTask);
                         }
-                        catch (IOException e)
+                        else
                         {
-                            UnityEngine.Debug.LogError($"Fail to copy {assemblySourcePath} or {pdbSourcePath} to {AssetPath.GetDirectoryName(assembly.FullPath)} before post processing the assembly. Skipping post processing.\n{e}");
+                            UnityEngine.Debug.LogError($"Fail to copy {assemblySourcePath} or {pdbSourcePath} to {AssetPath.GetDirectoryName(assembly.FullPath)} before post processing the assembly. Skipping post processing.");
                             // OnCompilationFinished callbacks might add more compiler messages
                             OnCompilationFinished?.Invoke(assembly, messagesList);
                             processedAssemblies.Add(assembly, messagesList.ToArray());

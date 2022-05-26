@@ -35,6 +35,7 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication", "Enable authentication for cache server. Also forces TLS/SSL encryption.");
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
+            public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Force Serialize References On One Line", "Forces Unity to write references and other inline mappings on one line, to help reduce version control noise");
@@ -181,6 +182,14 @@ namespace UnityEditor
             new PopupElement("Basic")
         };
 
+        private GUIContent[] cacheServerValidationPopupList =
+        {
+            EditorGUIUtility.TrTextContent("Disabled", "Content hashes are not calculated for uploaded artifacts and are not validated for downloaded artifacts."),
+            EditorGUIUtility.TrTextContent("Upload Only", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes are not validated for downloaded artifacts." ),
+            EditorGUIUtility.TrTextContent("Enabled", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes, if provided by the Accelerator, are validated for downloaded artifacts."),
+            EditorGUIUtility.TrTextContent("Required", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes are required and validated for downloaded artifacts."),
+        };
+
         private PopupElement[] etcTextureCompressorPopupList =
         {
             new PopupElement("Legacy"),
@@ -238,6 +247,7 @@ namespace UnityEditor
         SerializedProperty m_EnterPlayModeOptions;
         SerializedProperty m_ProjectGenerationIncludedExtensions;
         SerializedProperty m_ProjectGenerationRootNamespace;
+        SerializedProperty m_CacheServerValidationMode;
 
         bool m_IsGlobalSettings;
 
@@ -315,6 +325,9 @@ namespace UnityEditor
 
             m_ProjectGenerationRootNamespace = serializedObject.FindProperty("m_ProjectGenerationRootNamespace");
             Assert.IsNotNull(m_ProjectGenerationRootNamespace);
+
+            m_CacheServerValidationMode = serializedObject.FindProperty("m_CacheServerValidationMode");
+            Assert.IsNotNull(m_CacheServerValidationMode); // <-- TODO - will this cause a problem.
 
             m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
             s_ForcedAssetPipelineWarning = null;
@@ -714,6 +727,10 @@ namespace UnityEditor
                             EditorSettings.cacheServerEnableTls = enableTls;
                     }
 
+
+                    int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
+
+                    EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
                 }
             }
         }
@@ -959,6 +976,10 @@ namespace UnityEditor
             EditorUserSettings.SetConfigValue("cacheServerAuthMode", $"{(int)data}");
         }
 
+        private void SetCacheServerValidationMode(object data)
+        {
+            EditorSettings.cacheServerValidationMode = (CacheServerValidationMode)data;
+        }
 
         private void SetEtcTextureCompressorBehavior(object data)
         {

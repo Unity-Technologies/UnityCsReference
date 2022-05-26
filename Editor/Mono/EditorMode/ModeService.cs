@@ -498,8 +498,11 @@ namespace UnityEditor
         internal static void RefreshMenus()
         {
             Log("RefreshMenus");
-            // Version Control menus might be added later and that would mess up with the menu items that are filtered from the mode. To avoid that we wait them to be added
-            UnityEditor.VersionControl.Provider.UpdateSettings().Wait();
+
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                VersionControl.Provider.UpdateSettings().Wait();
+            }
             Menu.ResetMenus(true);
             UpdateModeMenus(currentIndex);
             EditorUtility.Internal_UpdateAllMenus();
