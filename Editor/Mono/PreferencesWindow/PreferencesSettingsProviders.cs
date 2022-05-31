@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEditor.Analytics;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -45,7 +46,7 @@ namespace UnityEditor
         class GeneralProperties
         {
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
-            public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
+            public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics");
             public static readonly GUIContent autoSaveScenesBeforeBuilding = EditorGUIUtility.TrTextContent("Auto-save scenes before building");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
@@ -472,14 +473,15 @@ namespace UnityEditor
             // Options
             m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(GeneralProperties.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
 
-            bool pro = UnityEngine.Application.HasProLicense();
-            using (new EditorGUI.DisabledScope(!pro))
+            bool enableEditorAnalyticsOld = m_EnableEditorAnalytics;
+
+            using (new EditorGUI.DisabledScope(m_AnalyticSettingChangedThisSession))
             {
-                bool enableEditorAnalyticsOld = m_EnableEditorAnalytics;
-                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
+                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics);
                 if (enableEditorAnalyticsOld != m_EnableEditorAnalytics)
                 {
                     m_AnalyticSettingChangedThisSession = true;
+                    EditorAnalytics.enabled = m_EnableEditorAnalytics;
                 }
                 if (m_AnalyticSettingChangedThisSession)
                 {
@@ -1139,7 +1141,7 @@ namespace UnityEditor
 
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 
-            m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
+            m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalyticsV2", EditorPrefs.GetBool("EnableEditorAnalytics", true));
 
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
             m_DeveloperMode = Unsupported.IsDeveloperMode();

@@ -43,7 +43,7 @@ namespace UnityEditor
         // Static methods
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace = ColorSpace.Gamma)
         {
-            Show(newGradient, hdr, ColorSpace.Gamma, null, GUIView.current);
+            Show(newGradient, hdr, colorSpace, null, GUIView.current);
         }
 
         public static void Show(Gradient newGradient, bool hdr, System.Action<Gradient> onGradientChanged)
@@ -53,7 +53,7 @@ namespace UnityEditor
 
         public static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged)
         {
-            Show(newGradient, hdr, ColorSpace.Gamma, onGradientChanged, null);
+            Show(newGradient, hdr, colorSpace, onGradientChanged, null);
         }
 
         private static void Show(Gradient newGradient, bool hdr, ColorSpace colorSpace, System.Action<Gradient> onGradientChanged, GUIView currentView)

@@ -138,6 +138,7 @@ namespace UnityEditor
         public extern static bool enabled
         {
             get;
+            set;
         }
 
         extern private static bool SendEvent(string eventName, object parameters, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);

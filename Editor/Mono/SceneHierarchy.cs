@@ -134,6 +134,16 @@ namespace UnityEditor
             set { SessionState.SetBool("ExpandedStateDebug", value); }
         }
 
+        internal static bool s_DebugPreviewScenes
+        {
+            get { return EditorSceneManager.GetPreviewScenesVisibleInHierarchy(); }
+            set
+            {
+                EditorSceneManager.SetPreviewScenesVisibleInHierarchy(value);
+                SceneHierarchyWindow.ReloadAllHierarchyWindows();
+            }
+        }
+
         internal bool hasSearchFilter
         {
             get { return !string.IsNullOrEmpty(m_SearchFilter); }
@@ -2036,6 +2046,7 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Hierarchy "), s_Debug, () => s_Debug = !s_Debug);
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Prefab Scene"), s_DebugPrefabStage, () => s_DebugPrefabStage = !s_DebugPrefabStage);
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Expanded State Persistence"), s_DebugPersistingExpandedState, () => s_DebugPersistingExpandedState = !s_DebugPersistingExpandedState);
+                menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Preview Scenes"), s_DebugPreviewScenes, () => s_DebugPreviewScenes = !s_DebugPreviewScenes);
             }
         }
 
