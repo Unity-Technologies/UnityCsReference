@@ -552,13 +552,13 @@ namespace UnityEditorInternal
 
             if (m_Count > 0)
             {
+                height = elementHeightCallback?.Invoke(0) ?? elementHeight;
                 if (m_Elements != null)
                 {
                     property = m_Elements.GetArrayElementAtIndex(0);
                     TryOverrideElementHeightWithPropertyDrawer(property, ref height);
                 }
 
-                height = elementHeightCallback?.Invoke(0) ?? elementHeight;
                 m_ScheduleGUIChanged |= m_PropertyCache[0].Set(property, height + Defaults.ElementPadding(height), offset);
             }
 
