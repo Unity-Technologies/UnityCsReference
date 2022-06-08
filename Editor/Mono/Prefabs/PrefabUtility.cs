@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEditor.Utils;
 using UnityEngine.SceneManagement;
@@ -13,7 +14,7 @@ using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
+
 
 namespace UnityEditor
 {
@@ -77,6 +78,34 @@ namespace UnityEditor
         ConnectToPrefab = 1,
         // Replaces the prefab using name based lookup in the transform hierarchy.
         ReplaceNameBased = 2,
+    }
+
+    public enum ObjectMatchMode
+    {
+        NoMatchingPerformed = 0,
+        ByName = 1,
+    }
+
+    [Flags]
+    public enum PrefabOverridesOptions
+    {
+        KeepAllPossibleOverrides = 0,
+        ClearNonDefaultPropertyOverrides = 1,
+        ClearAddedComponents = 2,
+        ClearRemovedComponents = 4,
+        ClearAddedGameObjects = 8,
+        ClearRemovedGameObjects = 16,
+        ClearAllOverridesExceptPropertyOverrides = ClearAddedComponents + ClearRemovedComponents + ClearAddedGameObjects + ClearRemovedGameObjects,
+        ClearAllNonDefaultOverrides = ClearNonDefaultPropertyOverrides + ClearAddedComponents + ClearRemovedComponents + ClearAddedGameObjects + ClearRemovedGameObjects,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeAsStruct]
+    public class PrefabReplacingSettings
+    {
+        public ObjectMatchMode objectMatchMode { get; set; } = ObjectMatchMode.ByName;
+        public PrefabOverridesOptions prefabOverridesOptions { get; set; } = PrefabOverridesOptions.KeepAllPossibleOverrides;
+        public bool logInfo { get; set; } = false;
     }
 
     // This must match C++ MergeStatus
@@ -171,137 +200,6 @@ namespace UnityEditor
             }
         }
 
-        internal static void GetObjectListFromHierarchy(HashSet<int> hierarchyInstanceIDs, GameObject gameObject)
-        {
-            Transform transform = null;
-            List<Component> components = new List<Component>();
-            gameObject.GetComponents(components);
-            hierarchyInstanceIDs.Add(gameObject.GetInstanceID());
-            foreach (var component in components)
-            {
-                if (component == null)
-                    continue; //Missing scripts will be null and no instanceid either
-
-                if (component is Transform t)
-                    transform = t;
-                else
-                    hierarchyInstanceIDs.Add(component.GetInstanceID());
-            }
-
-            if (transform == null)
-                return;
-
-            int childCount = transform.childCount;
-            for (var i = 0; i < childCount; i++)
-                GetObjectListFromHierarchy(hierarchyInstanceIDs, transform.GetChild(i).gameObject);
-        }
-
-        internal static void CollectAddedObjects(GameObject gameObject, HashSet<int> hierarchyInstanceIDs, List<Object> danglingObjects)
-        {
-            Transform transform = null;
-            List<Component> components = new List<Component>();
-
-            if (hierarchyInstanceIDs.Contains(gameObject.GetInstanceID()))
-            {
-                gameObject.GetComponents(components);
-                foreach (var component in components)
-                {
-                    if (component is Transform)
-                        transform = component as Transform;
-                    else
-                    {
-                        if (component == null)
-                            continue;
-                        if (!hierarchyInstanceIDs.Contains(component.GetInstanceID()))
-                        {
-                            danglingObjects.Add(component);
-                        }
-                    }
-                }
-
-                if (transform == null)
-                    return;
-
-                int childCount = transform.childCount;
-                for (var i = 0; i < childCount; i++)
-                    CollectAddedObjects(transform.GetChild(i).gameObject, hierarchyInstanceIDs, danglingObjects);
-            }
-            else
-            {
-                danglingObjects.Add(gameObject);
-            }
-        }
-
-        private static void RegisterNewObjects(GameObject newHierarchy, HashSet<int> hierarchyInstanceIDs, string actionName)
-        {
-            var danglingObjects = new List<Object>();
-
-            CollectAddedObjects(newHierarchy, hierarchyInstanceIDs, danglingObjects);
-
-            // We need to ensure that dangling components are registered in an acceptable order regarding dependencies. For example, if we're adding RigidBody and ConfigurableJoint, the RigidBody will need to be added first (as the ConfigurableJoint depends upon it existing)
-            var addedTypes = new HashSet<Type>()
-            {
-                typeof(Transform)
-            };
-
-            var emptyPass = false;
-            GameObject currentGO = null;
-
-            while (danglingObjects.Count > 0 && !emptyPass)
-            {
-                emptyPass = true;
-                for (var i = 0; i < danglingObjects.Count; i++)
-                {
-                    var danglingObject = danglingObjects[i];
-
-                    if (danglingObject is Component)
-                    {
-                        var comp = (Component)danglingObject;
-                        if (comp.gameObject != currentGO)
-                        {
-                            addedTypes = new HashSet<Type>();
-                            currentGO = comp.gameObject;
-                        }
-                    }
-
-                    var reqs = danglingObject.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
-                    var requiredComponentsExist = true;
-                    foreach (RequireComponent req in reqs)
-                    {
-                        bool addedTypesContainsRequired = (req.m_Type0 != null && addedTypes.Contains(req.m_Type0)) || (req.m_Type1 != null && addedTypes.Contains(req.m_Type1)) || (req.m_Type2 != null && addedTypes.Contains(req.m_Type2));
-                        bool gameObjectHasRequired = (req.m_Type0 != null && currentGO.GetComponent(req.m_Type0)) || (req.m_Type1 != null && currentGO.GetComponent(req.m_Type1)) || (req.m_Type2 != null && currentGO.GetComponent(req.m_Type2));
-                        if (!addedTypesContainsRequired && !gameObjectHasRequired)
-                        {
-                            requiredComponentsExist = false;
-                            break;
-                        }
-                    }
-
-                    if (requiredComponentsExist)
-                    {
-                        // This is a special case where the stack order must be forced. Created objects must be registered to the undo system before any structure changes can be recorded to it but in the case of applying prefabs this isn't possible. They are
-                        // modified but we can only find what has been added/created as an "afterthought" when scooping up the dangling objects. In this special case we must insert the creation of those dangling objects to the front of the current undo operation's stack
-                        // before they are referenced by any other entries on the undo stack
-                        Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(danglingObject, actionName);
-                        if (danglingObject is Component)
-                        {
-                            addedTypes.Add(danglingObject.GetType());
-                        }
-
-                        danglingObjects.RemoveAt(i);
-                        i--;
-                        emptyPass = false;
-                    }
-                }
-            }
-
-            Debug.Assert(danglingObjects.Count == 0, "Dangling components have unfulfilled dependencies");
-            foreach (var component in danglingObjects)
-            {
-                Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(component, actionName);
-            }
-        }
-
         static void ThrowExceptionIfNotValidPrefabInstanceObject(Object prefabInstanceObject, bool isApply)
         {
             if (!(prefabInstanceObject is GameObject || prefabInstanceObject is Component))
@@ -361,21 +259,14 @@ namespace UnityEditor
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
             var actionName = "Revert Prefab Instance";
-            HashSet<int> hierarchy = null;
 
             if (action == InteractionMode.UserAction)
-            {
-                hierarchy = new HashSet<int>();
-                GetObjectListFromHierarchy(hierarchy, prefabInstanceRoot);
                 Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
-            }
 
             RevertPrefabInstance_Internal(prefabInstanceRoot);
 
             if (action == InteractionMode.UserAction)
-            {
-                RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
-            }
+                Undo.FlushTrackedObjects();
         }
 
         public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
@@ -391,22 +282,16 @@ namespace UnityEditor
                 var actionName = "Apply instance to prefab";
                 Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
 
-                HashSet<int> prefabHierarchy = null;
                 if (action == InteractionMode.UserAction)
                 {
                     Undo.RegisterFullObjectHierarchyUndo(correspondingSourceObject, actionName); // handles changes to existing objects and object what will be deleted but not objects that are created
                     Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
-
-                    prefabHierarchy = new HashSet<int>();
-                    GetObjectListFromHierarchy(prefabHierarchy, correspondingSourceObject as GameObject);
                 }
 
                 PrefabUtility.ApplyPrefabInstance(prefabInstanceRoot);
 
                 if (action == InteractionMode.UserAction)
-                {
-                    RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
-                }
+                    Undo.FlushTrackedObjects();
             }
 
             Analytics.SendApplyEvent(
@@ -1094,11 +979,30 @@ namespace UnityEditor
             return false;
         }
 
-        internal static void RemoveRemovedComponentOverridesWhichAreNull(Object prefabInstanceObject)
+        internal static void RemoveRemovedComponentOverridesWhichAreInvalid(Object prefabInstanceObject)
         {
-            var removedComponents = PrefabUtility.GetRemovedComponents(prefabInstanceObject);
-            var filteredRemovedComponents = (from c in removedComponents where c != null select c).ToArray();
-            PrefabUtility.SetRemovedComponents(prefabInstanceObject, filteredRemovedComponents);
+            var removedComponents = GetRemovedComponents(prefabInstanceObject);
+            if (removedComponents.Length == 0)
+                return;
+
+            var rootGameObject = GetOutermostPrefabInstanceRoot(prefabInstanceObject);
+            if (rootGameObject == null)
+                return;
+            var assetRootTransform = GetCorrespondingObjectFromSource(rootGameObject.transform);
+            if (assetRootTransform == null)
+                return;
+
+            var filteredRemovedComponents = new List<Component>();
+            foreach (var assetComponent in removedComponents)
+            {
+                if (assetComponent != null && assetComponent.transform.root == assetRootTransform)
+                {
+                    filteredRemovedComponents.Add(assetComponent);
+                }
+            }
+
+            if (filteredRemovedComponents.Count != removedComponents.Length)
+                SetRemovedComponents(prefabInstanceObject, filteredRemovedComponents.ToArray());
         }
 
         // We can't use the same pattern of identifying the prefab asset via assetPath only,
@@ -1181,7 +1085,7 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(prefabInstanceObject, actionName);
 
-            RemoveRemovedComponentOverridesWhichAreNull(prefabInstanceObject);
+            RemoveRemovedComponentOverridesWhichAreInvalid(prefabInstanceObject);
 
             Analytics.SendApplyEvent(
                 Analytics.ApplyScope.RemovedComponent,
@@ -1504,18 +1408,10 @@ namespace UnityEditor
 
             GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(gameObjectInInstance);
 
-            HashSet<int> hierarchy = null;
             if (action == InteractionMode.UserAction)
-            {
-                hierarchy = new HashSet<int>();
-                GetObjectListFromHierarchy(hierarchy, prefabInstanceRoot);
                 Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
-            }
 
             RemoveRemovedGameObjectOverride(prefabInstanceHandle, assetGameObject);
-
-            if (action == InteractionMode.UserAction)
-                RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
         }
 
         public static void RevertAddedGameObject(GameObject gameObject, InteractionMode action)
@@ -1824,39 +1720,6 @@ namespace UnityEditor
             ValidatePath(root, path);
         }
 
-        [RequiredByNativeCode]
-        private static GameObject ReplacePrefabAndRegisterUndo_Internal(GameObject instanceRoot, GameObject existingPrefabRoot, bool connectedAfterwards, string actionName)
-        {
-            if (existingPrefabRoot == null)
-            {
-                throw new ArgumentNullException("Parameter existingPrefabRoot is null");
-            }
-
-            if (!IsPartOfPrefabAsset(existingPrefabRoot))
-            {
-                throw new ArgumentException("Parameter existingPrefabRoot is not a Prefab asset");
-            }
-
-            string assetPath = AssetDatabase.GetAssetPath(existingPrefabRoot);
-            ReplacePrefabArgumentCheck(instanceRoot, assetPath);
-
-            HashSet<int> hierarchy = new HashSet<int>();
-            GetObjectListFromHierarchy(hierarchy, existingPrefabRoot);
-            Undo.RegisterFullObjectHierarchyUndo(existingPrefabRoot, actionName);
-
-            bool success;
-            var prefabInstanceRoot = SavePrefab_Internal(instanceRoot, assetPath, connectedAfterwards, out success);
-            if (!success)
-            {
-                return null;
-            }
-
-            RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
-            Undo.RegisterCreatedObjectUndo(prefabInstanceRoot, actionName);
-
-            return prefabInstanceRoot;
-        }
-
         public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath, out bool success)
         {
             SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath);
@@ -1963,6 +1826,112 @@ namespace UnityEditor
         public static Object InstantiatePrefab(Object assetComponentOrGameObject, Transform parent)
         {
             return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects(), parent);
+        }
+
+        internal static void ThrowIfInvalidAssetForReplacePrefabInstance(GameObject prefabAsset, InteractionMode action)
+        {
+            if (prefabAsset == null)
+                throw new ArgumentNullException(nameof(prefabAsset));
+
+            if (!EditorUtility.IsPersistent(prefabAsset))
+                throw new ArgumentException("Input Prefab asset is not an asset object. Input asset: " + prefabAsset.name, nameof(prefabAsset));
+
+            var assetPath = AssetDatabase.GetAssetPath(prefabAsset);
+            if (assetPath.StartsWith("Library/"))
+                throw new InvalidOperationException(string.Format("Cannot replace the Prefab instance since the Prefab Asset is invalid for instance replacement. Prefab Asset path: " + assetPath));
+
+            // Recording undo does not handle missing scripts
+            var gameObjectsWithInvalidScript = FindGameObjectsWithInvalidComponent(prefabAsset);
+            if (action == InteractionMode.UserAction && gameObjectsWithInvalidScript.Count > 0)
+                throw new InvalidOperationException(string.Format($"Cannot replace the Prefab instance with the Prefab Asset '{AssetDatabase.GetAssetPath(prefabAsset)}' because it has a missing script. GameObject '{gameObjectsWithInvalidScript[0].name}' in the Prefab Asset has a missing script."));
+        }
+
+        internal static void ThrowIfInvalidArgumentsForReplacePrefabInstance(GameObject prefabInstanceRoot, GameObject prefabAssetRoot, bool checkValidAsset, InteractionMode mode)
+        {
+            if (prefabInstanceRoot == null)
+                throw new ArgumentNullException(nameof(prefabInstanceRoot));
+
+            if (prefabAssetRoot == null)
+                throw new ArgumentNullException(nameof(prefabAssetRoot));
+
+            if (checkValidAsset)
+                ThrowIfInvalidAssetForReplacePrefabInstance(prefabAssetRoot, mode);
+
+            if (!IsOutermostPrefabInstanceRoot(prefabInstanceRoot))
+                throw new ArgumentException("Input instance is not an outermost Prefab instance root. Input instance: " + prefabInstanceRoot.name, nameof(prefabInstanceRoot));
+            if (EditorUtility.IsPersistent(prefabInstanceRoot))
+                throw new ArgumentException("Input instance root is from a Prefab asset, this is not supported. Input instance: " + prefabInstanceRoot.name, nameof(prefabInstanceRoot));
+
+            if (PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(prefabInstanceRoot))
+                throw new InvalidOperationException("Replacing the root Prefab instance in a Variant is not supported since it will break all overrides for existing instances of this Variant, including their positions and rotations." + prefabInstanceRoot.name);
+            if (IsAnyPrefabInstanceRoot(prefabInstanceRoot) && EditorSceneManager.IsPreviewSceneObject(prefabInstanceRoot) && prefabInstanceRoot.transform.parent == null) // EditPrefabContentsScope handling
+                throw new InvalidOperationException("Replacing the Variant parent is not supported since it will break all overrides for existing instances of this Variant, including their positions and rotations." + prefabInstanceRoot.name);
+            if (prefabInstanceRoot.transform.GetType() != prefabAssetRoot.transform.GetType())
+                throw new InvalidOperationException(string.Format("Cannot replace the Prefab instance '{0}' with root transform of type {1} with a Prefab asset with root transform of type {2}. Transform types must match.", prefabInstanceRoot.name, prefabInstanceRoot.transform.GetType().Name, prefabAssetRoot.transform.GetType().Name));
+
+            // Recording undo does not handle missing scripts
+            var gameObjectsWithInvalidScript = FindGameObjectsWithInvalidComponent(prefabInstanceRoot);
+            if (mode == InteractionMode.UserAction && gameObjectsWithInvalidScript.Count > 0)
+                throw new InvalidOperationException(string.Format($"Cannot replace the Prefab instance when it has a missing script. GameObject '{gameObjectsWithInvalidScript[0].name}' has a missing script."));
+        }
+
+        public static void ReplacePrefabAssetOfPrefabInstances(GameObject[] prefabInstanceRoots, GameObject prefabAssetRoot, InteractionMode mode)
+        {
+            ReplacePrefabAssetOfPrefabInstances(prefabInstanceRoots, prefabAssetRoot, new PrefabReplacingSettings(), mode);
+        }
+
+        public static void ReplacePrefabAssetOfPrefabInstances(GameObject[] prefabInstanceRoots, GameObject prefabAssetRoot, PrefabReplacingSettings settings, InteractionMode mode)
+        {
+            if (prefabInstanceRoots == null)
+                throw new ArgumentNullException(nameof(prefabInstanceRoots));
+
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+
+            ThrowIfInvalidAssetForReplacePrefabInstance(prefabAssetRoot, mode);
+            foreach (var go in prefabInstanceRoots)
+                ThrowIfInvalidArgumentsForReplacePrefabInstance(go, prefabAssetRoot, false, mode);
+
+            foreach (var go in prefabInstanceRoots)
+                ReplacePrefabAssetOfPrefabInstance_NoInputValidation(go, prefabAssetRoot, settings, mode);
+
+            EditorUtility.ForceRebuildInspectors();
+        }
+
+        public static void ReplacePrefabAssetOfPrefabInstance(GameObject prefabInstanceRoot, GameObject prefabAssetRoot, InteractionMode mode)
+        {
+            ReplacePrefabAssetOfPrefabInstance(prefabInstanceRoot, prefabAssetRoot, new PrefabReplacingSettings(), mode);
+        }
+
+        public static void ReplacePrefabAssetOfPrefabInstance(GameObject prefabInstanceRoot, GameObject prefabAssetRoot, PrefabReplacingSettings settings, InteractionMode mode)
+        {
+            ThrowIfInvalidArgumentsForReplacePrefabInstance(prefabInstanceRoot, prefabAssetRoot, true, mode);
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+
+            ReplacePrefabAssetOfPrefabInstance_NoInputValidation(prefabInstanceRoot, prefabAssetRoot, settings, mode);
+
+            EditorUtility.ForceRebuildInspectors();
+        }
+
+        private static void ReplacePrefabAssetOfPrefabInstance_NoInputValidation(GameObject prefabInstanceRoot, GameObject prefabAssetRoot, PrefabReplacingSettings settings, InteractionMode mode)
+        {
+            var undoActionName = "Replace Prefab Instance";
+            if (mode == InteractionMode.UserAction)
+            {
+                Undo.FlushTrackedObjects();
+                Undo.SetCurrentGroupName(undoActionName);
+                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, undoActionName);
+            }
+
+            bool success = ReplacePrefabAssetOfPrefabInstance_Internal(prefabInstanceRoot, prefabAssetRoot, settings);
+            if (!success)
+            {
+                Debug.LogError(string.Format("Replace Prefab Instance failed for instance '{0}' using asset '{1}' at '{2}'", prefabInstanceRoot.name, prefabAssetRoot.name, AssetDatabase.GetAssetPath(prefabAssetRoot)), prefabInstanceRoot);
+            }
+
+            if (mode == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects();
         }
 
         [Obsolete("Use SaveAsPrefabAsset with a path instead.")]
@@ -2273,7 +2242,18 @@ namespace UnityEditor
         }
 
 
+        internal static List<GameObject> FindGameObjectsWithInvalidComponent(GameObject rootOfSearch)
+        {
+            TransformVisitor transformVisitor = new TransformVisitor();
+            var gameObjectsWithInvalidComponent = new List<GameObject>();
+            transformVisitor.VisitAll(rootOfSearch.transform, PrefabOverridesUtility.CheckForInvalidComponent, gameObjectsWithInvalidComponent);
+            return gameObjectsWithInvalidComponent;
+        }
 
+        internal static bool HasInvalidComponent(GameObject rootOfSearch)
+        {
+            return FindGameObjectsWithInvalidComponent(rootOfSearch).Count > 0;
+        }
 
         internal static bool HasInvalidComponent(Object gameObjectOrComponent)
         {
@@ -2289,12 +2269,7 @@ namespace UnityEditor
             if (!(gameObjectOrComponent is GameObject))
                 return false;
 
-            GameObject go;
-            go = (GameObject)gameObjectOrComponent;
-            TransformVisitor transformVisitor = new TransformVisitor();
-            var GOsWithInvalidComponent = new List<GameObject>();
-            transformVisitor.VisitAll(go.transform, PrefabOverridesUtility.CheckForInvalidComponent, GOsWithInvalidComponent);
-            return GOsWithInvalidComponent.Count > 0;
+            return HasInvalidComponent((GameObject)gameObjectOrComponent);
         }
 
         public static bool IsPartOfPrefabThatCanBeAppliedTo(Object gameObjectOrComponent)
@@ -3097,7 +3072,7 @@ namespace UnityEditor
 
                 if (iovInfo.unusedRemovedComponentCount > 0)
                 {
-                    PrefabUtility.RemoveRemovedComponentOverridesWhichAreNull(iovInfo.instance);
+                    PrefabUtility.RemoveRemovedComponentOverridesWhichAreInvalid(iovInfo.instance);
                     updatedEditorLog |= PrefabUtility.LogRemovedUnusedRemovedComponents(iovInfo.instance, iovInfo.unusedRemovedComponentCount);
                 }
             }

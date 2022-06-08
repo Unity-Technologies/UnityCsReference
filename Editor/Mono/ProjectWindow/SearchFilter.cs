@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.AssetImporters;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,6 +64,8 @@ namespace UnityEditor
         private string[] m_Globs = new string[0];
         [SerializeField]
         private string m_OriginalText = "";
+        [SerializeField]
+        private ImportLogFlags m_ImportLogFlags;
 
         // Interface
         public string nameFilter { get { return m_NameFilter; } set { m_NameFilter = value; }}
@@ -79,6 +82,7 @@ namespace UnityEditor
         public SearchArea searchArea {  get { return m_SearchArea; } set { m_SearchArea = value; }}
         public string[] globs { get { return m_Globs; } set { m_Globs = value; }}
         public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
+        public ImportLogFlags importLogFlags { get => m_ImportLogFlags; set => m_ImportLogFlags = value; }
 
         public void ClearSearch()
         {
@@ -94,6 +98,7 @@ namespace UnityEditor
             m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
             m_SkipHidden = false;
+            m_ImportLogFlags = ImportLogFlags.None;
         }
 
         bool IsNullOrEmpty<T>(T[] list)
@@ -108,7 +113,8 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_ClassNames) ||
                 !IsNullOrEmpty(m_AssetBundleNames) ||
                 !IsNullOrEmpty(m_Globs) ||
-                !IsNullOrEmpty(m_ReferencingInstanceIDs);
+                !IsNullOrEmpty(m_ReferencingInstanceIDs) ||
+                m_ImportLogFlags != ImportLogFlags.None;
 
             isSearchActive = isSearchActive || !IsNullOrEmpty(m_VersionControlStates);
             isSearchActive = isSearchActive || !IsNullOrEmpty(m_SoftLockControlStates);
@@ -213,6 +219,12 @@ namespace UnityEditor
                 changed = true;
             }
 
+            if (newFilter.m_ImportLogFlags != m_ImportLogFlags)
+            {
+                m_ImportLogFlags = newFilter.m_ImportLogFlags;
+                changed = true;
+            }
+
             m_ShowAllHits = newFilter.m_ShowAllHits;
 
             if (newFilter.m_SkipHidden != m_SkipHidden)
@@ -266,6 +278,20 @@ namespace UnityEditor
 
             result += "[ShowAllHits: " + showAllHits + "]";
             result += "[SkipHidden: " + skipHidden + "]";
+
+            if (m_ImportLogFlags == (ImportLogFlags.Error | ImportLogFlags.Warning))
+            {
+                result += $"[ImportLog: {ImportLog.Filters.AllIssuesStr}]";
+            }
+            else if (m_ImportLogFlags == ImportLogFlags.Error)
+            {
+                result += $"[ImportLog: {ImportLog.Filters.ErrorsStr}]";
+            }
+            else if (m_ImportLogFlags == ImportLogFlags.Warning)
+            {
+                result += $"[ImportLog: {ImportLog.Filters.WarningsStr}]";
+            }
+
             return result;
         }
 
@@ -289,6 +315,19 @@ namespace UnityEditor
             AddToString("s:", m_SoftLockControlStates, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);
             AddToString("glob:", m_Globs.Select(a => $"\"{a}\"").ToArray(), ref result);
+
+            if (m_ImportLogFlags == (ImportLogFlags.Error | ImportLogFlags.Warning))
+            {
+                result += $" {ImportLog.Filters.SearchToken}:{ImportLog.Filters.AllIssuesStr}";
+            }
+            else if (m_ImportLogFlags == ImportLogFlags.Error)
+            {
+                result += $" {ImportLog.Filters.SearchToken}:{ImportLog.Filters.ErrorsStr}";
+            }
+            else if (m_ImportLogFlags == ImportLogFlags.Warning)
+            {
+                result += $" {ImportLog.Filters.SearchToken}:{ImportLog.Filters.WarningsStr}";
+            }
 
             return result;
         }

@@ -254,7 +254,6 @@ namespace UnityEngine.UIElements
         public Cursor cursor;
         public TextOverflow textOverflow;
         public Color unityBackgroundImageTintColor;
-        public ScaleMode unityBackgroundScaleMode;
         public OverflowClipBox unityOverflowClipBox;
         public int unitySliceBottom;
         public int unitySliceLeft;
@@ -278,7 +277,6 @@ namespace UnityEngine.UIElements
             return lhs.cursor == rhs.cursor &&
                 lhs.textOverflow == rhs.textOverflow &&
                 lhs.unityBackgroundImageTintColor == rhs.unityBackgroundImageTintColor &&
-                lhs.unityBackgroundScaleMode == rhs.unityBackgroundScaleMode &&
                 lhs.unityOverflowClipBox == rhs.unityOverflowClipBox &&
                 lhs.unitySliceBottom == rhs.unitySliceBottom &&
                 lhs.unitySliceLeft == rhs.unitySliceLeft &&
@@ -313,7 +311,6 @@ namespace UnityEngine.UIElements
                 var hashCode = cursor.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textOverflow;
                 hashCode = (hashCode * 397) ^ unityBackgroundImageTintColor.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)unityBackgroundScaleMode;
                 hashCode = (hashCode * 397) ^ (int)unityOverflowClipBox;
                 hashCode = (hashCode * 397) ^ unitySliceBottom;
                 hashCode = (hashCode * 397) ^ unitySliceLeft;
@@ -469,6 +466,10 @@ namespace UnityEngine.UIElements
     {
         public Color backgroundColor;
         public Background backgroundImage;
+        public BackgroundPosition backgroundPositionX;
+        public BackgroundPosition backgroundPositionY;
+        public BackgroundRepeat backgroundRepeat;
+        public BackgroundSize backgroundSize;
         public Color borderBottomColor;
         public Length borderBottomLeftRadius;
         public Length borderBottomRightRadius;
@@ -494,6 +495,10 @@ namespace UnityEngine.UIElements
         {
             return lhs.backgroundColor == rhs.backgroundColor &&
                 lhs.backgroundImage == rhs.backgroundImage &&
+                lhs.backgroundPositionX == rhs.backgroundPositionX &&
+                lhs.backgroundPositionY == rhs.backgroundPositionY &&
+                lhs.backgroundRepeat == rhs.backgroundRepeat &&
+                lhs.backgroundSize == rhs.backgroundSize &&
                 lhs.borderBottomColor == rhs.borderBottomColor &&
                 lhs.borderBottomLeftRadius == rhs.borderBottomLeftRadius &&
                 lhs.borderBottomRightRadius == rhs.borderBottomRightRadius &&
@@ -530,6 +535,10 @@ namespace UnityEngine.UIElements
             {
                 var hashCode = backgroundColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ backgroundImage.GetHashCode();
+                hashCode = (hashCode * 397) ^ backgroundPositionX.GetHashCode();
+                hashCode = (hashCode * 397) ^ backgroundPositionY.GetHashCode();
+                hashCode = (hashCode * 397) ^ backgroundRepeat.GetHashCode();
+                hashCode = (hashCode * 397) ^ backgroundSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderBottomColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderBottomLeftRadius.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderBottomRightRadius.GetHashCode();

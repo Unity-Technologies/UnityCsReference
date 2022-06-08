@@ -222,6 +222,7 @@ namespace UnityEditor
 
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be created during gathering of import dependencies")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Warning, "AssetDatabase.CreateAsset() was called as part of running an import. Please make sure this function is not called from ScriptedImporters or PostProcessors, as it is a source of non-determinism and will be disallowed in a forthcoming release.")]
         extern public static void CreateAsset([NotNull] Object asset, string path);
         [NativeThrows]
         extern static internal void CreateAssetFromObjects(Object[] assets, string path);

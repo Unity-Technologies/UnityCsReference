@@ -49,12 +49,20 @@ namespace UnityEngine.UIElements
             return new Length(value, LengthUnit.Percent);
         }
 
-        internal static Length Auto()
+        /// <summary>
+        /// Creates an Auto Length <see cref="Length"/>.
+        /// </summary>
+        /// <returns>Auto length.</returns>
+        public static Length Auto()
         {
             return new Length(0f, Unit.Auto);
         }
 
-        internal static Length None()
+        /// <summary>
+        /// Creates a None Length <see cref="Length"/>.
+        /// </summary>
+        /// <returns>None length.</returns>
+        public static Length None()
         {
             return new Length(0f, Unit.None);
         }
@@ -79,8 +87,17 @@ namespace UnityEngine.UIElements
             set => m_Unit = (Unit)value;
         }
 
-        internal bool IsAuto() => m_Unit == Unit.Auto;
-        internal bool IsNone() => m_Unit == Unit.None;
+        /// <summary>
+        /// Check if Length is Auto.
+        /// </summary>
+        /// <returns>true if Length is Auto, false otherwise</returns>
+        public bool IsAuto() => m_Unit == Unit.Auto;
+
+        /// <summary>
+        /// Check if Length is None.
+        /// </summary>
+        /// <returns>true if Length is None, false otherwise</returns>
+        public bool IsNone() => m_Unit == Unit.None;
 
         /// <summary>
         /// Creates from a float and an optional <see cref="LengthUnit"/>.

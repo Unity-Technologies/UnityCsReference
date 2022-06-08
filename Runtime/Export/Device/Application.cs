@@ -182,7 +182,7 @@ namespace UnityEngine.Device
             ShimManager.applicationShim.Unload();
         }
 
-        public static CancellationToken CancellationToken => ShimManager.applicationShim.CancellationToken;
+        public static CancellationToken exitCancellationToken => ShimManager.applicationShim.exitCancellationToken;
 
     }
 }

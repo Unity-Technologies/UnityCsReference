@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
-using UnityEngine.Bindings;
-using UnityEngine.Rendering;
+using System.ComponentModel;
 
 namespace UnityEngine.VFX
 {
@@ -114,6 +112,7 @@ namespace UnityEngine.VFX
         VertexBufferFromSkinnedMeshRenderer,
         IndexBufferFromMesh,
         MeshFromSkinnedMeshRenderer,
+        RootBoneTransformFromSkinnedMeshRenderer,
 
         BakeCurve,
         BakeGradient,
@@ -331,10 +330,38 @@ namespace UnityEngine.VFX
         Normal = 1 << 2,
     }
 
+    internal enum VFXInstancingMode
+    {
+        Disabled,
+        [InspectorName("Automatic batch capacity")]
+        Auto,
+        [InspectorName("Custom batch capacity")]
+        Custom
+    };
+
+    internal enum VFXInstancingDisabledReason
+    {
+        None = 0,
+        [Description("Unknown reason")]
+        Unknown = -1
+    };
+
     internal enum VFXMainCameraBufferFallback
     {
         NoFallback,
         PreferMainCamera,
         PreferSceneCamera
+    };
+
+    internal enum VFXSkinnedMeshFrame
+    {
+        Current = 0,
+        Previous = 1,
+    };
+
+    internal enum VFXSkinnedTransform
+    {
+        LocalRootBoneTransform = 0,
+        WorldRootBoneTransform = 1,
     };
 }

@@ -53,7 +53,7 @@ namespace Unity.UI.Builder
                     var transition = builderTransitions[i];
                     var foldoutTransitionField = GetPooledTransitionField(transitionsListView, transition, i);
                     foldoutTransitionField.index = i;
-                    
+
                     SetTransitionVariableEditors(foldoutTransitionField, i);
                     UpdateFieldStatus(foldoutTransitionField.propertyField, setData.transitionProperty.styleProperty);
                     UpdateFieldStatus(foldoutTransitionField.durationField, setData.transitionDuration.styleProperty);
@@ -251,17 +251,11 @@ namespace Unity.UI.Builder
             {
                 foldoutField.header.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
                 SetUpContextualMenuOnStyleField(foldoutField.propertyField);
-                foldoutField.propertyField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.Property));
                 foldoutField.propertyField.getContent = GetTransitionPropertyContent;
 
                 SetUpContextualMenuOnStyleField(foldoutField.durationField);
-                foldoutField.durationField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.Duration));
-
                 SetUpContextualMenuOnStyleField(foldoutField.timingFunctionField);
-                foldoutField.timingFunctionField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.TimingFunction));
-
                 SetUpContextualMenuOnStyleField(foldoutField.delayField);
-                foldoutField.delayField.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, FindStylePropertyInfo(TransitionConstants.Delay));
             }
 
             GetOrCreateFieldListForStyleName(TransitionConstants.Property).Add(foldoutField.propertyField);

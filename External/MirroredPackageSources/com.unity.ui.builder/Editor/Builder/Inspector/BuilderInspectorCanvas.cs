@@ -280,7 +280,6 @@ namespace Unity.UI.Builder
             DeactivateCameraMode();
             customBackgroundElement.style.backgroundColor = StyleKeyword.Null;
             customBackgroundElement.style.backgroundImage = StyleKeyword.Null;
-            customBackgroundElement.style.unityBackgroundScaleMode = StyleKeyword.Null;
 
             if (settings.EnableCanvasBackground)
             {
@@ -292,7 +291,10 @@ namespace Unity.UI.Builder
                         break;
                     case BuilderCanvasBackgroundMode.Image:
                         customBackgroundElement.style.backgroundImage = settings.CanvasBackgroundImage;
-                        customBackgroundElement.style.unityBackgroundScaleMode = settings.CanvasBackgroundImageScaleMode;
+                        customBackgroundElement.style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(settings.CanvasBackgroundImageScaleMode);
+                        customBackgroundElement.style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(settings.CanvasBackgroundImageScaleMode);
+                        customBackgroundElement.style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(settings.CanvasBackgroundImageScaleMode);
+                        customBackgroundElement.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(settings.CanvasBackgroundImageScaleMode);
                         customBackgroundElement.style.opacity = settings.ImageModeCanvasBackgroundOpacity;
                         break;
                     case BuilderCanvasBackgroundMode.Camera:

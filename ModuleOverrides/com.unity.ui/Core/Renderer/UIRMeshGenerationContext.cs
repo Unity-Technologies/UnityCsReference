@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Profiling;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -279,6 +280,13 @@ namespace UnityEngine.UIElements
             public Rect rect;
             public Rect uv;
             public Color color;
+
+            // Allow support of background-properties
+            public BackgroundPosition backgroundPositionX;
+            public BackgroundPosition backgroundPositionY;
+            public BackgroundRepeat backgroundRepeat;
+            public BackgroundSize backgroundSize;
+
             public Texture texture;
             public Sprite sprite;
             public VectorImage vectorImage;
@@ -362,7 +370,6 @@ namespace UnityEngine.UIElements
                             rect = new Rect(rect.xMin, rect.yMin + rect.height * (1.0f - stretch) * .5f, rect.width, stretch * rect.height);
                         }
                         break;
-
                     default:
                         throw new NotImplementedException();
                 }
@@ -560,7 +567,7 @@ namespace UnityEngine.UIElements
                 return rp;
             }
 
-            public static RectangleParams MakeSprite(Rect rect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices)
+            public static RectangleParams MakeSprite(Rect rect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices, bool useForRepeat = false)
             {
                 if (sprite.texture == null)
                 {
@@ -580,7 +587,7 @@ namespace UnityEngine.UIElements
                 // polygon clipping.
                 var border = sprite.border;
                 bool hasSlices = (border != Vector4.zero) || (slices != Vector4.zero);
-                bool useTexturedQuad = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius;
+                bool useTexturedQuad = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius || useForRepeat;
 
                 if (useTexturedQuad && sprite.packed && sprite.packingRotation != SpritePackingRotation.None)
                     uv = ApplyPackingRotation(uv, sprite.packingRotation);
@@ -800,6 +807,7 @@ namespace UnityEngine.UIElements
         internal MeshGenerationContext(IStylePainter painter) { this.painter = painter; }
 
         private static readonly ProfilerMarker s_AllocateMarker = new ProfilerMarker("UIR.MeshGenerationContext.Allocate");
+        private static readonly ProfilerMarker s_DrawVectorImageMarker = new ProfilerMarker("UIR.MeshGenerationContext.DrawVectorImage");
 
         /// <summary>
         /// Allocates the specified number of vertices and indices required to express geometry for drawing the content of a <see cref="VisualElement"/>.
@@ -821,6 +829,37 @@ namespace UnityEngine.UIElements
         {
             using (s_AllocateMarker.Auto())
                 return painter.DrawMesh(vertexCount, indexCount, texture, material, flags);
+        }
+
+        /// <summary>
+        /// Draws a <see cref="VectorImage" /> asset.
+        /// </summary>
+        /// <param name="vectorImage">The vector image to draw.</param>
+        /// <param name="offset">The position offset where to draw the vector image.</param>
+        /// <param name="rotationAngle">The rotation of the vector image.</param>
+        /// <param name="scale">The scale of the vector image</param>
+        /// <remarks>
+        ///
+        /// <remarks>
+        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale)
+        {
+            using (s_DrawVectorImageMarker.Auto())
+                painter.DrawVectorImage(vectorImage, offset, rotationAngle, scale);
+        }
+
+        /// <summary>
+        /// Draw a string of text.
+        /// </summary>
+        /// <param name="text">The text to display.</param>
+        /// <param name="pos">The start position where the text will be displayed.</param>
+        /// <param name="fontSize">The font size to use.</param>
+        /// <param name="color">The text color.</param>
+        /// <param name="font">The font asset to use.</param>
+        public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font = null)
+        {
+            if (font == null)
+                font = TextUtilities.GetFontAsset(visualElement);
+            painter.DrawText(text, pos, fontSize, color, font);
         }
 
         internal IStylePainter painter;

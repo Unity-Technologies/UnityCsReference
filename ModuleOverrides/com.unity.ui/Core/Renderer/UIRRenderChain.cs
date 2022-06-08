@@ -261,7 +261,7 @@ namespace UnityEngine.UIElements.UIR
                 // todo: move painter2d to the render chain instead of the mgc
                 if (painter.meshGenerationContext.hasPainter2D)
                 {
-                    painter.meshGenerationContext.painter2D.Destroy();
+                    painter.meshGenerationContext.painter2D.Dispose();
                 }
                 painter = null;
             }

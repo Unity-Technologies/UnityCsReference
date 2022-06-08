@@ -218,9 +218,6 @@ namespace UnityEditor
         [FreeFunction("PhysicsDebugDraw::GetPooledQueries")]
         internal extern static void GetPooledQueries();
 
-        [FreeFunction("PhysicsDebugDraw::GetPooledContacts")]
-        internal extern static void GetPooledContacts();
-
         [FreeFunction("PhysicsDebugDraw::ClearAllPools")]
         internal extern static void ClearAllPools();
 
@@ -231,25 +228,14 @@ namespace UnityEditor
         internal extern static void UpdateFilter();
 
         [FreeFunction("PhysicsDebugDraw::IsContactVisualised")]
-        internal extern static bool IsContactVisualised(Collider collider);
+        internal extern static bool IsColliderVisualised(Collider collider);
 
-        internal static event Action<NativeArray<VisContactPoint>> OnDrawPooledContacts;
+        [FreeFunction("PhysicsDebugDraw::IsContactVisualisedThreadSafe", isThreadSafe: true)]
+        internal extern static bool IsContactVisualisedThreadSafe(IntPtr shapePtr);
+
+        internal static event Action<PhysicsScene> OnBeforeSimulate;
         internal static event Action<NativeArray<Query>> OnRetrievePooledQueries;
-        internal static event Action BeforeSimulate;
-
-        [RequiredByNativeCode]
-        private static unsafe void OnReportPooledContacts(IntPtr buffer, int count)
-        {
-            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<VisContactPoint>(buffer.ToPointer(), count, Allocator.None);
-
-            var safety = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, safety);
-
-            if (OnDrawPooledContacts != null)
-                OnDrawPooledContacts(array);
-
-            AtomicSafetyHandle.Release(safety);
-        }
+        internal static event Action<PhysicsScene> OnDestroyPhysicsScene;
 
         [RequiredByNativeCode]
         private static unsafe void OnReportPooledQueries(IntPtr buffer, int count)
@@ -266,10 +252,15 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        private static void InvokeBeforeSimulate()
+        private static void InvokeBeforeSimulate(PhysicsScene scene)
         {
-            if (BeforeSimulate != null)
-                BeforeSimulate();
+            OnBeforeSimulate?.Invoke(scene);
+        }
+
+        [RequiredByNativeCode]
+        private static void OnPhysicsWorldDestroyed(PhysicsScene scene)
+        {
+            OnDestroyPhysicsScene?.Invoke(scene);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -313,20 +304,6 @@ namespace UnityEditor
                 return hashCode;
             }
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct VisContactPoint
-        {
-            public Vector3 point;
-            public Vector3 normal;
-            public Vector3 impulse;
-            public float separation;
-            public int thisColliderInstanceID;
-            public int otherColliderInstanceID;
-
-            public Collider thisCollider { get { return ContactPoint.GetColliderByInstanceID(thisColliderInstanceID); } }
-            public Collider otherCollider { get { return ContactPoint.GetColliderByInstanceID(otherColliderInstanceID); } }
-        };
     }
 }
 

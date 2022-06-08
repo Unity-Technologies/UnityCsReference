@@ -28,6 +28,10 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Translate startValue, Translate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Rotate startValue, Rotate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundPosition startValue, BackgroundPosition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundRepeat startValue, BackgroundRepeat endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+
         void CancelAllAnimations();
         void CancelAllAnimations(VisualElement owner);
         void CancelAnimation(VisualElement owner, StylePropertyId id);
@@ -1264,6 +1268,84 @@ namespace UnityEngine.UIElements
             }
         }
 
+        class ValuesBackgroundPosition : ValuesDiscrete<BackgroundPosition>
+        {
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+        }
+
+        class ValuesBackgroundRepeat : ValuesDiscrete<BackgroundRepeat>
+        {
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+        }
+
+        class ValuesBackgroundSize : Values<BackgroundSize>
+        {
+            public override Func<BackgroundSize, BackgroundSize, bool> SameFunc { get; } = IsSame;
+            private static bool IsSame(BackgroundSize a, BackgroundSize b) => a == b;
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref BackgroundSize a, ref BackgroundSize b)
+            {
+                return owner.TryConvertBackgroundSizeUnits(ref a, ref b);
+            }
+
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+
+            private static BackgroundSize Lerp(BackgroundSize a, BackgroundSize b, float t) => new BackgroundSize(ValuesLength.Lerp(a.x, b.x, t), ValuesLength.Lerp(a.y, b.y, t));
+
+            protected sealed override void UpdateValues()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    ref var timing = ref running.timing[i];
+                    ref var style = ref running.style[i];
+                    style.currentValue = Lerp(style.startValue, style.endValue, timing.easedProgress);
+                }
+            }
+        }
+
         private ValuesFloat m_Floats;
         private ValuesInt m_Ints;
         private ValuesLength m_Lengths;
@@ -1277,6 +1359,9 @@ namespace UnityEngine.UIElements
         private ValuesRotate m_Rotate;
         private ValuesTranslate m_Translate;
         private ValuesTransformOrigin m_TransformOrigin;
+        private ValuesBackgroundPosition m_BackgroundPosition;
+        private ValuesBackgroundRepeat m_BackgroundRepeat;
+        private ValuesBackgroundSize m_BackgroundSize;
 
         // All the value lists with ongoing animations. Add and remove Values objects when animations come in/out.
         private readonly List<Values> m_AllValues = new List<Values>();
@@ -1366,6 +1451,21 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_TransformOrigin));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundPosition startValue, BackgroundPosition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_BackgroundPosition));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundRepeat startValue, BackgroundRepeat endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_BackgroundRepeat));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_BackgroundSize));
         }
 
         public void CancelAllAnimations()
@@ -1505,6 +1605,21 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Rotate startValue, Rotate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundPosition startValue, BackgroundPosition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundRepeat startValue, BackgroundRepeat endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return false;
         }

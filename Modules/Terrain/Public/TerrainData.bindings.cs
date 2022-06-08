@@ -107,7 +107,7 @@ namespace UnityEngine
         internal int m_UseInstancing = 0;
         internal int m_UseDensityScaling = 0;
         internal float m_AlignToGround = 0;
-        internal float m_PositionOrderliness = 0;
+        internal float m_PositionJitter = 0;
         internal float m_TargetCoverage = 1.0F;
 
         public GameObject prototype { get { return m_Prototype; } set { m_Prototype = value; } }
@@ -154,7 +154,7 @@ namespace UnityEngine
 
         public float alignToGround { get { return m_AlignToGround; } set { m_AlignToGround = value; } }
 
-        public float positionOrderliness { get { return m_PositionOrderliness; } set { m_PositionOrderliness = value; } }
+        public float positionJitter { get { return m_PositionJitter; } set { m_PositionJitter = value; } }
 
         public DetailPrototype() {}
 
@@ -177,7 +177,7 @@ namespace UnityEngine
             m_UseInstancing = other.m_UseInstancing;
             m_UseDensityScaling = other.m_UseDensityScaling;
             m_AlignToGround = other.m_AlignToGround;
-            m_PositionOrderliness = other.m_PositionOrderliness;
+            m_PositionJitter = other.m_PositionJitter;
             m_TargetCoverage = other.m_TargetCoverage;
         }
 

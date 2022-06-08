@@ -38,7 +38,7 @@ namespace Unity.UI.Builder
         public static readonly float PickSelectionRepeatRectSize = 2f;
         public static readonly float PickSelectionRepeatRectHalfSize = PickSelectionRepeatRectSize / 2;
         public static readonly double PickSelectionRepeatMinTimeDelay = 0.5;
-        public static readonly int OpenInIDELineNumber = int.MinValue;
+        public static readonly int OpenInIDELineNumber = 1;
 
         // Paths
         public const string UIBuilderPackageRootPath = "UIBuilderPackageResources";
@@ -109,7 +109,6 @@ namespace Unity.UI.Builder
 
         // Inspector Style VE Property Names
         public static readonly string InspectorStylePropertyNameVEPropertyName = "__unity-ui-builder-style-property-name";
-        public static readonly string InspectorComputedStylePropertyInfoVEPropertyName = "__unity-ui-builder-computed-style-property-info";
         public static readonly string InspectorClassPillLinkedSelectorElementVEPropertyName = "__unity-ui-builder-class-linked-pill-selector-element";
 
         // Inspector Style Property and Class Names
@@ -172,7 +171,7 @@ namespace Unity.UI.Builder
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string FileNotFoundMessage = "File not found";
         public static readonly string HeaderSectionHelpBoxMessage = "This control is not supported in Runtime UI. Remove it, or enable Editor Extension Authoring in the Library.";
-        
+
         // Tooltip Messages
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default value";
         public static readonly string FieldStatusIndicatorInlineTooltip = "Inline value";
@@ -190,11 +189,11 @@ namespace Unity.UI.Builder
 
         public static readonly string FieldValueInfoTypeEnumUSSPropertyDisplayString = "USS property";
         public static readonly string FieldValueInfoTypeEnumUUXMLAttributeDisplayString = "UXML attribute";
-        
+
         public static readonly string FieldTooltipFormatString = "{0}: {1}\n\nValue: {2}{3}\n\nValue definition: {4}{5}";
         public static readonly string FieldTooltipWithoutValueFormatString = "{0}: {1}\n\nValue definition: {4}{5}";
         public static readonly string MatchingStyleSheetRuleSourceTooltipFormatString = "    Selector: {0}\n    Sheet: {1}";
-        public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";        
+        public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";
 
         //
         // Explorer

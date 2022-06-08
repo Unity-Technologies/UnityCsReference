@@ -227,7 +227,6 @@ namespace UnityEditor.Overlays
         OverlayMenu menu => m_Menu ??= new OverlayMenu(this);
         internal VisualElement rootVisualElement => m_RootVisualElement ??= CreateRoot();
 
-        internal Vector2 localMousePosition { get; set; }
         internal Overlay hoveredOverlay => m_HoveredOverlay;
         OverlayContainer hoveredOverlayContainer { get; set; }
         OverlayContainer defaultContainer { get; set; }
@@ -341,20 +340,12 @@ namespace UnityEditor.Overlays
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            //this is necessary to get a mouse position relative to camera rect
-            //considering the canvas is non pickable and we need the mouse pos
-            //to pop the overlay menu
-            rootVisualElement.RegisterCallback<MouseOverEvent>(OnMouseEnter);
-            rootVisualElement.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-
             //this is used to clamp overlays to floating container bounds.
             floatingContainer.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
         {
-            rootVisualElement.UnregisterCallback<MouseOverEvent>(OnMouseEnter);
-            rootVisualElement.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             floatingContainer.UnregisterCallback<GeometryChangedEvent>(GeometryChanged);
         }
 
@@ -406,16 +397,8 @@ namespace UnityEditor.Overlays
                 //this is not doing anything if it has already been registered
                 overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(overlay.OnGeometryChanged);
             }
-        }
 
-        void OnMouseMove(MouseMoveEvent evt)
-        {
-            localMousePosition = rootVisualElement.WorldToLocal(evt.mousePosition);
-        }
-
-        void OnMouseEnter(MouseOverEvent evt)
-        {
-            localMousePosition = rootVisualElement.WorldToLocal(evt.mousePosition);
+            menu?.AdjustToParentSize();
         }
 
         void OnMouseLeaveOverlay(MouseLeaveEvent evt)
@@ -436,17 +419,15 @@ namespace UnityEditor.Overlays
                 hoveredOverlay.displayed = false;
         }
 
-        internal bool menuVisible
+        internal void ShowMenu(bool show, bool atMousePosition = true)
         {
-            get => menu.style.display != DisplayStyle.None;
-            set
-            {
-                if(value && !menuVisible)
-                    menu.Show(overlays, floatingContainer.localBound, localMousePosition);
-                else if(!value)
-                    menu.Hide();
-            }
+            if (show && !menuVisible)
+                menu.Show(overlays, atMousePosition);
+            else if (!show)
+                menu.Hide();
         }
+
+        internal bool menuVisible => menu.isShown;
 
         internal void Initialize(EditorWindow window)
         {

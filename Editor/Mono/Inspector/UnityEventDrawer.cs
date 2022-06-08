@@ -66,7 +66,7 @@ namespace UnityEditorInternal
         internal const string kLeftColumnClassName = kUssClassName + "__left-column";
         internal const string kRightColumnClassName = kUssClassName + "__right-column";
         internal const string kContainerClassName = kUssClassName + "__container";
-        internal const string kHeaderClassName = kUssClassName + "__header";
+        internal const string kHeaderClassName = "unity-list-view__header";
         internal const string kListViewScrollViewClassName = kUssClassName + "__list-view-scroll-view";
         internal const string kListViewItemClassName = kUssClassName + "__list-view-item";
 

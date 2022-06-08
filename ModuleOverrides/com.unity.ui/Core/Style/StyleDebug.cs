@@ -36,6 +36,9 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId GetStylePropertyIdFromName(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return StylePropertyId.Unknown;
+
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
                 return id;
@@ -45,18 +48,40 @@ namespace UnityEngine.UIElements
 
         public static object GetComputedStyleValue(in ComputedStyle computedStyle, string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
+            {
+                // Support obsolete -unity-background-scale-mode
+                if (id == StylePropertyId.UnityBackgroundScaleMode)
+                {
+                    return BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(computedStyle.backgroundPositionX,
+                        computedStyle.backgroundPositionY, computedStyle.backgroundRepeat,
+                        computedStyle.backgroundSize);
+                }
+
                 return GetComputedStyleValue(computedStyle, id);
+            }
 
             return null;
         }
 
         public static object GetInlineStyleValue(IStyle style, string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
             {
+                // Support obsolete -unity-background-scale-mode
+#pragma warning disable 0618
+                if (id == StylePropertyId.UnityBackgroundScaleMode)
+                    return style.unityBackgroundScaleMode;
+#pragma warning restore 0618
+
                 return GetInlineStyleValue(style, id);
             }
 
@@ -74,9 +99,15 @@ namespace UnityEngine.UIElements
 
         public static Type GetInlineStyleType(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
             {
+                if (id == StylePropertyId.UnityBackgroundScaleMode)
+                    return typeof(StyleEnum<ScaleMode>);
+
                 if (!IsShorthandProperty(id))
                     return GetInlineStyleType(id);
             }
@@ -84,14 +115,19 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        // For backwards compatibility with debugger in 2020.1
         public static Type GetComputedStyleType(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             StylePropertyId id;
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out id))
             {
+                if (id == StylePropertyId.UnityBackgroundScaleMode)
+                    return typeof(ScaleMode);
+
                 if (!IsShorthandProperty(id))
-                    return GetInlineStyleType(id);
+                    return GetComputedStyleType(id);
             }
 
             return null;

@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditorInternal
 {
@@ -26,17 +29,17 @@ namespace UnityEditorInternal
         public static extern bool IsSupported();
         public static extern void Load();
 
-        public static void BeginCaptureRenderDoc(UnityEditor.EditorWindow window)
+        public static void BeginCaptureRenderDoc(EditorWindow window)
             => window.m_Parent.BeginCaptureRenderDoc();
-        public static void EndCaptureRenderDoc(UnityEditor.EditorWindow window)
+        public static void EndCaptureRenderDoc(EditorWindow window)
             => window.m_Parent.EndCaptureRenderDoc();
 
-
+        static EditorWindow s_EditorWindowScheduledForCapture = null;
         static GUIContent s_RenderDocContent;
         internal static bool RenderDocCaptureButton(EditorWindow view, WindowAction self, Rect r)
         {
             if (s_RenderDocContent == null)
-                s_RenderDocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
+                s_RenderDocContent = EditorGUIUtility.TrIconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip);
 
             Rect r2 = new Rect(r.xMax - r.width, r.y, r.width, r.height);
             return GUI.Button(r2, s_RenderDocContent, EditorStyles.iconButton);
@@ -50,6 +53,39 @@ namespace UnityEditorInternal
         private static bool ShowRenderDocButton(EditorWindow view, WindowAction self)
         {
             return Unsupported.IsDeveloperMode() && IsLoaded() && IsSupported();
+        }
+
+        internal static void LoadRenderDoc()
+        {
+            if (IsInstalled() && !IsLoaded() && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                ShaderUtil.RequestLoadRenderDoc();
+            }
+        }
+
+        [Shortcut(RenderDocUtil.captureRenderDocShortcutID, KeyCode.C, ShortcutModifiers.Alt)]
+        internal static void CaptureRenderDoc()
+        {
+            if (IsInstalled() && !IsLoaded())
+            {
+                s_EditorWindowScheduledForCapture = EditorWindow.focusedWindow;
+                LoadRenderDoc();
+            }
+            else if (EditorWindow.focusedWindow != null)
+            {
+                CaptureRenderDocFullContent(EditorWindow.focusedWindow, null);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void RenderDocLoaded()
+        {
+            if (s_EditorWindowScheduledForCapture != null)
+            {
+                s_EditorWindowScheduledForCapture.Focus();
+                CaptureRenderDoc();
+                s_EditorWindowScheduledForCapture = null;
+            }
         }
     }
 }

@@ -116,8 +116,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadUpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
             m_DownloadUpdateFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
 
-            m_UpmFoldoutGroups = new MultiSelectFoldoutGroup[] { m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup};
-            m_AssetStoreFoldoutGroups = new MultiSelectFoldoutGroup[] { m_DownloadFoldoutGroup, m_DownloadUpdateFoldoutGroup };
+            m_UpmFoldoutGroups = new MultiSelectFoldoutGroup[] { m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
+
+            // Now that Upm packages can live on Asset Store, we want to show Upm foldout groups on asset store too
+            m_AssetStoreFoldoutGroups = new MultiSelectFoldoutGroup[] { m_DownloadFoldoutGroup, m_DownloadUpdateFoldoutGroup, m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
 
             // Add foldouts to the UI in the correct order. Note that the order here is not the same as the initialization order from above.
             foldoutsContainer.Add(m_UnlockFoldout);

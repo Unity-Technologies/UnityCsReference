@@ -18,6 +18,8 @@ namespace UnityEngine.AI
         public float agentHeight { get { return m_AgentHeight; } set { m_AgentHeight = value; } }
         public float agentSlope { get { return m_AgentSlope; } set { m_AgentSlope = value; } }
         public float agentClimb { get { return m_AgentClimb; } set { m_AgentClimb = value; } }
+        public float ledgeDropHeight { get { return m_LedgeDropHeight; } set { m_LedgeDropHeight = value; } }
+        public float maxJumpAcrossDistance { get { return m_MaxJumpAcrossDistance; } set { m_MaxJumpAcrossDistance = value; } }
         public float minRegionArea { get { return m_MinRegionArea; } set { m_MinRegionArea = value; } }
         public bool overrideVoxelSize { get { return m_OverrideVoxelSize != 0; } set { m_OverrideVoxelSize = value ? 1 : 0; } }
         public float voxelSize { get { return m_VoxelSize; } set { m_VoxelSize = value; } }
@@ -33,8 +35,8 @@ namespace UnityEngine.AI
         float m_AgentHeight;
         float m_AgentSlope;
         float m_AgentClimb;
-        float m_LedgeDropHeight;        // Not exposed
-        float m_MaxJumpAcrossDistance;  // Not exposed
+        float m_LedgeDropHeight;
+        float m_MaxJumpAcrossDistance;
         float m_MinRegionArea;
         int m_OverrideVoxelSize;
         float m_VoxelSize;

@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,7 +16,9 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class PropertyField : VisualElement, IBindable
     {
+        private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
+        internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
 
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
@@ -77,6 +79,7 @@ namespace UnityEditor.UIElements
 
         private int m_DrawNestingLevel;
         private PropertyField m_DrawParentProperty;
+        private VisualElement m_DecoratorDrawersContainer;
 
         SerializedProperty serializedProperty => m_SerializedProperty;
 
@@ -165,6 +168,9 @@ namespace UnityEditor.UIElements
                 // this is only supported for non propertydrawer types
                 if (m_ChildField != null && m_SerializedProperty.propertyType == property.propertyType)
                 {
+                    var propertyHandler = ScriptAttributeUtility.GetHandler(m_SerializedProperty);
+                    ResetDecoratorDrawers(propertyHandler);
+
                     var newField = CreateOrUpdateFieldFromProperty(property, m_ChildField);
                     // there was an issue where we weren't able to swap the bindings on the original field
                     if (newField != m_ChildField)
@@ -186,6 +192,7 @@ namespace UnityEditor.UIElements
             Clear();
             m_ChildField?.Unbind();
             m_ChildField = null;
+            m_DecoratorDrawersContainer = null;
 
             if (property == null)
                 return;
@@ -219,6 +226,8 @@ namespace UnityEditor.UIElements
                 }
             }
 
+            ResetDecoratorDrawers(handler);
+
             if (customPropertyGUI != null)
             {
                 PropagateNestingLevel(customPropertyGUI);
@@ -227,6 +236,52 @@ namespace UnityEditor.UIElements
 
             if (m_SerializedProperty.propertyType == SerializedPropertyType.ManagedReference)
                 BindingExtensions.TrackPropertyValue(this, m_SerializedProperty, Reset);
+        }
+
+        private void ResetDecoratorDrawers(PropertyHandler handler)
+        {
+             var decorators = handler.decoratorDrawers;
+
+             if (decorators == null || decorators.Count == 0)
+             {
+                 if (m_DecoratorDrawersContainer != null)
+                 {
+                     Remove(m_DecoratorDrawersContainer);
+                     m_DecoratorDrawersContainer = null;
+                 }
+
+                 return;
+             }
+
+             if (m_DecoratorDrawersContainer == null)
+             {
+                 m_DecoratorDrawersContainer = new VisualElement();
+                 m_DecoratorDrawersContainer.AddToClassList(decoratorDrawersContainerClassName);
+                 Insert(0, m_DecoratorDrawersContainer);
+             }
+             else
+             {
+                 m_DecoratorDrawersContainer.Clear();
+             }
+
+             foreach (var decorator in decorators)
+             {
+                 var ve = decorator.CreatePropertyGUI();
+
+                 if (ve == null)
+                 {
+                     ve = new IMGUIContainer(() =>
+                     {
+                         var decoratorRect = new Rect();
+                         decoratorRect.height = decorator.GetHeight();
+                         decoratorRect.width = resolvedStyle.width;
+                         decorator.OnGUI(decoratorRect);
+                     });
+                     ve.style.height = decorator.GetHeight();
+                 }
+
+                 m_DecoratorDrawersContainer.Add(ve);
+             }
         }
 
         private void Reset(SerializedPropertyBindEvent evt)
@@ -554,8 +609,21 @@ namespace UnityEditor.UIElements
                     if (NativeClassExtensionUtilities.ExtendsANativeType(target))
                         ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
 
+                    // case 142371: built-in types that are defined on the native side will not reference a C# type, but rather a PPtr<Type>, so in the
+                    // case where we can't extract the C# type from the FieldInfo, we need to extract it from the string representation.
                     if (requiredType == null)
+                    {
+                        // Fallback type
                         requiredType = typeof(UnityEngine.Object);
+                        var targetTypeName = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                        foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
+                        {
+                            if (!objectTypes.Name.Equals(targetTypeName, StringComparison.OrdinalIgnoreCase))
+                                continue;
+                            requiredType = objectTypes;
+                            break;
+                        }
+                    }
 
                     field.objectType = requiredType;
                     return ConfigureField<ObjectField, UnityEngine.Object>(field, property, () => new ObjectField());

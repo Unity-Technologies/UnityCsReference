@@ -111,6 +111,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
+        private bool m_OverviewFoldoutExpanded = true;
+        public virtual bool overviewFoldoutExpanded
+        {
+            get => m_OverviewFoldoutExpanded;
+            set => m_OverviewFoldoutExpanded = value;
+        }
+
+        [SerializeField]
         private float m_PackageDetailVerticalScrollOffset;
         public float packageDetailVerticalScrollOffset
         {

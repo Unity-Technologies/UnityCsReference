@@ -236,6 +236,11 @@ namespace UnityEditor.Search
             return new SearchContext(GetProviders(providerIds), searchText, flags);
         }
 
+        internal static SearchContext CreateContext(RuntimeSearchContext runtimeContext, IEnumerable<string> providerIds, string searchText = "", SearchFlags flags = SearchFlags.Default)
+        {
+            return new SearchContext(GetProviders(providerIds), searchText, flags, runtimeContext);
+        }
+
         /// <summary>
         /// Create context from a list of providers.
         /// </summary>
@@ -248,6 +253,11 @@ namespace UnityEditor.Search
             return new SearchContext(providers, searchText, flags);
         }
 
+        internal static SearchContext CreateContext(RuntimeSearchContext runtimeContext, IEnumerable<SearchProvider> providers, string searchText = "", SearchFlags flags = SearchFlags.Default)
+        {
+            return new SearchContext(providers, searchText, flags, runtimeContext);
+        }
+
         /// <summary>
         /// Create a search context with a single search provider.
         /// </summary>
@@ -257,6 +267,11 @@ namespace UnityEditor.Search
         public static SearchContext CreateContext(SearchProvider provider, string searchText = "")
         {
             return CreateContext(new[] { provider }, searchText);
+        }
+
+        internal static SearchContext CreateContext(RuntimeSearchContext runtimeContext, SearchProvider provider, string searchText = "")
+        {
+            return CreateContext(runtimeContext, new[] { provider }, searchText);
         }
 
         /// <summary>
@@ -271,6 +286,11 @@ namespace UnityEditor.Search
             return CreateContext(new[] { providerId }, searchText, flags);
         }
 
+        internal static SearchContext CreateContext(RuntimeSearchContext runtimeContext, string providerId, string searchText = "", SearchFlags flags = SearchFlags.Default)
+        {
+            return CreateContext(runtimeContext, new[] { providerId }, searchText, flags);
+        }
+
         /// <summary>
         /// Create a search context with all active providers.
         /// </summary>
@@ -280,9 +300,19 @@ namespace UnityEditor.Search
             return CreateContext(GetActiveProviders(), searchText, flags);
         }
 
+        internal static SearchContext CreateContext(RuntimeSearchContext runtimeContext, string searchText, SearchFlags flags)
+        {
+            return CreateContext(runtimeContext, GetActiveProviders(), searchText, flags);
+        }
+
         public static SearchContext CreateContext(string searchText)
         {
             return CreateContext(searchText, SearchFlags.Default);
+        }
+
+        internal static SearchContext CreateContext(RuntimeSearchContext runtimeContext, string searchText)
+        {
+            return CreateContext(runtimeContext, searchText, SearchFlags.Default);
         }
 
         /// <summary>

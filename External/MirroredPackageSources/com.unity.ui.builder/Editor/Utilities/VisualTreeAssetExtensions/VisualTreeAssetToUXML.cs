@@ -19,7 +19,7 @@ namespace Unity.UI.Builder
                 stringBuilder.Append("    ");
         }
 
-        static void AppendElementTypeName(VisualElementAsset root, StringBuilder stringBuilder)
+        static void AppendElementTypeName(UxmlAsset root, StringBuilder stringBuilder)
         {
             if (root is TemplateAsset)
             {
@@ -75,16 +75,9 @@ namespace Unity.UI.Builder
             AppendElementAttributes(vta.GetRootUXMLElement(), stringBuilder, writingToFile, "ui", "uie");
         }
 
-        static void AppendElementAttributes(VisualElementAsset vea, StringBuilder stringBuilder, bool writingToFile, params string[] ignoredAttributes)
+        static void AppendElementAttributes(UxmlAsset uxmlAsset, StringBuilder stringBuilder, bool writingToFile, params string[] ignoredAttributes)
         {
-            var fieldInfo = VisualElementAssetExtensions.AttributesListFieldInfo;
-            if (fieldInfo == null)
-            {
-                Debug.LogError("UI Builder: VisualElementAsset.m_Properties field has not been found! Update the reflection code!");
-                return;
-            }
-
-            var attributes = fieldInfo.GetValue(vea) as List<string>;
+            var attributes = uxmlAsset.GetProperties();
             if (attributes != null && attributes.Count > 0)
             {
                 for (int i = 0; i < attributes.Count; i += 2)
@@ -253,7 +246,7 @@ namespace Unity.UI.Builder
         }
 
         static void GenerateUXMLRecursive(
-            VisualTreeAsset vta, string vtaPath, VisualElementAsset root,
+            VisualTreeAsset vta, string vtaPath, UxmlAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren,
             StringBuilder stringBuilder, int depth, bool writingToFile)
         {
@@ -262,74 +255,80 @@ namespace Unity.UI.Builder
             stringBuilder.Append(BuilderConstants.UxmlOpenTagSymbol);
             AppendElementTypeName(root, stringBuilder);
 
-            // Add all non-style attributes.
-            AppendElementNonStyleAttributes(root, stringBuilder, writingToFile);
-
-            // Add style classes to class attribute.
-            if (root.classes != null && root.classes.Length > 0)
+            // If we have no children, avoid adding the full end tag and just end the open tag.
+            bool hasChildTags = false;
+            if (root is VisualElementAsset vea)
             {
-                stringBuilder.Append(" class=\"");
-                for (int i = 0; i < root.classes.Length; i++)
+                // Add all non-style attributes.
+                AppendElementNonStyleAttributes(vea, stringBuilder, writingToFile);
+
+                // Add style classes to class attribute.
+                if (vea.classes != null && vea.classes.Length > 0)
                 {
-                    if (i > 0)
-                        stringBuilder.Append(" ");
-
-                    stringBuilder.Append(root.classes[i]);
-                }
-                stringBuilder.Append("\"");
-            }
-
-            // Add inline StyleSheet attribute.
-            if (root.ruleIndex != -1)
-            {
-                if (vta.inlineSheet == null)
-                    Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
-                else
-                {
-                    StyleRule r = vta.inlineSheet.rules[root.ruleIndex];
-
-                    if (r.properties != null && r.properties.Length > 0)
+                    stringBuilder.Append(" class=\"");
+                    for (int i = 0; i < vea.classes.Length; i++)
                     {
-                        var ruleBuilder = new StringBuilder();
-                        var exportOptions = new UssExportOptions();
-                        exportOptions.propertyIndent = string.Empty;
-                        StyleSheetToUss.ToUssString(vta.inlineSheet, exportOptions, r, ruleBuilder);
-                        var ruleStr = ruleBuilder.ToString();
+                        if (i > 0)
+                            stringBuilder.Append(" ");
 
-                        // Need to remove newlines here before we give it to
-                        // AppendElementAttribute() so we don't add "&#10;" everywhere.
-                        ruleStr = ruleStr.Replace("\n", " ");
-                        ruleStr = ruleStr.Replace("\r", "");
-                        ruleStr = ruleStr.Trim();
+                        stringBuilder.Append(vea.classes[i]);
+                    }
+                    stringBuilder.Append("\"");
+                }
 
-                        AppendElementAttribute("style", ruleStr, stringBuilder);
+                // Add inline StyleSheet attribute.
+                if (vea.ruleIndex != -1)
+                {
+                    if (vta.inlineSheet == null)
+                        Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
+                    else
+                    {
+                        StyleRule r = vta.inlineSheet.rules[vea.ruleIndex];
+
+                        if (r.properties != null && r.properties.Length > 0)
+                        {
+                            var ruleBuilder = new StringBuilder();
+                            var exportOptions = new UssExportOptions();
+                            exportOptions.propertyIndent = string.Empty;
+                            StyleSheetToUss.ToUssString(vta.inlineSheet, exportOptions, r, ruleBuilder);
+                            var ruleStr = ruleBuilder.ToString();
+
+                            // Need to remove newlines here before we give it to
+                            // AppendElementAttribute() so we don't add "&#10;" everywhere.
+                            ruleStr = ruleStr.Replace("\n", " ");
+                            ruleStr = ruleStr.Replace("\r", "");
+                            ruleStr = ruleStr.Trim();
+
+                            AppendElementAttribute("style", ruleStr, stringBuilder);
+                        }
+                    }
+                }
+
+                // Add special children.
+                var styleSheets = vea.GetStyleSheets();
+                var styleSheetPaths = vea.GetStyleSheetPaths();
+
+                if (styleSheetPaths != null && styleSheetPaths.Count > 0)
+                {
+                    Assert.IsNotNull(styleSheets);
+                    Assert.AreEqual(styleSheetPaths.Count, styleSheets.Count);
+
+                    bool newLineAdded = false;
+
+                    for (var i = 0; i < styleSheetPaths.Count; ++i)
+                    {
+                        var styleSheet = styleSheets[i];
+                        var styleSheetPath = styleSheetPaths[i];
+                        ProcessStyleSheetPath(
+                            vtaPath,
+                            styleSheet, styleSheetPath, stringBuilder, depth,
+                            ref newLineAdded, ref hasChildTags);
                     }
                 }
             }
-
-            // If we have no children, avoid adding the full end tag and just end the open tag.
-            bool hasChildTags = false;
-
-            // Add special children.
-            var styleSheets = root.GetStyleSheets();
-            var styleSheetPaths = root.GetStyleSheetPaths();
-
-            if (styleSheetPaths != null && styleSheetPaths.Count > 0)
+            else
             {
-                Assert.IsNotNull(styleSheets);
-                Assert.AreEqual(styleSheetPaths.Count, styleSheets.Count);
-
-                bool newLineAdded = false;
-
-                for (var i = 0; i < styleSheetPaths.Count; ++i)
-                {
-                    var styleSheet = styleSheets[i];
-                    var styleSheetPath = styleSheetPaths[i];
-                    ProcessStyleSheetPath(
-                        vtaPath,
-                        styleSheet, styleSheetPath, stringBuilder, depth,
-                        ref newLineAdded, ref hasChildTags);
-                }
+                AppendElementAttributes(root, stringBuilder, writingToFile);
             }
 
             var templateAsset = root as TemplateAsset;
@@ -398,9 +397,9 @@ namespace Unity.UI.Builder
                     stringBuilder.Append(BuilderConstants.newlineCharFromEditorSettings);
                 }
 
-                foreach (var childVea in entry.uxmlObjectAssets)
+                foreach (var childAsset in entry.uxmlObjectAssets)
                     GenerateUXMLRecursive(
-                        vta, vtaPath, childVea, idToChildren, stringBuilder,
+                        vta, vtaPath, childAsset, idToChildren, stringBuilder,
                         depth + 1, writingToFile);
 
                 hasChildTags = true;

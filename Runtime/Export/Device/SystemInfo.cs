@@ -186,6 +186,8 @@ namespace UnityEngine.Device
 
         public static int constantBufferOffsetAlignment => ShimManager.systemInfoShim.constantBufferOffsetAlignment;
 
+        public static int maxConstantBufferSize => ShimManager.systemInfoShim.maxConstantBufferSize;
+
         public static long maxGraphicsBufferSize => ShimManager.systemInfoShim.maxGraphicsBufferSize;
 
         public static bool hasMipMaxLevel => ShimManager.systemInfoShim.hasMipMaxLevel;

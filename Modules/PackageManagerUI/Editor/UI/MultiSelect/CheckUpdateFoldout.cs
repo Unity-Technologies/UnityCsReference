@@ -21,7 +21,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool AddPackageVersion(IPackageVersion version)
         {
             var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
-            if (localInfo?.updateInfoFetched == false)
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            if (localInfo != null && updateInfo == null)
             {
                 m_AssetStoreCallQueue.InsertToCheckUpdateQueue(version.packageUniqueId);
                 return base.AddPackageVersion(version);

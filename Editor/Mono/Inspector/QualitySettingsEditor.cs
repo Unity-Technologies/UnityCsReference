@@ -28,6 +28,7 @@ namespace UnityEditor
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
             public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require either the Deferred Shading rendering path or Cameras that render depth textures.");
             public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.");
+            public static readonly GUIContent kUseLegacyDistribution = EditorGUIUtility.TrTextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.");
             public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
             public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
@@ -541,6 +542,7 @@ namespace UnityEditor
             var softParticlesProperty = currentSettings.FindPropertyRelative("softParticles");
             var realtimeReflectionProbes = currentSettings.FindPropertyRelative("realtimeReflectionProbes");
             var billboardsFaceCameraPosition = currentSettings.FindPropertyRelative("billboardsFaceCameraPosition");
+            var useLegacyDetailsDistribution = currentSettings.FindPropertyRelative("useLegacyDetailDistribution");
             var vSyncCountProperty = currentSettings.FindPropertyRelative("vSyncCount");
             var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
             var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
@@ -646,6 +648,7 @@ namespace UnityEditor
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Terrain"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
+            EditorGUILayout.PropertyField(useLegacyDetailsDistribution, Content.kUseLegacyDistribution);
 
             if (!usingSRP || showShadowMaskUsage)
             {

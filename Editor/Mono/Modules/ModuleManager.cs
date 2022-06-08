@@ -499,6 +499,7 @@ namespace UnityEditor.Modules
                 || curPlatform == BuildTargetGroup.iOS
                 || curPlatform == BuildTargetGroup.Android
                 || curPlatform == BuildTargetGroup.EmbeddedLinux
+                || curPlatform == BuildTargetGroup.QNX
                 || platformDisplayNames != null
                 ;
         }

@@ -59,6 +59,10 @@ namespace UnityEditor.ShortcutManagement
         void ClearShortcutOverride(Identifier identifier);
         void ResetToDefault(); // TODO: Remove this when current UI is replaced. Set activeProfile to null instead.
         void ResetToDefault(ShortcutEntry entry);
+
+        string GetProfileId(string path);
+        void ImportProfile(string path);
+        void ExportProfile(string path);
     }
 
     class ShortcutProfileManager : IShortcutProfileManager
@@ -558,5 +562,24 @@ namespace UnityEditor.ShortcutManagement
                 Debug.LogWarning(string.Format("The identifier '{0}' doesn't match the filename of '{1}.shortcut'!", id, instance.id));
             }
         }
+
+        public string GetProfileId(string path)
+        {
+            var profile = new ShortcutProfile();
+            var profileJson = File.ReadAllText(path);
+            JsonUtility.FromJsonOverwrite(profileJson, profile);
+            return profile.id;
+        }
+
+        public void ImportProfile(string path)
+        {
+            var profile = new ShortcutProfile();
+            var profileJson = File.ReadAllText(path);
+            JsonUtility.FromJsonOverwrite(profileJson, profile);
+            m_ProfileStore.SaveShortcutProfileJson(profile.id, profileJson);
+            m_LoadedProfiles[profile.id] = profile;
+        }
+
+        public void ExportProfile(string path) => File.WriteAllText(path, JsonUtility.ToJson(activeProfile, true));
     }
 }

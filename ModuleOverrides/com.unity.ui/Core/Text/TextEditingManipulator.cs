@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
         public TextEditingManipulator(TextElement textElement)
         {
             m_TextElement = textElement;
-            editingUtilities = new TextEditingUtilities(textElement.selectingManipulator.m_SelectingUtilities, textElement.uitkTextHandle.textHandle);
+            editingUtilities = new TextEditingUtilities(textElement.selectingManipulator.m_SelectingUtilities, textElement.uitkTextHandle, textElement.text);
             InitTextEditorEventHandler();
         }
 

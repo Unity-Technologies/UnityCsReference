@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Experimental;
@@ -337,6 +338,14 @@ namespace UnityEditor.ShortcutManagement
             var activeProfileDropdownArrow = activeProfileDropdownButton.Q("arrow");
             activeProfileDropdownArrow.AddToClassList(BasePopupField<string, string>.arrowUssClassName);
             activeProfileDropdownArrow.pickingMode = PickingMode.Ignore;
+
+            var import = header.Q<Button>("import");
+            import.text = L10n.Tr("Import");
+            import.RegisterCallback<ClickEvent>(OnImportProfileClicked);
+
+            var export = header.Q<Button>("export");
+            export.text = L10n.Tr("Export");
+            export.RegisterCallback<ClickEvent>(OnExportProfileClicked);
         }
 
         void OnCreateProfileClicked()
@@ -403,6 +412,32 @@ namespace UnityEditor.ShortcutManagement
                 genericMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
 
             genericMenu.DropDown(targetElement.worldBound);
+        }
+
+        void OnImportProfileClicked(ClickEvent evt)
+        {
+            var importPath = EditorUtility.OpenFilePanel(L10n.Tr("Import Profile"), "", "json");
+
+            if (!m_ViewController.CanImportProfile(importPath)) return;
+
+            m_ViewController.ImportProfile(importPath);
+        }
+
+        void OnExportProfileClicked(ClickEvent evt)
+        {
+            if (!m_ViewController.CanExportProfile())
+            {
+                EditorUtility.DisplayDialog(L10n.Tr("No Profile"),
+                    L10n.Tr($"The \"{m_ViewController.activeProfile}\" profile contains no shortcut overrides so there is nothing to export.\n\nCreate a new profile with shortcut key overrides and try again."),
+                    L10n.Tr("Ok"));
+                return;
+            }
+
+            var exportPath = EditorUtility.SaveFilePanel(L10n.Tr("Export Profile"), "", m_ViewController.activeProfile, "json");
+
+            if (string.IsNullOrWhiteSpace(exportPath)) return;
+
+            m_ViewController.ExportProfile(exportPath);
         }
 
         void BuildLegendRow(VisualElement root)
@@ -473,7 +508,6 @@ namespace UnityEditor.ShortcutManagement
             var shortcutsTableContainer = m_Root.Q("shortcutsTableContainer");
             m_ShortcutsTableSearchFilterContainer = shortcutsTableContainer.Q("shortcutsTableSearchFilterContainer");
             m_SearchFiltersContainer = shortcutsTableContainer.Q("searchFiltersContainer");
-
 
             m_KeyboardElement = new Keyboard(m_BindingStateProvider, m_ViewController.GetSelectedKey(), m_ViewController.GetSelectedEventModifiers());
             m_KeyboardElement.DragPerformed += OnKeyboardKeyDragPerformed;

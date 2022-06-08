@@ -177,6 +177,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionHistoryItemChangeLogLink.text = hasChangeLogInInfo ? L10n.Tr("See full changelog") : L10n.Tr("See changelog");
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogLink, true);
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, true);
+
+                var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.package.Is(PackageType.AssetStore) == true && string.IsNullOrEmpty((m_Version as UpmPackageVersion)?.changelogUrl);
+                versionHistoryItemChangeLogLink.SetEnabled(!disableIfNotInstall);
+                versionHistoryItemChangeLogLink.tooltip = disableIfNotInstall ? PackageDetailsLinks.k_ViewDisabledChangelogToolTip : string.Empty;
             }
         }
 
@@ -227,11 +231,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (left == null || right == null)
                 return false;
 
-            var leftDependencies = new List<DependencyInfo>(left.dependencies);
-            var rightDependencies = new List<DependencyInfo>(right.dependencies);
-            var leftDifferences = leftDependencies.Except(rightDependencies, new DependencyInfoComparer());
-            var rightDifferences = rightDependencies.Except(leftDependencies, new DependencyInfoComparer());
-            return leftDifferences.Any() || rightDifferences.Any();
+            var leftDependencies = left.dependencies ?? new DependencyInfo[0];
+            var rightDependencies = right.dependencies ?? new DependencyInfo[0];
+            if (leftDependencies.Length != rightDependencies.Length)
+                return true;
+
+            var comparer = new DependencyInfoComparer();
+            return leftDependencies.Except(rightDependencies, comparer).Any() || rightDependencies.Except(leftDependencies, comparer).Any();
         }
 
         private void RefreshMetaDataChanges()

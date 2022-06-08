@@ -32,8 +32,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
-            return localInfo?.canUpdateOrDowngrade == false
+            return localInfo != null && updateInfo?.canUpdateOrDowngrade != true
                 && (operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible);
         }
 
@@ -54,7 +55,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
             var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            return localInfo?.canUpdateOrDowngrade == false && operation?.isInProgress == true;
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            return localInfo != null && updateInfo?.canUpdateOrDowngrade != true && operation?.isInProgress == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)

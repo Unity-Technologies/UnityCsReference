@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
     /// To read the style data computed for the element use <see cref="IComputedStyle"/> interface.
     /// Writing to a property will mask the value coming from USS with the provided value however other properties will still match the values from USS.
     /// </remarks>
-    public interface IStyle
+    public partial interface IStyle
     {
         /// <summary>
         /// Alignment of the whole area of children on the cross axis if they span over multiple lines in this container.
@@ -41,6 +41,22 @@ namespace UnityEngine.UIElements
         /// Background image to paint in the element's box.
         /// </summary>
         StyleBackground backgroundImage { get; set; }
+        /// <summary>
+        /// Background image x position value.
+        /// </summary>
+        StyleBackgroundPosition backgroundPositionX { get; set; }
+        /// <summary>
+        /// Background image y position value.
+        /// </summary>
+        StyleBackgroundPosition backgroundPositionY { get; set; }
+        /// <summary>
+        /// Background image repeat value.
+        /// </summary>
+        StyleBackgroundRepeat backgroundRepeat { get; set; }
+        /// <summary>
+        /// Background image size value.
+        /// </summary>
+        StyleBackgroundSize backgroundSize { get; set; }
         /// <summary>
         /// Color of the element's bottom border.
         /// </summary>
@@ -273,10 +289,6 @@ namespace UnityEngine.UIElements
         /// Tinting color for the element's backgroundImage.
         /// </summary>
         StyleColor unityBackgroundImageTintColor { get; set; }
-        /// <summary>
-        /// Background image scaling in the element's box.
-        /// </summary>
-        StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
         /// <summary>
         /// Font to draw the element's text, defined as a Font object.
         /// </summary>

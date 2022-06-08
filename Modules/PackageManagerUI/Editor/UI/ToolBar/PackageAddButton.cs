@@ -81,6 +81,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return version != null
                 && version.package.versions.installed == null
+                && !version.HasTag(PackageTag.Placeholder)
                 && version.HasTag(PackageTag.Installable);
         }
 

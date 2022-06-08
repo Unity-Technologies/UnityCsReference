@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
 
         [SerializeField]
-        private List<UIError> m_Errors;
+        private List<UIError> m_Errors = new();
         public override IEnumerable<UIError> errors => m_Errors;
 
         [SerializeField]
@@ -42,8 +42,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsUnityPackage;
         public override bool isUnityPackage => m_IsUnityPackage;
 
-        public bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
-        public bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
+        public override bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
+        public override bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
         public override RegistryInfo registry => isRegistryPackage ? m_PackageInfo.registry : null;
 
         [SerializeField]
@@ -64,10 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsInstalled;
-        public override bool isInstalled
-        {
-            get { return m_IsInstalled; }
-        }
+        public override bool isInstalled => m_IsInstalled;
 
         public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
 
@@ -94,7 +91,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionString = m_Version?.ToString();
             m_DisplayName = displayName;
             m_IsInstalled = isInstalled;
-            m_PackageUniqueId = packageInfo.name;
 
             UpdatePackageInfo(packageInfo, isUnityPackage);
         }
@@ -105,7 +101,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionString = m_Version?.ToString();
             m_DisplayName = packageInfo.displayName;
             m_IsInstalled = isInstalled;
-            m_PackageUniqueId = packageInfo.name;
 
             UpdatePackageInfo(packageInfo, isUnityPackage);
         }
@@ -114,7 +109,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_IsFullyFetched = m_Version?.ToString() == newPackageInfo.version;
             m_PackageInfo = newPackageInfo;
-            m_PackageUniqueId = m_PackageInfo.name;
             m_IsUnityPackage = isUnityPackage;
 
             RefreshTags();
@@ -136,22 +130,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (installedFromPath)
                     m_PackageId = m_PackageId.Replace("\\", "/");
 
-                ProcessSignatureErrors(newPackageInfo);
+                ProcessErrors(newPackageInfo);
             }
             else
             {
                 m_PackageId = FormatPackageId(name, version.ToString());
             }
-        }
-
-        internal void UpdateProductInfo(AssetStoreProductInfo productInfo)
-        {
-            m_PackageUniqueId = productInfo.id;
-            m_PublishNotes = productInfo.publishNotes;
-
-            // override version info with product info
-            m_DisplayName = productInfo.displayName;
-            m_Description = productInfo.description;
         }
 
         public void SetInstalled(bool value)
@@ -247,24 +231,29 @@ namespace UnityEditor.PackageManager.UI.Internal
             return $"{name.ToLower()}@{version}";
         }
 
-        private void ProcessSignatureErrors(PackageInfo info)
+        private void ProcessErrors(PackageInfo info)
         {
-            // Setup the initial value for errors
-            m_Errors = hasEntitlementsError ? new List<UIError> {UIError.k_EntitlementError} : info.errors.Select(error => new UIError(error)).ToList();
+            if (hasEntitlementsError)
+                m_Errors.Add(UIError.k_EntitlementError);
+
+            foreach (var error in info.errors)
+            {
+                if (error.message.Contains(EntitlementsErrorChecker.k_NotAcquiredUpmErrorMessage))
+                    m_Errors.Add(new UIError(UIErrorCode.UpmError_NotAcquired, error.message));
+                else if (error.message.Contains(EntitlementsErrorChecker.k_NotSignedInUpmErrorMessage))
+                    m_Errors.Add(new UIError(UIErrorCode.UpmError_NotSignedIn, error.message));
+                else
+                    m_Errors.Add(new UIError(error));
+            }
 
             if (info.signature.status == SignatureStatus.Invalid)
-            {
                 m_Errors.Add(UIError.k_InvalidSignatureWarning);
-            }
             else if (info.signature.status == SignatureStatus.Unsigned && name.StartsWith(k_UnityPrefix) &&
                      (info.source == PackageSource.LocalTarball ||
-                      (info.source == PackageSource.Registry && !info.registry.isDefault)))
-            {
+                      info.source == PackageSource.Registry && !info.registry.isDefault))
                 // Flag Unsigned packages on a non-default registry and local tarballs
-                // when the name starts with "com.unity."
-                // to prevent dependency confusion
+                // when the name starts with "com.unity." to prevent dependency confusion
                 m_Errors.Add(UIError.k_UnsignedUnityPackageWarning);
-            }
         }
     }
 }

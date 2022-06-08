@@ -88,6 +88,15 @@ namespace UnityEditor
         [NativeThrows]
         extern internal static void SetSelectionWithActiveInstanceID(int[] newSelection, int activeObject);
 
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
+
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon), NativeThrows]
+        internal static extern void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
+
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void UpdateSelectionMetaData(Object context, DataMode dataModeHint);
+
         // Returns the active context object
         extern public static Object activeContext
         {
@@ -95,10 +104,21 @@ namespace UnityEditor
             get;
         }
 
-        // Returns the instanceID of the actual object selection. Includes prefabs, non-modifyable objects.
+        internal extern static DataMode dataModeHint
+        {
+            [NativeMethod("GetDataModeHint", true)]
+            get;
+        }
+
+        // Returns the instanceID of the actual object selection. Includes prefabs, non-modifiable objects.
         [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
         [NativeName("ActiveID")]
         extern public static int activeInstanceID { get; set; }
+
+        // Returns the active context object's instance ID
+        [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
+        [NativeName("ActiveContextID")]
+        extern internal static int activeContextInstanceID { get; }
 
         // The actual unfiltered selection from the Scene.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]

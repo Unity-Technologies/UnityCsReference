@@ -1015,7 +1015,6 @@ namespace UnityEditor
             public static GUIContent gridXToolbarContent = EditorGUIUtility.TrIconContent("GridAxisX", "Toggle the visibility of the grid");
             public static GUIContent gridYToolbarContent = EditorGUIUtility.TrIconContent("GridAxisY", "Toggle the visibility of the grid");
             public static GUIContent gridZToolbarContent = EditorGUIUtility.TrIconContent("GridAxisZ", "Toggle the visibility of the grid");
-            public static GUIContent renderDocContent;
             public static GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
             public static GUIContent sceneVisToolbarButtonContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden objects, click to toggle scene visibility");
             public static GUIStyle gizmoButtonStyle;
@@ -1024,7 +1023,6 @@ namespace UnityEditor
             static Styles()
             {
                 gizmoButtonStyle = "GV Gizmo DropDown";
-                renderDocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
             }
         }
 
@@ -1596,19 +1594,11 @@ namespace UnityEditor
             Repaint();
         }
 
-        void LoadRenderDoc()
-        {
-            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            {
-                ShaderUtil.RequestLoadRenderDoc();
-            }
-        }
-
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent(UnityEditor.RenderDocUtil.loadRenderDocLabel), false, LoadRenderDoc);
+                menu.AddItem(RenderDocUtil.LoadRenderDocMenuItem, false, RenderDoc.LoadRenderDoc);
             }
         }
 

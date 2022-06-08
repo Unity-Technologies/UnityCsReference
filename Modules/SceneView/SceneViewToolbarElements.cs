@@ -356,7 +356,7 @@ namespace UnityEditor.Toolbars
         public RenderDocElement()
         {
             name = "FrameCapture";
-            tooltip = L10n.Tr(RenderDocUtil.openInRenderDocLabel);
+            tooltip = L10n.Tr(RenderDocUtil.openInRenderDocTooltip);
             icon = EditorGUIUtility.FindTexture("FrameCapture");
             UpdateState();
 

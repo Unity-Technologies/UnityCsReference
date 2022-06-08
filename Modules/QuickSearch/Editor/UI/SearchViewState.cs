@@ -90,7 +90,7 @@ namespace UnityEditor.Search
             }
         }
 
-        internal string initialQuery => searchText;
+        internal string initialQuery { get; set; }
 
         internal SearchViewState() : this(null, null) {}
         public SearchViewState(SearchContext context) : this(context, null) {}
@@ -111,7 +111,7 @@ namespace UnityEditor.Search
             title = "item";
             itemSize = (float)DisplayMode.Grid;
             position = Rect.zero;
-            searchText = context?.searchText ?? string.Empty;
+            initialQuery = searchText = context?.searchText ?? string.Empty;
             tableConfig = null;
             providerIds = emptyProviders;
         }
@@ -262,6 +262,7 @@ namespace UnityEditor.Search
         public void OnAfterDeserialize()
         {
             m_WasDeserialized = true;
+            initialQuery = searchText;
             if (tableConfig != null && tableConfig.columns?.Length == 0)
                 tableConfig = null;
         }

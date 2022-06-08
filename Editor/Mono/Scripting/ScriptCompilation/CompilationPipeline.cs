@@ -484,7 +484,7 @@ namespace UnityEditor.Compilation
         public static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources)
         {
             var precompiledAssemblyProvider = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider;
-            return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider);
+            return GetPrecompiledAssemblyPaths(precompiledAssemblySources, precompiledAssemblyProvider).Select(FileUtil.GetPhysicalPath).ToArray();
         }
 
         internal static string[] GetPrecompiledAssemblyPaths(PrecompiledAssemblySources precompiledAssemblySources, PrecompiledAssemblyProviderBase precompiledAssemblyProvider)
@@ -561,7 +561,7 @@ namespace UnityEditor.Compilation
                 var outputPath = scriptAssembly.FullPath;
                 var sourceFiles = scriptAssembly.Files;
                 var defines = scriptAssembly.Defines;
-                var compiledAssemblyReferences = scriptAssembly.References;
+                var compiledAssemblyReferences = scriptAssembly.References.Select(FileUtil.GetPhysicalPath).ToArray();
 
                 var flags = AssemblyFlags.None;
 

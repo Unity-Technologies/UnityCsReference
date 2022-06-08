@@ -303,7 +303,7 @@ namespace UnityEditor
 
             if (isSearching)
             {
-                m_SearchSessionHandler.BeginSession(() => new SearchService.HierarchySearchContext {rootProperty = property});
+                m_SearchSessionHandler.BeginSession(() => new SearchService.SceneSearchContext {rootProperty = property});
             }
 
             if (isSearching || subTreeWanted)
@@ -459,8 +459,8 @@ namespace UnityEditor
             int currentSceneHandle = -1;
             int row = 0;
             var searchFilter = SearchableEditorWindow.CreateFilter(searchString, (SearchableEditorWindow.SearchMode)m_SearchMode);
-            var searchContext = (SearchService.HierarchySearchContext)m_SearchSessionHandler.context;
-            searchContext.filter = searchFilter;
+            var searchContext = (SearchService.SceneSearchContext)m_SearchSessionHandler.context;
+            searchContext.searchFilter = searchFilter;
             searchContext.rootProperty = property;
 
             m_SearchSessionHandler.BeginSearch(searchString);

@@ -20,11 +20,15 @@ namespace UnityEngine
         // Keep in sync with ScreenManager::Resolution
         private int m_Width;
         private int m_Height;
-        private int m_RefreshRate;
+        private RefreshRate m_RefreshRate;
 
         public int width        { get { return m_Width; } set { m_Width = value; } }
         public int height       { get { return m_Height; } set { m_Height = value; } }
-        public int refreshRate  { get { return m_RefreshRate; } set { m_RefreshRate = value; } }
+        public RefreshRate refreshRateRatio { get { return m_RefreshRate; } set { m_RefreshRate = value; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Resolution.refreshRate is obsolete. Use refreshRateRatio instead.", false)]
+        public int refreshRate { get { return (int)Math.Round(m_RefreshRate.value); } set { m_RefreshRate.numerator = (uint)value; m_RefreshRate.denominator = 1; } }
 
         public override string ToString()
         {

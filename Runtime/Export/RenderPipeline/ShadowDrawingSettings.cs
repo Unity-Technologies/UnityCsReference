@@ -17,6 +17,7 @@ namespace UnityEngine.Rendering
         int m_UseRenderingLayerMaskTest;
         ShadowSplitData m_SplitData;
         ShadowObjectsFilter m_ObjectsFilter;
+        BatchCullingProjectionType m_ProjectionType;
 
         public CullingResults cullingResults
         {
@@ -52,7 +53,19 @@ namespace UnityEngine.Rendering
             set { m_ObjectsFilter = value; }
         }
 
+        public BatchCullingProjectionType projectionType
+        {
+            get { return m_ProjectionType; }
+            set { m_ProjectionType = value; }
+        }
+
+        [Obsolete("ShadowDrawingSettings(CullingResults, int) is deprecated. Use ShadowDrawingSettings(CullingResults, int, BatchCullingProjectionType) instead.")]
         public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex)
+            : this(cullingResults, lightIndex, BatchCullingProjectionType.Unknown)
+        {
+        }
+
+        public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex, BatchCullingProjectionType projectionType)
         {
             m_CullingResults = cullingResults;
             m_LightIndex = lightIndex;
@@ -60,6 +73,7 @@ namespace UnityEngine.Rendering
             m_SplitData = default(ShadowSplitData);
             m_SplitData.shadowCascadeBlendCullingFactor = 1f;
             m_ObjectsFilter = ShadowObjectsFilter.AllObjects;
+            m_ProjectionType = projectionType;
         }
 
         public bool Equals(ShadowDrawingSettings other)

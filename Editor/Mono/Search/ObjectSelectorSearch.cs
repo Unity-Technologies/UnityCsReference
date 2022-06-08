@@ -31,6 +31,7 @@ namespace UnityEditor.SearchService
         public IEnumerable<string> requiredTypeNames { get; set; }
         public VisibleObjects visibleObjects { get; set; }
         public IEnumerable<int> allowedInstanceIds { get; set; }
+        internal SearchFilter searchFilter { get; set; }
     }
 
     public interface IObjectSelectorEngine : ISelectorEngine {}

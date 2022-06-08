@@ -245,15 +245,11 @@ namespace Unity.UI.Builder
                     () => new VisualElement(),
                     (inVta, inParent, ve) =>
                     {
-                        var vea = new VisualElementAsset(typeof(VisualElement).ToString());
-                        VisualTreeAssetUtilities.InitializeElement(vea);
-
+                        var vea = inVta.AddElement(inParent, ve);
                         BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow",
                             k_DefaultVisualElementFlexGrow);
                         BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "background-color",
                             k_DefaultVisualElementBackgroundColor);
-
-                        inVta.AddElement(inParent, vea);
                         return vea;
                     }),
                 CreateItem("Scroll View", "ScrollView", typeof(ScrollView), () => new ScrollView()),
@@ -335,7 +331,7 @@ namespace Unity.UI.Builder
                 CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
                 CreateItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
                 CreateItem("Layer Mask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask")),
-                CreateItem("Enum Flags", nameof(EnumField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))
+                CreateItem("Enum Flags", nameof(EnumFlagsField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))
             }, isEditorOnly: true, isHeader: true);
 
             var toolbar = CreateItem("Toolbar", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>

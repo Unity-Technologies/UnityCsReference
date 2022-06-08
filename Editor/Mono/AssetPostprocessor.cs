@@ -63,23 +63,39 @@ namespace UnityEditor
 
         // Logs an import warning to the console.
         [ExcludeFromDocs]
+        [Obsolete("Use context.LogImportWarning(string) instead.")]
         public void LogWarning(string warning)
         {
             Object context = null;
             LogWarning(warning, context);
         }
 
-        public void LogWarning(string warning, [DefaultValue("null")]  Object context) { Debug.LogWarning(warning, context); }
+        [Obsolete("Use context.LogImportWarning(string, Object) instead.")]
+        public void LogWarning(string warning, [DefaultValue("null")] Object context)
+        {
+            if (m_Context != null)
+                m_Context.LogImportWarning(warning, context);
+            else
+                Debug.LogWarning(warning, context);
+        }
 
         // Logs an import error message to the console.
         [ExcludeFromDocs]
+        [Obsolete("Use context.LogImportError(string) instead.")]
         public void LogError(string warning)
         {
             Object context = null;
             LogError(warning, context);
         }
 
-        public void LogError(string warning, [DefaultValue("null")]  Object context) { Debug.LogError(warning, context); }
+        [Obsolete("Use context.LogImportError(string, Object) instead.")]
+        public void LogError(string warning, [DefaultValue("null")] Object context)
+        {
+            if (m_Context != null)
+                m_Context.LogImportError(warning, context);
+            else
+                Debug.LogError(warning, context);
+        }
 
         // Returns the version of the asset postprocessor.
         public virtual uint GetVersion() { return 0; }

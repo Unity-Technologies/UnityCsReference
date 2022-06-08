@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 EditorApplication.delayCall += () =>
                 {
-                    OnError(new UIError(UIErrorCode.UpmError, L10n.Tr("UPM server is not running")));
+                    OnError(new UIError(UIErrorCode.UpmError_ServerNotRunning, L10n.Tr("UPM server is not running")));
                     Cancel();
                 };
                 return;
@@ -132,7 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (ArgumentException e)
             {
-                OnError(new UIError(UIErrorCode.UpmError, e.Message));
+                OnError(new UIError(UIErrorCode.UpmError_ServerNotRunning, e.Message));
                 return;
             }
             m_IsCompleted = false;

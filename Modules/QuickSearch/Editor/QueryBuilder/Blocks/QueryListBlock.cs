@@ -292,7 +292,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Components", "component", "t", ":")]
+    [QueryListBlock("Components", "component", "t", ":", 1)]
     class QueryComponentBlock : QueryTypeBlock
     {
         public QueryComponentBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)

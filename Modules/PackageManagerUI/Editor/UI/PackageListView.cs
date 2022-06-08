@@ -109,7 +109,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_AssetStoreCallQueue.AddToFetchDetailsQueue(visualState.packageUniqueId);
 
                 var localInfo = m_AssetStoreCache.GetLocalInfo(visualState.packageUniqueId);
-                if (localInfo?.updateInfoFetched == false)
+                var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+                if (updateInfo == null)
                     m_AssetStoreCallQueue.InsertToCheckUpdateQueue(visualState.packageUniqueId);
             }
         }

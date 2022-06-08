@@ -13,8 +13,8 @@ namespace UnityEngine.AI
     public static class NavMeshBuilder
     {
         public static void CollectSources(
-            Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
-            List<NavMeshBuildMarkup> markups, List<NavMeshBuildSource> results)
+            Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, List<NavMeshBuildSource> results)
         {
             if (markups == null)
                 throw new ArgumentNullException(nameof(markups));
@@ -24,14 +24,22 @@ namespace UnityEngine.AI
             // Ensure strictly positive extents
             includedWorldBounds.extents = Vector3.Max(includedWorldBounds.extents, 0.001f * Vector3.one);
             var resultsArray = CollectSourcesInternal(
-                includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, markups.ToArray());
+                includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, generateLinksByDefault,
+                markups.ToArray(), includeOnlyMarkedObjects);
             results.Clear();
             results.AddRange(resultsArray);
         }
 
         public static void CollectSources(
-            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
+            Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
             List<NavMeshBuildMarkup> markups, List<NavMeshBuildSource> results)
+        {
+            CollectSources(includedWorldBounds, includedLayerMask, geometry, defaultArea, false, markups, false, results);
+        }
+
+        public static void CollectSources(
+            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, List<NavMeshBuildSource> results)
         {
             if (markups == null)
                 throw new ArgumentNullException(nameof(markups));
@@ -42,14 +50,23 @@ namespace UnityEngine.AI
 
             var empty = new Bounds();
             var resultsArray = CollectSourcesInternal(
-                includedLayerMask, empty, root, false, geometry, defaultArea, markups.ToArray());
+                includedLayerMask, empty, root, false, geometry, defaultArea, generateLinksByDefault,
+                markups.ToArray(), includeOnlyMarkedObjects);
             results.Clear();
             results.AddRange(resultsArray);
         }
 
+        public static void CollectSources(
+            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
+            List<NavMeshBuildMarkup> markups, List<NavMeshBuildSource> results)
+        {
+            CollectSources(root, includedLayerMask, geometry, defaultArea, false, markups, false, results);
+        }
+
         static extern NavMeshBuildSource[] CollectSourcesInternal(
             int includedLayerMask, Bounds includedWorldBounds, Transform root, bool useBounds,
-            NavMeshCollectGeometry geometry, int defaultArea, NavMeshBuildMarkup[] markups);
+            NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            NavMeshBuildMarkup[] markups, bool includeOnlyMarkedObjects);
 
         // Immediate NavMeshData building
         public static NavMeshData BuildNavMeshData(

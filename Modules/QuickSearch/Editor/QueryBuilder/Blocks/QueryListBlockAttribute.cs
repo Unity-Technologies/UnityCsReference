@@ -15,15 +15,24 @@ namespace UnityEditor.Search
         static List<QueryListBlockAttribute> s_Attributes;
 
         public QueryListBlockAttribute(string category, string name, string id, string op = "=")
-            : this(category, name, new []{id}, op)
+            : this(category, name, new []{id}, op, 0)
         {}
 
         public QueryListBlockAttribute(string category, string name, string[] ids, string op = "=")
+            : this(category, name, ids, op, 0)
+        {}
+
+        internal QueryListBlockAttribute(string category, string name, string id, string op, int priority = 0)
+            : this(category, name, new[] { id }, op, priority)
+        {}
+
+        internal QueryListBlockAttribute(string category, string name, string[] ids, string op, int priority = 0)
         {
-            this.ids = ids ?? new string[]{};
+            this.ids = ids ?? new string[] { };
             this.category = category;
             this.name = name;
             this.op = op;
+            this.priority = priority;
         }
 
         public string[] ids { get; set; }
@@ -31,6 +40,7 @@ namespace UnityEditor.Search
         public string category { get; set; }
         public string op { get; set; }
         public Type type { get; set; }
+        internal int priority { get; private set; }
 
         public string id => ids.Length > 0 ? ids[0] : string.Empty;
 
@@ -75,14 +85,18 @@ namespace UnityEditor.Search
         {
             if (s_Attributes == null)
                 RefreshQueryListBlock();
-            return s_Attributes.FirstOrDefault(a => a.type == t);
+            return s_Attributes?.FirstOrDefault(a => a.type == t);
         }
 
         internal static QueryListBlockAttribute FindBlock(string id)
         {
             if (s_Attributes == null)
                 RefreshQueryListBlock();
-            return s_Attributes.FirstOrDefault(a => a.ids.Any(matchedId => matchedId.Equals(id, StringComparison.Ordinal)));
+            return s_Attributes?
+                .Where(a => a.ids.Any(matchedId => matchedId.Equals(id, StringComparison.Ordinal)))
+                .OrderBy(a => a.priority)
+                .ThenBy(a => a.name)
+                .FirstOrDefault();
         }
 
         internal static void RefreshQueryListBlock()

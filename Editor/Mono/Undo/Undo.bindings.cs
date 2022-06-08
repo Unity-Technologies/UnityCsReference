@@ -244,6 +244,9 @@ namespace UnityEditor
         [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
         public static extern void ClearAll();
 
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern bool ConvertSerializedData();
+
         [Obsolete("Use Undo.RegisterCompleteObjectUndo instead")]
         public static void RegisterUndo(Object objectToUndo, string name)
         {

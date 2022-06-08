@@ -306,7 +306,7 @@ namespace UnityEngine
         }
 
         private static CancellationTokenSource s_currentCancellationTokenSource = new CancellationTokenSource();
-        public static CancellationToken CancellationToken => s_currentCancellationTokenSource.Token;
+        public static CancellationToken exitCancellationToken => s_currentCancellationTokenSource.Token;
 
         [RequiredByNativeCode]
         static void Internal_ApplicationQuit()

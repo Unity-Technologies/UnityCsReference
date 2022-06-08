@@ -176,6 +176,23 @@ namespace UnityEngine.Rendering
         SelectionOutline = 4,
     }
 
+    // Match with BatchCullingProjectionType in C++ side
+    public enum BatchCullingProjectionType : int
+    {
+        Unknown = 0,
+        Perspective = 1,
+        Orthographic = 2,
+    }
+
+    // Match with BatchBufferTarget in C++ side
+    public enum BatchBufferTarget : int
+    {
+        Unknown = 0,
+        UnsupportedByUnderlyingGraphicsApi = -1, // BRG not supported on this platform or graphics API
+        RawBuffer = 1, // BRG supported using raw buffer instance data (SSBO)
+        ConstantBuffer = 2, // BRG supported using constant buffer instance data (UBO)
+    };
+
     [StructLayout(LayoutKind.Sequential)]
     public struct BatchPackedCullingViewID : IEquatable<BatchPackedCullingViewID>
     {
@@ -345,6 +362,7 @@ namespace UnityEngine.Rendering
             LODParameters inLodParameters,
             Matrix4x4 inLocalToWorldMatrix,
             BatchCullingViewType inViewType,
+            BatchCullingProjectionType inProjectionType,
             ulong inViewID,
             uint inCullingLayerMask,
             ulong inSceneCullingMask,
@@ -356,11 +374,15 @@ namespace UnityEngine.Rendering
             lodParameters = inLodParameters;
             localToWorldMatrix = inLocalToWorldMatrix;
             viewType = inViewType;
+            projectionType = inProjectionType;
             viewID = new BatchPackedCullingViewID { handle = inViewID };
             cullingLayerMask = inCullingLayerMask;
             sceneCullingMask = inSceneCullingMask;
             receiverPlaneOffset = inReceiverPlaneOffset;
             receiverPlaneCount = inReceiverPlaneCount;
+#pragma warning disable CS0618 // Type or member is obsolete
+            isOrthographic = 0;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         readonly public NativeArray<Plane> cullingPlanes;
@@ -368,9 +390,12 @@ namespace UnityEngine.Rendering
         readonly public LODParameters lodParameters;
         readonly public Matrix4x4 localToWorldMatrix;
         readonly public BatchCullingViewType viewType;
+        readonly public BatchCullingProjectionType projectionType;
         readonly public BatchPackedCullingViewID viewID;
         readonly public uint cullingLayerMask;
         readonly public ulong sceneCullingMask;
+        [System.Obsolete("BatchCullingContext.isOrthographic is deprecated. Use BatchCullingContext.projectionType instead.")]
+        readonly public byte isOrthographic;
         readonly public int receiverPlaneOffset;
         readonly public int receiverPlaneCount;
     }
@@ -396,6 +421,7 @@ namespace UnityEngine.Rendering
         public CullingSplit* cullingSplits;
         public int cullingSplitCount;
         public BatchCullingViewType viewType;
+        public BatchCullingProjectionType projectionType;
         public ulong viewID;
         public uint  cullingLayerMask;
         public ulong sceneCullingMask;
@@ -409,7 +435,7 @@ namespace UnityEngine.Rendering
         public IntPtr batchRendererGroup;
 
         [FreeFunction("BatchRendererGroup::AddDrawCommandBatch_Threaded", IsThreadSafe = true)]
-        private extern static BatchID AddDrawCommandBatch(IntPtr brg, IntPtr values, int count, GraphicsBufferHandle buffer);
+        private extern static BatchID AddDrawCommandBatch(IntPtr brg, IntPtr values, int count, GraphicsBufferHandle buffer, uint bufferOffset, uint windowSize);
 
         [FreeFunction("BatchRendererGroup::SetDrawCommandBatchBuffer_Threaded", IsThreadSafe = true)]
         private extern static void SetDrawCommandBatchBuffer(IntPtr brg, BatchID batchID, GraphicsBufferHandle buffer);
@@ -420,7 +446,12 @@ namespace UnityEngine.Rendering
 
         unsafe public BatchID AddBatch(NativeArray<MetadataValue> batchMetadata, GraphicsBufferHandle buffer)
         {
-            return AddDrawCommandBatch(batchRendererGroup, (IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer);
+            return AddDrawCommandBatch(batchRendererGroup, (IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer, 0, 0);
+        }
+
+        unsafe public BatchID AddBatch(NativeArray<MetadataValue> batchMetadata, GraphicsBufferHandle buffer, uint bufferOffset, uint windowSize)
+        {
+            return AddDrawCommandBatch(batchRendererGroup, (IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer, bufferOffset, windowSize);
         }
 
         public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer)
@@ -462,10 +493,14 @@ namespace UnityEngine.Rendering
             return new ThreadedBatchContext { batchRendererGroup = m_GroupHandle };
         }
 
-        private extern BatchID AddDrawCommandBatch(IntPtr values, int count, GraphicsBufferHandle buffer);
+        private extern BatchID AddDrawCommandBatch(IntPtr values, int count, GraphicsBufferHandle buffer, uint bufferOffset, uint windowSize);
         unsafe public BatchID AddBatch(NativeArray<MetadataValue> batchMetadata, GraphicsBufferHandle buffer)
         {
-            return AddDrawCommandBatch((IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer);
+            return AddDrawCommandBatch((IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer, 0, 0);
+        }
+        unsafe public BatchID AddBatch(NativeArray<MetadataValue> batchMetadata, GraphicsBufferHandle buffer, uint bufferOffset, uint windowSize)
+        {
+            return AddDrawCommandBatch((IntPtr)batchMetadata.GetUnsafeReadOnlyPtr(), batchMetadata.Length, buffer, bufferOffset, windowSize);
         }
 
         private extern void RemoveDrawCommandBatch(BatchID batchID);
@@ -489,6 +524,9 @@ namespace UnityEngine.Rendering
         public extern void SetLoadingMaterial(Material material);
 
         public extern void SetEnabledViewTypes(BatchCullingViewType[] viewTypes);
+
+        private extern static BatchBufferTarget GetBufferTarget();
+        public static BatchBufferTarget BufferTarget => GetBufferTarget();
 
         static extern unsafe IntPtr Create(BatchRendererGroup group, void* userContext);
         static extern void Destroy(IntPtr groupHandle);
@@ -518,6 +556,7 @@ namespace UnityEngine.Rendering
                         lodParameters,
                         context.localToWorldMatrix,
                         context.viewType,
+                        context.projectionType,
                         context.viewID,
                         context.cullingLayerMask,
                         context.sceneCullingMask,

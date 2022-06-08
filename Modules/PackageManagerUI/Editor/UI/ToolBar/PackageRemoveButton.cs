@@ -27,13 +27,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            var title = string.Format(L10n.Tr("Removing {0} items"), versions.Count);
+            var isModules = versions.FirstOrDefault()?.HasTag(PackageTag.BuiltIn) == true;
+            var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items"), versions.Count);
 
             var result = 0;
             if (!m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation)
             {
-                var message = L10n.Tr("Are you sure you want to remove these items?");
-                result = m_Application.DisplayDialogComplex("removeMultiplePackages", title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
+                var message = L10n.Tr(isModules ? "Are you sure you want to disable these items?" : "Are you sure you want to remove these items?");
+                result = m_Application.DisplayDialogComplex("removeMultiplePackages", title, message, L10n.Tr(isModules ? "Disable" : "Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
             }
 
             // Cancel
@@ -114,7 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installed = version?.package.versions.installed;
             return installed != null
                 && version.HasTag(PackageTag.Removable)
-                && !version.HasTag(PackageTag.Custom)
+                && !version.HasTag(PackageTag.Placeholder | PackageTag.Custom)
                 && (installed == version || version.IsRequestedButOverriddenVersion);
         }
 

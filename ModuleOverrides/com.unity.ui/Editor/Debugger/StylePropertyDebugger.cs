@@ -434,6 +434,56 @@ namespace UnityEditor.UIElements.Debugger
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(enumValue);
             }
+            else if (val is BackgroundPosition backgroundPosition)
+            {
+                Enum keyword = backgroundPosition.keyword;
+                EnumField field = GetOrCreateEnumField(keyword);
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(keyword);
+
+                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>("x", 2);
+                if (!IsFocused(fieldx))
+                    fieldx.SetValueWithoutNotify(backgroundPosition.offset);
+
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+            }
+            else if (val is BackgroundRepeat backgroundRepeat)
+            {
+                Enum enumValue1 = backgroundRepeat.x;
+                EnumField field1 = GetOrCreateEnumField(enumValue1);
+                if (!IsFocused(field1))
+                    field1.SetValueWithoutNotify(enumValue1);
+
+                Enum enumValue2 = backgroundRepeat.y;
+                bool isCreation = childCount == 2;
+                EnumField field2 = GetOrCreateFields<EnumField, Enum>("y", 2);
+                if (isCreation)
+                    field2.Init(enumValue2);
+                if (!IsFocused(field2))
+                    field2.SetValueWithoutNotify(enumValue2);
+
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+            }
+            else if (val is BackgroundSize backgroundSize)
+            {
+                Enum type = backgroundSize.sizeType;
+                EnumField field = GetOrCreateEnumField(type);
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(type);
+
+                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>("x", 2);
+                if (!IsFocused(fieldx))
+                    fieldx.SetValueWithoutNotify(backgroundSize.x);
+
+                StyleLengthField fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 3);
+                if (!IsFocused(fieldy))
+                    fieldy.SetValueWithoutNotify(backgroundSize.y);
+
+                Add(m_SpecificityLabel);
+                SetSpecificity(specificity);
+            }
             else
             {
                 var type = val.GetType();
@@ -487,7 +537,7 @@ namespace UnityEditor.UIElements.Debugger
                 field = new T();
                 field.label = propertyName;
                 field.RegisterValueChangedCallback(e =>
-                    SetPropertyValue(e.newValue));
+                    SetPropertyValue(e.newValue, index));
                 Add(field);
             }
             else
@@ -505,7 +555,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 field = new T();
                 field.label = m_PropertyName;
-                field.RegisterValueChangedCallback(e => SetPropertyValue(e.newValue));
+                field.RegisterValueChangedCallback(e => SetPropertyValue(e.newValue, 0));
                 Add(field);
                 Add(m_SpecificityLabel);
             }
@@ -549,7 +599,7 @@ namespace UnityEditor.UIElements.Debugger
             m_SpecificityLabel.text = specificityString;
         }
 
-        private void SetPropertyValue(object newValue)
+        private void SetPropertyValue(object newValue, int childIndex = -1)
         {
             object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
             Type type = m_PropertyInfo.type;
@@ -604,6 +654,58 @@ namespace UnityEditor.UIElements.Debugger
                 else if (val is Rotate rotate && newValue is float newAngle)
                 {
                     val = new StyleRotate(new Rotate(newAngle));
+                }
+                else if (val is BackgroundPosition backgroundPosition)
+                {
+                    if (childIndex == 0)
+                    {
+                        backgroundPosition.keyword = (BackgroundPositionKeyword)newValue;
+                    }
+                    else if (childIndex == 2)
+                    {
+                        if (newValue is StyleLength l)
+                        {
+                            backgroundPosition.offset = l.value;
+                        }
+                    }
+
+                    val = new StyleBackgroundPosition(backgroundPosition);
+                }
+                else if (val is BackgroundRepeat backgroundRepeat)
+                {
+                    if (childIndex == 0)
+                    {
+                        backgroundRepeat.x = (Repeat)newValue;
+                    }
+                    else if (childIndex == 2)
+                    {
+                        backgroundRepeat.y = (Repeat)newValue;
+                    }
+
+                    val = new StyleBackgroundRepeat(backgroundRepeat);
+                }
+                else if (val is BackgroundSize backgroundSize)
+                {
+                    if (childIndex == 0)
+                    {
+                        backgroundSize.sizeType = (BackgroundSizeType)newValue;
+                    }
+                    else if (childIndex == 2)
+                    {
+                        if (newValue is StyleLength l)
+                        {
+                            backgroundSize.x = l.value;
+                        }
+                    }
+                    else if (childIndex == 3)
+                    {
+                        if (newValue is StyleLength l)
+                        {
+                            backgroundSize.y = l.value;
+                        }
+                    }
+
+                    val = new StyleBackgroundSize(backgroundSize);
                 }
                 else
                 {

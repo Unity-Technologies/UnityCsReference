@@ -178,6 +178,7 @@ namespace UnityEditor
             public readonly GUIContent allowAutoConnect = EditorGUIUtility.TrTextContent("Auto Connect", "Allow the current terrain tile to automatically connect to neighboring tiles sharing the same grouping ID.");
             public readonly GUIContent attemptReconnect = EditorGUIUtility.TrTextContent("Reconnect", "Will attempt to re-run auto connection");
             public readonly GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
+            public readonly GUIContent enableHeightmapRayTracing = EditorGUIUtility.TrTextContent("Enable Ray Tracing", "When enabling this option, RayTracingAccelerationStructure.CullInstances function will populate the acceleration structure with terrain geometries. The option is disabled if the system configuration doesn't support Ray Tracing. Check SystemInfo.supportsRayTracing.");
             public readonly GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
             public readonly GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc.) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
             public readonly GUIContent baseMapDist = EditorGUIUtility.TrTextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.");
@@ -1116,6 +1117,14 @@ namespace UnityEditor
 
                 var drawHeightmap = EditorGUILayout.Toggle(styles.drawTerrain, m_Terrain.drawHeightmap);
                 var drawInstanced = EditorGUILayout.Toggle(styles.drawInstancedTerrain, m_Terrain.drawInstanced);
+
+                var enableHeightmapRayTracing = m_Terrain.enableHeightmapRayTracing;
+                GUI.enabled = SystemInfo.supportsRayTracing;
+                if (SystemInfo.supportsRayTracing)
+                    enableHeightmapRayTracing = EditorGUILayout.Toggle(styles.enableHeightmapRayTracing, m_Terrain.enableHeightmapRayTracing);
+                else
+                    EditorGUILayout.Toggle(styles.enableHeightmapRayTracing, false);
+                GUI.enabled = true;
                 var heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200); // former string formatting: ""
                 var basemapDistance = TerrainInspectorUtility.PowerSlider(styles.baseMapDist, m_Terrain.basemapDistance, 0.0f, 20000.0f, 2.0f);
                 var shadowCastingMode = (ShadowCastingMode)EditorGUILayout.EnumPopup(styles.castShadows, m_Terrain.shadowCastingMode);
@@ -1175,6 +1184,7 @@ namespace UnityEditor
                     m_Terrain.allowAutoConnect = allowAutoConnect;
                     m_Terrain.drawHeightmap = drawHeightmap;
                     m_Terrain.drawInstanced = drawInstanced;
+                    m_Terrain.enableHeightmapRayTracing = enableHeightmapRayTracing;
                     m_Terrain.heightmapPixelError = heightmapPixelError;
                     m_Terrain.basemapDistance = basemapDistance;
                     m_Terrain.shadowCastingMode = shadowCastingMode;

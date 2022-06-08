@@ -12,6 +12,9 @@ namespace UnityEditor.Search
     [EditorWindowTitle(title = "Search")]
     class SearchPickerWindow : QuickSearch
     {
+        internal const string k_SavedSearchTextPrefKey = "picker_search_text";
+        const string k_SavedWindowPositionPrefKey = "picker_window_position_offset";
+
         protected override bool IsPicker()
         {
             return true;
@@ -21,8 +24,20 @@ namespace UnityEditor.Search
         {
             base.OnEnable();
 
-            // If we get opened from an object field, the caller will still our focus, so lets put it back in the picker.
+            // If we get opened from an object field, the caller will steal our focus, so lets put it back in the picker.
             Utils.CallDelayed(() => { if (this) SelectSearch(); }, 0.1d);
+        }
+
+        internal override void OnDisable()
+        {
+            if (m_LastFocusedWindow && !Utils.IsRunningTests())
+            {
+                var offset = new Rect(position.position - m_LastFocusedWindow.position.position, position.size);
+                SearchSettings.SetScopeValue(k_SavedWindowPositionPrefKey, m_ContextHash, offset);
+            }
+            SearchSettings.SetScopeValue(k_SavedSearchTextPrefKey, m_ContextHash, context.searchText);
+
+            base.OnDisable();
         }
 
         public override void ExecuteSelection()
@@ -36,6 +51,7 @@ namespace UnityEditor.Search
 
         protected override void LoadSessionSettings(SearchViewState args)
         {
+            RestoreSearchText(args);
             RefreshSearch();
             UpdateViewState(args);
 
@@ -43,6 +59,16 @@ namespace UnityEditor.Search
                 SelectGroup(args.group);
             else if (args.hideAllGroup && context.providers.FirstOrDefault() is SearchProvider firstProvider)
                 SelectGroup(firstProvider.type);
+        }
+
+        private void RestoreSearchText(SearchViewState viewState)
+        {
+            if (Utils.IsRunningTests() || viewState.context == null)
+                return;
+
+            var previousSearchText = SearchSettings.GetScopeValue(k_SavedSearchTextPrefKey, m_ContextHash, viewState.initialQuery);
+            if (string.CompareOrdinal(viewState.searchText.Trim(), previousSearchText.Trim()) != 0)
+                viewState.text = previousSearchText.Trim();
         }
 
         protected override IEnumerable<SearchItem> FetchItems()
@@ -81,7 +107,7 @@ namespace UnityEditor.Search
 
         protected override void UpdateFocusState(TextEditor te)
         {
-            te.MoveLineEnd();
+            te.MoveTextEnd();
         }
 
         internal override SearchContext CreateQueryContext(ISearchQuery query)
@@ -99,25 +125,86 @@ namespace UnityEditor.Search
             return m_ViewState.HasFlag(SearchViewFlags.EnableSearchQuery);
         }
 
+        protected override void HandleEscapeKeyDown(Event evt)
+        {
+            if (string.CompareOrdinal(context.searchText, viewState.initialQuery) != 0)
+            {
+                ClearSearch();
+                evt.Use();
+                return;
+            }
+            SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
+            selectCallback?.Invoke(null, true);
+            selectCallback = null;
+            evt.Use();
+            CloseSearchWindow();
+        }
+
         public static QuickSearch ShowPicker(SearchViewState args)
         {
-            var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker));
+            var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker)) as SearchPickerWindow;
             qs.searchEventStatus = SearchEventStatus.WaitForEvent;
             qs.titleContent.text = $"Select {args.title ?? "item"}...";
 
+            if (qs.viewState.flags.HasNone(SearchViewFlags.OpenInBuilderMode) && !string.IsNullOrEmpty(qs.context.searchText))
+            {
+                if (!qs.viewState.text.EndsWith(' '))
+                    qs.viewState.text += ' ';
+                if (!qs.viewState.initialQuery.EndsWith(' '))
+                    qs.viewState.initialQuery += ' ';
+            }
+
+            InjectDefaultRuntimeContext(qs.context);
+
             if (args.context.options.HasAny(SearchFlags.Dockable))
-                qs.Show();
+                qs.Show(immediateDisplay: true);
             else
                 qs.ShowAuxWindow();
 
             // The window position can only be set one frame later.
-            Utils.CallDelayed(() =>
-            {
-                if (args.HasFlag(SearchViewFlags.Centered))
-                    qs.position = args.position = Utils.GetMainWindowCenteredPosition(args.hasWindowSize ? args.windowSize : qs.position.size);
-                qs.Focus();
-            });
+            qs.RestoreWindowPosition(args);
+            qs.Focus();
             return qs;
+        }
+
+        private Vector2 GetInitialWindowSize()
+        {
+            if (Utils.IsRunningTests())
+                return new Vector2(400, 600);
+            return position.size;
+        }
+
+        private void RestoreWindowPosition(SearchViewState viewState)
+        {
+            Rect windowPosition = default;
+            if (Utils.IsRunningTests() || viewState.HasFlag(SearchViewFlags.Centered))
+            {
+                windowPosition = Utils.GetMainWindowCenteredPosition(viewState.hasWindowSize ? viewState.windowSize : GetInitialWindowSize());
+            }
+            else if (m_LastFocusedWindow && !Utils.IsRunningTests())
+            {
+                var pickerOffset = SearchSettings.GetScopeValue(k_SavedWindowPositionPrefKey, m_ContextHash, default(Rect));
+                if (pickerOffset != default)
+                {
+                    windowPosition.position = m_LastFocusedWindow.position.position + pickerOffset.position;
+                    windowPosition.size = pickerOffset.size;
+                }
+            }
+
+            if (windowPosition != default)
+                position = viewState.position = windowPosition;
+        }
+
+        static void InjectDefaultRuntimeContext(SearchContext context)
+        {
+            context.runtimeContext ??= new RuntimeSearchContext();
+            if (context.runtimeContext.pickerType == SearchPickerType.None)
+                context.runtimeContext.pickerType = SearchPickerType.AdvancedSearchPicker;
+            if (context.runtimeContext.requiredTypes == null && context.runtimeContext.requiredTypeNames == null && context.filterType != null)
+            {
+                context.runtimeContext.requiredTypes = new[] { context.filterType };
+                context.runtimeContext.requiredTypeNames = new[] { context.filterType.Name };
+            }
         }
     }
 }

@@ -6,13 +6,18 @@ using System;
 
 namespace UnityEngine.UIElements
 {
-    internal  struct SafeHandleAccess
+    internal struct SafeHandleAccess
     {
-        private  IntPtr m_Handle;
+        private IntPtr m_Handle;
 
         public SafeHandleAccess(IntPtr ptr)
         {
             m_Handle = ptr;
+        }
+
+        public bool IsNull()
+        {
+            return m_Handle == IntPtr.Zero;
         }
 
         public static implicit operator IntPtr(SafeHandleAccess a)

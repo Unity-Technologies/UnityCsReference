@@ -18,10 +18,10 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ReturnTypeHandle;
         internal FoundryHandle m_ParameterListHandle;
         internal FoundryHandle m_ParentBlockHandle;
+        internal FoundryHandle m_IncludeListHandle;
 
         internal extern static ShaderFunctionInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-        internal extern FoundryHandle GetParentBlockHandle();
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
     }
@@ -55,7 +55,17 @@ namespace UnityEditor.ShaderFoundry
         }
 
         // Not valid until the parent block is finished being built.
-        public Block ParentBlock => new Block(Container, function.GetParentBlockHandle());
+        public Block ParentBlock => new Block(Container, function.m_ParentBlockHandle);
+
+        public IEnumerable<IncludeDescriptor> Includes
+        {
+            get
+            {
+                var localContainer = Container;
+                var list = new FixedHandleListInternal(function.m_IncludeListHandle);
+                return list.Select<IncludeDescriptor>(localContainer, (handle) => (new IncludeDescriptor(localContainer, handle)));
+            }
+        }
 
         internal ShaderFunction(ShaderContainer container, FoundryHandle handle)
         {
@@ -65,14 +75,15 @@ namespace UnityEditor.ShaderFoundry
         }
 
         // only for use by the Builder
-        ShaderFunction(ShaderContainer container, FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, List<FunctionParameter> parameters, FoundryHandle parentBlockHandle)
+        ShaderFunction(ShaderContainer container, FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, List<FunctionParameter> parameters, FoundryHandle parentBlockHandle, List<IncludeDescriptor> includes)
         {
             this.container = container;
             if (container != null)
             {
                 FoundryHandle parametersList = FixedHandleListInternal.Build(container, parameters, (p) => (p.handle));
+                FoundryHandle includesList = FixedHandleListInternal.Build(container, includes, (p) => (p.handle));
                 handle = functionHandle;
-                container.SetFunction(functionHandle, name, body, returnTypeHandle, parametersList, parentBlockHandle);
+                container.SetFunction(functionHandle, name, body, returnTypeHandle, parametersList, parentBlockHandle, includesList);
                 function = container.GetFunction(handle);
                 return;
             }
@@ -101,6 +112,7 @@ namespace UnityEditor.ShaderFoundry
             protected string name;
             ShaderType returnType = ShaderType.Invalid;
             List<FunctionParameter> parameters;
+            List<IncludeDescriptor> includes;
             bool finalized = false;
 
             public ShaderContainer Container => container;
@@ -157,6 +169,13 @@ namespace UnityEditor.ShaderFoundry
                 AddParameter(paramBuilder.Build());
             }
 
+            public void AddInclude(IncludeDescriptor descriptor)
+            {
+                if (includes == null)
+                    includes = new List<IncludeDescriptor>();
+                includes.Add(descriptor);
+            }
+
             public ShaderFunction Build()
             {
                 if (finalized)
@@ -165,7 +184,7 @@ namespace UnityEditor.ShaderFoundry
 
                 FoundryHandle parentBlockHandle = parentBlockBuilder?.blockHandle ?? FoundryHandle.Invalid();
                 var returnTypeHandle = container.AddShaderType(returnType, true);
-                var builtFunction = new ShaderFunction(container, functionHandle, name, ConvertToString(), returnTypeHandle, parameters, parentBlockHandle);
+                var builtFunction = new ShaderFunction(container, functionHandle, name, ConvertToString(), returnTypeHandle, parameters, parentBlockHandle, includes);
 
                 if (parentBlockBuilder != null)
                 {

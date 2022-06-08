@@ -8,7 +8,7 @@ using UnityEditorInternal;
 namespace UnityEditor
 {
     [CustomEditor(typeof(Physics2DSettings))]
-    internal class Physics2DSettingsInspector : ProjectSettingsBaseEditor
+    internal class Physics2DSettingsEditor : ProjectSettingsBaseEditor
     {
         private static class Content
         {

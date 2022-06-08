@@ -8,37 +8,6 @@ using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(CapsuleCollider2D))]
-    [CanEditMultipleObjects]
-    class CapsuleCollider2DEditor : Collider2DEditorBase
-    {
-        SerializedProperty m_Size;
-        SerializedProperty m_Direction;
-
-        public override void OnEnable()
-        {
-            base.OnEnable();
-
-            m_Size = serializedObject.FindProperty("m_Size");
-            m_Direction = serializedObject.FindProperty("m_Direction");
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
-
-            GUILayout.Space(5);
-            base.OnInspectorGUI();
-
-            EditorGUILayout.PropertyField(m_Size);
-            EditorGUILayout.PropertyField(m_Direction);
-
-            FinalizeInspectorGUI();
-        }
-    }
-
     [EditorTool("Edit Capsule Collider 2D", typeof(CapsuleCollider2D))]
     class CapsuleCollider2DTool : PrimitiveCollider2DTool<CapsuleCollider2D>
     {

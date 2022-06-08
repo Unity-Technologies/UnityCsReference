@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEditor.AssetImporters;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.PackageManager;
 using UnityEditor.TreeViewExamples;
@@ -85,6 +86,7 @@ namespace UnityEditor
 
             public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
             public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
+            public GUIContent m_FilterByImportLog = EditorGUIUtility.TrIconContent("d_console.erroricon.inactive.sml", "Search by Import Log Type");
             public GUIContent m_CreateDropdownContent = EditorGUIUtility.IconContent("CreateAddNew");
             public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
             public GUIContent m_PackagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle hidden packages visibility");
@@ -143,6 +145,7 @@ namespace UnityEditor
         SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.InAssetsOnly;
         PopupList.InputData m_AssetLabels;
         PopupList.InputData m_ObjectTypes;
+        PopupList.InputData m_LogTypes;
         bool m_UseTreeViewSelectionInsteadOfMainSelection;
         bool useTreeViewSelectionInsteadOfMainSelection
         {
@@ -907,9 +910,30 @@ namespace UnityEditor
             Repaint();
         }
 
+        public void LogTypeListCallback(PopupList.ListElement element)
+        {
+            if (!Event.current.control)
+            {
+                // Clear all selection except for clicked element
+                foreach (var item in m_LogTypes.m_ListElements)
+                    if (item != element)
+                        item.selected = false;
+            }
+
+            // Toggle clicked element
+            element.selected = !element.selected;
+
+            m_SearchFilter.importLogFlags = element.selected ? (UnityEditor.AssetImporters.ImportLogFlags) Enum.Parse(typeof(UnityEditor.AssetImporters.ImportLogFlags), element.types.First()) : ImportLogFlags.None;
+            m_SearchFieldText = m_SearchFilter.FilterToSearchFieldString();
+
+            TopBarSearchSettingsChanged();
+            Repaint();
+        }
+
         void SetupDroplists()
         {
             SetupAssetLabelList();
+            SetupLogTypeList();
 
             // Types
             m_ObjectTypes = new PopupList.InputData();
@@ -945,6 +969,19 @@ namespace UnityEditor
                 if (element.filterScore < pair.Value)
                     element.filterScore = pair.Value;
             }
+        }
+
+        void SetupLogTypeList()
+        {
+            m_LogTypes = new PopupList.InputData();
+            m_LogTypes.m_CloseOnSelection = false;
+            m_LogTypes.m_AllowCustom = false;
+            m_LogTypes.m_OnSelectCallback = LogTypeListCallback;
+            m_LogTypes.m_MaxCount = 2;
+            m_LogTypes.m_SortAlphabetically = true;
+
+            m_LogTypes.AddElement("Warnings", new string[]{"Warning"});
+            m_LogTypes.AddElement("Errors", new string[]{"Error"});
         }
 
         void SyncFilterGUI()
@@ -2216,6 +2253,7 @@ namespace UnityEditor
                 SearchField();
                 TypeDropDown();
                 AssetLabelsDropDown();
+                LogTypeDropDown();
                 if (m_ViewMode == ViewMode.TwoColumns)
                 {
                     ButtonSaveFilter();
@@ -2371,6 +2409,16 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(r, s_Styles.m_FilterByType, FocusType.Passive, EditorStyles.toolbarButton))
             {
                 PopupWindow.Show(r, new PopupList(m_ObjectTypes));
+            }
+        }
+
+        void LogTypeDropDown()
+        {
+            //Log type button
+            Rect r = GUILayoutUtility.GetRect(s_Styles.m_FilterByImportLog, EditorStyles.toolbarButton);
+            if (EditorGUI.DropdownButton(r, s_Styles.m_FilterByImportLog, FocusType.Passive, EditorStyles.toolbarButton))
+            {
+                PopupWindow.Show(r, new PopupList(m_LogTypes));
             }
         }
 

@@ -4,26 +4,85 @@
 
 using System;
 using System.IO;
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.AI;
-
 
 namespace UnityEditor.AI
 {
+    [InitializeOnLoad]
+    internal static class CheckNavigationPackage
+    {
+        const string k_NavigationPackageId = "com.unity.ai.navigation";
+        const string k_NavigationComponentMenuRoot = "Component/Navigation";
+
+        static string s_NavigationPackagePath = $"Packages/{k_NavigationPackageId}/package.json";
+
+        static CheckNavigationPackage()
+        {
+            if (!IsInstalled())
+            {
+                EditorApplication.CallDelayed(HideNavComponents);
+                EditorApplication.CallDelayed(CloseNavigationWindow);
+            }
+        }
+
+        static void CloseNavigationWindow()
+        {
+            if (EditorWindow.HasOpenInstances<NavMeshEditorWindow>())
+                EditorWindow.GetWindow<NavMeshEditorWindow>().Close();
+        }
+
+        static void HideNavComponents()
+        {
+            // Look for existing navigation menus, if none then nothing to do
+            var navMenuItems = Menu.GetMenuItems(k_NavigationComponentMenuRoot, false, false);
+            if (navMenuItems != null && navMenuItems.Length > 0)
+            {
+                // Remove trunk registered components entries
+                Menu.RemoveMenuItem($"{k_NavigationComponentMenuRoot}/Nav Mesh Agent");
+                Menu.RemoveMenuItem($"{k_NavigationComponentMenuRoot}/Nav Mesh Obstacle");
+                Menu.RemoveMenuItem($"{k_NavigationComponentMenuRoot}/Off Mesh Link");
+            }
+
+            // Register for the next menu modifications as we need to ensure components entries are not added again...
+            Menu.menuChanged += OnMenuChanged;
+        }
+
+        static void OnMenuChanged()
+        {
+            // Unregister from the menu modifications callback as we don't want to be notified until we actually try to remove the components
+            Menu.menuChanged -= OnMenuChanged;
+
+            EditorApplication.CallDelayed(HideNavComponents);
+        }
+
+        internal static bool IsInstalled()
+        {
+            var packagePath = Path.GetFullPath(s_NavigationPackagePath);
+            return !String.IsNullOrEmpty(packagePath) && File.Exists(packagePath);
+        }
+    }
+
     public static partial class NavMeshEditorHelpers
     {
+        internal static event Action<int> agentTypeSettingsClicked;
+        internal static event Action areaSettingsClicked;
+
         public static void OpenAgentSettings(int agentTypeID)
         {
-            NavMeshEditorWindow.OpenAgentSettings(agentTypeID);
+            if (!CheckNavigationPackage.IsInstalled())
+                Debug.LogWarning("Unable to open Agent settings because the Navigation window is not available. Please install the AI Navigation package to add that window.");
+
+            if (agentTypeSettingsClicked != null)
+                agentTypeSettingsClicked(agentTypeID);
         }
 
         public static void OpenAreaSettings()
         {
-            NavMeshEditorWindow.OpenAreaSettings();
+            if (!CheckNavigationPackage.IsInstalled())
+                Debug.LogWarning("Unable to open Area settings because the Navigation window is not available. Please install the AI Navigation package to add that window.");
+
+            if (areaSettingsClicked != null)
+                areaSettingsClicked();
         }
 
         public static void DrawAgentDiagram(Rect rect, float agentRadius, float agentHeight, float agentClimb, float agentSlope)

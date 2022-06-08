@@ -68,6 +68,22 @@ namespace UnityEngine.UIElements
             return StyleKeyword.Null;
         }
 
+        public StyleBackgroundPosition GetStyleBackgroundPosition(StylePropertyId id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleBackgroundPosition(inline.position);
+            return StyleKeyword.Null;
+        }
+
+        public StyleBackgroundRepeat GetStyleBackgroundRepeat(StylePropertyId id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleBackgroundRepeat(inline.repeat);
+            return StyleKeyword.Null;
+        }
+
         public StyleFont GetStyleFont(StylePropertyId id)
         {
             var inline = new StyleValue();
@@ -151,6 +167,9 @@ namespace UnityEngine.UIElements
         private bool m_HasInlineScale;
         private StyleScale m_InlineScale;
 
+        private bool m_HasInlineBackgroundSize;
+        public StyleBackgroundSize m_InlineBackgroundSize;
+
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
 
@@ -222,6 +241,8 @@ namespace UnityEngine.UIElements
                     return m_HasInlineRotate;
                 case StylePropertyId.Scale:
                     return m_HasInlineScale;
+                case StylePropertyId.BackgroundSize:
+                    return m_HasInlineBackgroundSize;
                 default:
                     return false;
             }
@@ -282,6 +303,11 @@ namespace UnityEngine.UIElements
             {
                 computedStyle.ApplyStyleRotate(ve.style.rotate.value);
             }
+
+            if (m_HasInlineBackgroundSize)
+            {
+                computedStyle.ApplyStyleBackgroundSize(ve.style.backgroundSize.value);
+            }
         }
 
         StyleCursor IStyle.cursor
@@ -316,6 +342,24 @@ namespace UnityEngine.UIElements
                 if (SetInlineTextShadow(value))
                 {
                     ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleBackgroundSize IStyle.backgroundSize
+        {
+            get
+            {
+                var inlineBackgroundSize = new StyleBackgroundSize();
+                if (TryGetInlineBackgroundSize(ref inlineBackgroundSize))
+                    return inlineBackgroundSize;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                if (SetInlineBackgroundSize(value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
             }
         }
@@ -444,6 +488,57 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private bool SetStyleValue(StylePropertyId id, StyleBackgroundPosition inlineValue)
+        {
+            var sv = new StyleValue();
+            if (TryGetStyleValue(id, ref sv))
+            {
+                if (sv.position == inlineValue.value && sv.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            sv.id = id;
+            sv.keyword = inlineValue.keyword;
+            sv.position = inlineValue.value;
+
+            SetStyleValue(sv);
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+                return RemoveInlineStyle(id);
+
+            ApplyStyleValue(sv);
+            return true;
+        }
+
+        private bool SetStyleValue(StylePropertyId id, StyleBackgroundRepeat inlineValue)
+        {
+            var sv = new StyleValue();
+            if (TryGetStyleValue(id, ref sv))
+            {
+                if (sv.repeat == inlineValue.value && sv.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            sv.id = id;
+            sv.keyword = inlineValue.keyword;
+            sv.repeat = inlineValue.value;
+
+            SetStyleValue(sv);
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+                return RemoveInlineStyle(id);
+
+            ApplyStyleValue(sv);
+            return true;
+        }
 
         private bool SetStyleValue(StylePropertyId id, StyleLength inlineValue)
         {
@@ -1029,6 +1124,55 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private bool SetInlineBackgroundSize(StyleBackgroundSize inlineValue)
+        {
+            var styleBackgroundSize = new StyleBackgroundSize();
+            if (TryGetInlineBackgroundSize(ref styleBackgroundSize))
+            {
+                if (styleBackgroundSize.value == inlineValue.value && styleBackgroundSize.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                m_HasInlineBackgroundSize = false;
+                return RemoveInlineStyle(StylePropertyId.BackgroundSize);
+            }
+
+            m_InlineBackgroundSize = inlineValue;
+            m_HasInlineBackgroundSize = true;
+            ApplyStyleBackgroundSize(inlineValue);
+
+            return true;
+        }
+
+        private void ApplyStyleBackgroundSize(StyleBackgroundSize backgroundSize)
+        {
+            ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle);
+
+            bool startedTransition = false;
+            if (ve.computedStyle.hasTransition && ve.styleInitialized &&
+                ve.computedStyle.GetTransitionProperty(StylePropertyId.BackgroundSize, out var t))
+            {
+                startedTransition = ComputedStyle.StartAnimationInlineBackgroundSize(ve, ref ve.computedStyle,
+                    backgroundSize, t.durationMs, t.delayMs, t.easingCurve);
+            }
+            else
+            {
+                // In case there were older animations running, cancel them.
+                ve.styleAnimation.CancelAnimation(StylePropertyId.TransformOrigin);
+            }
+
+            if (!startedTransition)
+            {
+                ve.computedStyle.ApplyStyleBackgroundSize(backgroundSize.value);
+            }
+        }
+
         private void ApplyStyleValue(StyleValue value)
         {
             var parent = ve.hierarchy.parent;
@@ -1169,6 +1313,33 @@ namespace UnityEngine.UIElements
                 return true;
             }
             return false;
+        }
+
+        public bool TryGetInlineBackgroundSize(ref StyleBackgroundSize value)
+        {
+            if (m_HasInlineBackgroundSize)
+            {
+                value = m_InlineBackgroundSize;
+                return true;
+            }
+            return false;
+        }
+
+        StyleEnum<ScaleMode> IStyle.unityBackgroundScaleMode
+        {
+            get
+            {
+                return new StyleEnum<ScaleMode>(BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(ve.style.backgroundPositionX.value,
+                    ve.style.backgroundPositionY.value, ve.style.backgroundRepeat.value, ve.style.backgroundSize.value));
+            }
+
+            set
+            {
+                ve.style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(value.value);
+                ve.style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(value.value);
+                ve.style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(value.value);
+                ve.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(value.value);
+            }
         }
     }
 }

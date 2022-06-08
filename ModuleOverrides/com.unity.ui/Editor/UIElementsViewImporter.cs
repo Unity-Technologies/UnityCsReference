@@ -22,7 +22,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 10, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 11, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -703,10 +703,10 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, int orderInDocument)
+        void LoadXml(XElement elt, UxmlAsset parent, VisualTreeAsset vta, int orderInDocument)
         {
-            VisualElementAsset vea = ResolveType(elt, vta);
-            if (vea == null)
+            var uxmlAsset = ResolveType(elt, vta);
+            if (uxmlAsset == null)
             {
                 return;
             }
@@ -714,32 +714,29 @@ namespace UnityEditor.UIElements
             int parentHash;
             if (parent == null)
             {
-                vea.parentId = 0;
+                uxmlAsset.parentId = 0;
                 parentHash = vta.contentHash;
             }
             else
             {
-                vea.parentId = parent.id;
+                uxmlAsset.parentId = parent.id;
                 parentHash = parent.id;
             }
 
-            if (!EnsureValidUxmlObjectChild(elt, vea, vta))
+            if (!EnsureValidUxmlObjectChild(elt, uxmlAsset, vta))
                 return;
 
             // id includes the parent id, meaning it's dependent on the whole direct hierarchy
-            vea.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
-            vea.orderInDocument = orderInDocument;
+            uxmlAsset.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
+            uxmlAsset.orderInDocument = orderInDocument;
 
-            bool startedRule = ParseAttributes(elt, vea, vta, parent);
+            ParseAttributes(elt, uxmlAsset, vta, parent);
 
-            // each vea will creates 0 or 1 style rule, with one or more properties
-            // they don't have selectors and are directly referenced by index
-            // it's then applied during tree cloning
-            vea.ruleIndex = startedRule ? m_Builder.EndRule() : -1;
-            var templateAsset = vea as TemplateAsset;
+            var templateAsset = uxmlAsset as TemplateAsset;
+            var vea = uxmlAsset as VisualElementAsset;
             if (templateAsset != null)
                 vta.templateAssets.Add(templateAsset);
-            else if (vea is UxmlObjectAsset uxmlObjectAsset)
+            else if (uxmlAsset is UxmlObjectAsset uxmlObjectAsset)
                 vta.RegisterUxmlObject(uxmlObjectAsset);
             else
                 vta.visualElementAssets.Add(vea);
@@ -750,14 +747,14 @@ namespace UnityEditor.UIElements
                 {
                     if (child.Name.LocalName == k_TemplateNode)
                         LoadTemplateNode(vta, elt, child);
-                    else if (child.Name.LocalName == k_StyleReferenceNode)
+                    else if (vea != null && child.Name.LocalName == k_StyleReferenceNode)
                         LoadStyleReferenceNode(vea, child, vta);
                     else if (templateAsset != null && child.Name.LocalName == k_AttributeOverridesNode)
                         LoadAttributeOverridesNode(templateAsset, child, vta);
                     else
                     {
                         ++orderInDocument;
-                        LoadXml(child, vea, vta, orderInDocument);
+                        LoadXml(child, uxmlAsset, vta, orderInDocument);
                     }
                 }
             }
@@ -862,7 +859,7 @@ namespace UnityEditor.UIElements
             return (elementNamespaceName, fullName);
         }
 
-        VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
+        UxmlAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
         {
             var (elementNamespaceName, fullName) = ResolveFullType(elt);
 
@@ -901,14 +898,14 @@ namespace UnityEditor.UIElements
             return new VisualElementAsset(fullName);
         }
 
-        bool EnsureValidUxmlObjectChild(XElement elt, VisualElementAsset vea, VisualTreeAsset vta)
+        bool EnsureValidUxmlObjectChild(XElement elt, UxmlAsset uxmlAsset, VisualTreeAsset vta)
         {
-            if (vea is UxmlObjectAsset)
+            if (uxmlAsset is UxmlObjectAsset)
             {
                 // UxmlObjects can't be at the root of a visual tree or child of style and template nodes.
                 if (elt.Parent == null || elt.Parent.Name.LocalName == k_RootNode)
                 {
-                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectParent, vea.fullTypeName, elt);
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectParent, uxmlAsset.fullTypeName, elt);
                     return false;
                 }
 
@@ -919,10 +916,10 @@ namespace UnityEditor.UIElements
             // Other types can't be child of a UxmlObject.
             if (vta.uxmlObjectIds != null)
             {
-                var isUxmlObjectChild = vta.uxmlObjectIds.Contains(vea.parentId);
+                var isUxmlObjectChild = vta.uxmlObjectIds.Contains(uxmlAsset.parentId);
                 if (isUxmlObjectChild)
                 {
-                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectChild, vea.fullTypeName, elt);
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectChild, uxmlAsset.fullTypeName, elt);
                     return false;
                 }
             }
@@ -993,11 +990,11 @@ namespace UnityEditor.UIElements
             return null;
         }
 
-        bool ParseAttributes(XElement elt, VisualElementAsset res, VisualTreeAsset vta, VisualElementAsset parent)
+        void ParseAttributes(XElement elt, UxmlAsset res, VisualTreeAsset vta, UxmlAsset parent)
         {
-            var startedRule = false;
             var uxmlAssetAttributeDescriptions = GetAssetAttributeDescriptionForType(res.fullTypeName);
 
+            var vea = res as VisualElementAsset;
             foreach (var xattr in elt.Attributes())
             {
                 var attrName = xattr.Name.LocalName;
@@ -1009,7 +1006,7 @@ namespace UnityEditor.UIElements
                     if (assetAttributeDescription != null)
                     {
                         added = true;
-                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
+                        res.SetAttribute(xattr.Name.LocalName, xattr.Value);
 
                         var type = assetAttributeDescription.GetType().GetGenericArguments()[0];
                         var (response, asset) = ValidateAndLoadResource(elt, vta, xattr.Value);
@@ -1026,88 +1023,93 @@ namespace UnityEditor.UIElements
                         continue;
                 }
 
-                // start with special cases
-                switch (attrName)
+                // Start with VisualElement special cases
+                if (vea != null)
                 {
-                    case k_ClassAttr:
-                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
-                        res.classes = xattr.Value.Split(' ');
-                        continue;
-                    case "content-container":
-                    case "contentContainer":
-                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
-                        if (attrName == "contentContainer")
-                        {
-                        }
-                        if (vta.contentContainerId != 0)
-                        {
-                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);
+                    switch (attrName)
+                    {
+                        case k_ClassAttr:
+                            vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
+                            vea.classes = xattr.Value.Split(' ');
                             continue;
-                        }
-                        vta.contentContainerId = res.id;
-                        continue;
-                    case k_SlotDefinitionAttr:
-                        LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
-                        if (String.IsNullOrEmpty(xattr.Value))
-                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, elt);
-                        else if (!vta.AddSlotDefinition(xattr.Value, res.id))
-                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, elt);
-                        continue;
-                    case k_SlotUsageAttr:
-                        LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
-                        var templateAsset = parent as TemplateAsset;
-                        if (templateAsset == null)
-                        {
-                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, elt);
+                        case "content-container":
+                        case "contentContainer":
+                            vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
+                            if (attrName == "contentContainer")
+                            {
+                            }
+                            if (vta.contentContainerId != 0)
+                            {
+                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);
+                                continue;
+                            }
+                            vta.contentContainerId = vea.id;
                             continue;
-                        }
-                        if (string.IsNullOrEmpty(xattr.Value))
-                        {
-                            LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, elt);
+                        case k_SlotDefinitionAttr:
+                            LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
+                            if (String.IsNullOrEmpty(xattr.Value))
+                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, elt);
+                            else if (!vta.AddSlotDefinition(xattr.Value, vea.id))
+                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, elt);
                             continue;
-                        }
-                        templateAsset.AddSlotUsage(xattr.Value, res.id);
-                        continue;
-                    case k_StyleAttr:
-                        res.AddProperty(xattr.Name.LocalName, xattr.Value);
-                        ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
-                        if (parsed.Errors.Count != 0)
-                        {
-                            LogWarning(
-                                vta,
-                                ImportErrorType.Semantic,
-                                ImportErrorCode.InvalidCssInStyleAttribute,
-                                parsed.Errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
-                                xattr);
+                        case k_SlotUsageAttr:
+                            LogWarning(vta, ImportErrorType.Syntax, ImportErrorCode.SlotsAreExperimental, null, elt);
+                            var templateAsset = parent as TemplateAsset;
+                            if (templateAsset == null)
+                            {
+                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, elt);
+                                continue;
+                            }
+                            if (string.IsNullOrEmpty(xattr.Value))
+                            {
+                                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, elt);
+                                continue;
+                            }
+                            templateAsset.AddSlotUsage(xattr.Value, vea.id);
                             continue;
-                        }
-                        if (parsed.StyleRules.Count != 1)
-                        {
-                            LogWarning(
-                                vta,
-                                ImportErrorType.Semantic,
-                                ImportErrorCode.InvalidCssInStyleAttribute,
-                                "Expected one style rule, found " + parsed.StyleRules.Count,
-                                xattr);
-                            continue;
-                        }
-                        m_Builder.BeginRule(-1);
-                        startedRule = true;
-                        m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
-                        foreach (Property prop in parsed.StyleRules[0].Declarations)
-                        {
-                            m_Builder.BeginProperty(prop.Name);
-                            VisitValue(prop.Term);
-                            m_Builder.EndProperty();
-                        }
+                        case k_StyleAttr:
+                            vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
+                            ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
+                            if (parsed.Errors.Count != 0)
+                            {
+                                LogWarning(
+                                    vta,
+                                    ImportErrorType.Semantic,
+                                    ImportErrorCode.InvalidCssInStyleAttribute,
+                                    parsed.Errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
+                                    xattr);
+                                continue;
+                            }
+                            if (parsed.StyleRules.Count != 1)
+                            {
+                                LogWarning(
+                                    vta,
+                                    ImportErrorType.Semantic,
+                                    ImportErrorCode.InvalidCssInStyleAttribute,
+                                    "Expected one style rule, found " + parsed.StyleRules.Count,
+                                    xattr);
+                                continue;
+                            }
 
-                        // Don't call m_Builder.EndRule() here, it's done in LoadXml to get the rule index at the same time !
-                        continue;
+                            // Each vea will creates 0 or 1 style rule, with one or more properties
+                            // they don't have selectors and are directly referenced by index
+                            // it's then applied during tree cloning
+                            m_Builder.BeginRule(-1);
+                            m_CurrentLine = ((IXmlLineInfo)xattr).LineNumber;
+                            foreach (var prop in parsed.StyleRules[0].Declarations)
+                            {
+                                m_Builder.BeginProperty(prop.Name);
+                                VisitValue(prop.Term);
+                                m_Builder.EndProperty();
+                            }
+
+                            vea.ruleIndex = m_Builder.EndRule();
+                            continue;
+                    }
                 }
 
-                res.AddProperty(xattr.Name.LocalName, xattr.Value);
+                res.SetAttribute(xattr.Name.LocalName, xattr.Value);
             }
-            return startedRule;
         }
     }
 

@@ -20,6 +20,7 @@ using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -504,7 +505,7 @@ namespace UnityEditorInternal
                 "il2cpp"));
         }
 
-        static string GetBCLExtensionsFolder()
+        internal static string GetBCLExtensionsFolder()
         {
             var il2CppFolder = GetIl2CppFolder(out var isDevelopmentLocation);
             if (isDevelopmentLocation)
@@ -908,6 +909,12 @@ namespace UnityEditorInternal
         public static string GetIl2CppExe()
         {
             return IL2CPPUtils.GetExePath("il2cpp");
+        }
+
+        [RequiredByNativeCode]
+        public static string GetBuildAnalyticsSummaryCollectorExe()
+        {
+            return IL2CPPUtils.GetExePath("Analytics");
         }
     }
 

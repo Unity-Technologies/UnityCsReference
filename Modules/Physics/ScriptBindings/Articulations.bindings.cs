@@ -29,6 +29,14 @@ namespace UnityEngine
         FreeMotion = 2
     };
 
+    public enum ArticulationDriveType
+    {
+        Force = 0,
+        Acceleration = 1,
+        Target = 2,
+        Velocity = 3,
+    };
+
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct ArticulationDrive
@@ -40,6 +48,7 @@ namespace UnityEngine
         public float forceLimit;
         public float target;
         public float targetVelocity;
+        public ArticulationDriveType driveType;
     }
 
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
@@ -159,6 +168,13 @@ namespace UnityEngine
         }
     }
 
+    public enum ArticulationDriveAxis
+    {
+        X = 0,
+        Y = 1,
+        Z = 2
+    }
+
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
     [NativeClass("Unity::ArticulationBody")]
     public partial class ArticulationBody : Behaviour
@@ -190,6 +206,12 @@ namespace UnityEngine
         extern public float linearDamping { get; set; }
         extern public float angularDamping { get; set; }
         extern public float jointFriction { get; set; }
+
+        // Get/Set the Exclude Layers,
+        extern public LayerMask excludeLayers { get; set; }
+
+        // Get/Set the Include Layers,
+        extern public LayerMask includeLayers { get; set; }
 
         extern public Vector3 GetAccumulatedForce([DefaultValue("Time.fixedDeltaTime")] float step);
 
@@ -290,7 +312,17 @@ namespace UnityEngine
         extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
 
-        extern public int GetDenseJacobian(ref ArticulationJacobian jacobian);
+        [NativeMethod("GetDenseJacobian")]
+        extern private int GetDenseJacobian_Internal(ref ArticulationJacobian jacobian);
+
+        public int GetDenseJacobian(ref ArticulationJacobian jacobian)
+        {
+            // Initialize matrixData if ArticulationJacobian struct was created with default constructor
+            if(jacobian.elements == null)
+                jacobian.elements = new List<float>();
+
+            return GetDenseJacobian_Internal(ref jacobian);
+        }
 
         extern public int GetJointPositions(List<float> positions);
         extern public void SetJointPositions(List<float> positions);
@@ -303,12 +335,20 @@ namespace UnityEngine
         extern public int GetDriveForces(List<float> forces);
         extern public int GetJointGravityForces(List<float> forces);
         extern public int GetJointCoriolisCentrifugalForces(List<float> forces);
+        extern public int GetJointExternalForces(List<float> forces, float step);
 
         extern public int GetDriveTargets(List<float> targets);
         extern public void SetDriveTargets(List<float> targets);
         extern public int GetDriveTargetVelocities(List<float> targetVelocities);
         extern public void SetDriveTargetVelocities(List<float> targetVelocities);
         extern public int GetDofStartIndices(List<int> dofStartIndices);
+
+        extern public void SetDriveTarget(ArticulationDriveAxis axis, float value);
+        extern public void SetDriveTargetVelocity(ArticulationDriveAxis axis, float value);
+        extern public void SetDriveLimits(ArticulationDriveAxis axis, float lower, float upper);
+        extern public void SetDriveStiffness(ArticulationDriveAxis axis, float value);
+        extern public void SetDriveDamping(ArticulationDriveAxis axis, float value);
+        extern public void SetDriveForceLimit(ArticulationDriveAxis axis, float value);
 
         extern public CollisionDetectionMode collisionDetectionMode { get; set; }
 

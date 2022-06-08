@@ -426,7 +426,7 @@ namespace UnityEngine.Bindings
     {
         PreventExecution_Error,
         PreventExecution_ManagedException,
-        PreventExecution_NativeException
+        PreventExecution_Warning
     }
 
     [VisibleToOtherModules]

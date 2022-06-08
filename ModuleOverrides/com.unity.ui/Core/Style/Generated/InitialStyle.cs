@@ -35,6 +35,10 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().alignSelf = Align.Auto;
             s_InitialStyle.visualData.Write().backgroundColor = Color.clear;
             s_InitialStyle.visualData.Write().backgroundImage = default(Background);
+            s_InitialStyle.visualData.Write().backgroundPositionX = BackgroundPosition.Initial();
+            s_InitialStyle.visualData.Write().backgroundPositionY = BackgroundPosition.Initial();
+            s_InitialStyle.visualData.Write().backgroundRepeat = BackgroundRepeat.Initial();
+            s_InitialStyle.visualData.Write().backgroundSize = BackgroundSize.Initial();
             s_InitialStyle.visualData.Write().borderBottomColor = Color.clear;
             s_InitialStyle.visualData.Write().borderBottomLeftRadius = 0f;
             s_InitialStyle.visualData.Write().borderBottomRightRadius = 0f;
@@ -89,7 +93,6 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.transitionData.Write().transitionTimingFunction = new List<EasingFunction>{EasingMode.Ease};
             s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
-            s_InitialStyle.rareData.Write().unityBackgroundScaleMode = ScaleMode.StretchToFill;
             s_InitialStyle.inheritedData.Write().unityFont = default(Font);
             s_InitialStyle.inheritedData.Write().unityFontDefinition = default(FontDefinition);
             s_InitialStyle.inheritedData.Write().unityFontStyleAndWeight = FontStyle.Normal;
@@ -115,6 +118,10 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Align alignSelf => s_InitialStyle.layoutData.Read().alignSelf;
         public static Color backgroundColor => s_InitialStyle.visualData.Read().backgroundColor;
         public static Background backgroundImage => s_InitialStyle.visualData.Read().backgroundImage;
+        public static BackgroundPosition backgroundPositionX => s_InitialStyle.visualData.Read().backgroundPositionX;
+        public static BackgroundPosition backgroundPositionY => s_InitialStyle.visualData.Read().backgroundPositionY;
+        public static BackgroundRepeat backgroundRepeat => s_InitialStyle.visualData.Read().backgroundRepeat;
+        public static BackgroundSize backgroundSize => s_InitialStyle.visualData.Read().backgroundSize;
         public static Color borderBottomColor => s_InitialStyle.visualData.Read().borderBottomColor;
         public static Length borderBottomLeftRadius => s_InitialStyle.visualData.Read().borderBottomLeftRadius;
         public static Length borderBottomRightRadius => s_InitialStyle.visualData.Read().borderBottomRightRadius;
@@ -169,7 +176,6 @@ namespace UnityEngine.UIElements.StyleSheets
         public static List<EasingFunction> transitionTimingFunction => s_InitialStyle.transitionData.Read().transitionTimingFunction;
         public static Translate translate => s_InitialStyle.transformData.Read().translate;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.rareData.Read().unityBackgroundImageTintColor;
-        public static ScaleMode unityBackgroundScaleMode => s_InitialStyle.rareData.Read().unityBackgroundScaleMode;
         public static Font unityFont => s_InitialStyle.inheritedData.Read().unityFont;
         public static FontDefinition unityFontDefinition => s_InitialStyle.inheritedData.Read().unityFontDefinition;
         public static FontStyle unityFontStyleAndWeight => s_InitialStyle.inheritedData.Read().unityFontStyleAndWeight;

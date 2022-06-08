@@ -12,13 +12,8 @@ namespace UnityEngine
     {
         public DblClickSnapping dblClickSnap = DblClickSnapping.WORDS;
         public int iAltCursorPos = -1;
-        public event Action OnTextChanged;
-        public bool multiline = false;
         public bool hasHorizontalCursorPos = false;
 
-        private int m_CursorIndex = 0;
-        private int m_SelectIndex = 0;
-        private string m_Text;
         private bool m_bJustSelected = false;
         private bool m_MouseDragSelectsWholeWords = false;
         private int m_DblClickInitPos = 0;
@@ -27,7 +22,7 @@ namespace UnityEngine
         private const char kNewLineChar = '\n';
 
         /// Does this text field has a selection
-        public bool hasSelection { get { return cursorIndex != selectIndex; } }
+        public bool hasSelection => cursorIndex != selectIndex;
 
         bool m_RevealCursor;
         public bool revealCursor
@@ -43,48 +38,38 @@ namespace UnityEngine
             }
         }
 
-        public string text
-        {
-            get { return m_Text; }
-            set
-            {
-                if (value == m_Text)
-                    return;
-                m_Text = value ?? string.Empty;
-                EnsureValidCodePointIndex(ref m_CursorIndex);
-                EnsureValidCodePointIndex(ref m_SelectIndex);
-                OnTextChanged?.Invoke();
-            }
-        }
+        int m_CharacterCount => m_TextHandle.textInfo.characterCount;
+        int characterCount => (m_CharacterCount > 0 && m_TextHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
+        TextElementInfo[] m_TextElementInfos => m_TextHandle.textInfo.textElementInfo;
 
+
+        int m_CursorIndex = 0;
         public int cursorIndex
         {
-            get { return m_CursorIndex; }
+            get => EnsureValidCodePointIndex(m_CursorIndex);
             set
             {
-                int oldCursorIndex = m_CursorIndex;
-                m_CursorIndex = value;
-                EnsureValidCodePointIndex(ref m_CursorIndex);
-
-                if (m_CursorIndex != oldCursorIndex)
+                if (m_CursorIndex != value)
                 {
+                    m_CursorIndex = value;
                     revealCursor = true;
                     OnCursorIndexChange?.Invoke();
                 }
             }
         }
 
+        internal int m_SelectIndex = 0;
         public int selectIndex
         {
-            get { return m_SelectIndex; }
+            get => EnsureValidCodePointIndex(m_SelectIndex);
             set
             {
-                int oldSelectIndex = m_SelectIndex;
-                m_SelectIndex = value;
-                EnsureValidCodePointIndex(ref m_SelectIndex);
 
-                if (m_SelectIndex != oldSelectIndex)
+                if (m_SelectIndex != value)
+                {
+                    m_SelectIndex = value;
                     OnSelectIndexChange?.Invoke();
+                }
             }
         }
 
@@ -95,23 +80,18 @@ namespace UnityEngine
             {
                 if (cursorIndex == selectIndex)
                     return "";
+
                 if (cursorIndex < selectIndex)
-                    return text.Substring(cursorIndex, selectIndex - cursorIndex);
+                    return m_TextHandle.Substring(cursorIndex, selectIndex - cursorIndex);
                 else
-                    return text.Substring(selectIndex, cursorIndex - selectIndex);
+                    return m_TextHandle.Substring(selectIndex, cursorIndex - selectIndex);
             }
         }
+
 
         public TextSelectingUtilities(TextHandle textHandle)
         {
             m_TextHandle = textHandle;
-            m_Text = String.Empty;
-        }
-
-        internal void SetCursorNoCheck(int cursor)
-        {
-            m_CursorIndex = cursor;
-            m_SelectIndex = cursor;
         }
 
         public void ClearCursorPos()
@@ -132,7 +112,7 @@ namespace UnityEngine
         /// Select all the text
         public void SelectAll()
         {
-            cursorIndex = 0; selectIndex = text.Length;
+            cursorIndex = 0; selectIndex = Int32.MaxValue;
             ClearCursorPos();
         }
 
@@ -188,7 +168,7 @@ namespace UnityEngine
             // This is not quite like the mac - there, when you select to end of text, the position of the cursor becomes somewhat i'll defined
             // Hard to explain. In textedit, try: CMD-SHIFT-down, SHIFT-LEFT for case 1. then do CMD-SHIFT-down, SHIFT-RIGHT, SHIFT-LEFT for case 2.
             // Anyways, it's wrong so we won't do that
-            cursorIndex = text.Length;
+            cursorIndex = characterCount;
         }
 
         /// Select to the start of the text
@@ -264,7 +244,7 @@ namespace UnityEngine
         {
             ClearCursorPos();
             bool wasBehind = cursorIndex < selectIndex;
-            if (cursorIndex < text.Length)
+            if (cursorIndex < characterCount)
             {
                 cursorIndex = IndexOfEndOfLine(cursorIndex + 1);
                 if (wasBehind && cursorIndex > selectIndex)
@@ -278,7 +258,7 @@ namespace UnityEngine
             bool wasInFront = cursorIndex > selectIndex;
             if (cursorIndex > 1)
             {
-                cursorIndex = text.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
+                cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
                 if (wasInFront && cursorIndex < selectIndex)
                     cursorIndex = selectIndex;
             }
@@ -309,14 +289,14 @@ namespace UnityEngine
         public void SelectCurrentParagraph()
         {
             ClearCursorPos();
-            int textLen = text.Length;
+            int textLen = characterCount;
 
             if (cursorIndex < textLen)
             {
                 cursorIndex = IndexOfEndOfLine(cursorIndex) + 1;
             }
             if (selectIndex != 0)
-                selectIndex = text.LastIndexOf(kNewLineChar, selectIndex - 1) + 1;
+                selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, selectIndex - 1) + 1;
         }
 
         /// Move the cursor one character to the right and deselect.
@@ -375,7 +355,7 @@ namespace UnityEngine
             else
                 cursorIndex = selectIndex;
             cursorIndex = selectIndex = m_TextHandle.LineDownCharacterPosition(cursorIndex);
-            if (cursorIndex == text.Length)
+            if (cursorIndex == characterCount)
                 ClearCursorPos();
         }
 
@@ -387,7 +367,7 @@ namespace UnityEngine
             // then we scan back to find the first newline
             int i = p;
             while (i-- != 0)
-                if (text[i] == kNewLineChar)
+                if (m_TextElementInfos[i].character == kNewLineChar)
                 {
                     selectIndex = cursorIndex = i + 1;
                     return;
@@ -402,10 +382,10 @@ namespace UnityEngine
             int p = selectIndex > cursorIndex ? selectIndex : cursorIndex;
             // then we scan forward to find the first newline
             int i = p;
-            int strlen = text.Length;
+            int strlen = characterCount;
             while (i < strlen)
             {
-                if (text[i] == kNewLineChar)
+                if (m_TextElementInfos[i].character == kNewLineChar)
                 {
                     selectIndex = cursorIndex = i;
                     return;
@@ -436,14 +416,14 @@ namespace UnityEngine
         /// Moves the cursor to the end of the text
         public void MoveTextEnd()
         {
-            selectIndex = cursorIndex = text.Length;
+            selectIndex = cursorIndex = characterCount;
         }
 
         /// Move to the next paragraph
         public void MoveParagraphForward()
         {
             cursorIndex = cursorIndex > selectIndex ? cursorIndex : selectIndex;
-            if (cursorIndex < text.Length)
+            if (cursorIndex < characterCount)
             {
                 selectIndex = cursorIndex = IndexOfEndOfLine(cursorIndex + 1);
             }
@@ -455,7 +435,7 @@ namespace UnityEngine
             cursorIndex = cursorIndex < selectIndex ? cursorIndex : selectIndex;
             if (cursorIndex > 1)
             {
-                selectIndex = cursorIndex = text.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
+                selectIndex = cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
             }
             else
                 selectIndex = cursorIndex = 0;
@@ -562,8 +542,8 @@ namespace UnityEngine
             {
                 int p = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
 
-                EnsureValidCodePointIndex(ref p);
-                EnsureValidCodePointIndex(ref m_DblClickInitPos);
+                p = EnsureValidCodePointIndex(p);
+                m_DblClickInitPos = EnsureValidCodePointIndex(m_DblClickInitPos);
 
                 if (dblClickSnap == DblClickSnapping.WORDS)
                 {
@@ -583,22 +563,22 @@ namespace UnityEngine
                     if (p < m_DblClickInitPos)
                     {
                         if (p > 0)
-                            cursorIndex = text.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 2)) + 1;
+                            cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 2)) + 1;
                         else
                             cursorIndex = 0;
 
-                        selectIndex = text.LastIndexOf(kNewLineChar, Mathf.Min(text.Length - 1, m_DblClickInitPos));
+                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Min(characterCount - 1, m_DblClickInitPos));
                     }
                     else
                     {
-                        if (p < text.Length)
+                        if (p < characterCount)
                         {
                             cursorIndex = IndexOfEndOfLine(p);
                         }
                         else
-                            cursorIndex = text.Length;
+                            cursorIndex = characterCount;
 
-                        selectIndex = text.LastIndexOf(kNewLineChar, Mathf.Max(0, m_DblClickInitPos - 2)) + 1;
+                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, m_DblClickInitPos - 2)) + 1;
                     }
                 }
             }
@@ -606,7 +586,7 @@ namespace UnityEngine
 
         int FindNextSeperator(int startPos)
         {
-            int textLen = text.Length;
+            int textLen = characterCount;
             while (startPos < textLen && ClassifyChar(startPos) != CharacterType.LetterLike)
                 startPos = NextCodePointIndex(startPos);
             while (startPos < textLen && ClassifyChar(startPos) == CharacterType.LetterLike)
@@ -633,7 +613,7 @@ namespace UnityEngine
 
         public int FindStartOfNextWord(int p)
         {
-            int textLen = text.Length;
+            int textLen = characterCount;
             if (p == textLen)
                 return p;
 
@@ -647,7 +627,7 @@ namespace UnityEngine
             }
             else
             {
-                if (text[p] == '\t' || text[p] == kNewLineChar)
+                if (m_TextElementInfos[p].character == '\t' || m_TextElementInfos[p].character == kNewLineChar)
                     return NextCodePointIndex(p);
             }
 
@@ -655,12 +635,12 @@ namespace UnityEngine
                 return p;
 
             // Skip spaces
-            if (text[p] == ' ') // If we're at a space, skip over any number of spaces
+            if (m_TextElementInfos[p].character == ' ') // If we're at a space, skip over any number of spaces
             {
                 while (p < textLen && ClassifyChar(p) == CharacterType.WhiteSpace)
                     p = NextCodePointIndex(p);
             }
-            else if (text[p] == '\t' || text[p] == kNewLineChar) // If we're at a tab or a newline, just step one char ahead
+            else if (m_TextElementInfos[p].character == '\t' || m_TextElementInfos[p].character == kNewLineChar) // If we're at a tab or a newline, just step one char ahead
             {
                 return p;
             }
@@ -674,7 +654,7 @@ namespace UnityEngine
             p = PreviousCodePointIndex(p);
 
             // Skip spaces
-            while (p > 0 && text[p] == ' ')
+            while (p > 0 && m_TextElementInfos[p].character == ' ')
                 p = PreviousCodePointIndex(p);
 
             CharacterType t = ClassifyChar(p);
@@ -688,10 +668,10 @@ namespace UnityEngine
 
         int FindEndOfClassification(int p, Direction dir)
         {
-            if (text.Length == 0)
+            if (characterCount == 0)
                 return 0;
 
-            if (p == text.Length)
+            if (p == characterCount)
                 p = PreviousCodePointIndex(p);
 
             var t = ClassifyChar(p);
@@ -709,8 +689,8 @@ namespace UnityEngine
 
                     case Direction.Forward:
                         p = NextCodePointIndex(p);
-                        if (p == text.Length)
-                            return text.Length;
+                        if (p == characterCount)
+                            return characterCount;
                         break;
                 }
             }
@@ -721,50 +701,50 @@ namespace UnityEngine
         }
 
         internal Action OnCursorIndexChange;
-
         internal Action OnSelectIndexChange;
 
-        void ClampTextIndex(ref int index)
+        int ClampTextIndex(int index)
         {
-            index = Mathf.Clamp(index, 0, text.Length);
+            return Mathf.Clamp(index, 0, characterCount);
         }
 
-        void EnsureValidCodePointIndex(ref int index)
+        internal int EnsureValidCodePointIndex(int index)
         {
-            ClampTextIndex(ref index);
+            index = ClampTextIndex(index);
             if (!IsValidCodePointIndex(index))
                 index = NextCodePointIndex(index);
+            return index;
         }
 
         bool IsValidCodePointIndex(int index)
         {
-            if (index < 0 || index > text.Length)
+            if (index < 0 || index > characterCount)
                 return false;
-            if (index == 0 || index == text.Length)
+            if (index == 0 || index == characterCount)
                 return true;
-            return !char.IsLowSurrogate(text[index]);
+            return !char.IsLowSurrogate(m_TextElementInfos[index].character);
         }
 
         int IndexOfEndOfLine(int startIndex)
         {
-            int index = text.IndexOf(kNewLineChar, startIndex);
-            return (index != -1 ? index : text.Length);
+            int index = m_TextHandle.IndexOf(kNewLineChar, startIndex);
+            return (index != -1 ? index : characterCount);
         }
 
         public int PreviousCodePointIndex(int index)
         {
             if (index > 0)
                 index--;
-            while (index > 0 && char.IsLowSurrogate(text[index]))
+            while (index > 0 && char.IsLowSurrogate(m_TextElementInfos[index].character))
                 index--;
             return index;
         }
 
         public int NextCodePointIndex(int index)
         {
-            if (index < text.Length)
+            if (index < characterCount)
                 index++;
-            while (index < text.Length && char.IsLowSurrogate(text[index]))
+            while (index < characterCount && char.IsLowSurrogate(m_TextElementInfos[index].character))
                 index++;
             return index;
         }
@@ -809,11 +789,12 @@ namespace UnityEngine
 
         CharacterType ClassifyChar(int index)
         {
-            if (text[index] == kNewLineChar)
+            char c = m_TextElementInfos[index].character;
+            if (c == kNewLineChar)
                 return CharacterType.NewLine;
-            if (char.IsWhiteSpace(text, index))
+            if (char.IsWhiteSpace(c))
                 return CharacterType.WhiteSpace;
-            if (char.IsLetterOrDigit(text, index) || text[index] == '\'')
+            if (char.IsLetterOrDigit(c) || m_TextElementInfos[index].character == '\'')
                 return CharacterType.LetterLike;
             return CharacterType.Symbol;
         }

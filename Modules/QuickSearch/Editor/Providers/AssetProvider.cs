@@ -538,7 +538,7 @@ namespace UnityEditor.Search.Providers
                 // Search index
                 foreach (var r in index.Search(searchQuery.ToLowerInvariant(), context, provider))
                     results.Add(r);
-            });
+            }, context.sessions.cancelToken);
 
             while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
             {

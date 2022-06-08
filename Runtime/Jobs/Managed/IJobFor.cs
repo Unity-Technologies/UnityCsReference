@@ -56,19 +56,12 @@ namespace Unity.Jobs
             ForJobStruct<T>.Initialize();
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckReflectionDataCorrect(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-                throw new InvalidOperationException("Support for burst compiled calls to Schedule depends on the Jobs package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))] in your source file.");
-        }
-
         private static IntPtr GetReflectionData<T>()
             where T : struct, IJobFor
         {
             ForJobStruct<T>.Initialize();
             var reflectionData = ForJobStruct<T>.jobReflectionData.Data;
-            CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
 
@@ -85,6 +78,24 @@ namespace Unity.Jobs
         }
 
         unsafe public static void Run<T>(this T jobData, int arrayLength) where T : struct, IJobFor
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), new JobHandle(), ScheduleMode.Run);
+            JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);
+        }
+
+        unsafe public static JobHandle ScheduleByRef<T>(ref this T jobData, int arrayLength, JobHandle dependency) where T : struct, IJobFor
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), dependency, ScheduleMode.Single);
+            return JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);
+        }
+
+        unsafe public static JobHandle ScheduleParallelByRef<T>(ref this T jobData, int arrayLength, int innerloopBatchCount, JobHandle dependency) where T : struct, IJobFor
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), dependency, ScheduleMode.Parallel);
+            return JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, innerloopBatchCount);
+        }
+
+        unsafe public static void RunByRef<T>(ref this T jobData, int arrayLength) where T : struct, IJobFor
         {
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), new JobHandle(), ScheduleMode.Run);
             JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);

@@ -15,14 +15,14 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStorePackageVersion : BasePackageVersion, ISerializationCallbackReceiver
     {
-        [SerializeField]
-        private string m_Author;
+        public static readonly string k_IncompatibleWarningMessage = L10n.Tr("The downloaded version of this package is intended for Unity {0} and higher." +
+            " This version might not work with your current version of Unity." +
+            " Click Update to download a compatible version of the package.");
+
         [SerializeField]
         private string m_Category;
         [SerializeField]
         private List<UIError> m_Errors;
-        [SerializeField]
-        private string m_PublisherId;
         [SerializeField]
         private bool m_IsAvailableOnDisk;
         [SerializeField]
@@ -48,9 +48,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IOProxy = ioProxy;
         }
 
-        public override string author => m_Author;
-
-        public override string authorLink => $"{m_AssetStoreUtils.assetStoreUrl}/publishers/{m_PublisherId}";
+        // We want to distinguish version.author to the package.publisherName since publisher name is related to a product
+        // but author here refers to the author data in the PackageInfo, which is empty for an asset store package version
+        public override string author => string.Empty;
 
         public override string category => m_Category;
 
@@ -76,7 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public override string uniqueId => $"{m_PackageUniqueId}@{m_VersionId}";
+        public override string uniqueId => $"{packageUniqueId}@{versionId}";
 
         public override bool isInstalled => false;
 
@@ -123,15 +123,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_Errors = new List<UIError>();
             m_Tag = PackageTag.Downloadable | PackageTag.Importable;
-            m_PackageUniqueId = productInfo.id;
 
-            m_Description = productInfo.description;
-            m_Author = productInfo.author;
-            m_PublisherId = productInfo.publisherId;
+            // m_Description is the version level description from PackageInfo, so we set this field to empty here deliberately
+            // For asset store packages, we have the `productDescription` at the package level.
+            m_Description = string.Empty;
 
             m_Category = productInfo.category;
 
-            m_PublishNotes = localInfo?.publishNotes ?? productInfo.publishNotes ?? string.Empty;
+            m_PublishNotes = localInfo?.publishNotes ?? string.Empty;
 
             m_VersionString = localInfo?.versionString ?? productInfo.versionString ?? string.Empty;
             m_VersionId = localInfo?.versionId ?? productInfo.versionId ?? string.Empty;
@@ -139,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var publishDateString = localInfo?.publishedDate ?? productInfo.publishedDate ?? string.Empty;
             m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
-            m_DisplayName = !string.IsNullOrEmpty(productInfo.displayName) ? productInfo.displayName : $"Package {m_PackageUniqueId}@{m_VersionId}";
+            m_DisplayName = !string.IsNullOrEmpty(productInfo.displayName) ? productInfo.displayName : $"Package {productInfo.id}@{m_VersionId}";
 
             m_SupportedUnityVersions = new List<SemVersion>();
             if (localInfo != null)
@@ -178,10 +177,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetLocalPath(localInfo?.packagePath);
         }
 
-        public void SetUpmPackageFetchError(UIError error)
+        public void AddDowngradeWarningIfApplicable(AssetStoreLocalInfo localInfo, AssetStoreUpdateInfo updateInfo)
         {
-            m_Errors.Add(error);
-            m_Tag &= ~(PackageTag.Downloadable | PackageTag.Importable);
+            if (updateInfo?.canUpdate == true)
+            {
+                var warningMessage = string.Format(k_IncompatibleWarningMessage, localInfo.supportedVersion);
+                m_Errors.Add(new UIError(UIErrorCode.AssetStorePackageError, warningMessage, UIError.Attribute.IsWarning));
+            }
         }
 
         public override void OnAfterDeserialize()

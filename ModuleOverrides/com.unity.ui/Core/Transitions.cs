@@ -760,6 +760,11 @@ namespace UnityEngine.UIElements.Experimental
                         case StylePropertyId.Overflow:
                         case StylePropertyId.Display:
                         case StylePropertyId.BackgroundImage:
+                        case StylePropertyId.BackgroundPosition:
+                        case StylePropertyId.BackgroundPositionX:
+                        case StylePropertyId.BackgroundPositionY:
+                        case StylePropertyId.BackgroundRepeat:
+                        case StylePropertyId.BackgroundSize:
                         case StylePropertyId.Custom:
                         case StylePropertyId.Unknown:
                         case StylePropertyId.UnitySliceLeft:

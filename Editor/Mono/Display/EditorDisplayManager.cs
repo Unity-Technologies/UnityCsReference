@@ -226,7 +226,7 @@ namespace UnityEditor
             }
         }
 
-        private static void ActivateDisplayImpl(IntPtr nativeDisplay, int width, int height, int refreshRate)
+        private static void ActivateDisplayImpl(IntPtr nativeDisplay, int width, int height, RefreshRate refreshRate)
         {
             var manager = instance;
             if (manager.m_mode == DisplayAPIControlMode.FromRuntime)

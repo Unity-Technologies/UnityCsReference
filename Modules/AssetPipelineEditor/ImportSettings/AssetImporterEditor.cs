@@ -167,6 +167,7 @@ namespace UnityEditor.AssetImporters
         bool m_ApplyRevertGUICalled;
         // Adding a check on OnEnable to make sure users call the base class, as it used to do nothing.
         bool m_OnEnableCalled;
+        bool? m_AssetHasIssues;
 
         // Called from ActiveEditorTracker.cpp to setup the target editor once created before Awake and OnEnable of the Editor.
         internal void InternalSetAssetImporterTargetEditor(Object editor)
@@ -363,6 +364,7 @@ namespace UnityEditor.AssetImporters
 
         public virtual void OnEnable()
         {
+            finishedDefaultHeaderGUI += DrawAssetHasIssuesNotification;
             AssetImporterEditorPostProcessAsset.OnAssetbundleNameChanged += FixImporterAssetbundleName;
 
             InitializeAvailableImporters();
@@ -381,6 +383,7 @@ namespace UnityEditor.AssetImporters
 
         public virtual void OnDisable()
         {
+            finishedDefaultHeaderGUI -= DrawAssetHasIssuesNotification;
             AssetImporterEditorPostProcessAsset.OnAssetbundleNameChanged -= FixImporterAssetbundleName;
 
             if (!m_OnEnableCalled)
@@ -427,6 +430,70 @@ namespace UnityEditor.AssetImporters
             if (extraDataType != null)
                 DoDrawDefaultInspector(extraDataSerializedObject);
             ApplyRevertGUI();
+        }
+
+        void DrawAssetHasIssuesNotification(Editor editor)
+        {
+            if (editor != this)
+                return;
+
+            AssetImporterEditor assetImporterEditor = (AssetImporterEditor) editor;
+            if (!assetImporterEditor.AssetHasIssues())
+                return;
+
+            if (assetImporterEditor.targets == null || assetImporterEditor.targets.Length == 0)
+                return;
+
+            int nbErrors = 0, nbWarnings = 0;
+            var guids = new List<GUID>();
+            foreach (var importer in assetImporterEditor.targets.OfType<AssetImporter>())
+            {
+                var guid = AssetDatabase.GUIDFromAssetPath(importer.assetPath);
+                AssetImporter.GetImportLogEntriesCount(guid, out int nbE, out int nbW);
+
+                if (nbE > 0 || nbW > 0)
+                    guids.Add(guid);
+
+                nbErrors += nbE;
+                nbWarnings += nbW;
+            }
+
+            if (nbErrors + nbWarnings <= 0)
+                return;
+
+            string text = assetImporterEditor.targets.Length == 1 ? "Last import generated " : $"{assetImporterEditor.targets.Length} selected assets with ";
+            if (nbErrors > 0 && nbWarnings > 0)
+                text += $"{nbErrors} errors / {nbWarnings} warnings.";
+            else if (nbErrors > 0)
+                text += $"{nbErrors} errors";
+            else
+                text += $"{nbWarnings} warnings";
+
+            var btnText = $"Print to console";
+            Action onBtnClick = () =>
+            {
+                foreach (var guid in guids)
+                {
+                    ImportLog importLog = AssetImporter.GetImportLog(guid);
+                    if (importLog != null)
+                        importLog.PrintToConsole();
+                }
+            };
+            Texture image = EditorGUIUtility.GetHelpIcon(nbErrors > 0 ? MessageType.Error : MessageType.Warning);
+            DrawNotification(image, text, btnText, onBtnClick);
+        }
+
+        internal bool AssetHasIssues()
+        {
+            if (!m_AssetHasIssues.HasValue)
+            {
+                m_AssetHasIssues = targets != null && targets.Length > 0 && targets.Any(t =>
+                    t is AssetImporter importer
+                    && AssetImporter.GetImportLogEntriesCount(AssetDatabase.GUIDFromAssetPath(importer.assetPath), out int nbErrors, out int nbWarnings)
+                    && (nbErrors > 0 || nbWarnings > 0));
+            }
+
+            return m_AssetHasIssues.Value;
         }
 
         IEnumerable<string> GetAssetPaths()

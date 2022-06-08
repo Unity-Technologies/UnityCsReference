@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     internal interface IGroupManager
     {
+        void Init(IGroupBox groupBox);
         IGroupBoxOption GetSelectedOption();
         void OnOptionSelectionChanged(IGroupBoxOption selectedOption);
         void RegisterOption(IGroupBoxOption option);
@@ -26,6 +27,12 @@ namespace UnityEngine.UIElements
     {
         List<IGroupBoxOption> m_GroupOptions = new List<IGroupBoxOption>();
         IGroupBoxOption m_SelectedOption;
+        IGroupBox m_GroupBox;
+
+        public void Init(IGroupBox groupBox)
+        {
+            m_GroupBox = groupBox;
+        }
 
         public IGroupBoxOption GetSelectedOption()
         {
@@ -50,12 +57,14 @@ namespace UnityEngine.UIElements
             if (!m_GroupOptions.Contains(option))
             {
                 m_GroupOptions.Add(option);
+                m_GroupBox.OnOptionAdded(option);
             }
         }
 
         public void UnregisterOption(IGroupBoxOption option)
         {
             m_GroupOptions.Remove(option);
+            m_GroupBox.OnOptionRemoved(option);
         }
     }
 }

@@ -36,7 +36,11 @@ namespace UnityEditor.Experimental.GraphView
             style.position = Position.Absolute;
             style.top = float.NaN;
             style.left = float.NaN;
-            style.unityBackgroundScaleMode = ScaleMode.ScaleAndCrop;
+
+            style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop);
+            style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop);
+            style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleAndCrop);
+            style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleAndCrop);
 
             m_Active = false;
             m_OnResizedCallback = onResizedCallback;
@@ -49,7 +53,13 @@ namespace UnityEditor.Experimental.GraphView
             AddToClassList("resizer");
 
             var icon = new VisualElement() {
-                style = { unityBackgroundScaleMode = ScaleMode.ScaleAndCrop }
+                style =
+                {
+                    backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop),
+                    backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop),
+                    backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleAndCrop),
+                    backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleAndCrop)
+                }
             };
             icon.AddToClassList("resizer-icon");
             Add(icon);

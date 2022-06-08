@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
@@ -31,9 +32,10 @@ namespace UnityEngine
         private string SelectedText => m_TextSelectingUtility.selectedText;
         private int m_iAltCursorPos => m_TextSelectingUtility.iAltCursorPos;
         int m_CursorIndexSavedState = -1;
-        bool m_IsCompositionActive;
+        internal bool isCompositionActive;
         bool m_UpdateImeWindowPosition;
 
+        public bool multiline = false;
         internal bool revealCursor
         {
             get { return m_TextSelectingUtility.revealCursor; }
@@ -49,15 +51,25 @@ namespace UnityEngine
             get { return m_TextSelectingUtility.selectIndex; }
             set { m_TextSelectingUtility.selectIndex = value; }
         }
-        internal string text
+
+        string m_Text;
+        public string text
         {
-            get { return m_TextSelectingUtility.text; }
-            set { m_TextSelectingUtility.text = value; }
+            get { return m_Text; }
+            set
+            {
+                if (value == m_Text)
+                    return;
+
+                m_Text = value ?? string.Empty;
+            }
         }
-        public TextEditingUtilities(TextSelectingUtilities selectingUtilities, TextHandle textHandle)
+
+        public TextEditingUtilities(TextSelectingUtilities selectingUtilities, TextHandle textHandle, string text)
         {
             m_TextSelectingUtility = selectingUtilities;
             m_TextHandle = textHandle;
+            m_Text = text;
         }
 
         /// <summary>
@@ -67,20 +79,20 @@ namespace UnityEngine
         {
             if (GUIUtility.compositionString.Length > 0)
             {
-                if (!m_IsCompositionActive)
+                if (!isCompositionActive)
                 {
                     m_UpdateImeWindowPosition = true;
                     ReplaceSelection(string.Empty);
                 }
 
-                m_IsCompositionActive = true;
+                isCompositionActive = true;
             }
             else
             {
-                m_IsCompositionActive = false;
+                isCompositionActive = false;
             }
 
-            return m_IsCompositionActive;
+            return isCompositionActive;
         }
 
         public bool ShouldUpdateImeWindowPosition()
@@ -98,7 +110,7 @@ namespace UnityEngine
         {
             RestoreCursorState();
             var compositionString = GUIUtility.compositionString;
-            if (m_IsCompositionActive)
+            if (isCompositionActive)
             {
                 return richText ? text.Insert(cursorIndex, $"<u>{compositionString}</u>") : text.Insert(cursorIndex, compositionString);
             }
@@ -116,7 +128,7 @@ namespace UnityEngine
                 return;
 
             m_CursorIndexSavedState = m_TextSelectingUtility.cursorIndex;
-            m_TextSelectingUtility.SetCursorNoCheck(m_CursorIndexSavedState + GUIUtility.compositionString.Length);
+            cursorIndex = selectIndex = m_CursorIndexSavedState + GUIUtility.compositionString.Length;
         }
 
         /// <summary>
@@ -127,7 +139,7 @@ namespace UnityEngine
             if (m_CursorIndexSavedState == -1)
                 return;
 
-            m_TextSelectingUtility.SetCursorNoCheck(m_CursorIndexSavedState);
+            cursorIndex = selectIndex = m_CursorIndexSavedState;
             m_CursorIndexSavedState = -1;
         }
 
@@ -498,6 +510,7 @@ namespace UnityEngine
             RestoreCursorState();
             DeleteSelection();
             text = text.Insert(cursorIndex, replace);
+
             selectIndex = cursorIndex += replace.Length;
             m_TextSelectingUtility.ClearCursorPos();
         }
@@ -546,7 +559,7 @@ namespace UnityEngine
             string pasteval = GUIUtility.systemCopyBuffer;
             if (pasteval != "")
             {
-                if (!m_TextSelectingUtility.multiline)
+                if (!multiline)
                     pasteval = ReplaceNewlinesWithSpaces(pasteval);
                 ReplaceSelection(pasteval);
                 return true;

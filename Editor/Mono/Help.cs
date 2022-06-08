@@ -155,6 +155,11 @@ namespace UnityEditor
                 {
                     return helpTopic.Substring(dashIndex + 1);
                 }
+
+                if (obj is SceneAsset)
+                {
+                    return nameof(SceneAsset);
+                }
             }
             else
             {
@@ -339,6 +344,9 @@ namespace UnityEditor
             {
                 return "CreatingScenes";
             }
+
+            if (obj is DefaultAsset)
+                return "";
 
             return $"class-{obj.GetType().Name}";
         }

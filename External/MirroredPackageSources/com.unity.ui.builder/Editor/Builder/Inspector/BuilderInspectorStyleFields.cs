@@ -28,7 +28,6 @@ namespace Unity.UI.Builder
         BuilderSelection m_Selection;
 
         internal Dictionary<string, List<VisualElement>> m_StyleFields;
-        Dictionary<string, PropertyInfo> m_ComputedStylesPropertyInfos;
 
         List<string> s_StyleChangeList = new List<string>();
 
@@ -46,9 +45,6 @@ namespace Unity.UI.Builder
             m_Selection = inspector.selection;
 
             m_StyleFields = new Dictionary<string, List<VisualElement>>();
-            m_ComputedStylesPropertyInfos = new Dictionary<string, PropertyInfo>();
-
-            CreateReflectionCaches();
         }
 
         public List<VisualElement> GetFieldListForStyleName(string styleName)
@@ -90,25 +86,6 @@ namespace Unity.UI.Builder
             return ussStyleName;
         }
 
-        void CreateReflectionCaches()
-        {
-            foreach (PropertyInfo field in StyleSheetUtilities.ComputedStylesFieldInfos)
-            {
-                var styleNameFrom = BuilderNameUtilities.ConvertStyleCSharpNameToUssName(field.Name);
-                m_ComputedStylesPropertyInfos[styleNameFrom] = field;
-            }
-        }
-
-        public PropertyInfo FindStylePropertyInfo(string styleName)
-        {
-            if (string.IsNullOrEmpty(styleName))
-                return null;
-
-            var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(styleName);
-            m_ComputedStylesPropertyInfos.TryGetValue(cSharpStyleName, out PropertyInfo result);
-            return result;
-        }
-
         void RegisterFocusCallbackOnHighlightingField(VisualElement field)
         {
             field.RegisterCallback<FocusInEvent>(OnFieldFocusIn);
@@ -139,14 +116,13 @@ namespace Unity.UI.Builder
             // Link the row.
             fieldElement.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, styleRow);
 
-            var field = FindStylePropertyInfo(styleName);
-            if (field == null)
+            var styleType = StyleDebug.GetComputedStyleType(styleName);
+            if (styleType == null)
                 return;
 
             // We don't care which element we get the value for here as we're only interested
             // in the type of Enum it might be (and for validation), but not it's actual value.
-            var val = field.GetValue(fieldElement.computedStyle, null);
-            var valType = val == null ? typeof(object) : val.GetType();
+            var val = StyleDebug.GetComputedStyleValue(fieldElement.computedStyle, styleName);
 
             if (IsComputedStyleFloat(val) && fieldElement is FloatField)
             {
@@ -243,9 +219,9 @@ namespace Unity.UI.Builder
                 uiField.objectType = typeof(Texture2D);
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
-            else if (IsComputedStyleEnum(val, valType))
+            else if (IsComputedStyleEnum(val, styleType))
             {
-                var enumValue = GetComputedStyleEnumValue(val, valType);
+                var enumValue = GetComputedStyleEnumValue(val, styleType);
 
                 if (fieldElement is EnumField)
                 {
@@ -298,7 +274,6 @@ namespace Unity.UI.Builder
             }
 
             fieldElement.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, styleName);
-            fieldElement.SetProperty(BuilderConstants.InspectorComputedStylePropertyInfoVEPropertyName, field);
             SetUpContextualMenuOnStyleField(fieldElement);
 
             // Add to styleName to field map.
@@ -500,8 +475,8 @@ namespace Unity.UI.Builder
 
         public void RefreshStyleField(string styleName, VisualElement fieldElement)
         {
-            var field = FindStylePropertyInfo(styleName);
-            if (field == null)
+            var styleType = StyleDebug.GetComputedStyleType(styleName);
+            if (styleType == null)
             {
                 // Transitions are made from 4 different properties and does not have a dedicated C# property on ComputedStyle.
                 if (!string.IsNullOrEmpty(styleName) &&
@@ -512,8 +487,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var val = field.GetValue(currentVisualElement.computedStyle, null);
-            var valType = val == null ? typeof(object) : val.GetType();
+            var val = StyleDebug.GetComputedStyleValue(currentVisualElement.computedStyle, styleName);
             var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(styleName);
             var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
             bool useStyleProperty = styleProperty != null && !styleProperty.IsVariable();
@@ -846,9 +820,9 @@ namespace Unity.UI.Builder
                     uiField.SetValueWithoutNotify(null);
                 }
             }
-            else if (IsComputedStyleEnum(val, valType))
+            else if (IsComputedStyleEnum(val, styleType))
             {
-                var enumValue = GetComputedStyleEnumValue(val, valType);
+                var enumValue = GetComputedStyleEnumValue(val, styleType);
 
                 if (useStyleProperty)
                 {
@@ -965,18 +939,17 @@ namespace Unity.UI.Builder
             {
                 foldout.UpdateFromChildFields();
             }
-            
+
             updateStyleCategoryFoldoutOverrides?.Invoke();
         }
 
         public void DispatchChangeEvent(string styleName, VisualElement fieldElement)
         {
-            var field = FindStylePropertyInfo(styleName);
-            if (field == null)
+            var styleType = StyleDebug.GetComputedStyleType(styleName);
+            if (styleType == null)
                 return;
 
-            var val = field.GetValue(currentVisualElement.computedStyle, null);
-            var valType = val == null ? typeof(object) : val.GetType();
+            var val = StyleDebug.GetComputedStyleValue(fieldElement.computedStyle, styleName);
 
             if (IsComputedStyleFloat(val) && fieldElement is FloatField floatField)
             {
@@ -1051,7 +1024,7 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(transitionTimingFunctionField);
             }
-            else if (IsComputedStyleEnum(val, valType))
+            else if (IsComputedStyleEnum(val, styleType))
             {
                 switch (fieldElement)
                 {
@@ -1082,8 +1055,8 @@ namespace Unity.UI.Builder
                 var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(path);
                 var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
 
-                var field = FindStylePropertyInfo(path);
-                if (field == null)
+                var styleType = StyleDebug.GetComputedStyleType(path);
+                if (styleType == null)
                     continue;
 
                 if (styleProperty != null)
@@ -1104,11 +1077,11 @@ namespace Unity.UI.Builder
                 var cSharpStyleName = ConvertUssStyleNameToCSharpStyleName(path);
                 var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
 
-                var field = FindStylePropertyInfo(path);
-                if (field == null)
+                var styleType = StyleDebug.GetComputedStyleType(path);
+                if (styleType == null)
                     continue;
 
-                var val = field.GetValue(currentVisualElement.computedStyle, null);
+                var val = StyleDebug.GetComputedStyleValue(currentVisualElement.computedStyle, path);
                 if (val is StyleColor)
                 {
                     var style = (StyleColor)val;
@@ -1155,7 +1128,7 @@ namespace Unity.UI.Builder
         void BuildStyleFieldContextualMenu(DropdownMenu menu, VisualElement fieldElement)
         {
             var isSelector = BuilderSharedStyles.IsSelectorElement(currentVisualElement);
-            
+
             if (fieldElement.HasProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName))
             {
                 var fieldValueInfo =
@@ -1214,7 +1187,7 @@ namespace Unity.UI.Builder
                     menu.AppendSeparator();
                 }
             }
-            
+
             menu.AppendAction(
                 isSelector ? BuilderConstants.ContextMenuSetAsValueMessage : BuilderConstants.ContextMenuSetAsInlineValueMessage,
                 SetStyleProperty,
@@ -1237,7 +1210,7 @@ namespace Unity.UI.Builder
         void SetUpContextualMenuOnStyleField(VisualElement fieldElement)
         {
             var menuTarget = fieldElement;
-            
+
             // show the context menu when right-clicking anywhere in the containing row if the row only contains this field
             if (fieldElement.parent is BuilderStyleRow row && !row.ClassListContains(BuilderConstants.InspectorMultiFieldsRowClassName))
                 menuTarget = row;
@@ -1309,7 +1282,7 @@ namespace Unity.UI.Builder
                 return;
 
             StyleProperty styleProperty = null;
-            
+
             bool isNewValue = OnFieldVariableChangeImplInBatch(newValue, styleName, index, out styleProperty);
             PostStyleFieldSteps(target, styleProperty, styleName, isNewValue, true, notifyType);
         }
@@ -1346,7 +1319,7 @@ namespace Unity.UI.Builder
             var varEditingHandler = StyleVariableUtilities.GetVarHandler(bindableElement);
             varEditingHandler.ShowVariableField();
         }
-        
+
         void RemoveVariableViaContextMenu(DropdownMenuAction action)
         {
             var bindableElement = action.userData as BindableElement;
@@ -1374,7 +1347,7 @@ namespace Unity.UI.Builder
         DropdownMenuAction.Status SetActionStatus(DropdownMenuAction action)
         {
             var isBoundToVariable = false;
-            
+
             if (action.userData is VisualElement fieldElement)
             {
                 var styleName =
@@ -1385,8 +1358,8 @@ namespace Unity.UI.Builder
                 if (fieldElement.HasProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName))
                 {
                     var fieldValueInfo = (FieldValueInfo) fieldElement.GetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName);
-                
-                    isBoundToVariable = fieldValueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable; 
+
+                    isBoundToVariable = fieldValueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable;
                 }
             }
 
@@ -1558,7 +1531,7 @@ namespace Unity.UI.Builder
                 }
             }
         }
-        
+
         void OpenSelectorInIDE(DropdownMenuAction action)
         {
             var matchedRule = (MatchedRule) action.userData;
@@ -1568,7 +1541,7 @@ namespace Unity.UI.Builder
             {
                 opened = InternalEditorUtility.OpenFileAtLineExternal(matchedRule.fullPath, matchedRule.lineNumber, -1);
             }
-            
+
             if (!opened)
             {
                 Builder.ShowWarning(BuilderConstants.CouldNotOpenSelectorMessage);
@@ -2229,10 +2202,10 @@ namespace Unity.UI.Builder
         static public bool IsComputedStyleFontAsset(object val, string styleName)
         {
             return IsComputedStyleFont(val, styleName) ||
-                   val is StyleFontDefinition ||
-                   val is FontDefinition ||
-                   val is FontAsset ||
-                   styleName == "-unity-font-definition";
+                val is StyleFontDefinition ||
+                val is FontDefinition ||
+                val is FontAsset ||
+                styleName == "-unity-font-definition";
         }
 
         static public bool IsComputedStyleTextShadow(object val)

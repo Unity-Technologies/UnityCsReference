@@ -12,13 +12,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStorePackage : BasePackage
     {
-        public static readonly string k_IncompatibleWarningMessage = L10n.Tr("The downloaded version of this package is intended for Unity {0} and higher." +
-            " This version might not work with your current version of Unity." +
-            " Click Update to download a compatible version of the package.");
-
         [SerializeField]
         private string m_ProductId;
         public override string uniqueId => m_ProductId;
+        public override string productId => m_ProductId;
 
         [SerializeField]
         private AssetStoreVersionList m_VersionList;
@@ -26,7 +23,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UpmVersionList m_UpmVersionList;
 
-        public override IVersionList versions => string.IsNullOrEmpty(name) ? m_VersionList as IVersionList : m_UpmVersionList as IVersionList;
+        [SerializeField]
+        private PlaceholderVersionList m_PlaceholderVersionList;
+
+        public override IVersionList versions
+        {
+            get
+            {
+                if (m_PlaceholderVersionList?.Any() == true)
+                    return m_PlaceholderVersionList;
+                if (string.IsNullOrEmpty(name))
+                    return m_VersionList;
+                return m_UpmVersionList;
+            }
+        }
 
         [SerializeField]
         private List<PackageImage> m_Images;
@@ -58,117 +68,65 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionList?.ResolveDependencies(assetStoreUtils, ioProxy);
         }
 
-        public AssetStorePackage(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, string productId, UIError error)
+        private AssetStorePackage(AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo)
         {
-            ResolveDependencies(assetStoreUtils, ioProxy);
-
-            m_Errors = new List<UIError> { error };
+            m_Errors = new List<UIError>();
             m_Progress = PackageProgress.None;
             m_Type = PackageType.AssetStore;
-            m_Name = string.Empty;
+            m_Name = productInfo?.packageName;
+            m_ProductId = productInfo?.id.ToString();
+            m_ProductDisplayName = productInfo?.displayName;
+            m_ProductDescription = productInfo?.description;
+            m_PublishNotes = productInfo?.publishNotes;
+            m_PublisherName = productInfo?.publisherName;
+            m_PublisherLink = productInfo?.publisherLink;
+
+            m_Images = productInfo?.images ?? new List<PackageImage>();
+            m_Links = productInfo?.links ?? new List<PackageLink>();
+
+            m_Labels = purchaseInfo?.tags;
+            m_IsHidden = purchaseInfo?.isHidden == true;
+            m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
+
+            var firstPublishedDateString = productInfo?.firstPublishedDate ?? string.Empty;
+            m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
+
+            m_AssetStoreLink = productInfo?.assetStoreLink.url;
+        }
+
+        public AssetStorePackage(AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, AssetStoreVersionList versionList)
+            : this(purchaseInfo, productInfo)
+        {
+            m_VersionList = versionList;
+
+            RefreshPackageTypeFromVersions();
+            LinkPackageAndVersions();
+        }
+
+        // We are passing packageName and productId in this particular constructor because for regular AssetStore packages
+        // those two fields are inferred from productInfo, in the case of Upm on AssetStore package, productInfo could be null sometimes
+        public AssetStorePackage(string packageName, string productId, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, UpmVersionList upmVersionList)
+            : this(purchaseInfo, productInfo)
+        {
+            m_Name = packageName;
             m_ProductId = productId;
+            m_UpmVersionList = upmVersionList;
+            m_Type |= PackageType.Upm;
 
-            m_Images = new List<PackageImage>();
-            m_Links = new List<PackageLink>();
-            m_VersionList = new AssetStoreVersionList(assetStoreUtils, ioProxy);
-            m_UpmVersionList = new UpmVersionList();
-
-            m_Labels = new List<string>();
-            m_PurchasedTimeTicks = 0;
-
+            RefreshPackageTypeFromVersions();
             LinkPackageAndVersions();
         }
 
-        public AssetStorePackage(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
+        public AssetStorePackage(string packageName, string productId, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, PlaceholderVersionList placeholderVersionList)
+            : this(purchaseInfo, productInfo)
         {
-            ResolveDependencies(assetStoreUtils, ioProxy);
+            m_Name = packageName;
+            m_ProductId = productId;
+            m_PlaceholderVersionList = placeholderVersionList;
+            if (!string.IsNullOrEmpty(packageName))
+                m_Type |= PackageType.Upm;
 
-            m_Errors = new List<UIError>();
-            m_Progress = PackageProgress.None;
-            m_Type = PackageType.AssetStore;
-            m_Name = string.Empty;
-            m_ProductId = productInfo?.id.ToString();
-            m_Images = productInfo?.images ?? new List<PackageImage>();
-            m_Links = productInfo?.links ?? new List<PackageLink>();
-            m_VersionList = new AssetStoreVersionList(assetStoreUtils, ioProxy);
-            m_UpmVersionList = new UpmVersionList();
-            m_AssetStoreLink = productInfo?.assetStoreLink.url;
-
-            var firstPublishedDateString = productInfo?.firstPublishedDate ?? string.Empty;
-            m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
-
-            m_Labels = purchaseInfo?.tags;
-            m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
-            m_IsHidden = purchaseInfo?.isHidden == true;
-
-            if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Invalid product details.")));
-            else
-            {
-                // The version we get from the product info the latest on the server
-                // The version we get from the localInfo is the version publisher set when uploading the .unitypackage file
-                // The publisher could update the version on the server but NOT upload a new .unitypackage file, that will
-                // result in a case where localInfo and productInfo have different version numbers but no update is available
-                // Because of this, we prefer showing version from the server (even when localInfo version is different)
-                // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
-                var latestVersion = new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo);
-                if (localInfo != null)
-                {
-                    if (localInfo.canUpdate)
-                        m_VersionList.AddVersion(new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo, localInfo));
-                    else
-                    {
-                        latestVersion.SetLocalPath(localInfo.packagePath);
-                        if (localInfo.canDowngrade)
-                        {
-                            var warningMessage = string.Format(k_IncompatibleWarningMessage, localInfo.supportedVersion);
-                            AddError(new UIError(UIErrorCode.AssetStorePackageError, warningMessage, UIError.Attribute.IsWarning));
-                        }
-                    }
-                }
-                m_VersionList.AddVersion(latestVersion);
-            }
-
-            LinkPackageAndVersions();
-        }
-
-        public AssetStorePackage(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStorePurchaseInfo purchaseInfo, AssetStoreProductInfo productInfo, UpmPackage package)
-        {
-            ResolveDependencies(assetStoreUtils, ioProxy);
-
-            m_Errors = new List<UIError>();
-            m_Progress = PackageProgress.None;
-            m_Type = PackageType.AssetStore;
-            m_Name = package?.name ?? string.Empty;
-            m_ProductId = productInfo?.id.ToString();
-
-            m_Images = productInfo?.images ?? new List<PackageImage>();
-            m_Links = productInfo?.links ?? new List<PackageLink>();
-            m_VersionList = new AssetStoreVersionList(assetStoreUtils, ioProxy);
-
-            m_Labels = purchaseInfo?.tags;
-            m_IsHidden = purchaseInfo?.isHidden == true;
-            m_PurchasedTimeTicks = !string.IsNullOrEmpty(purchaseInfo?.purchasedTime) ? DateTime.Parse(purchaseInfo?.purchasedTime).Ticks : 0;
-
-            m_UpmVersionList = package?.versions as UpmVersionList ?? new UpmVersionList();
-            if (productInfo != null)
-            {
-                foreach (var version in m_UpmVersionList.Cast<UpmPackageVersion>())
-                    version.UpdateProductInfo(productInfo);
-            }
-
-            m_AssetStoreLink = productInfo?.assetStoreLink.url;
-
-            var firstPublishedDateString = productInfo?.firstPublishedDate ?? string.Empty;
-            m_FirstPublishedDateTicks = !string.IsNullOrEmpty(firstPublishedDateString) ? DateTime.Parse(firstPublishedDateString).Ticks : 0;
-
-            if (purchaseInfo == null)
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to get asset purchase details because you may not have purchased this package.")));
-            if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset product details.")));
-            else if (string.IsNullOrEmpty(package?.name))
-                AddError(new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Unable to retrieve asset package info.")));
-
+            RefreshPackageTypeFromVersions();
             LinkPackageAndVersions();
         }
     }

@@ -1592,6 +1592,10 @@ namespace UnityEditor.UIElements.Bindings
                     // at least update the prefab override visual if necessary. Happens when user reverts a
                     // field where the value is the same as the prefab registered value. Case 1276154.
                     BindingsStyleHelpers.UpdatePrefabStateStyle(veField, boundProperty);
+
+                    if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState() && boundProperty.isLiveModified)
+                        BindingsStyleHelpers.UpdateLivePropertyStateStyle(veField, boundProperty);
+
                     return;
                 }
             }

@@ -26,7 +26,7 @@ namespace UnityEngine
 
 
         private CancellationTokenSource m_CancellationTokenSource;
-        public CancellationToken CancellationToken
+        public CancellationToken destroyCancellationToken
         {
             get
             {

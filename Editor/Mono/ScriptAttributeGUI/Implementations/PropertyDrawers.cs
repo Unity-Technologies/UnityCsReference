@@ -415,6 +415,7 @@ namespace UnityEditor
                 var field = new GradientField(property.displayName);
                 field.hdr = gradientUsage.hdr;
                 field.colorSpace = gradientUsage.colorSpace;
+                field.bindingPath = property.propertyPath;
                 return field;
             }
 

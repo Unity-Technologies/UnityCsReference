@@ -254,7 +254,12 @@ namespace UnityEditor.SceneTemplate
                 Help.BrowseURL(helpUrl);
             });
             helpButton.style.backgroundImage = new StyleBackground(m_HelpIcon);
-            helpButton.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+
+            helpButton.style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit);
+            helpButton.style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit);
+            helpButton.style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleToFit);
+            helpButton.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleToFit);
+
             helpButton.AddToClassList(Styles.classFoldoutHelpButton);
             toggleInput.Add(helpButton);
 

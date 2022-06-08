@@ -71,6 +71,14 @@ namespace UnityEngine
             get { return Internal_GetActiveTextureColorSpace() == 0 ? ColorSpace.Linear : ColorSpace.Gamma; }
         }
 
+        [NativeMethod("GetStoredColorSpace")]
+        extern private TextureColorSpace Internal_GetStoredColorSpace();
+
+        public bool isDataSRGB
+        {
+            get { return Internal_GetStoredColorSpace() == TextureColorSpace.sRGB; }
+        }
+
         extern public Hash128 imageContentsHash { get; set; }
 
         extern public static ulong totalTextureMemory

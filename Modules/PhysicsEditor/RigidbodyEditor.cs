@@ -30,6 +30,11 @@ namespace UnityEditor
         SerializedProperty m_Interpolate;
         SerializedProperty m_CollisionDetection;
 
+        readonly AnimBool m_ShowLayerOverrides = new AnimBool();
+        private SavedBool m_ShowLayerOverridesFoldout;
+        SerializedProperty m_IncludeLayers;
+        SerializedProperty m_ExcludeLayers;
+
 
          private class Styles
         {
@@ -51,12 +56,12 @@ namespace UnityEditor
 
             public static GUIContent freezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
             public static GUIContent freezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
+
+            public static GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
+            public static GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
         }
 
-        readonly AnimBool m_ShowInfo = new AnimBool();
-        private bool m_RequiresConstantRepaint;
-
-        public void OnEnable()
+         public void OnEnable()
         {
             m_Mass = serializedObject.FindProperty("m_Mass");
             m_Drag = serializedObject.FindProperty("m_Drag");
@@ -74,16 +79,19 @@ namespace UnityEditor
             m_CollisionDetection = serializedObject.FindProperty("m_CollisionDetection");
             m_Constraints = serializedObject.FindProperty("m_Constraints");
 
-            m_ShowInfo.valueChanged.AddListener(Repaint);
+            m_IncludeLayers = serializedObject.FindProperty("m_IncludeLayers");
+            m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
 
-            m_RequiresConstantRepaint = false;
+            m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
+            m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
+            m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
 
             PhysicsDebugWindow.UpdateSelectionOnComponentAdd();
         }
 
         public void OnDisable()
         {
-            m_ShowInfo.valueChanged.RemoveListener(Repaint);
+            m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
         }
 
         void ConstraintToggle(Rect r, string label, RigidbodyConstraints value, int bit)
@@ -163,12 +171,23 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
 
+            ShowLayerOverridesProperties();
+
             serializedObject.ApplyModifiedProperties();
         }
 
-        public override bool RequiresConstantRepaint()
+        private void ShowLayerOverridesProperties()
         {
-            return m_RequiresConstantRepaint;
+            // Show Layer Overrides.
+            m_ShowLayerOverridesFoldout.value = m_ShowLayerOverrides.target = EditorGUILayout.Foldout(m_ShowLayerOverrides.target, "Layer Overrides", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowLayerOverrides.faded))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_IncludeLayers, Styles.includeLayers);
+                EditorGUILayout.PropertyField(m_ExcludeLayers, Styles.excludeLayers);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
         }
     }
 }

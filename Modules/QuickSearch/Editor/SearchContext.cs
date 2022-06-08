@@ -6,9 +6,106 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using UnityEditor.SearchService;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.Search
 {
+    enum SearchPickerType
+    {
+        None,
+        AdvancedSearchPicker,
+        ObjectField,
+        SearchContextAttribute
+    }
+
+    class RuntimeSearchContext
+    {
+        public SearchPickerType pickerType;
+        public ISearchContext searchEngineContext;
+
+        public ProjectSearchContext projectSearchContext => searchEngineContext.engineScope == SearchEngineScope.Project ? (ProjectSearchContext)searchEngineContext : null;
+        public SceneSearchContext sceneSearchContext => searchEngineContext.engineScope == SearchEngineScope.Scene ? (SceneSearchContext)searchEngineContext : null;
+        public ObjectSelectorSearchContext selectorSearchContext => searchEngineContext.engineScope == SearchEngineScope.ObjectSelector ? (ObjectSelectorSearchContext)searchEngineContext : null;
+
+        Object m_CurrentObject;
+        public Object currentObject
+        {
+            get
+            {
+                if (m_CurrentObject != null)
+                    return m_CurrentObject;
+
+                if (searchEngineContext?.engineScope == SearchEngineScope.ObjectSelector)
+                    return selectorSearchContext?.currentObject;
+
+                return null;
+            }
+            set => m_CurrentObject = value;
+        }
+
+        Object[] m_EditedObjects;
+        public Object[] editedObjects
+        {
+            get
+            {
+                if (m_EditedObjects != null)
+                    return m_EditedObjects;
+
+                if (searchEngineContext?.engineScope == SearchEngineScope.ObjectSelector)
+                    return selectorSearchContext?.editedObjects;
+
+                return null;
+            }
+            set => m_EditedObjects = value;
+        }
+
+        IEnumerable<Type> m_RequiredTypes;
+        public IEnumerable<Type> requiredTypes
+        {
+            get
+            {
+                if (m_RequiredTypes == null)
+                    return searchEngineContext?.requiredTypes;
+                return m_RequiredTypes;
+            }
+            set => m_RequiredTypes = value;
+        }
+
+        IEnumerable<string> m_RequiredTypeNames;
+        public IEnumerable<string> requiredTypeNames
+        {
+            get
+            {
+                if (m_RequiredTypeNames == null)
+                    return searchEngineContext?.requiredTypeNames;
+                return m_RequiredTypeNames;
+            }
+            set => m_RequiredTypeNames = value;
+        }
+        public IEnumerable<int> allowedInstanceIds;
+
+        SearchFilter m_SearchFilter;
+        public SearchFilter searchFilter
+        {
+            get
+            {
+                if (m_SearchFilter != null)
+                    return m_SearchFilter;
+
+                if (searchEngineContext?.engineScope == SearchEngineScope.Project)
+                    return projectSearchContext?.searchFilter;
+                if (searchEngineContext?.engineScope == SearchEngineScope.Scene)
+                    return sceneSearchContext?.searchFilter;
+                if (searchEngineContext?.engineScope == SearchEngineScope.ObjectSelector)
+                    return selectorSearchContext?.searchFilter;
+
+                return null;
+            }
+            set => m_SearchFilter = value;
+        }
+    }
+
     /// <summary>
     /// The search context encapsulate all the states necessary to perform a query. It allows the full
     /// customization of how a query would be performed.
@@ -26,6 +123,8 @@ namespace UnityEditor.Search
         private readonly List<SearchProvider> m_Providers;
         private readonly List<SearchQueryError> m_QueryErrors = new List<SearchQueryError>();
 
+        internal RuntimeSearchContext runtimeContext { get; set; }
+
         /// <summary>
         /// This special constructor is used to create dummy context for default providers.
         /// It is normal that no session is initialized.
@@ -33,10 +132,15 @@ namespace UnityEditor.Search
         /// <see cref="SearchProvider.defaultContext"/>
         /// <param name="provider">Default context provider</param>
         internal SearchContext(SearchProvider provider)
+            : this(provider, null)
+        {}
+
+        internal SearchContext(SearchProvider provider, RuntimeSearchContext runtimeContext)
         {
             m_Providers = new List<SearchProvider>() { provider };
             searchText = string.Empty;
             options = SearchFlags.Default;
+            this.runtimeContext = runtimeContext;
         }
 
         /// <summary>
@@ -46,11 +150,15 @@ namespace UnityEditor.Search
         /// <param name="searchText">The search query to perform.</param>
         /// <param name="options">Options to further controlled the query.</param>
         public SearchContext(IEnumerable<SearchProvider> providers, string searchText, SearchFlags options)
+            : this(providers, searchText, options, null)
+        {}
+
+        internal SearchContext(IEnumerable<SearchProvider> providers, string searchText, SearchFlags options, RuntimeSearchContext runtimeContext)
         {
             m_Providers = FilterProviders(providers);
             this.options = options;
             this.searchText = searchText ?? string.Empty;
-
+            this.runtimeContext = runtimeContext;
             BeginSession();
         }
 
@@ -64,6 +172,10 @@ namespace UnityEditor.Search
         {
         }
 
+        internal SearchContext(IEnumerable<SearchProvider> providers, string searchText, RuntimeSearchContext runtimeContext)
+            : this(providers, searchText, SearchFlags.Default, runtimeContext)
+        {}
+
         /// <summary>
         /// Create a new search context.
         /// </summary>
@@ -73,10 +185,13 @@ namespace UnityEditor.Search
         {
         }
 
+        internal SearchContext(IEnumerable<SearchProvider> providers, RuntimeSearchContext runtimeContext)
+            : this(providers, string.Empty, SearchFlags.Default, runtimeContext)
+        {}
+
         public SearchContext(SearchContext context)
-            : this(context.providers, context.searchText, context.options)
-        {
-        }
+            : this(context.providers, context.searchText, context.options, context.runtimeContext)
+        {}
 
         /// <summary>
         /// Search context finalizer.
@@ -484,7 +599,8 @@ namespace UnityEditor.Search
         /// <returns>Returns the SearchContext unique hashcode.</returns>
         public override int GetHashCode()
         {
-            return m_Providers.Select(p => p.id.GetHashCode()).Aggregate((int)options, (h1, h2) => (h1 ^ h2).GetHashCode());
+            var validContextHashOptiopns = options & ~SearchFlags.OpenGlobal;
+            return m_Providers.Select(p => p.id.GetHashCode()).Aggregate((int)validContextHashOptiopns, (h1, h2) => (h1 ^ h2).GetHashCode());
         }
 
         /// <summary>

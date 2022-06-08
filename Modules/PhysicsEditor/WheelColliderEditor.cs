@@ -5,6 +5,7 @@
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEditor.AnimatedValues;
 
 namespace UnityEditor
 {
@@ -22,6 +23,13 @@ namespace UnityEditor
         SerializedProperty m_ForwardFriction;
         SerializedProperty m_SidewaysFriction;
 
+        private SerializedProperty m_LayerOverridePriority;
+        private SerializedProperty m_IncludeLayers;
+        private SerializedProperty m_ExcludeLayers;
+
+        private readonly AnimBool m_ShowLayerOverrides = new AnimBool();
+        private SavedBool m_ShowLayerOverridesFoldout;
+
         private static class Styles
         {
             public static readonly GUIContent forceAppPointDistanceContent = EditorGUIUtility.TrTextContent("Force App Point Distance", "The point where the wheel forces are applied");
@@ -30,6 +38,9 @@ namespace UnityEditor
             public static readonly GUIContent suspensionSpringContent = EditorGUIUtility.TrTextContent("Suspension Spring", "The suspension attempts to reach a Target Position by adding spring and damping forces.");
             public static readonly GUIContent forwardFrictionContent = EditorGUIUtility.TrTextContent("Forward Friction", "Tire friction properties when the wheel is rolling forward.");
             public static readonly GUIContent sidewaysFrictionContent = EditorGUIUtility.TrTextContent("Sideways Friction", "Tire friction properties when the wheel is rolling sideways.");
+            public static readonly GUIContent layerOverridePriority = EditorGUIUtility.TrTextContent("Layer Override Priority", "When 2 colliders have conflicting overrides, the settings of the collider with the higher priority are taken.");
+            public static readonly GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
+            public static readonly GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
         }
 
         public void OnEnable()
@@ -44,6 +55,14 @@ namespace UnityEditor
             m_WheelDampingRate = serializedObject.FindProperty("m_WheelDampingRate");
             m_ForwardFriction = serializedObject.FindProperty("m_ForwardFriction");
             m_SidewaysFriction = serializedObject.FindProperty("m_SidewaysFriction");
+
+            m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
+            m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
+            m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
+
+            m_LayerOverridePriority = serializedObject.FindProperty("m_LayerOverridePriority");
+            m_IncludeLayers = serializedObject.FindProperty("m_IncludeLayers");
+            m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
         }
 
         public override void OnInspectorGUI()
@@ -62,7 +81,24 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_ForwardFriction, Styles.forwardFrictionContent);
             EditorGUILayout.PropertyField(m_SidewaysFriction, Styles.sidewaysFrictionContent);
 
+            ShowLayerOverridesProperties();
+
             serializedObject.ApplyModifiedProperties();
+        }
+
+         protected void ShowLayerOverridesProperties()
+        {
+            // Show Layer Overrides.
+            m_ShowLayerOverridesFoldout.value = m_ShowLayerOverrides.target = EditorGUILayout.Foldout(m_ShowLayerOverrides.target, "Layer Overrides", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowLayerOverrides.faded))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_LayerOverridePriority, Styles.layerOverridePriority);
+                EditorGUILayout.PropertyField(m_IncludeLayers, Styles.includeLayers);
+                EditorGUILayout.PropertyField(m_ExcludeLayers, Styles.excludeLayers);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
         }
     }
 }

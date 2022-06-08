@@ -22,6 +22,8 @@ namespace UnityEditor
         {
             public readonly GUIContent dataSourceContent =
                 EditorGUIUtility.TrTextContent("Source", "Type of source the movie will be read from.");
+            public readonly GUIContent timeUpdateModeContent =
+                EditorGUIUtility.TrTextContent("Update Mode", "The clock source to use to derive the current time.");
             public readonly GUIContent videoClipContent =
                 EditorGUIUtility.TrTextContent("Video Clip", "VideoClips can be imported using the asset pipeline.");
             public readonly GUIContent urlContent =
@@ -116,6 +118,7 @@ namespace UnityEditor
         static Styles s_Styles;
 
         SerializedProperty m_DataSource;
+        SerializedProperty m_TimeUpdateMode;
         SerializedProperty m_VideoClip;
         SerializedProperty m_Url;
         SerializedProperty m_PlayOnAwake;
@@ -166,6 +169,7 @@ namespace UnityEditor
             m_ShowAudioControls.valueChanged.AddListener(Repaint);
 
             m_DataSource = serializedObject.FindProperty("m_DataSource");
+            m_TimeUpdateMode = serializedObject.FindProperty("m_TimeUpdateMode");
             m_VideoClip = serializedObject.FindProperty("m_VideoClip");
             m_Url = serializedObject.FindProperty("m_Url");
             m_PlayOnAwake = serializedObject.FindProperty("m_PlayOnAwake");
@@ -228,6 +232,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_DataSource, s_Styles.dataSourceContent);
             HandleDataSourceField();
+            EditorGUILayout.PropertyField(m_TimeUpdateMode, s_Styles.timeUpdateModeContent);
             EditorGUILayout.PropertyField(m_PlayOnAwake, s_Styles.playOnAwakeContent);
             EditorGUILayout.PropertyField(m_WaitForFirstFrame, s_Styles.waitForFirstFrameContent);
             EditorGUILayout.PropertyField(m_Looping, s_Styles.loopContent);

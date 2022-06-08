@@ -102,6 +102,54 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleBackgroundPosition IStyle.backgroundPositionX
+        {
+            get
+            {
+                return GetStyleBackgroundPosition(StylePropertyId.BackgroundPositionX);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.BackgroundPositionX, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleBackgroundPosition IStyle.backgroundPositionY
+        {
+            get
+            {
+                return GetStyleBackgroundPosition(StylePropertyId.BackgroundPositionY);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.BackgroundPositionY, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleBackgroundRepeat IStyle.backgroundRepeat
+        {
+            get
+            {
+                return GetStyleBackgroundRepeat(StylePropertyId.BackgroundRepeat);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.BackgroundRepeat, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleColor IStyle.borderBottomColor
         {
             get
@@ -515,7 +563,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.LetterSpacing, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
         }
@@ -908,23 +956,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        StyleEnum<ScaleMode> IStyle.unityBackgroundScaleMode
-        {
-            get
-            {
-                var tmp = GetStyleInt(StylePropertyId.UnityBackgroundScaleMode);
-                return new StyleEnum<ScaleMode>((ScaleMode)tmp.value, tmp.keyword);
-            }
-
-            set
-            {
-                if (SetStyleValue(StylePropertyId.UnityBackgroundScaleMode, value))
-                {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
-                }
-            }
-        }
-
         StyleFont IStyle.unityFont
         {
             get
@@ -952,7 +983,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.UnityFontDefinition, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
         }
@@ -1002,7 +1033,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.UnityParagraphSpacing, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
         }
@@ -1215,7 +1246,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.WordSpacing, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
         }

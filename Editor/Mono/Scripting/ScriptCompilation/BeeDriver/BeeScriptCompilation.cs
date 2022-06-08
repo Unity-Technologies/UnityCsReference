@@ -33,6 +33,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string outputDirectory,
             BuildTarget buildTarget,
             bool buildingForEditor,
+            bool enableScriptUpdater,
             string[] extraScriptingDefines = null)
         {
             // Need to call AssemblyDataFrom before calling CompilationPipeline.GetScriptAssemblies,
@@ -103,7 +104,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 BuildPlayerDataOutput = $"Library/BuildPlayerData/{(buildingForEditor ? "Editor" : "Player")}",
                 ExtractRuntimeInitializeOnLoads = !buildingForEditor,
                 AssembliesToScanForTypeDB = assembliesToScanForTypeDB.OrderBy(p => p).ToArray(),
-                SearchPaths = searchPaths.OrderBy(p => p).ToArray()
+                SearchPaths = searchPaths.OrderBy(p => p).ToArray(),
+                EmitInfoForScriptUpdater = enableScriptUpdater
             };
         }
 

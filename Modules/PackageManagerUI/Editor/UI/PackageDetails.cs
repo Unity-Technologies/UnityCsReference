@@ -212,10 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var error = version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable))
                 ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
-            if (error == null)
-                detailError.ClearError();
-            else
-                detailError.SetError(error, version);
+            detailError.RefreshError(error, version);
         }
 
         private VisualElementCache cache { get; set; }

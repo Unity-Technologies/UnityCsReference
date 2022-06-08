@@ -301,7 +301,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
                 dropdownItem.insertSeparatorBefore = true;
-                dropdownItem.text = L10n.Tr("Reset Package Database");
+                dropdownItem.text = L10n.Tr("Internal/Reset Package Database");
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
@@ -310,7 +310,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 };
 
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-                dropdownItem.text = L10n.Tr("Reset Stylesheets");
+                dropdownItem.text = L10n.Tr("Internal/Reset Stylesheets");
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
@@ -436,7 +436,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddFilterTabToDropdownMenu(PackageFilterTab.UnityRegistry);
             AddFilterTabToDropdownMenu(PackageFilterTab.MyRegistries, null, a =>
             {
-                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)) && !m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.MainNotUnity)))
+                if (!m_PackageDatabase.allPackages.Any(p => PackageFiltering.FilterByTab(p, PackageFilterTab.MyRegistries, true)))
                     return DropdownMenuAction.Status.Hidden;
                 else if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
                     return DropdownMenuAction.Status.Checked;

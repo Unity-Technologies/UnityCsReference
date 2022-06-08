@@ -43,8 +43,7 @@ namespace UnityEditor
             public static Color hoveredBackgroundColor =
                 EditorResources.GetStyle("game-object-tree-view").GetColor("-unity-object-tree-hovered-color");
 
-            public static Texture2D sceneIcon = EditorGUIUtility.FindTexture("Scene");
-            public static Texture2D prefabIcon = EditorGUIUtility.FindTexture("Prefab Icon");
+            public static Texture2D sceneIcon = (Texture2D)EditorGUIUtility.IconContent("SceneAsset Icon").image;
 
             static GameObjectStyles()
             {

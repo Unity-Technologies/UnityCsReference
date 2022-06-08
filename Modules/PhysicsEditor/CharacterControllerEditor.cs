@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEditor.AnimatedValues;
 
 namespace UnityEditor
 {
@@ -18,6 +19,13 @@ namespace UnityEditor
         SerializedProperty m_MinMoveDistance;
         SerializedProperty m_Center;
 
+        private SerializedProperty m_LayerOverridePriority;
+        private SerializedProperty m_IncludeLayers;
+        private SerializedProperty m_ExcludeLayers;
+
+        private readonly AnimBool m_ShowLayerOverrides = new AnimBool();
+        private SavedBool m_ShowLayerOverridesFoldout;
+
         private int m_HandleControlID;
 
         public void OnEnable()
@@ -30,11 +38,22 @@ namespace UnityEditor
             m_MinMoveDistance = serializedObject.FindProperty("m_MinMoveDistance");
             m_Center = serializedObject.FindProperty("m_Center");
 
+            m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
+            m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
+            m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
+
+            m_LayerOverridePriority = serializedObject.FindProperty("m_LayerOverridePriority");
+            m_IncludeLayers = serializedObject.FindProperty("m_IncludeLayers");
+            m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
+
             m_HandleControlID = -1;
         }
 
-        public void OnDisable()
+        protected static class Styles
         {
+            public static readonly GUIContent layerOverridePriority = EditorGUIUtility.TrTextContent("Layer Override Priority", "When 2 colliders have conflicting overrides, the settings of the collider with the higher priority are taken.");
+            public static readonly GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
+            public static readonly GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
         }
 
         public override void OnInspectorGUI()
@@ -49,6 +68,8 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Center);
             EditorGUILayout.PropertyField(m_Radius);
             EditorGUILayout.PropertyField(m_Height);
+
+            ShowLayerOverridesProperties();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -162,6 +183,21 @@ namespace UnityEditor
             Handles.color = tempColor;
 
             return adjust;
+        }
+
+        protected void ShowLayerOverridesProperties()
+        {
+            // Show Layer Overrides.
+            m_ShowLayerOverridesFoldout.value = m_ShowLayerOverrides.target = EditorGUILayout.Foldout(m_ShowLayerOverrides.target, "Layer Overrides", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowLayerOverrides.faded))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_LayerOverridePriority, Styles.layerOverridePriority);
+                EditorGUILayout.PropertyField(m_IncludeLayers, Styles.includeLayers);
+                EditorGUILayout.PropertyField(m_ExcludeLayers, Styles.excludeLayers);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
         }
     }
 }

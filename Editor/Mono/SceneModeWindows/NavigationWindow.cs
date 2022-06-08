@@ -6,22 +6,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEditor.AI;
 using UnityEditorInternal;
 using EditorNavMeshBuilder = UnityEditor.AI.NavMeshBuilder;
 using Object = UnityEngine.Object;
 using System.Globalization;
-using UnityEditor.Overlays;
 
 namespace UnityEditor
 {
-    [EditorWindowTitle(title = "Navigation", icon = "Navigation")]
+    [EditorWindowTitle(title = "Navigation (Obsolete)", icon = "Navigation")]
     internal class NavMeshEditorWindow : EditorWindow, IHasCustomMenu
     {
-        const string k_NavigationPackageId = "com.unity.ai.navigation";
-        static string s_NavigationPackagePath = $"Packages/{k_NavigationPackageId}/package.json";
-
         static NavMeshEditorWindow s_NavMeshEditorWindow;
 
         // Scene based bake configuration
@@ -51,12 +46,7 @@ namespace UnityEditor
         static Styles s_Styles;
 
         Vector2 m_ScrollPos = Vector2.zero;
-        int m_SelectedNavMeshAgentCount;
-        int m_SelectedNavMeshObstacleCount;
         bool m_Advanced;
-        bool m_HasPendingAgentDebugInfo;
-        bool m_HasRepaintedForPendingAgentDebugInfo;
-        bool m_NavigationPackageInstalled;
 
         ReorderableList m_AreasList;
         ReorderableList m_AgentsList;
@@ -70,7 +60,6 @@ namespace UnityEditor
         }
 
         Mode m_Mode = Mode.ObjectSettings;
-        bool m_BecameVisibleCalled;
 
         class Styles
         {
@@ -95,8 +84,7 @@ namespace UnityEditor
             public readonly GUIContent m_BakeMinRegionAreaContent = EditorGUIUtility.TrTextContent("Min Region Area", "Minimum area that a navmesh region can be.");
             public readonly GUIContent m_BakePlacementContent = EditorGUIUtility.TrTextContent("Height Mesh", "Generate an accurate height mesh for precise agent placement (slower).");
 
-            public readonly GUIContent m_ComponentWorkflowNotInstalledNotice = EditorGUIUtility.TrTextContent("To try an experimental, component-based workflow for configuring NavMeshes, install the AI Navigation package.");
-            public readonly GUIContent m_ComponentWorkflowInstalledNotice = EditorGUIUtility.TrTextContent("The AI Navigation package is installed. It allows you to configure NavMeshes using an experimental, component-based workflow.");
+            public readonly GUIContent m_WindowDeprecationMessage = EditorGUIUtility.TrTextContent("This window will be deprecated.\nGo in the menu Window -> AI -> Navigation in order to open the window provided by the AI Navigation package.");
             public readonly GUIContent m_ComponentWorfklowWebLinklabel = EditorGUIUtility.TrTextContent("For details, visit the Unity manual");
 
             public readonly GUIContent m_AgentSizeHeader = EditorGUIUtility.TrTextContent("Baked Agent Size");
@@ -123,7 +111,6 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("Window/AI/Navigation", false, 1)]
         public static void SetupWindow()
         {
             var window = GetWindow<NavMeshEditorWindow>(typeof(InspectorWindow));
@@ -169,10 +156,6 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             s_NavMeshEditorWindow = this;
             EditorApplication.searchChanged += Repaint;
-
-            m_NavigationPackageInstalled = IsNavigationPackageInstalled();
-
-            UpdateSelectedAgentAndObstacleState();
 
             Repaint();
         }
@@ -260,17 +243,8 @@ namespace UnityEditor
             EditorApplication.searchChanged -= Repaint;
         }
 
-        void UpdateSelectedAgentAndObstacleState()
-        {
-            Object[] selectedAgents = Selection.GetFiltered(typeof(NavMeshAgent), SelectionMode.ExcludePrefab | SelectionMode.Editable);
-            Object[] selectedObstacles = Selection.GetFiltered(typeof(NavMeshObstacle), SelectionMode.ExcludePrefab | SelectionMode.Editable);
-            m_SelectedNavMeshAgentCount = selectedAgents.Length;
-            m_SelectedNavMeshObstacleCount = selectedObstacles.Length;
-        }
-
         void OnSelectionChange()
         {
-            UpdateSelectedAgentAndObstacleState();
             m_ScrollPos = Vector2.zero;
             if (m_Mode == Mode.ObjectSettings)
                 Repaint();
@@ -454,213 +428,9 @@ namespace UnityEditor
                     break;
             }
 
-            if (m_NavigationPackageInstalled)
-                ComponentBasedWorkflowNotice(s_Styles.m_ComponentWorkflowInstalledNotice);
-            else
-                ComponentBasedWorkflowNotice(s_Styles.m_ComponentWorkflowNotInstalledNotice);
+            WindowDeprecationWarning();
 
             EditorGUILayout.EndScrollView();
-        }
-
-        public void OnBecameVisible()
-        {
-            // Make sure OnBecameVisible/OnBecameInvisible pair is called correctly.
-            if (m_BecameVisibleCalled)
-                return;
-            var shouldRepaint = NavMeshVisualizationSettings.showNavigation == 0;
-            NavMeshVisualizationSettings.showNavigation++;
-            if (shouldRepaint)
-                RepaintSceneAndGameViews();
-            m_BecameVisibleCalled = true;
-        }
-
-        public void OnBecameInvisible()
-        {
-            if (!m_BecameVisibleCalled)
-                return;
-            NavMeshVisualizationSettings.showNavigation--;
-            RepaintSceneAndGameViews();
-            m_BecameVisibleCalled = false;
-        }
-
-        static void RepaintSceneAndGameViews()
-        {
-            SceneView.RepaintAll();
-            PlayModeView.RepaintAll();
-        }
-
-        static void DisplayControls()
-        {
-            EditorGUIUtility.labelWidth = 150;
-            var bRepaint = false;
-            var showNavMesh = NavMeshVisualizationSettings.showNavMesh;
-            if (showNavMesh != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show NavMesh"), showNavMesh))
-            {
-                NavMeshVisualizationSettings.showNavMesh = !showNavMesh;
-                bRepaint = true;
-            }
-
-            using (new EditorGUI.DisabledScope(!NavMeshVisualizationSettings.hasHeightMesh))
-            {
-                bool showHeightMesh = NavMeshVisualizationSettings.showHeightMesh;
-                if (showHeightMesh != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMesh"), showHeightMesh))
-                {
-                    NavMeshVisualizationSettings.showHeightMesh = !showHeightMesh;
-                    bRepaint = true;
-                }
-            }
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                GUILayout.Label("Internal");
-
-                var showNavMeshPortals = NavMeshVisualizationSettings.showNavMeshPortals;
-                if (showNavMeshPortals != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show NavMesh Portals"), showNavMeshPortals))
-                {
-                    NavMeshVisualizationSettings.showNavMeshPortals = !showNavMeshPortals;
-                    bRepaint = true;
-                }
-
-                var showNavMeshLinks = NavMeshVisualizationSettings.showNavMeshLinks;
-                if (showNavMeshLinks != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show NavMesh Links"), showNavMeshLinks))
-                {
-                    NavMeshVisualizationSettings.showNavMeshLinks = !showNavMeshLinks;
-                    bRepaint = true;
-                }
-
-                var showProximityGrid = NavMeshVisualizationSettings.showProximityGrid;
-                if (showProximityGrid != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Proximity Grid"), showProximityGrid))
-                {
-                    NavMeshVisualizationSettings.showProximityGrid = !showProximityGrid;
-                    bRepaint = true;
-                }
-
-                var showHeightMeshBVTree = NavMeshVisualizationSettings.showHeightMeshBVTree;
-                if (showHeightMeshBVTree != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMesh BV-Tree"), showHeightMeshBVTree))
-                {
-                    NavMeshVisualizationSettings.showHeightMeshBVTree = !showHeightMeshBVTree;
-                    bRepaint = true;
-                }
-
-                var showHeightMaps = NavMeshVisualizationSettings.showHeightMaps;
-                if (showHeightMaps != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMaps"), showHeightMaps))
-                {
-                    NavMeshVisualizationSettings.showHeightMaps = !showHeightMaps;
-                    bRepaint = true;
-                }
-            }
-
-            if (bRepaint)
-                RepaintSceneAndGameViews();
-        }
-
-        void OnInspectorUpdate()
-        {
-            // This is a bit hacky.
-            // The value of the hasPendingAgentDebugInfo is updated during scene draw,
-            // which means that value may not be correctly set when entering game mode.
-            // The value is cache during EventType.Layout, in case they are different
-            // try to fix it by redrawing the scene and UI.
-            if (m_SelectedNavMeshAgentCount > 0)
-            {
-                if (m_HasPendingAgentDebugInfo != NavMeshVisualizationSettings.hasPendingAgentDebugInfo)
-                {
-                    if (!m_HasRepaintedForPendingAgentDebugInfo)
-                    {
-                        m_HasRepaintedForPendingAgentDebugInfo = true;
-                        RepaintSceneAndGameViews();
-                    }
-                }
-                else
-                {
-                    m_HasRepaintedForPendingAgentDebugInfo = false;
-                }
-            }
-        }
-
-        static void DisplayAgentControls()
-        {
-            EditorGUIUtility.labelWidth = 150;
-            var bRepaint = false;
-
-            // NavMeshVisualizationSettings.hasPendingAgentDebugInfo can change between events,
-            // capture the value on Layout event.
-            if (Event.current.type == EventType.Layout)
-            {
-                s_NavMeshEditorWindow.m_HasPendingAgentDebugInfo = NavMeshVisualizationSettings.hasPendingAgentDebugInfo;
-            }
-
-            var showAgentPath = NavMeshVisualizationSettings.showAgentPath;
-            if (showAgentPath != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Path Polygons", "Shows the polygons leading to goal."), showAgentPath))
-            {
-                NavMeshVisualizationSettings.showAgentPath = !showAgentPath;
-                bRepaint = true;
-            }
-
-            var showAgentPathInfo = NavMeshVisualizationSettings.showAgentPathInfo;
-            if (showAgentPathInfo != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Path Query Nodes", "Shows the nodes expanded during last path query."), showAgentPathInfo))
-            {
-                NavMeshVisualizationSettings.showAgentPathInfo = !showAgentPathInfo;
-                bRepaint = true;
-            }
-
-            var showAgentNeighbours = NavMeshVisualizationSettings.showAgentNeighbours;
-            if (showAgentNeighbours != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Neighbours", "Show the agent neighbours considered during simulation."), showAgentNeighbours))
-            {
-                NavMeshVisualizationSettings.showAgentNeighbours = !showAgentNeighbours;
-                bRepaint = true;
-            }
-
-            var showAgentWalls = NavMeshVisualizationSettings.showAgentWalls;
-            if (showAgentWalls != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Walls", "Shows the wall segments handled during simulation."), showAgentWalls))
-            {
-                NavMeshVisualizationSettings.showAgentWalls = !showAgentWalls;
-                bRepaint = true;
-            }
-
-            var showAgentAvoidance = NavMeshVisualizationSettings.showAgentAvoidance;
-            if (showAgentAvoidance != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Avoidance", "Shows the processed avoidance geometry from simulation."), showAgentAvoidance))
-            {
-                NavMeshVisualizationSettings.showAgentAvoidance = !showAgentAvoidance;
-                bRepaint = true;
-            }
-
-            if (showAgentAvoidance)
-            {
-                if (s_NavMeshEditorWindow.m_HasPendingAgentDebugInfo)
-                {
-                    EditorGUILayout.BeginVertical(GUILayout.MaxWidth(165));
-                    EditorGUILayout.HelpBox("Avoidance display is not valid until after next game update.", MessageType.Warning);
-                    EditorGUILayout.EndVertical();
-                }
-                // Should match NavMeshManager::kDebugAgentCount
-                const int kDebugAgentCount = 10;
-                if (s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount > kDebugAgentCount)
-                {
-                    EditorGUILayout.BeginVertical(GUILayout.MaxWidth(165));
-                    EditorGUILayout.HelpBox(string.Format("Avoidance visualization can be drawn for {0} agents ({1} selected).", kDebugAgentCount, s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount), MessageType.Warning);
-                    EditorGUILayout.EndVertical();
-                }
-            }
-
-            if (bRepaint)
-                RepaintSceneAndGameViews();
-        }
-
-        static void DisplayObstacleControls()
-        {
-            EditorGUIUtility.labelWidth = 150;
-            var bRepaint = false;
-
-            var showObstacleCarveHull = NavMeshVisualizationSettings.showObstacleCarveHull;
-            if (showObstacleCarveHull != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Carve Hull", "Shows the hull used to carve the obstacle from navmesh."), showObstacleCarveHull))
-            {
-                NavMeshVisualizationSettings.showObstacleCarveHull = !showObstacleCarveHull;
-                bRepaint = true;
-            }
-
-            if (bRepaint)
-                RepaintSceneAndGameViews();
         }
 
         public virtual void AddItemsToMenu(GenericMenu menu)
@@ -711,15 +481,15 @@ namespace UnityEditor
                 GameObjectUtility.SetNavMeshArea(go, area);
         }
 
-        private static void ComponentBasedWorkflowNotice(GUIContent message)
+        private static void WindowDeprecationWarning()
         {
             EditorGUILayout.Space();
             GUILayout.FlexibleSpace();
 
             GUILayout.BeginHorizontal(EditorStyles.helpBox);
-            GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Info), GUILayout.ExpandWidth(false));
+            GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Warning), GUILayout.ExpandWidth(false));
             GUILayout.BeginVertical();
-            GUILayout.Label(message, EditorStyles.wordWrappedMiniLabel);
+            GUILayout.Label(s_Styles.m_WindowDeprecationMessage, EditorStyles.wordWrappedMiniLabel);
 
             GUILayout.BeginHorizontal();
 
@@ -732,13 +502,6 @@ namespace UnityEditor
 
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
-        }
-
-        private static bool IsNavigationPackageInstalled()
-        {
-            var packagePath = Path.GetFullPath(s_NavigationPackagePath);
-
-            return !String.IsNullOrEmpty(packagePath) && File.Exists(packagePath);
         }
 
         private void ObjectSettings()
@@ -772,9 +535,11 @@ namespace UnityEditor
 
             using (var so = new SerializedObject(gos))
             {
+                #pragma warning disable 618
                 using (new EditorGUI.DisabledScope(!SceneModeUtility.StaticFlagField("Navigation Static", so.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.NavigationStatic)))
                 {
                     SceneModeUtility.StaticFlagField("Generate OffMeshLinks", so.FindProperty("m_StaticEditorFlags"), (int)StaticEditorFlags.OffMeshLinkGeneration);
+                #pragma warning restore 618
 
                     var property = so.FindProperty("m_NavMeshLayer");
 
@@ -1079,57 +844,6 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
-        }
-
-        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
-        class SceneViewNavMeshOverlay : TransientSceneViewOverlay
-        {
-            const string k_OverlayID = "Scene View/Navmesh Display";
-            const string k_DisplayName = "Nav Mesh";
-
-            public override bool visible
-            {
-                get { return NavMeshVisualizationSettings.showNavigation != 0; }
-            }
-
-            public override void OnGUI()
-            {
-                DisplayControls();
-            }
-        }
-
-        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
-        class SceneViewAgentOverlay : TransientSceneViewOverlay
-        {
-            const string k_OverlayID = "Scene View/Agent Display";
-            const string k_DisplayName = "Nav Mesh Agents";
-
-            public override bool visible
-            {
-                get { return NavMeshVisualizationSettings.showNavigation != 0 && s_NavMeshEditorWindow != null && s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount > 0; }
-            }
-
-            public override void OnGUI()
-            {
-                DisplayAgentControls();
-            }
-        }
-
-        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
-        class SceneViewObstacleOverlay : TransientSceneViewOverlay
-        {
-            const string k_OverlayID = "Scene View/Obstacle Display";
-            const string k_DisplayName = "Nav Mesh Obstacles";
-
-            public override bool visible
-            {
-                get { return NavMeshVisualizationSettings.showNavigation != 0 && s_NavMeshEditorWindow != null && s_NavMeshEditorWindow.m_SelectedNavMeshObstacleCount > 0; }
-            }
-
-            public override void OnGUI()
-            {
-                DisplayObstacleControls();
-            }
         }
     }
 }

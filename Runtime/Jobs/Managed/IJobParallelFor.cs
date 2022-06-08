@@ -56,19 +56,12 @@ namespace Unity.Jobs
             ParallelForJobStruct<T>.Initialize();
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckReflectionDataCorrect(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-                throw new InvalidOperationException("Support for burst compiled calls to Schedule depends on the Jobs package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))] in your source file.");
-        }
-
         private static IntPtr GetReflectionData<T>()
             where T : struct, IJobParallelFor
         {
             ParallelForJobStruct<T>.Initialize();
             var reflectionData = ParallelForJobStruct<T>.jobReflectionData.Data;
-            CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
 
@@ -79,6 +72,18 @@ namespace Unity.Jobs
         }
 
         unsafe public static void Run<T>(this T jobData, int arrayLength) where T : struct, IJobParallelFor
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), new JobHandle(), ScheduleMode.Run);
+            JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);
+        }
+
+        unsafe public static JobHandle ScheduleByRef<T>(ref this T jobData, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = new JobHandle()) where T : struct, IJobParallelFor
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), dependsOn, ScheduleMode.Parallel);
+            return JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, innerloopBatchCount);
+        }
+
+        unsafe public static void RunByRef<T>(ref this T jobData, int arrayLength) where T : struct, IJobParallelFor
         {
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), new JobHandle(), ScheduleMode.Run);
             JobsUtility.ScheduleParallelFor(ref scheduleParams, arrayLength, arrayLength);

@@ -26,6 +26,11 @@ namespace UnityEngine.UIElements.StyleSheets
         public Color color;
         [FieldOffset(8)]
         public GCHandle resource;
+        [FieldOffset(8)]
+        public BackgroundPosition position;
+        [FieldOffset(8)]
+        public BackgroundRepeat repeat;
+
     }
 
     internal struct StyleValueManaged

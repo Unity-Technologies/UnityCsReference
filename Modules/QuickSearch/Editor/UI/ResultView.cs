@@ -121,7 +121,7 @@ namespace UnityEditor.Search
         protected void HandleMouseDown(int clickedItemIndex)
         {
             var evt = Event.current;
-            m_PrepareDrag = true;
+            m_PrepareDrag = !searchView.IsPicker();
             m_MouseDownItemIndex = clickedItemIndex;
             m_DragStartPosition = evt.mousePosition;
 

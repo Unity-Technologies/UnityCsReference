@@ -44,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            if (version == null || version.package?.Is(PackageType.AssetStore | PackageType.BuiltIn) == true)
+            if (version == null || version.package?.Is(PackageType.BuiltIn) == true)
                 return false;
 
             var samples = version.isInstalled || version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(version) : Enumerable.Empty<Sample>();

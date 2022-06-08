@@ -5,6 +5,9 @@
 using System;
 using System.Collections.Generic;
 
+using UnityObject = UnityEngine.Object;
+using DataModeSupportHandler = UnityEditor.DeclareDataModeSupportAttribute.DataModeSupportHandler;
+
 namespace UnityEditor
 {
     /// <summary>
@@ -23,7 +26,7 @@ namespace UnityEditor
     // Sincerely,
     // The #dots-editor team
     //
-    public enum DataMode
+    public enum DataMode // Values must be kept in sync with `DataMode.h`
     {
         /// <summary>
         /// Represents a situation or context in which the usage of data modes is not applicable.
@@ -31,14 +34,14 @@ namespace UnityEditor
         /// <remarks> <para>
         /// This mode informs the docking area that the data modes switch should now be displayed.
         /// </para> </remarks>
-        Disabled,
+        Disabled = 0,
         /// <summary>
         /// Uses a mode where only authoring data is available.
         /// </summary>
         /// <remarks> <para>
         /// In this mode, only authoring data is available. When exiting Play mode, Unity retains authoring data.
         /// </para> </remarks>
-        Authoring,
+        Authoring = 1,
         /// <summary>
         /// Uses a mode where a mix of authoring and runtime data is available.
         /// </summary>
@@ -46,7 +49,7 @@ namespace UnityEditor
         /// In this mode, a mixture of authoring and runtime data is available. **Important:** When exiting Play mode,
         /// Unity loses runtime data. However, it retains any authoring data.
         /// </para> </remarks>
-        Mixed,
+        Mixed = 2,
         /// <summary>
         /// Uses a mode where only runtime data is available.
         /// </summary>
@@ -54,7 +57,7 @@ namespace UnityEditor
         /// In this mode, only runtime data is available. **Important:** When exiting Play mode, Unity loses runtime
         /// data.
         /// </para> </remarks>
-        Runtime
+        Runtime = 3
     }
 
     /// <summary>
@@ -168,5 +171,49 @@ namespace UnityEditor
         /// </para>
         /// </summary>
         event Action<DataMode> dataModeChanged;
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    class DeclareDataModeSupportAttribute : Attribute
+    {
+        public delegate void DataModeSupportHandler(UnityObject activeSelection, UnityObject activeContext, HashSet<DataMode> supportedModes);
+
+        [RequiredSignature]
+        static void signature(UnityObject activeSelection, UnityObject activeContext, HashSet<DataMode> supportedModes)
+        {
+        }
+    }
+
+    static class DataModeSupportUtils
+    {
+        static readonly List<DataModeSupportHandler> k_Handlers = new(4);
+
+        static DataModeSupportUtils()
+        {
+            Rebuild();
+        }
+
+        public static void GetDataModeSupport(UnityObject activeSelection, UnityObject activeContext, HashSet<DataMode> supportedDataModes)
+        {
+            foreach (var handler in k_Handlers)
+            {
+                handler(activeSelection, activeContext, supportedDataModes);
+            }
+        }
+
+        static void Rebuild()
+        {
+            k_Handlers.Clear();
+            var candidates = TypeCache.GetMethodsWithAttribute<DeclareDataModeSupportAttribute>();
+            var attributeType = typeof(DeclareDataModeSupportAttribute);
+            foreach (var candidate in candidates)
+            {
+                if (!AttributeHelper.MethodMatchesAnyRequiredSignatureOfAttribute(candidate, attributeType))
+                    continue;
+
+                if (Delegate.CreateDelegate(typeof(DataModeSupportHandler), candidate) is DataModeSupportHandler handler)
+                    k_Handlers.Add(handler);
+            }
+        }
     }
 }

@@ -142,6 +142,18 @@ namespace UnityEditor.Search
 
             var at = AssetDatabase.GetMainAssetTypeAtPath(path);
             var hasCustomIndexers = HasCustomIndexers(at);
+
+            if (AssetImporter.GetImportLogEntriesCount(globalObjectId.assetGUID, out var nbErrors, out var nbWarnings))
+            {
+                IndexNumber(documentIndex, "errors", nbErrors);
+                IndexNumber(documentIndex, "warnings", nbWarnings);
+                if (nbErrors > 0)
+                    IndexProperty(documentIndex, "i", "errors", saveKeyword: true, exact: true);
+
+                if (nbWarnings > 0)
+                    IndexProperty(documentIndex, "i", "warnings", saveKeyword: true, exact: true);
+            }
+
             var isPrefab = path.EndsWith(".prefab");
 
             if (at != null)

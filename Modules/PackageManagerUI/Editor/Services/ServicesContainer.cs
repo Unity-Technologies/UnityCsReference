@@ -42,6 +42,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_ApplicationProxy;
 
         [SerializeField]
+        private FetchStatusTracker m_FetchStatusTracker;
+
+        [SerializeField]
         private AssetStoreCache m_AssetStoreCache;
 
         [SerializeField]
@@ -120,6 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = new ResourceLoader();
             m_ExtensionManager = new ExtensionManager();
 
+            m_FetchStatusTracker = new FetchStatusTracker();
             m_AssetStoreCache = new AssetStoreCache();
             m_AssetStoreClient = new AssetStoreClient();
             m_AssetStoreOAuth = new AssetStoreOAuth();
@@ -156,15 +160,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader.ResolveDependencies(m_ApplicationProxy);
 
             m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_AssetStoreUtils, m_HttpClientFactory, m_IOProxy);
-            m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_UpmClient, m_IOProxy);
+            m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_FetchStatusTracker, m_UpmCache, m_UpmClient, m_IOProxy);
             m_AssetStoreOAuth.ResolveDependencies(m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
             m_AssetStoreUtils.ResolveDependencies(m_UnityConnectProxy);
             m_AssetStoreRestAPI.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreOAuth, m_AssetStoreCache, m_HttpClientFactory);
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy);
             m_AssetStoreCallQueue.ResolveDependencies(m_ApplicationProxy, m_UnityConnectProxy, m_PackageFiltering, m_AssetStoreClient, m_AssetStoreCache, m_PageManager);
 
-            m_UpmCache.ResolveDependencies(m_PackageManagerPrefs);
-            m_UpmClient.ResolveDependencies(m_UpmCache, m_IOProxy, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
+            m_UpmClient.ResolveDependencies(m_UpmCache, m_FetchStatusTracker, m_IOProxy, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
             m_UpmRegistryClient.ResolveDependencies(m_UpmCache, m_SettingsProxy, m_ClientProxy, m_ApplicationProxy);
             m_UpmCacheRootClient.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
 
@@ -242,6 +245,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_SettingsProxy);
             Register(m_ClientProxy);
 
+            Register(m_FetchStatusTracker);
             Register(m_AssetStoreCache);
             Register(m_AssetStoreClient);
             Register(m_AssetStoreOAuth);

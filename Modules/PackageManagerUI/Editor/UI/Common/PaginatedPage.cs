@@ -178,7 +178,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             TriggerOnListUpdate(added: addedPackages);
         }
 
-        public void OnProductFetched(long productId)
+        public void OnProductExtraFetched(long productId)
         {
             var uniqueId = productId.ToString();
             var isNewItem = !Contains(uniqueId);

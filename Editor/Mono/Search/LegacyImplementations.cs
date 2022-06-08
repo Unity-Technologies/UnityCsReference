@@ -62,13 +62,6 @@ namespace UnityEditor.SearchService
     class ProjectSearchEngine : DefaultSearchEngine<string>, IProjectSearchEngine
     {}
 
-    // Custom search context. Used internally to pass the SearchFilter instance to our default
-    // search engine.
-    class HierarchySearchContext : SceneSearchContext
-    {
-        public SearchFilter filter;
-    }
-
     // Default scene search engine.
     [SceneSearchEngine]
     class HierarchySearchEngine : DefaultFilterEngine<HierarchyProperty>, ISceneSearchEngine
@@ -84,8 +77,8 @@ namespace UnityEditor.SearchService
             // To get the original behavior and performance, we set the filter on the root property
             // at the beginning of a search. This will have the effect of filtering the properties
             // during a call to Next() or NextWithDepthCheck(), so Filter() should always return true.
-            var hierarchySearchContext = context as HierarchySearchContext;
-            hierarchySearchContext?.rootProperty.SetSearchFilter(hierarchySearchContext.filter);
+            var hierarchySearchContext = context as SceneSearchContext;
+            hierarchySearchContext?.rootProperty.SetSearchFilter(hierarchySearchContext.searchFilter);
         }
     }
 

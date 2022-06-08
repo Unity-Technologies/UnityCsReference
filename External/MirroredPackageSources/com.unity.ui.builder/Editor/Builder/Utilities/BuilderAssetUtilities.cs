@@ -281,7 +281,7 @@ namespace Unity.UI.Builder
 
                 foreach (var overwrittenElement in overwrittenElements)
                 {
-                    overwrittenElement.SetAttributeValue(attributeOverride.m_AttributeName, attributeOverride.m_Value);
+                    overwrittenElement.SetAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value);
                 }
             }
         }

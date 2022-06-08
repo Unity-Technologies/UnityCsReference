@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using UnityEditor.SceneManagement;
+using UnityEditor.AssetImporters;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -201,11 +202,11 @@ namespace UnityEditor
         // 4.0 interface (made internal for now)
         internal void SetSearchFilter(SearchFilter filter)
         {
-            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.showAllHits);
+            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.showAllHits, filter.importLogFlags);
         }
 
         [FreeFunction("HierarchyPropertyBindings::SetSearchFilterImpl", HasExplicitThis = true)]
-        extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, string[] regex, bool showAllHits);
+        extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, string[] regex, bool showAllHits, ImportLogFlags importLogFlags);
         [FreeFunction("HierarchyPropertyBindings::FindAllAncestors", HasExplicitThis = true)]
         public extern int[] FindAllAncestors(int[] instanceIDs);
         [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilter")]

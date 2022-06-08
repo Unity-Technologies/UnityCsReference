@@ -105,7 +105,6 @@ namespace UnityEditor
             public static GUIContent shortcutsOffContent = EditorGUIUtility.TrIconContent("KeyboardShortcutsDisabled", "Unity Shortcuts");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
             public static GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
-            public static GUIContent loadRenderDocContent = EditorGUIUtility.TrTextContent(UnityEditor.RenderDocUtil.loadRenderDocLabel);
             public static GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TrTextContent("Warn if No Cameras Rendering");
             public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
             public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
@@ -123,7 +122,7 @@ namespace UnityEditor
             static Styles()
             {
                 gameViewBackgroundStyle = "GameViewBackground";
-                renderdocContent = EditorGUIUtility.TrIconContent("FrameCapture", UnityEditor.RenderDocUtil.openInRenderDocLabel);
+                renderdocContent = EditorGUIUtility.TrIconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip);
             }
 
             public static readonly GUIStyle largeCenteredText = new GUIStyle(EditorStyles.label)
@@ -577,19 +576,11 @@ namespace UnityEditor
                 Repaint();
         }
 
-        private void LoadRenderDoc()
-        {
-            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            {
-                ShaderUtil.RequestLoadRenderDoc();
-            }
-        }
-
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
-                menu.AddItem(Styles.loadRenderDocContent, false, LoadRenderDoc);
+                menu.AddItem(RenderDocUtil.LoadRenderDocMenuItem, false, RenderDoc.LoadRenderDoc);
             }
             menu.AddItem(Styles.noCameraWarningContextMenuContent, m_NoCameraWarning, ToggleNoCameraWarning);
             menu.AddItem(Styles.clearEveryFrameContextMenuContent, m_ClearInEditMode, ToggleClearInEditMode);
@@ -783,10 +774,7 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(!RenderDoc.IsSupported()))
                     {
                         if (GUILayout.Button(Styles.renderdocContent, EditorStyles.toolbarButton))
-                        {
-                            m_Parent.CaptureRenderDocScene();
-                            GUIUtility.ExitGUI();
-                        }
+                            RenderDoc.CaptureRenderDoc();
                     }
                 }
 

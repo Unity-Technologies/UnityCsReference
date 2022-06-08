@@ -160,7 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else if (m_UpdateAvailableOnly)
             {
                 m_AdjustedQueryArgs.status = string.Empty;
-                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => info.canUpdate).Select(info => info.id).ToList();
+                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.uploadId)?.canUpdate == true).Select(info => info.id).ToList();
             }
         }
 

@@ -24,5 +24,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingWithoutScriptUpdater = 1 << 11,
         BuildingExtractTypeDB = 1 << 12,
         BuildingSkipCompile = 1 << 13,
+        BuildingCleanCompilation = 1 << 14,
     }
 }

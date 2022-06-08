@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -11,7 +10,7 @@ using UnityEditor.AnimatedValues;
 namespace UnityEditor
 {
     [CanEditMultipleObjects]
-    internal abstract class Collider2DEditorBase : ColliderEditorBase
+    internal abstract class Collider2DEditorBase : Editor
     {
         protected class Styles
         {
@@ -48,9 +47,10 @@ namespace UnityEditor
 
         private readonly AnimBool m_ShowCompositeRedundants = new AnimBool();
 
-        public override void OnEnable()
+        public virtual void OnEnable()
         {
-            base.OnEnable();
+            EditMode.editModeStarted += OnEditModeStart;
+            EditMode.editModeEnded += OnEditModeEnd;
 
             m_Density = serializedObject.FindProperty("m_Density");
 
@@ -87,7 +87,7 @@ namespace UnityEditor
             m_RequiresConstantRepaint = false;
         }
 
-        public override void OnDisable()
+        public virtual void OnDisable()
         {
             m_ShowDensity.valueChanged.RemoveListener(Repaint);
             m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
@@ -95,7 +95,8 @@ namespace UnityEditor
             m_ShowContacts.valueChanged.RemoveListener(Repaint);
             m_ShowCompositeRedundants.valueChanged.RemoveListener(Repaint);
 
-            base.OnDisable();
+            EditMode.editModeStarted -= OnEditModeStart;
+            EditMode.editModeEnded -= OnEditModeEnd;
         }
 
         public override void OnInspectorGUI()
@@ -313,6 +314,48 @@ namespace UnityEditor
         public override bool RequiresConstantRepaint()
         {
             return m_RequiresConstantRepaint;
+        }
+
+        protected virtual void OnEditStart() {}
+        protected virtual void OnEditEnd() {}
+
+        public bool editingCollider
+        {
+            get { return EditMode.editMode == EditMode.SceneViewEditMode.Collider && EditMode.IsOwner(this); }
+        }
+
+        protected virtual GUIContent editModeButton { get { return EditorGUIUtility.IconContent("EditCollider"); } }
+
+        protected void InspectorEditButtonGUI()
+        {
+            EditMode.DoEditModeInspectorModeButton(
+                EditMode.SceneViewEditMode.Collider,
+                "Edit Collider",
+                editModeButton,
+                this
+            );
+        }
+
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
+        {
+            if (targetObject is Collider2D)
+                return ((Collider2D)targetObject).bounds;
+            else if (targetObject is Collider)
+                return ((Collider)targetObject).bounds;
+            else
+                return base.GetWorldBoundsOfTarget(targetObject);
+        }
+
+        protected void OnEditModeStart(IToolModeOwner owner, EditMode.SceneViewEditMode mode)
+        {
+            if (mode == EditMode.SceneViewEditMode.Collider && owner == (IToolModeOwner)this)
+                OnEditStart();
+        }
+
+        protected void OnEditModeEnd(IToolModeOwner owner)
+        {
+            if (owner == (IToolModeOwner)this)
+                OnEditEnd();
         }
     }
 }

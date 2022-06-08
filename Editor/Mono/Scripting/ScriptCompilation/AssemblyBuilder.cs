@@ -112,8 +112,21 @@ namespace UnityEditor.Compilation
 
             var debug = compilerOptions.CodeOptimization == CodeOptimization.Debug;
 
-            var buildRequest = UnityBeeDriver.BuildRequestFor(EditorCompilation.ScriptCompilationBuildProgram, editorCompilation, $"{(int)assembly.BuildTarget}{"AB"}", beeAssemblyBuilderDirectory);
-            buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(editorCompilation, assemblies, debug, assembly.OutputDirectory, assembly.BuildTarget, true));
+            var buildRequest = UnityBeeDriver.BuildRequestFor(
+                EditorCompilation.ScriptCompilationBuildProgram,
+                editorCompilation,
+                $"{(int)assembly.BuildTarget}{"AB"}",
+                UnityBeeDriver.CacheMode.Off,
+                beeAssemblyBuilderDirectory,
+                useScriptUpdater:false);
+            buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(
+                editorCompilation,
+                assemblies,
+                debug,
+                assembly.OutputDirectory,
+                assembly.BuildTarget,
+                true,
+                false));
             buildRequest.Target = Constants.ScriptAssembliesTarget;
 
             activeBeeBuild = new BeeScriptCompilationState

@@ -13,12 +13,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal new class UxmlFactory : UxmlFactory<Alert> {}
 
         private ResourceLoader m_ResourceLoader;
-        private Action m_ReadMoreLinkAction;
+        private UnityConnectProxy m_UnityConnectProxy;
+
+        private Action m_OnActionButtonClicked;
 
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
+            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
         }
 
         public Alert()
@@ -32,21 +35,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             cache = new VisualElementCache(root);
 
-            alertReadMoreLink.clicked += ReadMoreLinkClick;
+            alertActionButton.clicked += () => m_OnActionButtonClicked?.Invoke();
         }
 
-        private void ReadMoreLinkClick()
+        public void RefreshError(UIError error, IPackageVersion packageVersion = null)
         {
-            m_ReadMoreLinkAction?.Invoke();
-        }
+            if (error == null)
+            {
+                UIUtils.SetElementDisplay(this, false);
+                return;
+            }
+            UIUtils.SetElementDisplay(this, true);
 
-        public void SetError(UIError error, IPackageVersion packageVersion = null)
-        {
-            var message = string.Empty;
-            if (!string.IsNullOrEmpty(error.message))
-                message = error.message;
+            var message = error.message ?? string.Empty;
             if (error.HasAttribute(UIError.Attribute.IsDetailInConsole))
                 message = string.Format(L10n.Tr("{0} See console for more details."), message);
+            alertMessage.text = message;
 
             if (error.HasAttribute(UIError.Attribute.IsWarning))
             {
@@ -59,46 +63,47 @@ namespace UnityEditor.PackageManager.UI.Internal
                 alertContainer.AddClasses("error");
             }
 
-            if (!string.IsNullOrEmpty(error.readMoreURL))
+            RefreshActionButton(error, packageVersion);
+        }
+
+        private void RefreshActionButton(UIError error, IPackageVersion packageVersion)
+        {
+            var buttonText = string.Empty;
+            Action buttonAction = null;
+
+            if (error.errorCode is UIErrorCode.UpmError_NotSignedIn)
             {
-                ShowReadMoreLink(error, packageVersion);
+                buttonText = L10n.Tr("Sign in");
+                buttonAction = () => m_UnityConnectProxy.ShowLogin();
             }
-            else
+            else if (error.errorCode is UIErrorCode.UpmError_NotAcquired)
             {
-                HideReadMoreLink();
+                var assetStoreLink = (packageVersion?.package as AssetStorePackage)?.assetStoreLink;
+                if (!string.IsNullOrEmpty(assetStoreLink))
+                {
+                    buttonText = L10n.Tr("View in Asset Store");
+                    buttonAction = () => Application.OpenURL(assetStoreLink);
+                }
+            }
+            else if (!string.IsNullOrEmpty(error.readMoreURL))
+            {
+                buttonText = L10n.Tr("Read more");
+                buttonAction = () =>
+                {
+                    PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode.ToString()}", packageVersion?.uniqueId);
+                    Application.OpenURL(error.readMoreURL);
+                };
             }
 
-            alertMessage.text = message;
-            UIUtils.SetElementDisplay(this, true);
+            alertActionButton.text = buttonText;
+            m_OnActionButtonClicked = buttonAction;
+            UIUtils.SetElementDisplay(alertActionButton, buttonAction != null);
         }
 
-        public void ClearError()
-        {
-            UIUtils.SetElementDisplay(this, false);
-            alertMessage.text = string.Empty;
-            HideReadMoreLink();
-        }
+        private VisualElementCache cache { get; }
 
-        private void ShowReadMoreLink(UIError error, IPackageVersion packageVersion)
-        {
-            m_ReadMoreLinkAction = () =>
-            {
-                PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode.ToString()}", packageVersion?.uniqueId);
-                Application.OpenURL(error.readMoreURL);
-            };
-            UIUtils.SetElementDisplay(alertReadMoreLink, true);
-        }
-
-        private void HideReadMoreLink()
-        {
-            UIUtils.SetElementDisplay(alertReadMoreLink, false);
-            m_ReadMoreLinkAction = null;
-        }
-
-        private VisualElementCache cache { get; set; }
-
-        private Label alertMessage { get { return cache.Get<Label>("alertMessage"); } }
-        private VisualElement alertContainer { get { return cache.Get<VisualElement>("alertContainer"); } }
-        private Button alertReadMoreLink { get { return cache.Get<Button>("alertReadMoreLink"); } }
+        private Label alertMessage => cache.Get<Label>("alertMessage");
+        private VisualElement alertContainer => cache.Get<VisualElement>("alertContainer");
+        private Button alertActionButton => cache.Get<Button>("alertActionButton");
     }
 }

@@ -451,12 +451,15 @@ namespace UnityEditor
                 }
                 else
                 {
-                    if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(m_ButtonWidth)))
+                    using (new EditorGUI.DisabledScope(!m_HasApplicableOverrides))
                     {
-                        if (RevertAll() && editorWindow != null)
+                        if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(m_ButtonWidth)))
                         {
-                            editorWindow.Close();
-                            GUIUtility.ExitGUI();
+                            if (RevertAll() && editorWindow != null)
+                            {
+                                editorWindow.Close();
+                                GUIUtility.ExitGUI();
+                            }
                         }
                     }
 
@@ -515,12 +518,6 @@ namespace UnityEditor
             }
         }
 
-        struct ApplyAllUndo
-        {
-            public GameObject correspondingSourceObject;
-            public HashSet<int> prefabHierarchy;
-        }
-
         bool ApplyAll()
         {
             // Collect Prefab Asset paths and also check if there's more than one of the same.
@@ -547,21 +544,6 @@ namespace UnityEditor
             if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(prefabAssetPaths.ToArray(), PrefabUtility.SaveVerb.Apply))
                 return false;
 
-            var undoStructs = new List<ApplyAllUndo>();
-            var actionName = "ApplyAll";
-            for (var i = 0; i < m_SelectedGameObjects.Length; i++)
-            {
-                var us = new ApplyAllUndo();
-                us.correspondingSourceObject = (GameObject)PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObjects[i]);
-                Undo.RegisterFullObjectHierarchyUndo(us.correspondingSourceObject, actionName); // handles changes to existing objects and object what will be deleted but not objects that are created
-                GameObject prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(m_SelectedGameObjects[i]);
-                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
-
-                us.prefabHierarchy = new HashSet<int>();
-                PrefabUtility.GetObjectListFromHierarchy(us.prefabHierarchy, us.correspondingSourceObject);
-                undoStructs.Add(us);
-            }
-
             // Apply sequentially.
             AssetDatabase.StartAssetEditing();
             try
@@ -572,14 +554,6 @@ namespace UnityEditor
             finally
             {
                 AssetDatabase.StopAssetEditing();
-            }
-
-            foreach (var t in undoStructs)
-            {
-                var danglingObjects = new List<Object>();
-                PrefabUtility.CollectAddedObjects(t.correspondingSourceObject, t.prefabHierarchy, danglingObjects);
-                foreach (var component in danglingObjects)
-                    Undo.RegisterCreatedObjectUndoToFrontOfUndoQueue(component, actionName);
             }
 
             EditorUtility.ForceRebuildInspectors();

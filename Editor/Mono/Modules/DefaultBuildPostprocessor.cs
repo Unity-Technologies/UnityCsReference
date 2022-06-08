@@ -110,7 +110,7 @@ namespace UnityEditor.Modules
             }
         }
 
-        protected static string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
+        protected virtual string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
         {
             return $"{args.installPath.ToNPath().FileNameWithoutExtension}_BackUpThisFolder_ButDontShipItWithYourGame";
         }

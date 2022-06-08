@@ -141,48 +141,6 @@ namespace UnityEngine.UIElements
             computedTransitions = null;
         }
 
-        public static VersionChangeType CompareChanges(ref ComputedStyle x, ref ComputedStyle y)
-        {
-            // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
-            // But those should be the only possible type of changes needed
-            VersionChangeType changes = VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint;
-
-            if (x.overflow != y.overflow)
-                changes |= VersionChangeType.Overflow;
-
-            if (x.borderBottomLeftRadius != y.borderBottomLeftRadius ||
-                x.borderBottomRightRadius != y.borderBottomRightRadius ||
-                x.borderTopLeftRadius != y.borderTopLeftRadius ||
-                x.borderTopRightRadius != y.borderTopRightRadius)
-            {
-                changes |= VersionChangeType.BorderRadius;
-            }
-
-            if (x.borderLeftWidth != y.borderLeftWidth ||
-                x.borderTopWidth != y.borderTopWidth ||
-                x.borderRightWidth != y.borderRightWidth ||
-                x.borderBottomWidth != y.borderBottomWidth)
-            {
-                changes |= VersionChangeType.BorderWidth;
-            }
-
-            if (x.opacity != y.opacity)
-                changes |= VersionChangeType.Opacity;
-
-            if (!ComputedTransitionUtils.SameTransitionProperty(ref x, ref y))
-                changes |= VersionChangeType.TransitionProperty;
-
-            if (x.transformOrigin != y.transformOrigin ||
-                x.translate != y.translate ||
-                x.scale != y.scale ||
-                x.rotate != y.rotate)
-            {
-                changes |= VersionChangeType.Transform;
-            }
-
-            return changes;
-        }
-
         public static bool StartAnimationInlineTextShadow(VisualElement element, ref ComputedStyle computedStyle, StyleTextShadow textShadow, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             var to = textShadow.keyword == StyleKeyword.Initial ? InitialStyle.textShadow : textShadow.value;
@@ -239,6 +197,12 @@ namespace UnityEngine.UIElements
             }
 
             return result;
+        }
+
+        public static bool StartAnimationInlineBackgroundSize(VisualElement element, ref ComputedStyle computedStyle, StyleBackgroundSize backgroundSize, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            var to = backgroundSize.keyword == StyleKeyword.Initial ? InitialStyle.backgroundSize : backgroundSize.value;
+            return element.styleAnimation.Start(StylePropertyId.BackgroundSize, computedStyle.visualData.Read().backgroundSize, to, durationMs, delayMs, easingCurve);
         }
     }
 }

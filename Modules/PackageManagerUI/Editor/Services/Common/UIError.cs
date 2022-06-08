@@ -15,14 +15,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static readonly string k_InvalidSignatureWarningMessage = L10n.Tr("This package version doesn't have a valid signature. For your security, install a different version or report a bug to Unity.");
         internal static readonly string k_UnsignedUnityPackageWarningMessage = L10n.Tr("This package version has no signature. For your security, install a different version or review your scoped registry and load the package from the Unity registry.");
         internal static readonly string k_ReadMoreDocsUrl = "https://docs.unity3d.com/Manual/upm-errors.html";
-        public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.Forbidden, k_EntitlementErrorMessage);
-        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.Forbidden, k_EntitlementErrorMessage, Attribute.IsWarning);
+        public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage);
+        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.IsWarning);
         internal static readonly UIError k_InvalidSignatureWarning = new UIError(
             UIErrorCode.UpmError_InvalidSignature,
             k_InvalidSignatureWarningMessage,
             Attribute.IsWarning,
             readMoreUrl: k_ReadMoreDocsUrl);
-
         internal static readonly UIError k_UnsignedUnityPackageWarning = new UIError(
             UIErrorCode.UpmError_UnsignedUnityPackage,
             k_UnsignedUnityPackageWarningMessage,

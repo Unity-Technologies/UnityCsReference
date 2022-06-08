@@ -153,6 +153,11 @@ namespace UnityEditor
             string[] directories = Directory.GetDirectories(path);
             foreach (string directory in directories)
             {
+                // skip WebGLIncludes
+                string[] separated_dirs = directory.Split(Path.DirectorySeparatorChar);
+                if (separated_dirs[separated_dirs.Length - 1].Equals("WebGLIncludes")) {
+                    continue;
+                }
                 WebTemplate template = Load(directory);
                 if (template != null)
                 {

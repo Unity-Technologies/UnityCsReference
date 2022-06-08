@@ -101,5 +101,8 @@ namespace UnityEngine.UIElements
 
             this.text = text;
         }
+
+        void IGroupBox.OnOptionAdded(IGroupBoxOption option) { /* Nothing to do here. */ }
+        void IGroupBox.OnOptionRemoved(IGroupBoxOption option) { /* Nothing to do here. */ }
     }
 }

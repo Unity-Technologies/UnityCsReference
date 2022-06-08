@@ -25,7 +25,9 @@ namespace UnityEngine.UIElements
         bool Start(StylePropertyId id, Translate from, Translate to, int durationMs, int delayMs, Func<float, float> easingCurve);
         bool Start(StylePropertyId id, Rotate from, Rotate to, int durationMs, int delayMs, Func<float, float> easingCurve);
         bool Start(StylePropertyId id, TransformOrigin from, TransformOrigin to, int durationMs, int delayMs, Func<float, float> easingCurve);
-
+        bool Start(StylePropertyId id, BackgroundPosition from, BackgroundPosition to, int durationMs, int delayMs, Func<float, float> easingCurve);
+        bool Start(StylePropertyId id, BackgroundRepeat from, BackgroundRepeat to, int durationMs, int delayMs, Func<float, float> easingCurve);
+        bool Start(StylePropertyId id, BackgroundSize from, BackgroundSize to, int durationMs, int delayMs, Func<float, float> easingCurve);
 
         bool HasRunningAnimation(StylePropertyId id);
         void UpdateAnimation(StylePropertyId id);
@@ -113,6 +115,21 @@ namespace UnityEngine.UIElements
         }
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, TransformOrigin from, TransformOrigin to, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
+        }
+
+        bool IStylePropertyAnimations.Start(StylePropertyId id, BackgroundPosition from, BackgroundPosition to, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
+        }
+
+        bool IStylePropertyAnimations.Start(StylePropertyId id, BackgroundRepeat from, BackgroundRepeat to, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
+        }
+
+        bool IStylePropertyAnimations.Start(StylePropertyId id, BackgroundSize from, BackgroundSize to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
         }
@@ -207,6 +224,33 @@ namespace UnityEngine.UIElements
             if (!TryConvertLengthUnits(StylePropertyId.Translate, ref fromX, ref toX, 0))
                 return false;
             if (!TryConvertLengthUnits(StylePropertyId.Translate, ref fromY, ref toY, 1))
+                return false;
+
+            from.x = fromX;
+            from.y = fromY;
+            return true;
+        }
+
+        // Changes the from BackgroundPosition so that it apply the same result as before, but with the unit of the "to"
+        // return false if not possible
+        internal bool TryConvertBackgroundPositionUnits(ref BackgroundPosition from, ref BackgroundPosition to)
+        {
+            Length fromX = from.offset, toX = to.offset;
+            if (!TryConvertLengthUnits(StylePropertyId.BackgroundPosition, ref fromX, ref toX, 0))
+                return false;
+
+            from.offset = fromX;
+            return true;
+        }
+
+        // Changes the from BackgroundSize so that it apply the same result as before, but with the unit of the "to" value
+        // return false if not possible
+        internal bool TryConvertBackgroundSizeUnits(ref BackgroundSize from, ref BackgroundSize to)
+        {
+            Length fromX = from.x, fromY = from.y, toX = to.x, toY = to.y;
+            if (!TryConvertLengthUnits(StylePropertyId.BackgroundSize, ref fromX, ref toX, 0))
+                return false;
+            if (!TryConvertLengthUnits(StylePropertyId.BackgroundSize, ref fromY, ref toY, 1))
                 return false;
 
             from.x = fromX;

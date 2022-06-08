@@ -28,10 +28,8 @@ namespace Unity.Jobs.LowLevel.Unsafe
         internal int    BatchSize;
         internal int    NumJobs;
         public   int    TotalIterationCount;
-        internal int    NumPhases;
 
         internal IntPtr StartEndIndex;
-        internal IntPtr PhaseData;
     }
 
     public enum ScheduleMode
@@ -161,6 +159,10 @@ namespace Unity.Jobs.LowLevel.Unsafe
         //@TODO: @timj Should we decrease this???
         public const int MaxJobThreadCount = 128;
         public const int CacheLineSize = 64;
+
+        [FreeFunction("IsJobQueueBatchingEnabled")]
+        static extern bool GetJobBatchingEnabled();
+        internal static bool JobBatchingEnabled => GetJobBatchingEnabled();
 
         [FreeFunction("JobDebuggerGetSystemIdCellPtr")]
         internal static extern IntPtr GetSystemIdCellPtr();

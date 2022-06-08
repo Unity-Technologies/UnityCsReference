@@ -47,8 +47,11 @@ namespace UnityEngine.UIElements
         /// this class affects every RadioButtonGroup located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-radio-button-group";
+        /// <summary>
+        /// USS class name of container element of this type.
+        /// </summary>
+        public static readonly string containerUssClassName = ussClassName + "__container";
 
-        IEnumerable<string> m_Choices;
         List<RadioButton> m_RadioButtons = new List<RadioButton>();
         EventCallback<ChangeEvent<bool>> m_RadioButtonValueChangedCallback;
 
@@ -61,33 +64,53 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public IEnumerable<string> choices
         {
-            get => m_Choices;
-            set
+            get
             {
-                m_Choices = value;
-
                 foreach (var radioButton in m_RadioButtons)
                 {
-                    radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-                    radioButton.RemoveFromHierarchy();
-                }
-
-                m_RadioButtons.Clear();
-
-                if (m_Choices != null)
-                {
-                    foreach (var choice in m_Choices)
-                    {
-                        var radioButton = new RadioButton() { text = choice };
-                        radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-                        m_RadioButtons.Add(radioButton);
-                        visualInput.Add(radioButton);
-                    }
-
-                    UpdateRadioButtons();
+                    yield return radioButton.text;
                 }
             }
+            set
+            {
+                if (value == null)
+                {
+                    m_RadioButtonContainer.Clear();
+                    return;
+                }
+
+                var i = 0;
+                foreach (var choice in value)
+                {
+                    if (i < m_RadioButtons.Count)
+                    {
+                        m_RadioButtons[i].text = choice;
+                        m_RadioButtonContainer.Insert(i, m_RadioButtons[i]);
+                    }
+                    else
+                    {
+                        var radioButton = new RadioButton { text = choice };
+                        radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+                        m_RadioButtons.Add(radioButton);
+                        m_RadioButtonContainer.Add(radioButton);
+                    }
+
+                    i++;
+                }
+
+                var lastIndex = m_RadioButtons.Count - 1;
+                for (var j = lastIndex; j >= i; j--)
+                {
+                    // RadioButton will be removed from m_RadioButton in the OnOptionRemoved method below.
+                    // The value change callback will be unregistered there as well.
+                    m_RadioButtons[j].RemoveFromHierarchy();
+                }
+
+                UpdateRadioButtons();
+            }
         }
+
+        VisualElement m_RadioButtonContainer;
 
         /// <summary>
         /// Initializes and returns an instance of RadioButtonGroup.
@@ -105,6 +128,8 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
+            visualInput.Add(m_RadioButtonContainer = new VisualElement { name = containerUssClassName });
+            m_RadioButtonContainer.AddToClassList(containerUssClassName);
             m_RadioButtonValueChangedCallback = RadioButtonValueChangedCallback;
             choices = radioButtonChoices;
             value = -1;
@@ -140,6 +165,41 @@ namespace UnityEngine.UIElements
                     radioButton.value = false;
                 }
             }
+        }
+
+        void IGroupBox.OnOptionAdded(IGroupBoxOption option)
+        {
+            if (!(option is RadioButton radioButton))
+                throw new ArgumentException("[UI Toolkit] Internal group box error. Expected a radio button element. Please report this using Help -> Report a bug...");
+
+            if (m_RadioButtons.Contains(radioButton))
+                return;
+
+            radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+            var indexInContainer = m_RadioButtonContainer.IndexOf(radioButton);
+            if (indexInContainer < 0 || indexInContainer > m_RadioButtons.Count)
+            {
+                m_RadioButtons.Add(radioButton);
+                m_RadioButtonContainer.Add(radioButton);
+            }
+            else
+            {
+                m_RadioButtons.Insert(indexInContainer, radioButton);
+            }
+        }
+
+        void IGroupBox.OnOptionRemoved(IGroupBoxOption option)
+        {
+            if (!(option is RadioButton radioButton))
+                throw new ArgumentException("[UI Toolkit] Internal group box error. Expected a radio button element. Please report this using Help -> Report a bug...");
+
+            var index = m_RadioButtons.IndexOf(radioButton);
+            radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+            m_RadioButtons.Remove(radioButton);
+
+            // Reset value if the selected option is removed
+            if (value == index)
+                value = -1;
         }
     }
 }

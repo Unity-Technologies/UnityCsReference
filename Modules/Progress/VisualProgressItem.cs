@@ -355,17 +355,20 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(iconName))
             {
                 m_BackgroundTaskStatusIcon.style.backgroundImage = null;
-                m_BackgroundTaskStatusIcon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
                 m_BackgroundTaskStatusIcon.style.height = 0;
                 m_BackgroundTaskStatusIcon.style.width = 0;
             }
             else
             {
                 m_BackgroundTaskStatusIcon.style.backgroundImage = EditorGUIUtility.LoadIcon(iconName);
-                m_BackgroundTaskStatusIcon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
                 m_BackgroundTaskStatusIcon.style.height = k_IconSize;
                 m_BackgroundTaskStatusIcon.style.width = k_IconSize;
             }
+
+            m_BackgroundTaskStatusIcon.style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit);
+            m_BackgroundTaskStatusIcon.style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit);
+            m_BackgroundTaskStatusIcon.style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleToFit);
+            m_BackgroundTaskStatusIcon.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleToFit);
         }
 
         public void SetProgressStyleFull(bool styleFull)

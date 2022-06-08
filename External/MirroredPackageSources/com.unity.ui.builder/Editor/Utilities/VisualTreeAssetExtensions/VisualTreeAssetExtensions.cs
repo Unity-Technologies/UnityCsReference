@@ -376,7 +376,7 @@ namespace Unity.UI.Builder
             var templateAsset = new TemplateAsset(templateName, BuilderConstants.UxmlInstanceTypeName);
             VisualTreeAssetUtilities.InitializeElement(templateAsset);
 
-            templateAsset.AddProperty("template", templateName);
+            templateAsset.SetAttribute("template", templateName);
 
             return VisualTreeAssetUtilities.AddElementToDocument(vta, templateAsset, parent) as TemplateAsset;
         }
@@ -401,7 +401,7 @@ namespace Unity.UI.Builder
 
             var overriddenAttributes = visualElement.GetOverriddenAttributes();
             foreach (var attribute in overriddenAttributes)
-                vea.AddProperty(attribute.Key, attribute.Value);
+                vea.SetAttribute(attribute.Key, attribute.Value);
 
             return VisualTreeAssetUtilities.AddElementToDocument(vta, vea, parent);
         }

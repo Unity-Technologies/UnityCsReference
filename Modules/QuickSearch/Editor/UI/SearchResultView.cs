@@ -33,6 +33,8 @@ namespace UnityEditor.Search
         public string currentGroup => string.Empty;
         public Rect position => m_Results?.context.searchView?.position ?? Rect.zero;
 
+        int ISearchView.cursorIndex => 0;
+
         public SearchResultView(ISearchList results)
         {
             m_Results = results;
@@ -175,6 +177,11 @@ namespace UnityEditor.Search
         public void SetColumns(IEnumerable<SearchColumn> columns)
         {
             throw new NotSupportedException("This result view cannot set columns");
+        }
+
+        bool ISearchView.IsPicker()
+        {
+            return false;
         }
     }
 

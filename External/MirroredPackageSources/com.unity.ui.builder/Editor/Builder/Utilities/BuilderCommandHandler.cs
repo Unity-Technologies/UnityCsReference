@@ -425,7 +425,7 @@ namespace Unity.UI.Builder
             BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, newTemplateContainer, (inVta, inParent, ve) =>
             {
                 var vea = inVta.AddTemplateInstance(inParent, path) as VisualElementAsset;
-                vea.AddProperty("name", newTemplateVTA.name);
+                vea.SetAttribute("name", newTemplateVTA.name);
                 ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, newTemplateVTA);
                 return vea;
             }, index);
@@ -472,7 +472,7 @@ namespace Unity.UI.Builder
                 var attributes = elementToUnpack.GetOverriddenAttributes();
                 foreach (var attribute in attributes)
                 {
-                    unpackedVEA.SetAttributeValue(attribute.Key, attribute.Value);
+                    unpackedVEA.SetAttribute(attribute.Key, attribute.Value);
                 }
 
                 if (isRootElement)

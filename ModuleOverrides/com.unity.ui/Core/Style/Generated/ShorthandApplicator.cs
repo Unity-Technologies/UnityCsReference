@@ -15,6 +15,14 @@ namespace UnityEngine.UIElements.StyleSheets
 {
     internal static partial class ShorthandApplicator
     {
+        public static void ApplyBackgroundPosition(StylePropertyReader reader, ref ComputedStyle computedStyle)
+        {
+            CompileBackgroundPosition(reader, out BackgroundPosition backgroundPositionX, out BackgroundPosition backgroundPositionY);
+
+            computedStyle.visualData.Write().backgroundPositionX = backgroundPositionX;
+            computedStyle.visualData.Write().backgroundPositionY = backgroundPositionY;
+        }
+
         public static void ApplyBorderColor(StylePropertyReader reader, ref ComputedStyle computedStyle)
         {
             CompileBoxArea(reader, out Color borderTopColor, out Color borderRightColor, out Color borderBottomColor, out Color borderLeftColor);
@@ -82,6 +90,16 @@ namespace UnityEngine.UIElements.StyleSheets
             computedStyle.transitionData.Write().transitionDuration.CopyFrom(transitionDuration);
             computedStyle.transitionData.Write().transitionProperty.CopyFrom(transitionProperty);
             computedStyle.transitionData.Write().transitionTimingFunction.CopyFrom(transitionTimingFunction);
+        }
+
+        public static void ApplyUnityBackgroundScaleMode(StylePropertyReader reader, ref ComputedStyle computedStyle)
+        {
+            CompileUnityBackgroundScaleMode(reader, out BackgroundPosition backgroundPositionX, out BackgroundPosition backgroundPositionY, out BackgroundRepeat backgroundRepeat, out BackgroundSize backgroundSize);
+
+            computedStyle.visualData.Write().backgroundPositionX = backgroundPositionX;
+            computedStyle.visualData.Write().backgroundPositionY = backgroundPositionY;
+            computedStyle.visualData.Write().backgroundRepeat = backgroundRepeat;
+            computedStyle.visualData.Write().backgroundSize = backgroundSize;
         }
 
         public static void ApplyUnityTextOutline(StylePropertyReader reader, ref ComputedStyle computedStyle)

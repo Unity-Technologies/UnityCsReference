@@ -19,6 +19,11 @@ namespace UnityEngine.UIElements
 
         public int index => m_Index - 1;
 
+        public bool IsValid()
+        {
+            return m_Index > 0;
+        }
+
         public float ConvertToGpu()
         {
             // Ids from 0 to 2048 can be perfectly represented with half.

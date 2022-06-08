@@ -4,6 +4,7 @@
 
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -12,15 +13,29 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(SpaceAttribute))]
     internal sealed class SpaceDrawer : DecoratorDrawer
     {
+        public const string spaceDrawerClassName = "unity-space-drawer";
+
         public override float GetHeight()
         {
             return (attribute as SpaceAttribute).height;
+        }
+
+        public override VisualElement CreatePropertyGUI()
+        {
+            var spaceElement = new VisualElement();
+            spaceElement.AddToClassList(spaceDrawerClassName);
+
+            spaceElement.style.height = GetHeight();
+
+            return spaceElement;
         }
     }
 
     [CustomPropertyDrawer(typeof(HeaderAttribute))]
     internal sealed class HeaderDrawer : DecoratorDrawer
     {
+        public const string headerLabelClassName = "unity-header-drawer__label";
+
         public override void OnGUI(Rect position)
         {
             position.yMin += EditorGUIUtility.singleLineHeight * 0.5f;
@@ -36,6 +51,16 @@ namespace UnityEditor
                 lines = (attribute as HeaderAttribute).header.Count(a => a == '\n') + 1;
             float eachLineHeight = fullTextHeight / lines;
             return EditorGUIUtility.singleLineHeight * 1.5f + (eachLineHeight * (lines - 1));
+        }
+
+        public override VisualElement CreatePropertyGUI()
+        {
+            var text = (attribute as HeaderAttribute).header;
+            var label = new Label(text);
+
+            label.AddToClassList(headerLabelClassName);
+
+            return label;
         }
     }
 }

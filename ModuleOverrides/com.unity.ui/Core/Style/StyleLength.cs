@@ -16,11 +16,25 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Length value
         {
-            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(Length); }
+            get
+            {
+                if (m_Keyword == StyleKeyword.Auto ||
+                    m_Keyword == StyleKeyword.None ||
+                    m_Keyword == StyleKeyword.Undefined)
+                    return m_Value;
+                else
+                    return default(Length);
+            }
             set
             {
+                if (value.IsAuto())
+                    m_Keyword = StyleKeyword.Auto;
+                else if (value.IsNone())
+                    m_Keyword = StyleKeyword.None;
+                else
+                    m_Keyword = StyleKeyword.Undefined;
+
                 m_Value = value;
-                m_Keyword = StyleKeyword.Undefined;
             }
         }
 
@@ -30,7 +44,23 @@ namespace UnityEngine.UIElements
         public StyleKeyword keyword
         {
             get { return m_Keyword; }
-            set { m_Keyword = value; }
+            set
+            {
+                m_Keyword = value;
+
+                if (m_Keyword == StyleKeyword.Auto)
+                {
+                    m_Value = Length.Auto();
+                }
+                else if (m_Keyword == StyleKeyword.None)
+                {
+                    m_Value = Length.None();
+                }
+                else if (m_Keyword != StyleKeyword.Undefined)
+                {
+                    m_Value = default(Length);
+                }
+            }
         }
 
         /// <summary>

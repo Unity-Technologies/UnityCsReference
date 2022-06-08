@@ -188,6 +188,14 @@ namespace UnityEditor
             m_PreviewUtility.camera.transform.position = new Vector3(5, 5, 0);
 
             m_Settings = new Settings();
+
+            //Fix for FogBugz case : 1364821 Inspector Model Preview orientation is reversed when Bake Axis Conversion is enabled
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(target)) as ModelImporter;
+            if (importer && importer.bakeAxisConversion)
+            {
+                m_Settings.previewDir += new Vector2(180,0);
+            }
+
             m_Settings.changed += OnSettingsChanged;
             m_BlendShapes = new List<string>();
             CheckAvailableAttributes();

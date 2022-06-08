@@ -14,7 +14,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version?.package?.Is(PackageType.AssetStore) == true;
+            var package = version?.package;
+            return package != null && package.Is(PackageType.AssetStore) && !package.Is(PackageType.Upm);
         }
 
         public PackageDetailsReleasesTab()
@@ -30,13 +31,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_ReleasesContainer.Clear();
 
+            if (version is PlaceholderPackageVersion)
+                return;
+
             if (version?.package?.firstPublishedDate != null)
             {
                 var latest = version.package.versions.latest;
+                m_ReleasesContainer.Add(new PackageReleaseDetailsItem(latest.versionString, latest.publishedDate, latest == version, latest.package.latestReleaseNotes));
                 if (latest != version)
-                    m_ReleasesContainer.Add(new PackageReleaseDetailsItem(latest.versionString, latest.publishedDate, false, latest.releaseNotes));
-
-                m_ReleasesContainer.Add(new PackageReleaseDetailsItem(version.versionString, version.publishedDate, version is AssetStorePackageVersion, version.releaseNotes));
+                    m_ReleasesContainer.Add(new PackageReleaseDetailsItem(version.versionString, version.publishedDate, true, version.localReleaseNotes));
                 m_ReleasesContainer.Add(new PackageReleaseDetailsItem(L10n.Tr("Original"), version.package.firstPublishedDate));
             }
         }

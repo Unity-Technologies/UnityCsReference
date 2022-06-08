@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -129,7 +131,18 @@ namespace UnityEngine.UIElements
             visualInput.Add(m_CheckmarkBackground);
             UpdateCheckmark();
 
-            this.RegisterGroupBoxOptionCallbacks();
+            RegisterCallback<AttachToPanelEvent>(OnOptionAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnOptionDetachFromPanel);
+        }
+
+        void OnOptionAttachToPanel(AttachToPanelEvent evt)
+        {
+            this.RegisterGroupBoxOption();
+        }
+
+        void OnOptionDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            this.UnregisterGroupBoxOption();
         }
 
         protected override void InitLabel()
@@ -148,9 +161,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        [Obsolete("[UI Toolkit] Please set the value property instead.", false)]
         public void SetSelected(bool selected)
         {
-            // TODO this is an implementation of IGroupBoxOption, does it need to be public? (explicit interface implementation)
+            ((IGroupBoxOption)this).SetSelected(selected);
+        }
+
+        void IGroupBoxOption.SetSelected(bool selected)
+        {
             // We're using value here and not SetValueWithoutNotify, to allow users to receive events when this gets
             // changed from other options. Checks in the setter and the group manager will prevent infinite loops.
             value = selected;

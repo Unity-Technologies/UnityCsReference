@@ -51,6 +51,7 @@ namespace UnityEngine
         public extern bool isGrounded {[NativeName("IsGrounded")] get; }
         public extern float rpm { get; }
         public extern float sprungMass { get; set; }
+        public extern float rotationSpeed { get; set; }
 
         public extern void ResetSprungMasses();
 

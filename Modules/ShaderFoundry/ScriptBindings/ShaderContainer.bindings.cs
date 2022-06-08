@@ -60,7 +60,7 @@ namespace UnityEditor.ShaderFoundry
         internal extern TagDescriptorInternal GetTagDescriptor(FoundryHandle tagDescriptorHandle);
 
         internal extern FoundryHandle CreateFunctionInternal();
-        internal extern bool SetFunction(FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, FoundryHandle parameterListHandle, FoundryHandle parentBlockHandle);
+        internal extern bool SetFunction(FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, FoundryHandle parameterListHandle, FoundryHandle parentBlockHandle, FoundryHandle includeListHandle);
         internal extern ShaderFunctionInternal GetFunction(FoundryHandle functionHandle);
 
         internal extern FoundryHandle AddFunctionParameter(string name, FoundryHandle typeHandle, UInt32 flags);
@@ -153,6 +153,12 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern FoundryHandle AddTemplateInternal(TemplateInternal templateInternal);
         internal extern TemplateInternal GetTemplate(FoundryHandle templateHandle);
+
+        internal extern FoundryHandle AddShaderDependency(ShaderDependencyInternal shaderDependency);
+        internal extern ShaderDependencyInternal GetShaderDependency(FoundryHandle shaderDependencyHandle);
+
+        internal extern FoundryHandle AddShaderCustomEditor(ShaderCustomEditorInternal shaderCustomEditor);
+        internal extern ShaderCustomEditorInternal GetShaderCustomEditor(FoundryHandle shaderCustomEditorHandle);
 
         internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)
         {

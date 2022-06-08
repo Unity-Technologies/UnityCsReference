@@ -629,9 +629,12 @@ With this option, this model will not create any avatar but only import animatio
                 }
             }
 
-            EditorGUILayout.PropertyField(m_OptimizeBones, Styles.OptimizeBones);
+            if (animationType != ModelImporterAnimationType.None)
+            {
+                EditorGUILayout.PropertyField(m_OptimizeBones, Styles.OptimizeBones);
 
-            ShowUpdateReferenceClip();
+                ShowUpdateReferenceClip();
+            }
 
             // OptimizeGameObject is only supported on our own avatar when animation type is not Legacy.
             if (m_AvatarSetup.intValue == (int)ModelImporterAvatarSetup.CreateFromThisModel && animationType != ModelImporterAnimationType.Legacy)

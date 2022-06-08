@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using System;
 using System.Runtime.InteropServices;
 

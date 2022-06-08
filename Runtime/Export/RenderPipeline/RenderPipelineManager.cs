@@ -15,14 +15,18 @@ namespace UnityEngine.Rendering
         internal static RenderPipelineAsset s_CurrentPipelineAsset;
         static List<Camera> s_Cameras = new List<Camera>();
 
-        private static string s_currentPipelineType;
-        static string s_builtinPipelineName = "Built-in Pipeline";
+        private static string s_CurrentPipelineType;
+        const string k_BuiltinPipelineName = "Built-in Pipeline";
 
-        private static RenderPipeline s_currentPipeline = null;
+        private static RenderPipeline s_CurrentPipeline = null;
         public static RenderPipeline currentPipeline
         {
-            get => s_currentPipeline;
-            private set { s_currentPipelineType = (value != null) ? value.GetType().ToString() : s_builtinPipelineName; s_currentPipeline = value; }
+            get => s_CurrentPipeline;
+            private set
+            {
+                s_CurrentPipelineType = (value != null) ? value.GetType().ToString() : k_BuiltinPipelineName;
+                s_CurrentPipeline = value;
+            }
         }
 
         public static event Action<ScriptableRenderContext, List<Camera>> beginContextRendering;
@@ -33,6 +37,7 @@ namespace UnityEngine.Rendering
         public static event Action<ScriptableRenderContext, Camera> endCameraRendering;
 
         public static event Action activeRenderPipelineTypeChanged;
+        public static event Action<RenderPipelineAsset, RenderPipelineAsset> activeRenderPipelineAssetChanged;
 
         internal static void BeginContextRendering(ScriptableRenderContext context, List<Camera> cameras)
         {
@@ -60,6 +65,12 @@ namespace UnityEngine.Rendering
         internal static void OnActiveRenderPipelineTypeChanged()
         {
             activeRenderPipelineTypeChanged?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        internal static void OnActiveRenderPipelineAssetChanged(ScriptableObject from, ScriptableObject to)
+        {
+            activeRenderPipelineAssetChanged?.Invoke(from as RenderPipelineAsset, to as RenderPipelineAsset);
         }
 
         [RequiredByNativeCode]
@@ -91,7 +102,7 @@ namespace UnityEngine.Rendering
         [RequiredByNativeCode]
         static string GetCurrentPipelineAssetType()
         {
-            return s_currentPipelineType;
+            return s_CurrentPipelineType;
         }
 
         [RequiredByNativeCode]

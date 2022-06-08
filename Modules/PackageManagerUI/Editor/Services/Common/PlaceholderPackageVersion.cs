@@ -22,8 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string author => string.Empty;
 
-        public override string authorLink => string.Empty;
-
         public override string category => string.Empty;
 
         public override bool isInstalled => false;
@@ -36,18 +34,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string localPath => string.Empty;
 
-        public override string versionString => string.Empty;
+        public override string versionString => m_VersionString;
 
         public override string versionId => string.Empty;
 
-        public PlaceholderPackageVersion(string packageUniqueId, string uniqueId, string displayName, PackageTag tag = PackageTag.None, UIError error = null)
+        public PlaceholderPackageVersion(string uniqueId, string displayName, string versionString = "", PackageTag tag = PackageTag.None, UIError error = null)
         {
-            m_PackageUniqueId = packageUniqueId;
             m_UniqueId = uniqueId;
             m_DisplayName = displayName;
-            m_Tag = tag;
+            m_VersionString = versionString;
+            m_Tag = tag | PackageTag.Placeholder;
             m_Version = new SemVersion(0);
             m_Errors = error != null ? new UIError[] { error } : new UIError[0];
+
+            SemVersionParser.TryParse(m_VersionString, out m_Version);
         }
     }
 }

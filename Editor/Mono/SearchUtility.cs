@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
 using UnityEditor.Collaboration;
 using UnityEditor.Connect;
@@ -240,6 +242,28 @@ namespace UnityEditor
                 globs.Add(globValue);
                 filter.globs = globs.ToArray();
                 parsed = true;
+            }
+
+            var importSearchToken = $"{ImportLog.Filters.SearchToken}:";
+            index = searchString.IndexOf(importSearchToken);
+            if (index == 0)
+            {
+                var label = searchString.Substring(importSearchToken.Length);
+                if (label == ImportLog.Filters.AllIssuesStr)
+                {
+                    filter.importLogFlags = ImportLogFlags.Error | ImportLogFlags.Warning;
+                    parsed = true;
+                }
+                else if (label == ImportLog.Filters.ErrorsStr)
+                {
+                    filter.importLogFlags = ImportLogFlags.Error;
+                    parsed = true;
+                }
+                else if (label == ImportLog.Filters.WarningsStr)
+                {
+                    filter.importLogFlags = ImportLogFlags.Warning;
+                    parsed = true;
+                }
             }
 
             return parsed;

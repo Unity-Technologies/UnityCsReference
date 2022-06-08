@@ -49,7 +49,7 @@ namespace UnityEditor
         private bool m_ShowAllContactsWhenEnteredPlayMode = false; // For displaying the help message
         private bool m_ShowContactsWhenEnteredPlayMode = false;
         private bool m_AnyItems = false; // Are there any tracked items in the Info tab?
-        private bool m_SimulationOccured = false;
+        private bool m_FixedUpdateOccured = false;
 
         private Dictionary<Transform, VisualisationState> m_LockedObjects     = new Dictionary<Transform, VisualisationState>();
         [SerializeField] private List<RenderedTransform> m_TransformsToRender = new List<RenderedTransform>();
@@ -224,14 +224,15 @@ namespace UnityEditor
             EditorSceneManager.sceneClosed += OnSceneClose;
             EditorSceneManager.sceneOpened += OnSceneOpen;
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
-            PhysicsDebugDraw.OnDrawPooledContacts += DrawContacts_Internal;
+            Physics.ContactEvent += ReadContacts_Internal;
             PhysicsDebugDraw.OnRetrievePooledQueries += OnQueriesRetrieved;
-            PhysicsDebugDraw.BeforeSimulate += BeforeSimulate;
+            PhysicsDebugDraw.OnDestroyPhysicsScene += OnPhysicsSceneDestoryed;
+            PhysicsDebugDraw.OnBeforeSimulate += OnBeforeSimulate;
             SetPickingEnabled(PhysicsVisualizationSettings.showCollisionGeometry
                 && PhysicsVisualizationSettings.enableMouseSelect);
 
             LoadDictionary();
-            ClearInvalidObjects();
+            ClearInvalidInfoObjects();
             UpdateSelection();
 
             PhysicsDebugDraw.ClearAllPools();
@@ -246,15 +247,16 @@ namespace UnityEditor
             EditorSceneManager.sceneClosed -= OnSceneClose;
             EditorSceneManager.sceneOpened -= OnSceneOpen;
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
-            PhysicsDebugDraw.OnDrawPooledContacts -= DrawContacts_Internal;
+            Physics.ContactEvent -= ReadContacts_Internal;
             PhysicsDebugDraw.OnRetrievePooledQueries -= OnQueriesRetrieved;
-            PhysicsDebugDraw.BeforeSimulate -= BeforeSimulate;
+            PhysicsDebugDraw.OnDestroyPhysicsScene -= OnPhysicsSceneDestoryed;
+            PhysicsDebugDraw.OnBeforeSimulate -= OnBeforeSimulate;
             SetPickingEnabled(false);
 
             SaveDictionary();
-            ClearInvalidObjects();
+            ClearInvalidInfoObjects();
 
-            PhysicsDebugDraw.ClearAllPools();
+            ClearAllPoolsAndStoredQueries();
         }
 
         static void SetPickingEnabled(bool enabled)
@@ -325,20 +327,23 @@ namespace UnityEditor
                 Repaint();
         }
 
-        private void BeforeSimulate()
+        private void OnBeforeSimulate(PhysicsScene sceneHandle)
         {
-            m_SimulationOccured = true;
+            m_FixedUpdateOccured = true;
+
+            if (m_ContactsToDraw.ContainsKey(sceneHandle))
+                m_ContactsToDraw[sceneHandle].CompleteJob();
         }
 
         private void Update()
         {
             bool canFetch = s_Window != null && PhysicsVisualizationSettings.GetQueryFilterState(PhysicsVisualizationSettings.QueryFilter.ShowQueries);
 
-            if (canFetch && m_SimulationOccured)
+            if (canFetch && m_FixedUpdateOccured)
             {
                 m_ShapesToDraw.Clear();
                 PhysicsDebugDraw.GetPooledQueries();
-                m_SimulationOccured = false;
+                m_FixedUpdateOccured = false;
             }
         }
 

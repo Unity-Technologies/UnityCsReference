@@ -56,19 +56,25 @@ namespace UnityEditor
             if (requirements.HasFlag(EditorFeatures.PreviewGUI) && !editor.HasPreviewGUI())
                 return false;
 
-            var onSceneDragMi = editor.GetType().GetMethod("OnSceneDrag", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            const BindingFlags sceneDragReflectionFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-            var objs = new[] { obj };
-            var rootEditorType = RootEditorUtils.FindRootEditor(objs);
-            if (rootEditorType != null && onSceneDragMi == null)
+            var onSceneDragMethodInfo = editor.GetType().GetMethod("OnSceneDrag", sceneDragReflectionFlags);
+
+            if (onSceneDragMethodInfo == null)
             {
-                // Create normal editor:
-                editor = RootEditorUtils.CreateNonRootEditor(objs);
-                onSceneDragMi = editor.GetType().GetMethod("OnSceneDrag", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var nonRootEditor = RootEditorUtils.CreateNonRootEditor(new[] { obj });
+
+                // Are we dealing with a Root Editor?
+                if (editor.GetType() != nonRootEditor.GetType())
+                {
+                    // Try again, with a normal editor
+                    editor = nonRootEditor;
+                    onSceneDragMethodInfo = editor.GetType().GetMethod("OnSceneDrag", sceneDragReflectionFlags);
+                }
             }
 
-            if (onSceneDragMi != null)
-                OnSceneDrag = (VoidDelegate)System.Delegate.CreateDelegate(typeof(VoidDelegate), editor, onSceneDragMi);
+            if (onSceneDragMethodInfo != null)
+                OnSceneDrag = (VoidDelegate)System.Delegate.CreateDelegate(typeof(VoidDelegate), editor, onSceneDragMethodInfo);
             else if (requirements.HasFlag(EditorFeatures.OnSceneDrag))
                 return false;
             else

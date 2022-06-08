@@ -34,63 +34,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public UpmPackage(string name, bool isDiscoverable, PackageType type)
+        public UpmPackage(string name, bool isDiscoverable, UpmVersionList versionList)
         {
             m_Progress = PackageProgress.None;
             m_Name = name;
-            m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList();
-            m_Errors = new List<UIError>();
-            m_Type = type;
-
-            RefreshUnityType();
-            LinkPackageAndVersions();
-        }
-
-        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, bool isUnityPackage)
-        {
-            m_Progress = PackageProgress.None;
-            m_Name = info.name;
+            m_Type = PackageType.Upm;
             m_Errors = new List<UIError>();
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(info, isInstalled, isUnityPackage);
-            m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
-            _ = info.type == "feature" ? m_Type |= PackageType.Feature : m_Type &= ~PackageType.Feature;
+            m_VersionList = versionList;
 
-            RefreshUnityType();
+            RefreshPackageTypeFromVersions();
             LinkPackageAndVersions();
-        }
-
-        internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
-        {
-            m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion);
-            RefreshUnityType();
-            LinkPackageAndVersions();
-            ClearErrors();
-        }
-
-        internal void UpdateVersion(UpmPackageVersion version)
-        {
-            m_VersionList.UpdateVersion(version);
-            RefreshUnityType();
-            LinkPackageAndVersions();
-        }
-
-        // This function is only used to update the object, not to actually perform the add operation
-        public void AddInstalledVersion(UpmPackageVersion newVersion)
-        {
-            m_VersionList.AddInstalledVersion(newVersion);
-            RefreshUnityType();
-            LinkPackageAndVersions();
-        }
-
-        private void RefreshUnityType()
-        {
-            var primaryUpmVersion = versions?.primary as UpmPackageVersion;
-            _ = primaryUpmVersion?.isUnityPackage ?? false ? m_Type |= PackageType.Unity : m_Type &= ~PackageType.Unity;
-            _ = primaryUpmVersion?.isFromScopedRegistry ?? false ? m_Type |= PackageType.ScopedRegistry : m_Type &= ~PackageType.ScopedRegistry;
-            _ = primaryUpmVersion?.isRegistryPackage ?? false ? (!primaryUpmVersion?.isUnityPackage ?? false ?
-                m_Type |= PackageType.MainNotUnity : m_Type &= ~PackageType.ScopedRegistry) : m_Type &= ~PackageType.MainNotUnity;
         }
     }
 }

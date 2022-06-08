@@ -26,6 +26,11 @@ namespace UnityEngine.UIElements.StyleSheets
             {"all", StylePropertyId.All},
             {"background-color", StylePropertyId.BackgroundColor},
             {"background-image", StylePropertyId.BackgroundImage},
+            {"background-position", StylePropertyId.BackgroundPosition},
+            {"background-position-x", StylePropertyId.BackgroundPositionX},
+            {"background-position-y", StylePropertyId.BackgroundPositionY},
+            {"background-repeat", StylePropertyId.BackgroundRepeat},
+            {"background-size", StylePropertyId.BackgroundSize},
             {"border-bottom-color", StylePropertyId.BorderBottomColor},
             {"border-bottom-left-radius", StylePropertyId.BorderBottomLeftRadius},
             {"border-bottom-right-radius", StylePropertyId.BorderBottomRightRadius},
@@ -117,6 +122,11 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.All, "all"},
             {StylePropertyId.BackgroundColor, "background-color"},
             {StylePropertyId.BackgroundImage, "background-image"},
+            {StylePropertyId.BackgroundPosition, "background-position"},
+            {StylePropertyId.BackgroundPositionX, "background-position-x"},
+            {StylePropertyId.BackgroundPositionY, "background-position-y"},
+            {StylePropertyId.BackgroundRepeat, "background-repeat"},
+            {StylePropertyId.BackgroundSize, "background-size"},
             {StylePropertyId.BorderBottomColor, "border-bottom-color"},
             {StylePropertyId.BorderBottomLeftRadius, "border-bottom-left-radius"},
             {StylePropertyId.BorderBottomRightRadius, "border-bottom-right-radius"},
@@ -201,7 +211,7 @@ namespace UnityEngine.UIElements.StyleSheets
         };
 
         internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>()
-        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
 
         internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
         {
@@ -252,6 +262,52 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (string.Equals(value, "stretch", StringComparison.OrdinalIgnoreCase))
                     {
                         intValue = (int)Align.Stretch;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.BackgroundPositionKeyword:
+                    if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundPositionKeyword.Center;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "top", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundPositionKeyword.Top;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "bottom", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundPositionKeyword.Bottom;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "left", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundPositionKeyword.Left;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "right", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundPositionKeyword.Right;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.BackgroundSizeType:
+                    if (string.Equals(value, "cover", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundSizeType.Cover;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "contain", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)BackgroundSizeType.Contain;
                         return true;
                     }
 
@@ -556,6 +612,46 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
 
                     break;
+                case StyleEnumType.Repeat:
+                    if (string.Equals(value, "no-repeat", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Repeat.NoRepeat;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "repeat", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Repeat.Repeat;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "space", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Repeat.Space;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "round", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Repeat.Round;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.RepeatXY:
+                    if (string.Equals(value, "repeat-x", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)RepeatXY.RepeatX;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "repeat-y", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)RepeatXY.RepeatY;
+                        return true;
+                    }
+
+                    break;
                 case StyleEnumType.ScaleMode:
                     if (string.Equals(value, "stretch-to-fill", StringComparison.OrdinalIgnoreCase))
                     {
@@ -757,6 +853,8 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StylePropertyId.All:
                     return true;
+                case StylePropertyId.BackgroundPosition:
+                    return id == StylePropertyId.BackgroundPositionX || id == StylePropertyId.BackgroundPositionY;
                 case StylePropertyId.BorderColor:
                     return id == StylePropertyId.BorderTopColor || id == StylePropertyId.BorderRightColor || id == StylePropertyId.BorderBottomColor || id == StylePropertyId.BorderLeftColor;
                 case StylePropertyId.BorderRadius:
@@ -769,6 +867,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return id == StylePropertyId.MarginTop || id == StylePropertyId.MarginRight || id == StylePropertyId.MarginBottom || id == StylePropertyId.MarginLeft;
                 case StylePropertyId.Padding:
                     return id == StylePropertyId.PaddingTop || id == StylePropertyId.PaddingRight || id == StylePropertyId.PaddingBottom || id == StylePropertyId.PaddingLeft;
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return id == StylePropertyId.BackgroundPositionX || id == StylePropertyId.BackgroundPositionY || id == StylePropertyId.BackgroundRepeat || id == StylePropertyId.BackgroundSize;
                 case StylePropertyId.UnityTextOutline:
                     return id == StylePropertyId.UnityTextOutlineColor || id == StylePropertyId.UnityTextOutlineWidth;
                 default:

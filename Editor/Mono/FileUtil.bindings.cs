@@ -135,7 +135,7 @@ namespace UnityEditor
         [FreeFunction]
         public static extern string GetLogicalPath(string path);
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern string GetPhysicalPath(string path);
 
         // Replaces a file.

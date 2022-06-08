@@ -11,11 +11,32 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class BasePackage : IPackage
     {
+        public virtual string productId => string.Empty;
+
         [SerializeField]
         protected string m_Name;
         public string name => m_Name;
 
-        public string displayName => versions.FirstOrDefault()?.displayName ?? string.Empty;
+        [SerializeField]
+        protected string m_ProductDisplayName;
+
+        [SerializeField]
+        protected string m_PublisherName;
+        public string publisherName => m_PublisherName;
+
+        [SerializeField]
+        protected string m_PublisherLink;
+        public string publisherLink => m_PublisherLink;
+
+        [SerializeField]
+        protected string m_ProductDescription;
+        public string productDescription => m_ProductDescription;
+
+        [SerializeField]
+        protected string m_PublishNotes;
+        public string latestReleaseNotes => m_PublishNotes;
+
+        public string displayName => !string.IsNullOrEmpty(m_ProductDisplayName) ? m_ProductDisplayName : versions.FirstOrDefault()?.displayName ?? string.Empty;
         public PackageState state
         {
             get
@@ -88,11 +109,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasEntitlements => Is(PackageType.Unity) && versions.Any(version => version.hasEntitlements);
 
-        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.Forbidden) || versions.Any(version => version.hasEntitlementsError);
+        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(version => version.hasEntitlementsError);
 
         public void AddError(UIError error)
         {
-            if (error.errorCode == UIErrorCode.Forbidden)
+            if (error.errorCode == UIErrorCode.UpmError_Forbidden)
             {
                 m_Errors.Add(versions?.primary.isInstalled == true ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
                 return;
@@ -144,6 +165,33 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             foreach (var version in versions)
                 version.package = this;
+        }
+
+        protected void RefreshPackageTypeFromVersions()
+        {
+            var primaryVesion = versions?.primary;
+            if (primaryVesion == null)
+                return;
+            if (primaryVesion.HasTag(PackageTag.BuiltIn))
+                m_Type |= PackageType.BuiltIn;
+            else if (primaryVesion.HasTag(PackageTag.Feature))
+                m_Type |= PackageType.Feature;
+            if (primaryVesion.isUnityPackage)
+                m_Type |= PackageType.Unity;
+
+            // The rest of the check is to do with registries, a package hosted on AssetStore does not need to worry about this
+            if (Is(PackageType.AssetStore))
+                return;
+
+            if (primaryVesion.isFromScopedRegistry)
+                m_Type |= PackageType.ScopedRegistry;
+            if (primaryVesion.isRegistryPackage)
+            {
+                if (primaryVesion.isUnityPackage)
+                    m_Type &= ~PackageType.ScopedRegistry;
+                else
+                    m_Type |= PackageType.MainNotUnity;
+            }
         }
     }
 }

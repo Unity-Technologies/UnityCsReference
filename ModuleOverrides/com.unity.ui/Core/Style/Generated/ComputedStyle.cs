@@ -36,6 +36,10 @@ namespace UnityEngine.UIElements
         public Align alignSelf => layoutData.Read().alignSelf;
         public Color backgroundColor => visualData.Read().backgroundColor;
         public Background backgroundImage => visualData.Read().backgroundImage;
+        public BackgroundPosition backgroundPositionX => visualData.Read().backgroundPositionX;
+        public BackgroundPosition backgroundPositionY => visualData.Read().backgroundPositionY;
+        public BackgroundRepeat backgroundRepeat => visualData.Read().backgroundRepeat;
+        public BackgroundSize backgroundSize => visualData.Read().backgroundSize;
         public Color borderBottomColor => visualData.Read().borderBottomColor;
         public Length borderBottomLeftRadius => visualData.Read().borderBottomLeftRadius;
         public Length borderBottomRightRadius => visualData.Read().borderBottomRightRadius;
@@ -90,7 +94,6 @@ namespace UnityEngine.UIElements
         public List<EasingFunction> transitionTimingFunction => transitionData.Read().transitionTimingFunction;
         public Translate translate => transformData.Read().translate;
         public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
-        public ScaleMode unityBackgroundScaleMode => rareData.Read().unityBackgroundScaleMode;
         public Font unityFont => inheritedData.Read().unityFont;
         public FontDefinition unityFontDefinition => inheritedData.Read().unityFontDefinition;
         public FontStyle unityFontStyleAndWeight => inheritedData.Read().unityFontStyleAndWeight;
@@ -196,6 +199,21 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.BackgroundImage:
                         visualData.Write().backgroundImage = reader.ReadBackground(0);
+                        break;
+                    case StylePropertyId.BackgroundPosition:
+                        ShorthandApplicator.ApplyBackgroundPosition(reader, ref this);
+                        break;
+                    case StylePropertyId.BackgroundPositionX:
+                        visualData.Write().backgroundPositionX = reader.ReadBackgroundPositionX(0);
+                        break;
+                    case StylePropertyId.BackgroundPositionY:
+                        visualData.Write().backgroundPositionY = reader.ReadBackgroundPositionY(0);
+                        break;
+                    case StylePropertyId.BackgroundRepeat:
+                        visualData.Write().backgroundRepeat = reader.ReadBackgroundRepeat(0);
+                        break;
+                    case StylePropertyId.BackgroundSize:
+                        visualData.Write().backgroundSize = reader.ReadBackgroundSize(0);
                         break;
                     case StylePropertyId.BorderBottomColor:
                         visualData.Write().borderBottomColor = reader.ReadColor(0);
@@ -385,7 +403,7 @@ namespace UnityEngine.UIElements
                         rareData.Write().unityBackgroundImageTintColor = reader.ReadColor(0);
                         break;
                     case StylePropertyId.UnityBackgroundScaleMode:
-                        rareData.Write().unityBackgroundScaleMode = (ScaleMode)reader.ReadEnum(StyleEnumType.ScaleMode, 0);
+                        ShorthandApplicator.ApplyUnityBackgroundScaleMode(reader, ref this);
                         break;
                     case StylePropertyId.UnityFont:
                         inheritedData.Write().unityFont = reader.ReadFont(0);
@@ -482,6 +500,15 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.BackgroundImage:
                     visualData.Write().backgroundImage = sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
+                    break;
+                case StylePropertyId.BackgroundPositionX:
+                    visualData.Write().backgroundPositionX = sv.position;
+                    break;
+                case StylePropertyId.BackgroundPositionY:
+                    visualData.Write().backgroundPositionY = sv.position;
+                    break;
+                case StylePropertyId.BackgroundRepeat:
+                    visualData.Write().backgroundRepeat = sv.repeat;
                     break;
                 case StylePropertyId.BorderBottomColor:
                     visualData.Write().borderBottomColor = sv.color;
@@ -617,9 +644,6 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = sv.color;
                     break;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    rareData.Write().unityBackgroundScaleMode = (ScaleMode)sv.number;
-                    break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = sv.resource.IsAllocated ? sv.resource.Target as Font : null;
                     break;
@@ -748,6 +772,18 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.BackgroundImage:
                     visualData.Write().backgroundImage = other.visualData.Read().backgroundImage;
+                    break;
+                case StylePropertyId.BackgroundPositionX:
+                    visualData.Write().backgroundPositionX = other.visualData.Read().backgroundPositionX;
+                    break;
+                case StylePropertyId.BackgroundPositionY:
+                    visualData.Write().backgroundPositionY = other.visualData.Read().backgroundPositionY;
+                    break;
+                case StylePropertyId.BackgroundRepeat:
+                    visualData.Write().backgroundRepeat = other.visualData.Read().backgroundRepeat;
+                    break;
+                case StylePropertyId.BackgroundSize:
+                    visualData.Write().backgroundSize = other.visualData.Read().backgroundSize;
                     break;
                 case StylePropertyId.BorderBottomColor:
                     visualData.Write().borderBottomColor = other.visualData.Read().borderBottomColor;
@@ -915,9 +951,6 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = other.rareData.Read().unityBackgroundImageTintColor;
                     break;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    rareData.Write().unityBackgroundScaleMode = other.rareData.Read().unityBackgroundScaleMode;
-                    break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = other.inheritedData.Read().unityFont;
                     break;
@@ -1024,7 +1057,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.LetterSpacing:
                     inheritedData.Write().letterSpacing = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.MarginBottom:
                     layoutData.Write().marginBottom = newValue;
@@ -1098,7 +1131,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
                     inheritedData.Write().unityParagraphSpacing = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.Width:
                     layoutData.Write().width = newValue;
@@ -1107,7 +1140,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.WordSpacing:
                     inheritedData.Write().wordSpacing = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Length' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1258,14 +1291,6 @@ namespace UnityEngine.UIElements
                     }
 
                     break;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    if (rareData.Read().unityBackgroundScaleMode != (ScaleMode)newValue)
-                    {
-                        rareData.Write().unityBackgroundScaleMode = (ScaleMode)newValue;
-                        ve.IncrementVersion(VersionChangeType.Repaint);
-                    }
-
-                    break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     if (inheritedData.Read().unityFontStyleAndWeight != (FontStyle)newValue)
                     {
@@ -1332,6 +1357,61 @@ namespace UnityEngine.UIElements
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'int' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, BackgroundPosition newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundPositionX:
+                    if (visualData.Read().backgroundPositionX != newValue)
+                    {
+                        visualData.Write().backgroundPositionX = newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
+                    break;
+                case StylePropertyId.BackgroundPositionY:
+                    if (visualData.Read().backgroundPositionY != newValue)
+                    {
+                        visualData.Write().backgroundPositionY = newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundPosition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, BackgroundRepeat newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundRepeat:
+                    if (visualData.Read().backgroundRepeat != newValue)
+                    {
+                        visualData.Write().backgroundRepeat = newValue;
+                        ve.IncrementVersion(VersionChangeType.Repaint);
+                    }
+
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundRepeat' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, BackgroundSize newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundSize:
+                    visualData.Write().backgroundSize = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'BackgroundSize' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }
         }
 
@@ -1418,7 +1498,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().unityFontDefinition != newValue)
                     {
                         inheritedData.Write().unityFontDefinition = newValue;
-                        ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1459,7 +1539,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.TransformOrigin:
                     transformData.Write().transformOrigin = newValue;
-                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'TransformOrigin' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
@@ -1518,6 +1598,22 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.BackgroundImage:
                     return element.styleAnimation.Start(StylePropertyId.BackgroundImage, oldStyle.visualData.Read().backgroundImage, newStyle.visualData.Read().backgroundImage, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BackgroundPosition:
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionX, oldStyle.visualData.Read().backgroundPositionX, newStyle.visualData.Read().backgroundPositionX, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionY, oldStyle.visualData.Read().backgroundPositionY, newStyle.visualData.Read().backgroundPositionY, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
+                case StylePropertyId.BackgroundPositionX:
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundPositionX, oldStyle.visualData.Read().backgroundPositionX, newStyle.visualData.Read().backgroundPositionX, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BackgroundPositionY:
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundPositionY, oldStyle.visualData.Read().backgroundPositionY, newStyle.visualData.Read().backgroundPositionY, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BackgroundRepeat:
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundRepeat, oldStyle.visualData.Read().backgroundRepeat, newStyle.visualData.Read().backgroundRepeat, durationMs, delayMs, easingCurve);
+                case StylePropertyId.BackgroundSize:
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundSize, oldStyle.visualData.Read().backgroundSize, newStyle.visualData.Read().backgroundSize, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BorderBottomColor:
                 {
                     var result = element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldStyle.visualData.Read().borderBottomColor, newStyle.visualData.Read().borderBottomColor, durationMs, delayMs, easingCurve);
@@ -1782,7 +1878,15 @@ namespace UnityEngine.UIElements
                 }
 
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    return element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)oldStyle.rareData.Read().unityBackgroundScaleMode, (int)newStyle.rareData.Read().unityBackgroundScaleMode, durationMs, delayMs, easingCurve);
+                {
+                    bool result = false;
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionX, oldStyle.visualData.Read().backgroundPositionX, newStyle.visualData.Read().backgroundPositionX, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionY, oldStyle.visualData.Read().backgroundPositionY, newStyle.visualData.Read().backgroundPositionY, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundRepeat, oldStyle.visualData.Read().backgroundRepeat, newStyle.visualData.Read().backgroundRepeat, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundSize, oldStyle.visualData.Read().backgroundSize, newStyle.visualData.Read().backgroundSize, durationMs, delayMs, easingCurve);
+                    return result;
+                }
+
                 case StylePropertyId.UnityFont:
                     return element.styleAnimation.Start(StylePropertyId.UnityFont, oldStyle.inheritedData.Read().unityFont, newStyle.inheritedData.Read().unityFont, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityFontDefinition:
@@ -2108,11 +2212,6 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.unityBackgroundScaleMode != newData.unityBackgroundScaleMode)
-                {
-                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)oldData.unityBackgroundScaleMode, (int)newData.unityBackgroundScaleMode, durationMs, delayMs, easingCurve);
-                }
-
                 if (oldData.unityOverflowClipBox != newData.unityOverflowClipBox)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)oldData.unityOverflowClipBox, (int)newData.unityOverflowClipBox, durationMs, delayMs, easingCurve);
@@ -2216,6 +2315,26 @@ namespace UnityEngine.UIElements
                 if (oldData.backgroundImage != newData.backgroundImage)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BackgroundImage, oldData.backgroundImage, newData.backgroundImage, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.backgroundPositionX != newData.backgroundPositionX)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionX, oldData.backgroundPositionX, newData.backgroundPositionX, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.backgroundPositionY != newData.backgroundPositionY)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionY, oldData.backgroundPositionY, newData.backgroundPositionY, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.backgroundRepeat != newData.backgroundRepeat)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundRepeat, oldData.backgroundRepeat, newData.backgroundRepeat, durationMs, delayMs, easingCurve);
+                }
+
+                if (oldData.backgroundSize != newData.backgroundSize)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.BackgroundSize, oldData.backgroundSize, newData.backgroundSize, durationMs, delayMs, easingCurve);
                 }
 
                 if (oldData.borderBottomColor != newData.borderBottomColor)
@@ -2345,6 +2464,24 @@ namespace UnityEngine.UIElements
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundImage : sv.resource.IsAllocated ? Background.FromObject(sv.resource.Target) : new Background();
                     return element.styleAnimation.Start(StylePropertyId.BackgroundImage, computedStyle.visualData.Read().backgroundImage, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BackgroundPositionX:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundPositionX : sv.position;
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundPositionX, computedStyle.visualData.Read().backgroundPositionX, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BackgroundPositionY:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundPositionY : sv.position;
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundPositionY, computedStyle.visualData.Read().backgroundPositionY, to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.BackgroundRepeat:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.backgroundRepeat : sv.repeat;
+                    return element.styleAnimation.Start(StylePropertyId.BackgroundRepeat, computedStyle.visualData.Read().backgroundRepeat, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.BorderBottomColor:
@@ -2649,12 +2786,6 @@ namespace UnityEngine.UIElements
                     return result;
                 }
 
-                case StylePropertyId.UnityBackgroundScaleMode:
-                {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityBackgroundScaleMode : (ScaleMode)sv.number;
-                    return element.styleAnimation.StartEnum(StylePropertyId.UnityBackgroundScaleMode, (int)computedStyle.rareData.Read().unityBackgroundScaleMode, (int)to, durationMs, delayMs, easingCurve);
-                }
-
                 case StylePropertyId.UnityFont:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFont : sv.resource.IsAllocated ? sv.resource.Target as Font : null;
@@ -2788,6 +2919,11 @@ namespace UnityEngine.UIElements
             transformData.Write().scale = scaleValue;
         }
 
+        public void ApplyStyleBackgroundSize(BackgroundSize backgroundSizeValue)
+        {
+            visualData.Write().backgroundSize = backgroundSizeValue;
+        }
+
         public void ApplyInitialValue(StylePropertyReader reader)
         {
             switch (reader.propertyId)
@@ -2824,6 +2960,22 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.BackgroundImage:
                     visualData.Write().backgroundImage = InitialStyle.backgroundImage;
+                    break;
+                case StylePropertyId.BackgroundPosition:
+                    visualData.Write().backgroundPositionX = InitialStyle.backgroundPositionX;
+                    visualData.Write().backgroundPositionY = InitialStyle.backgroundPositionY;
+                    break;
+                case StylePropertyId.BackgroundPositionX:
+                    visualData.Write().backgroundPositionX = InitialStyle.backgroundPositionX;
+                    break;
+                case StylePropertyId.BackgroundPositionY:
+                    visualData.Write().backgroundPositionY = InitialStyle.backgroundPositionY;
+                    break;
+                case StylePropertyId.BackgroundRepeat:
+                    visualData.Write().backgroundRepeat = InitialStyle.backgroundRepeat;
+                    break;
+                case StylePropertyId.BackgroundSize:
+                    visualData.Write().backgroundSize = InitialStyle.backgroundSize;
                     break;
                 case StylePropertyId.BorderBottomColor:
                     visualData.Write().borderBottomColor = InitialStyle.borderBottomColor;
@@ -3034,7 +3186,10 @@ namespace UnityEngine.UIElements
                     rareData.Write().unityBackgroundImageTintColor = InitialStyle.unityBackgroundImageTintColor;
                     break;
                 case StylePropertyId.UnityBackgroundScaleMode:
-                    rareData.Write().unityBackgroundScaleMode = InitialStyle.unityBackgroundScaleMode;
+                    visualData.Write().backgroundPositionX = InitialStyle.backgroundPositionX;
+                    visualData.Write().backgroundPositionY = InitialStyle.backgroundPositionY;
+                    visualData.Write().backgroundRepeat = InitialStyle.backgroundRepeat;
+                    visualData.Write().backgroundSize = InitialStyle.backgroundSize;
                     break;
                 case StylePropertyId.UnityFont:
                     inheritedData.Write().unityFont = InitialStyle.unityFont;
@@ -3163,6 +3318,181 @@ namespace UnityEngine.UIElements
                     ApplyInitialValue(id);
                     break;
             }
+        }
+
+        // It's possible that the struct object (for layout data, visual data, etc) is the same on both ComputedStyle
+        // instances, and when that's the case, we don't need to check the individual properties.
+        // The check of each property, when necessary, is ordered in a way to try to check most common properties
+        // to have their values changed first, in an effort to try to reduce the amount of comparisons done.
+        // NOTE: This code is generated based on the value for compareChangesOrder on uss-properties.json
+        // and StyleGroupDefinitions.s_GroupsOrder (UIElementsGenerator tool).
+        public static VersionChangeType CompareChanges(ref ComputedStyle x, ref ComputedStyle y)
+        {
+            VersionChangeType changes = VersionChangeType.Styles;
+            if (!x.layoutData.ReferenceEquals(y.layoutData))
+            {
+                if (x.flexGrow != y.flexGrow ||
+                    x.flexShrink != y.flexShrink ||
+                    x.flexWrap != y.flexWrap ||
+                    x.flexDirection != y.flexDirection ||
+                    x.justifyContent != y.justifyContent ||
+                    x.bottom != y.bottom ||
+                    x.left != y.left ||
+                    x.right != y.right ||
+                    x.top != y.top ||
+                    x.height != y.height ||
+                    x.width != y.width ||
+                    x.paddingBottom != y.paddingBottom ||
+                    x.paddingLeft != y.paddingLeft ||
+                    x.paddingRight != y.paddingRight ||
+                    x.paddingTop != y.paddingTop ||
+                    x.marginBottom != y.marginBottom ||
+                    x.marginLeft != y.marginLeft ||
+                    x.marginRight != y.marginRight ||
+                    x.marginTop != y.marginTop ||
+                    x.position != y.position ||
+                    x.alignContent != y.alignContent ||
+                    x.alignItems != y.alignItems ||
+                    x.alignSelf != y.alignSelf ||
+                    x.flexBasis != y.flexBasis ||
+                    x.maxHeight != y.maxHeight ||
+                    x.maxWidth != y.maxWidth ||
+                    x.minHeight != y.minHeight ||
+                    x.minWidth != y.minWidth)
+                {
+                    changes |= VersionChangeType.Layout;
+                }
+
+                if (x.borderBottomWidth != y.borderBottomWidth ||
+                    x.borderLeftWidth != y.borderLeftWidth ||
+                    x.borderRightWidth != y.borderRightWidth ||
+                    x.borderTopWidth != y.borderTopWidth)
+                {
+                    changes |= VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
+                }
+
+                if (x.display != y.display)
+                {
+                    changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
+                }
+            }
+
+            if (!x.inheritedData.ReferenceEquals(y.inheritedData))
+            {
+                if (x.color != y.color)
+                {
+                    changes |= VersionChangeType.Color;
+                }
+
+                if (x.fontSize != y.fontSize ||
+                    x.whiteSpace != y.whiteSpace)
+                {
+                    changes |= VersionChangeType.Layout;
+                }
+
+                if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unityFont != y.unityFont ||
+                    x.unityFontDefinition != y.unityFontDefinition ||
+                    x.unityFontStyleAndWeight != y.unityFontStyleAndWeight ||
+                    x.unityTextOutlineWidth != y.unityTextOutlineWidth ||
+                    x.letterSpacing != y.letterSpacing ||
+                    x.wordSpacing != y.wordSpacing ||
+                    x.unityParagraphSpacing != y.unityParagraphSpacing))
+                {
+                    changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
+                }
+
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.visibility != y.visibility ||
+                    x.textShadow != y.textShadow ||
+                    x.unityTextAlign != y.unityTextAlign ||
+                    x.unityTextOutlineColor != y.unityTextOutlineColor))
+                {
+                    changes |= VersionChangeType.Repaint;
+                }
+            }
+
+            if (!x.transformData.ReferenceEquals(y.transformData))
+            {
+                if (x.scale != y.scale ||
+                    x.rotate != y.rotate ||
+                    x.translate != y.translate ||
+                    x.transformOrigin != y.transformOrigin)
+                {
+                    changes |= VersionChangeType.Transform;
+                }
+            }
+
+            if (!x.transitionData.ReferenceEquals(y.transitionData))
+            {
+                if (!ComputedTransitionUtils.SameTransitionProperty(ref x, ref y))
+                {
+                    changes |= VersionChangeType.TransitionProperty;
+                }
+            }
+
+            if (!x.visualData.ReferenceEquals(y.visualData))
+            {
+                if ((changes & VersionChangeType.Color) == 0 && (x.backgroundColor != y.backgroundColor ||
+                    x.borderBottomColor != y.borderBottomColor ||
+                    x.borderLeftColor != y.borderLeftColor ||
+                    x.borderRightColor != y.borderRightColor ||
+                    x.borderTopColor != y.borderTopColor))
+                {
+                    changes |= VersionChangeType.Color;
+                }
+
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.backgroundImage != y.backgroundImage ||
+                    x.backgroundPositionX != y.backgroundPositionX ||
+                    x.backgroundPositionY != y.backgroundPositionY ||
+                    x.backgroundRepeat != y.backgroundRepeat ||
+                    x.backgroundSize != y.backgroundSize))
+                {
+                    changes |= VersionChangeType.Repaint;
+                }
+
+                if (x.borderBottomLeftRadius != y.borderBottomLeftRadius ||
+                    x.borderBottomRightRadius != y.borderBottomRightRadius ||
+                    x.borderTopLeftRadius != y.borderTopLeftRadius ||
+                    x.borderTopRightRadius != y.borderTopRightRadius)
+                {
+                    changes |= VersionChangeType.BorderRadius | VersionChangeType.Repaint;
+                }
+
+                if (x.opacity != y.opacity)
+                {
+                    changes |= VersionChangeType.Opacity;
+                }
+
+                if (x.overflow != y.overflow)
+                {
+                    changes |= VersionChangeType.Layout | VersionChangeType.Overflow;
+                }
+            }
+
+            if (!x.rareData.ReferenceEquals(y.rareData))
+            {
+                if (x.textOverflow != y.textOverflow ||
+                    x.unitySliceScale != y.unitySliceScale)
+                {
+                    changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
+                }
+
+                if (x.unityBackgroundImageTintColor != y.unityBackgroundImageTintColor)
+                {
+                    changes |= VersionChangeType.Color;
+                }
+
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.unityOverflowClipBox != y.unityOverflowClipBox ||
+                    x.unitySliceBottom != y.unitySliceBottom ||
+                    x.unitySliceLeft != y.unitySliceLeft ||
+                    x.unitySliceRight != y.unitySliceRight ||
+                    x.unitySliceTop != y.unitySliceTop ||
+                    x.unityTextOverflowPosition != y.unityTextOverflowPosition))
+                {
+                    changes |= VersionChangeType.Repaint;
+                }
+            }
+
+            return changes;
         }
     }
 }

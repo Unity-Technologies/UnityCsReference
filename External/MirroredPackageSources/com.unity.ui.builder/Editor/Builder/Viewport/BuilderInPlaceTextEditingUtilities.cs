@@ -224,7 +224,7 @@ namespace Unity.UI.Builder
             if (newValue != oldValue)
             {
                 // Set value in asset.
-                vea.SetAttributeValue(s_EditedTextAttribute.name, newValue);
+                vea.SetAttribute(s_EditedTextAttribute.name, newValue);
 
                 var fullTypeName = type.ToString();
 

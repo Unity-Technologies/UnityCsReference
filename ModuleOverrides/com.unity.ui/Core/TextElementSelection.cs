@@ -84,7 +84,7 @@ namespace UnityEngine.UIElements
         /// The position of the text cursor inside the element"/>.
         /// </summary>
         public Vector2 cursorPosition { get; }
-        internal float cursorLineHeight  { get; }
+        internal float lineHeightAtCursorPosition  { get; }
         internal float cursorWidth { get; set; }
 
         internal void MoveTextEnd();
@@ -179,8 +179,9 @@ namespace UnityEngine.UIElements
         bool ITextSelection.selectAllOnMouseUp { get; set; } = false;
 
 
-        Vector2 ITextSelection.cursorPosition => uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(selection.cursorIndex);
-        float ITextSelection.cursorLineHeight => uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
+        Vector2 ITextSelection.cursorPosition => uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
+
+        float ITextSelection.lineHeightAtCursorPosition => uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
 
         void ITextSelection.MoveTextEnd()
         {
@@ -206,17 +207,24 @@ namespace UnityEngine.UIElements
                 : Color.white;
 
             var startIndex = Math.Min(selection.cursorIndex, selection.selectIndex);
-            var startPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(startIndex);
             var endIndex = Math.Max(selection.cursorIndex, selection.selectIndex);
-            var endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(endIndex);
 
-            var firstLineIndex = uitkTextHandle.textHandle.GetLineNumber(startIndex);
-            var lastLineIndex = uitkTextHandle.textHandle.GetLineNumber(endIndex);
+            var startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(startIndex);
+            var endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(endIndex);
+
+            var firstLineIndex = uitkTextHandle.GetLineNumber(startIndex);
+            var lastLineIndex = uitkTextHandle.GetLineNumber(endIndex);
             var lineHeight = uitkTextHandle.GetLineHeight(firstLineIndex);
+
+            // We must take the padding, margin and border into account
+            var layoutOffset = contentRect.min;
 
             // Single line
             if (firstLineIndex == lastLineIndex)
             {
+                startPos += layoutOffset;
+                endPos += layoutOffset;
+
                 mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
                 {
                     rect = new Rect(startPos.x, startPos.y - lineHeight, endPos.x - startPos.x, lineHeight),
@@ -234,26 +242,29 @@ namespace UnityEngine.UIElements
                 {
                     if (lineIndex == firstLineIndex)
                     {
-                        lastCharacterOnLine = uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
-                        endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(lastCharacterOnLine);
+                        lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine);
                     }
                     else if (lineIndex == lastLineIndex)
                     {
                         firstCharacterOnLine =
-                            uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
-                        startPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(firstCharacterOnLine);
+                            uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
+                        startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(firstCharacterOnLine);
 
-                        endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(endIndex);
+                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(endIndex);
                     }
                     else if (lineIndex != firstLineIndex && lineIndex != lastLineIndex)
                     {
                         firstCharacterOnLine =
-                            uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
-                        startPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(firstCharacterOnLine);
+                            uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
+                        startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(firstCharacterOnLine);
 
-                        lastCharacterOnLine = uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
-                        endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(lastCharacterOnLine);
+                        lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine);
                     }
+
+                    startPos += layoutOffset;
+                    endPos += layoutOffset;
 
                     mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
                     {

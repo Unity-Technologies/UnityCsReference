@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshName()
         {
-            if (!string.IsNullOrEmpty(m_Version.name))
+            if (!string.IsNullOrEmpty(m_Version.name) && !m_Package.Is(PackageType.AssetStore))
             {
                 UIUtils.SetElementDisplay(detailName, true);
                 detailName.SetValueWithoutNotify(m_Version.name);
@@ -268,9 +268,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshAuthor()
         {
-            var showDetailAuthorLink = !string.IsNullOrEmpty(m_Version?.author) && !string.IsNullOrEmpty(m_Version.authorLink);
+            var publisherName = m_Package?.publisherName;
+            var publisherLink = m_Package?.publisherLink;
+
+            var showDetailAuthorLink = !string.IsNullOrEmpty(publisherName) && !string.IsNullOrEmpty(publisherLink);
             if (showDetailAuthorLink)
-                detailAuthorLink.text = m_Version.author;
+                detailAuthorLink.text = publisherName;
 
             UIUtils.SetElementDisplay(detailAuthorLink, showDetailAuthorLink);
         }
@@ -302,7 +305,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void AuthorClick()
         {
-            var authorLink = m_Version?.authorLink ?? string.Empty;
+            var authorLink = m_Package.publisherLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
             {
                 m_Application.OpenURL(authorLink);
@@ -345,14 +348,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (installed.IsDifferentVersionThanRequested)
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
-
-                if (m_Version.IsRequestedButOverriddenVersion)
-                    versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
-                        installedVersionString, m_Version.versionString);
-                else if (m_Version.isInstalled)
-                    versionInfoIcon.tooltip = L10n.Tr("At least one other package depends on this version of the package.");
-                else
-                    versionInfoIcon.tooltip = string.Format(L10n.Tr("At least one other package depends on version {0} of this package."), installedVersionString);
+                versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
+                    installedVersionString, m_Version.packageInfo?.projectDependenciesEntry);
                 return;
             }
 
@@ -390,7 +387,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshRegistry()
         {
             var registry = m_Version.registry;
-            var showRegistry = registry != null;
+            var showRegistry = registry != null && !m_Package.Is(PackageType.AssetStore);
             UIUtils.SetElementDisplay(detailRegistry, showRegistry);
             UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
             if (showRegistry)
@@ -400,14 +397,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var detailRegistryName = L10n.Tr("Unknown");
                 detailRegistry.tooltip = string.Empty;
-                if (m_Version.packageInfo.versions.all.Any())
+                if (m_Version.packageInfo.versions.all.Any() && !m_Package.Is(PackageType.AssetStore))
                 {
                     detailRegistryName = registry.isDefault ? "Unity Technologies Inc." : registry.name;
                     detailRegistry.tooltip = registry.url;
                 }
-
                 detailRegistry.enableRichText = true;
-                if (registry.isDefault)
+                if(registry.isDefault)
                 {
                     detailRegistry.text = string.Format(L10n.Tr("From <b>Unity Registry</b> by {0}"), detailRegistryName);
                 }

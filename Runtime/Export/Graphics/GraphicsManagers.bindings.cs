@@ -111,6 +111,7 @@ namespace UnityEngine
 
         extern public static bool  realtimeReflectionProbes         { get; set; }
         extern public static bool  billboardsFaceCameraPosition     { get; set; }
+        extern public static bool  useLegacyDetailDistribution      { get; set; }
         extern public static float resolutionScalingFixedDPIFactor  { get; set; }
 
         [NativeName("RenderPipeline")] extern private static ScriptableObject INTERNAL_renderPipeline { get; set; }

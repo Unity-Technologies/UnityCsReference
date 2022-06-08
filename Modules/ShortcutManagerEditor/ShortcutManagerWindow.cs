@@ -64,6 +64,11 @@ namespace UnityEditor.ShortcutManagement
         IList<string> GetCategories();
         int categorySeparatorIndex { get; }
 
+        bool CanImportProfile(string path, bool letUserDecide = true);
+        void ImportProfile(string path);
+        bool CanExportProfile();
+        void ExportProfile(string path);
+
         void SetCategorySelected(string category);
         int selectedCategoryIndex
         {

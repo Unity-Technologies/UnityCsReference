@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_HEIGHTMESH_RUNTIME_SUPPORT;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_GGP_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_HEIGHTMESH_RUNTIME_SUPPORT;ENABLE_NAVIGATION_PACKAGE_DEBUG_VISUALIZATION;ENABLE_NAVIGATION_UI_REQUIRES_PACKAGE;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_GGP_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
     <LangVersion>latest</LangVersion>
     <NoWarn>1071;0169;0649;0626</NoWarn>
   </PropertyGroup>
@@ -375,6 +375,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\IHVImageFormatImporter.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\IHVImageFormatImporter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\AssetPipeline\ImportLog.bindings.cs">
+      <Link>Editor\Mono\AssetPipeline\ImportLog.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\AssetPipeline\LightDescription.bindings.cs">
       <Link>Editor\Mono\AssetPipeline\LightDescription.bindings.cs</Link>
@@ -898,6 +901,9 @@
     <Compile Include="..\..\Editor\Mono\CutBoard.cs">
       <Link>Editor\Mono\CutBoard.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\DataMode.cs">
+      <Link>Editor\Mono\DataMode.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\DataWatchService.cs">
       <Link>Editor\Mono\DataWatchService.cs</Link>
     </Compile>
@@ -1231,9 +1237,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\AboutWindow.cs">
       <Link>Editor\Mono\GUI\AboutWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\AboutWindowNames.cs">
-      <Link>Editor\Mono\GUI\AboutWindowNames.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\AngularDial.cs">
       <Link>Editor\Mono\GUI\AngularDial.cs</Link>
     </Compile>
@@ -1284,9 +1287,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\DragRect.cs">
       <Link>Editor\Mono\GUI\DragRect.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs">
-      <Link>Editor\Mono\GUI\EditModeTools\PrimitiveCollider2DTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\EditModeTools\PrimitiveColliderTool.cs">
       <Link>Editor\Mono\GUI\EditModeTools\PrimitiveColliderTool.cs</Link>
@@ -1756,9 +1756,6 @@
     <Compile Include="..\..\Editor\Mono\ICleanuppable.cs">
       <Link>Editor\Mono\ICleanuppable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\IDataModeHandler.cs">
-      <Link>Editor\Mono\IDataModeHandler.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\IDropArea.cs">
       <Link>Editor\Mono\IDropArea.cs</Link>
     </Compile>
@@ -1867,9 +1864,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\AimConstraintEditor.cs">
       <Link>Editor\Mono\Inspector\AimConstraintEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AnchoredJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\AnchoredJoint2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AnimationClipEditor.cs">
       <Link>Editor\Mono\Inspector\AnimationClipEditor.cs</Link>
     </Compile>
@@ -1881,9 +1875,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AnimatorOverrideControllerInspector.cs">
       <Link>Editor\Mono\Inspector\AnimatorOverrideControllerInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\AreaEffector2DEditor.cs">
-      <Link>Editor\Mono\Inspector\AreaEffector2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AssemblyDefinitionImporterInspector.cs">
       <Link>Editor\Mono\Inspector\AssemblyDefinitionImporterInspector.cs</Link>
@@ -1981,12 +1972,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\BlendTreeInspector.cs">
       <Link>Editor\Mono\Inspector\BlendTreeInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\BoxCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\BoxCollider2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\BuoyancyEffector2DEditor.cs">
-      <Link>Editor\Mono\Inspector\BuoyancyEffector2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CameraEditor.cs">
       <Link>Editor\Mono\Inspector\CameraEditor.cs</Link>
     </Compile>
@@ -2002,26 +1987,14 @@
     <Compile Include="..\..\Editor\Mono\Inspector\CanvasRendererEditor.cs">
       <Link>Editor\Mono\Inspector\CanvasRendererEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CapsuleCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\CapsuleCollider2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CircleCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\CircleCollider2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ClothInspector.cs">
       <Link>Editor\Mono\Inspector\ClothInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Collider2DEditorBase.cs">
-      <Link>Editor\Mono\Inspector\Collider2DEditorBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ColliderEditorBase.cs">
       <Link>Editor\Mono\Inspector\ColliderEditorBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ColorPresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\ColorPresetLibraryInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CompositeCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\CompositeCollider2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ComputeShaderImporterInspector.cs">
       <Link>Editor\Mono\Inspector\ComputeShaderImporterInspector.cs</Link>
@@ -2047,9 +2020,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\CurvePresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\CurvePresetLibraryInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\CustomCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\CustomCollider2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\CustomEditor.cs">
       <Link>Editor\Mono\Inspector\CustomEditor.cs</Link>
     </Compile>
@@ -2062,23 +2032,11 @@
     <Compile Include="..\..\Editor\Mono\Inspector\DirectorEditor.cs">
       <Link>Editor\Mono\Inspector\DirectorEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\DistanceJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\DistanceJoint2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\DoubleCurvePresetLibraryInspector.cs">
       <Link>Editor\Mono\Inspector\DoubleCurvePresetLibraryInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\EdgeCollider2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DTool.cs">
-      <Link>Editor\Mono\Inspector\EdgeCollider2DTool.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditMode.cs">
       <Link>Editor\Mono\Inspector\EditMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\EditablePathTool.cs">
-      <Link>Editor\Mono\Inspector\EditablePathTool.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Editor.cs">
       <Link>Editor\Mono\Inspector\Editor.cs</Link>
@@ -2091,9 +2049,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\EditorSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\EditorSettingsInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Effector2DEditor.cs">
-      <Link>Editor\Mono\Inspector\Effector2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Enlighten\LightmapParameters.cs">
       <Link>Editor\Mono\Inspector\Enlighten\LightmapParameters.cs</Link>
@@ -2116,9 +2071,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\HingeJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\HingeJoint2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\IEditorElement.cs">
       <Link>Editor\Mono\Inspector\IEditorElement.cs</Link>
     </Compile>
@@ -2127,9 +2079,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\InspectorWindowUtils.cs">
       <Link>Editor\Mono\Inspector\InspectorWindowUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Joint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\Joint2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LODGroupEditor.cs">
       <Link>Editor\Mono\Inspector\LODGroupEditor.cs</Link>
@@ -2242,9 +2191,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs">
       <Link>Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PlatformEffector2DEditor.cs">
-      <Link>Editor\Mono\Inspector\PlatformEffector2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs">
       <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsEditor.cs</Link>
     </Compile>
@@ -2262,18 +2208,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\WebTemplateManagerBase.cs">
       <Link>Editor\Mono\Inspector\PlayerSettingsEditor\WebTemplateManagerBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PointEffector2DEditor.cs">
-      <Link>Editor\Mono\Inspector\PointEffector2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DEditor.cs">
-      <Link>Editor\Mono\Inspector\PolygonCollider2DEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PolygonCollider2DTool.cs">
-      <Link>Editor\Mono\Inspector\PolygonCollider2DTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\PolygonEditorUtility.cs">
-      <Link>Editor\Mono\Inspector\PolygonEditorUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\PositionConstraintEditor.cs">
       <Link>Editor\Mono\Inspector\PositionConstraintEditor.cs</Link>
@@ -2311,9 +2245,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\ReflectionProbeEditor.cs">
       <Link>Editor\Mono\Inspector\ReflectionProbeEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\RelativeJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\RelativeJoint2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RenderPipelineAssetSelector.cs">
       <Link>Editor\Mono\Inspector\RenderPipelineAssetSelector.cs</Link>
     </Compile>
@@ -2334,9 +2265,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ReorderableListWrapper.cs">
       <Link>Editor\Mono\Inspector\ReorderableListWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Rigidbody2DEditor.cs">
-      <Link>Editor\Mono\Inspector\Rigidbody2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\RootEditor.cs">
       <Link>Editor\Mono\Inspector\RootEditor.cs</Link>
@@ -2383,9 +2311,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\SkyboxProceduralShaderGUI.cs">
       <Link>Editor\Mono\Inspector\SkyboxProceduralShaderGUI.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\SliderJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\SliderJoint2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\SortingGroupEditor.cs">
       <Link>Editor\Mono\Inspector\SortingGroupEditor.cs</Link>
     </Compile>
@@ -2397,9 +2322,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\SpeedTreeMaterialInspector.cs">
       <Link>Editor\Mono\Inspector\SpeedTreeMaterialInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\SpringJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\SpringJoint2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\SpriteFrameInspector.cs">
       <Link>Editor\Mono\Inspector\SpriteFrameInspector.cs</Link>
@@ -2416,17 +2338,11 @@
     <Compile Include="..\..\Editor\Mono\Inspector\StreamingControllerInspector.cs">
       <Link>Editor\Mono\Inspector\StreamingControllerInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\SurfaceEffector2DEditor.cs">
-      <Link>Editor\Mono\Inspector\SurfaceEffector2DEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\TabbedEditor.cs">
       <Link>Editor\Mono\Inspector\TabbedEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\TagManagerInspector.cs">
       <Link>Editor\Mono\Inspector\TagManagerInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\TargetJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\TargetJoint2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\TextMeshInspector.cs">
       <Link>Editor\Mono\Inspector\TextMeshInspector.cs</Link>
@@ -2481,9 +2397,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\WebCamTextureInspector.cs">
       <Link>Editor\Mono\Inspector\WebCamTextureInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\WheelJoint2DEditor.cs">
-      <Link>Editor\Mono\Inspector\WheelJoint2DEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\WindInspector.cs">
       <Link>Editor\Mono\Inspector\WindInspector.cs</Link>
@@ -2923,9 +2836,6 @@
     <Compile Include="..\..\Editor\Mono\PresetLibraries\ScriptableObjectSaveLoadHelper.cs">
       <Link>Editor\Mono\PresetLibraries\ScriptableObjectSaveLoadHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\ProfileUtils.cs">
-      <Link>Editor\Mono\ProfileUtils.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Progress\Progress.bindings.cs">
       <Link>Editor\Mono\Progress\Progress.bindings.cs</Link>
     </Compile>
@@ -3162,6 +3072,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceDrawer.cs">
       <Link>Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceObject.cs">
+      <Link>Editor\Mono\ScriptAttributeGUI\Implementations\ExposedReferenceObject.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\Implementations\PropertyDrawers.cs">
       <Link>Editor\Mono\ScriptAttributeGUI\Implementations\PropertyDrawers.cs</Link>
@@ -3664,6 +3577,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\DefaultMainToolbar.cs">
       <Link>Editor\Mono\UIElements\DefaultMainToolbar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Drawers\Internal\DropdownOptionListItem.cs">
+      <Link>Editor\Mono\UIElements\Drawers\Internal\DropdownOptionListItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs">
       <Link>Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs</Link>
     </Compile>
@@ -3729,6 +3645,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Undo\UndoHistoryWindow.cs">
       <Link>Editor\Mono\Undo\UndoHistoryWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Undo\UndoSerializationWindow.cs">
+      <Link>Editor\Mono\Undo\UndoSerializationWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Undo\UndoWindow.cs">
       <Link>Editor\Mono\Undo\UndoWindow.cs</Link>
@@ -5494,6 +5413,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreTermsOfServiceStatus.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreTermsOfServiceStatus.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUpdateInfo.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUpdateInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreUtils.cs</Link>
     </Compile>
@@ -5508,6 +5430,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\DownloadState.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\DownloadState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs</Link>
@@ -5902,6 +5830,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsOverviewTab.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsOverviewTab.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsOverviewTabContent.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsOverviewTabContent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsReleasesTab.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsReleasesTab.cs</Link>
     </Compile>
@@ -6052,6 +5983,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageUpdateButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageUpdateButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs">
+      <Link>Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AuthorInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AuthorInfo.cs</Link>
     </Compile>
@@ -6072,6 +6006,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DependencyInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\DependencyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DownloadProgress.cs">
+      <Link>Modules\PackageManager\Editor\Managed\DownloadProgress.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\EntitlementLicensingModel.cs">
       <Link>Modules\PackageManager\Editor\Managed\EntitlementLicensingModel.cs</Link>
@@ -6124,6 +6061,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageProgress.cs">
+      <Link>Modules\PackageManager\Editor\Managed\PackageProgress.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageRegistrationDiffEventArgs.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageRegistrationDiffEventArgs.cs</Link>
     </Compile>
@@ -6136,11 +6076,20 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageValidation.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageValidation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ProgressState.cs">
+      <Link>Modules\PackageManager\Editor\Managed\ProgressState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ProgressUpdateEventArgs.cs">
+      <Link>Modules\PackageManager\Editor\Managed\ProgressUpdateEventArgs.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RegistryInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\RegistryInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RepositoryInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\RepositoryInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RequestProgress.cs">
+      <Link>Modules\PackageManager\Editor\Managed\RequestProgress.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\AddAndRemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\AddAndRemoveRequest.cs</Link>
@@ -6352,17 +6301,116 @@
     <Compile Include="..\..\Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs">
       <Link>Modules\ParticleSystemEditor\SerializedMinMaxGradient.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics2DEditor\Managed\LayerCollisionMatrix2D.cs">
-      <Link>Modules\Physics2DEditor\Managed\LayerCollisionMatrix2D.cs</Link>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\BoxCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\BoxCollider2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs">
-      <Link>Modules\Physics2DEditor\Managed\Physics2DMenuItem.cs</Link>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\BoxCollider2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\BoxCollider2DTool.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DPreferences.cs">
-      <Link>Modules\Physics2DEditor\Managed\Physics2DPreferences.cs</Link>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\CapsuleCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\CapsuleCollider2DEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Physics2DSettingsInspector.cs">
-      <Link>Modules\Physics2DEditor\Managed\Physics2DSettingsInspector.cs</Link>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\CapsuleCollider2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\CapsuleCollider2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\CircleCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\CircleCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\CircleCollider2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\CircleCollider2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\Collider2DEditorBase.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\Collider2DEditorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\Collider2DToolBase.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\Collider2DToolBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\CompositeCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\CompositeCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\CustomCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\CustomCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EdgeCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\EdgeCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EdgeCollider2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\EdgeCollider2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EditablePath2D.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\EditablePath2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EditablePath2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\EditablePath2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\PolygonCollider2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\PolygonCollider2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\PolygonCollider2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\PolygonCollider2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\PrimitiveCollider2DTool.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\PrimitiveCollider2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\AreaEffector2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Effectors\AreaEffector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\BuoyancyEffector2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Effectors\BuoyancyEffector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\Effector2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Effectors\Effector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\PlatformEffector2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Effectors\PlatformEffector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\PointEffector2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Effectors\PointEffector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Effectors\SurfaceEffector2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Effectors\SurfaceEffector2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\AnchoredJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\AnchoredJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\DistanceJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\DistanceJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\HingeJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\HingeJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\Joint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\Joint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\RelativeJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\RelativeJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\SliderJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\SliderJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\SpringJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\SpringJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\TargetJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\TargetJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Joints\WheelJoint2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Joints\WheelJoint2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Menu\Physics2DMenuItem.cs">
+      <Link>Modules\Physics2DEditor\Managed\Menu\Physics2DMenuItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Rigidbody\Rigidbody2DEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Rigidbody\Rigidbody2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Settings\LayerCollisionMatrix2D.cs">
+      <Link>Modules\Physics2DEditor\Managed\Settings\LayerCollisionMatrix2D.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Settings\Physics2DPreferences.cs">
+      <Link>Modules\Physics2DEditor\Managed\Settings\Physics2DPreferences.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs">
+      <Link>Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
       <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
@@ -7036,6 +7084,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\CompareEvaluators.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\CompareEvaluators.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\ContextEvaluators.cs">
+      <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\ContextEvaluators.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\SearchExpression\Evaluators\ControlFlowEvaluators.cs">
       <Link>Modules\QuickSearch\Editor\SearchExpression\Evaluators\ControlFlowEvaluators.cs</Link>
     </Compile>
@@ -7482,6 +7533,12 @@
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderContainer.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderContainer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderCustomEditor.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderCustomEditor.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderDependency.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderDependency.binding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderFunction.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderFunction.bindings.cs</Link>
@@ -8269,7 +8326,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../External/Unity.Compiler.Client/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler_20ac/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />

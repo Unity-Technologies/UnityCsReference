@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.Requests
         private bool m_Serializing;
 
         /// <summary>
-        /// Note: This property is there to workaround the serializer
+        /// Note: This field is there to workaround the serializer
         /// that does not know how to handle null values
         /// </summary>
         [SerializeField]
@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.Requests
     public abstract class Request<T> : Request
     {
         /// <summary>
-        /// Note: This property is there to workaround the serializer
+        /// Note: This field is there to workaround the serializer
         /// that does not know how to handle null values
         /// </summary>
         [SerializeField]

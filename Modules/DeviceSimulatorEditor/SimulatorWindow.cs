@@ -162,16 +162,7 @@ namespace UnityEditor.DeviceSimulation
             menu.AddItem(new GUIContent("Reload"), false, m_Main.InitSimulation);
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent(RenderDocUtil.loadRenderDocLabel), false, LoadRenderDoc);
-            }
-        }
-
-        private void LoadRenderDoc()
-        {
-            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            {
-                RenderDoc.Load();
-                ShaderUtil.RecreateGfxDevice();
+                menu.AddItem(RenderDocUtil.LoadRenderDocMenuItem, false, RenderDoc.LoadRenderDoc);
             }
         }
 

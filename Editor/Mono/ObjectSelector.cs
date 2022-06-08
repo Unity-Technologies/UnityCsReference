@@ -271,6 +271,39 @@ namespace UnityEditor
 
         void FilterSettingsChanged()
         {
+            var filter = GetSearchFilter();
+            var hierarchyType = m_IsShowingAssets ? HierarchyType.Assets : HierarchyType.GameObjects;
+
+            bool hasObject = false;
+            var requiredTypes = new List<Type>();
+            var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
+            foreach (var type in m_RequiredTypes)
+            {
+                foreach (var objectType in objectTypes)
+                {
+                    if (objectType.Name == type)
+                        requiredTypes.Add(objectType);
+                    else if (!hasObject)
+                    {
+                        requiredTypes.Add(typeof(UnityObject));
+                        hasObject = true;
+                    }
+                }
+            }
+            m_ListArea.InitForSearch(listPosition, hierarchyType, filter, true, s =>
+            {
+                foreach (var type in requiredTypes)
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath(s, type);
+                    if (asset != null && asset.GetInstanceID() != 0)
+                        return asset.GetInstanceID();
+                }
+                return 0;
+            }, m_LegacySearchSessionOptions);
+        }
+
+        SearchFilter GetSearchFilter()
+        {
             var filter = new SearchFilter();
             if (m_IsShowingAssets)
                 filter.searchArea = SearchFilter.SearchArea.AllAssets;
@@ -321,32 +354,7 @@ namespace UnityEditor
                 filter.skipHidden = m_SkipHiddenPackages;
             }
 
-            bool hasObject = false;
-            var requiredTypes = new List<Type>();
-            var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
-            foreach (var type in m_RequiredTypes)
-            {
-                foreach (var objectType in objectTypes)
-                {
-                    if (objectType.Name == type)
-                        requiredTypes.Add(objectType);
-                    else if (!hasObject)
-                    {
-                        requiredTypes.Add(typeof(UnityObject));
-                        hasObject = true;
-                    }
-                }
-            }
-            m_ListArea.InitForSearch(listPosition, hierarchyType, filter, true, s =>
-            {
-                foreach (var type in requiredTypes)
-                {
-                    var asset = AssetDatabase.LoadAssetAtPath(s, type);
-                    if (asset != null && asset.GetInstanceID() != 0)
-                        return asset.GetInstanceID();
-                }
-                return 0;
-            }, m_LegacySearchSessionOptions);
+            return filter;
         }
 
         static bool ShouldTreeViewBeUsed(String typeStr)
@@ -488,6 +496,7 @@ namespace UnityEditor
                         requiredTypeNames = m_RequiredTypes,
                         allowedInstanceIds = allowedInstanceIDs,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
+                        searchFilter = GetSearchFilter()
                     };
                 });
 

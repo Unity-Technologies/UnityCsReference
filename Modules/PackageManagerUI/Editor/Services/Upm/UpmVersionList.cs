@@ -205,17 +205,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version;
         }
 
-        internal void UpdateVersion(UpmPackageVersion version)
-        {
-            for (var i = 0; i < m_Versions.Count; ++i)
-            {
-                if (m_Versions[i].uniqueId != version.uniqueId)
-                    continue;
-                m_Versions[i] = version;
-                return;
-            }
-        }
-
         // This function is only used to update the object, not to actually perform the add operation
         public void AddInstalledVersion(UpmPackageVersion newVersion)
         {
@@ -249,41 +238,56 @@ namespace UnityEditor.PackageManager.UI.Internal
             return sortedVersions.Count - 1;
         }
 
-        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null)
+        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, bool isUnityPackage, Dictionary<string, PackageInfo> extraVersions = null)
+        {
+            // We prioritize searchInfo over installedInfo, because searchInfo is fetched from the server
+            // while installedInfo sometimes only contain local data
+            var mainInfo = searchInfo ?? installedInfo;
+            if (mainInfo != null)
+            {
+                var mainVersion = new UpmPackageVersion(mainInfo, mainInfo == installedInfo, isUnityPackage);
+                m_Versions = mainInfo.versions.compatible.Select(v =>
+                {
+                    SemVersion? version;
+                    SemVersionParser.TryParse(v, out version);
+                    return new UpmPackageVersion(mainInfo, false, version, mainVersion.displayName, isUnityPackage);
+                }).ToList();
+                AddToSortedVersions(m_Versions, mainVersion);
+
+                if (mainInfo != installedInfo && installedInfo != null)
+                    AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
+            }
+            m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
+            SetLifecycleVersions(mainInfo?.unityLifecycle?.version, mainInfo?.unityLifecycle?.nextVersion);
+            UpdateExtraPackageInfos(extraVersions, isUnityPackage);
+        }
+
+        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null, Dictionary<string, PackageInfo> extraVersions = null)
         {
             m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
+            SetLifecycleVersions(unityLifecycleInfoVersion, unityLifecycleInfoNextVersion);
+            UpdateExtraPackageInfos(extraVersions, versions?.Any(v => v.isUnityPackage) == true);
+        }
 
+        private void UpdateExtraPackageInfos(Dictionary<string, PackageInfo> extraVersions, bool isUnityPackage)
+        {
+            if (extraVersions?.Any() != true)
+                return;
+            foreach (var version in m_Versions.Where(v => !v.isFullyFetched))
+                if (extraVersions.TryGetValue(version.version.ToString(), out var packageInfo))
+                    version.UpdatePackageInfo(packageInfo, isUnityPackage);
+        }
+
+        private void SetLifecycleVersions(string unityLifecycleInfoVersion, string unityLifecycleInfoNextVersion)
+        {
             m_LifecycleVersionString = unityLifecycleInfoVersion;
             m_LifecycleNextVersionString = unityLifecycleInfoNextVersion;
 
-            if (m_LifecycleVersionString != null)
+            if (!string.IsNullOrEmpty(m_LifecycleVersionString))
                 SemVersionParser.TryParse(m_LifecycleVersionString, out m_LifecycleVersion);
-            if (m_LifecycleNextVersionString != null)
+            if (!string.IsNullOrEmpty(m_LifecycleNextVersionString))
                 SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
-        }
-
-        public UpmVersionList(PackageInfo info, bool isInstalled, bool isUnityPackage)
-        {
-            m_LifecycleVersionString = info.unityLifecycle?.version;
-            m_LifecycleNextVersionString = info.unityLifecycle?.nextVersion;
-
-            if (m_LifecycleVersionString != null)
-                SemVersionParser.TryParse(m_LifecycleVersionString, out m_LifecycleVersion);
-            if (m_LifecycleNextVersionString != null)
-                SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
-
-            var mainVersion = new UpmPackageVersion(info, isInstalled, isUnityPackage);
-            m_Versions = info.versions.compatible.Select(v =>
-            {
-                SemVersion? version;
-                SemVersionParser.TryParse(v, out version);
-                return new UpmPackageVersion(info, false, version, mainVersion.displayName, isUnityPackage);
-            }).ToList();
-
-            AddToSortedVersions(m_Versions, mainVersion);
-
-            m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
         }
 
         public IEnumerator<IPackageVersion> GetEnumerator()

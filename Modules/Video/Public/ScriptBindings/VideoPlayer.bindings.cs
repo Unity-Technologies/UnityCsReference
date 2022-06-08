@@ -38,9 +38,12 @@ namespace UnityEngine.Video
     }
 
     [RequiredByNativeCode]
+    [System.Obsolete("VideoTimeSource is deprecated. Use TimeUpdateMode instead. (UnityUpgradable) -> VideoTimeUpdateMode")]
     public enum VideoTimeSource
     {
+        [System.Obsolete("AudioDSPTimeSource is deprecated. Use DSPTime instead. (UnityUpgradable) -> DSPTime")]
         AudioDSPTimeSource = 0,
+        [System.Obsolete("GameTimeSource is deprecated. Use GameTime instead. (UnityUpgradable) -> GameTime")]
         GameTimeSource     = 1
     }
 
@@ -60,6 +63,14 @@ namespace UnityEngine.Video
     }
 
     [RequiredByNativeCode]
+    public enum VideoTimeUpdateMode
+    {
+        DSPTime          = 0,
+        GameTime         = 1,
+        UnscaledGameTime = 2
+    }
+
+    [RequiredByNativeCode]
     public enum VideoAudioOutputMode
     {
         None        = 0,
@@ -74,6 +85,7 @@ namespace UnityEngine.Video
     public sealed class VideoPlayer : Behaviour
     {
         public extern VideoSource source { get; set; }
+        public extern VideoTimeUpdateMode timeUpdateMode { get; set; }
 
         [NativeName("VideoUrl")]
         public extern string url { get; set; }
@@ -82,6 +94,12 @@ namespace UnityEngine.Video
         public extern VideoClip clip { get; set; }
 
         public extern VideoRenderMode renderMode { get; set; }
+
+        public extern bool canSetTimeUpdateMode
+        {
+            [NativeName("CanSetTimeUpdateMode")]
+            get;
+        }
 
         [NativeHeader("Runtime/Camera/Camera.h")]
         public extern Camera targetCamera { get; set; }
@@ -168,12 +186,14 @@ namespace UnityEngine.Video
         [NativeName("Loop")]
         public extern bool isLooping { get; set; }
 
+        [System.Obsolete("VideoPlayer.canSetTimeSource is deprecated. Use canSetTimeUpdateMode instead. (UnityUpgradable) -> canSetTimeUpdateMode")]
         public extern bool canSetTimeSource
         {
             [NativeName("CanSetTimeSource")]
             get;
         }
 
+        [System.Obsolete("VideoPlayer.timeSource is deprecated. Use timeUpdateMode instead. (UnityUpgradable) -> timeUpdateMode")]
         public extern VideoTimeSource timeSource { get; set; }
 
         public extern VideoTimeReference timeReference { get; set; }
