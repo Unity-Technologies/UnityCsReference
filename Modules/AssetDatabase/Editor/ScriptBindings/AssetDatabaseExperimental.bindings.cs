@@ -111,6 +111,8 @@ namespace UnityEditor.Experimental
 
                 public Counter connects;
                 public Counter disconnects;
+
+                public Counter batchesUsedForDownload;
             }
 
             public struct ImportCounters

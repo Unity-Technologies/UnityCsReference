@@ -6699,15 +6699,19 @@ namespace UnityEditor
                 }
             }
 
-            var isLiveModified = property.isLiveModified;
-            if (isLiveModified)
-                EditorGUIUtility.SetBoldDefaultFont(isLiveModified);
-
-            if (Event.current.type == EventType.Repaint && isLiveModified)
+            if (Event.current.type == EventType.Repaint && EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState())
             {
-                Rect highlightRect = totalPosition;
-                highlightRect.xMin += EditorGUI.indent;
-                DrawLiveModifiedBackground(highlightRect, false);
+                var component = property.serializedObject.targetObject as Component;
+                var isLiveProperty = (component != null && !component.gameObject.scene.isSubScene) || property.isLiveModified;
+
+                if (isLiveProperty)
+                {
+                    EditorGUIUtility.SetBoldDefaultFont(true);
+
+                    Rect highlightRect = totalPosition;
+                    highlightRect.xMin += EditorGUI.indent;
+                    DrawLivePropertyBackground(highlightRect, false);
+                }
             }
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
@@ -6853,7 +6857,7 @@ namespace UnityEditor
             Graphics.DrawTexture(position, EditorGUIUtility.whiteTexture, new Rect(), 0, 0, 0, 0, color, guiTextureClipVerticallyMaterial);
         }
 
-        internal static void DrawLiveModifiedBackground(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
+        internal static void DrawLivePropertyBackground(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
         {
             if (fixupRectForHeadersAndBackgrounds)
             {

@@ -195,7 +195,7 @@ namespace UnityEngine
             UnityEngine.Application.Unload();
         }
 
-        public virtual CancellationToken CancellationToken => UnityEngine.Application.CancellationToken;
+        public virtual CancellationToken exitCancellationToken => UnityEngine.Application.exitCancellationToken;
     }
 }
 

@@ -38,5 +38,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
             }
         }
+
+        public bool Equals(AssetStorePurchaseInfo other)
+        {
+            return other != null &&
+                other.productId == productId &&
+                other.purchasedTime == purchasedTime &&
+                other.displayName == displayName &&
+                other.isHidden == isHidden &&
+                other.tags?.Count == tags?.Count &&
+                other.tags?.SequenceEqual(tags) != false;
+        }
     }
 }

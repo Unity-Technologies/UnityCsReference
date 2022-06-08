@@ -35,7 +35,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
-            if (localInfo?.canDowngrade != true)
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            if (updateInfo?.canDowngrade != true)
                 return false;
 
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
@@ -48,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return L10n.Tr("The download request has been sent. Please wait for the download to start.");
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
-            return string.Format(AssetStorePackage.k_IncompatibleWarningMessage, localInfo.supportedVersion);
+            return string.Format(AssetStorePackageVersion.k_IncompatibleWarningMessage, localInfo.supportedVersion);
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
@@ -60,7 +61,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
             var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            return localInfo?.canDowngrade == true && operation?.isInProgress == true;
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            return updateInfo?.canDowngrade == true && operation?.isInProgress == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)

@@ -29,9 +29,19 @@ namespace UnityEngine
 
         public virtual Resolution[] resolutions => EditorScreen.resolutions;
 
-        public virtual void SetResolution(int width, int height, FullScreenMode fullscreenMode, int preferredRefreshRate)
+        public virtual void SetResolution(int width, int height, FullScreenMode fullscreenMode, RefreshRate preferredRefreshRate)
         {
             EditorScreen.SetResolution(width, height, fullscreenMode, preferredRefreshRate);
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("SetResolution(int, int, FullScreenMode, int) is obsolete. Use SetResolution(int, int, FullScreenMode, RefreshRate) instead.")]
+        public virtual void SetResolution(int width, int height, FullScreenMode fullscreenMode, int preferredRefreshRate)
+        {
+            if (preferredRefreshRate < 0)
+                preferredRefreshRate = 0;
+
+            SetResolution(width, height, fullscreenMode, new RefreshRate() { numerator = (uint)preferredRefreshRate, denominator = 1 });
         }
 
         public virtual bool fullScreen

@@ -167,6 +167,9 @@ namespace UnityEditor
         // Enable/Disable live property feature globally.
         internal extern static void EnableLivePropertyFeatureGlobally(bool value);
 
+        // Get live property global state.
+        internal extern static bool GetLivePropertyFeatureGlobalState();
+
         // Copies a value from a SerializedProperty to the same serialized property on this serialized object.
         public void CopyFromSerializedProperty(SerializedProperty prop)
         {

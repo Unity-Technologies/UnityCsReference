@@ -591,6 +591,11 @@ namespace UnityEngine
             get { return MinConstantBufferOffsetAlignment(); }
         }
 
+        public static int maxConstantBufferSize
+        {
+            get { return MaxConstantBufferSize(); }
+        }
+
         public static long maxGraphicsBufferSize
         {
             get { return MaxGraphicsBufferSize(); }
@@ -914,6 +919,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::MinConstantBufferOffsetAlignment")]
         static extern int MinConstantBufferOffsetAlignment();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxConstantBufferSize")]
+        static extern int MaxConstantBufferSize();
 
         [FreeFunction("ScriptingGraphicsCaps::MaxGraphicsBufferSize")]
         static extern long MaxGraphicsBufferSize();

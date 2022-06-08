@@ -25,7 +25,9 @@ namespace UnityEditor
         [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
         [SerializeField] PreviewWindow m_PreviewWindow;
 
-        private IMGUIContainer m_TrackerResetter;
+        readonly HashSet<DataMode> m_UserSupportedDataModes = new(4);
+        IMGUIContainer m_TrackerResetter;
+
 
         public bool isLocked
         {
@@ -87,6 +89,8 @@ namespace UnityEditor
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
             Selection.selectionChanged += OnSelectionChanged;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+
+            UpdateDataMode();
         }
 
         private void OnAfterAssemblyReload()
@@ -145,6 +149,33 @@ namespace UnityEditor
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
+            }
+
+            UpdateDataMode();
+        }
+
+        private void UpdateDataMode()
+        {
+            UpdateSupportedDataModes();
+
+            // Try to respect the DataMode hint provided by the selection.
+            // If impossible, try to retain the current DataMode if supported.
+            if (IsDataModeSupported(Selection.dataModeHint))
+                SwitchToDataMode(Selection.dataModeHint);
+            else if (!IsDataModeSupported(dataMode))
+                SwitchToDefaultDataMode();
+        }
+
+        // Note: supportedModes is cleared before and sorted after this method is called
+        protected override void OnUpdateSupportedDataModes(List<DataMode> supportedModes)
+        {
+            m_UserSupportedDataModes.Clear();
+
+            // Not showing data modes in debug
+            if (m_InspectorMode == InspectorMode.Normal)
+            {
+                DataModeSupportUtils.GetDataModeSupport(Selection.activeObject, Selection.activeContext, m_UserSupportedDataModes);
+                supportedModes.AddRange(m_UserSupportedDataModes);
             }
         }
 

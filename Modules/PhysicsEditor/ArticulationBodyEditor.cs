@@ -48,8 +48,10 @@ namespace UnityEditor
         SerializedProperty m_YDrive;
         SerializedProperty m_ZDrive;
 
-        readonly AnimBool m_ShowInfo = new AnimBool();
-        bool m_RequiresConstantRepaint;
+        readonly AnimBool m_ShowLayerOverrides = new AnimBool();
+        private SavedBool m_ShowLayerOverridesFoldout;
+        SerializedProperty m_IncludeLayers;
+        SerializedProperty m_ExcludeLayers;
 
         private class Styles
         {
@@ -87,6 +89,11 @@ namespace UnityEditor
             public static GUIContent forceLimit = EditorGUIUtility.TrTextContent("Force Limit", "The maximum force this drive can apply to a body.");
             public static GUIContent target = EditorGUIUtility.TrTextContent("Target", "The target value for the drive to try reaching.");
             public static GUIContent targetVelocity = EditorGUIUtility.TrTextContent("Target Velocity", "The target velocity for the drive to try reaching.");
+
+            public static GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
+            public static GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
+
+            public static GUIContent driveType = EditorGUIUtility.TrTextContent("Drive Type", "The drive type");
         }
 
         internal enum NonLockedMotion
@@ -138,17 +145,19 @@ namespace UnityEditor
             m_YDrive = serializedObject.FindProperty("m_YDrive");
             m_ZDrive = serializedObject.FindProperty("m_ZDrive");
 
-            // Info foldout
-            m_ShowInfo.valueChanged.AddListener(Repaint);
+            m_IncludeLayers = serializedObject.FindProperty("m_IncludeLayers");
+            m_ExcludeLayers = serializedObject.FindProperty("m_ExcludeLayers");
 
-            m_RequiresConstantRepaint = false;
+            m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
+            m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
+            m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
 
             PhysicsDebugWindow.UpdateSelectionOnComponentAdd();
         }
 
         public void OnDisable()
         {
-            m_ShowInfo.valueChanged.RemoveListener(Repaint);
+            m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
         }
 
         public override void OnInspectorGUI()
@@ -344,6 +353,8 @@ namespace UnityEditor
             ClampDriveLimits(m_ZDrive, body.zDrive);
             ClampDriveLimits(m_XDrive, body.xDrive);
 
+            ShowLayerOverridesProperties();
+
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -388,20 +399,59 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(drive.FindPropertyRelative("upperLimit"), Styles.upperLimit);
             }
 
+            var driveTypeProperty = drive.FindPropertyRelative("driveType");
+            var driveType = (ArticulationDriveType)driveTypeProperty.enumValueIndex;
+
             // Always display fields
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("stiffness"), Styles.stiffness);
-            EditorGUILayout.PropertyField(drive.FindPropertyRelative("damping"), Styles.damping);
+
+            if(driveType == ArticulationDriveType.Target)
+            {
+                EditorGUI.BeginDisabled(true);
+                EditorGUILayout.FloatField(Styles.stiffness, 1e+25f);
+                EditorGUILayout.FloatField(Styles.damping, 0f);
+                EditorGUI.EndDisabled();
+            }
+            else if(driveType == ArticulationDriveType.Velocity)
+            {
+                EditorGUI.BeginDisabled(true);
+                EditorGUILayout.FloatField(Styles.stiffness, 0f);
+                EditorGUILayout.FloatField(Styles.damping, 1e+25f);
+                EditorGUI.EndDisabled();
+            }
+            else
+            {
+                EditorGUILayout.PropertyField(drive.FindPropertyRelative("stiffness"), Styles.stiffness);
+                EditorGUILayout.PropertyField(drive.FindPropertyRelative("damping"), Styles.damping);
+            }
+
             EditorGUILayout.PropertyField(drive.FindPropertyRelative("forceLimit"), Styles.forceLimit);
+
+            EditorGUI.BeginDisabled(driveType == ArticulationDriveType.Velocity);
             EditorGUILayout.PropertyField(drive.FindPropertyRelative("target"), Styles.target);
+            EditorGUI.EndDisabled();
+
+            EditorGUI.BeginDisabled(driveType == ArticulationDriveType.Target);
             EditorGUILayout.PropertyField(drive.FindPropertyRelative("targetVelocity"), Styles.targetVelocity);
+            EditorGUI.EndDisabled();
+
+            EditorGUILayout.PropertyField(driveTypeProperty, Styles.driveType);
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
         }
 
-        public override bool RequiresConstantRepaint()
+        private void ShowLayerOverridesProperties()
         {
-            return m_RequiresConstantRepaint;
+            // Show Layer Overrides.
+            m_ShowLayerOverridesFoldout.value = m_ShowLayerOverrides.target = EditorGUILayout.Foldout(m_ShowLayerOverrides.target, "Layer Overrides", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowLayerOverrides.faded))
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_IncludeLayers, Styles.includeLayers);
+                EditorGUILayout.PropertyField(m_ExcludeLayers, Styles.excludeLayers);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFadeGroup();
         }
     }
 }

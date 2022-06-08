@@ -527,7 +527,7 @@ namespace UnityEditor.DeviceSimulation
             set => SetAutoRotationOrientation(ScreenOrientation.LandscapeRight, value);
         }
 
-        public override void SetResolution(int width, int height, FullScreenMode fullScreenMode, int refreshRate)
+        public override void SetResolution(int width, int height, FullScreenMode fullScreenMode, RefreshRate refreshRate)
         {
             m_WasResolutionSet = true;
 

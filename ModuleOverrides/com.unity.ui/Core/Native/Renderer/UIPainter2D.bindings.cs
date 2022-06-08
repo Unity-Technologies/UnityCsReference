@@ -25,6 +25,10 @@ namespace UnityEngine.UIElements
         public static extern Color GetStrokeColor(IntPtr handle);
         public static extern void SetStrokeColor(IntPtr handle, Color value);
 
+        [NativeName("GetStrokeGradientCopy")]
+        public static extern Gradient GetStrokeGradient(IntPtr handle);
+        public static extern void SetStrokeGradient(IntPtr handle, Gradient gradient);
+
         public static extern Color GetFillColor(IntPtr handle);
         public static extern void SetFillColor(IntPtr handle, Color value);
 

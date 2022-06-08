@@ -116,14 +116,17 @@ namespace UnityEditor.UIElements.Bindings
         {
             bool handleLivePropertyState = false;
 
-            try
+            if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState())
             {
-                // This can throw if the serialized object changes type under our feet
-                handleLivePropertyState = prop.isLiveModified;
-            }
-            catch (Exception)
-            {
-                return;
+                try
+                {
+                    var component = prop.serializedObject.targetObject as Component;
+                    handleLivePropertyState = (component != null && !component.gameObject.scene.isSubScene) || prop.isLiveModified;
+                }
+                catch (Exception)
+                {
+                    return;
+                }
             }
 
             if (handleLivePropertyState)
@@ -178,6 +181,14 @@ namespace UnityEditor.UIElements.Bindings
                 return;
 
             UpdateElementRecursively(element, prop, UpdatePrefabStateStyleFromProperty);
+        }
+
+        internal static void UpdateLivePropertyStateStyle(VisualElement element, SerializedProperty prop)
+        {
+            if (element == null)
+                return;
+
+            UpdateElementRecursively(element, prop, UpdateLivePropertyStyleFromProperty);
         }
 
         private static void UpdatePrefabStateStyleFromProperty(VisualElement element, SerializedProperty prop)
@@ -270,6 +281,13 @@ namespace UnityEditor.UIElements.Bindings
                 return;
 
             var elementHeight = element.resolvedStyle.height;
+            if (float.IsNaN(elementHeight))
+            {
+                // This event is added due to an issue where container is fully resolved, but this element is not.
+                // This happens each time when entering play mode.
+                element.RegisterCallback<GeometryChangedEvent, VisualElement>(ReUpdateLivePropertyBarStyleEvent, bar);
+                return;
+            }
 
             // This is needed so if you have 2 overridden fields their blue
             // bars touch (and it looks like one long bar). They normally wouldn't
@@ -299,6 +317,17 @@ namespace UnityEditor.UIElements.Bindings
 
             for (var i = 0; i < barContainer.childCount; i++)
                 UpdatePrefabOverrideOrLivePropertyBarStyle(barContainer[i]);
+        }
+
+        private static void ReUpdateLivePropertyBarStyleEvent(GeometryChangedEvent evt, VisualElement bar)
+        {
+            var element = evt.target as VisualElement;
+            if (element == null)
+                return;
+
+            element.UnregisterCallback<GeometryChangedEvent, VisualElement>(ReUpdateLivePropertyBarStyleEvent);
+
+            UpdatePrefabOverrideOrLivePropertyBarStyle(bar);
         }
 
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)

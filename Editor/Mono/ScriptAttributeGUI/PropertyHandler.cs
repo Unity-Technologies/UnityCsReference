@@ -27,6 +27,9 @@ namespace UnityEditor
                 return m_PropertyDrawers[m_NestingLevel];
             }
         }
+
+        internal List<DecoratorDrawer> decoratorDrawers => m_DecoratorDrawers;
+
         private int m_NestingLevel;
 
         private bool isCurrentlyNested { get { return m_NestingLevel > 0; } }

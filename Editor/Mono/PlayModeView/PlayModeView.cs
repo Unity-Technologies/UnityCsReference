@@ -88,6 +88,9 @@ namespace UnityEditor
             get { return m_TargetDisplay; }
             protected set
             {
+                if (m_TargetDisplay != value)
+                    SetDisplayViewSize(value, m_TargetSize);
+
                 m_TargetDisplay = value;
             }
         }

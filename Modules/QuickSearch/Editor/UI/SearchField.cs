@@ -37,6 +37,17 @@ namespace UnityEditor.Search.UI
         public const float cancelButtonWidth = 20f;
         public int controlID { get; private set; } = -1;
 
+        internal bool hasFocus => GUIUtility.keyboardControl == controlID;
+
+        internal int cursorIndex
+        {
+            get
+            {
+                var te = GetTextEditor();
+                return te?.cursorIndex ?? 0;
+            }
+        }
+
         public bool IsMultiline(float height)
         {
             return height > 30f;

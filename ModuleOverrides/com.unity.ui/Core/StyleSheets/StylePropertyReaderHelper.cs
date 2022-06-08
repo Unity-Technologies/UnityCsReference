@@ -203,6 +203,24 @@ namespace UnityEngine.UIElements.StyleSheets
             return rot;
         }
 
+        static bool TryReadEnum(StyleEnumType enumType, StylePropertyValue value, out int intValue)
+        {
+            string enumString = null;
+            var handle = value.handle;
+
+            if (handle.valueType == StyleValueType.Keyword)
+            {
+                var keyword = value.sheet.ReadKeyword(handle);
+                enumString = keyword.ToUssString();
+            }
+            else
+            {
+                enumString = value.sheet.ReadEnum(handle);
+            }
+
+            return (StylePropertyUtil.TryGetEnumIntValue(enumType, enumString, out intValue));
+        }
+
         static int ReadEnum(StyleEnumType enumType, StylePropertyValue value)
         {
             string enumString = null;
@@ -239,6 +257,123 @@ namespace UnityEngine.UIElements.StyleSheets
             var dimension = value.sheet.ReadDimension(value.handle);
             return dimension.ToAngle();
         }
+
+        static public BackgroundPosition ReadBackgroundPosition(int valCount, StylePropertyValue val1, StylePropertyValue val2, BackgroundPositionKeyword keyword)
+        {
+            if (valCount == 1)
+            {
+                if (val1.handle.valueType == StyleValueType.Enum)
+                {
+                    return new BackgroundPosition((BackgroundPositionKeyword)ReadEnum(StyleEnumType.BackgroundPositionKeyword, val1));
+                }
+                else if ((val1.handle.valueType == StyleValueType.Dimension) || (val1.handle.valueType == StyleValueType.Float))
+                {
+                    return new BackgroundPosition(keyword, val1.sheet.ReadDimension(val1.handle).ToLength());
+                }
+            }
+            else if (valCount == 2)
+            {
+                if ((val1.handle.valueType == StyleValueType.Enum) &&
+                    ((val2.handle.valueType == StyleValueType.Dimension) || (val2.handle.valueType == StyleValueType.Float)))
+                {
+                    return new BackgroundPosition(
+                        (BackgroundPositionKeyword)ReadEnum(StyleEnumType.BackgroundPositionKeyword, val1),
+                        val1.sheet.ReadDimension(val2.handle).ToLength());
+                }
+            }
+
+            return new BackgroundPosition();
+        }
+
+        static public BackgroundRepeat ReadBackgroundRepeat(int valCount, StylePropertyValue val1, StylePropertyValue val2)
+        {
+            var backgroundRepeat = new BackgroundRepeat();
+
+            if (valCount == 1)
+            {
+                int enumValue;
+                if (TryReadEnum(StyleEnumType.RepeatXY, val1, out enumValue))
+                {
+                    if ((RepeatXY)enumValue == RepeatXY.RepeatX)
+                    {
+                        backgroundRepeat.x = Repeat.Repeat;
+                        backgroundRepeat.y = Repeat.NoRepeat;
+                    }
+                    else if ((RepeatXY)enumValue == RepeatXY.RepeatY)
+                    {
+                        backgroundRepeat.x = Repeat.NoRepeat;
+                        backgroundRepeat.y = Repeat.Repeat;
+                    }
+                }
+                else
+                {
+                    backgroundRepeat.x = (Repeat)ReadEnum(StyleEnumType.Repeat, val1);
+                    backgroundRepeat.y = backgroundRepeat.x;
+                }
+            }
+            else
+            {
+                backgroundRepeat.x = (Repeat)ReadEnum(StyleEnumType.Repeat, val1);
+                backgroundRepeat.y = (Repeat)ReadEnum(StyleEnumType.Repeat, val2);
+            }
+
+            return backgroundRepeat;
+        }
+
+        static public BackgroundSize ReadBackgroundSize(int valCount, StylePropertyValue val1, StylePropertyValue val2)
+        {
+            var BackgroundSize = new BackgroundSize();
+
+            if (valCount == 1)
+            {
+                if (val1.handle.valueType == StyleValueType.Keyword)
+                {
+                    if ((StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.Auto)
+                    {
+                        BackgroundSize.x = Length.Auto();
+                        BackgroundSize.y = Length.Auto();
+                    }
+                }
+                else if (val1.handle.valueType == StyleValueType.Enum)
+                {
+                    BackgroundSize.sizeType = (BackgroundSizeType)ReadEnum(StyleEnumType.BackgroundSizeType, val1);
+                }
+                else if (val1.handle.valueType == StyleValueType.Dimension)
+                {
+                    BackgroundSize.x = val1.sheet.ReadDimension(val1.handle).ToLength();
+                    BackgroundSize.y = Length.Auto();
+                }
+            }
+            else if (valCount == 2)
+            {
+                if (val1.handle.valueType == StyleValueType.Keyword)
+                {
+                    if ((StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.Auto)
+                    {
+                        BackgroundSize.x = Length.Auto();
+                    }
+                }
+                else if (val1.handle.valueType == StyleValueType.Dimension)
+                {
+                    BackgroundSize.x = val1.sheet.ReadDimension(val1.handle).ToLength();
+                }
+
+                if (val2.handle.valueType == StyleValueType.Keyword)
+                {
+                    if ((StyleValueKeyword)val2.handle.valueIndex == StyleValueKeyword.Auto)
+                    {
+                        BackgroundSize.y = Length.Auto();
+                    }
+                }
+                else if (val2.handle.valueType == StyleValueType.Dimension)
+                {
+                    BackgroundSize.y = val2.sheet.ReadDimension(val2.handle).ToLength();
+                }
+            }
+
+            return BackgroundSize;
+        }
+
 
         internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, float dpiScaling, out ImageSource source)
         {

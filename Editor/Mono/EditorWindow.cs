@@ -1352,7 +1352,7 @@ namespace UnityEditor
         static void ShowOverlayMenu(ShortcutArguments args)
         {
             if(args.context is OverlayShortcutContext context)
-                context.editorWindow.overlayCanvas.menuVisible = !context.editorWindow.overlayCanvas.menuVisible;
+                context.editorWindow.overlayCanvas.ShowMenu(!context.editorWindow.overlayCanvas.menuVisible);
         }
 
         public bool TryGetOverlay(string id, out Overlay match)

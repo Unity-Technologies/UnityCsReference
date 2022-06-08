@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
         Editor = 1
     }
 
+    // NOTE: if a new VersionChangeType is added, ComputedStyle.CompareChanges may need to be reworked!
     [Flags]
     internal enum VersionChangeType
     {
@@ -532,6 +533,9 @@ namespace UnityEngine.UIElements
 
             CommitElementUnderPointers();
         }
+
+        void IGroupBox.OnOptionAdded(IGroupBoxOption option) { /* Nothing to do here. */ }
+        void IGroupBox.OnOptionRemoved(IGroupBoxOption option) { /* Nothing to do here. */ }
 
         public IPanelDebug panelDebug { get; set; }
         public ILiveReloadSystem liveReloadSystem { get; set; }

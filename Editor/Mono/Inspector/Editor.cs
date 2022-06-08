@@ -1154,36 +1154,64 @@ namespace UnityEditor
 
                 if (mainObjectName != expectedMainObjectName)
                 {
-                    var warningText = "The main object name should match the asset filename.\nPlease fix to avoid errors.";
+                    DrawMismatchedNameNotification(editor, expectedMainObjectName, mainObjectName);
+                }
+            }
+        }
 
-                    GUILayout.BeginVertical(EditorStyles.helpBox);
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Warning), GUILayout.ExpandWidth(false));
-                    GUILayout.Label(warningText, EditorStyles.wordWrappedLabel);
-                    GUILayout.FlexibleSpace();
-                    GUILayout.BeginVertical();
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Fix object name", EditorStyles.miniButtonRight, GUILayout.ExpandWidth(false)))
+        static void DrawMismatchedNameNotification(Editor editor, string expectedMainObjectName, string mainObjectName)
+        {
+            var warningText = $"The main object name '{mainObjectName}' should match the asset filename '{expectedMainObjectName}'.\nPlease fix to avoid errors.";
+            var image = EditorGUIUtility.GetHelpIcon(MessageType.Warning);
+            var btnText = "Fix object name";
+            Action onBtnClick = () =>
+            {
+                editor.target.name = expectedMainObjectName;
+                AssetDatabase.SaveAssetIfDirty(editor.target);
+
+                var message = String.Format("Main Object Name '{0}' does not match filename '{1}'", mainObjectName, expectedMainObjectName);
+                var hash = Hash128.Compute(message);
+                UInt32 correspondingLogID = (UInt32)hash.GetHashCode();
+                Debug.RemoveLogEntriesByIdentifier((int)correspondingLogID);
+            };
+
+            DrawNotification(image, warningText, btnText, onBtnClick);
+        }
+
+        internal static void DrawNotification(Texture image, string text, string btnText, Action onBtnClick)
+        {
+            using (new GUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new GUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(image, GUILayout.ExpandWidth(false));
+                    using (new GUILayout.VerticalScope())
                     {
-                        editor.target.name = expectedMainObjectName;
-                        AssetDatabase.SaveAssetIfDirty(editor.target);
-
-                        var message = String.Format("Main Object Name '{0}' does not match filename '{1}'", mainObjectName, expectedMainObjectName);
-                        var hash = Hash128.Compute(message);
-                        UInt32 correspondingLogID = (UInt32)hash.GetHashCode();
-                        Debug.RemoveLogEntriesByIdentifier((int)correspondingLogID);
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label(text, EditorStyles.wordWrappedLabel);
+                        GUILayout.FlexibleSpace();
                     }
+
                     GUILayout.FlexibleSpace();
-                    GUILayout.EndVertical();
-                    GUILayout.EndHorizontal();
-                    GUILayout.EndVertical();
+
+                    if (onBtnClick != null)
+                    {
+                        using (new GUILayout.VerticalScope())
+                        {
+                            GUILayout.FlexibleSpace();
+                            if (GUILayout.Button(btnText, EditorStyles.miniButtonRight, GUILayout.ExpandWidth(false)))
+                                onBtnClick.Invoke();
+                            GUILayout.FlexibleSpace();
+                        }
+                    }
+
                 }
             }
         }
 
         internal void DrawPostIconContent(Rect iconRect)
         {
-            if (OnPostIconGUI != null)
+            if (OnPostIconGUI != null && Event.current.type == EventType.Repaint)
             {
                 // Post icon draws 16 x 16 at bottom right corner
                 const float k_Size = 16;
@@ -1193,15 +1221,6 @@ namespace UnityEditor
                 drawRect.width = k_Size;
                 drawRect.height = k_Size;
                 OnPostIconGUI(this, drawRect);
-            }
-        }
-
-        internal void DrawPostIconContent()
-        {
-            if (Event.current.type == EventType.Repaint)
-            {
-                Rect iconRect = GUILayoutUtility.GetLastRect();
-                DrawPostIconContent(iconRect);
             }
         }
 

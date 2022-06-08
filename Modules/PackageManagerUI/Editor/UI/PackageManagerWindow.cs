@@ -271,6 +271,13 @@ namespace UnityEditor.PackageManager.UI
             upmClient.List(true);
         }
 
+        [InitializeOnLoadMethod]
+        private static void EditorInitializedInSafeMode()
+        {
+            if (EditorUtility.isInSafeMode)
+                OnEditorFinishLoadingProject();
+        }
+
         [UsedByNativeCode]
         internal static void OnEditorFinishLoadingProject()
         {

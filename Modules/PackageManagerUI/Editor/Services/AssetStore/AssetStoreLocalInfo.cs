@@ -10,15 +10,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreLocalInfo
     {
-        [Flags]
-        internal enum UpdateStatus
-        {
-            None            = 0,
-            UpdateChecked   = 1 << 0,
-            CanUpdate       = 1 << 1,
-            CanDowngrade    = 1 << 2
-        }
-
         public string id;
         public string versionString;
         public string versionId;
@@ -28,12 +19,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string packagePath;
         public string publishNotes;
         public string firstPublishedDate;
-
-        public UpdateStatus updateStatus;
-        public bool updateInfoFetched => (updateStatus & UpdateStatus.UpdateChecked) != 0;
-        public bool canUpdateOrDowngrade => (updateStatus & (UpdateStatus.CanUpdate | UpdateStatus.CanDowngrade)) != 0;
-        public bool canUpdate => (updateStatus & UpdateStatus.CanUpdate) != 0;
-        public bool canDowngrade => (updateStatus & UpdateStatus.CanDowngrade) != 0;
 
         public static AssetStoreLocalInfo ParseLocalInfo(UnityEditor.PackageInfo localInfo)
         {
@@ -56,8 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     uploadId = jsonInfo.GetString("upload_id") ?? string.Empty,
                     publishedDate = jsonInfo.GetString("pubdate") ?? string.Empty,
                     supportedVersion = jsonInfo.GetString("unity_version") ?? string.Empty,
-                    publishNotes = jsonInfo.GetString("publishnotes") ?? string.Empty,
-                    updateStatus = UpdateStatus.None
+                    publishNotes = jsonInfo.GetString("publishnotes") ?? string.Empty
                 };
             }
             catch (Exception)

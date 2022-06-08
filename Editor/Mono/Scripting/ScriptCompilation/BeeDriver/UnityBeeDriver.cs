@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,12 +16,16 @@ using NiceIO;
 using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class UnityBeeDriver
     {
         internal static readonly string BeeBackendExecutable = new NPath($"{EditorApplication.applicationContentsPath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
+        internal static readonly string BeeCacheToolExecutable = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/BeeLocalCacheTool{BeeScriptCompilation.ExecutableExtension}";
+        internal static readonly string BeeCacheDirEnvVar = "BEE_CACHE_DIRECTORY";
+        internal static string BeeCacheDir => Environment.GetEnvironmentVariable(BeeCacheDirEnvVar) ?? new NPath($"{InternalEditorUtility.userAppDataFolder}/cache/bee").ToString(SlashMode.Native);
 
         [Serializable]
         internal class BeeBackendInfo
@@ -116,16 +121,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static BuildRequest BuildRequestFor(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, string dagDirectory = null, bool useScriptUpdater = true)
+        public static BuildRequest BuildRequestFor(RunnableProgram buildProgram, EditorCompilation editorCompilation, string dagName, CacheMode cacheMode, string dagDirectory = null, bool useScriptUpdater = true)
         {
-            return BuildRequestFor(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, new ILPostProcessingProgram(), StdOutModeForScriptCompilation);
+            return BuildRequestFor(buildProgram, dagName, dagDirectory, useScriptUpdater, editorCompilation.projectDirectory, new ILPostProcessingProgram(), cacheMode, StdOutModeForScriptCompilation);
         }
 
         public const StdOutMode StdOutModeForScriptCompilation =
             StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.LogStdOutOnFinish;
         public const StdOutMode StdOutModeForPlayerBuilds =
             StdOutMode.LogStartArgumentsAndExitcode | StdOutMode.Stream;
-        public static BuildRequest BuildRequestFor(RunnableProgram buildProgram, string dagName, string dagDirectory, bool useScriptUpdater, string projectDirectory, ILPostProcessingProgram ilpp,StdOutMode stdoutMode, RunnableProgram beeBackendProgram = null)
+
+        public static BuildRequest BuildRequestFor(
+                RunnableProgram buildProgram,
+                string dagName,
+                string dagDirectory,
+                bool useScriptUpdater,
+                string projectDirectory,
+                ILPostProcessingProgram ilpp,
+                CacheMode cacheMode,
+                StdOutMode stdoutMode,
+                RunnableProgram beeBackendProgram = null)
         {
             NPath dagDir = dagDirectory ?? "Library/Bee";
             RecreateDagDirectoryIfNeeded(dagDir);
@@ -134,7 +149,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return new BuildRequest()
             {
                 BuildProgram = buildProgram,
-                BackendProgram = beeBackendProgram ?? UnityBeeBackendProgram(stdoutMode),
+                BackendProgram = beeBackendProgram ?? UnityBeeBackendProgram(cacheMode, stdoutMode),
                 ProjectRoot = projectDirectory,
                 DagName = dagName,
                 BuildStateDirectory = dagDir.EnsureDirectoryExists().ToString(),
@@ -154,6 +169,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Il2CppPath = IL2CPPUtils.GetExePath("il2cpp"),
                 UnityLinkerPath = IL2CPPUtils.GetExePath("UnityLinker"),
                 NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
+                DotNetExe = NetCoreProgram.DotNetMuxerPath.ToString(),
                 EditorContentsPath = EditorApplication.applicationContentsPath,
                 Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
                 UnityVersion = Application.unityVersion,
@@ -168,13 +184,49 @@ namespace UnityEditor.Scripting.ScriptCompilation
             };
         }
 
-        internal static RunnableProgram UnityBeeBackendProgram(StdOutMode stdoutMode)
+        public static void RunCleanBeeCache()
         {
-            return new SystemProcessRunnableProgramDuplicate(BeeBackendExecutable, alwaysEnvironmentVariables: new Dictionary<string, string>()
+            // Note that this size is spefied as the total number of used bytes for all the files in the cache
+            // and not as the actual size of occupied blocks on the disk, which will add some overhead.
+            long cacheSize = 256 * 1024 * 1024;
+            var psi = new ProcessStartInfo()
             {
-                { "BEE_CACHE_BEHAVIOUR", "_"},
+                FileName = BeeCacheToolExecutable,
+                Arguments = $"clean {cacheSize}",
+                UseShellExecute = false
+            };
+            psi.EnvironmentVariables[BeeCacheDirEnvVar] = BeeCacheDir;
+            Process.Start(psi);
+        }
+
+        public enum CacheMode
+        {
+            Off,
+            ReadOnly,
+            WriteOnly,
+            ReadWrite,
+        }
+
+        internal static RunnableProgram UnityBeeBackendProgram(CacheMode cacheMode, StdOutMode stdoutMode)
+        {
+            var env = new Dictionary<string, string>()
+            {
+                { "BEE_CACHE_BEHAVIOUR", cacheMode switch
+                {
+                    CacheMode.Off => "_",
+                    CacheMode.ReadOnly => "R",
+                    CacheMode.WriteOnly => "W",
+                    CacheMode.ReadWrite => "RW",
+                    _ => throw new ArgumentOutOfRangeException(nameof(cacheMode), cacheMode, null)
+                }},
+                { "CACHE_SERVER_ADDRESS", "none_but_bee_still_wants_us_to_set_it" },
+                { "REAPI_CACHE_CLIENT", $"\"{BeeCacheToolExecutable}\"" },
+                { BeeCacheDirEnvVar, BeeCacheDir },
                 { "CHROMETRACE_TIMEOFFSET", "unixepoch" }
-            }, stdOutMode: stdoutMode);
+            };
+            return new SystemProcessRunnableProgram(BeeBackendExecutable,
+                alwaysEnvironmentVariables: env,
+                stdOutMode: stdoutMode);
         }
     }
 }

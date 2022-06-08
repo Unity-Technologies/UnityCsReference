@@ -288,31 +288,72 @@ namespace UnityEngine
         [FreeFunction("CameraScripting::RaycastTry2D")] extern internal static GameObject RaycastTry2D(Camera cam, Ray ray, float distance, int layerMask);
     }
 
+    // Burst-compatible unmanaged string calls can not be in UnityEngine namespace (UnityEngine.Internal is okay)
+    namespace Internal
+    {
+        [NativeHeader("Runtime/Input/InputBindings.h")]
+        internal static class InputUnsafeUtility
+        {
+            [NativeThrows]
+            internal extern static bool GetKeyString(string name);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe bool GetKeyString__Unmanaged(byte* name, int nameLen);
+            [NativeThrows]
+            internal extern static bool GetKeyUpString(string name);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe bool GetKeyUpString__Unmanaged(byte* name, int nameLen);
+            [NativeThrows]
+            internal extern static bool GetKeyDownString(string name);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe bool GetKeyDownString__Unmanaged(byte* name, int nameLen);
+            [NativeThrows]
+            internal extern static float GetAxis(string axisName);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe float GetAxis__Unmanaged(byte* axisName, int axisNameLen);
+            [NativeThrows]
+            internal extern static float GetAxisRaw(string axisName);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe float GetAxisRaw__Unmanaged(byte* axisName, int axisNameLen);
+            [NativeThrows]
+            internal extern static bool GetButton(string buttonName);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe bool GetButton__Unmanaged(byte* buttonName, int buttonNameLen);
+            [NativeThrows]
+            internal extern static bool GetButtonDown(string buttonName);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe byte GetButtonDown__Unmanaged(byte* buttonName, int buttonNameLen);
+            [NativeThrows]
+            internal extern static bool GetButtonUp(string buttonName);
+            // Burst shadow
+            [NativeThrows]
+            internal extern static unsafe bool GetButtonUp__Unmanaged(byte* buttonName, int buttonNameLen);
+            internal extern static bool IsJoystickPreconfigured(string joystickName);
+            internal extern static unsafe bool IsJoystickPreconfigured__Unmanaged(byte* joystickName, int joystickNameLen);
+        }
+    }
+
     [NativeHeader("Runtime/Input/InputBindings.h")]
     public class Input
     {
+        public static float GetAxis(string axisName) => Internal.InputUnsafeUtility.GetAxis(axisName);
+        public static float GetAxisRaw(string axisName) => Internal.InputUnsafeUtility.GetAxisRaw(axisName);
+        public static bool GetButton(string buttonName) => Internal.InputUnsafeUtility.GetButton(buttonName);
+        public static bool GetButtonDown(string buttonName) => Internal.InputUnsafeUtility.GetButtonDown(buttonName);
+        public static bool GetButtonUp(string buttonName) => Internal.InputUnsafeUtility.GetButtonUp(buttonName);
+
         [NativeThrows]
         private extern static bool GetKeyInt(KeyCode key);
         [NativeThrows]
-        private extern static bool GetKeyString(string name);
-        [NativeThrows]
         private extern static bool GetKeyUpInt(KeyCode key);
         [NativeThrows]
-        private extern static bool GetKeyUpString(string name);
-        [NativeThrows]
         private extern static bool GetKeyDownInt(KeyCode key);
-        [NativeThrows]
-        private extern static bool GetKeyDownString(string name);
-        [NativeThrows]
-        public extern static float GetAxis(string axisName);
-        [NativeThrows]
-        public extern static float GetAxisRaw(string axisName);
-        [NativeThrows]
-        public extern static bool GetButton(string buttonName);
-        [NativeThrows]
-        public extern static bool GetButtonDown(string buttonName);
-        [NativeThrows]
-        public extern static bool GetButtonUp(string buttonName);
         [NativeThrows]
         public extern static bool GetMouseButton(int button);
         [NativeThrows]
@@ -321,7 +362,7 @@ namespace UnityEngine
         public extern static bool GetMouseButtonUp(int button);
         [FreeFunction("ResetInput")]
         public extern static void ResetInputAxes();
-        public extern static bool IsJoystickPreconfigured(string joystickName);
+        public static bool IsJoystickPreconfigured(string joystickName) => Internal.InputUnsafeUtility.IsJoystickPreconfigured(joystickName);
         [NativeThrows]
         public extern static string[] GetJoystickNames();
         [NativeThrows]
@@ -337,35 +378,12 @@ namespace UnityEngine
         [NativeThrows]
         public extern static AccelerationEvent GetAccelerationEvent(int index);
 
-        public static bool GetKey(KeyCode key)
-        {
-            return GetKeyInt(key);
-        }
-
-        public static bool GetKey(string name)
-        {
-            return GetKeyString(name);
-        }
-
-        public static bool GetKeyUp(KeyCode key)
-        {
-            return GetKeyUpInt(key);
-        }
-
-        public static bool GetKeyUp(string name)
-        {
-            return GetKeyUpString(name);
-        }
-
-        public static bool GetKeyDown(KeyCode key)
-        {
-            return GetKeyDownInt(key);
-        }
-
-        public static bool GetKeyDown(string name)
-        {
-            return GetKeyDownString(name);
-        }
+        public static bool GetKey(KeyCode key) => GetKeyInt(key);
+        public static bool GetKey(string name) => Internal.InputUnsafeUtility.GetKeyString(name);
+        public static bool GetKeyUp(KeyCode key) => GetKeyUpInt(key);
+        public static bool GetKeyUp(string name) => Internal.InputUnsafeUtility.GetKeyUpString(name);
+        public static bool GetKeyDown(KeyCode key) => GetKeyDownInt(key);
+        public static bool GetKeyDown(string name) => Internal.InputUnsafeUtility.GetKeyDownString(name);
 
         [Conditional("UNITY_EDITOR")]
         internal static void SimulateTouch(Touch touch)
@@ -443,7 +461,7 @@ namespace UnityEngine
         }
         public extern static DeviceOrientation deviceOrientation
         {
-            [FreeFunction("GetOrientation")]
+            [FreeFunction("GetDeviceOrientation")]
             get;
         }
         public extern static Vector3 acceleration

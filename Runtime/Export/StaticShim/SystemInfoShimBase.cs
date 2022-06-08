@@ -192,6 +192,8 @@ namespace UnityEngine
 
         public virtual int constantBufferOffsetAlignment => UnityEngine.SystemInfo.constantBufferOffsetAlignment;
 
+        public virtual int maxConstantBufferSize => UnityEngine.SystemInfo.maxConstantBufferSize;
+
         public virtual long maxGraphicsBufferSize => UnityEngine.SystemInfo.maxGraphicsBufferSize;
 
         [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]

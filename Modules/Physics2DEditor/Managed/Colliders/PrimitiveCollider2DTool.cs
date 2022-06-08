@@ -8,11 +8,9 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    abstract class PrimitiveCollider2DTool<T> : EditorTool where T : Collider2D
+    abstract class PrimitiveCollider2DTool<T> : Collider2DToolbase where T : Collider2D
     {
         protected abstract PrimitiveBoundsHandle boundsHandle { get; }
-
-        public override GUIContent toolbarIcon { get { return PrimitiveBoundsHandle.editModeButton; } }
 
         protected abstract void CopyColliderSizeToHandle(T collider);
 

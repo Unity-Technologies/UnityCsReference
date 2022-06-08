@@ -61,6 +61,8 @@ namespace UnityEditor
             }
             EditorGUI.indentLevel--;
 
+            EditorGUILayout.PropertyField(m_ProvidesContacts, BaseStyles.providesContacts);
+
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
                 using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_CookingOptions))
@@ -76,6 +78,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Mesh, Styles.meshText);
 
+            ShowLayerOverridesProperties();
             serializedObject.ApplyModifiedProperties();
         }
     }

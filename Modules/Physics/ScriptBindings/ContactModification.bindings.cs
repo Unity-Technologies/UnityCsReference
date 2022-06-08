@@ -55,15 +55,15 @@ namespace UnityEngine
         private int numContacts;
         private IntPtr contacts;
 
-        public int colliderInstanceID => ResolveColliderInstanceID(shape);
-        public int otherColliderInstanceID => ResolveColliderInstanceID(otherShape);
-        public int bodyInstanceID => ResolveBodyInstanceID(actor);
-        public int otherBodyInstanceID => ResolveBodyInstanceID(otherActor);
+        public int colliderInstanceID => Physics.ResolveShapeToInstanceID(shape);
+        public int otherColliderInstanceID => Physics.ResolveShapeToInstanceID(otherShape);
+        public int bodyInstanceID => Physics.ResolveActorToInstanceID(actor);
+        public int otherBodyInstanceID => Physics.ResolveActorToInstanceID(otherActor);
 
-        public Vector3 bodyVelocity => GetActorLinearVelocity(actor);
-        public Vector3 bodyAngularVelocity => GetActorAngularVelocity(actor);
-        public Vector3 otherBodyVelocity => GetActorLinearVelocity(otherActor);
-        public Vector3 otherBodyAngularVelocity => GetActorAngularVelocity(otherActor);
+        public Vector3 bodyVelocity => Physics.GetActorLinearVelocity(actor);
+        public Vector3 bodyAngularVelocity => Physics.GetActorAngularVelocity(actor);
+        public Vector3 otherBodyVelocity => Physics.GetActorLinearVelocity(otherActor);
+        public Vector3 otherBodyAngularVelocity => Physics.GetActorAngularVelocity(otherActor);
 
         public int contactCount => numContacts;
 
@@ -181,7 +181,7 @@ namespace UnityEngine
                 var item = new IntPtr(contacts.ToInt64() + numContacts * sizeof(ModifiableContact) + (numContacts + i) * sizeof(int));
                 uint rawIndex = *(uint*)item;
 
-                return TranslateTriangleIndex(otherShape, rawIndex);
+                return Physics.TranslateTriangleIndex(otherShape, rawIndex);
             }
 
             return 0xffffFFFF;
@@ -198,26 +198,6 @@ namespace UnityEngine
             var item = new IntPtr(contacts.ToInt64() - numContacts * sizeof(ModifiableContactPatch));
             return (ModifiableContactPatch*)item;
         }
-
-        [ThreadSafe]
-        [StaticAccessor("GetPhysicsManager()")]
-        private static extern int ResolveColliderInstanceID(IntPtr shapePtr);
-
-        [ThreadSafe]
-        [StaticAccessor("GetPhysicsManager()")]
-        private static extern int ResolveBodyInstanceID(IntPtr actorPtr);
-
-        [ThreadSafe]
-        [StaticAccessor("GetPhysicsManager()")]
-        private static extern uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
-
-        [ThreadSafe]
-        [StaticAccessor("GetPhysicsManager()")]
-        private static extern Vector3 GetActorLinearVelocity(IntPtr actorPtr);
-
-        [ThreadSafe]
-        [StaticAccessor("GetPhysicsManager()")]
-        private static extern Vector3 GetActorAngularVelocity(IntPtr actorPtr);
     }
 
     [StructLayout(LayoutKind.Sequential)]

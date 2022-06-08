@@ -83,6 +83,58 @@ namespace UnityEditor.Build
         void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data);
     }
 
+    // This API lets you generate native plugins to be integrated into the player build,
+    // during the incremental player build. The incremental player build platform implementations will know
+    // how to consume these plugins and link them into the build.
+    internal interface IGenerateNativePluginsForAssemblies : IOrderedCallback
+    {
+        // Arguments to the PrepareOnMainThread method
+        public struct PrepareArgs
+        {
+            // The currently active build report.
+            public BuildReport report { get; set; }
+        }
+
+        // Return value of the PrepareOnMainThread method
+        public struct PrepareResult
+        {
+            // Any pathname in here will be considered an input file to the generated plugins;
+            // Any changes to any of these files will trigger a rebuild of the plugins.
+            public string[] additionalInputFiles { get; set; }
+
+            // Message to be shown in the progress bar when the GenerateNativePluginsForAssemblies method is run.
+            public string displayName { get; set; }
+        }
+
+        // Prepare method which is called on the main thread before the incremental player build starts.
+        // Use this to do any work which must happen on the main thread, and to set up dependencies which must trigger a
+        // rebuild of the generated plugins.
+        public PrepareResult PrepareOnMainThread(PrepareArgs args);
+
+        // Arguments to the GenerateNativePluginsForAssemblies method
+
+        public struct GenerateArgs
+        {
+            // Path names to the managed assembly files on disk as built for the currently active player target
+            public string[] assemblyFiles { get; set; }
+        }
+
+        // Return value of the GenerateNativePluginsForAssemblies method
+        public struct GenerateResult
+        {
+            // Any pathname returned in this array will be treated as a plugin to be linked into the player
+            public string[] generatedPlugins { get; set; }
+            public string[] generatedSymbols { get; set; }
+        }
+
+        // Method to generate native plugins during the player build. This will be called on a thread by the incremental
+        // player build pipeline to allow generating native plugins from editor code which will be linked into the player.
+        // If the plugins have already be generated in a previous build, this will only be called if any of the input
+        // files have changed. Input files are all assemblies (as specified in args.assemblyFiles) and all input files
+        // returned by `PrepareOnMainThread` in `additionalInputFiles`.
+        public GenerateResult GenerateNativePluginsForAssemblies(GenerateArgs args);
+    }
+
     public interface IUnityLinkerProcessor : IOrderedCallback
     {
         string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinker.UnityLinkerBuildPipelineData data);
@@ -116,6 +168,7 @@ namespace UnityEditor.Build
             public List<IPostBuildPlayerScriptDLLs> buildPlayerScriptDLLProcessors;
 
             public List<IUnityLinkerProcessor> unityLinkerProcessors;
+            public List<IGenerateNativePluginsForAssemblies> generateNativePluginsForAssembliesProcessors;
         }
 
         private static Processors m_Processors;
@@ -140,6 +193,7 @@ namespace UnityEditor.Build
             ShaderProcessors = 16,
             BuildPlayerScriptDLLProcessors = 32,
             UnityLinkerProcessors = 64,
+            GenerateNativePluginsForAssembliesProcessors = 128,
             ComputeShaderProcessors = 256
         }
 
@@ -216,6 +270,7 @@ namespace UnityEditor.Build
             bool findComputeShaderProcessors = (findFlags & BuildCallbacks.ComputeShaderProcessors) == BuildCallbacks.ComputeShaderProcessors;
             bool findBuildPlayerScriptDLLsProcessors = (findFlags & BuildCallbacks.BuildPlayerScriptDLLProcessors) == BuildCallbacks.BuildPlayerScriptDLLProcessors;
             bool findUnityLinkerProcessors = (findFlags & BuildCallbacks.UnityLinkerProcessors) == BuildCallbacks.UnityLinkerProcessors;
+            bool findGenerateNativePluginsForAssembliesProcessors = (findFlags & BuildCallbacks.GenerateNativePluginsForAssembliesProcessors) == BuildCallbacks.GenerateNativePluginsForAssembliesProcessors;
 
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
             foreach (var t in TypeCache.GetTypesDerivedFrom<IOrderedCallback>())
@@ -254,6 +309,11 @@ namespace UnityEditor.Build
                 if (findUnityLinkerProcessors)
                 {
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.unityLinkerProcessors);
+                }
+
+                if (findGenerateNativePluginsForAssembliesProcessors)
+                {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.generateNativePluginsForAssembliesProcessors);
                 }
 
                 if (findShaderProcessors)
@@ -305,6 +365,8 @@ namespace UnityEditor.Build
                 processors.filterBuildAssembliesProcessor.Sort(CompareICallbackOrder);
             if (processors.unityLinkerProcessors != null)
                 processors.unityLinkerProcessors.Sort(CompareICallbackOrder);
+            if (processors.generateNativePluginsForAssembliesProcessors != null)
+                processors.generateNativePluginsForAssembliesProcessors.Sort(CompareICallbackOrder);
             if (processors.shaderProcessors != null)
                 processors.shaderProcessors.Sort(CompareICallbackOrder);
             if (processors.computeShaderProcessors != null)
@@ -597,6 +659,7 @@ namespace UnityEditor.Build
             processors.sceneProcessorsWithReport = null;
             processors.filterBuildAssembliesProcessor = null;
             processors.unityLinkerProcessors = null;
+            processors.generateNativePluginsForAssembliesProcessors = null;
             processors.shaderProcessors = null;
             processors.computeShaderProcessors = null;
             processors.buildPlayerScriptDLLProcessors = null;

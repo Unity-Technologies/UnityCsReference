@@ -42,7 +42,7 @@ namespace UnityEngine.ParticleSystemJobs
         {
             ParticleSystemJobStruct<T>.Initialize();
             var reflectionData = ParticleSystemJobStruct<T>.jobReflectionData.Data;
-            ParticleSystemJobUtility.CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
     }
@@ -60,7 +60,7 @@ namespace UnityEngine.ParticleSystemJobs
         {
             ParticleSystemParallelForJobStruct<T>.Initialize();
             var reflectionData = ParticleSystemParallelForJobStruct<T>.jobReflectionData.Data;
-            ParticleSystemJobUtility.CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
     }
@@ -78,20 +78,13 @@ namespace UnityEngine.ParticleSystemJobs
         {
             ParticleSystemParallelForBatchJobStruct<T>.Initialize();
             var reflectionData = ParticleSystemParallelForBatchJobStruct<T>.jobReflectionData.Data;
-            ParticleSystemJobUtility.CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
     }
 
     static class ParticleSystemJobUtility
     {
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        internal static void CheckReflectionDataCorrect(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-                throw new InvalidOperationException("Support for burst compiled calls to Schedule depends on the Jobs package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))] in your source file.");
-        }
-
         unsafe internal static JobsUtility.JobScheduleParameters CreateScheduleParams<T>(ref T jobData, ParticleSystem ps, JobHandle dependsOn, IntPtr jobReflectionData) where T : struct
         {
             dependsOn = JobHandle.CombineDependencies(ps.GetManagedJobHandle(), dependsOn);

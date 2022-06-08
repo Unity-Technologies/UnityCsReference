@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
                 if (keyboardOnScreen != null)
                 {
                     var edition = textElement.edition;
-                    edition.UpdateText(edition.CullString(keyboardOnScreen.text));
+                    edition.UpdateText(keyboardOnScreen.text);
 
                     if (!edition.isDelayed)
                         edition.UpdateValueFromText?.Invoke();

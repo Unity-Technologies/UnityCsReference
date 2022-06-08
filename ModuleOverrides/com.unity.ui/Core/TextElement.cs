@@ -180,7 +180,7 @@ namespace UnityEngine.UIElements
             mgc.Text(this);
 
             if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
-                isElided = uitkTextHandle.textHandle.IsElided();
+                isElided = uitkTextHandle.IsElided();
 
             UpdateTooltip();
 
@@ -315,8 +315,7 @@ namespace UnityEngine.UIElements
 
         private bool ShouldElide()
         {
-            return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden &&
-                computedStyle.whiteSpace == WhiteSpace.NoWrap;
+            return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden;
         }
 
         /// <summary>
@@ -367,19 +366,19 @@ namespace UnityEngine.UIElements
 
         void INotifyValueChanged<string>.SetValueWithoutNotify(string newValue)
         {
+            newValue = ((ITextEdition)this).CullString(newValue);
             if (m_Text != newValue)
             {
                 renderedText = newValue;
                 m_Text = newValue;
-                if (selection.isSelectable)
-                    selectingManipulator.m_SelectingUtilities.text = newValue;
                 IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
 
                 if (!string.IsNullOrEmpty(viewDataKey))
                     SaveViewData();
             }
+
+            if (!edition.isReadOnly && editingManipulator?.editingUtilities.text != newValue)
+                editingManipulator.editingUtilities.text = newValue;
         }
-
-
     }
 }

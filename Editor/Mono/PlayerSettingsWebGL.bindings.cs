@@ -155,6 +155,13 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
+            [NativeProperty("webGLShowDiagnostics", TargetType.Field)]
+            public extern static bool showDiagnostics
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
             [Obsolete("debugSymbols Property deprecated. Property has been replaced by debugSymbolMode property.", false)]
             public static bool debugSymbols
             {

@@ -5,3 +5,5 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.AI.HeightMesh.Tests")]
+[assembly: InternalsVisibleTo("Unity.AI.Navigation.Editor")]
+[assembly: InternalsVisibleTo("Unity.AI.Navigation.Updater")]

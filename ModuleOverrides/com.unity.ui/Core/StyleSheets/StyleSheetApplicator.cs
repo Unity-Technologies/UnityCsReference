@@ -121,6 +121,120 @@ namespace UnityEngine.UIElements.StyleSheets
                 left = 0f;
         }
 
+        private static void CompileBackgroundPosition(StylePropertyReader reader, out BackgroundPosition backgroundPositionX, out BackgroundPosition backgroundPositionY)
+        {
+            var valCount = reader.valueCount;
+
+            var val1 = reader.GetValue(0);
+            var val2 = valCount > 1 ? reader.GetValue(1) : default;
+            var val3 = valCount > 2 ? reader.GetValue(2) : default;
+            var val4 = valCount > 3 ? reader.GetValue(3) : default;
+
+            backgroundPositionX = new BackgroundPosition();
+            backgroundPositionY = new BackgroundPosition();
+
+            if (valCount == 1)
+            {
+                var keyword = (BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 0);
+                if (keyword == BackgroundPositionKeyword.Left)
+                {
+                    backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Left);
+                    backgroundPositionY = BackgroundPosition.Initial();
+                }
+                else if (keyword == BackgroundPositionKeyword.Right)
+                {
+                    backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Right);
+                    backgroundPositionY = BackgroundPosition.Initial();
+                }
+                else if (keyword == BackgroundPositionKeyword.Top)
+                {
+                    backgroundPositionX = BackgroundPosition.Initial();
+                    backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Top);
+                }
+                else if (keyword == BackgroundPositionKeyword.Bottom)
+                {
+                    backgroundPositionX = BackgroundPosition.Initial();
+                    backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Bottom);
+                }
+                else if (keyword == BackgroundPositionKeyword.Center)
+                {
+                    backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                    backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                }
+            }
+            else if (valCount == 2)
+            {
+                if (((val1.handle.valueType == StyleValueType.Dimension) || (val1.handle.valueType == StyleValueType.Float)) &&
+                    ((val1.handle.valueType == StyleValueType.Dimension) || (val1.handle.valueType == StyleValueType.Float)))
+                {
+                    backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Left, val1.sheet.ReadDimension(val1.handle).ToLength());
+                    backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Top, val2.sheet.ReadDimension(val2.handle).ToLength());
+                }
+                else if ((val1.handle.valueType == StyleValueType.Enum) && (val2.handle.valueType == StyleValueType.Enum))
+                {
+                    BackgroundPositionKeyword keyword1 = (BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 0);
+                    BackgroundPositionKeyword keyword2 = (BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 1);
+
+                    static void SwapKeyword(ref BackgroundPositionKeyword a, ref BackgroundPositionKeyword b)
+                    {
+                        BackgroundPositionKeyword temp = a;
+                        a = b;
+                        b = temp;
+                    }
+
+                    if (keyword2 == BackgroundPositionKeyword.Left) SwapKeyword(ref keyword1, ref keyword2);
+                    if (keyword2 == BackgroundPositionKeyword.Right) SwapKeyword(ref keyword1, ref keyword2);
+
+                    if (keyword1 == BackgroundPositionKeyword.Top) SwapKeyword(ref keyword1, ref keyword2);
+                    if (keyword1 == BackgroundPositionKeyword.Bottom) SwapKeyword(ref keyword1, ref keyword2);
+
+                    backgroundPositionX = new BackgroundPosition(keyword1);
+                    backgroundPositionY = new BackgroundPosition(keyword2);
+                }
+            }
+            else if (valCount == 3)
+            {
+                if ((val1.handle.valueType == StyleValueType.Enum) &&
+                    (val2.handle.valueType == StyleValueType.Enum) &&
+                    (val3.handle.valueType == StyleValueType.Dimension))
+                {
+                    backgroundPositionX = new BackgroundPosition((BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 0));
+                    backgroundPositionY = new BackgroundPosition((BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 1), reader.ReadLength(2));
+                }
+                else if ((val1.handle.valueType == StyleValueType.Enum) &&
+                         (val2.handle.valueType == StyleValueType.Dimension) &&
+                         (val3.handle.valueType == StyleValueType.Enum))
+                {
+                    backgroundPositionX = new BackgroundPosition((BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 0), reader.ReadLength(1));
+                    backgroundPositionY = new BackgroundPosition((BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 2));
+                }
+            }
+            else if (valCount == 4)
+            {
+                if ((val1.handle.valueType == StyleValueType.Enum) &&
+                    (val2.handle.valueType == StyleValueType.Dimension) &&
+                    (val3.handle.valueType == StyleValueType.Enum) &&
+                    (val4.handle.valueType == StyleValueType.Dimension))
+                {
+                    backgroundPositionX = new BackgroundPosition((BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 0), reader.ReadLength(1));
+                    backgroundPositionY = new BackgroundPosition((BackgroundPositionKeyword)reader.ReadEnum(StyleEnumType.BackgroundPositionKeyword, 2), reader.ReadLength(3));
+                }
+            }
+        }
+
+        public static void CompileUnityBackgroundScaleMode(StylePropertyReader reader,
+                                                           out BackgroundPosition backgroundPositionX,
+                                                           out BackgroundPosition backgroundPositionY,
+                                                           out BackgroundRepeat backgroundRepeat,
+                                                           out BackgroundSize backgroundSize)
+        {
+            var scaleMode = (ScaleMode)reader.ReadEnum(StyleEnumType.ScaleMode, 0);
+            backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(scaleMode);
+            backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(scaleMode);
+            backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(scaleMode);
+            backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(scaleMode);
+        }
+
         private static void CompileBoxArea(StylePropertyReader reader, out Length top, out Length right, out Length bottom, out Length left)
         {
             top = 0f;

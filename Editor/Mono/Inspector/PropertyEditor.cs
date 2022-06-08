@@ -47,7 +47,7 @@ namespace UnityEditor
         Object hoveredObject { get; }
     }
 
-    class PropertyEditor : EditorWindow, IPropertyView, IHasCustomMenu
+    class PropertyEditor : EditorWindow, IPropertyView, IHasCustomMenu, IDataModeHandlerAndDispatcher
     {
         internal const string k_AssetPropertiesMenuItemName = "Assets/Properties... _&P";
         protected const string s_MultiEditClassName = "unity-inspector-no-multi-edit-warning";
@@ -326,6 +326,7 @@ namespace UnityEditor
             CreateTracker();
 
             EditorApplication.focusChanged += OnFocusChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoEvent += OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished += OnObjectChanged;
@@ -348,6 +349,7 @@ namespace UnityEditor
             m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
 
             EditorApplication.focusChanged -= OnFocusChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished -= OnObjectChanged;
@@ -684,7 +686,10 @@ namespace UnityEditor
 
             m_Tracker = new ActiveEditorTracker { inspectorMode = InspectorMode.Normal };
             if (LoadPersistedObject())
-                m_Tracker.RebuildIfNecessary();
+            {
+                dataMode = GetLastKnownDataMode();
+                m_Tracker.ForceRebuild();
+            }
         }
 
         private void OnTrackerRebuilt()
@@ -725,14 +730,21 @@ namespace UnityEditor
 
         private void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
-            // Early out if we have no removed or suppressed components.
-            // It's only a change from suppressed to removed or vice versa that needs to be handled specially on undo/redo.
+            // We need to detect and rebuild removed or suppressed component titlebars if the
+            // backend changes. Situations where this detection is needed is when:
+            // 1) Undo could cause a removed component to become a suppressed component and vice versa
+            // 2) Undo after replacing with a new prefab instance that has the same component count but the previous had a removed component.
             // Other cases will cause the number of Editors to change which will result in the tracker being rebuilt already.
-            if ((m_RemovedComponents == null || m_RemovedComponents.Count == 0) && (m_SuppressedComponents == null || m_SuppressedComponents.Count == 0))
-                return;
-
-            // Since undo could cause a removed component to become a suppressed component or vice versa, we have to rebuild that info here.
-            RebuildContentsContainers();
+            var prevRemovedComponents = new HashSet<Component>(m_RemovedComponents ?? new HashSet<Component>());
+            var prevSuppressedComponents = new HashSet<Component>(m_SuppressedComponents ?? new HashSet<Component>());
+            var prevComponentsInPrefabSource = new HashSet<Component>(m_ComponentsInPrefabSource ?? new Component[0]);
+            ExtractPrefabComponents();
+            if (!prevRemovedComponents.SetEquals(m_RemovedComponents ?? new HashSet<Component>())  ||
+                !prevSuppressedComponents.SetEquals(m_SuppressedComponents ?? new HashSet<Component>()) ||
+                !prevComponentsInPrefabSource.SetEquals(m_ComponentsInPrefabSource ?? new Component[0]))
+            {
+                RebuildContentsContainers();
+            }
         }
 
         private void DetermineInsertionPointOfVisualElementForRemovedComponent(int targetGameObjectIndex, Editor[] editors)
@@ -971,7 +983,6 @@ namespace UnityEditor
             {
                 m_RemovedPrefabComponentsElement.RemoveFromHierarchy();
                 m_RemovedPrefabComponentsElement = null;
-
             }
 
             if (m_RemovedComponentDict != null)
@@ -1064,6 +1075,9 @@ namespace UnityEditor
             ScriptAttributeUtility.ClearGlobalCache();
 
             EndRebuildContentContainers();
+
+            if (dataMode == DataMode.Disabled)
+                SwitchToDefaultDataMode();
 
             Repaint();
             RefreshTitle();
@@ -2353,6 +2367,130 @@ namespace UnityEditor
                 if (pso.hoveredObject)
                     OpenPropertyEditor(pso.hoveredObject);
             }
+        }
+
+        static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
+
+        readonly List<DataMode> m_SupportedDataModes = new(4);
+
+        bool areDataModesEnabled =>
+            m_InspectorMode == InspectorMode.Normal &&
+            m_SupportedDataModes.Count > 0;
+
+        List<DataMode> GetSupportedDataModesForContext() =>
+            areDataModesEnabled && m_SupportedDataModes.Count > 0
+                ? m_SupportedDataModes
+                : k_DisabledDataModes;
+
+        DataMode GetLastKnownDataMode()
+        {
+            if (areDataModesEnabled)
+                return EditorApplication.isPlaying
+                    ? m_LastKnownPlayModeDataMode
+                    : m_LastKnownEditModeDataMode;
+
+            return DataMode.Disabled;
+        }
+
+        [SerializeField] DataMode m_LastKnownEditModeDataMode = DataMode.Authoring;
+        [SerializeField] DataMode m_LastKnownPlayModeDataMode = DataMode.Runtime;
+
+        public event Action<DataMode> dataModeChanged;
+
+        // Caching the DataMode to avoid round-trips to native multiple times per frame.
+        // Note: DataMode.Disabled is the same default as in ActiveEditorTracker.cpp
+        DataMode m_DataMode = DataMode.Disabled;
+
+        public DataMode dataMode
+        {
+            get => m_DataMode;
+            private set
+            {
+                if (m_DataMode == value)
+                    return;
+
+                tracker.dataMode = value;
+                m_DataMode = value;
+            }
+        }
+
+        public IReadOnlyList<DataMode> supportedDataModes => GetSupportedDataModesForContext();
+
+        public bool IsDataModeSupported(DataMode mode) => GetSupportedDataModesForContext().Contains(mode);
+
+        public void SwitchToNextDataMode()
+        {
+            var possibleDataModes = GetSupportedDataModesForContext();
+            var nextIndex = possibleDataModes.IndexOf(dataMode) + 1;
+            if (nextIndex >= possibleDataModes.Count)
+                nextIndex = 0;
+
+            SwitchToDataMode(possibleDataModes[nextIndex]);
+        }
+
+        public void SwitchToDefaultDataMode()
+        {
+            var selectedDataMode = GetLastKnownDataMode();
+
+            if (!IsDataModeSupported(selectedDataMode))
+            {
+                // Fallback
+                selectedDataMode = supportedDataModes[0];
+            }
+
+            SwitchToDataMode(selectedDataMode);
+        }
+
+        public void SwitchToDataMode(DataMode mode)
+        {
+            if (!IsDataModeSupported(mode))
+                SwitchToDefaultDataMode();
+
+            if (dataMode == mode)
+                return;
+
+            dataMode = mode;
+            tracker.ForceRebuild();
+
+            dataModeChanged?.Invoke(dataMode);
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange playModeStateChange)
+        {
+            switch (playModeStateChange)
+            {
+                case PlayModeStateChange.ExitingEditMode:
+                {
+                    // We're about to exit edit mode, save the last known DataMode
+                    m_LastKnownEditModeDataMode = dataMode;
+                    break;
+                }
+                case PlayModeStateChange.ExitingPlayMode:
+                {
+                    // We're about to exit play mode, save the last known DataMode
+                    m_LastKnownPlayModeDataMode = dataMode;
+                    break;
+                }
+                case PlayModeStateChange.EnteredEditMode:
+                case PlayModeStateChange.EnteredPlayMode:
+                {
+                    UpdateSupportedDataModes();
+                    SwitchToDefaultDataMode();
+                    break;
+                }
+            }
+        }
+
+        protected void UpdateSupportedDataModes()
+        {
+            m_SupportedDataModes.Clear();
+            OnUpdateSupportedDataModes(m_SupportedDataModes);
+            m_SupportedDataModes.Sort();
+        }
+
+        protected virtual void OnUpdateSupportedDataModes(List<DataMode> supportedModes)
+        {
+            // Override me
         }
     }
 }

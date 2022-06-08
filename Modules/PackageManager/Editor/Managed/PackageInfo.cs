@@ -163,6 +163,10 @@ namespace UnityEditor.PackageManager
         [NativeName("deprecationMessage")]
         private string m_DeprecationMessage = "";
 
+        [SerializeField]
+        [NativeName("assetStore")]
+        private AssetStoreInfo m_AssetStore = new AssetStoreInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -199,6 +203,7 @@ namespace UnityEditor.PackageManager
         internal SignatureInfo signature { get { return m_Signature ; } }
         public bool isDeprecated { get { return m_IsDeprecated; } }
         public string deprecationMessage { get { return m_DeprecationMessage; } }
+        internal AssetStoreInfo assetStore { get { return m_Entitlements.licensingModel == EntitlementLicensingModel.AssetStore ? m_AssetStore : null; } }
 
         public DateTime? datePublished
         {

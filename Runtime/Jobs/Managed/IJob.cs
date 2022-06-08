@@ -11,6 +11,28 @@ using System.Diagnostics;
 
 namespace Unity.Jobs
 {
+    internal static class JobValidationInternal
+    {
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal static void CheckReflectionDataCorrect<T>(IntPtr reflectionData)
+        {
+            bool burstCompiled = true;
+            CheckReflectionDataCorrectInternal<T>(reflectionData, ref burstCompiled);
+            if (burstCompiled && reflectionData == IntPtr.Zero)
+                throw new InvalidOperationException("Reflection data was not set up by an Initialize() call. Support for burst compiled calls to Schedule depends on the Collections package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))] in your source file.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [BurstDiscard]
+        static void CheckReflectionDataCorrectInternal<T>(IntPtr reflectionData, ref bool burstCompiled)
+        {
+            if (reflectionData == IntPtr.Zero)
+                throw new InvalidOperationException($"Reflection data was not set up by an Initialize() call. Support for burst compiled calls to Schedule depends on the Collections package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof({typeof(T)}))] in your source file.");
+            burstCompiled = false;
+        }
+    }
+
+
     [JobProducerType(typeof(IJobExtensions.JobStruct<>))]
     public interface IJob
     {
@@ -44,19 +66,12 @@ namespace Unity.Jobs
             JobStruct<T>.Initialize();
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        static void CheckReflectionDataCorrect(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-                throw new InvalidOperationException("Support for burst compiled calls to Schedule depends on the Jobs package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))] in your source file.");
-        }
-
         static IntPtr GetReflectionData<T>()
             where T : struct, IJob
         {
             JobStruct<T>.Initialize();
             var reflectionData = JobStruct<T>.jobReflectionData.Data;
-            CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
 
@@ -67,6 +82,18 @@ namespace Unity.Jobs
         }
 
         unsafe public static void Run<T>(this T jobData) where T : struct, IJob
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), new JobHandle(), ScheduleMode.Run);
+            JobsUtility.Schedule(ref scheduleParams);
+        }
+
+        unsafe public static JobHandle ScheduleByRef<T>(ref this T jobData, JobHandle dependsOn = new JobHandle()) where T : struct, IJob
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), dependsOn, ScheduleMode.Single);
+            return JobsUtility.Schedule(ref scheduleParams);
+        }
+
+        unsafe public static void RunByRef<T>(ref this T jobData) where T : struct, IJob
         {
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), new JobHandle(), ScheduleMode.Run);
             JobsUtility.Schedule(ref scheduleParams);

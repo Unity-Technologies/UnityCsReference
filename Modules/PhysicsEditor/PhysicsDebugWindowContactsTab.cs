@@ -4,12 +4,18 @@
 
 using UnityEngine;
 using Unity.Collections;
+using System.Collections.Generic;
+using Unity.Jobs;
+using UnityEngine.Profiling;
+using System;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor
 {
     public partial class PhysicsDebugWindow : EditorWindow
     {
         private Camera m_Camera;
+        private readonly Dictionary<PhysicsScene, SceneContacts> m_ContactsToDraw = new Dictionary<PhysicsScene, SceneContacts>();
 
         private void DrawContactsTab()
         {
@@ -78,11 +84,215 @@ namespace UnityEditor
         {
             PhysicsDebugDraw.ClearAllPools();
             ClearQueryShapes();
+
+            foreach (var (scene, sceneContacts) in m_ContactsToDraw)
+                sceneContacts.CompleteAndDispose();
+
+            m_ContactsToDraw.Clear();
         }
 
         #region Contact retrieval and filtering
 
+        private struct VisContactPoint
+        {
+            public Vector3 point;
+            public Vector3 normal;
+            public float separation;
+            public float impulse;
+            public int thisColliderId;
+            public int otherColliderId;
 
+            public Collider thisCollider => thisColliderId == 0 ? null : UnityEngine.Object.FindObjectFromInstanceID(thisColliderId) as Collider;
+            public Collider otherCollider => otherColliderId == 0 ? null : UnityEngine.Object.FindObjectFromInstanceID(otherColliderId) as Collider;
+
+            public VisContactPoint(Vector3 point, Vector3 normal, float separation, float impulse, int col0, int col1)
+            {
+                this.point = point;
+                this.normal = normal;
+                this.separation = separation;
+                this.impulse = impulse;
+                this.thisColliderId = col0;
+                this.otherColliderId = col1;
+            }
+        }
+
+        private struct ReadContactsJob : IJob
+        {
+            public ContactArrayWrapper contactBuffer;
+
+            [ReadOnly]
+            public NativeArray<ContactPairHeader>.ReadOnly pairHeaders;
+
+            public ReadContactsJob(ContactArrayWrapper contactBuffer, NativeArray<ContactPairHeader>.ReadOnly pairHeaders)
+            {
+                this.contactBuffer = contactBuffer;
+                this.pairHeaders = pairHeaders;
+            }
+
+            public void Execute()
+            {
+                for (int i = 0; i < pairHeaders.Length; i++)
+                {
+                    var n = pairHeaders[i].PairCount;
+
+                    for (int j = 0; j < n; j++)
+                    {
+                        ref readonly var pair = ref pairHeaders[i].GetContactPair(j);
+
+                        if (pair.IsCollisionExit)
+                            continue;
+
+                        var shape0 = pair.ColliderInstanceID;
+                        var shape1 = pair.OtherColliderInstanceID;
+
+                        for(int k = 0; k < pair.ContactCount; k++)
+                        {
+                            ref readonly var contact = ref pair.GetContactPoint(k);
+
+                            contactBuffer.PushBackNoResize(new VisContactPoint(
+                                contact.m_Position,
+                                contact.m_Normal,
+                                contact.m_Separation,
+                                contact.m_Impulse.magnitude,
+                                shape0,
+                                shape1
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        // This whole mess is here because we have no access to DynamicArrays in the Core module
+        // and the NativeArray safety doesn't allow array resizing when running a single thread job
+        private struct ContactArrayWrapper
+        {
+            private NativeArray<VisContactPoint> m_Buffer;
+            private int m_Count;
+
+            public int Capacity => m_Buffer.Length;
+            public int Count { get { return m_Count; } set { m_Count = value; } }
+
+            public VisContactPoint this[int index]
+            {
+                get { return m_Buffer[index]; }
+                set { m_Buffer[index] = value; }
+            }
+
+            public ContactArrayWrapper(int size)
+            {
+                m_Buffer = new NativeArray<VisContactPoint>(size, Allocator.Persistent);
+                m_Count = 0;
+            }
+
+            public void Reserve(int size)
+            {
+                if (size <= Capacity)
+                    return;
+
+                var newArray = new NativeArray<VisContactPoint>(size, Allocator.Persistent);
+                NativeArray<VisContactPoint>.Copy(m_Buffer, newArray, m_Count);
+
+                m_Buffer.Dispose();
+                m_Buffer = newArray;
+            }
+
+            public void PushBackNoResize(VisContactPoint value)
+            {
+                if (m_Count >= Capacity)
+                    return;
+
+                m_Buffer[m_Count++] = value;
+            }
+
+            public void Clear()
+            {
+                m_Count = 0;
+            }
+
+            public void Dispose()
+            {
+                m_Count = 0;
+                m_Buffer.Dispose();
+            }
+        }
+
+        private struct SceneContacts
+        {
+            private ContactArrayWrapper m_ContactArray;
+            private JobHandle m_JobHandle;
+
+            public ContactArrayWrapper ContactArray { get { return m_ContactArray; } set { m_ContactArray = value; } }
+            public JobHandle Handle { get { return m_JobHandle; } set { m_JobHandle = value; } }
+
+            public SceneContacts(int size)
+            {
+                m_ContactArray = new ContactArrayWrapper(size);
+                m_JobHandle = new JobHandle();
+            }
+
+            public void CompleteJob()
+            {
+                m_JobHandle.Complete();
+            }
+
+            public void CompleteAndDispose()
+            {
+                m_JobHandle.Complete();
+                m_ContactArray.Dispose();
+            }
+        }
+
+        private void ReadContacts_Internal(PhysicsScene scene, NativeArray<ContactPairHeader>.ReadOnly pairHeaders)
+        {
+            Profiler.BeginSample("PhysicsDebugWindow.ReadContacts");
+
+            try
+            {
+                var sceneContacts = m_ContactsToDraw.ContainsKey(scene) ? m_ContactsToDraw[scene] : new SceneContacts(32);
+
+                int nbContacts = 0;
+
+                for (int i = 0; i < pairHeaders.Length; i++)
+                {
+                    var header = pairHeaders[i];
+                    for (int j = 0; j < header.PairCount; j++)
+                    {
+                        ref readonly var pair = ref header.GetContactPair(j);
+
+                        if (!pair.IsCollisionExit)
+                            nbContacts += pair.ContactCount;
+                    }
+                }
+
+                var array = sceneContacts.ContactArray;
+
+                array.Reserve(nbContacts);
+
+                var job = new ReadContactsJob(array, pairHeaders);
+
+                array.Count = nbContacts;
+                sceneContacts.ContactArray = array;
+                sceneContacts.Handle = job.Schedule();
+
+                m_ContactsToDraw[scene] = sceneContacts;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+
+            Profiler.EndSample();
+        }
+
+        private void OnPhysicsSceneDestoryed(PhysicsScene sceneHandle)
+        {
+            if (!m_ContactsToDraw.ContainsKey(sceneHandle))
+                return;
+
+            m_ContactsToDraw[sceneHandle].CompleteAndDispose();
+            m_ContactsToDraw.Remove(sceneHandle);
+        }
 
         #endregion
 
@@ -90,26 +300,29 @@ namespace UnityEditor
 
         private void DrawContacts()
         {
-            if (PhysicsVisualizationSettings.showContacts)
-                PhysicsDebugDraw.GetPooledContacts();
-        }
+            if (!PhysicsVisualizationSettings.showContacts)
+                return;
 
-        private void DrawContacts_Internal(NativeArray<PhysicsDebugDraw.VisContactPoint> array)
-        {
             var useRandomColor = PhysicsVisualizationSettings.useVariedContactColors;
             var impulseColor = useRandomColor ? Color.black : PhysicsVisualizationSettings.contactImpulseColor;
 
-            for (int i = 0; i < array.Length; i++)
+            foreach(var (scene, sceneContacts) in m_ContactsToDraw)
             {
-                bool passedFiltering = (!PhysicsVisualizationSettings.useContactFiltering || PhysicsDebugDraw.IsContactVisualised(array[i].otherCollider));
-                if (passedFiltering && IsContactSeenByCamera(array[i].point))
-                    DrawSingleCollision(array[i], impulseColor, useRandomColor);
+                sceneContacts.CompleteJob();
+
+                var array = sceneContacts.ContactArray;
+                for(int j = 0; j < array.Count; j++)
+                {
+                    bool passedFiltering = (!PhysicsVisualizationSettings.useContactFiltering || PhysicsDebugDraw.IsColliderVisualised(array[j].otherCollider));
+                    if (passedFiltering && IsContactSeenByCamera(array[j].point))
+                        DrawSingleCollision(array[j], impulseColor, useRandomColor);
+                }
             }
         }
 
-        private void DrawSingleCollision(PhysicsDebugDraw.VisContactPoint contactPoint, Color impulseColor, bool useRandomColor)
+        private void DrawSingleCollision(VisContactPoint contactPoint, Color impulseColor, bool useRandomColor)
         {
-            var primaryColor = useRandomColor ? GetHashedColor(contactPoint.thisColliderInstanceID) : PhysicsVisualizationSettings.contactColor;
+            var primaryColor = useRandomColor ? GetHashedColor(contactPoint.thisColliderId) : PhysicsVisualizationSettings.contactColor;
             var inverseColor = useRandomColor ? GetInverseColor(primaryColor) : PhysicsVisualizationSettings.contactSeparationColor;
 
             var colliderScale1 = GetColliderScale(contactPoint.thisCollider);
@@ -129,7 +342,6 @@ namespace UnityEditor
                 Handles.Disc(Quaternion.identity, contactPoint.point
                     , contactPoint.normal, contactPoint.separation / 2f, false, 1f);
 
-                // Looks really good but maybe computationally too expensive?
                 var discFillingColor = inverseColor;
                 discFillingColor.a = 0.2f;
 
@@ -138,10 +350,10 @@ namespace UnityEditor
             }
 
             // Impulse arrow
-            if (PhysicsVisualizationSettings.showContactImpulse && contactPoint.impulse.sqrMagnitude > 0.001f)
+            if (PhysicsVisualizationSettings.showContactImpulse && contactPoint.impulse > 0.032f)
             {
                 Handles.color = impulseColor;
-                Handles.ArrowHandleCap(0, contactPoint.point, Quaternion.LookRotation(contactPoint.impulse), contactPoint.impulse.magnitude, EventType.Repaint);
+                Handles.ArrowHandleCap(0, contactPoint.point, Quaternion.LookRotation(contactPoint.normal), contactPoint.impulse, EventType.Repaint);
             }
         }
 

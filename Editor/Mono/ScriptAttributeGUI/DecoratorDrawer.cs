@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -17,6 +18,14 @@ namespace UnityEditor
         // Override this method to make your own GUI for the property.
         public virtual void OnGUI(Rect position)
         {
+        }
+
+        /// <summary>
+        /// Override this method to make your own GUI for the property based on UIElements.
+        /// </summary>
+        public virtual VisualElement CreatePropertyGUI()
+        {
+            return null;
         }
 
         // Override this method to specify how tall the GUI for this field is in pixels.

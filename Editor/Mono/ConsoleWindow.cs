@@ -14,6 +14,8 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 using UnityEditor.Profiling;
 
 namespace UnityEditor
@@ -161,7 +163,7 @@ namespace UnityEditor
         ListViewState m_ListView;
         string m_ActiveText = "";
         StringBuilder m_CopyString;
-        private int m_ActiveInstanceID = 0;
+        private int m_LastPingedEntry = -1;
         bool m_DevBuild;
         int m_CallstackTextStart = 0;
         private Mode m_ActiveMode = Mode.None;
@@ -458,18 +460,17 @@ namespace UnityEditor
                 entry.callstackTextStartUTF8 = entry.message.Length;
                 m_CallstackTextStart = entry.callstackTextStartUTF16;
                 // ping object referred by the log entry
-                if (m_ActiveInstanceID != entry.instanceID)
+                if (entry.instanceID != 0 && m_LastPingedEntry != entry.globalLineIndex)
                 {
-                    m_ActiveInstanceID = entry.instanceID;
-                    if (entry.instanceID != 0)
-                        EditorGUIUtility.PingObject(entry.instanceID);
+                    EditorGUIUtility.PingObject(entry.instanceID);
+                    m_LastPingedEntry = entry.globalLineIndex;
                 }
             }
             else
             {
                 m_CallstackTextStart = 0;
                 m_ActiveText = string.Empty;
-                m_ActiveInstanceID = 0;
+                m_LastPingedEntry = -1;
                 m_ListView.row = -1;
                 m_CopyString.Clear();
                 m_ActiveMode = Mode.None;
@@ -1285,6 +1286,27 @@ namespace UnityEditor
         {
             var outputEntry = new LogEntry {message = message, file = file, mode = mode, instanceID = instanceID};
             LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
+        }
+
+        [UsedImplicitly]
+        internal static void AddMessages(NativeArray<LogEntryStruct> messages)
+        {
+            unsafe
+            {
+                LogEntries.AddMessagesImpl(messages.GetUnsafeReadOnlyPtr(), messages.Length);
+            }
+        }
+
+        [UsedImplicitly]
+        internal static void AddMessage(ref LogEntryStruct message)
+        {
+            unsafe
+            {
+                fixed (void* ptr = &message)
+                {
+                    LogEntries.AddMessagesImpl(ptr, 1);
+                }
+            }
         }
     }
 

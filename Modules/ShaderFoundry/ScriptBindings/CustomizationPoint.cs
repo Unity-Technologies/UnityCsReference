@@ -16,7 +16,6 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_InputListHandle;
         internal FoundryHandle m_OutputListHandle;
-        internal FoundryHandle m_PropertyListHandle;
         internal FoundryHandle m_DefaultBlockInstanceList;
 
         internal extern static CustomizationPointInternal Invalid();
@@ -37,7 +36,6 @@ namespace UnityEditor.ShaderFoundry
         public string Name => container?.GetString(customizationPoint.m_NameHandle) ?? string.Empty;
         public IEnumerable<BlockVariable> Inputs => GetVariableEnumerable(customizationPoint.m_InputListHandle);
         public IEnumerable<BlockVariable> Outputs => GetVariableEnumerable(customizationPoint.m_OutputListHandle);
-        public IEnumerable<BlockVariable> Properties => GetVariableEnumerable(customizationPoint.m_PropertyListHandle);
         public IEnumerable<BlockInstance> DefaultBlockInstances
         {
             get
@@ -90,7 +88,6 @@ namespace UnityEditor.ShaderFoundry
 
             public void AddInput(BlockVariable input) { inputs.Add(input); }
             public void AddOutput(BlockVariable output) { outputs.Add(output); }
-            public void AddProperty(BlockVariable prop) { properties.Add(prop); }
             public void AddDefaultBlockInstance(BlockInstance blockInstance) { defaultBlockInstances.Add(blockInstance); }
 
             public CustomizationPoint Build()
@@ -102,7 +99,6 @@ namespace UnityEditor.ShaderFoundry
 
                 customizationPointInternal.m_InputListHandle = FixedHandleListInternal.Build(container, inputs, (v) => (v.handle));
                 customizationPointInternal.m_OutputListHandle = FixedHandleListInternal.Build(container, outputs, (v) => (v.handle));
-                customizationPointInternal.m_PropertyListHandle = FixedHandleListInternal.Build(container, properties, (v) => (v.handle));
                 customizationPointInternal.m_DefaultBlockInstanceList = FixedHandleListInternal.Build(container, defaultBlockInstances, (v) => (v.handle));
 
                 var returnTypeHandle = container.AddCustomizationPointInternal(customizationPointInternal);

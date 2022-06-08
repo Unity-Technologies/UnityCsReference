@@ -53,7 +53,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
             public int maskStencilRef; // What's the stencil ref value used before pushing/popping the mask?
         }
 
-
+        struct RepeatRectUV
+        {
+            public Rect rect;
+            public Rect uv;
+        }
 
         RenderChain m_Owner;
         List<Entry> m_Entries = new List<Entry>();
@@ -71,6 +75,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
         TempAllocator<UInt16> m_IndicesPool;
         List<MeshWriteData> m_MeshWriteDataPool;
         int m_NextMeshWriteDataPoolItem;
+
+        List<RepeatRectUV>[] m_RepeatRectUVList = null;
 
         // The delegates must be stored to avoid allocations
         MeshBuilder.AllocMeshData.Allocator m_AllocRawVertsIndicesDelegate;
@@ -286,6 +292,33 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
 
             TextInfo textInfo = te.uitkTextHandle.Update();
+            DrawTextInfo(textInfo, te.contentRect.min, true);
+        }
+
+        private TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo();
+
+        public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
+        {
+            var textSettings = TextUtilities.GetTextSettingsFrom(currentElement);
+
+            m_TextInfo.Clear();
+            var textGenerationSettings = new TextCore.Text.TextGenerationSettings() {
+                text = text,
+                screenRect = Rect.zero,
+                fontAsset = font,
+                textSettings = textSettings,
+                fontSize = fontSize,
+                color = color,
+                material = font.material,
+                inverseYAxis = true
+            };
+            TextCore.Text.TextGenerator.GenerateText(textGenerationSettings, m_TextInfo);
+
+            DrawTextInfo(m_TextInfo, pos, false);
+        }
+
+        private void DrawTextInfo(TextCore.Text.TextInfo textInfo, Vector2 offset, bool useHints)
+        {
             for (int i = 0; i < textInfo.materialCount; i++)
             {
                 if (textInfo.meshInfo[i].vertexCount == 0)
@@ -307,7 +340,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
-                        te.contentRect.min,
+                        offset,
                         new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
                         VertexFlags.IsTextured);
                 }
@@ -321,14 +354,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     m_CurrentEntry.texture = TextureRegistry.instance.Acquire(texture);
                     m_Owner.AppendTexture(currentElement, texture, m_CurrentEntry.texture, false);
 
-                    bool isDynamicColor = RenderEvents.NeedsColorID(currentElement);
+                    bool isDynamicColor = useHints && RenderEvents.NeedsColorID(currentElement);
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
-                    isDynamicColor = isDynamicColor || RenderEvents.NeedsTextCoreSettings(currentElement);
+                    if (useHints)
+                        isDynamicColor = isDynamicColor || RenderEvents.NeedsTextCoreSettings(currentElement);
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
-                        te.contentRect.min,
+                        offset,
                         new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate },
                         VertexFlags.IsText,
                         isDynamicColor);
@@ -393,6 +427,57 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_Entries.Add(new Entry() { customCommand = cmd });
         }
 
+        public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale)
+        {
+            if (vectorImage == null)
+                return;
+
+            int settingIndexOffset = 0;
+            var svgTexture = new TextureId();
+            MeshWriteData mwd;
+
+            bool hasGradients = vectorImage.atlas != null;
+            if (hasGradients)
+            {
+                RegisterVectorImageGradient(vectorImage, out settingIndexOffset, out svgTexture);
+                mwd = AddGradientsEntry(vectorImage.vertices.Length, vectorImage.indices.Length, svgTexture, null, MeshGenerationContext.MeshFlags.None);
+            }
+            else
+            {
+                mwd = DrawMesh(vectorImage.vertices.Length, vectorImage.indices.Length, null, null, MeshGenerationContext.MeshFlags.None);
+            }
+
+            var matrix = Matrix4x4.TRS(offset, Quaternion.AngleAxis(rotationAngle.ToDegrees(), Vector3.forward), new Vector3(scale.x, scale.y, 1.0f));
+            bool flipWinding = (scale.x < 0.0f) ^ (scale.y < 0.0f);
+
+            int vertexCount = vectorImage.vertices.Length;
+            for (int i = 0; i < vertexCount; ++i)
+            {
+                var v = vectorImage.vertices[i];
+                var flags = v.flags;
+                var p = matrix.MultiplyPoint3x4(v.position);
+                p.z = Vertex.nearZ;
+
+                uint settingIndex = (uint)(v.settingIndex + settingIndexOffset);
+                var opc = new Color32(0, 0, (byte)(settingIndex >> 8), (byte)settingIndex);
+
+                mwd.SetNextVertex(new Vertex() { position = p, tint = v.tint, uv = v.uv, opacityColorPages = opc, flags = v.flags, circle = v.circle });
+            }
+
+            if (!flipWinding)
+                mwd.SetAllIndices(vectorImage.indices);
+            else
+            {
+                var inds = vectorImage.indices;
+                for (int i = 0; i < inds.Length; i +=3)
+                {
+                    mwd.SetNextIndex(inds[i]);
+                    mwd.SetNextIndex(inds[i+2]);
+                    mwd.SetNextIndex(inds[i+1]);
+                }
+            }
+        }
+
         public VisualElement visualElement { get { return currentElement; } }
 
         public void DrawVisualElementBackground()
@@ -448,7 +533,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.texture,
-                        style.unityBackgroundScaleMode,
+                        ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
                 }
                 else if (background.sprite != null)
@@ -456,10 +541,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(
                         currentElement.rect,
                         background.sprite,
-                        style.unityBackgroundScaleMode,
+                        ScaleMode.StretchToFill,
                         currentElement.panel.contextType,
                         radiusParams.HasRadius(Tessellation.kEpsilon),
-                        ref slices);
+                        ref slices,
+                        true);
 
                     sliceScale *= UIElementsUtility.PixelsPerUnitScaleForElement(visualElement, background.sprite);
                 }
@@ -469,7 +555,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.renderTexture,
-                        style.unityBackgroundScaleMode,
+                        ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
                 }
                 else if (background.vectorImage != null)
@@ -478,7 +564,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.vectorImage,
-                        style.unityBackgroundScaleMode,
+                        ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
                 }
 
@@ -499,10 +585,460 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 rectParams.color = style.unityBackgroundImageTintColor;
                 rectParams.colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.tintColorID);
+                rectParams.backgroundPositionX = style.backgroundPositionX;
+                rectParams.backgroundPositionY = style.backgroundPositionY;
+                rectParams.backgroundRepeat = style.backgroundRepeat;
+                rectParams.backgroundSize = style.backgroundSize;
 
                 MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams.rect);
 
-                DrawRectangle(rectParams);
+                if (rectParams.texture != null)
+                {
+                    rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
+                    DrawRectangleRepeat(rectParams, currentElement.rect);
+                }
+                else if (rectParams.vectorImage != null)
+                {
+                    rectParams.rect = new Rect(0, 0, rectParams.vectorImage.size.x, rectParams.vectorImage.size.y);
+                    DrawRectangleRepeat(rectParams, currentElement.rect);
+                }
+                else
+                {
+                    DrawRectangle(rectParams);
+                }
+            }
+        }
+
+        private void DrawRectangleRepeat(MeshGenerationContextUtils.RectangleParams rectParams, Rect totalRect)
+        {
+            rectParams.rect.width *= rectParams.uv.width;
+            rectParams.rect.height *= rectParams.uv.height;
+
+            if (m_RepeatRectUVList == null)
+            {
+                m_RepeatRectUVList = new List<RepeatRectUV>[2];
+                m_RepeatRectUVList[0] = new List<RepeatRectUV>();
+                m_RepeatRectUVList[1] = new List<RepeatRectUV>();
+            }
+            else
+            {
+                m_RepeatRectUVList[0].Clear();
+                m_RepeatRectUVList[1].Clear();
+            }
+
+            if (rectParams.backgroundSize.sizeType != BackgroundSizeType.Length)
+            {
+                if (rectParams.backgroundSize.sizeType == BackgroundSizeType.Contain)
+                {
+                    float ratioX = totalRect.width / rectParams.rect.width;
+                    float ratioY = totalRect.height / rectParams.rect.height;
+
+                    Rect rect = rectParams.rect;
+                    if (ratioX < ratioY)
+                    {
+                        rect.width = totalRect.width;
+                        rect.height = rectParams.rect.height * totalRect.width / rectParams.rect.width;
+                    }
+                    else
+                    {
+                        rect.width = rectParams.rect.width * totalRect.height / rectParams.rect.height;
+                        rect.height = totalRect.height;
+                    }
+
+                    rectParams.rect = rect;
+                }
+                else if (rectParams.backgroundSize.sizeType == BackgroundSizeType.Cover)
+                {
+                    float ratioX = totalRect.width / rectParams.rect.width;
+                    float ratioY = totalRect.height / rectParams.rect.height;
+
+                    Rect rect = rectParams.rect;
+                    if (ratioX > ratioY)
+                    {
+                        rect.width = totalRect.width;
+                        rect.height = rectParams.rect.height * totalRect.width / rectParams.rect.width;
+                    }
+                    else
+                    {
+                        rect.width = rectParams.rect.width * totalRect.height / rectParams.rect.height;
+                        rect.height = totalRect.height;
+                    }
+
+                    rectParams.rect = rect;
+                }
+            }
+            else
+            {
+                if (!rectParams.backgroundSize.x.IsNone() || !rectParams.backgroundSize.y.IsNone())
+                {
+                    if ((!rectParams.backgroundSize.x.IsNone()) && (rectParams.backgroundSize.y.IsAuto()))
+                    {
+                        Rect rect = rectParams.rect;
+                        if (rectParams.backgroundSize.x.unit == LengthUnit.Percent)
+                        {
+                            rect.width = totalRect.width * rectParams.backgroundSize.x.value / 100.0f;
+                            rect.height = rect.width * rectParams.rect.height / rectParams.rect.width;
+                        }
+                        else if (rectParams.backgroundSize.x.unit == LengthUnit.Pixel)
+                        {
+                            rect.width = rectParams.backgroundSize.x.value;
+                            rect.height = rect.width * rectParams.rect.height / rectParams.rect.width;
+                        }
+                        rectParams.rect = rect;
+                    }
+                    else if ((!rectParams.backgroundSize.x.IsNone()) && (!rectParams.backgroundSize.y.IsNone()))
+                    {
+                        Rect rect = rectParams.rect;
+                        if (!rectParams.backgroundSize.x.IsAuto())
+                        {
+                            if (rectParams.backgroundSize.x.unit == LengthUnit.Percent)
+                            {
+                                rect.width = totalRect.width * rectParams.backgroundSize.x.value / 100.0f;
+                            }
+                            else if (rectParams.backgroundSize.x.unit == LengthUnit.Pixel)
+                            {
+                                rect.width = rectParams.backgroundSize.x.value;
+                            }
+                        }
+
+                        if (!rectParams.backgroundSize.y.IsAuto())
+                        {
+                            if (rectParams.backgroundSize.y.unit == LengthUnit.Percent)
+                            {
+                                rect.height = totalRect.height * rectParams.backgroundSize.y.value / 100.0f;
+                            }
+                            else if (rectParams.backgroundSize.y.unit == LengthUnit.Pixel)
+                            {
+                                rect.height = rectParams.backgroundSize.y.value;
+                            }
+
+                            if (rectParams.backgroundSize.x.IsAuto())
+                            {
+                                rect.width = rect.height * rectParams.rect.width / rectParams.rect.height;
+                            }
+                        }
+                        rectParams.rect = rect;
+                    }
+                }
+            }
+
+            // Skip invalid size
+            if ((rectParams.rect.size.x <= UIRUtility.k_Epsilon) || (rectParams.rect.size.y <= UIRUtility.k_Epsilon))
+            {
+                return;
+            }
+
+            // Skip empty background
+            if ((totalRect.size.x <= UIRUtility.k_Epsilon) || (totalRect.size.y <= UIRUtility.k_Epsilon))
+            {
+                return;
+            }
+
+            // Adjust size when background-repeat is round and other axis background-size is auto
+            if ((rectParams.backgroundSize.x.IsAuto()) && (rectParams.backgroundRepeat.y == Repeat.Round))
+            {
+                int count = (int)((totalRect.size[1] + rectParams.rect.size[1] * 0.5f) / rectParams.rect.size[1]);
+                count = Math.Max(count, 1);
+
+                float new_size = (totalRect.size[1] / count);
+                Rect rect = new Rect();
+                rect.height = new_size;
+                rect.width = rect.height * rectParams.rect.width / rectParams.rect.height;
+                rectParams.rect = rect;
+            }
+            else if ((rectParams.backgroundSize.y.IsAuto()) && (rectParams.backgroundRepeat.x == Repeat.Round))
+            {
+                int count = (int)((totalRect.size[0] + rectParams.rect.size[0] * 0.5f) / rectParams.rect.size[0]);
+                count = Math.Max(count, 1);
+
+                float new_size = (totalRect.size[0] / count);
+                Rect rect = new Rect();
+                rect.width = new_size;
+                rect.height = rect.width * rectParams.rect.height / rectParams.rect.width;
+                rectParams.rect = rect;
+            }
+
+            for (int axis = 0; axis < 2; ++axis)
+            {
+                Repeat repeat = (axis == 0) ? rectParams.backgroundRepeat.x : rectParams.backgroundRepeat.y;
+
+                BackgroundPosition backgroundPosition = (axis == 0) ? rectParams.backgroundPositionX : rectParams.backgroundPositionY;
+
+                float linear_size = 0;
+                if (repeat == Repeat.NoRepeat)
+                {
+                    RepeatRectUV repeatRectUV;
+                    Rect uv = rectParams.uv;
+                    Rect rect = rectParams.rect;
+
+                    repeatRectUV.uv = uv;
+                    repeatRectUV.rect = rect;
+                    linear_size = rect.size[axis];
+                    m_RepeatRectUVList[axis].Add(repeatRectUV);
+                }
+                else if (repeat == Repeat.Repeat)
+                {
+                    Rect rect = rectParams.rect;
+                    Rect uv = rectParams.uv;
+
+                    int count = (int)(totalRect.size[axis] / rectParams.rect.size[axis]);
+
+                    if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
+                    {
+                        if ((count % 2) == 1)
+                        {
+                            count += 2;
+                        }
+                        else
+                        {
+                            count++;
+                        }
+                    }
+                    else
+                    {
+                        count++;
+                    }
+
+                    for (int i = 0; i < count; ++i)
+                    {
+                        Vector2 r = rect.position;
+                        r[axis] = (i * rectParams.rect.size[axis]);
+                        rect.position = r;
+
+                        RepeatRectUV s;
+                        s.rect = rect;
+                        s.uv = uv;
+
+                        linear_size += s.rect.size[axis];
+
+                        m_RepeatRectUVList[axis].Add(s);
+                    }
+                }
+                else if (repeat == Repeat.Space)
+                {
+                    Rect rect = rectParams.rect;
+                    Rect uv = rectParams.uv;
+
+                    int count = (int)(totalRect.size[axis] / rectParams.rect.size[axis]);
+
+                    if (count >= 0)
+                    {
+                        RepeatRectUV s;
+                        s.rect = rect;
+                        s.uv = uv;
+                        m_RepeatRectUVList[axis].Add(s);
+                        linear_size = rectParams.rect.size[axis];
+                    }
+
+                    if (count >= 2)
+                    {
+                        RepeatRectUV s;
+
+                        Vector2 r = rect.position;
+                        r[axis] = totalRect.size[axis] - rectParams.rect.size[axis];
+                        rect.position = r;
+
+                        s.rect = rect;
+                        s.uv = uv;
+
+                        m_RepeatRectUVList[axis].Add(s);
+                        linear_size = totalRect.size[axis];
+                    }
+
+                    if (count > 2)
+                    {
+                        float spaceOffset = (totalRect.size[axis] - rectParams.rect.size[axis] * count) / (count - 1);
+
+                        for (int i = 0; i < (count - 2); ++i)
+                        {
+                            RepeatRectUV s;
+                            Vector2 r = rect.position;
+                            r[axis] = (rectParams.rect.size[axis] + spaceOffset) * (1 + i);
+                            rect.position = r;
+
+                            s.rect = rect;
+                            s.uv = uv;
+
+                            m_RepeatRectUVList[axis].Add(s);
+                        }
+                    }
+                }
+                else if (repeat == Repeat.Round)
+                {
+                    int count = (int)((totalRect.size[axis] + rectParams.rect.size[axis] * 0.5f) / rectParams.rect.size[axis]);
+                    count = Math.Max(count, 1);
+
+                    float new_size = (totalRect.size[axis] / count);
+
+                    if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
+                    {
+                        if ((count % 2) == 1)
+                        {
+                            count += 2;
+                        }
+                        else
+                        {
+                            count++;
+                        }
+                    }
+                    else
+                    {
+                        count++;
+                    }
+
+                    Rect rect = rectParams.rect;
+                    Vector2 d = rect.size;
+
+                    d[axis] = new_size;
+                    rect.size = d;
+
+                    Rect uv = rectParams.uv;
+
+                    for (int i = 0; i < count; ++i)
+                    {
+                        RepeatRectUV s;
+                        Vector2 r = rect.position;
+                        r[axis] = new_size * i;
+                        rect.position = r;
+                        s.rect = rect;
+                        s.uv = uv;
+                        m_RepeatRectUVList[axis].Add(s);
+
+                        linear_size += s.rect.size[axis];
+                    }
+                }
+
+                // Adjust for position
+                float offset = 0;
+
+                if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
+                {
+                    offset = (totalRect.size[axis] - linear_size) * 0.5f;
+                }
+                else if (repeat != Repeat.Space)
+                {
+                    if (backgroundPosition.offset.unit == LengthUnit.Percent)
+                    {
+                        offset = (totalRect.size[axis] - rectParams.rect.size[axis]) * backgroundPosition.offset.value / 100.0f;
+                    }
+                    else if (backgroundPosition.offset.unit == LengthUnit.Pixel)
+                    {
+                        offset = backgroundPosition.offset.value;
+                    }
+
+                    if ((backgroundPosition.keyword == BackgroundPositionKeyword.Right) || (backgroundPosition.keyword == BackgroundPositionKeyword.Bottom))
+                    {
+
+                        offset = (totalRect.size[axis] - linear_size) - offset;
+                    }
+                }
+
+                // adjust offset position for repeat and round
+                if (repeat == Repeat.Repeat || repeat == Repeat.Round)
+                {
+                    while (offset < -rectParams.rect.size[axis])
+                    {
+                        offset += rectParams.rect.size[axis];
+                    }
+
+                    while (offset > 0)
+                    {
+                        offset -= rectParams.rect.size[axis];
+                    }
+                }
+
+                for (int i = 0; i < m_RepeatRectUVList[axis].Count; ++i)
+                {
+                    RepeatRectUV item = m_RepeatRectUVList[axis][i];
+                    Vector2 pos = item.rect.position;
+
+                    pos[axis] += offset;
+                    item.rect.position = pos;
+                    m_RepeatRectUVList[axis][i] = item;
+                }
+            }
+
+            Rect originalUV = new Rect(rectParams.uv);
+
+            foreach (var y in m_RepeatRectUVList[1])
+            {
+                rectParams.rect.y = y.rect.y;
+                rectParams.rect.height = y.rect.height;
+                rectParams.uv.y = y.uv.y;
+                rectParams.uv.height = y.uv.height;
+
+                if (rectParams.rect.y < totalRect.y)
+                {
+                    float left = totalRect.y - rectParams.rect.y;
+                    float right = rectParams.rect.height - left;
+
+                    float total = left + right;
+                    float new_height = originalUV.height * right / total;
+                    float new_y = originalUV.height * left / total;
+
+                    rectParams.uv.y = new_y + originalUV.y;
+                    rectParams.uv.height = new_height;
+
+                    rectParams.rect.y = totalRect.y;
+                    rectParams.rect.height = right;
+                }
+
+                if (rectParams.rect.yMax > totalRect.yMax)
+                {
+                    float right = rectParams.rect.yMax - totalRect.yMax;
+                    float left = rectParams.rect.height - right;
+                    float total = left + right;
+
+                    float new_height = rectParams.uv.height * left / total;
+                    rectParams.uv.height = new_height;
+                    rectParams.uv.y = rectParams.uv.yMax - new_height;
+                    rectParams.rect.height = left;
+                }
+
+                if (rectParams.vectorImage == null)
+                {
+                    // offset y
+                    float before = rectParams.uv.y - originalUV.y;
+                    float after = originalUV.yMax - rectParams.uv.yMax;
+                    rectParams.uv.y += (after - before);
+                }
+
+                foreach (var x in m_RepeatRectUVList[0])
+                {
+                    rectParams.rect.x = x.rect.x;
+                    rectParams.rect.width = x.rect.width;
+                    rectParams.uv.x = x.uv.x;
+                    rectParams.uv.width = x.uv.width;
+
+                    if (rectParams.rect.x < totalRect.x)
+                    {
+                        float left = totalRect.x - rectParams.rect.x;
+                        float right = rectParams.rect.width - left;
+
+                        float total = left + right;
+                        float new_width = rectParams.uv.width * right / total;
+                        float new_x = originalUV.x + originalUV.width * left / total;
+
+                        rectParams.uv.x = new_x;
+                        rectParams.uv.width = new_width;
+
+                        rectParams.rect.x = totalRect.x;
+                        rectParams.rect.width = right;
+                    }
+
+                    if (rectParams.rect.xMax > totalRect.xMax)
+                    {
+                        float right = rectParams.rect.xMax - totalRect.xMax;
+                        float left = rectParams.rect.width - right;
+                        float total = left + right;
+
+                        float new_width = rectParams.uv.width * left / total;
+                        rectParams.uv.width = new_width;
+                        rectParams.rect.width = left;
+                    }
+
+                    DrawRectangle(rectParams);
+                }
             }
         }
 
@@ -513,7 +1049,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var style = currentElement.resolvedStyle;
                 if (style.borderLeftColor != Color.clear && style.borderLeftWidth > 0.0f ||
                     style.borderTopColor != Color.clear && style.borderTopWidth > 0.0f ||
-                    style.borderRightColor != Color.clear &&  style.borderRightWidth > 0.0f ||
+                    style.borderRightColor != Color.clear && style.borderRightWidth > 0.0f ||
                     style.borderBottomColor != Color.clear && style.borderBottomWidth > 0.0f)
                 {
                     var borderParams = new MeshGenerationContextUtils.BorderParams
@@ -640,7 +1176,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 uv *= uvRegion.size;
                 uv += uvRegion.position;
 
-                vertices[i] = new Vertex() {
+                vertices[i] = new Vertex()
+                {
                     position = new Vector3(v.x, v.y, Vertex.nearZ),
                     tint = rectParams.color,
                     uv = uv
@@ -649,6 +1186,25 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             mwd.SetAllVertices(vertices);
             mwd.SetAllIndices(indices);
+        }
+
+        public void RegisterVectorImageGradient(VectorImage vi, out int settingIndexOffset, out TextureId texture)
+        {
+            texture = new TextureId();
+
+            // The vector image has embedded textures/gradients and we have a manager that can accept the settings.
+            // Register the settings and assume that it works.
+            var gradientRemap = m_VectorImageManager.AddUser(vi, currentElement);
+            settingIndexOffset = gradientRemap.destIndex;
+            if (gradientRemap.atlas != TextureId.invalid)
+                // The textures/gradients themselves have also been atlased.
+                texture = gradientRemap.atlas;
+            else
+            {
+                // Only the settings were atlased.
+                texture = TextureRegistry.instance.Acquire(vi.atlas);
+                m_Owner.AppendTexture(currentElement, vi.atlas, texture, false);
+            }
         }
 
         public void DrawVectorImage(MeshGenerationContextUtils.RectangleParams rectParams)
@@ -661,20 +1217,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             MeshBuilder.AllocMeshData meshAlloc = new MeshBuilder.AllocMeshData();
             if (vi.atlas != null && m_VectorImageManager != null)
             {
-                // The vector image has embedded textures/gradients and we have a manager that can accept the settings.
-                // Register the settings and assume that it works.
-                var gradientRemap = m_VectorImageManager.AddUser(vi, currentElement);
-                settingIndexOffset = gradientRemap.destIndex;
-                if (gradientRemap.atlas != TextureId.invalid)
-                    // The textures/gradients themselves have also been atlased.
-                    meshAlloc.svgTexture = gradientRemap.atlas;
-                else
-                {
-                    // Only the settings were atlased.
-                    meshAlloc.svgTexture = TextureRegistry.instance.Acquire(vi.atlas);
-                    m_Owner.AppendTexture(currentElement, vi.atlas, meshAlloc.svgTexture, false);
-                }
-
+                RegisterVectorImageGradient(vi, out settingIndexOffset, out meshAlloc.svgTexture);
                 meshAlloc.alloc = m_AllocThroughDrawGradientsDelegate;
             }
             else

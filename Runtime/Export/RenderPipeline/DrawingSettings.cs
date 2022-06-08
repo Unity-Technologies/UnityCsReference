@@ -26,6 +26,8 @@ namespace UnityEngine.Rendering
         DrawRendererFlags m_Flags;
 
 #pragma warning disable 414
+        int m_OverrideShaderID;
+        int m_OverrideShaderPassIndex;
         int m_OverrideMaterialInstanceId;
         int m_OverrideMaterialPassIndex;
         int m_fallbackMaterialInstanceId;
@@ -39,6 +41,8 @@ namespace UnityEngine.Rendering
             m_PerObjectData = PerObjectData.None;
             m_Flags = DrawRendererFlags.EnableInstancing;
 
+            m_OverrideShaderID = 0;
+            m_OverrideShaderPassIndex = 0;
             m_OverrideMaterialInstanceId = 0;
             m_OverrideMaterialPassIndex = 0;
             m_fallbackMaterialInstanceId = 0;
@@ -98,10 +102,22 @@ namespace UnityEngine.Rendering
             set { m_OverrideMaterialInstanceId = value?.GetInstanceID() ?? 0; }
         }
 
+        public Shader overrideShader
+        {
+            get { return m_OverrideShaderID != 0 ? Object.FindObjectFromInstanceID(m_OverrideShaderID) as Shader : null; }
+            set { m_OverrideShaderID = value?.GetInstanceID() ?? 0; }
+        }
+
         public int overrideMaterialPassIndex
         {
             get { return m_OverrideMaterialPassIndex; }
             set { m_OverrideMaterialPassIndex = value; }
+        }
+
+        public int overrideShaderPassIndex
+        {
+            get { return m_OverrideShaderPassIndex; }
+            set { m_OverrideShaderPassIndex = value; }
         }
 
         public Material fallbackMaterial

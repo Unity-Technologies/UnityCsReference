@@ -6,7 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using JetBrains.Annotations;
 using UnityEngine.Internal;
+using UnityEngine.Pool;
+using UnityEngine.Scripting;
+
+using RootEditorHandler = UnityEditor.RootEditorAttribute.RootEditorHandler;
+using RootEditorWithMetaDataHandler = UnityEditor.RootEditorAttribute.RootEditorWithMetaDataHandler;
 
 namespace UnityEditor
 {
@@ -14,6 +20,7 @@ namespace UnityEditor
     public class RootEditorAttribute : System.Attribute
     {
         public delegate System.Type RootEditorHandler(UnityEngine.Object[] objects);
+        internal delegate System.Type RootEditorWithMetaDataHandler(UnityEngine.Object[] objects, UnityEngine.Object context, DataMode dataMode);
 
         public bool supportsAddComponent;
         public RootEditorAttribute(bool supportsAddComponent = false)
@@ -26,15 +33,24 @@ namespace UnityEditor
         {
             return null;
         }
+
+        [RequiredSignature]
+        private static System.Type signature(UnityEngine.Object[] objects, UnityEngine.Object context, DataMode dataMode)
+        {
+            return null;
+        }
     }
 
     internal static class RootEditorUtils
     {
-        internal class RootEditorDesc
+        class RootEditorDesc
         {
-            public RootEditorAttribute.RootEditorHandler needsRootEditor;
-            public System.Type rootEditorType;
+            public RootEditorHandler rootEditorHandler;
+            public RootEditorWithMetaDataHandler rootEditorWithMetaDataHandler;
+
+            public Type rootEditorType;
             public bool supportsAddComponent;
+            public bool usesMetaData;
         }
 
         private static bool s_SuppressRootEditor = false;
@@ -73,13 +89,18 @@ namespace UnityEditor
             return false;
         }
 
-        internal static Type FindRootEditor(UnityEngine.Object[] objects)
+        [UsedByNativeCode, UsedImplicitly] // Currently, only called from native
+        internal static Type FindRootEditor(UnityEngine.Object[] objects, UnityEngine.Object context, DataMode dataMode)
         {
             if (s_SuppressRootEditor)
                 return null;
+
             foreach (var desc in kSRootEditor)
             {
-                var rootEditorType = desc.needsRootEditor(objects);
+                var rootEditorType = desc.usesMetaData
+                    ? desc.rootEditorWithMetaDataHandler(objects, context, dataMode)
+                    : desc.rootEditorHandler(objects);
+
                 if (rootEditorType != null)
                 {
                     desc.rootEditorType = rootEditorType;
@@ -92,17 +113,49 @@ namespace UnityEditor
 
         internal static void Rebuild()
         {
-            kSRootEditor.Clear();
-            var rootEditorMethods = AttributeHelper.GetMethodsWithAttribute<RootEditorAttribute>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-            foreach (var method in rootEditorMethods.methodsWithAttributes)
+            var rootEditors = ListPool<RootEditorDesc>.Get();
+            var rootEditorsWithMetaData = ListPool<RootEditorDesc>.Get();
+
+            var candidates = TypeCache.GetMethodsWithAttribute<RootEditorAttribute>();
+            var attributeType = typeof(RootEditorAttribute);
+            foreach (var candidate in candidates)
             {
-                var callback = Delegate.CreateDelegate(typeof(RootEditorAttribute.RootEditorHandler), method.info) as RootEditorAttribute.RootEditorHandler;
-                if (callback != null)
+                if (!AttributeHelper.MethodMatchesAnyRequiredSignatureOfAttribute(candidate, attributeType))
+                    continue;
+
+                var attribute = candidate.GetCustomAttribute<RootEditorAttribute>(false);
+                var desc = new RootEditorDesc { supportsAddComponent = attribute.supportsAddComponent };
+
+                if (Delegate.CreateDelegate(typeof(RootEditorHandler), candidate, false) is RootEditorHandler handler)
                 {
-                    var attr = method.attribute as RootEditorAttribute;
-                    kSRootEditor.Add(new RootEditorDesc() { needsRootEditor = callback, supportsAddComponent = attr.supportsAddComponent });
+                    desc.usesMetaData = false;
+                    desc.rootEditorHandler = handler;
+                    rootEditors.Add(desc);
+                }
+                else if (Delegate.CreateDelegate(typeof(RootEditorWithMetaDataHandler), candidate, false) is RootEditorWithMetaDataHandler handlerWithMetaData)
+                {
+                    desc.usesMetaData = true;
+                    desc.rootEditorWithMetaDataHandler = handlerWithMetaData;
+                    rootEditorsWithMetaData.Add(desc);
+                }
+                else
+                {
+                    var parameters = candidate.GetParameters();
+                    var signature = parameters is { Length: > 0 }
+                        ? string.Join(", ", parameters.Select(p => p.ParameterType.FullName).ToArray())
+                        : string.Empty;
+                    throw new InvalidOperationException($"Could not create a valid delegate from method marked: [{nameof(RootEditorAttribute)}] with signature: ({signature})");
                 }
             }
+
+            kSRootEditor.Clear();
+
+            // Adding the root editors with metadata first to take precedence over the general version
+            kSRootEditor.AddRange(rootEditorsWithMetaData);
+            kSRootEditor.AddRange(rootEditors);
+
+            ListPool<RootEditorDesc>.Release(rootEditors);
+            ListPool<RootEditorDesc>.Release(rootEditorsWithMetaData);
         }
     }
 }

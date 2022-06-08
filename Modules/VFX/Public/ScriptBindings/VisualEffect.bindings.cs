@@ -162,6 +162,8 @@ namespace UnityEngine.VFX
 
         extern public void AdvanceOneFrame();
 
+        extern internal void RecreateData();
+
         [FreeFunction(Name = "VisualEffectBindings::ResetOverrideFromScript", HasExplicitThis = true)] extern public void ResetOverride(int nameID);
 
         // Values check
@@ -549,7 +551,7 @@ namespace UnityEngine.VFX
     }
 
     [UsedByNativeCode]
-    [NativeHeader("Modules/VFX/Public/VFXSystem.h")]
+    [NativeHeader("Modules/VFX/Public/Systems/VFXParticleSystem.h")]
     public struct VFXParticleSystemInfo
     {
         public uint aliveCount;

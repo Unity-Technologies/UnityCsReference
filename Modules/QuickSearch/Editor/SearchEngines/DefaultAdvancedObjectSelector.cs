@@ -69,6 +69,7 @@ namespace UnityEditor.Search
             var viewState = new SearchViewState(
                 SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, viewFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
+            viewState.context.runtimeContext = new RuntimeSearchContext() { searchEngineContext = selectContext, pickerType = SearchPickerType.AdvancedSearchPicker };
 
             s_Window = SearchService.ShowPicker(viewState) as QuickSearch;
         }

@@ -92,19 +92,12 @@ namespace UnityEngine.Jobs
             TransformParallelForLoopStruct<T>.Initialize();
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckReflectionDataCorrect(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-                throw new InvalidOperationException("Support for burst compiled calls to Schedule depends on the Jobs package.\n\nFor generic job types, please include [assembly: RegisterGenericJobType(typeof(MyJob<MyJobSpecialization>))] in your source file.");
-        }
-
         private static IntPtr GetReflectionData<T>()
             where T : struct, IJobParallelForTransform
         {
             TransformParallelForLoopStruct<T>.Initialize();
             var reflectionData = TransformParallelForLoopStruct<T>.jobReflectionData.Data;
-            CheckReflectionDataCorrect(reflectionData);
+            JobValidationInternal.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
 
@@ -121,6 +114,24 @@ namespace UnityEngine.Jobs
         }
 
         public static unsafe void RunReadOnly<T>(this T jobData, TransformAccessArray transforms) where T : struct, IJobParallelForTransform
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), default, ScheduleMode.Run);
+            JobsUtility.ScheduleParallelForTransformReadOnly(ref scheduleParams, transforms.GetTransformAccessArrayForSchedule(), transforms.length);
+        }
+
+        unsafe static public JobHandle ScheduleByRef<T>(ref this T jobData, TransformAccessArray transforms, JobHandle dependsOn = new JobHandle()) where T : struct, IJobParallelForTransform
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), dependsOn, ScheduleMode.Parallel);
+            return JobsUtility.ScheduleParallelForTransform(ref scheduleParams, transforms.GetTransformAccessArrayForSchedule());
+        }
+
+        public static unsafe JobHandle ScheduleReadOnlyByRef<T>(ref this T jobData, TransformAccessArray transforms, int batchSize, JobHandle dependsOn = new JobHandle()) where T : struct, IJobParallelForTransform
+        {
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), dependsOn, ScheduleMode.Parallel);
+            return JobsUtility.ScheduleParallelForTransformReadOnly(ref scheduleParams, transforms.GetTransformAccessArrayForSchedule(), batchSize);
+        }
+
+        public static unsafe void RunReadOnlyByRef<T>(ref this T jobData, TransformAccessArray transforms) where T : struct, IJobParallelForTransform
         {
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), GetReflectionData<T>(), default, ScheduleMode.Run);
             JobsUtility.ScheduleParallelForTransformReadOnly(ref scheduleParams, transforms.GetTransformAccessArrayForSchedule(), transforms.length);

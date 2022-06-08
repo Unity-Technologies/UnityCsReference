@@ -802,6 +802,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            Vector2 lastCursorPos = Vector2.zero;
             Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth)
             {
                 var cursorPos = textSelection.cursorPosition;
@@ -811,6 +812,10 @@ namespace UnityEngine.UIElements
                 var newYOffset = yOffset;
 
                 const int leftScrollOffsetPadding = 5;
+                const float epsilon = 0.05f;
+
+                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon)
+                {
 
                 // Update scrollOffset when cursor moves right.
                 if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth)
@@ -818,16 +823,19 @@ namespace UnityEngine.UIElements
                 // Update scrollOffset when cursor moves left.
                 else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
                     newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
+                }
 
-                if (textEdition.multiline)
+                if (textEdition.multiline && Math.Abs(lastCursorPos.y - cursorPos.y) > epsilon)
                 {
                     // Update scrollOffset when cursor moves down.
-                    if ((cursorPos.y - yOffset) > contentRect.height)
+                    if (cursorPos.y > contentRect.height + yOffset)
                         newYOffset = cursorPos.y - contentRect.height;
                     // Update scrollOffset when cursor moves up.
-                    else if (cursorPos.y - textSelection.cursorLineHeight - yOffset < 0)
-                        newYOffset = cursorPos.y - textSelection.cursorLineHeight;
+                    else if (cursorPos.y < textSelection.lineHeightAtCursorPosition + yOffset + epsilon)
+                        newYOffset = cursorPos.y - textSelection.lineHeightAtCursorPosition;
                 }
+
+                lastCursorPos = cursorPos;
 
                 if (xOffset != newXOffset || yOffset != newYOffset)
                     return new Vector2(newXOffset, newYOffset);

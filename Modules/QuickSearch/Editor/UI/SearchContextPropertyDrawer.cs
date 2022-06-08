@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -21,13 +22,14 @@ namespace UnityEditor.Search
             var objType = fieldInfo.FieldType;
             var searchContextFlags = searchContextAttribute.flags;
             var context = CreateContextFromAttribute(searchContextAttribute);
+            context.runtimeContext = CreateRuntimeSearchContextFromAttribute(property, objType);
             ObjectField.DoObjectField(position, property, objType, label, context, searchContextFlags);
         }
 
         public override VisualElement CreatePropertyGUI(SerializedProperty prop)
         {
             var searchContextAttribute = (SearchContextAttribute)attribute;
-
+            var runtimeContext = CreateRuntimeSearchContextFromAttribute(prop, fieldInfo.FieldType);
             ObjectField obj = new ObjectField()
             {
                 name = kVisualElementName,
@@ -37,11 +39,24 @@ namespace UnityEditor.Search
                 searchViewFlags = searchContextAttribute.flags,
                 searchContext = CreateContextFromAttribute(searchContextAttribute)
             };
+            obj.searchContext.runtimeContext = runtimeContext;
 
             return obj;
         }
 
-        static SearchContext CreateContextFromAttribute(SearchContextAttribute attribute)
+        internal static RuntimeSearchContext CreateRuntimeSearchContextFromAttribute(SerializedProperty property, Type objType)
+        {
+            return new RuntimeSearchContext
+            {
+                pickerType = SearchPickerType.SearchContextAttribute,
+                currentObject = property.objectReferenceValue,
+                editedObjects = property.serializedObject.targetObjects,
+                requiredTypes = new Type[] { objType },
+                requiredTypeNames = new[] { objType.ToString() }
+            };
+        }
+
+        internal static SearchContext CreateContextFromAttribute(SearchContextAttribute attribute)
         {
             var providers = attribute.providerIds.Select(id => SearchService.GetProvider(id))
                 .Concat(attribute.instantiableProviders.Select(type => SearchService.GetProvider(type))).Where(p => p != null);

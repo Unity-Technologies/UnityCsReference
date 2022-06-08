@@ -19,21 +19,38 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPackageVersion m_Version = null;
         private HashSet<PackageDetailsTabElement> m_DeferredRefreshTracker = new HashSet<PackageDetailsTabElement>();
 
+        // hardcoded constant values taken from styles applied to Package Details tab headers
+        // if these ever change, these values will need to be updated
+        private const float k_TabHeaderPaddingLeft = 6.0f;
+        private const float k_TabHeaderPaddingRight = 6.0f;
+        private const float k_TabHeaderMarginLeft = 3.0f;
+        private const float k_TabHeaderMarginRight = 3.0f;
+
         public PackageDetailsTabView()
         {
-            m_HeaderContainer.name = "packageDetailsTabViewHeaderContainer";
+            m_TabHeaderContainer.name = "packageDetailsTabViewHeaderContainer";
             m_BodyContainer.name = "packageDetailsTabViewBodyContainer";
+            m_TabHeaderDropdown.name = "packageDetailsTabViewHeaderDropdown";
 
             m_EntitlementsErrorLabel = new Label(L10n.Tr("Information is unavailable because the package license isn't registered to your user account."));
             m_EntitlementsErrorLabel.AddClasses("packageTabsEntitlementsError");
             Add(m_EntitlementsErrorLabel);
+
+            m_CalculatedTabHorizontalMarginAndPadding = k_TabHeaderMarginLeft + k_TabHeaderMarginRight + k_TabHeaderPaddingLeft + k_TabHeaderPaddingRight;
         }
 
         public void RefreshAllTabs(IPackageVersion version)
         {
+            m_ValidTabIds.Clear();
             RefreshTabs(tabs, version);
             UIUtils.SetElementDisplay(m_BodyContainer, !version.hasEntitlementsError);
             UIUtils.SetElementDisplay(m_EntitlementsErrorLabel, version.hasEntitlementsError);
+
+            if (!version.hasEntitlementsError)
+            {
+                ClearDropdown();
+                CalculateTabHeaderDropdown(rect.width - 13f); // account for scroll bar width
+            }
         }
 
         public void RefreshTabs(IEnumerable<string> tabIds, IPackageVersion version)
@@ -55,7 +72,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_DeferredRefreshTracker.Add(tab);
                 if (!RefreshTabAndHeaderVisibility(tab, version))
+                {
+                    if (m_ValidTabIds.Contains(tab.id))
+                    {
+                        m_ValidTabIds.Remove(tab.id);
+                    }
                     m_DeferredRefreshTracker.Remove(tab);
+                }
+                else if (!m_ValidTabIds.Contains(tab.id))
+                {
+                    m_ValidTabIds.Add(tab.id);
+                }
             }
 
             UpdateSelectionIfCurrentSelectionIsInvalid();

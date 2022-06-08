@@ -84,8 +84,8 @@ namespace UnityEngine.UIElements
             {
                 if (value != m_Multiline)
                 {
-                    if (selection.isSelectable)
-                        selectingManipulator.m_SelectingUtilities.multiline = value;
+                    if (!edition.isReadOnly)
+                        editingManipulator.editingUtilities.multiline = value;
                     m_Multiline = value;
                 }
             }

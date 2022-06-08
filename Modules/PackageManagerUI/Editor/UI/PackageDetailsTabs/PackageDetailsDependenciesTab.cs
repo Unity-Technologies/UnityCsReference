@@ -19,8 +19,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version?.package?.Is(PackageType.Feature) != true
-                && version?.package?.Is(PackageType.MainNotUnity | PackageType.ScopedRegistry | PackageType.Unity | PackageType.BuiltIn) == true;
+            var package = version?.package;
+            return package != null && package.Is(PackageType.Upm) && !package.Is(PackageType.Feature) && !version.HasTag(PackageTag.Placeholder);
         }
 
         public PackageDetailsDependenciesTab(ResourceLoader resourceLoader, PackageDatabase packageDatabase)
@@ -91,7 +91,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string GetVersionText(DependencyInfo dependency, IPackage package)
         {
-            if (package == null || package.Is(PackageType.Feature))
+            if (package == null)
+                return dependency.version;
+            if (package.Is(PackageType.Feature))
                 return string.Empty;
             if (package.Is(PackageType.BuiltIn))
                 return "---";

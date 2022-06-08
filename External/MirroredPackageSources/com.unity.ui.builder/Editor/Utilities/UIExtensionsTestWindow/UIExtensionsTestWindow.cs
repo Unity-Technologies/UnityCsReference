@@ -114,8 +114,8 @@ namespace Unity.UI.Builder
                 var canvasAsset = canvas.GetVisualElementAsset();
 
                 var newButton = m_VisualTreeAsset.AddElement(canvasAsset, "UnityEngine.UIElements.Button");
-                newButton.AddProperty("name", "new-guy");
-                newButton.AddProperty("text", "Canvas Button 2!");
+                newButton.SetAttribute("name", "new-guy");
+                newButton.SetAttribute("text", "Canvas Button 2!");
                 newButton.AddStyleClass("new-guy-type");
                 newButton.AddStyleClass("some-button");
                 newButton.RemoveStyleClass("some-button");

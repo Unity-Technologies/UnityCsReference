@@ -296,7 +296,6 @@ namespace UnityEditor
                             }
                             else
                             {
-                                Selection.instanceIDs = new int[0];
                                 Selection.activeInstanceID = m_ParticleSystems[0].gameObject.GetInstanceID();
                             }
                         }

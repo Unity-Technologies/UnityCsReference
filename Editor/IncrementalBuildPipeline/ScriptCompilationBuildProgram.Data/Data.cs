@@ -25,6 +25,7 @@ namespace ScriptCompilationBuildProgram.Data
         public string BuildPlayerDataOutput;
         public bool ExtractRuntimeInitializeOnLoads;
         public bool EnableDiagnostics;
+        public bool EmitInfoForScriptUpdater;
         public string[] AssembliesToScanForTypeDB;
         public string[] SearchPaths;
     }

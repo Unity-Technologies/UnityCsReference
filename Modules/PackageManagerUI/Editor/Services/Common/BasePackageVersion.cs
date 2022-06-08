@@ -14,7 +14,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver
     {
-        private const string k_NoSubscriptionErrorMessage = "You do not have a subscription for this package";
         public string name => packageInfo?.name ?? string.Empty;
 
         [SerializeField]
@@ -25,11 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected string m_Description;
         public string description => !string.IsNullOrEmpty(m_Description) ? m_Description : (packageInfo?.description ?? string.Empty);
 
-        [SerializeField]
-        protected string m_PackageUniqueId;
-        public string packageUniqueId => m_PackageUniqueId;
-
-        public virtual string authorLink => string.Empty;
+        public string packageUniqueId => m_Package?.uniqueId ?? string.Empty;
 
         [SerializeField]
         protected string m_VersionString;
@@ -42,13 +37,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_PublishNotes;
-        public string releaseNotes => m_PublishNotes;
+        public string localReleaseNotes => m_PublishNotes;
 
         public DependencyInfo[] dependencies => packageInfo?.dependencies;
         public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
         public EntitlementsInfo entitlements => packageInfo?.entitlements;
 
         public virtual RegistryInfo registry => null;
+
+        public virtual bool isRegistryPackage => false;
+
+        public virtual bool isFromScopedRegistry => false;
 
         [NonSerialized]
         private IPackage m_Package;
@@ -66,9 +65,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return (m_Tag & tag) != 0;
         }
 
+        // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements
+        // and it is only used right now to check if a package is from Asset Store. This is also to be consistent with
+        // other Asset Store packages (as in, if Upm Packages on Asset Store are considered with entitlements, then every
+        // package from Asset Store should be considered to have entitlements).
         public bool hasEntitlements => entitlements != null &&
-                (entitlements.licensingModel == EntitlementLicensingModel.AssetStore
-                || entitlements.licensingModel == EntitlementLicensingModel.Enterprise
+                (entitlements.licensingModel == EntitlementLicensingModel.Enterprise
                 || entitlements.status == EntitlementStatus.NotGranted
                 || entitlements.status == EntitlementStatus.Granted);
 
@@ -76,12 +78,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (!hasEntitlements || entitlements.isAllowed)
-                    return packageInfo?.errors.Any(error =>
-                        error.errorCode == ErrorCode.Forbidden ||
-                        error.message.IndexOf(k_NoSubscriptionErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0) ?? false;
+                if (hasEntitlements && !entitlements.isAllowed)
+                    return true;
 
-                return true;
+                return packageInfo?.errors.Any(error =>
+                    error.errorCode == ErrorCode.Forbidden ||
+                    error.message.Contains(EntitlementsErrorChecker.k_NoSubscriptionUpmErrorMessage)) ?? false;
             }
         }
 

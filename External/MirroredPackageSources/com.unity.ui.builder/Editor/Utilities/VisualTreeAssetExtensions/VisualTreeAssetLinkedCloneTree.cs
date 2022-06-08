@@ -77,9 +77,6 @@ namespace Unity.UI.Builder
 
                 foreach (VisualElementAsset childVea in children)
                 {
-                    if (childVea is UxmlObjectAsset)
-                        continue;
-
                     // this will fill the slotInsertionPoints mapping
                     var childVe = CloneSetupRecursively(vta, childVea, idToChildren, context);
                     if (childVe == null)

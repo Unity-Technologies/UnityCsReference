@@ -113,5 +113,10 @@ namespace UnityEngine.UIElements
         {
             return obj is StyleDataRef<T> other && Equals(other);
         }
+
+        public bool ReferenceEquals(StyleDataRef<T> other)
+        {
+            return m_Ref == other.m_Ref;
+        }
     }
 }

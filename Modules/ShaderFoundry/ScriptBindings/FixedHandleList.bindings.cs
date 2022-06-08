@@ -60,4 +60,21 @@ namespace UnityEditor.ShaderFoundry
             }
         }
     }
+
+    internal static class FixedHandleListUtilities
+    {
+        internal static IEnumerable<T> AsListEnumerable<T>(this FoundryHandle listHandle, ShaderContainer container, Func<ShaderContainer, FoundryHandle, T> accessor)
+        {
+            if ((container != null) && listHandle.IsValid)
+            {
+                var list = new FixedHandleListInternal(listHandle);
+                var size = list.GetSize(container);
+                for (uint i = 0; i < size; i++)
+                {
+                    var handle = list.GetElement(container, i);
+                    yield return accessor(container, handle);
+                }
+            }
+        }
+    }
 }

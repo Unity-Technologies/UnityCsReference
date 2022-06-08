@@ -486,6 +486,10 @@ namespace UnityEngine.UIElements
             get { return panel == null ? GUIUtility.pixelsPerPoint : (panel as BaseVisualElementPanel).scaledPixelsPerPoint; }
         }
 
+        StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(
+            computedStyle.backgroundPositionX, computedStyle.backgroundPositionY,
+            computedStyle.backgroundRepeat, computedStyle.backgroundSize);
+
         Rect m_Layout;
 
         // This will replace the Rect position

@@ -189,6 +189,10 @@ namespace UnityEngine.Rendering.RendererUtils
         /// </summary>
         public RenderStateBlock? stateBlock;
         /// <summary>
+        /// Override shader for this renderer list.
+        /// </summary>
+        public Shader overrideShader;
+        /// <summary>
         /// Override material for this renderer list.
         /// </summary>
         public Material overrideMaterial;
@@ -208,6 +212,10 @@ namespace UnityEngine.Rendering.RendererUtils
         /// Pass index for the override material.
         /// </summary>
         public int overrideMaterialPassIndex;
+        /// <summary>
+        /// Pass index for the override shader.
+        /// </summary>
+        public int overrideShaderPassIndex;
 
         // Mandatory parameters passed through constructors
         internal CullingResults cullingResult { get; private set; }
@@ -231,6 +239,7 @@ namespace UnityEngine.Rendering.RendererUtils
             this.layerMask = -1;
             this.renderingLayerMask = uint.MaxValue;
             this.overrideMaterialPassIndex = 0;
+            this.overrideShaderPassIndex = 0;
         }
 
         /// <summary>
@@ -297,6 +306,12 @@ namespace UnityEngine.Rendering.RendererUtils
                 {
                     drawSettings.SetShaderPassName(i, desc.passNames[i]);
                 }
+            }
+
+            if (desc.overrideShader != null)
+            {
+                drawSettings.overrideShader = desc.overrideShader;
+                drawSettings.overrideShaderPassIndex = desc.overrideShaderPassIndex;
             }
 
             if (desc.overrideMaterial != null)

@@ -71,7 +71,7 @@ namespace UnityEditor
 
         private static AssemblyDefinition ReadAssembly(string assemblyPath)
         {
-            var assemblyResolver = new DefaultAssemblyResolver();
+            using var assemblyResolver = new DefaultAssemblyResolver();
             assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(assemblyPath));
             var readerParameters = new ReaderParameters
             {
@@ -97,7 +97,7 @@ namespace UnityEditor
             var assemblyPath = type.Assembly.Location;
 
             // Get the sequence point directly from the method token (to avoid scanning all types/methods)
-            var assemblyDefinition = ReadAssembly(assemblyPath);
+            using var assemblyDefinition = ReadAssembly(assemblyPath);
             var methodDefinition = assemblyDefinition.MainModule.LookupToken(methodInfo.MetadataToken) as MethodDefinition;
             var sequencePoint = GetMethodFirstSequencePoint(methodDefinition);
 

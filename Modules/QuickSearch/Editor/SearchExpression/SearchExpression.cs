@@ -57,6 +57,13 @@ namespace UnityEditor.Search
             return (type & flags) != 0;
         }
 
+        public static bool HasNone(this SearchExpressionType type, SearchExpressionType flags)
+        {
+            if (type == SearchExpressionType.Nil && flags == SearchExpressionType.Nil)
+                return false; // None of Nil means there should be something.
+            return (type & flags) == 0;
+        }
+
         public static bool IsIterable(this SearchExpressionType type)
         {
             return type.HasAny(SearchExpressionType.Iterable);

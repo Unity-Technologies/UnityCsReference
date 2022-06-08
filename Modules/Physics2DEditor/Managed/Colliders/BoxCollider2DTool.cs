@@ -2,81 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.AnimatedValues;
 using UnityEditor.EditorTools;
 using UnityEngine;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(BoxCollider2D))]
-    [CanEditMultipleObjects]
-    class BoxCollider2DEditor : Collider2DEditorBase
-    {
-        SerializedProperty m_Size;
-        SerializedProperty m_EdgeRadius;
-        SerializedProperty m_UsedByComposite;
-        readonly AnimBool m_ShowCompositeRedundants = new AnimBool();
-
-        public override void OnEnable()
-        {
-            base.OnEnable();
-
-            m_Size = serializedObject.FindProperty("m_Size");
-            m_EdgeRadius = serializedObject.FindProperty("m_EdgeRadius");
-            m_UsedByComposite = serializedObject.FindProperty("m_UsedByComposite");
-            m_AutoTiling = serializedObject.FindProperty("m_AutoTiling");
-            m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
-            m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
-        }
-
-        public override void OnDisable()
-        {
-            base.OnDisable();
-
-            m_ShowCompositeRedundants.valueChanged.RemoveListener(Repaint);
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            bool disableEditCollider = !CanEditCollider();
-
-            if (disableEditCollider)
-            {
-                EditorGUILayout.HelpBox(Styles.s_ColliderEditDisableHelp.text, MessageType.Info);
-
-                if (ToolManager.activeToolType == typeof(BoxCollider2DTool))
-                    ToolManager.RestorePreviousTool();
-            }
-            else
-                EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
-
-            GUILayout.Space(5);
-            base.OnInspectorGUI();
-
-            EditorGUILayout.PropertyField(m_Size);
-
-            m_ShowCompositeRedundants.target = !m_UsedByComposite.boolValue;
-            if (EditorGUILayout.BeginFadeGroup(m_ShowCompositeRedundants.faded))
-                EditorGUILayout.PropertyField(m_EdgeRadius);
-            EditorGUILayout.EndFadeGroup();
-
-            FinalizeInspectorGUI();
-        }
-    }
-
     [EditorTool("Edit Box Collider 2D", typeof(BoxCollider2D))]
-    class BoxCollider2DTool : EditorTool
+    class BoxCollider2DTool : Collider2DToolbase
     {
-        public override GUIContent toolbarIcon
-        {
-            get { return PrimitiveBoundsHandle.editModeButton; }
-        }
-
         readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
         void OnEnable()

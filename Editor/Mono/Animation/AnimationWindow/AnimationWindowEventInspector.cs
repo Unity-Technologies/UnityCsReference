@@ -139,7 +139,6 @@ namespace UnityEditor
                     foreach (var evt in data.selectedEvents)
                     {
                         evt.functionName = functionName;
-                        evt.stringParameter = string.Empty;
                     }
                 }
                 EditorGUI.showMixedValue = false;

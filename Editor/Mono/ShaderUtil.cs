@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEditor.Rendering;
 using UnityEngine;
@@ -15,26 +16,45 @@ namespace UnityEditor
     {
         public class Subshader
         {
+            internal enum Type
+            {
+                Runtime,
+                Serialized
+            }
+
             internal ShaderData m_Data;
             internal int m_SubshaderIndex;
+            private Func<Shader, int, ShaderTagId, ShaderTagId> m_FindTagValue;
 
-            internal Subshader(ShaderData data, int subshaderIndex)
+            internal Subshader(ShaderData data, int subshaderIndex, Type type = Type.Runtime)
             {
                 m_Data = data;
                 m_SubshaderIndex = subshaderIndex;
+
+                m_FindTagValue = type == Type.Serialized ? s_SerializedFindTagValue : s_RuntimeFindTagValue;
             }
 
-            internal Shader SourceShader { get { return m_Data.SourceShader; } }
+            internal Shader SourceShader => m_Data.SourceShader;
 
-            public int PassCount { get { return ShaderUtil.GetShaderTotalPassCount(m_Data.SourceShader, m_SubshaderIndex); } }
+            public int PassCount => ShaderUtil.GetShaderTotalPassCount(m_Data.SourceShader, m_SubshaderIndex);
 
-            public int LevelOfDetail { get { return ShaderUtil.GetSubshaderLOD(m_Data.SourceShader, m_SubshaderIndex); } }
+            public int LevelOfDetail => ShaderUtil.GetSubshaderLOD(m_Data.SourceShader, m_SubshaderIndex);
 
-            public UnityEngine.Rendering.ShaderTagId FindTagValue(UnityEngine.Rendering.ShaderTagId tagName)
+            private static Func<Shader, int, ShaderTagId, ShaderTagId> s_SerializedFindTagValue = (Shader sourceShader, int subshaderIndex, ShaderTagId tag) =>
+                new ShaderTagId { id = ShaderUtil.FindSerializedSubShaderTagValue(sourceShader, subshaderIndex, tag.id) };
+
+            private static Func<Shader, int, ShaderTagId, ShaderTagId> s_RuntimeFindTagValue = (Shader sourceShader, int subshaderIndex, ShaderTagId tag) =>
             {
-                int id = ShaderUtil.FindSubShaderTagValue(SourceShader, m_SubshaderIndex, tagName.id);
-                return new UnityEngine.Rendering.ShaderTagId { id = id };
-            }
+                if (subshaderIndex < 0 || subshaderIndex >= sourceShader.subshaderCount)
+                {
+                    Debug.LogErrorFormat("Subshader index is incorrect: {0}, shader {1} has {2} subshaders.", subshaderIndex, sourceShader, sourceShader.subshaderCount);
+                    return ShaderTagId.none;
+                }
+
+                return sourceShader.FindSubshaderTagValue(subshaderIndex, tag);
+            };
+
+            public ShaderTagId FindTagValue(ShaderTagId tag) => m_FindTagValue(SourceShader, m_SubshaderIndex, tag);
 
             public Pass GetPass(int passIndex)
             {
@@ -156,8 +176,9 @@ namespace UnityEditor
             }
         }
 
-        public int ActiveSubshaderIndex { get { return ShaderUtil.GetShaderActiveSubshaderIndex(SourceShader); } }
-        public int SubshaderCount { get { return ShaderUtil.GetShaderSubshaderCount(SourceShader); } }
+        public int ActiveSubshaderIndex => ShaderUtil.GetShaderActiveSubshaderIndex(SourceShader);
+        public int SubshaderCount => ShaderUtil.GetShaderSubshaderCount(SourceShader);
+        public int SerializedSubshaderCount => ShaderUtil.GetShaderSerializedSubshaderCount(SourceShader);
 
         public Shader SourceShader { get; private set; }
 
@@ -183,11 +204,22 @@ namespace UnityEditor
         {
             if (index < 0 || index >= SubshaderCount)
             {
-                Debug.LogErrorFormat("Subshader index is incorrect: {0}, shader {1} has {2} passes.", index, SourceShader, SubshaderCount);
+                Debug.LogErrorFormat("Subshader index is incorrect: {0}, shader {1} has {2} subshaders.", index, SourceShader, SubshaderCount);
                 return null;
             }
 
             return new Subshader(this, index);
+        }
+
+        public Subshader GetSerializedSubshader(int index)
+        {
+            if (index < 0 || index >= SerializedSubshaderCount)
+            {
+                Debug.LogErrorFormat("Serialized Subshader index is incorrect: {0}, shader {1} has {2} serialized subshaders.", index, SourceShader, SerializedSubshaderCount);
+                return null;
+            }
+
+            return new Subshader(this, index, Subshader.Type.Serialized);
         }
 
         public struct PreprocessedVariant

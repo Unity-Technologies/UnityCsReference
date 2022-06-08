@@ -155,6 +155,8 @@ namespace UnityEditor
                     }
                     else
                     {
+                        if (property.isArray && property.arrayElementType == "managedReference<>") break;
+
                         SetupAction(property, menu, evt,
                             Clipboard.SetSerializedProperty,
                             p => Clipboard.HasSerializedProperty(),

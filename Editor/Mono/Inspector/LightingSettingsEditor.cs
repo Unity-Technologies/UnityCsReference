@@ -183,7 +183,8 @@ namespace UnityEditor
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
             public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not avaliable on Apple silicon. Use Progressive GPU Lightmapper instead.");
-            public static readonly GUIContent enlightenLightmapperWarning = EditorGUIUtility.TrTextContent("Use the Progressive Lightmapper for Baked GI in new projects. Use Enlighten Baked GI for backwards compatibility only.");
+            public static readonly GUIContent enlightenLightmapperWarning = EditorGUIUtility.TrTextContent("Enlighten Baked Global Illumination is deprecated and no longer available in 2023.1 and later. Use the Progressive CPU or GPU Lightmapper instead.");
+            public static readonly GUIContent enlightenLightmapperAppleWarning = EditorGUIUtility.TrTextContent("Enlighten Baked Global Illumination is deprecated and no longer available in 2023.1 and later. Use the Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -973,10 +974,19 @@ namespace UnityEditor
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
 
-                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (isAppleSiliconEditor && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
-                        menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
+                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value)
+                        || (isAppleSiliconEditor && value == (int)LightingSettings.Lightmapper.ProgressiveCPU)
+                        || (value == 0 && !EditorSettings.enableEnlightenBakedGI))
+                    {
+                        if (value != 0) // enlighten should not be shown if unavailable
+                        {
+                            menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
+                        }
+                    }
                     else
+                    {
                         menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
+                    }
                 }
                 menu.DropDown(rect);
             }
@@ -999,7 +1009,11 @@ namespace UnityEditor
             else if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
             #pragma warning restore 618
             {
-                EditorGUILayout.HelpBox(Styles.enlightenLightmapperWarning.text, MessageType.Info);
+                string warningStr = isAppleSiliconEditor ?
+                    Styles.enlightenLightmapperAppleWarning.text :
+                    Styles.enlightenLightmapperWarning.text;
+
+                EditorGUILayout.HelpBox(warningStr, MessageType.Warning);
             }
         }
 

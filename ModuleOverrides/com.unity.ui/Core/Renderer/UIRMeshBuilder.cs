@@ -364,7 +364,9 @@ namespace UnityEngine.UIElements.UIR
                     position = v.position,
                     tint = v.tint,
                     uv = v.uv,
-                    opacityColorPages = new Color32(0, 0, (byte)(v.settingIndex >> 8), (byte)v.settingIndex)
+                    opacityColorPages = new Color32(0, 0, (byte)(v.settingIndex >> 8), (byte)v.settingIndex),
+                    flags = v.flags,
+                    circle = v.circle
                 };
             }
 
@@ -1190,6 +1192,8 @@ namespace UnityEngine.UIElements.UIR
             iv.position.y = y;
             iv.tint = (Color)vt[0].tint * uvw.x + (Color)vt[1].tint * uvw.y + (Color)vt[2].tint * uvw.z;
             iv.uv = vt[0].uv * uvw.x + vt[1].uv * uvw.y + vt[2].uv * uvw.z;
+            iv.circle = vt[0].circle * uvw.x + vt[1].circle * uvw.y + vt[2].circle * uvw.z;
+            iv.flags = vt[0].flags;
             return iv;
         }
 
@@ -1200,6 +1204,8 @@ namespace UnityEngine.UIElements.UIR
             iv.position.y = vt[e0].position.y + t * (vt[e1].position.y - vt[e0].position.y);
             iv.tint = Color.LerpUnclamped(vt[e0].tint, vt[e1].tint, t);
             iv.uv = Vector2.LerpUnclamped(vt[e0].uv, vt[e1].uv, t);
+            iv.circle = Vector4.LerpUnclamped(vt[e0].circle, vt[e1].circle, t);
+            iv.flags = vt[e0].flags;
             return iv;
         }
 

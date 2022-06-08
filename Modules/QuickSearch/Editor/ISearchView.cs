@@ -203,5 +203,9 @@ namespace UnityEditor.Search
         /// Set table view columns.
         /// </summary>
         void SetColumns(IEnumerable<SearchColumn> columns);
+
+        internal bool IsPicker();
+
+        internal int cursorIndex { get; }
     }
 }

@@ -25,6 +25,10 @@ namespace UnityEngine.UIElements
         Align IResolvedStyle.alignSelf => computedStyle.alignSelf;
         Color IResolvedStyle.backgroundColor => computedStyle.backgroundColor;
         Background IResolvedStyle.backgroundImage => computedStyle.backgroundImage;
+        BackgroundPosition IResolvedStyle.backgroundPositionX => computedStyle.backgroundPositionX;
+        BackgroundPosition IResolvedStyle.backgroundPositionY => computedStyle.backgroundPositionY;
+        BackgroundRepeat IResolvedStyle.backgroundRepeat => computedStyle.backgroundRepeat;
+        BackgroundSize IResolvedStyle.backgroundSize => computedStyle.backgroundSize;
         Color IResolvedStyle.borderBottomColor => computedStyle.borderBottomColor;
         float IResolvedStyle.borderBottomLeftRadius => computedStyle.borderBottomLeftRadius.value;
         float IResolvedStyle.borderBottomRightRadius => computedStyle.borderBottomRightRadius.value;
@@ -76,7 +80,6 @@ namespace UnityEngine.UIElements
         IEnumerable<EasingFunction> IResolvedStyle.transitionTimingFunction => computedStyle.transitionTimingFunction;
         Vector3 IResolvedStyle.translate => ResolveTranslate();
         Color IResolvedStyle.unityBackgroundImageTintColor => computedStyle.unityBackgroundImageTintColor;
-        ScaleMode IResolvedStyle.unityBackgroundScaleMode => computedStyle.unityBackgroundScaleMode;
         Font IResolvedStyle.unityFont => computedStyle.unityFont;
         FontDefinition IResolvedStyle.unityFontDefinition => computedStyle.unityFontDefinition;
         FontStyle IResolvedStyle.unityFontStyleAndWeight => computedStyle.unityFontStyleAndWeight;

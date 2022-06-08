@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PageManager : ISerializationCallbackReceiver
     {
+        internal const string k_AssetStorePackageGroupName = "Asset Store";
         internal const string k_UnityPackageGroupName = "Unity";
         internal const string k_OtherPackageGroupName = "Other";
 
@@ -297,24 +298,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             SelectInInspector(selection, false);
         }
 
-        private void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
+        private void TriggerOnVisualStateChange(VisualStateChangeArgs args)
         {
-            onVisualStateChange?.Invoke(visualStates);
+            if (args.page.tab == m_PackageFiltering.currentFilterTab)
+                onVisualStateChange?.Invoke(args.visualStates);
         }
 
         private void TriggerOnPageUpdate(ListUpdateArgs args)
         {
-            onListUpdate?.Invoke(args);
+            if (args.page.tab == m_PackageFiltering.currentFilterTab)
+                onListUpdate?.Invoke(args);
         }
 
         private void TriggerOnPageRebuild(IPage page)
         {
-            onListRebuild?.Invoke(page);
+            if (page.tab == m_PackageFiltering.currentFilterTab)
+                onListRebuild?.Invoke(page);
         }
 
         private void TriggerOnSubPageChanged(IPage page)
         {
-            onSubPageChanged?.Invoke(page);
+            if (page.tab == m_PackageFiltering.currentFilterTab)
+                onSubPageChanged?.Invoke(page);
         }
 
         private void TriggerOnFiltersChange(PageFilters filters)
@@ -452,11 +457,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (firstPackageVersion == null)
                 return m_PackageFiltering.currentFilterTab;
 
-            // Since built in package and asset store packages have their own tabs, we only need to check the first item to know which tab these packages belong to
+            // Since built in packages can never be in other tabs, we only need to check the first item to know which tab these packages belong to
             if (firstPackageVersion.package.Is(PackageType.BuiltIn))
                 return PackageFilterTab.BuiltIn;
-            if (firstPackageVersion.package.Is(PackageType.AssetStore))
-                return PackageFilterTab.AssetStore;
 
             var page = GetPageFromTab();
             if (packageVersions.All(v => page.Contains(v.packageUniqueId)))
@@ -472,6 +475,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return PackageFilterTab.InProject;
 
             if (packageVersions.All(v => v.package.Is(PackageType.Unity)))
+                return PackageFilterTab.UnityRegistry;
+
+            if (packageVersions.All(v => v.package.Is(PackageType.AssetStore)))
                 return PackageFilterTab.UnityRegistry;
 
             return PackageFilterTab.MyRegistries;
@@ -541,9 +547,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductListFetched(productList);
         }
 
-        private void OnProductFetched(long productId)
+        private void OnProductExtraFetched(long productId)
         {
-            GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductFetched(productId);
+            GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductExtraFetched(productId);
         }
 
         public virtual VisualState GetVisualState(IPackage package)
@@ -570,7 +576,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (entitlements.Any())
                 {
                     foreach (var package in entitlements)
-                        package.ClearErrors(error => error.errorCode == UIErrorCode.Forbidden);
+                        package.ClearErrors(error => error.errorCode == UIErrorCode.UpmError_Forbidden);
                     TriggerOnSelectionChanged();
                 }
             }
@@ -633,17 +639,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void Fetch(string uniqueId)
         {
             if (m_UnityConnect.isUserLoggedIn && long.TryParse(uniqueId, out var productId))
-            {
-                m_AssetStoreClient.Fetch(productId);
-            }
-        }
-
-        public virtual void FetchDetail(IPackage package, Action<IPackage> doneCallbackAction = null)
-        {
-            if (m_UnityConnect.isUserLoggedIn && long.TryParse(package?.uniqueId, out var productId))
-            {
-                m_AssetStoreClient.FetchDetail(productId, doneCallbackAction);
-            }
+                m_AssetStoreClient.ExtraFetch(productId);
         }
 
         public virtual void LoadMore(long numberOfPackages)
@@ -653,12 +649,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
-                return;
-
             if (!loggedIn)
+            {
+                // When users log out, even when we are not on `My Assets` tab we should still clear the Asset Store page properly
                 GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).ClearAndRebuild();
-            else if (m_Application.isInternetReachable && !EditorApplication.isPlaying && !EditorApplication.isCompiling && !IsRefreshInProgress(RefreshOptions.Purchased))
+
+                // We also want to clear the refresh time stamp here so that the next time users visit the Asset Store page, we'll call
+                // refresh properly
+                m_RefreshTimestamps[RefreshOptions.Purchased] = 0;
+            }
+            else if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
+                m_Application.isInternetReachable && !EditorApplication.isPlaying &&
+                !EditorApplication.isCompiling &&
+                !IsRefreshInProgress(RefreshOptions.Purchased))
                 Refresh(RefreshOptions.Purchased);
         }
 
@@ -698,7 +701,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreClient.onListOperation += OnRefreshOperation;
             m_AssetStoreClient.onProductListFetched += OnProductListFetched;
-            m_AssetStoreClient.onProductFetched += OnProductFetched;
+            m_AssetStoreClient.onProductExtraFetched += OnProductExtraFetched;
 
             m_PackageDatabase.onPackageUniqueIdFinalize += OnPackageUniqueIdFinalize;
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
@@ -719,7 +722,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreClient.onListOperation -= OnRefreshOperation;
             m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
-            m_AssetStoreClient.onProductFetched -= OnProductFetched;
+            m_AssetStoreClient.onProductExtraFetched -= OnProductExtraFetched;
 
             m_PackageDatabase.onPackageUniqueIdFinalize -= OnPackageUniqueIdFinalize;
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;

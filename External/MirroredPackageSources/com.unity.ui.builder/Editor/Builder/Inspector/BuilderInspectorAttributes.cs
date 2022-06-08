@@ -614,7 +614,7 @@ namespace Unity.UI.Builder
             string value;
             if (attributeValue is Enum @enum)
                 value = @enum.ToString();
-            else if (attributeValue is List<string> list)
+            else if (attributeValue is IEnumerable<string> list)
             {
                 value = string.Join(",", list.ToArray());
             }
@@ -1145,7 +1145,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                vea.SetAttributeValue(field.bindingPath, value);
+                vea.SetAttribute(field.bindingPath, value);
 
                 // Call Init();
                 m_Inspector.CallInitOnElement();

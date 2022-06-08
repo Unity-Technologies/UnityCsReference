@@ -79,6 +79,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
         internal static extern ProfilerRecorderHandle GetByName(ProfilerCategory category, string name);
         // Burst shadow
         [NativeMethod(IsThreadSafe = true)]
+        // This will only be referenced from Burst-generated code, in place of the version without the
+        // __Unmanaged suffix. So we need to make sure it will not get stripped.
+        [RequiredMember]
         internal static extern unsafe ProfilerRecorderHandle GetByName__Unmanaged(ProfilerCategory category, byte* name, int nameLen);
 
         // 256 : Aggressive inlining

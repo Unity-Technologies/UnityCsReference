@@ -215,7 +215,7 @@ namespace UnityEngine
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Please use Collision.rigidbody, Collision.transform or Collision.collider instead", false)]
-        public Component other { get { return m_Body != null ? m_Body : m_Collider; } }
+        public Component other { get { return body != null ? body : collider; } }
     }
 }
 

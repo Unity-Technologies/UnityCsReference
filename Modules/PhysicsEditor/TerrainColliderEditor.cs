@@ -30,10 +30,12 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
+            EditorGUILayout.PropertyField(m_ProvidesContacts, BaseStyles.providesContacts);
             EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
             EditorGUILayout.PropertyField(m_TerrainData, Styles.terrainContent);
             EditorGUILayout.PropertyField(m_EnableTreeColliders, Styles.treeColliderContent);
 
+            ShowLayerOverridesProperties();
             serializedObject.ApplyModifiedProperties();
         }
     }

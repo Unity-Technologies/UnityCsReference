@@ -6,33 +6,41 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+using ObjectField = UnityEditor.UIElements.ObjectField;
 
 abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 {
     private static float kDriveWidgetWidth = 18.0f;
     private static GUIStyle kDropDownStyle = null;
     private static Color kMissingOverrideColor = new Color(1.0f, 0.11f, 0.11f, 1.0f);
+    protected static string kSetExposedPropertyMsg = "Set Exposed Property";
+    protected static string kClearExposedPropertyMsg = "Clear Exposed Property";
+    private  const string kVisualElementName = "ExposedReference";
 
-    protected readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
-    protected readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TrTextContent("Unexpose Property");
+    internal readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
+    internal readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TrTextContent("Unexpose Property");
     protected readonly GUIContent NotFoundOn = EditorGUIUtility.TrTextContent("not found on");
     protected readonly GUIContent OverridenByContent = EditorGUIUtility.TrTextContent("Overridden by ");
 
     private GUIContent m_ModifiedLabel = new GUIContent();
 
-    protected enum ExposedPropertyMode
+    internal enum ExposedPropertyMode
     {
         DefaultValue,
         Named,
         NamedGUID
     }
 
-    protected enum OverrideState
+    internal enum OverrideState
     {
         DefaultValue,
         MissingOverride,
         Overridden
     }
+
+    ExposedReferenceObject m_Item;
 
     public BaseExposedPropertyDrawer()
     {
@@ -40,7 +48,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
             kDropDownStyle = "ShurikenDropdown";
     }
 
-    static ExposedPropertyMode GetExposedPropertyMode(string propertyName)
+    static internal ExposedPropertyMode GetExposedPropertyMode(string propertyName)
     {
         if (string.IsNullOrEmpty(propertyName))
             return ExposedPropertyMode.DefaultValue;
@@ -72,10 +80,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         UnityEditor.SerializedProperty prop,
         GUIContent label)
     {
-        SerializedProperty defaultValue = prop.FindPropertyRelative("defaultValue");
-        SerializedProperty exposedName = prop.FindPropertyRelative("exposedName");
-        var exposedNameStr = exposedName.stringValue;
-        var propertyMode = GetExposedPropertyMode(exposedNameStr);
+        m_Item = new ExposedReferenceObject(prop);
 
         Rect propertyFieldPosition = position;
         propertyFieldPosition.xMax = propertyFieldPosition.xMax - ExposedReferencePropertyDrawer.kDriveWidgetWidth;
@@ -84,35 +89,34 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         driveFieldPosition.x = propertyFieldPosition.xMax;
         driveFieldPosition.width = ExposedReferencePropertyDrawer.kDriveWidgetWidth;
 
-        var exposedPropertyTable = GetExposedPropertyTable(prop);
-
-        bool showContextMenu = exposedPropertyTable != null;
-        var propertyName = new PropertyName(exposedNameStr);
-
-        OverrideState currentOverrideState = OverrideState.DefaultValue;
-        var currentReferenceValue = Resolve(propertyName, exposedPropertyTable, defaultValue.objectReferenceValue, out currentOverrideState);
+        bool showContextMenu = m_Item.exposedPropertyTable != null;
+        var propertyName = new PropertyName(m_Item.exposedPropertyNameString);
 
         var previousColor = GUI.color;
         var wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
 
-        var valuePosition = DrawLabel(showContextMenu, currentOverrideState, label, position, exposedPropertyTable, exposedNameStr, exposedName, defaultValue);
+        var valuePosition = DrawLabel(showContextMenu, label, position, m_Item);
         var indent = EditorGUI.indentLevel;
         EditorGUI.indentLevel = 0;
 
-        if (propertyMode == ExposedPropertyMode.DefaultValue || propertyMode == ExposedPropertyMode.NamedGUID)
+        if (m_Item.propertyMode == ExposedPropertyMode.DefaultValue || m_Item.propertyMode == ExposedPropertyMode.NamedGUID)
         {
-            OnRenderProperty(valuePosition, propertyName, currentReferenceValue, defaultValue, exposedName, propertyMode, exposedPropertyTable);
+            OnRenderProperty(valuePosition, propertyName, m_Item.currentReferenceValue, m_Item.exposedPropertyDefault,
+                m_Item.exposedPropertyName,
+                m_Item.propertyMode, m_Item.exposedPropertyTable);
         }
         else
         {
             valuePosition.width /= 2;
             EditorGUI.BeginChangeCheck();
-            exposedNameStr = EditorGUI.TextField(valuePosition, exposedNameStr);
+            m_Item.exposedPropertyNameString = EditorGUI.TextField(valuePosition, m_Item.exposedPropertyNameString);
             if (EditorGUI.EndChangeCheck())
-                exposedName.stringValue = exposedNameStr;
+                m_Item.exposedPropertyName.stringValue = m_Item.exposedPropertyNameString;
 
             valuePosition.x += valuePosition.width;
-            OnRenderProperty(valuePosition, new PropertyName(exposedNameStr), currentReferenceValue, defaultValue, exposedName, propertyMode, exposedPropertyTable);
+            OnRenderProperty(valuePosition, new PropertyName(m_Item.exposedPropertyNameString),
+                m_Item.currentReferenceValue, m_Item.exposedPropertyDefault,
+                m_Item.exposedPropertyName, m_Item.propertyMode, m_Item.exposedPropertyTable);
         }
 
         GUI.color = previousColor;
@@ -121,7 +125,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         if (showContextMenu && GUI.Button(driveFieldPosition, GUIContent.none, kDropDownStyle))
         {
             GenericMenu menu = new GenericMenu();
-            PopulateContextMenu(menu, currentOverrideState, exposedPropertyTable, exposedName, defaultValue);
+            PopulateContextMenu(menu, m_Item);
             menu.ShowAsContext();
             Event.current.Use();
         }
@@ -129,14 +133,87 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         EditorGUI.indentLevel = indent;
     }
 
-    Rect DrawLabel(bool showContextMenu, OverrideState currentOverrideState, GUIContent label, Rect position, IExposedPropertyTable exposedPropertyTable, string exposedNameStr, SerializedProperty exposedName, SerializedProperty defaultValue)
+    public override VisualElement CreatePropertyGUI(SerializedProperty prop)
+    {
+        m_Item = new ExposedReferenceObject(prop);
+
+        var propertyType = fieldInfo.FieldType;
+
+        if (propertyType.IsArrayOrList())
+        {
+            propertyType = propertyType.GetArrayOrListElementType();
+        }
+
+        var typeOfExposedReference = propertyType.GetGenericArguments()[0];
+
+        ObjectField obj = new ObjectField()
+        {
+            name = kVisualElementName,
+            label = prop.displayName,
+            bindingPath = m_Item.exposedPropertyDefault.propertyPath,
+            objectType = typeOfExposedReference,
+            value = m_Item.currentReferenceValue,
+            allowSceneObjects = m_Item.exposedPropertyTable != null
+        };
+
+        obj.RegisterValueChangedCallback(SetReference);
+        obj.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+
+        return obj;
+    }
+
+    void SetReference(ChangeEvent<Object> evt)
+    {
+        SetReference(evt.newValue);
+        m_Item.currentReferenceValue = evt.newValue;
+    }
+
+    internal void SetReference(Object newValue)
+    {
+        if (m_Item.exposedPropertyTable == null)
+            return;
+
+        if (m_Item.propertyMode == ExposedPropertyMode.DefaultValue)
+        {
+            // We can directly assign to the exposed property default value if
+            // * asset we are modifying is in the scene
+            // * object we are assigning to the property is also an asset
+            if (!EditorUtility.IsPersistent(m_Item.exposedPropertyDefault.serializedObject.targetObject) ||
+                newValue == null || EditorUtility.IsPersistent(newValue))
+            {
+                if (!EditorGUI.CheckForCrossSceneReferencing(
+                        m_Item.exposedPropertyDefault.serializedObject.targetObject, newValue))
+                {
+                    m_Item.exposedPropertyDefault.objectReferenceValue = newValue;
+                }
+            }
+            else
+            {
+                var guid = UnityEditor.GUID.Generate();
+                var str = guid.ToString();
+                m_Item.exposedPropertyNameString = str;
+                m_Item.exposedPropertyName.stringValue = str;
+
+                Undo.RecordObject(m_Item.exposedPropertyTable as UnityEngine.Object, kSetExposedPropertyMsg);
+                m_Item.exposedPropertyTable.SetReferenceValue(m_Item.exposedPropertyNameString, newValue);
+            }
+        }
+        else
+        {
+            Undo.RecordObject(m_Item.exposedPropertyTable as UnityEngine.Object, kSetExposedPropertyMsg);
+            m_Item.exposedPropertyTable.SetReferenceValue(m_Item.exposedPropertyNameString, newValue);
+        }
+    }
+
+
+    Rect DrawLabel(bool showContextMenu, GUIContent label, Rect position, ExposedReferenceObject item)
     {
         if (showContextMenu)
         {
             position.xMax = position.xMax - ExposedReferencePropertyDrawer.kDriveWidgetWidth;
         }
 
-        EditorGUIUtility.SetBoldDefaultFont(currentOverrideState != OverrideState.DefaultValue);
+        EditorGUIUtility.SetBoldDefaultFont(item.currentOverrideState != OverrideState.DefaultValue);
 
         m_ModifiedLabel.text = label.text;
         m_ModifiedLabel.tooltip = label.tooltip;
@@ -146,25 +223,27 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         {
             m_ModifiedLabel.tooltip += "\n";
         }
-        if (currentOverrideState == OverrideState.MissingOverride)
+
+        if (item.currentOverrideState == OverrideState.MissingOverride)
         {
             GUI.color = kMissingOverrideColor;
-            m_ModifiedLabel.tooltip += label.text + " " + NotFoundOn.text + " " + exposedPropertyTable + ".";
+            m_ModifiedLabel.tooltip += label.text + " " + NotFoundOn.text + " " + item.exposedPropertyTable + ".";
         }
-        else if (currentOverrideState == OverrideState.Overridden && exposedPropertyTable != null)
+        else if (item.currentOverrideState == OverrideState.Overridden && item.exposedPropertyTable != null)
         {
-            m_ModifiedLabel.tooltip += OverridenByContent.text + exposedPropertyTable + ".";
+            m_ModifiedLabel.tooltip += OverridenByContent.text + item.exposedPropertyTable + ".";
         }
 
         var prefixRect = EditorGUI.PrefixLabel(position, m_ModifiedLabel);
 
         // Show contextual menu
-        if (exposedPropertyTable != null && Event.current.type == EventType.ContextClick)
+        if (item.exposedPropertyTable != null && Event.current.type == EventType.ContextClick)
         {
             if (position.Contains(Event.current.mousePosition))
             {
                 GenericMenu menu = new GenericMenu();
-                PopulateContextMenu(menu, string.IsNullOrEmpty(exposedNameStr) ? OverrideState.DefaultValue : OverrideState.Overridden, exposedPropertyTable, exposedName, defaultValue);
+                item.currentOverrideState = string.IsNullOrEmpty(item.exposedPropertyNameString) ? OverrideState.DefaultValue : OverrideState.Overridden;
+                PopulateContextMenu(menu, item);
                 menu.ShowAsContext();
             }
         }
@@ -172,29 +251,42 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         return prefixRect;
     }
 
-    protected Object Resolve(PropertyName exposedPropertyName, IExposedPropertyTable exposedPropertyTable, Object defaultValue, out OverrideState currentOverrideState)
+    protected abstract void PopulateContextMenu(GenericMenu menu, ExposedReferenceObject item);
+
+    // UITK context menu
+    void BuildContextualMenu(ContextualMenuPopulateEvent evt)
     {
-        Object objReference = null;
-        bool propertyFoundInTable = false;
-        var propertyIsNamed = !PropertyName.IsNullOrEmpty(exposedPropertyName);
-        currentOverrideState = OverrideState.DefaultValue;
-
-        if (exposedPropertyTable != null)
+        if (m_Item != null && m_Item.exposedPropertyTable != null)
         {
-            objReference = exposedPropertyTable.GetReferenceValue(exposedPropertyName, out propertyFoundInTable);
+            OverrideState currentOverrideState;
+            var currentValue = m_Item.Resolve(out currentOverrideState);
 
-            if (propertyFoundInTable)
-                currentOverrideState = OverrideState.Overridden;
-            else if (propertyIsNamed)
-                currentOverrideState = OverrideState.MissingOverride;
+            if (m_Item.currentOverrideState == OverrideState.DefaultValue)
+            {
+                evt.menu.AppendAction(ExposePropertyContent.text,
+                    (userData) =>
+                    {
+                        ExposedReferencePropertyDrawer.SetReferenceValueMenuItem(m_Item.exposedPropertyTable,
+                            m_Item.exposedPropertyName, currentValue);
+                    });
+            }
+            else
+            {
+                evt.menu.AppendAction(UnexposePropertyContent.text, (userData) =>
+                {
+                    ExposedReferencePropertyDrawer.ClearReferenceValueMenuItem(m_Item.exposedPropertyTable,
+                        m_Item.exposedPropertyName, new PropertyName(m_Item.exposedPropertyName.stringValue));
+                });
+            }
         }
 
-        return currentOverrideState == OverrideState.Overridden ? objReference : defaultValue;
+        evt.menu.AppendAction("Properties...",
+            (userData) =>
+            {
+                UnityEditor.EditorUtility.OpenPropertyEditor(m_Item.currentReferenceValue);
+            });
     }
-
-    protected abstract void PopulateContextMenu(GenericMenu menu, OverrideState overrideState, IExposedPropertyTable exposedPropertyTable, SerializedProperty exposedName, SerializedProperty defaultValue);
 }
-
 
 [CustomPropertyDrawer(typeof(ExposedReference<>))]
 class ExposedReferencePropertyDrawer : BaseExposedPropertyDrawer
@@ -217,70 +309,52 @@ class ExposedReferencePropertyDrawer : BaseExposedPropertyDrawer
         var typeOfExposedReference = propertyType.GetGenericArguments()[0];
 
         EditorGUI.BeginChangeCheck();
-        var newValue = EditorGUI.ObjectField(position, currentReferenceValue, typeOfExposedReference, exposedPropertyTable != null);
+        var newValue = EditorGUI.ObjectField(position, currentReferenceValue, typeOfExposedReference,
+            exposedPropertyTable != null);
 
         if (EditorGUI.EndChangeCheck())
         {
-            if (mode == ExposedPropertyMode.DefaultValue)
-            {
-                // We can directly assign to the exposed property default value if
-                // * asset we are modifying is in the scene
-                // * object we are assigning to the property is also an asset
-                if (!EditorUtility.IsPersistent(exposedPropertyDefault.serializedObject.targetObject) || newValue == null || EditorUtility.IsPersistent(newValue))
-                {
-                    if (!EditorGUI.CheckForCrossSceneReferencing(exposedPropertyDefault.serializedObject.targetObject, newValue))
-                    {
-                        exposedPropertyDefault.objectReferenceValue = newValue;
-                    }
-                }
-                else
-                {
-                    var guid = UnityEditor.GUID.Generate();
-                    var str = guid.ToString();
-                    exposedPropertyNameString = new PropertyName(str);
-                    exposedPropertyName.stringValue = str;
-
-                    Undo.RecordObject(exposedPropertyTable as UnityEngine.Object, "Set Exposed Property");
-                    exposedPropertyTable.SetReferenceValue(exposedPropertyNameString, newValue);
-                }
-            }
-            else
-            {
-                Undo.RecordObject(exposedPropertyTable as UnityEngine.Object, "Set Exposed Property");
-                exposedPropertyTable.SetReferenceValue(exposedPropertyNameString, newValue);
-            }
+            SetReference(newValue);
         }
     }
 
-    protected override void PopulateContextMenu(GenericMenu menu, OverrideState overrideState, IExposedPropertyTable exposedPropertyTable, SerializedProperty exposedName, SerializedProperty defaultValue)
+    protected override void PopulateContextMenu(GenericMenu menu, ExposedReferenceObject item)
     {
-        var propertyName = new PropertyName(exposedName.stringValue);
+        var propertyName = new PropertyName(item.exposedPropertyName.stringValue);
         OverrideState currentOverrideState;
-        UnityEngine.Object currentValue = Resolve(new PropertyName(exposedName.stringValue), exposedPropertyTable, defaultValue.objectReferenceValue, out currentOverrideState);
+        UnityEngine.Object currentValue = item.Resolve(out currentOverrideState);
 
-        if (overrideState == OverrideState.DefaultValue)
+        if (item.currentOverrideState == OverrideState.DefaultValue)
         {
-            menu.AddItem(new GUIContent(ExposePropertyContent.text), false, (userData) =>
-            {
-                var guid = UnityEditor.GUID.Generate();
-                exposedName.stringValue = guid.ToString();
-                exposedName.serializedObject.ApplyModifiedProperties();
-                var newPropertyName = new PropertyName(exposedName.stringValue);
-
-                Undo.RecordObject(exposedPropertyTable as Object, "Set Exposed Property");
-                exposedPropertyTable.SetReferenceValue(newPropertyName, currentValue);
-            } , null);
+            menu.AddItem(new GUIContent(ExposePropertyContent.text), false,
+                (userData) => { SetReferenceValueMenuItem(item.exposedPropertyTable, item.exposedPropertyName, currentValue); }, null);
         }
         else
         {
-            menu.AddItem(UnexposePropertyContent, false, (userData) =>
-            {
-                exposedName.stringValue = "";
-                exposedName.serializedObject.ApplyModifiedProperties();
-
-                Undo.RecordObject(exposedPropertyTable as Object, "Clear Exposed Property");
-                exposedPropertyTable.ClearReferenceValue(propertyName);
-            }, null);
+            menu.AddItem(UnexposePropertyContent, false,
+                (userData) => { ClearReferenceValueMenuItem(item.exposedPropertyTable, item.exposedPropertyName, propertyName); }, null);
         }
+    }
+
+    internal static void SetReferenceValueMenuItem(IExposedPropertyTable exposedPropertyTable,
+        SerializedProperty exposedName, Object currentValue)
+    {
+        var guid = UnityEditor.GUID.Generate();
+        exposedName.stringValue = guid.ToString();
+        exposedName.serializedObject.ApplyModifiedProperties();
+        var newPropertyName = new PropertyName(exposedName.stringValue);
+
+        Undo.RecordObject(exposedPropertyTable as Object, kSetExposedPropertyMsg);
+        exposedPropertyTable.SetReferenceValue(newPropertyName, currentValue);
+    }
+
+    internal static void ClearReferenceValueMenuItem(IExposedPropertyTable exposedPropertyTable,
+        SerializedProperty exposedName, PropertyName propertyName)
+    {
+        exposedName.stringValue = "";
+        exposedName.serializedObject.ApplyModifiedProperties();
+
+        Undo.RecordObject(exposedPropertyTable as Object, kClearExposedPropertyMsg);
+        exposedPropertyTable.ClearReferenceValue(propertyName);
     }
 }

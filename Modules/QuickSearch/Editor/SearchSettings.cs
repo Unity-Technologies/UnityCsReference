@@ -302,6 +302,11 @@ namespace UnityEditor.Search
             scopes[$"{prefix}.{hash:X8}"] = value.ToString();
         }
 
+        internal static void SetScopeValue(string prefix, int hash, Rect rect)
+        {
+            scopes[$"{prefix}.{hash:X8}"] = $"{rect.x};{rect.y};{rect.width};{rect.height}";
+        }
+
         internal static string GetScopeValue(string prefix, int hash, string defaultValue)
         {
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
@@ -323,6 +328,17 @@ namespace UnityEditor.Search
             if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
             {
                 return Convert.ToSingle(value);
+            }
+            return defaultValue;
+        }
+
+        internal static Rect GetScopeValue(string prefix, int hash, Rect defaultValue)
+        {
+            if (scopes.TryGetValue($"{prefix}.{hash:X8}", out var value))
+            {
+                var rs = value.Split(";");
+                if (rs.Length == 4)
+                    return new Rect(Convert.ToSingle(rs[0]), Convert.ToSingle(rs[1]), Convert.ToSingle(rs[2]), Convert.ToSingle(rs[3]));
             }
             return defaultValue;
         }

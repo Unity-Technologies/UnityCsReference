@@ -284,8 +284,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void DoPackageDescriptionLabel()
         {
             var descriptionStyle = EditorStyles.textArea;
-            var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(m_Version.description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-            EditorGUI.SelectableLabel(descriptionRect, m_Version.description, descriptionStyle);
+            var description = !string.IsNullOrEmpty(m_Package.productDescription) ? m_Package.productDescription : m_Version.description;
+            var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+            EditorGUI.SelectableLabel(descriptionRect, description, descriptionStyle);
         }
 
         private void DoPackageDescriptionLayout()

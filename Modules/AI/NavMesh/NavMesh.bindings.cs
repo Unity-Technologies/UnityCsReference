@@ -73,6 +73,8 @@ namespace UnityEngine.AI
         public extern Vector3 position { get; set; }
         public extern Quaternion rotation { get; set; }
         internal extern bool hasHeightMeshData { [NativeMethod("HasHeightMeshData")] get; }
+
+        internal extern NavMeshBuildSettings buildSettings { get; }
     }
 
     public struct NavMeshDataInstance
@@ -98,6 +100,15 @@ namespace UnityEngine.AI
                     Debug.LogError("Cannot set 'owner' on an invalid NavMeshDataInstance");
             }
         }
+
+        internal void FlagAsInSelectionHierarchy()
+        {
+            if (valid)
+                FlagSurfaceAsInSelectionHierarchy(id);
+        }
+
+        [StaticAccessor("GetNavMeshManager()", StaticAccessorType.Dot)]
+        static extern void FlagSurfaceAsInSelectionHierarchy(int id);
     }
 
     // Keep this struct in sync with the one defined in "NavMeshBindingTypes.h"

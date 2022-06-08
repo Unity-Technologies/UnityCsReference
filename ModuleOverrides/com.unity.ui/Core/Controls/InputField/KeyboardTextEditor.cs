@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
         public KeyboardTextEditorEventHandler(TextElement textElement, TextEditingUtilities editingUtilities)
             : base(textElement, editingUtilities)
         {
+            editingUtilities.multiline = textElement.edition.multiline;
         }
 
         public override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -81,9 +82,7 @@ namespace UnityEngine.UIElements
             if (editingUtilities.HandleKeyEvent(m_ImguiEvent, false))
             {
                 if (textElement.text != editingUtilities.text)
-                {
                     m_Changed = true;
-                }
                 evt.StopPropagation();
             }
             else
@@ -142,23 +141,13 @@ namespace UnityEngine.UIElements
                 else
                 {
                     // if we have a composition string, make sure we clear the previous selection.
-                    if(editingUtilities.UpdateImeState())
+                    var oldIsCompositionActive = editingUtilities.isCompositionActive;
+                    if(editingUtilities.UpdateImeState() || oldIsCompositionActive != editingUtilities.isCompositionActive)
                         m_Changed = true;
                 }
             }
-
             if (m_Changed)
-            {
                 UpdateLabel();
-                // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
-                textElement.uitkTextHandle.Update();
-
-                if (!textElement.edition.isDelayed)
-                    textElement.edition.UpdateValueFromText?.Invoke();
-            }
-
-            // Scroll offset might need to be updated
-            textElement.edition.UpdateScrollOffset?.Invoke();
         }
 
         void UpdateLabel()
@@ -170,8 +159,12 @@ namespace UnityEngine.UIElements
                 editingUtilities.SetImeWindowPosition(new Vector2(textElement.worldBound.x, textElement.worldBound.y));
 
             var fullText = editingUtilities.GeneratePreviewString(textElement.enableRichText);
-            editingUtilities.text = textElement.edition.CullString(fullText);
-            textElement.edition.UpdateText(editingUtilities.text);
+
+            //Note that UpdateText will update editingUtilities with the latest text if validations were made.
+            textElement.edition.UpdateText(fullText);
+
+            if (!textElement.edition.isDelayed)
+                textElement.edition.UpdateValueFromText?.Invoke();
 
             if (imeEnabled)
             {
@@ -181,14 +174,16 @@ namespace UnityEngine.UIElements
                 // We need to move the cursor so that it appears at the end of the composition string when rendered in generateVisualContent.
                 editingUtilities.EnableCursorPreviewState();
             }
+
+            // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
+            // The latest text geometry is also required for updating the cusor and selection position.
+            textElement.uitkTextHandle.Update();
         }
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)
         {
             if (!textElement.edition.hasFocus)
                 return;
-
-            m_Changed = false;
 
             switch (evt.commandName)
             {
@@ -219,8 +214,8 @@ namespace UnityEngine.UIElements
             if (!textElement.edition.hasFocus)
                 return;
 
-            m_Changed = false;
 
+            m_Changed = false;
             bool mayHaveChanged = false;
             string oldText = editingUtilities.text;
             switch (evt.commandName)
@@ -231,16 +226,19 @@ namespace UnityEngine.UIElements
                 case EventCommandNames.Cut:
                     editingUtilities.Cut();
                     mayHaveChanged = true;
+                    evt.StopPropagation();
                     break;
                 case EventCommandNames.Paste:
                     editingUtilities.Paste();
                     mayHaveChanged = true;
+                    evt.StopPropagation();
                     break;
                 case EventCommandNames.Delete:
                     // This "Delete" command stems from a Shift-Delete in the text
                     // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
                     editingUtilities.Cut();
                     mayHaveChanged = true;
+                    evt.StopPropagation();
                     break;
             }
 
@@ -248,21 +246,11 @@ namespace UnityEngine.UIElements
             {
                 if (oldText != editingUtilities.text)
                     m_Changed = true;
-
                 evt.StopPropagation();
             }
 
             if (m_Changed)
-            {
                 UpdateLabel();
-                evt.StopPropagation();
-
-                // Scroll offset might need to be updated
-                textElement.edition.UpdateScrollOffset?.Invoke();
-
-                if (!textElement.edition.isDelayed)
-                    textElement.edition.UpdateValueFromText();
-            }
         }
 
         void OnNavigationEvent<TEvent>(NavigationEventBase<TEvent> evt) where TEvent : NavigationEventBase<TEvent>, new()

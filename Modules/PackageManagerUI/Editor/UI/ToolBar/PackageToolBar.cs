@@ -146,7 +146,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_BuiltInActions.Add(m_ImportButton.element);
 
             m_RedownloadButton = new PackageRedownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
-            m_RedownloadButton.SetGlobalDisableConditions(m_DisableIfCompiling);
+            m_RedownloadButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_RedownloadButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_RedownloadButton.element);
 

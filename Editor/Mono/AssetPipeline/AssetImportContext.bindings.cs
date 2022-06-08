@@ -39,8 +39,6 @@ namespace UnityEditor.AssetImporters
 
         public extern BuildTarget selectedBuildTarget { get; }
 
-        extern void LogMessage(string msg, string file, int line, UnityEngine.Object obj, bool isAnError);
-
         [NativeThrows]
         public extern void SetMainObject(Object obj);
         public extern Object mainObject { get; }
@@ -175,36 +173,34 @@ namespace UnityEditor.AssetImporters
         [NativeName("DependsOnCustomDependency")]
         private extern void DependsOnCustomDependencyInternal(string path);
 
+        extern void AddImportLog(string msg, string file, int line, ImportLogFlags flags, UnityEngine.Object obj);
+
+        void AddImportLog(string msg, ImportLogFlags flags, UnityEngine.Object obj)
+        {
+            var st = new StackTrace(2, true);
+            var sf = st.GetFrame(0);
+            AddImportLog(msg, sf.GetFileName(), sf.GetFileLineNumber(), flags, obj);
+        }
+
         public void LogImportError(string msg, UnityEngine.Object obj = null)
         {
-            AddToLog(msg, true, obj);
+            AddImportLog(msg, ImportLogFlags.Error, obj);
         }
 
         internal void LogImportError(string msg, string file, int line, UnityEngine.Object obj = null)
         {
-            AddToLog(msg, file, line, true, obj);
+            AddImportLog(msg, file, line, ImportLogFlags.Error, obj);
         }
 
         public void LogImportWarning(string msg, UnityEngine.Object obj = null)
         {
-            AddToLog(msg, false, obj);
+            AddImportLog(msg, ImportLogFlags.Warning, obj);
         }
 
         internal void LogImportWarning(string msg, string file, int line, UnityEngine.Object obj = null)
         {
-            AddToLog(msg, file, line, false, obj);
+            AddImportLog(msg, file, line, ImportLogFlags.Warning, obj);
         }
 
-        void AddToLog(string msg, bool isAnError, UnityEngine.Object obj)
-        {
-            var st = new StackTrace(2, true);
-            var sf = st.GetFrame(0);
-            AddToLog(msg, sf.GetFileName(), sf.GetFileLineNumber(), isAnError, obj);
-        }
-
-        void AddToLog(string msg, string file, int line, bool isAnError, UnityEngine.Object obj)
-        {
-            LogMessage(msg, file, line, obj, isAnError);
-        }
     }
 }

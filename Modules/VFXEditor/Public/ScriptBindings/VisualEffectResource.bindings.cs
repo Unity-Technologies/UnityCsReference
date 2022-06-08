@@ -447,7 +447,7 @@ namespace UnityEditor.VFX
         public void SetRuntimeData(VFXExpressionSheet sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] bufferDesc,
+            VFXGPUBufferDesc[] gpuBufferDesc,
             VFXCPUBufferDesc[] cpuBufferDesc,
             VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
             VFXShaderSourceDesc[] shaderSourceDesc,
@@ -461,14 +461,14 @@ namespace UnityEditor.VFX
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, version);
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, version);
         }
 
         //This version is for backward compatibility
         public void SetRuntimeData(VFXExpressionSheet sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] bufferDesc,
+            VFXGPUBufferDesc[] gpuBufferDesc,
             VFXCPUBufferDesc[] cpuBufferDesc,
             VFXTemporaryGPUBufferDesc[] temporaryBufferDesc)
         {
@@ -478,14 +478,14 @@ namespace UnityEditor.VFX
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
-            SetRuntimeDataDeprecated(internalSheet, systemDesc, eventDesc, bufferDesc, temporaryBufferDesc, cpuBufferDesc, this.shaderSources, defaultVersion);
+            SetRuntimeDataDeprecated(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, this.shaderSources, defaultVersion);
         }
 
         [NativeThrows]
         extern private void SetRuntimeData(VFXExpressionSheetInternal sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] bufferDesc,
+            VFXGPUBufferDesc[] gpuBufferDesc,
             VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
             VFXCPUBufferDesc[] cpuBufferDesc,
             VFXShaderSourceDesc[] shaderSourceDesc,
@@ -499,7 +499,7 @@ namespace UnityEditor.VFX
         extern private void SetRuntimeDataDeprecated(VFXExpressionSheetInternal sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] bufferDesc,
+            VFXGPUBufferDesc[] gpuBufferDesc,
             VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
             VFXCPUBufferDesc[] cpuBufferDesc,
             VFXShaderSourceDesc[] shaderSourceDesc,
@@ -587,5 +587,8 @@ namespace UnityEditor.VFX
 
         internal static Action<VisualEffectResource> onCompileResource;
         internal static Action<VisualEffectResource, Material, UnityObject> onSetupMaterial;
+
+        extern internal void EnableInstancing();
+        extern internal void DisableInstancing(VFXInstancingDisabledReason reason = VFXInstancingDisabledReason.Unknown);
     }
 }

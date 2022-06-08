@@ -265,4 +265,108 @@ namespace UnityEngine.UIElements
         /// </summary>
         None = YogaDisplay.None
     }
+
+    /// <summary>
+    /// Defines the position of the background
+    /// </summary>
+    public enum BackgroundPositionKeyword
+    {
+        /// <summary>
+        /// Vertical alignment is centered and/or Horizontal alignment is centered.
+        /// This is the default value to make sure it is backward compatible
+        /// with unity-background-scale-mode default value.
+        /// </summary>
+        Center = 0,
+
+        /// <summary>
+        /// Vertical alignment is at the top.
+        /// </summary>
+        Top = 1,
+
+        /// <summary>
+        /// Vertical alignment is at the bottom.
+        /// </summary>
+        Bottom = 2,
+
+        /// <summary>
+        /// Horizontal alignment is to the left.
+        /// </summary>
+        Left = 3,
+
+        /// <summary>
+        /// Horizontal alignment is to the right.
+        /// </summary>
+        Right = 4,
+    }
+
+
+    /// <summary>
+    /// Defines how the background is repeated
+    /// </summary>
+    public enum Repeat
+    {
+        /// <summary>
+        /// The background-image is not repeated. The image will only be shown once
+        /// This is the default to keep background compatibility with
+        /// unity-background-scale-mode
+        /// </summary>
+        NoRepeat = 0,
+
+        /// <summary>
+        /// The background-image is repeated as much as possible without clipping.
+        /// The first and last image is pinned to either side of the element,
+        /// and whitespace is distributed evenly between the images
+        /// </summary>
+        Space = 1,
+
+        /// <summary>
+        /// The background-image is repeated and squished or stretched to fill the space (no gaps)
+        /// </summary>
+        Round = 2,
+
+        /// <summary>
+        /// The background image is repeated both vertically and horizontally.
+        /// The last image will be clipped if it does not fit.
+        /// </summary>
+        Repeat = 3,
+    }
+
+    /// <summary>
+    /// Defines how the background is repeated (one-value only)
+    /// </summary>
+    internal enum RepeatXY
+    {
+        /// <summary>
+        /// The background image is repeated only horizontally
+        /// </summary>
+        RepeatX = 0,
+
+        /// <summary>
+        /// The background image is repeated only vertically
+        /// </summary>
+        RepeatY = 1,
+    }
+
+    /// <summary>
+    /// Defines the size of the background
+    /// </summary>
+    public enum BackgroundSizeType
+    {
+        /// <summary>
+        /// Determines if the size of the background image comes from the
+        /// <see cref="BackgroundSize.x"/> and <see cref="BackgroundSize.y"/> length values
+        /// </summary>
+        Length = 0,
+
+        /// <summary>
+        /// Resize the background image to cover the entire container,
+        /// even if it has to stretch the image or cut a little bit off one of the edges
+        /// </summary>
+        Cover = 1,
+
+        /// <summary>
+        /// Resize the background image to make sure the image is fully visible
+        /// </summary>
+        Contain = 2,
+    }
 }

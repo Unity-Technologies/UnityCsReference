@@ -133,12 +133,14 @@ namespace UnityEditor
             EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
             GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
+            EditorGUILayout.PropertyField(m_ProvidesContacts, BaseStyles.providesContacts);
             EditorGUILayout.PropertyField(m_Material, BaseStyles.materialContent);
             EditorGUILayout.PropertyField(m_Center, BaseStyles.centerContent);
             EditorGUILayout.PropertyField(m_Radius);
             EditorGUILayout.PropertyField(m_Height);
             EditorGUILayout.PropertyField(m_Direction, Styles.directionContent);
 
+            ShowLayerOverridesProperties();
             serializedObject.ApplyModifiedProperties();
         }
     }

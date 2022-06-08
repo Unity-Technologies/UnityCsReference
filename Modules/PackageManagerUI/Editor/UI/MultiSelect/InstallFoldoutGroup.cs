@@ -27,5 +27,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             base.Refresh();
         }
+
+        public override bool AddPackageVersion(IPackageVersion version)
+        {
+            if (!version.package.Is(PackageType.Upm))
+                return false;
+            return base.AddPackageVersion(version);
+        }
     }
 }

@@ -91,8 +91,8 @@ namespace UnityEditor.AI
         }
 
         public static void CollectSourcesInStage(
-            Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
-            List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
+            Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, Scene stageProxy, List<NavMeshBuildSource> results)
         {
             if (markups == null)
                 throw new ArgumentNullException(nameof(markups));
@@ -104,14 +104,19 @@ namespace UnityEditor.AI
             // Ensure strictly positive extents
             includedWorldBounds.extents = Vector3.Max(includedWorldBounds.extents, 0.001f * Vector3.one);
             var resultsArray = CollectSourcesInStageInternal(
-                includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, markups.ToArray(), stageProxy);
+                includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, generateLinksByDefault, markups.ToArray(), includeOnlyMarkedObjects, stageProxy);
             results.Clear();
             results.AddRange(resultsArray);
         }
 
+        public static void CollectSourcesInStage(Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
+        {
+            CollectSourcesInStage(includedWorldBounds, includedLayerMask, geometry, defaultArea, generateLinksByDefault:false, markups, includeOnlyMarkedObjects:false, stageProxy, results);
+        }
+
         public static void CollectSourcesInStage(
-            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
-            List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
+            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, bool generateLinksByDefault,
+            List<NavMeshBuildMarkup> markups, bool includeOnlyMarkedObjects, Scene stageProxy, List<NavMeshBuildSource> results)
         {
             if (markups == null)
                 throw new ArgumentNullException(nameof(markups));
@@ -124,14 +129,21 @@ namespace UnityEditor.AI
 
             var empty = new Bounds();
             var resultsArray = CollectSourcesInStageInternal(
-                includedLayerMask, empty, root, false, geometry, defaultArea, markups.ToArray(), stageProxy);
+                includedLayerMask, empty, root, false, geometry, defaultArea, generateLinksByDefault, markups.ToArray(), includeOnlyMarkedObjects, stageProxy);
             results.Clear();
             results.AddRange(resultsArray);
         }
 
+        public static void CollectSourcesInStage(
+            Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea,
+            List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
+        {
+            CollectSourcesInStage(root, includedLayerMask, geometry, defaultArea, generateLinksByDefault:false, markups, includeOnlyMarkedObjects:false, stageProxy, results);
+        }
+
         [FreeFunction("NavMeshBuilderEditorBindings::CollectSourcesInStageInternal")]
         static extern NavMeshBuildSource[] CollectSourcesInStageInternal(
-            int includedLayerMask, Bounds includedWorldBounds, Transform root, bool useBounds,
-            NavMeshCollectGeometry geometry, int defaultArea, NavMeshBuildMarkup[] markups, Scene stageProxy);
+            int includedLayerMask, Bounds includedWorldBounds, Transform root, bool useBounds, NavMeshCollectGeometry geometry,
+            int defaultArea, bool generateLinksByDefault, NavMeshBuildMarkup[] markups, bool includeOnlyMarkedObjects, Scene stageProxy);
     }
 }

@@ -16,6 +16,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Prefabs/PrefabCreation.h")]
     [NativeHeader("Editor/Src/Prefabs/PrefabConnection.h")]
     [NativeHeader("Editor/Src/Prefabs/PrefabInstance.h")]
+    [NativeHeader("Editor/Src/Prefabs/ReplacePrefabInstance.h")]
     [NativeHeader("Editor/Mono/Prefabs/PrefabUtility.bindings.h")]
     public sealed partial class PrefabUtility
     {
@@ -135,6 +136,10 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
         extern static private Object InstantiatePrefab_internal(Object target, Scene destinationScene, Transform parent);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern static private bool ReplacePrefabAssetOfPrefabInstance_Internal([NotNull] GameObject instanceRoot, [NotNull] GameObject assetRootRoot, PrefabReplacingSettings settings);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

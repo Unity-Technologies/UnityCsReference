@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -55,13 +56,15 @@ using UnityEngine.UIElements.UIR;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Object to draw 2D vector graphics. Do not instantiate this class directly. Access it
-    /// from the <see cref="MeshGenerationContext.painter2D"/> property.
+    /// Object to draw 2D vector graphics.
     /// </summary>
-    public class Painter2D
+    public class Painter2D : IDisposable
     {
         private MeshGenerationContext m_Ctx;
+        internal DetachedAllocator m_DetachedAllocator;
         internal SafeHandleAccess m_Handle;
+
+        internal bool isDetached => m_DetachedAllocator != null;
 
         // Instantiated internally by UIR, users shouldn't derive from this class.
         internal Painter2D(MeshGenerationContext ctx)
@@ -71,15 +74,75 @@ namespace UnityEngine.UIElements
             Reset();
         }
 
+        /// <summary>
+        /// Initializes an instance of Painter2D.
+        /// </summary>
+        public Painter2D()
+        {
+            m_Handle = new SafeHandleAccess(UIPainter2D.Create(maxArcRadius));
+            m_DetachedAllocator = new DetachedAllocator();
+            isPainterActive = true;
+            Reset();
+        }
+
         internal void Reset()
         {
             UIPainter2D.Reset(m_Handle);
         }
 
-        internal void Destroy()
+        internal MeshWriteData Allocate(int vertexCount, int indexCount)
         {
-            UIPainter2D.Destroy(m_Handle);
-            m_Handle = new SafeHandleAccess(IntPtr.Zero);
+            if (isDetached)
+                return m_DetachedAllocator.Alloc(vertexCount, indexCount);
+            else
+                return m_Ctx.Allocate(vertexCount, indexCount);
+        }
+
+        /// <summary>
+        /// When created as a detached painter, clears the current content. Does nothing otherwise.
+        /// </summary>
+        public void Clear()
+        {
+            if (!isDetached)
+            {
+                Debug.LogError("Clear() cannot be called on a Painter2D associated with a MeshGenerationContext. You should create your own instance of Painter2D instead.");
+                return;
+            }
+
+            m_DetachedAllocator.Clear();
+        }
+
+
+        /// <summary>
+        /// Dispose the Painter2D object and free its internal unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private bool m_Disposed;
+        void Dispose(bool disposing)
+        {
+            if(m_Disposed)
+                return;
+
+            if (disposing)
+            {
+                if (!m_Handle.IsNull())
+                {
+                    UIPainter2D.Destroy(m_Handle);
+                    m_Handle = new SafeHandleAccess(IntPtr.Zero);
+                }
+
+                if (m_DetachedAllocator != null)
+                    m_DetachedAllocator.Dispose();
+            }
+            else
+                UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
+
+            m_Disposed = true;
         }
 
         /// <summary>
@@ -94,10 +157,26 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The color of draw paths when using <see cref="Stroke"/>.
         /// </summary>
+        /// <remarks>
+        /// Setting a stroke color will override the currently set <see cref="strokeGradient"/>.
+        /// </remarks>
         public Color strokeColor
         {
             get => UIPainter2D.GetStrokeColor(m_Handle);
             set => UIPainter2D.SetStrokeColor(m_Handle, value);
+        }
+
+        /// <summary>
+        /// The stroke gradient to use when using <see cref="Stroke"/>.
+        /// </summary>
+        /// <remarks>
+        /// Setting a stroke gradient will override the currently set <see cref="strokeColor"/>.
+        /// Setting a null stroke gradient will remove it and fall back on the currently set <see cref="strokeColor"/>.
+        /// </remarks>
+        public Gradient strokeGradient
+        {
+            get => UIPainter2D.GetStrokeGradient(m_Handle);
+            set => UIPainter2D.SetStrokeGradient(m_Handle, value);
         }
 
         /// <summary>
@@ -138,12 +217,13 @@ namespace UnityEngine.UIElements
         }
 
         internal static bool isPainterActive { get; set; }
-        private static bool ValidateState()
+        private bool ValidateState()
         {
-            if (!isPainterActive)
+            bool isValid = isDetached || isPainterActive;
+            if (!isValid)
                 Debug.LogError("Cannot issue vector graphics commands outside of generateVisualContent callback");
 
-            return isPainterActive;
+            return isValid;
         }
 
         private static float s_MaxArcRadius = -1.0f;
@@ -285,7 +365,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 // transfer all data in a single batch
-                var meshWrite = m_Ctx.Allocate(meshData.vertexCount, meshData.indexCount);
+                var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
                 unsafe
                 {
                     var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
@@ -314,7 +394,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 // transfer all data in a single batch
-                var meshWrite = m_Ctx.Allocate(meshData.vertexCount, meshData.indexCount);
+                var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
                 unsafe
                 {
                     var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
@@ -323,6 +403,88 @@ namespace UnityEngine.UIElements
                     meshWrite.SetAllIndices(indices);
                 }
             }
+        }
+
+        /// <summary>
+        /// Saves the content of this <see cref="Painter2D"/> to a <see cref="VectorImage"/> object.
+        /// </summary>
+        /// <remarks>
+        /// The size and content of the vector image will be determined from the bounding-box of the visible content of the painter object.
+        /// Any offset of the visible content will not be saved in the vector image.
+        /// </remarks>
+        /// <param name="vectorImage">The <see cref="VectorImage"/> object that will be initialized with this painter. This object should not be null.</param>
+        /// <returns>True if the VectorImage initialization succeeded. False otherwise.</returns>
+        public bool SaveToVectorImage(VectorImage vectorImage)
+        {
+            if (!isDetached)
+            {
+                Debug.LogError("SaveToVectorImage cannot be called on a Painter2D associated with a MeshGenerationContext. You should create your own instance of Painter2D instead.");
+                return false;
+            }
+
+            if (vectorImage == null)
+                throw new NullReferenceException("The provided vectorImage is null");
+
+            var meshes = m_DetachedAllocator.meshes;
+
+            // Count the total number of vertices/indices.
+            int vertCount = 0, indCount = 0;
+            foreach (var mwd in meshes)
+            {
+                vertCount += mwd.m_Vertices.Length;
+                indCount += mwd.m_Indices.Length;
+            }
+
+            var bboxMin = new Vector2(float.MaxValue, float.MaxValue);
+            var bboxMax = new Vector2(-float.MaxValue, -float.MaxValue);
+            foreach (var mwd in meshes)
+            {
+                var vs = mwd.m_Vertices;
+                for (int i = 0; i < vs.Length; ++i)
+                {
+                    var v = vs[i];
+                    bboxMin = Vector2.Min(bboxMin, v.position);
+                    bboxMax = Vector2.Max(bboxMax, v.position);
+                }
+            }
+
+            // Allocate + copy
+            var allVerts = new VectorImageVertex[vertCount];
+            var allInds = new UInt16[indCount];
+            int vCount = 0;
+            int iCount = 0;
+            int baseVertex = 0;
+            foreach (var mwd in meshes)
+            {
+                var verts = mwd.m_Vertices;
+                for (int i = 0; i < verts.Length; ++i)
+                {
+                    var v = verts[i];
+                    var p = v.position;
+                    p.x -= bboxMin.x;
+                    p.y -= bboxMin.y;
+                    allVerts[vCount++] = new VectorImageVertex() {
+                        position = new Vector3(p.x, p.y, Vertex.nearZ),
+                        tint = v.tint,
+                        uv = v.uv,
+                        flags = v.flags,
+                        circle = v.circle,
+                    };
+                }
+
+                var inds = mwd.m_Indices;
+                for (int i = 0; i < inds.Length; ++i)
+                    allInds[iCount++] = (UInt16)(inds[i] + baseVertex);
+
+                baseVertex += verts.Length;
+            }
+
+            vectorImage.version = 0;
+            vectorImage.vertices = allVerts;
+            vectorImage.indices = allInds;
+            vectorImage.size = bboxMax - bboxMin;
+
+            return true;
         }
     }
 }

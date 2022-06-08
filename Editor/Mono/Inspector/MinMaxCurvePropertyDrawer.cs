@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace UnityEditorInternal
 {
@@ -103,7 +106,6 @@ namespace UnityEditorInternal
             var modeRect = new Rect(fieldRect.xMax, fieldRect.y, s_Styles.stateButtonWidth, fieldRect.height);
             EditorGUI.BeginProperty(modeRect, GUIContent.none, m_Property.mode);
             EditorGUI.BeginChangeCheck();
-            //GUI.Button(modeRect, "T"); // worrks
             int newSelection = EditorGUI.Popup(modeRect, null, m_Property.mode.intValue, s_Styles.modes, EditorStyles.minMaxStateDropdown);
             if (EditorGUI.EndChangeCheck())
             {
@@ -229,6 +231,96 @@ namespace UnityEditorInternal
                     }
                     break;
             }
+        }
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            const string StylesheetPath = "StyleSheets/ParticleSystem/ParticleSystem.uss";
+            const string HideClass = "unity-hidden";
+            const string AlignClass = "unity-base-field__aligned";
+            const string InputClass = "unity-base-popup-field__input";
+            const string RowClass = "unity-particle-system-min-max-curve__row";
+            const string GrowClass = "unity-particle-system-min-max-curve__grow";
+
+            PropertyField PrepareProperty(SerializedProperty prop, string label, VisualElement parent)
+            {
+                var propField = new PropertyField(prop, label);
+                propField.AddToClassList(HideClass);
+                propField.AddToClassList(GrowClass);
+                parent.Add(propField);
+                return propField;
+            }
+
+            Init(property);
+
+            var container = new VisualElement();
+            container.AddStyleSheetPath(StylesheetPath);
+            container.AddToClassList(RowClass);
+
+            var constantMin = PrepareProperty(m_Property.constantMin, property.name, container);
+            var constantMax = PrepareProperty(m_Property.constantMax, property.name, container);
+
+            var region = new IMGUIContainer(() =>
+            {
+                var label = new GUIContent(property.name);
+                var rect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
+                EditorGUI.LabelField(rect, label);
+                rect = EditorGUI.PrefixLabel(rect, label);
+
+                EditorGUI.BeginChangeCheck();
+                if ((MinMaxCurveState)m_Property.mode.intValue == MinMaxCurveState.k_Curve)
+                    DoMinMaxCurvesField(rect, m_Property.curveMax.GetHashCode(), m_Property.curveMax, null, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor, xAxisLabel);
+                else DoMinMaxCurvesField(rect, m_Property.curveMin.GetHashCode(), m_Property.curveMax, m_Property.curveMin, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor, xAxisLabel);
+                if (EditorGUI.EndChangeCheck()) m_Property.curveMax.serializedObject.ApplyModifiedProperties();
+            });
+            region.AddToClassList(HideClass);
+            region.AddToClassList(GrowClass);
+            container.Add(region);
+
+            var mode = new PopupField<string>(s_Styles.modes.Select(m => m.text).ToList(), m_Property.mode.intValue);
+            container.Add(mode);
+
+            EventCallback<ChangeEvent<string>> valueChangeAction = (e) =>
+            {
+                MinMaxCurveState state = (MinMaxCurveState)s_Styles.modes.Select(m => m.text).ToList().IndexOf(e.newValue);
+                m_Property.mode.intValue = (int)state;
+                m_Property.mode.serializedObject.ApplyModifiedProperties();
+
+                constantMax.EnableInClassList(HideClass, state != MinMaxCurveState.k_Scalar && state != MinMaxCurveState.k_TwoScalars);
+
+                if(constantMax.Children().Count() > 0)
+                {
+                    constantMax.Children().First().EnableInClassList(AlignClass, state != MinMaxCurveState.k_TwoScalars);
+
+                    var label = constantMax.Query<Label>().Build().First();
+                    if (state == MinMaxCurveState.k_Scalar)
+                    {
+                        label.ResetPositionProperties();
+                        label.text = property.name;
+                    }
+                    else
+                    {
+                        label.text = string.Empty;
+                        label.style.width = label.style.minWidth = s_Styles.floatFieldDragWidth;
+                    }
+                }
+
+                constantMin.EnableInClassList(HideClass, state != MinMaxCurveState.k_TwoScalars);
+                region.EnableInClassList(HideClass, state != MinMaxCurveState.k_Curve && state != MinMaxCurveState.k_TwoCurves);
+                AnimationCurvePreviewCache.ClearCache();
+            };
+            mode.RegisterValueChangedCallback(valueChangeAction);
+
+            container.RegisterCallback<AttachToPanelEvent>((e) =>
+            {
+                var popup = mode.Children().First();
+                popup.Remove(popup.Children().First());
+                popup.RemoveFromClassList(InputClass);
+
+                valueChangeAction.Invoke(ChangeEvent<string>.GetPooled("", s_Styles.modes[m_Property.mode.intValue].text));
+            });
+
+            return container;
         }
     }
 }

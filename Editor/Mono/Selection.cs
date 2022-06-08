@@ -6,25 +6,52 @@ using UnityEngine;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace UnityEditor
 {
     public sealed partial class Selection
     {
+        static readonly int[] k_SingleSelectionCache = new int[1];
+
         public static System.Action selectionChanged;
         private static DelegateWithPerformanceTracker<System.Action> m_SelectionChangedEvent = new DelegateWithPerformanceTracker<System.Action>($"{nameof(Selection)}.{nameof(selectionChanged)}");
         internal static event System.Action<int> selectedObjectWasDestroyed;
 
+        [PublicAPI] // Used by packages with internal access. Not actually intended for users.
+        internal static event System.Action postProcessSelectionMetadata;
+
+        [UsedImplicitly]
         private static void Internal_SelectedObjectWasDestroyed(int instanceID)
         {
             if (selectedObjectWasDestroyed != null)
                 selectedObjectWasDestroyed(instanceID);
         }
 
+        [UsedImplicitly]
+        private static void Internal_PostProcessSelectionMetadata()
+        {
+            postProcessSelectionMetadata?.Invoke();
+        }
+
+        [UsedImplicitly]
         private static void Internal_CallSelectionChanged()
         {
             foreach (var evt in m_SelectionChangedEvent.UpdateAndInvoke(selectionChanged))
                 evt();
+        }
+
+        internal static void SetSelection(Object[] newSelection, Object newActiveObject = null, Object newActiveContext = null, DataMode newDataModeHint = default)
+        {
+            SetFullSelection(newSelection, newActiveObject, newActiveContext, newDataModeHint);
+        }
+
+        internal static void SetSelection(Object newActiveObject, Object newActiveContext = null, DataMode newDataModeHint = default)
+        {
+            var activeObjectID = newActiveObject != null ? newActiveObject.GetInstanceID() : 0;
+            var activeContextID = newActiveContext != null ? newActiveContext.GetInstanceID() : 0;
+            k_SingleSelectionCache[0] = activeObjectID;
+            SetFullSelectionByID(k_SingleSelectionCache, activeObjectID, activeContextID, newDataModeHint);
         }
 
         public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }

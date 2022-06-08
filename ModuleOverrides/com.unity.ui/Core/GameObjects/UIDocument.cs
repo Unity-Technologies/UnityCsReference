@@ -485,6 +485,9 @@ namespace UnityEngine.UIElements
 
         private void AddRootVisualElementToTree()
         {
+            if (!enabled)
+                return; // Case 1388963, don't add the root if the component is disabled
+
             // If we do have a parent, it will add us.
             if (parentUI != null)
             {

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.Device
@@ -76,24 +77,39 @@ namespace UnityEngine.Device
             set => ShimManager.screenShim.brightness = value;
         }
 
-        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, [Internal.DefaultValue("0")] int preferredRefreshRate)
+        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, RefreshRate preferredRefreshRate)
         {
             ShimManager.screenShim.SetResolution(width, height, fullscreenMode, preferredRefreshRate);
         }
 
-        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode)
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("SetResolution(int, int, FullScreenMode, int) is obsolete. Use SetResolution(int, int, FullScreenMode, RefreshRate) instead.")]
+        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, [Internal.DefaultValue("0")] int preferredRefreshRate)
         {
-            SetResolution(width, height, fullscreenMode, 0);
+            if (preferredRefreshRate < 0)
+                preferredRefreshRate = 0;
+
+            ShimManager.screenShim.SetResolution(width, height, fullscreenMode, new RefreshRate() { numerator = (uint)preferredRefreshRate, denominator = 1 });
         }
 
+        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode)
+        {
+            SetResolution(width, height, fullscreenMode, new RefreshRate { numerator = 0, denominator = 1 });
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("SetResolution(int, int, bool, int) is obsolete. Use SetResolution(int, int, FullScreenMode, RefreshRate) instead.")]
         public static void SetResolution(int width, int height, bool fullscreen, [Internal.DefaultValue("0")] int preferredRefreshRate)
         {
-            SetResolution(width, height, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed, preferredRefreshRate);
+            if (preferredRefreshRate < 0)
+                preferredRefreshRate = 0;
+
+            SetResolution(width, height, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed, new RefreshRate() { numerator = (uint)preferredRefreshRate, denominator = 1 });
         }
 
         public static void SetResolution(int width, int height, bool fullscreen)
         {
-            SetResolution(width, height, fullscreen, 0);
+            SetResolution(width, height, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed, new RefreshRate() { numerator = 0, denominator = 1 });
         }
 
         public static Vector2Int mainWindowPosition => ShimManager.screenShim.mainWindowPosition;

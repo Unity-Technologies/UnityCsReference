@@ -229,6 +229,9 @@ namespace UnityEditorInternal
         extern public static void SwitchSkinAndRepaintAllViews();
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        extern internal static bool IsSwitchSkinRequested();
+
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         [NativeMethod("RequestRepaintAllViews")]
         extern public static void RepaintAllViews();
 

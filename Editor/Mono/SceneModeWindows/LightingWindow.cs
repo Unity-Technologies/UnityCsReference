@@ -4,14 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections;
-using System.Linq;
-using UnityEditor.AnimatedValues;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
 using UnityEngine.Rendering;
-using Object = UnityEngine.Object;
 using System.Text;
 using System.Globalization;
 
@@ -336,6 +332,19 @@ namespace UnityEditor
             }
         }
 
+        private bool IsPackageUsed(string packageName)
+        {
+            PackageManager.PackageInfo[] allInfo = PackageManager.PackageInfo.GetAllRegisteredPackages();
+            foreach (PackageManager.PackageInfo info in allInfo)
+            {
+                if (info.name == packageName)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void Buttons()
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
@@ -345,18 +354,24 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Lightmapping.lightingDataAsset.validityErrorMessage, MessageType.Warning);
                 }
 
+                bool entitiesPackage = IsPackageUsed("com.unity.entities");
+
+                if (entitiesPackage)
+                    EditorGUILayout.HelpBox("Auto Generate mode is unavailable when the Entities package is installed. When you generate lighting in a project where you have installed the Entities package, the Unity Editor opens all loaded subscenes. This may slow down Editor performance.", MessageType.Warning);
+
                 EditorGUILayout.Space();
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
 
-                bool iterative = m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative;
+                bool iterative = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative) && entitiesPackage;
+
                 Rect rect = GUILayoutUtility.GetRect(Styles.continuousBakeLabel, GUIStyle.none);
 
                 EditorGUI.BeginProperty(rect, Styles.continuousBakeLabel, m_WorkflowMode);
 
-                // Continous mode checkbox
+                // Auto Generate checkbox.
                 EditorGUI.BeginChangeCheck();
-                using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
+                using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode || entitiesPackage))
                 {
                     iterative = GUILayout.Toggle(iterative, Styles.continuousBakeLabel);
                 }

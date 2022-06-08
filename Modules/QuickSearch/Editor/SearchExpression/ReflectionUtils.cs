@@ -97,7 +97,10 @@ namespace UnityEditor.Search
             where TAttribute : Attribute
         {
             if (!methodInfo.IsStatic)
+            {
                 LogError<TAttribute>($"Method {methodInfo.Name} should be static.", methodInfo, behavior);
+                return;
+            }
 
             foreach (var supportedSignature in supportedSignatures)
             {
@@ -172,14 +175,14 @@ namespace UnityEditor.Search
         {
             if (behavior == AttributeLoaderBehavior.ThrowOnValidation)
                 throw new Exception(message);
-            UnityEngine.Debug.LogWarning($"Cannot load method \"{GetMethodFullName(mi)}\" with attribute \"{typeof(TAttribute).FullName}\": ({message})");
+            UnityEngine.Debug.LogWarning($"Cannot load method \"{GetMethodFullName(mi)}\" with attribute \"{typeof(TAttribute).FullName}\": {message}");
         }
 
         static void LogGeneratorError<TAttribute>(string message, TAttribute attribute, MethodInfo mi, AttributeLoaderBehavior behavior)
         {
             if (behavior == AttributeLoaderBehavior.ThrowOnValidation)
                 throw new Exception(message);
-            UnityEngine.Debug.LogWarning($"Cannot load method \"{GetMethodFullName(mi)}\" with attribute \"{attribute}\": ({message})");
+            UnityEngine.Debug.LogWarning($"Cannot load method \"{GetMethodFullName(mi)}\" with attribute \"{attribute}\": {message}");
         }
 
         public static string GetMethodFullName(MethodInfo mi)

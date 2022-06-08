@@ -44,7 +44,6 @@ namespace UnityEditor.ShaderFoundry
         internal extern int MatrixRows { get; }
         internal extern int ArrayElements { get; }
         internal extern FoundryHandle GetArrayElementTypeHandle();
-        internal extern FoundryHandle GetParentBlockHandle();
 
         internal IEnumerable<StructField> StructFields(ShaderContainer container)
         {
@@ -121,7 +120,7 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<ShaderAttribute> Attributes => type.Attributes(container);
         public IEnumerable<IncludeDescriptor> Includes => type.Includes(container);
         // Not valid until the parent block is finished being built.
-        public Block ParentBlock => new Block(container, type.GetParentBlockHandle());
+        public Block ParentBlock => new Block(container, type.m_ParentBlockHandle);
 
         public override int GetHashCode() => (container, handle).GetHashCode();
 

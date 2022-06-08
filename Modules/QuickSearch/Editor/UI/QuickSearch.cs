@@ -85,11 +85,11 @@ namespace UnityEditor.Search
 
         [SerializeField] private TreeViewState m_QueryTreeViewState;
         [SerializeField] protected SearchViewState m_ViewState = null;
-        [SerializeField] private EditorWindow m_LastFocusedWindow;
+        [SerializeField] protected EditorWindow m_LastFocusedWindow;
         [SerializeField] private bool m_SearchBoxFocus;
         [SerializeField] private SplitterInfo m_SideBarSplitter;
         [SerializeField] private SplitterInfo m_DetailsPanelSplitter;
-        [SerializeField] private int m_ContextHash;
+        [SerializeField] protected int m_ContextHash;
         [SerializeField] internal SearchEventStatus searchEventStatus;
         [SerializeField] private bool m_FilterSearchQueryToggle;
         [SerializeField] internal SearchQuery activeSearchQuery;
@@ -158,6 +158,9 @@ namespace UnityEditor.Search
 
         internal string windowId => m_ViewState.sessionId;
         internal IResultView resultView => m_ResultView;
+        int ISearchView.cursorIndex => m_SearchField?.cursorIndex ?? 0;
+
+        internal bool searchFieldHasFocus => m_SearchField.hasFocus;
 
         private string searchTopicPlaceHolder => $"Search {m_ViewState.title}";
 
@@ -353,7 +356,7 @@ namespace UnityEditor.Search
             var windowSize = new Vector2(defaultWidth, defaultHeight);
             if (flags.HasAny(SearchFlags.Dockable) && viewState.flags.HasNone(SearchViewFlags.Borderless))
             {
-                bool firstOpen = !EditorPrefs.HasKey(k_CheckWindowKeyName);
+                bool firstOpen = Utils.IsRunningTests() || !EditorPrefs.HasKey(k_CheckWindowKeyName);
                 Show(true);
                 if (firstOpen)
                 {
@@ -636,7 +639,7 @@ namespace UnityEditor.Search
             });
         }
 
-        internal void OnDisable()
+        internal virtual void OnDisable()
         {
             s_FocusedWindow = null;
             AutoComplete.Clear();
@@ -652,7 +655,7 @@ namespace UnityEditor.Search
             EditorApplication.delayCall -= DelayTrackSelection;
             SearchSettings.providerActivationChanged -= OnProviderActivationChanged;
 
-            selectCallback?.Invoke(null, true);
+            selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
 
             SaveSessionSettings();
 
@@ -1023,8 +1026,10 @@ namespace UnityEditor.Search
                 menu.AddItem(new GUIContent($"{optionPrefix}Debug"), context?.options.HasAny(SearchFlags.Debug) ?? false, () => ToggleDebugQuery());
 
             if (!IsPicker())
+            {
                 menu.AddItem(new GUIContent($"{optionPrefix}Keep Open"), SearchSettings.keepOpen, () => ToggleKeepOpen());
-            menu.AddItem(new GUIContent($"{optionPrefix}Show Tabs"), !viewState.hideTabs, () => ToggleShowTabs());
+                menu.AddItem(new GUIContent($"{optionPrefix}Show Tabs"), !viewState.hideTabs, () => ToggleShowTabs());
+            }
             menu.AddItem(new GUIContent($"{optionPrefix}Show Status"), SearchSettings.showStatusBar, () => ToggleShowStatusBar());
             menu.AddItem(new GUIContent($"{optionPrefix}Show Packages results"), context.options.HasAny(SearchFlags.Packages), () => TogglePackages());
             menu.AddItem(wantsMoreContent, context?.wantsMore ?? false, () => ToggleWantsMore());
@@ -1167,6 +1172,12 @@ namespace UnityEditor.Search
                     titleContent.text = L10n.Tr("Search");
                 else
                     titleContent.text = $"Search ({m_FilteredItems.Count})";
+            }
+
+            if (Utils.isDeveloperBuild)
+            {
+                if (Utils.IsRunningTests())
+                    titleContent.text = $"[TEST] {titleContent.text}";
             }
         }
 
@@ -1451,19 +1462,7 @@ namespace UnityEditor.Search
                 var ctrl = evt.control || evt.command;
                 if (evt.keyCode == KeyCode.Escape)
                 {
-                    if (!docked)
-                    {
-                        SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
-                        selectCallback?.Invoke(null, true);
-                        selectCallback = null;
-                        evt.Use();
-                        CloseSearchWindow();
-                    }
-                    else
-                    {
-                        ClearSearch();
-                        evt.Use();
-                    }
+                    HandleEscapeKeyDown(evt);
                 }
                 else if (evt.keyCode == KeyCode.F5)
                 {
@@ -1533,6 +1532,23 @@ namespace UnityEditor.Search
                 m_SearchField.Focus();
         }
 
+        protected virtual void HandleEscapeKeyDown(Event evt)
+        {
+            if (!docked)
+            {
+                SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
+                selectCallback?.Invoke(null, true);
+                selectCallback = null;
+                evt.Use();
+                CloseSearchWindow();
+            }
+            else
+            {
+                ClearSearch();
+                evt.Use();
+            }
+        }
+
         private void UpdateSearchText(string undoText, int cursorPos)
         {
             if (m_QueryBuilder != null)
@@ -1555,6 +1571,7 @@ namespace UnityEditor.Search
         public void SelectSearch()
         {
             m_SearchBoxFocus = true;
+            Repaint();
         }
 
         public void FocusSearch()
@@ -1986,7 +2003,7 @@ namespace UnityEditor.Search
 
         private void DrawSearchField(in Event evt, in Rect toolbarRect, Rect searchTextRect)
         {
-            var showClearButton = IsPicker() ? context.searchText != viewState.initialQuery : !string.IsNullOrEmpty(context.searchText);
+            var showClearButton = IsPicker() ? string.CompareOrdinal(context.searchText, viewState.initialQuery) != 0 : !string.IsNullOrEmpty(context.searchText);
             var searchClearButtonRect = new Rect(0, 0, 1, 1);
 
             if (showClearButton)
@@ -2149,7 +2166,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private void ClearSearch()
+        protected void ClearSearch()
         {
             m_QueryTreeView.SetSelection(new int[0]);
             SendEvent(SearchAnalytics.GenericEventType.QuickSearchClearSearch);
@@ -2172,6 +2189,11 @@ namespace UnityEditor.Search
         protected virtual bool IsPicker()
         {
             return false;
+        }
+
+        bool ISearchView.IsPicker()
+        {
+            return IsPicker();
         }
 
         protected virtual void OnSaveQuery()
@@ -2318,10 +2340,12 @@ namespace UnityEditor.Search
             {
                 var contextualProvider = GetContextualProvider();
                 if (contextualProvider != null)
-                    m_ContextHash ^= contextualProvider.id.GetHashCode();
+                    m_ContextHash = Utils.CombineHashCodes(m_ContextHash, contextualProvider.id.GetHashCode());
             }
 
-            m_ContextHash ^= GetType().Name.GetHashCode();
+            m_ContextHash = Utils.CombineHashCodes(m_ContextHash, GetType().Name.GetHashCode());
+            if (context.filterType != null)
+                m_ContextHash = Utils.CombineHashCodes(m_ContextHash, context.filterType.Name.GetHashCode());
         }
 
         protected void UpdateViewState(SearchViewState args)
@@ -2334,23 +2358,31 @@ namespace UnityEditor.Search
 
         protected virtual void LoadSessionSettings(SearchViewState args)
         {
-            if (!args.ignoreSaveSearches && args.context != null && string.IsNullOrEmpty(args.context.searchText))
-                SetSearchText(SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, ""));
+            if (!Utils.IsRunningTests())
+            {
+                if (!args.ignoreSaveSearches && args.context != null && string.IsNullOrEmpty(args.context.searchText))
+                    SetSearchText(SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, ""));
+                else
+                    RefreshSearch();
+
+                if (m_ViewState.flags.HasNone(SearchViewFlags.OpenInspectorPreview | SearchViewFlags.OpenLeftSidePanel | SearchViewFlags.HideSearchBar))
+                {
+                    if (SearchSettings.GetScopeValue(nameof(SearchViewFlags.OpenInspectorPreview), m_ContextHash, 0) != 0)
+                        m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;
+
+                    if (SearchSettings.showSavedSearchPanel)
+                        m_ViewState.flags |= SearchViewFlags.OpenLeftSidePanel;
+                }
+            }
             else
                 RefreshSearch();
 
-            if (m_ViewState.flags.HasNone(SearchViewFlags.OpenInspectorPreview | SearchViewFlags.OpenLeftSidePanel | SearchViewFlags.HideSearchBar))
-            {
-                if (SearchSettings.GetScopeValue(nameof(SearchViewFlags.OpenInspectorPreview), m_ContextHash, 0) != 0)
-                    m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;
-
-                if (SearchSettings.showSavedSearchPanel)
-                    m_ViewState.flags |= SearchViewFlags.OpenLeftSidePanel;
-            }
-
             if (m_FilteredItems != null)
             {
-                var loadGroup = string.IsNullOrEmpty(args.group) ? SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, ((IGroup)m_FilteredItems).id) : args.group;
+                string loadGroup = args.group;
+                if (!Utils.IsRunningTests())
+                    loadGroup = string.IsNullOrEmpty(args.group) ? SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, ((IGroup)m_FilteredItems).id) : args.group;
+
                 if (context.options.HasAny(SearchFlags.FocusContext))
                 {
                     var contextualProvider = GetContextualProvider();

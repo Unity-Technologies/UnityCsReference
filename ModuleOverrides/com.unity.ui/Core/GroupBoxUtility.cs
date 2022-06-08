@@ -16,10 +16,36 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Registers this group option panel callbacks.
         /// </summary>
-        public static void RegisterGroupBoxOptionCallbacks<T>(this T option) where T : VisualElement, IGroupBoxOption
+        public static void RegisterGroupBoxOption<T>(this T option) where T : VisualElement, IGroupBoxOption
         {
-            option.RegisterCallback<AttachToPanelEvent>(OnOptionAttachToPanel);
-            option.RegisterCallback<DetachFromPanelEvent>(OnOptionDetachFromPanel);
+            var element = option as VisualElement;
+
+            IGroupBox groupInHierarchy = null;
+            var hierarchyParent = element.hierarchy.parent;
+            while (hierarchyParent != null)
+            {
+                if (hierarchyParent is IGroupBox group)
+                {
+                    groupInHierarchy = group;
+                    break;
+                }
+
+                hierarchyParent = hierarchyParent.hierarchy.parent;
+            }
+
+            var groupBox = groupInHierarchy ?? element.elementPanel;
+            var groupManager = FindOrCreateGroupManager(groupBox);
+            groupManager.RegisterOption(option);
+            s_GroupOptionManagerCache[option] = groupManager;
+        }
+
+        public static void UnregisterGroupBoxOption<T>(this T option) where T : VisualElement, IGroupBoxOption
+        {
+            if (!s_GroupOptionManagerCache.ContainsKey(option))
+                return;
+
+            s_GroupOptionManagerCache[option].UnregisterOption(option);
+            s_GroupOptionManagerCache.Remove(option);
         }
 
         /// <summary>
@@ -52,45 +78,6 @@ namespace UnityEngine.UIElements
             return s_GroupManagers.ContainsKey(groupBox) ? s_GroupManagers[groupBox] : null;
         }
 
-        static void OnOptionAttachToPanel(AttachToPanelEvent evt)
-        {
-            var element = evt.currentTarget as VisualElement;
-            var option = evt.currentTarget as IGroupBoxOption;
-
-            IGroupManager groupManager = null;
-
-            var hierarchyParent = element.hierarchy.parent;
-            while (hierarchyParent != null)
-            {
-                if (hierarchyParent is IGroupBox groupBox)
-                {
-                    groupManager = FindOrCreateGroupManager(groupBox);
-                    break;
-                }
-
-                hierarchyParent = hierarchyParent.hierarchy.parent;
-            }
-
-            if (groupManager == null)
-            {
-                groupManager = FindOrCreateGroupManager(element.elementPanel);
-            }
-
-            groupManager.RegisterOption(option);
-            s_GroupOptionManagerCache[option] = groupManager;
-        }
-
-        static void OnOptionDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            var option = evt.currentTarget as IGroupBoxOption;
-
-            if (!s_GroupOptionManagerCache.ContainsKey(option))
-                return;
-
-            s_GroupOptionManagerCache[option].UnregisterOption(option);
-            s_GroupOptionManagerCache.Remove(option);
-        }
-
         static IGroupManager FindOrCreateGroupManager(IGroupBox groupBox)
         {
             if (s_GroupManagers.ContainsKey(groupBox))
@@ -109,6 +96,7 @@ namespace UnityEngine.UIElements
             }
 
             var groupManager = genericType != null ? (IGroupManager)Activator.CreateInstance(genericType) : new DefaultGroupManager();
+            groupManager.Init(groupBox);
 
             if (groupBox is BaseVisualElementPanel panel)
             {

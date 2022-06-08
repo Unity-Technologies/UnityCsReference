@@ -31,6 +31,14 @@ namespace UnityEngine.UIElements
                     return computedStyle.backgroundColor;
                 case StylePropertyId.BackgroundImage:
                     return computedStyle.backgroundImage;
+                case StylePropertyId.BackgroundPositionX:
+                    return computedStyle.backgroundPositionX;
+                case StylePropertyId.BackgroundPositionY:
+                    return computedStyle.backgroundPositionY;
+                case StylePropertyId.BackgroundRepeat:
+                    return computedStyle.backgroundRepeat;
+                case StylePropertyId.BackgroundSize:
+                    return computedStyle.backgroundSize;
                 case StylePropertyId.BorderBottomColor:
                     return computedStyle.borderBottomColor;
                 case StylePropertyId.BorderBottomLeftRadius:
@@ -139,8 +147,6 @@ namespace UnityEngine.UIElements
                     return computedStyle.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return computedStyle.unityBackgroundImageTintColor;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    return computedStyle.unityBackgroundScaleMode;
                 case StylePropertyId.UnityFont:
                     return computedStyle.unityFont;
                 case StylePropertyId.UnityFontDefinition:
@@ -199,6 +205,14 @@ namespace UnityEngine.UIElements
                     return typeof(Color);
                 case StylePropertyId.BackgroundImage:
                     return typeof(Background);
+                case StylePropertyId.BackgroundPositionX:
+                    return typeof(BackgroundPosition);
+                case StylePropertyId.BackgroundPositionY:
+                    return typeof(BackgroundPosition);
+                case StylePropertyId.BackgroundRepeat:
+                    return typeof(BackgroundRepeat);
+                case StylePropertyId.BackgroundSize:
+                    return typeof(BackgroundSize);
                 case StylePropertyId.BorderBottomColor:
                     return typeof(Color);
                 case StylePropertyId.BorderBottomLeftRadius:
@@ -307,8 +321,6 @@ namespace UnityEngine.UIElements
                     return typeof(Translate);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(Color);
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    return typeof(ScaleMode);
                 case StylePropertyId.UnityFont:
                     return typeof(Font);
                 case StylePropertyId.UnityFontDefinition:
@@ -357,6 +369,8 @@ namespace UnityEngine.UIElements
         {
             switch (id)
             {
+                case StylePropertyId.BackgroundPosition:
+                    return typeof(BackgroundPosition);
                 case StylePropertyId.BorderColor:
                     return typeof(Color);
                 case StylePropertyId.BorderRadius:
@@ -389,6 +403,14 @@ namespace UnityEngine.UIElements
                     return style.backgroundColor;
                 case StylePropertyId.BackgroundImage:
                     return style.backgroundImage;
+                case StylePropertyId.BackgroundPositionX:
+                    return style.backgroundPositionX;
+                case StylePropertyId.BackgroundPositionY:
+                    return style.backgroundPositionY;
+                case StylePropertyId.BackgroundRepeat:
+                    return style.backgroundRepeat;
+                case StylePropertyId.BackgroundSize:
+                    return style.backgroundSize;
                 case StylePropertyId.BorderBottomColor:
                     return style.borderBottomColor;
                 case StylePropertyId.BorderBottomLeftRadius:
@@ -497,8 +519,6 @@ namespace UnityEngine.UIElements
                     return style.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return style.unityBackgroundImageTintColor;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    return style.unityBackgroundScaleMode;
                 case StylePropertyId.UnityFont:
                     return style.unityFont;
                 case StylePropertyId.UnityFontDefinition:
@@ -561,6 +581,18 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.BackgroundImage:
                     style.backgroundImage = (StyleBackground)value;
+                    break;
+                case StylePropertyId.BackgroundPositionX:
+                    style.backgroundPositionX = (StyleBackgroundPosition)value;
+                    break;
+                case StylePropertyId.BackgroundPositionY:
+                    style.backgroundPositionY = (StyleBackgroundPosition)value;
+                    break;
+                case StylePropertyId.BackgroundRepeat:
+                    style.backgroundRepeat = (StyleBackgroundRepeat)value;
+                    break;
+                case StylePropertyId.BackgroundSize:
+                    style.backgroundSize = (StyleBackgroundSize)value;
                     break;
                 case StylePropertyId.BorderBottomColor:
                     style.borderBottomColor = (StyleColor)value;
@@ -724,9 +756,6 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = (StyleColor)value;
                     break;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    style.unityBackgroundScaleMode = (StyleEnum<ScaleMode>)value;
-                    break;
                 case StylePropertyId.UnityFont:
                     style.unityFont = (StyleFont)value;
                     break;
@@ -801,6 +830,14 @@ namespace UnityEngine.UIElements
                     return (StyleColor)(Color)value;
                 case StylePropertyId.BackgroundImage:
                     return (StyleBackground)(Background)value;
+                case StylePropertyId.BackgroundPositionX:
+                    return (StyleBackgroundPosition)(BackgroundPosition)value;
+                case StylePropertyId.BackgroundPositionY:
+                    return (StyleBackgroundPosition)(BackgroundPosition)value;
+                case StylePropertyId.BackgroundRepeat:
+                    return (StyleBackgroundRepeat)(BackgroundRepeat)value;
+                case StylePropertyId.BackgroundSize:
+                    return (StyleBackgroundSize)(BackgroundSize)value;
                 case StylePropertyId.BorderBottomColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.BorderBottomLeftRadius:
@@ -909,8 +946,6 @@ namespace UnityEngine.UIElements
                     return (StyleTranslate)(Translate)value;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (StyleColor)(Color)value;
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    return (StyleEnum<ScaleMode>)(ScaleMode)value;
                 case StylePropertyId.UnityFont:
                     return (StyleFont)(Font)value;
                 case StylePropertyId.UnityFontDefinition:
@@ -969,6 +1004,14 @@ namespace UnityEngine.UIElements
                     return typeof(StyleColor);
                 case StylePropertyId.BackgroundImage:
                     return typeof(StyleBackground);
+                case StylePropertyId.BackgroundPositionX:
+                    return typeof(StyleBackgroundPosition);
+                case StylePropertyId.BackgroundPositionY:
+                    return typeof(StyleBackgroundPosition);
+                case StylePropertyId.BackgroundRepeat:
+                    return typeof(StyleBackgroundRepeat);
+                case StylePropertyId.BackgroundSize:
+                    return typeof(StyleBackgroundSize);
                 case StylePropertyId.BorderBottomColor:
                     return typeof(StyleColor);
                 case StylePropertyId.BorderBottomLeftRadius:
@@ -1077,8 +1120,6 @@ namespace UnityEngine.UIElements
                     return typeof(StyleTranslate);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(StyleColor);
-                case StylePropertyId.UnityBackgroundScaleMode:
-                    return typeof(StyleEnum<ScaleMode>);
                 case StylePropertyId.UnityFont:
                     return typeof(StyleFont);
                 case StylePropertyId.UnityFontDefinition:
@@ -1129,6 +1170,8 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.All:
                     return new string[]{};
+                case StylePropertyId.BackgroundPosition:
+                    return new string[]{"background-position-x", "background-position-y"};
                 case StylePropertyId.BorderColor:
                     return new string[]{"border-top-color", "border-right-color", "border-bottom-color", "border-left-color"};
                 case StylePropertyId.BorderRadius:
@@ -1143,6 +1186,8 @@ namespace UnityEngine.UIElements
                     return new string[]{"padding-top", "padding-right", "padding-bottom", "padding-left"};
                 case StylePropertyId.Transition:
                     return new string[]{"transition-delay", "transition-duration", "transition-property", "transition-timing-function"};
+                case StylePropertyId.UnityBackgroundScaleMode:
+                    return new string[]{"background-position-x", "background-position-y", "background-repeat", "background-size"};
                 case StylePropertyId.UnityTextOutline:
                     return new string[]{"-unity-text-outline-color", "-unity-text-outline-width"};
                 default:
@@ -1159,6 +1204,8 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.All:
                     return true;
+                case StylePropertyId.BackgroundPosition:
+                    return true;
                 case StylePropertyId.BorderColor:
                     return true;
                 case StylePropertyId.BorderRadius:
@@ -1172,6 +1219,8 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Padding:
                     return true;
                 case StylePropertyId.Transition:
+                    return true;
+                case StylePropertyId.UnityBackgroundScaleMode:
                     return true;
                 case StylePropertyId.UnityTextOutline:
                     return true;
@@ -1234,6 +1283,12 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.BackgroundImage:
                     return true;
+                case StylePropertyId.BackgroundPositionX:
+                    return true;
+                case StylePropertyId.BackgroundPositionY:
+                    return true;
+                case StylePropertyId.BackgroundRepeat:
+                    return true;
                 case StylePropertyId.Display:
                     return true;
                 case StylePropertyId.FlexDirection:
@@ -1247,8 +1302,6 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.Position:
                     return true;
                 case StylePropertyId.TextOverflow:
-                    return true;
-                case StylePropertyId.UnityBackgroundScaleMode:
                     return true;
                 case StylePropertyId.UnityFont:
                     return true;

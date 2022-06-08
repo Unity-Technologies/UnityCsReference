@@ -9,7 +9,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
-using UnityEngineInternal;
 using Scene = UnityEngine.SceneManagement.Scene;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 using Unity.Collections;
@@ -331,10 +330,40 @@ namespace UnityEditor
 
         public static event Action bakeStarted;
 
+        private static void OpenNestedSubScenes()
+        {
+            if (SceneHierarchyHooks.provideSubScenes == null)
+                return;
+
+            var subSceneInfos = SceneHierarchyHooks.provideSubScenes();
+            if (subSceneInfos != null)
+            {
+                // Open all nested sub scenes.
+                int subSceneCount = subSceneInfos.Length;
+                foreach (var subSceneInfo in subSceneInfos)
+                {
+                    if (subSceneInfo.scene.isLoaded)
+                        continue;
+
+                    var path = AssetDatabase.GetAssetPath(subSceneInfo.sceneAsset);
+                    var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                    scene.isSubScene = true;
+                }
+
+                // Keep going deeper until sub scene count has stabilized.
+                subSceneInfos = SceneHierarchyHooks.provideSubScenes();
+                if (subSceneCount != subSceneInfos.Length)
+                    OpenNestedSubScenes();
+            }
+        }
+
         private static void Internal_CallBakeStartedFunctions()
         {
             if (bakeStarted != null)
                 bakeStarted();
+
+            // Open all sub scenes before the bake so they can participate in the GI calculations.
+            OpenNestedSubScenes();
 
 #pragma warning disable 0618
             if (started != null)

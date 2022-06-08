@@ -205,7 +205,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CancelActiveBuild();
         }
 
-        internal static void CleanCache()
+        internal static void ClearBeeBuildArtifacts()
         {
             new NPath("Library/Bee").DeleteIfExists(DeleteMode.Soft);
             Mono.Utils.Pram.PramDataDirectory.DeleteIfExists(DeleteMode.Soft);
@@ -791,6 +791,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CompileStatus CompileScriptsWithSettings(ScriptAssemblySettings scriptAssemblySettings)
         {
+            if (m_ScriptCompilationRequest == RequestScriptCompilationOptions.CleanBuildCache)
+                scriptAssemblySettings.CompilationOptions |= EditorScriptCompilationOptions.BuildingCleanCompilation;
+
+            if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingCleanCompilation))
+                ClearBeeBuildArtifacts();
+
             m_ScriptCompilationRequest = null;
 
             DeleteUnusedAssemblies(scriptAssemblySettings);
@@ -836,7 +842,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 $"{(scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile) ? "SkipCompile" : "")}";
 
             BuildTarget buildTarget = scriptAssemblySettings.BuildTarget;
-            var buildRequest = UnityBeeDriver.BuildRequestFor(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater);
+            var cacheMode = scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingCleanCompilation)
+                ? UnityBeeDriver.CacheMode.WriteOnly
+                : UnityBeeDriver.CacheMode.ReadWrite;
+            var buildRequest = UnityBeeDriver.BuildRequestFor(ScriptCompilationBuildProgram, this, $"{(int)buildTarget}{config}", cacheMode, useScriptUpdater: !scriptAssemblySettings.BuildingWithoutScriptUpdater);
 
             buildRequest.DeferDagVerification = true;
             buildRequest.ContinueBuildingAfterFirstFailure = true;
@@ -844,7 +853,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ? Constants.ScriptAssembliesAndTypeDBTarget
                 : Constants.ScriptAssembliesTarget;
 
-            buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(this, scriptAssemblies, debug, scriptAssemblySettings.OutputDirectory, buildTarget, scriptAssemblySettings.BuildingForEditor));
+            buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(
+                this,
+                scriptAssemblies,
+                debug,
+                scriptAssemblySettings.OutputDirectory,
+                buildTarget,
+                scriptAssemblySettings.BuildingForEditor,
+                !scriptAssemblySettings.BuildingWithoutScriptUpdater));
 
             var cts = new CancellationTokenSource();
 
@@ -1026,8 +1042,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!IsCompilationTaskCompiling() && IsScriptCompilationRequested())
             {
                 Profiler.BeginSample("CompilationPipeline.CompileScripts");
-                if (m_ScriptCompilationRequest == RequestScriptCompilationOptions.CleanBuildCache)
-                    CleanCache();
                 CompileStatus compileStatus;
                 try
                 {
@@ -1061,6 +1075,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 CompleteActiveBuildWhilePumping();
             }
+
+            UnityBeeDriver.RunCleanBeeCache();
 
             Progress.Finish(_currentBeeScriptCompilationState.AsyncProgressBarToken);
 

@@ -172,6 +172,16 @@ namespace UnityEditor
         static extern void Internal_VerifyModifiedMonoBehaviours(ActiveEditorTracker self);
         public void VerifyModifiedMonoBehaviours() { Internal_VerifyModifiedMonoBehaviours(this); }
 
+        [FreeFunction]
+        static extern DataMode Internal_GetDataMode(ActiveEditorTracker self);
+        [FreeFunction]
+        static extern void Internal_SetDataMode(ActiveEditorTracker self, DataMode mode);
+        internal DataMode dataMode
+        {
+            get => Internal_GetDataMode(this);
+            set => Internal_SetDataMode(this, value);
+        }
+
         [Obsolete("Use Editor.CreateEditor instead")]
         public static Editor MakeCustomEditor(UnityObject obj)
         {

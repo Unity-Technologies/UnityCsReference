@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style values after layout pass.
     /// </summary>
-    public interface IResolvedStyle
+    public partial interface IResolvedStyle
     {
         /// <summary>
         /// Alignment of the whole area of children on the cross axis if they span over multiple lines in this container.
@@ -38,6 +38,22 @@ namespace UnityEngine.UIElements
         /// Background image to paint in the element's box.
         /// </summary>
         Background backgroundImage { get; }
+        /// <summary>
+        /// Background image x position value.
+        /// </summary>
+        BackgroundPosition backgroundPositionX { get; }
+        /// <summary>
+        /// Background image y position value.
+        /// </summary>
+        BackgroundPosition backgroundPositionY { get; }
+        /// <summary>
+        /// Background image repeat value.
+        /// </summary>
+        BackgroundRepeat backgroundRepeat { get; }
+        /// <summary>
+        /// Background image size value.
+        /// </summary>
+        BackgroundSize backgroundSize { get; }
         /// <summary>
         /// Color of the element's bottom border.
         /// </summary>
@@ -258,10 +274,6 @@ namespace UnityEngine.UIElements
         /// Tinting color for the element's backgroundImage.
         /// </summary>
         Color unityBackgroundImageTintColor { get; }
-        /// <summary>
-        /// Background image scaling in the element's box.
-        /// </summary>
-        ScaleMode unityBackgroundScaleMode { get; }
         /// <summary>
         /// Font to draw the element's text, defined as a Font object.
         /// </summary>

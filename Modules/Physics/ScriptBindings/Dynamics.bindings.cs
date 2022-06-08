@@ -133,6 +133,12 @@ namespace UnityEngine
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
         extern public int solverVelocityIterations { get; set; }
 
+        // Get/Set the Exclude Layers,
+        extern public LayerMask excludeLayers { get; set; }
+
+        // Get/Set the Include Layers,
+        extern public LayerMask includeLayers { get; set; }
+
         extern public Vector3 GetAccumulatedForce([DefaultValue("Time.fixedDeltaTime")] float step);
 
         [ExcludeFromDocs]
@@ -321,6 +327,16 @@ namespace UnityEngine
         extern public Vector3 ClosestPoint(Vector3 position);
         extern public Bounds bounds { get; }
         extern public bool hasModifiableContacts {get; set;}
+        extern public bool providesContacts { get; set; }
+
+        // Get/Set the Layer Override Priority.
+        extern public int layerOverridePriority { get; set; }
+
+        // Get/Set the Exclude Layers,
+        extern public LayerMask excludeLayers { get; set; }
+
+        // Get/Set the Include Layers,
+        extern public LayerMask includeLayers { get; set; }
 
         [NativeMethod("Material")]
         extern public PhysicMaterial sharedMaterial { get; set; }
@@ -480,6 +496,7 @@ namespace UnityEngine
         extern public bool useSpring { get; set; }
         extern public float velocity { get; }
         extern public float angle { get; }
+        extern public bool useAcceleration { get; set; }
     }
 
     [NativeHeader("Modules/Physics/SpringJoint.h")]
@@ -567,12 +584,19 @@ namespace UnityEngine
         public Vector3 normal { get { return m_Normal; } }
         public Vector3 impulse { get { return m_Impulse;} }
 
-        public Collider thisCollider { get { return GetColliderByInstanceID(m_ThisColliderInstanceID); } }
-        public Collider otherCollider { get { return GetColliderByInstanceID(m_OtherColliderInstanceID); } }
+        public Collider thisCollider { get { return Physics.GetColliderByInstanceID(m_ThisColliderInstanceID); } }
+        public Collider otherCollider { get { return Physics.GetColliderByInstanceID(m_OtherColliderInstanceID); } }
         public float separation { get { return m_Separation; }}
 
-        [FreeFunction]
-        extern internal static Collider GetColliderByInstanceID(int instanceID);
+        internal ContactPoint(Vector3 point, Vector3 normal, Vector3 impulse, float separation, int thisInstanceID, int otherInstenceID)
+        {
+            m_Point = point;
+            m_Normal = normal;
+            m_Impulse = impulse;
+            m_Separation = separation;
+            m_ThisColliderInstanceID = thisInstanceID;
+            m_OtherColliderInstanceID = otherInstenceID;
+        }
     }
 
     #region Scene
@@ -635,6 +659,34 @@ namespace UnityEngine
             }
 
             throw new InvalidOperationException("Cannot simulate the physics scene as it is invalid.");
+        }
+
+        public void InterpolateBodies()
+        {
+            if(!IsValid())
+                throw new InvalidOperationException("Cannot interpolate the physics scene as it is invalid.");
+
+            if (this == Physics.defaultPhysicsScene)
+            {
+                Debug.LogWarning("PhysicsScene.InterpolateBodies() was called on the default Physics Scene. This is done automatically and the call will be ignored");
+                return;
+            }
+
+            Physics.InterpolateBodies_Internal(this);
+        }
+
+        public void ResetInterpolationPoses()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException("Cannot reset poses of the physics scene as it is invalid.");
+
+            if (this == Physics.defaultPhysicsScene)
+            {
+                Debug.LogWarning("PhysicsScene.ResetInterpolationPoses() was called on the default Physics Scene. This is done automatically and the call will be ignored");
+                return;
+            }
+
+            Physics.ResetInterpolationPoses_Internal(this);
         }
 
         // Hit Test.
@@ -915,6 +967,8 @@ namespace UnityEngine
 
         extern static public float defaultMaxAngularSpeed { get; set; }
         extern static public bool improvedPatchFriction { get; set; }
+
+        extern static public bool invokeCollisionCallbacks { get; set; }
 
         [NativeProperty("DefaultPhysicsSceneHandle", true, TargetType.Function, true)]
         extern public static PhysicsScene defaultPhysicsScene { get; }
@@ -1512,6 +1566,12 @@ namespace UnityEngine
             Simulate_Internal(defaultPhysicsScene, step);
         }
 
+        [NativeName("InterpolateBodies")]
+        extern internal static void InterpolateBodies_Internal(PhysicsScene physicsScene);
+
+        [NativeName("ResetInterpolatedTransformPosition")]
+        extern internal static void ResetInterpolationPoses_Internal(PhysicsScene physicsScene);
+
         extern public static void SyncTransforms();
         extern public static bool autoSyncTransforms { get; set; }
         extern public static bool reuseCollisionCallbacks { get; set; }
@@ -1867,6 +1927,53 @@ namespace UnityEngine
                                      MeshColliderCookingOptions.WeldColocatedVertices |
                                      MeshColliderCookingOptions.UseFastMidphase);
         }
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern Collider ResolveShapeToCollider(IntPtr shapePtr);
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern Component ResolveActorToComponent(IntPtr actorPtr);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern int ResolveShapeToInstanceID(IntPtr shapePtr);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern int ResolveActorToInstanceID(IntPtr actorPtr);
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        extern internal static Collider GetColliderByInstanceID(int instanceID);
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern Component GetBodyByInstanceID(int instanceID);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern uint TranslateTriangleIndexFromID(int instanceID, uint faceIndex);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern bool IsShapeTrigger(IntPtr shapePtr);
+
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        private static extern void SendOnCollisionEnter(Component component, Collision collision);
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        private static extern void SendOnCollisionStay(Component component,  Collision collision);
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        private static extern void SendOnCollisionExit(Component component,  Collision collision);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern Vector3 GetActorLinearVelocity(IntPtr actorPtr);
+
+        [ThreadSafe]
+        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
+        internal static extern Vector3 GetActorAngularVelocity(IntPtr actorPtr);
     }
 }
 

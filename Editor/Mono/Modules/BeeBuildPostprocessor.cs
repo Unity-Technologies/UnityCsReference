@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Bee.BeeDriver;
 using Bee.BinLog;
 using NiceIO;
+using Bee.Core;
 using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -139,17 +139,6 @@ namespace UnityEditor.Modules
                 if (!string.IsNullOrEmpty(diagArgs))
                     additionalArgs.Add(diagArgs.Trim('\''));
 
-                var engineStrippingFlags = new List<string>();
-
-                if (UnityEngine.Connect.UnityConnectSettings.enabled)
-                    engineStrippingFlags.Add("EnableUnityConnect");
-                if (UnityEngine.Analytics.PerformanceReporting.enabled)
-                    engineStrippingFlags.Add("EnablePerformanceReporting");
-                if (UnityEngine.Analytics.Analytics.enabled)
-                    engineStrippingFlags.Add("EnableAnalytics");
-                if (UnityEditor.CrashReporting.CrashReportingSettings.enabled)
-                    engineStrippingFlags.Add("EnableCrashReporting");
-
                 NPath managedAssemblyFolderPath = $"{args.stagingAreaData}/Managed";
                 var linkerRunInformation = new UnityLinkerRunInformation(managedAssemblyFolderPath.MakeAbsolute().ToString(), null, args.target,
                     rcr, strippingLevel, null, args.report);
@@ -272,7 +261,7 @@ namespace UnityEditor.Modules
                     BuildOptions.EnableDeepProfilingSupport),
                 EnableFullGenericSharing = il2cppCodeGeneration == Il2CppCodeGeneration.OptimizeSize,
                 Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
-                Defines = string.Join(";", IL2CPPUtils.GetBuilderDefinedDefines(args.target, apiCompatibilityLevel, allowDebugging)),
+                IDEProjectDefines = IL2CPPUtils.GetBuilderDefinedDefines(args.target, apiCompatibilityLevel, allowDebugging),
                 ConfigurationName = Il2CppBuildConfigurationNameFor(args),
                 GcWBarrierValidation = platformHasIncrementalGC && PlayerSettings.gcWBarrierValidation,
                 GcIncremental = platformHasIncrementalGC && PlayerSettings.gcIncremental &&
@@ -304,6 +293,26 @@ namespace UnityEditor.Modules
             return newInputEnabledProp.intValue != 0;
         }
 
+        static GenerateNativePluginsForAssembliesSettings GetGenerateNativePluginsForAssembliesSettings(BuildPostProcessArgs args)
+        {
+            var settings = new GenerateNativePluginsForAssembliesSettings();
+            settings.DisplayName = "Generating Native Plugins";
+            if (BuildPipelineInterfaces.processors.generateNativePluginsForAssembliesProcessors != null)
+            {
+                foreach (var processor in BuildPipelineInterfaces.processors.generateNativePluginsForAssembliesProcessors)
+                {
+                    var setupResult = processor.PrepareOnMainThread(new () { report = args.report });
+                    if (setupResult.additionalInputFiles != null)
+                        settings.AdditionalInputFiles = settings.AdditionalInputFiles.Concat(setupResult.additionalInputFiles).ToArray();
+                    if (setupResult.displayName != null)
+                        settings.DisplayName = setupResult.displayName;
+                    settings.HasCallback = true;
+                }
+            }
+
+            return settings;
+        }
+
         PlayerBuildConfig PlayerBuildConfigFor(BuildPostProcessArgs args) => new PlayerBuildConfig
         {
             DestinationPath = GetInstallPathFor(args),
@@ -319,7 +328,8 @@ namespace UnityEditor.Modules
             UseCoreCLR = GetUseCoreCLR(args),
             Architecture = GetArchitecture(args),
             DataFolder = GetDataFolderFor(args),
-            Services = new Services()
+            GenerateNativePluginsForAssembliesSettings = GetGenerateNativePluginsForAssembliesSettings(args),
+            Services = new ()
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
                 EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.enabled,
@@ -401,8 +411,11 @@ namespace UnityEditor.Modules
         BuildRequest SetupBuildRequest(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
+            var cacheMode = ((args.options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
+                ? UnityBeeDriver.CacheMode.WriteOnly
+                : UnityBeeDriver.CacheMode.ReadWrite;
 
-            var buildRequest = UnityBeeDriver.BuildRequestFor(buildProgram, DagName(args), DagDirectory.ToString(), false, "",ilpp, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
+            var buildRequest = UnityBeeDriver.BuildRequestFor(buildProgram, DagName(args), DagDirectory.ToString(), false, "",ilpp, cacheMode, UnityBeeDriver.StdOutModeForPlayerBuilds, BeeBackendProgram(args));
             buildRequest.DataForBuildProgram.Add(() => GetDataForBuildProgramFor(args).Where(o=> o is not null));
 
             return buildRequest;
@@ -501,7 +514,7 @@ namespace UnityEditor.Modules
         {
             // Clean the Bee folder in PrepareForBuild, so that it is also clean for script compilation.
             if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
-                EditorCompilation.CleanCache();
+                EditorCompilation.ClearBeeBuildArtifacts();
 
             if (Unsupported.IsDeveloperBuild())
             {
@@ -523,8 +536,48 @@ namespace UnityEditor.Modules
         {
             if (!GetInstallingIntoBuildsFolder(args))
             {
-                new NPath(args.installPath).DeleteIfExists(DeleteMode.Soft);
-                new NPath(GetIl2CppDataBackupFolderName(args)).DeleteIfExists(DeleteMode.Soft);
+                new NPath(GetInstallPathFor(args)).DeleteIfExists(DeleteMode.Soft);
+                new NPath(GetInstallPathFor(args)).Parent.Combine(GetIl2CppDataBackupFolderName(args)).DeleteIfExists(DeleteMode.Soft);
+            }
+        }
+
+        static void GenerateNativePluginsForAssemblies(GenerateNativePluginsForAssembliesArgs args)
+        {
+            using var section = UnityBeeDriverProfilerSession.ProfilerInstance.Section(nameof(GenerateNativePluginsForAssembliesArgs));
+            var generateArgs = new IGenerateNativePluginsForAssemblies.GenerateArgs { assemblyFiles = args.Assemblies };
+            bool wrotePlugins = false;
+            bool wroteSymbols = false;
+            foreach (var processor in BuildPipelineInterfaces.processors.generateNativePluginsForAssembliesProcessors)
+            {
+                var result = processor.GenerateNativePluginsForAssemblies(generateArgs);
+                if (result.generatedPlugins?.Length > 0)
+                {
+                    wrotePlugins = true;
+                    foreach (var file in result.generatedPlugins.ToNPaths())
+                        file.Copy($"{args.PluginOutputFolder}/{file.FileName}");
+                }
+                if (result.generatedSymbols?.Length > 0)
+                {
+                    wroteSymbols = true;
+                    foreach (var file in result.generatedSymbols.ToNPaths())
+                        file.Copy($"{args.SymbolOutputFolder}/{file.FileName}");
+                }
+            }
+
+            if (!wrotePlugins)
+            {
+                // We need to produce a file, so Bee will not be upset when we use the `FilesOrDummy` mechanism.
+                new NPath(args.PluginOutputFolder)
+                    .Combine("no_plugins_were_generated.txt")
+                    .WriteAllText("GenerateNativePluginsForAssemblies did not produce any output");
+            }
+
+            if (!wroteSymbols)
+            {
+                // We need to produce a file, so Bee will not be upset when we use the `FilesOrDummy` mechanism.
+                new NPath(args.SymbolOutputFolder)
+                    .Combine("no_symbols_were_generated.txt")
+                    .WriteAllText("GenerateNativePluginsForAssemblies did not produce any output");
             }
         }
 
@@ -545,6 +598,7 @@ namespace UnityEditor.Modules
                 var cancellationTokenSource = new CancellationTokenSource();
 
                 buildRequest.Target = "Player";
+                buildRequest.RegisterRPCCallback<GenerateNativePluginsForAssembliesArgs>(nameof(GenerateNativePluginsForAssemblies), GenerateNativePluginsForAssemblies);
                 var activeBuild = BeeDriver.BuildAsync(buildRequest, cancellationToken: cancellationTokenSource.Token);
 
                 {
@@ -574,6 +628,8 @@ namespace UnityEditor.Modules
                         PostProcessCompletedBuild(args);
                     }
                     ReportBuildResults();
+
+                    UnityBeeDriver.RunCleanBeeCache();
 
                     if (BeeDriverResult.Success)
                     {

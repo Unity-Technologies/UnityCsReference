@@ -246,6 +246,7 @@ namespace UnityEditor.SceneManagement
             return false;
         }
 
+        [RequiredByNativeCode]
         public static PrefabStage GetCurrentPrefabStage()
         {
             return StageNavigationManager.instance.currentStage as PrefabStage;

@@ -83,6 +83,7 @@ namespace UnityEditor
             public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
 
             public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
+            public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
 
         }
 
@@ -165,7 +166,7 @@ namespace UnityEditor
         private bool m_EnableConstrainProportionsScalingForNewObjects;
         private string[] m_CustomScalingLabels = {"100%", "125%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"};
         private int[] m_CustomScalingValues = { 100, 125, 150, 175, 200, 225, 250, 300, 350 };
-
+        private bool m_EnableExtendedLogging;
         private readonly string kContentScalePrefKey = "CustomEditorUIScale";
 
         private struct GICacheSettings
@@ -572,6 +573,8 @@ namespace UnityEditor
             DrawDynamicHintsOptions();
             DrawPerformBumpMapCheck();
 
+            m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
+
             EditorGUILayout.Space();
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
 
@@ -603,7 +606,7 @@ namespace UnityEditor
             const string idleTimePrefKeyName = "ApplicationIdleTime";
             const string interactionModePrefKeyName = "InteractionMode";
             const string inputMaxProcessTimeKeyName = "InputMaxProcessTime";
-            var monitorRefreshDelayMs = (int)(1f / Math.Max(Screen.currentResolution.refreshRate, 1) * 1000f);
+            var monitorRefreshDelayMs = Math.Min(1000, (int)(1000.0 / Screen.currentResolution.refreshRateRatio.value));
             var idleTimeMs = EditorPrefs.GetInt(idleTimePrefKeyName, defaultIdleTimeMs);
             var inputMaxProcessTime = EditorPrefs.GetInt(inputMaxProcessTimeKeyName, 100);
             var interactionModeOption = (InteractionMode)EditorPrefs.GetInt(interactionModePrefKeyName, (int)InteractionMode.Default);
@@ -1095,6 +1098,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
 
             EditorPrefs.SetBool("EnableConstrainProportionsTransformScale", m_EnableConstrainProportionsScalingForNewObjects);
+            EditorPrefs.SetBool("EnableExtendedLogging", m_EnableExtendedLogging);
         }
 
         private int CurrentEditorScalingValue
@@ -1202,6 +1206,7 @@ namespace UnityEditor
             }
 
             m_GraphSnapping = EditorPrefs.GetBool("GraphSnapping", true);
+            m_EnableExtendedLogging = EditorPrefs.GetBool("EnableExtendedLogging", false);
         }
 
         internal static void ReloadCustomDiffToolData()

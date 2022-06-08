@@ -20,6 +20,8 @@ namespace UnityEditor
     {
         static class Styles
         {
+            public const float iconMargin = 1f;
+
             public static readonly GUIStyle background = new GUIStyle("hostview");
             public static readonly GUIStyle overlay = "dockareaoverlay";
             public static readonly GUIStyle paneOptions = "PaneOptions";
@@ -89,7 +91,7 @@ namespace UnityEditor
             set { SetActualViewInternal(value, sendEvents: true); }
         }
 
-        static readonly Vector2 k_DockedMinSize = new Vector2(100, 100);
+        static readonly Vector2 k_DockedMinSize = new Vector2(100, 50);
         static readonly Vector2 k_DockedMaxSize = new Vector2(8096, 8096);
         public override Vector2 minSize { get => (actualView?.docked ?? false) ? k_DockedMinSize : base.minSize; }
         public override Vector2 maxSize { get => (actualView?.docked ?? false) ? k_DockedMaxSize : base.maxSize; }
@@ -524,6 +526,9 @@ namespace UnityEditor
             set { windowBackend = value; }
         }
 
+        DataMode m_CachedDataMode;
+        bool m_ShouldDrawDataModeSwitch;
+
         protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
@@ -555,8 +560,18 @@ namespace UnityEditor
                 EditorApplication.update += m_ActualView.CheckForWindowRepaint;
             }
 
-            if (m_ActualView is IDataModeHandlerAndDispatcher dataModesDispatcher)
-                dataModesDispatcher.dataModeChanged += OnViewDataModeChanged;
+            if (m_ActualView is IDataModeHandler dataModeHandler)
+            {
+                UpdateDataMode(dataModeHandler.dataMode, false);
+
+                if (m_ActualView is IDataModeHandlerAndDispatcher dataModesDispatcher)
+                    dataModesDispatcher.dataModeChanged += OnViewDataModeChanged;
+            }
+            else
+            {
+                m_CachedDataMode = DataMode.Disabled;
+                m_ShouldDrawDataModeSwitch = false;
+            }
 
             if (sendEvents)
             {
@@ -679,18 +694,17 @@ namespace UnityEditor
             if (m_ShowButton != null)
                 extraWidth += ContainerWindow.kButtonWidth;
 
-            if (ShouldDrawDataModesSwitch())
-                extraWidth += Styles.DataModes.switchButtonWidth + k_iconMargin;
+            if (m_ShouldDrawDataModeSwitch)
+                extraWidth += Styles.DataModes.switchButtonWidth + Styles.iconMargin;
 
             foreach (var item in windowActions)
             {
                 if (item != null && (item.validateHandler == null || item.validateHandler(actualView, item)) && item.width.HasValue)
-                    extraWidth += item.width.Value + k_iconMargin;
+                    extraWidth += item.width.Value + Styles.iconMargin;
             }
             return extraWidth;
         }
 
-        internal const float k_iconMargin = 1f;
         protected void ShowGenericMenu(float leftOffset, float topOffset)
         {
             if (showGenericMenu)
@@ -700,50 +714,36 @@ namespace UnityEditor
                     PopupGenericMenu(m_ActualView, paneMenu);
 
                 if (m_ShowButton != null)
-                    leftOffset -= paneMenu.width + k_iconMargin;
+                    leftOffset -= paneMenu.width + Styles.iconMargin;
             }
 
             // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon)
             if (m_ShowButton != null)
                 m_ShowButton.Invoke(new Rect(leftOffset, topOffset, ContainerWindow.kButtonWidth, ContainerWindow.kButtonHeight));
 
-            // Note: We are assuming the value returned by ShouldDrawDataModesSwitch() hasn't changed since
-            // it was called from GetExtraButtonsWidth(); if GetExtraButtonsWidth() was called at all, that is.
-            if (ShouldDrawDataModesSwitch())
+            if (m_ShouldDrawDataModeSwitch)
             {
-                // This cast is guaranteed to work by ShouldDrawDataModesSwitch()
-                var dataModesClient = (IDataModeHandler) m_ActualView;
-                var switchContent = default(GUIContent);
-
-                switch (dataModesClient.dataMode)
+                var switchContent = m_CachedDataMode switch
                 {
-                    case DataMode.Authoring:
-                    {
-                        switchContent = Styles.DataModes.authoringModeContent;
-                        break;
-                    }
-                    case DataMode.Mixed:
-                    {
-                        switchContent = Styles.DataModes.mixedModeContent;
-                        break;
-                    }
-                    case DataMode.Runtime:
-                    {
-                        switchContent = Styles.DataModes.runtimeModeContent;
-                        break;
-                    }
-                }
+                    DataMode.Authoring => Styles.DataModes.authoringModeContent,
+                    DataMode.Mixed => Styles.DataModes.mixedModeContent,
+                    DataMode.Runtime => Styles.DataModes.runtimeModeContent,
+                    _ => default
+                };
 
                 // Last chance to bail in case something weird happened
                 if (switchContent != default)
                 {
-                    leftOffset -= Styles.DataModes.switchButtonWidth + k_iconMargin;
+                    leftOffset -= Styles.DataModes.switchButtonWidth + Styles.iconMargin;
                     var switchRect = new Rect(leftOffset, topOffset, Styles.DataModes.switchButtonWidth, ContainerWindow.kButtonHeight);
 
                     if (EditorGUI.Button(switchRect, switchContent, Styles.DataModes.switchStyle))
                     {
+                        // This cast is guaranteed to work by m_ShouldDrawDataModeSwitch
+                        var dataModesClient = (IDataModeHandler) m_ActualView;
+
                         dataModesClient.SwitchToNextDataMode();
-                        RefreshAfterDataModeChange();
+                        UpdateDataMode(dataModesClient.dataMode, true);
                     }
                 }
             }
@@ -752,7 +752,7 @@ namespace UnityEditor
             {
                 if (item != null && (item.validateHandler == null || item.validateHandler(actualView, item)) && item.width.HasValue)
                 {
-                    leftOffset -= item.width.Value + k_iconMargin;
+                    leftOffset -= item.width.Value + Styles.iconMargin;
                     Rect itemRect = new Rect(leftOffset, topOffset, item.width.Value, ContainerWindow.kButtonHeight);
                     if (item.drawHandler != null)
                     {
@@ -779,26 +779,29 @@ namespace UnityEditor
 
         void SelectDataMode(object dataMode)
         {
-            if (!(m_ActualView is IDataModeHandler dataModesHandler))
+            if (m_ActualView is not IDataModeHandler dataModeHandler)
                 return; // Something very weird has happened...
 
-            if (dataMode is DataMode mode && dataModesHandler.IsDataModeSupported(mode))
-                dataModesHandler.SwitchToDataMode(mode);
+            if (dataMode is DataMode mode && dataModeHandler.IsDataModeSupported(mode))
+                dataModeHandler.SwitchToDataMode(mode);
             else
-                dataModesHandler.SwitchToDefaultDataMode();
+                dataModeHandler.SwitchToDefaultDataMode();
+
+            UpdateDataMode(dataModeHandler.dataMode, true);
         }
 
-        void OnViewDataModeChanged(DataMode newMode)
-        {
-            // Current implementation doesn't need to know the new data mode, but once
-            // we switch this to UITK (soon), knowing the new mode will be very useful.
-            RefreshAfterDataModeChange();
-        }
+        void OnViewDataModeChanged(DataMode newDataMode) => UpdateDataMode(newDataMode, true);
 
-        void RefreshAfterDataModeChange()
+        void UpdateDataMode(DataMode newDataMode, bool needsRepaint)
         {
-            m_ActualView.Repaint();
-            RepaintImmediately();
+            m_CachedDataMode = newDataMode;
+            m_ShouldDrawDataModeSwitch = ShouldDrawDataModesSwitch();
+
+            if (needsRepaint)
+            {
+                m_ActualView.Repaint();
+                RepaintImmediately();
+            }
         }
 
         private static WindowAction[] FetchWindowActionFromAttribute()
@@ -942,8 +945,10 @@ namespace UnityEditor
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
 
-            if (window is IDataModeHandler dataModesHandler && dataModesHandler.dataMode != DataMode.Disabled)
+            if (m_ShouldDrawDataModeSwitch)
             {
+                // This cast is guaranteed to work by m_ShouldDrawDataModeSwitch
+                var dataModesHandler = (IDataModeHandler) window;
                 SanitizeSupportedDataModesList(dataModesHandler.supportedDataModes, m_DataModeSanitizationCache);
 
                 // Don't show anything if only one mode is supported
@@ -952,7 +957,7 @@ namespace UnityEditor
                     foreach (var mode in m_DataModeSanitizationCache)
                     {
                         menu.AddItem(Styles.DataModes.dataModeNameLabels[mode],
-                            dataModesHandler.dataMode == mode,
+                            m_CachedDataMode == mode,
                             SelectDataMode,
                             mode);
                     }
@@ -969,8 +974,7 @@ namespace UnityEditor
                     visibleMenu,
                     () =>
                     {
-                        window.overlayCanvas.localMousePosition = Vector2.negativeInfinity;
-                        window.overlayCanvas.menuVisible = !visibleMenu;
+                        window.overlayCanvas.ShowMenu(!visibleMenu, false);
                     });
             }
 

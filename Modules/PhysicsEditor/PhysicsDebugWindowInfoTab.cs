@@ -329,7 +329,7 @@ namespace UnityEditor
 
         private void OnSceneClose(Scene scene)
         {
-            ClearInvalidObjects();
+            ClearInvalidInfoObjects();
             PhysicsDebugDraw.UpdateFilter();
         }
 
@@ -339,7 +339,7 @@ namespace UnityEditor
         }
 
         // This is usefull when Transfrom references change and they start pointing to null Transforms
-        private void ClearInvalidObjects()
+        private void ClearInvalidInfoObjects()
         {
             foreach (var lockedObject in m_LockedObjects)
                 if (lockedObject.Key == null)

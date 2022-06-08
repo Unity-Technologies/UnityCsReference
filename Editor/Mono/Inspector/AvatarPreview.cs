@@ -413,6 +413,13 @@ namespace UnityEditor
 
             SetPreviewCharacterEnabled(false, false);
 
+            //Fix for FogBugz case : 1364821 Inspector Model Preview orientation is reversed when Bake Axis Conversion is enabled
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(motion)) as ModelImporter;
+            if (importer && importer.bakeAxisConversion)
+            {
+                m_PreviewDir += new Vector2(180,0);
+            }
+
             m_PivotPositionOffset = Vector3.zero;
         }
 

@@ -8,33 +8,6 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(CircleCollider2D))]
-    [CanEditMultipleObjects]
-    class CircleCollider2DEditor : Collider2DEditorBase
-    {
-        SerializedProperty m_Radius;
-
-        public override void OnEnable()
-        {
-            base.OnEnable();
-            m_Radius = serializedObject.FindProperty("m_Radius");
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
-
-            GUILayout.Space(5);
-            base.OnInspectorGUI();
-
-            EditorGUILayout.PropertyField(m_Radius);
-
-            FinalizeInspectorGUI();
-        }
-    }
-
     [EditorTool("Edit Circle Collider 2D", typeof(CircleCollider2D))]
     class CircleCollider2DTool : PrimitiveCollider2DTool<CircleCollider2D>
     {

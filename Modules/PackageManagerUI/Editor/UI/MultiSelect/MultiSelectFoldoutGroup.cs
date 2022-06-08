@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             this.inProgressFoldout = inProgressFoldout;
         }
 
-        public bool AddPackageVersion(IPackageVersion version)
+        public virtual bool AddPackageVersion(IPackageVersion version)
         {
             var state = mainButton.GetActionState(version, out _, out _);
             if (state.HasFlag(PackageActionState.InProgress))

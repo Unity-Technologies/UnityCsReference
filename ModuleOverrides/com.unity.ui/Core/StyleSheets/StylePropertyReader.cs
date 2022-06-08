@@ -465,6 +465,38 @@ namespace UnityEngine.UIElements.StyleSheets
             return textShadow;
         }
 
+        public BackgroundPosition ReadBackgroundPositionX(int index)
+        {
+            return ReadBackgroundPosition(index, BackgroundPositionKeyword.Left);
+        }
+
+        public BackgroundPosition ReadBackgroundPositionY(int index)
+        {
+            return ReadBackgroundPosition(index, BackgroundPositionKeyword.Top);
+        }
+
+        private BackgroundPosition ReadBackgroundPosition(int index, BackgroundPositionKeyword keyword)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            return ReadBackgroundPosition(valueCount, val1, val2, keyword);
+        }
+
+
+        public BackgroundRepeat ReadBackgroundRepeat(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            return ReadBackgroundRepeat(valueCount, val1, val2);
+        }
+
+        public BackgroundSize ReadBackgroundSize(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            return ReadBackgroundSize(valueCount, val1, val2);
+        }
+
         public void ReadListEasingFunction(List<EasingFunction> list, int index)
         {
             list.Clear();

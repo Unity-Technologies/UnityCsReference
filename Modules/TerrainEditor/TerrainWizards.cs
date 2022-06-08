@@ -508,7 +508,7 @@ namespace UnityEditor
         public readonly GUIContent holeEdgePadding = EditorGUIUtility.TrTextContent("Hole Edge Padding (%)", "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.");
         public readonly GUIContent useDensityScaling = EditorGUIUtility.TrTextContent("Affected by Density Scale", "Toggles whether or not this detail prototype should be affected by the global density scaling setting in the Terrain settings.");
         public readonly GUIContent alignToGround = EditorGUIUtility.TrTextContent("Align To Ground (%)", "Rotate detail axis to ground normal direction.");
-        public readonly GUIContent positionOrderliness = EditorGUIUtility.TrTextContent("Position Orderliness (%)", "Controls how to generate position between random and quasirandom. \n\nquasirandom prevents instances from overlapping each other.");
+        public readonly GUIContent positionJitter = EditorGUIUtility.TrTextContent("Position Jitter (%)", "Controls the randomness of the detail distribution, from ordered to random. Only available when legacy distribution in Quality Settings is turned off.");
 
         public DetailWizardSharedStyles()
         {
@@ -554,7 +554,7 @@ namespace UnityEditor
         bool         m_UseInstancing;
         bool         m_UseDensityScaling;
         float        m_AlignToGround;
-        float        m_PositionOrderliness;
+        float        positionJitter;
         float        m_TargetCoverage;
         int          m_PrototypeIndex = -1;
 
@@ -608,7 +608,7 @@ namespace UnityEditor
             m_UseInstancing = prototype.useInstancing;
             m_UseDensityScaling = prototype.useDensityScaling;
             m_AlignToGround = Mathf.Clamp01(prototype.alignToGround) * 100.0f;
-            m_PositionOrderliness = Mathf.Clamp01(prototype.positionOrderliness) * 100.0f;
+            positionJitter = Mathf.Clamp01(prototype.positionJitter) * 100.0f;
             m_TargetCoverage = prototype.targetCoverage;
 
             OnWizardUpdate();
@@ -638,7 +638,7 @@ namespace UnityEditor
                 useInstancing = m_UseInstancing,
                 useDensityScaling = m_UseDensityScaling,
                 alignToGround = m_AlignToGround / 100.0f,
-                positionOrderliness = m_PositionOrderliness / 100.0f,
+                positionJitter = positionJitter / 100.0f,
                 targetCoverage = m_TargetCoverage
             };
         }
@@ -697,10 +697,11 @@ namespace UnityEditor
 
             m_DetailPrefab = EditorGUILayout.ObjectField("Detail Prefab", m_DetailPrefab, typeof(GameObject), !TerrainDataIsPersistent) as GameObject;
             GUI.enabled = terrainData.detailScatterMode == DetailScatterMode.CoverageMode;
-            m_DetailDensity = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.detailDensity, m_DetailDensity, 0, 3);
             GUI.enabled = true;
             m_AlignToGround = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.alignToGround, m_AlignToGround, 0, 100);
-            m_PositionOrderliness = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionOrderliness, m_PositionOrderliness, 0, 100);
+            GUI.enabled = !QualitySettings.useLegacyDetailDistribution;
+            positionJitter = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionJitter, positionJitter, 0, 100);
+            GUI.enabled = true;
             m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
             m_MaxWidth = EditorGUILayout.FloatField("Max Width", m_MaxWidth);
             m_MinHeight = EditorGUILayout.FloatField("Min Height", m_MinHeight);
@@ -757,7 +758,7 @@ namespace UnityEditor
         bool         m_Billboard;
         bool         m_UseDensityScaling;
         float        m_AlignToGround;
-        float        m_PositionOrderliness;
+        float        m_PositionJitter;
 
         int      m_PrototypeIndex = -1;
 
@@ -798,7 +799,7 @@ namespace UnityEditor
             m_Billboard = prototype.renderMode == DetailRenderMode.GrassBillboard;
             m_UseDensityScaling = prototype.useDensityScaling;
             m_AlignToGround = Mathf.Clamp01(prototype.alignToGround) * 100.0f;
-            m_PositionOrderliness = Mathf.Clamp01(prototype.positionOrderliness) * 100.0f;
+            m_PositionJitter = Mathf.Clamp01(prototype.positionJitter) * 100.0f;
 
             OnWizardUpdate();
         }
@@ -827,7 +828,7 @@ namespace UnityEditor
                 useInstancing = false,
                 useDensityScaling = m_UseDensityScaling,
                 alignToGround = m_AlignToGround / 100.0f,
-                positionOrderliness = m_PositionOrderliness / 100.0f
+                positionJitter = m_PositionJitter / 100.0f
             };
         }
 
@@ -892,7 +893,7 @@ namespace UnityEditor
             m_DetailTexture = EditorGUI.ObjectField(r, "Detail Texture", m_DetailTexture, typeof(Texture2D), !TerrainDataIsPersistent) as Texture2D;
 
             m_AlignToGround = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.alignToGround, m_AlignToGround, 0, 100);
-            m_PositionOrderliness = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionOrderliness, m_PositionOrderliness, 0, 100);
+            m_PositionJitter = EditorGUILayout.Slider(DetailWizardSharedStyles.Instance.positionJitter, m_PositionJitter, 0, 100);
             m_MinWidth = EditorGUILayout.FloatField("Min Width", m_MinWidth);
             m_MaxWidth = EditorGUILayout.FloatField("Max Width", m_MaxWidth);
             m_MinHeight = EditorGUILayout.FloatField("Min Height", m_MinHeight);

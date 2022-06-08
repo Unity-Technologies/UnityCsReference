@@ -18,6 +18,7 @@ namespace UnityEditor.SearchService
         public IEnumerable<Type> requiredTypes { get; set; }
         public IEnumerable<string> requiredTypeNames { get; set; }
         public HierarchyProperty rootProperty { get; set; }
+        internal SearchFilter searchFilter { get; set; }
     }
 
     public interface ISceneSearchEngine : IFilterEngine<HierarchyProperty>

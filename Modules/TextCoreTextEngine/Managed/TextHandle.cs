@@ -2,10 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Text;
+
 namespace UnityEngine.TextCore.Text
 {
     internal class TextHandle
     {
+        public TextHandle()
+        {
+            textGenerationSettings = new TextGenerationSettings();
+        }
+
         Vector2 m_PreferredSize;
         /// <summary>
         /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
@@ -26,6 +34,12 @@ namespace UnityEngine.TextCore.Text
 
                 return m_TextInfo;
             }
+        }
+
+        // For testing purposes
+        internal bool IsTextInfoAllocated()
+        {
+            return m_TextInfo != null;
         }
 
         /// <summary>
@@ -49,7 +63,28 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        internal TextGenerationSettings textGenerationSettings;
+        int m_PreviousGenerationSettingsHash;
+        protected TextGenerationSettings textGenerationSettings;
+
+        //static instance cached to minimize allocation
+        protected static TextGenerationSettings s_LayoutSettings = new TextGenerationSettings();
+
+        private bool isDirty;
+        public void SetDirty()
+        {
+            isDirty = true;
+        }
+
+        public bool IsDirty()
+        {
+            int hash = textGenerationSettings.GetHashCode();
+            if (m_PreviousGenerationSettingsHash == hash && !isDirty)
+                return false;
+
+            m_PreviousGenerationSettingsHash = hash;
+            isDirty = false;
+            return true;
+        }
 
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
@@ -288,7 +323,7 @@ namespace UnityEngine.TextCore.Text
             int closest = lastCharacter;
 
 
-            for (int i = firstCharacter; i < lastCharacter; i++)
+            for (int i = firstCharacter; i <= lastCharacter; i++)
             {
                 // Get current character info.
                 var cInfo = textInfo.textElementInfo[i];
@@ -327,6 +362,148 @@ namespace UnityEngine.TextCore.Text
                 }
             }
             return closest;
+        }
+
+        public int GetLineNumber(int index)
+        {
+            if (index <= 0)
+                index = 0;
+            else if (index >= textInfo.characterCount)
+                index = Mathf.Max(0, textInfo.characterCount - 1);
+
+            return textInfo.textElementInfo[index].lineNumber;
+        }
+
+        public float GetLineHeight(int lineNumber)
+        {
+            if (lineNumber <= 0)
+                lineNumber = 0;
+            else if (lineNumber >= textInfo.lineCount)
+                lineNumber = Mathf.Max(0, textInfo.lineCount - 1);
+
+            return textInfo.lineInfo[lineNumber].lineHeight;
+        }
+
+        public float GetLineHeightFromCharacterIndex(int index)
+        {
+            if (index <= 0)
+                index = 0;
+            else if (index >= textInfo.characterCount)
+                index = Mathf.Max(0, textInfo.characterCount - 1);
+            return GetLineHeight(textInfo.textElementInfo[index].lineNumber);
+        }
+
+        public float GetCharacterHeightFromIndex(int index)
+        {
+            if (index <= 0)
+                index = 0;
+            else if (index >= textInfo.characterCount)
+                index = Mathf.Max(0, textInfo.characterCount - 1);
+
+            var characterInfo = textInfo.textElementInfo[index];
+            return characterInfo.ascender - characterInfo.descender;
+        }
+
+        public bool IsElided()
+        {
+            if (textInfo == null)
+                return false;
+
+            if (textInfo.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
+                return true;
+
+            return TextGenerator.isTextTruncated;
+        }
+
+        /// <summary>
+        // Retrieves a substring from this instance.
+        /// </summary>
+        public string Substring(int startIndex, int length)
+        {
+            if (startIndex < 0 || startIndex + length > textInfo.characterCount)
+                throw new ArgumentOutOfRangeException();
+
+            var result = new StringBuilder(length);
+            for (int i = startIndex; i < startIndex + length; ++i)
+                result.Append(textInfo.textElementInfo[i].character);
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        // Reports the zero-based index of the first occurrence of the specified Unicode character in this string.
+        // The search starts at a specified character position.
+        /// </summary>
+        /// <remarks>
+        /// The search is case sensitive.
+        /// </remarks>
+        public int IndexOf(char value, int startIndex)
+        {
+            if (startIndex < 0 || startIndex >= textInfo.characterCount)
+                throw new ArgumentOutOfRangeException();
+
+            for (int i = startIndex; i < textInfo.characterCount; i++)
+            {
+                if (textInfo.textElementInfo[i].character == value)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        // Reports the zero-based index position of the last occurrence of a specified Unicode character within this
+        // instance. The search starts at a specified character position and proceeds backward toward the beginning of the string.
+        /// </summary>
+        /// <remarks>
+        /// The search is case sensitive.
+        /// </remarks>
+        public int LastIndexOf(char value, int startIndex)
+        {
+            if (startIndex < 0 || startIndex >= textInfo.characterCount)
+                throw new ArgumentOutOfRangeException();
+
+            for (int i = startIndex; i >= 0; i--)
+            {
+                if (textInfo.textElementInfo[i].character == value)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        protected float ComputeTextWidth(TextGenerationSettings tgs)
+        {
+            UpdatePreferredValues(tgs);
+            return m_PreferredSize.x;
+        }
+
+        protected float ComputeTextHeight(TextGenerationSettings tgs)
+        {
+            UpdatePreferredValues(tgs);
+            return m_PreferredSize.y;
+        }
+
+        protected void UpdatePreferredValues(TextGenerationSettings tgs)
+        {
+            m_PreferredSize = TextGenerator.GetPreferredValues(tgs, layoutTextInfo);
+        }
+
+        internal TextInfo Update(string newText)
+        {
+            textGenerationSettings.text = newText;
+            return Update(textGenerationSettings);
+        }
+
+        protected TextInfo Update(TextGenerationSettings tgs)
+        {
+            if (!IsDirty())
+                return textInfo;
+
+            textInfo.isDirty = true;
+            TextGenerator.GenerateText(tgs, textInfo);
+            textGenerationSettings = tgs;
+            return textInfo;
         }
 
         private static bool PointIntersectRectangle(Vector3 m, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
@@ -370,87 +547,6 @@ namespace UnityEngine.TextCore.Text
             Vector3 e = pa - n * (c / Vector3.Dot( n, n ));
 
             return Vector3.Dot( e, e );
-        }
-        public float ComputeTextWidth(TextGenerationSettings tgs)
-        {
-            UpdatePreferredValues(tgs);
-            return m_PreferredSize.x;
-        }
-
-        public float ComputeTextHeight(TextGenerationSettings tgs)
-        {
-            UpdatePreferredValues(tgs);
-            return m_PreferredSize.y;
-        }
-
-        void UpdatePreferredValues(TextGenerationSettings tgs)
-        {
-            m_PreferredSize = TextGenerator.GetPreferredValues(tgs, layoutTextInfo);
-        }
-
-        public int GetLineNumber(int index)
-        {
-            if (index <= 0)
-                index = 0;
-            else if (index >= textInfo.characterCount)
-                index = Mathf.Max(0, textInfo.characterCount - 1);
-
-            return textInfo.textElementInfo[index].lineNumber;
-        }
-
-        public float GetLineHeight(int lineNumber)
-        {
-            if (lineNumber <= 0)
-                lineNumber = 0;
-            else if (lineNumber >= textInfo.lineCount)
-                lineNumber = Mathf.Max(0, textInfo.lineCount - 1);
-
-            return textInfo.lineInfo[lineNumber].lineHeight;
-        }
-
-        public float GetLineHeightFromCharacterIndex(int index)
-        {
-            if (index <= 0)
-                index = 0;
-            else if (index >= textInfo.characterCount)
-                index = Mathf.Max(0, textInfo.characterCount - 1);
-            return GetLineHeight(textInfo.textElementInfo[index].lineNumber);
-        }
-
-        public float GetCharacterHeightFromIndex(int index)
-        {
-            if (index <= 0)
-                index = 0;
-            else if (index >= textInfo.characterCount)
-                index = Mathf.Max(0, textInfo.characterCount - 1);
-
-            var characterInfo = textInfo.textElementInfo[index];
-            return characterInfo.ascender - characterInfo.descender;
-        }
-
-        public TextInfo Update(TextGenerationSettings tgs)
-        {
-            textInfo.isDirty = true;
-            TextGenerator.GenerateText(tgs, textInfo);
-            textGenerationSettings = tgs;
-            return textInfo;
-        }
-
-        // For testing purposes
-        internal bool IsTextInfoAllocated()
-        {
-            return m_TextInfo != null;
-        }
-
-        public bool IsElided()
-        {
-            if (textInfo == null)
-                return false;
-
-            if (textInfo.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
-                return true;
-
-            return TextGenerator.isTextTruncated;
         }
     }
 }

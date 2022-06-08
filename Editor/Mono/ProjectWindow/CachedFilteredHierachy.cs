@@ -283,9 +283,9 @@ namespace UnityEditor
                 HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
                 m_SearchSessionHandler.BeginSession(() =>
                 {
-                    return new SearchService.HierarchySearchContext
+                    return new SearchService.SceneSearchContext
                     {
-                        filter = m_SearchFilter,
+                        searchFilter = m_SearchFilter,
                         rootProperty = property,
                         requiredTypeNames = m_SearchFilter.classNames,
                         requiredTypes = searchFilter.classNames.Select(name => TypeCache.GetTypesDerivedFrom<Object>().FirstOrDefault(t => name == t.FullName || name == t.Name))

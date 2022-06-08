@@ -8,12 +8,10 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    internal class UITKTextHandle
+    internal class UITKTextHandle : TextHandle
     {
         public UITKTextHandle(TextElement te)
         {
-            m_CurrentGenerationSettings = new UnityEngine.TextCore.Text.TextGenerationSettings();
-            textHandle = new TextHandle();
             m_TextElement = te;
         }
 
@@ -21,34 +19,6 @@ namespace UnityEngine.UIElements
         public Vector2 RoundedSizes { get; set; }
 
         TextElement m_TextElement;
-        internal TextHandle textHandle;
-        int m_PreviousGenerationSettingsHash;
-        UnityEngine.TextCore.Text.TextGenerationSettings m_CurrentGenerationSettings;
-
-        //static instance cached to minimize allocation
-        static TextCore.Text.TextGenerationSettings s_LayoutSettings = new TextCore.Text.TextGenerationSettings();
-
-        private bool isDirty;
-        public void SetDirty()
-        {
-            isDirty = true;
-        }
-
-        public bool IsDirty()
-        {
-            int hash = m_CurrentGenerationSettings.GetHashCode();
-            if (m_PreviousGenerationSettingsHash == hash && !isDirty)
-                return false;
-
-            m_PreviousGenerationSettingsHash = hash;
-            isDirty = false;
-            return true;
-        }
-
-        public Vector2 GetCursorPositionFromIndexUsingLineHeight(int index)
-        {
-            return textHandle.GetCursorPositionFromStringIndexUsingLineHeight(index);
-        }
 
         public float ComputeTextWidth(string textToMeasure, bool wordWrap, float width, float height)
         {
@@ -56,7 +26,7 @@ namespace UnityEngine.UIElements
             s_LayoutSettings.text = textToMeasure;
             s_LayoutSettings.screenRect = new Rect(0, 0, width, height);
             s_LayoutSettings.wordWrap = wordWrap;
-            return textHandle.ComputeTextWidth(s_LayoutSettings);
+            return ComputeTextWidth(s_LayoutSettings);
         }
 
         public float ComputeTextHeight(string textToMeasure, float width, float height)
@@ -64,27 +34,12 @@ namespace UnityEngine.UIElements
             ConvertUssToTextGenerationSettings(s_LayoutSettings);
             s_LayoutSettings.text = textToMeasure;
             s_LayoutSettings.screenRect = new Rect(0, 0, width, height);
-            return textHandle.ComputeTextHeight(s_LayoutSettings);
-        }
-
-        public float GetLineHeight(int lineNumber)
-        {
-            return textHandle.GetLineHeight(lineNumber);
-        }
-
-        public float GetLineHeightFromCharacterIndex(int index)
-        {
-            return textHandle.GetLineHeightFromCharacterIndex(index);
-        }
-
-        public float GetCharacterHeightFromIndex(int index)
-        {
-            return textHandle.GetCharacterHeightFromIndex(index);
+            return ComputeTextHeight(s_LayoutSettings);
         }
 
         public TextInfo Update()
         {
-            ConvertUssToTextGenerationSettings(m_CurrentGenerationSettings);
+            ConvertUssToTextGenerationSettings(textGenerationSettings);
 
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             var size = m_TextElement.contentRect.size;
@@ -101,16 +56,12 @@ namespace UnityEngine.UIElements
                 MeasuredSizes = size;
             }
 
-            m_CurrentGenerationSettings.screenRect = new Rect(Vector2.zero, size);
-            if (!IsDirty())
-            {
-                return textHandle.textInfo;
-            }
+            textGenerationSettings.screenRect = new Rect(Vector2.zero, size);
 
-            return textHandle.Update(m_CurrentGenerationSettings);
+            return Update(textGenerationSettings);
         }
 
-        internal TextOverflowMode GetTextOverflowMode()
+        TextOverflowMode GetTextOverflowMode()
         {
             var style = m_TextElement.computedStyle;
             if (style.textOverflow == TextOverflow.Clip)
@@ -123,15 +74,13 @@ namespace UnityEngine.UIElements
             if (!TextLibraryCanElide())
                 return TextOverflowMode.Masking;
 
-            var wordWrap = style.whiteSpace == WhiteSpace.Normal;
-            if (!wordWrap && style.overflow == OverflowInternal.Hidden)
+            if (style.overflow == OverflowInternal.Hidden)
                 return TextOverflowMode.Ellipsis;
 
             return TextOverflowMode.Overflow;
         }
 
-
-        internal void ConvertUssToTextGenerationSettings(UnityEngine.TextCore.Text.TextGenerationSettings tgs)
+        void ConvertUssToTextGenerationSettings(UnityEngine.TextCore.Text.TextGenerationSettings tgs)
         {
             var style = m_TextElement.computedStyle;
 
@@ -246,7 +195,9 @@ namespace UnityEngine.UIElements
             var textSettings = GetTextSettingsFrom(ve);
             if (ve.computedStyle.unityFontDefinition.font != null)
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
-            return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
+            else if (ve.computedStyle.unityFont != null)
+                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
+            return null;
         }
 
         internal static Font GetFont(VisualElement ve)

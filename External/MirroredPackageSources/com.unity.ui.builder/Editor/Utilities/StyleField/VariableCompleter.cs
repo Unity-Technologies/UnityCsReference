@@ -79,12 +79,11 @@ namespace Unity.UI.Builder
 
         public static StyleValueType[] GetCompatibleStyleValueTypes(VariableEditingHandler handler)
         {
-            var field = handler.inspector.styleFields.FindStylePropertyInfo(handler.styleName);
-            if (field == null)
+            var styleType = StyleDebug.GetComputedStyleType(handler.styleName);
+            if (styleType == null)
                 return new[] { StyleValueType.Invalid };
 
-            var val = field.GetValue(handler.inspector.currentVisualElement.computedStyle, null);
-            var valType = val == null ? typeof(object) : val.GetType();
+            var val = StyleDebug.GetComputedStyleValue(handler.inspector.currentVisualElement.computedStyle, handler.styleName);
 
             if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) ||
                 BuilderInspectorStyleFields.IsComputedStyleInt(val) ||
@@ -115,7 +114,7 @@ namespace Unity.UI.Builder
                 return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }
 
-            if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, valType) ||
+            if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, styleType) ||
                 BuilderInspectorStyleFields.IsComputedStyleList<EasingFunction>(val))
             {
                 return new[] { StyleValueType.Enum };

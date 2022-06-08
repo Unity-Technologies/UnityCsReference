@@ -28,7 +28,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     internal interface IGroupBox
     {
-        // This interface was left empty on purpose. This type is only used as a marker on VisualElements.
+        void OnOptionAdded(IGroupBoxOption option);
+        void OnOptionRemoved(IGroupBoxOption option);
     }
 
     /// <summary>

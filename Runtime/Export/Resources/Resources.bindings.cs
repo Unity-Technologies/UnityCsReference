@@ -200,5 +200,36 @@ namespace UnityEngine
 
             InstanceIDToObjectList((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
         }
-    }
+
+        [FreeFunction("Resources_Bindings::InstanceIDsToValidArray")]
+        private static extern unsafe void InstanceIDsToValidArray_Internal(IntPtr instanceIDs, int instanceCount, IntPtr validArray, int validArrayCount);
+
+        public static unsafe void InstanceIDsToValidArray(NativeArray<int> instanceIDs, NativeArray<bool> validArray)
+        {
+            if (!instanceIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
+            if (!validArray.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(validArray));
+            if (instanceIDs.Length != validArray.Length)
+                throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
+            if(instanceIDs.Length == 0)
+                return;
+
+            InstanceIDsToValidArray_Internal((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
+        }
+
+        public static unsafe void InstanceIDsToValidArray(ReadOnlySpan<int> instanceIDs, Span<bool> validArray)
+            {
+                if (instanceIDs.Length != validArray.Length)
+                    throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
+                if(instanceIDs.Length == 0)
+                    return;
+
+                fixed(int* instanceIDsPtr = instanceIDs)
+                fixed(bool* validArrayPtr = validArray)
+                {
+                    InstanceIDsToValidArray_Internal((IntPtr)instanceIDsPtr, instanceIDs.Length, (IntPtr)validArrayPtr, validArray.Length);
+                }
+            }
+        }
 }

@@ -370,6 +370,7 @@ namespace UnityEditor
         public extern  SpriteImportMode spriteImportMode { get; set; }
 
         [NativeProperty("SpriteMetaDatas")]
+        [Obsolete("Support for accessing sprite meta data through spritesheet has been removed. Please use the UnityEditor.U2D.Sprites.ISpriteEditorDataProvider interface instead.")]
         public extern SpriteMetaData[] spritesheet { get; set; }
 
         public extern SecondarySpriteTexture[] secondarySpriteTextures { get; set; }

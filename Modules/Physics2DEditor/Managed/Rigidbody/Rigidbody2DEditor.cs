@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
-using UnityEditorInternal;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 

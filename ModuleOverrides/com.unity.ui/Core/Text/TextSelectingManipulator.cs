@@ -33,12 +33,10 @@ namespace UnityEngine.UIElements
         public TextSelectingManipulator(TextElement textElement)
         {
             m_TextElement = textElement;
-            m_SelectingUtilities = new TextSelectingUtilities(m_TextElement.uitkTextHandle.textHandle);
+            m_SelectingUtilities = new TextSelectingUtilities(m_TextElement.uitkTextHandle);
 
             m_SelectingUtilities.OnCursorIndexChange += OnCursorIndexChange;
             m_SelectingUtilities.OnSelectIndexChange += OnSelectIndexChange;
-
-            SyncSelectingUtilitiesWithTextElement();
         }
 
         internal int cursorIndex
@@ -51,12 +49,6 @@ namespace UnityEngine.UIElements
         {
             get => m_SelectingUtilities?.selectIndex ?? -1;
             set => m_SelectingUtilities.selectIndex = value;
-        }
-
-        private void SyncSelectingUtilitiesWithTextElement()
-        {
-            m_SelectingUtilities.multiline = m_TextElement.edition.multiline;
-            m_SelectingUtilities.text = m_TextElement.text;
         }
 
         void OnSelectIndexChange()
@@ -135,6 +127,7 @@ namespace UnityEngine.UIElements
 
         void OnMouseDownEvent(MouseDownEvent evt)
         {
+            var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
             if (evt.button == (int)MouseButton.LeftMouse)
             {
                 if (evt.clickCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
@@ -142,10 +135,10 @@ namespace UnityEngine.UIElements
                 else if (evt.clickCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else
-                    m_SelectingUtilities.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
+                    m_SelectingUtilities.MoveCursorToPosition_Internal(mousePosition, evt.shiftKey);
 
                 isClicking = true;
-                m_ClickStartPosition = evt.localMousePosition;
+                m_ClickStartPosition = mousePosition;
                 evt.StopPropagation();
 
                 // Scroll offset might need to be updated
@@ -158,10 +151,12 @@ namespace UnityEngine.UIElements
             if (evt.button != (int)MouseButton.LeftMouse || !isClicking)
                 return;
 
-            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, evt.localMousePosition);
+            var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
+
+            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, mousePosition);
             if (m_Dragged)
             {
-                m_SelectingUtilities.SelectToPosition(evt.localMousePosition);
+                m_SelectingUtilities.SelectToPosition(mousePosition);
                 // Scroll offset might need to be updated
                 m_TextElement.edition.UpdateScrollOffset?.Invoke();
 

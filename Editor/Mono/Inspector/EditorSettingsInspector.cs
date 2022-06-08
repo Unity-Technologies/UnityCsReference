@@ -43,6 +43,7 @@ namespace UnityEditor
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
             public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
+            public static GUIContent cacheServerDownloadBatchSizeLabel = EditorGUIUtility.TrTextContent("Download Batch Size");
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
@@ -53,6 +54,7 @@ namespace UnityEditor
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
             public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
+            public static GUIContent enableEnlightenLightmapping = EditorGUIUtility.TrTextContent("Enable Enlighten for Baked GI (Legacy)", "Enable the Enlighten backend for Baked GI lightmaps. This is a deprecated feature that is no longer available in 2023.1 and later.");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max SpriteAtlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart.");
@@ -258,6 +260,7 @@ namespace UnityEditor
         SerializedProperty m_PrefabModeAllowAutoSave;
         SerializedProperty m_UseLegacyProbeSampleCount;
         SerializedProperty m_DisableCookiesInLightmapper;
+        SerializedProperty m_EnableEnlightenBakedGI;
         SerializedProperty m_SpritePackerMode;
         SerializedProperty m_SpritePackerCacheSize;
         SerializedProperty m_Bc7TextureCompressor;
@@ -279,6 +282,8 @@ namespace UnityEditor
         const string kStandbyWorkerCountKeyArgs = "-standbyWorkerCount";
         const string kIdleWorkerShutdownDelayKeyArgs = "-idleWorkerShutdownDelay";
         const string kDesiredImportWorkerCountKeyArgs = "-desiredWorkerCount";
+
+        private const string kCacheServerDownloadBatchSizeCmdArg = "-cacheServerDownloadBatchSize";
 
         enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
@@ -323,6 +328,9 @@ namespace UnityEditor
 
             m_DisableCookiesInLightmapper = serializedObject.FindProperty("m_DisableCookiesInLightmapper");
             Assert.IsNotNull(m_DisableCookiesInLightmapper);
+
+            m_EnableEnlightenBakedGI = serializedObject.FindProperty("m_EnableEnlightenBakedGI");
+            Assert.IsNotNull(m_EnableEnlightenBakedGI);
 
             m_SpritePackerMode = serializedObject.FindProperty("m_SpritePackerMode");
             Assert.IsNotNull(m_SpritePackerMode);
@@ -559,6 +567,33 @@ namespace UnityEditor
             }
             EditorGUI.EndProperty();
 
+#pragma warning disable 618
+            if (UnityEngine.Rendering.SupportedRenderingFeatures.active.enlightenLightmapper)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_EnableEnlightenBakedGI, Content.enableEnlightenLightmapping);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (!m_EnableEnlightenBakedGI.boolValue
+                        && Lightmapping.lightingSettings.lightmapper == LightingSettings.Lightmapper.Enlighten)
+                    {
+                        bool isAppleSiliconEditor = SystemInfo.processorType.Contains("Apple") && !EditorUtility.IsRunningUnderCPUEmulation();
+
+                        Lightmapping.lightingSettings.lightmapper = isAppleSiliconEditor ?
+                            LightingSettings.Lightmapper.ProgressiveGPU :
+                            LightingSettings.Lightmapper.ProgressiveCPU;
+                    }
+
+                    if (m_IsGlobalSettings)
+                    {
+                        EditorSettings.enableEnlightenBakedGI = m_EnableEnlightenBakedGI.boolValue;
+                    }
+
+                    EditorApplication.RequestRepaintAllViews();
+                }
+            }
+#pragma warning restore 618
+
             GUILayout.Space(10);
 
             GUI.enabled = true;
@@ -717,7 +752,7 @@ namespace UnityEditor
             var overridekIdleWorkerShutdownDelay = GetCommandLineOverride(kIdleWorkerShutdownDelayKeyArgs);
             if (overridekIdleWorkerShutdownDelay != null)
             {
-                EditorGUILayout.HelpBox($"Idle import worker shutdown delay forced to {overrideStandbyCount} ms. via command line argument. To use the settings specified here please restart Unity without the -idleWorkerShutdownDelay command line argument.", MessageType.Info, true);
+                EditorGUILayout.HelpBox($"Idle import worker shutdown delay forced to {overridekIdleWorkerShutdownDelay} ms. via command line argument. To use the settings specified here please restart Unity without the -idleWorkerShutdownDelay command line argument.", MessageType.Info, true);
             }
 
             using (new EditorGUI.DisabledScope(overridekIdleWorkerShutdownDelay != null))
@@ -821,11 +856,11 @@ namespace UnityEditor
 
                     EditorGUILayout.EndHorizontal();
 
-                    var old = EditorSettings.cacheServerNamespacePrefix;
-                    var newvalue = EditorGUILayout.TextField(Content.cacheServerNamespacePrefixLabel, old);
-                    if (newvalue != old)
+                    var oldPrefix = EditorSettings.cacheServerNamespacePrefix;
+                    var newPrefix = EditorGUILayout.TextField(Content.cacheServerNamespacePrefixLabel, oldPrefix);
+                    if (newPrefix != oldPrefix)
                     {
-                        EditorSettings.cacheServerNamespacePrefix = newvalue;
+                        EditorSettings.cacheServerNamespacePrefix = newPrefix;
                     }
 
                     EditorGUI.BeginChangeCheck();
@@ -862,8 +897,20 @@ namespace UnityEditor
                     }
 
                     int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
-
                     EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
+
+                    var cacheServerDownloadBatchSizeOverride = GetCommandLineOverride(kCacheServerDownloadBatchSizeCmdArg);
+                    if (cacheServerDownloadBatchSizeOverride != null)
+                        EditorGUILayout.HelpBox($"Forced via command line argument. To use the setting, please restart Unity without the {kCacheServerDownloadBatchSizeCmdArg} command line argument.", MessageType.Info, true);
+
+                    using (new EditorGUI.DisabledScope(cacheServerDownloadBatchSizeOverride != null))
+                    {
+                        var oldDownloadBatchSize = cacheServerDownloadBatchSizeOverride != null ? Int32.Parse(cacheServerDownloadBatchSizeOverride) : EditorSettings.cacheServerDownloadBatchSize;
+                        var newDownloadBatchSize = EditorGUILayout.IntField(Content.cacheServerDownloadBatchSizeLabel, oldDownloadBatchSize);
+                        newDownloadBatchSize = Mathf.Max(0, newDownloadBatchSize);
+                        if (newDownloadBatchSize != oldDownloadBatchSize)
+                            EditorSettings.cacheServerDownloadBatchSize = newDownloadBatchSize;
+                    }
                 }
             }
         }

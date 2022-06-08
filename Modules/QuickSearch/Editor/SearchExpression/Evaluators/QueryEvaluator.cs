@@ -75,7 +75,7 @@ namespace UnityEditor.Search
                         {
                             if (r.value == null)
                                 continue;
-                            var replacement = r.value.ToString();
+                            var replacement = r.value is UnityEngine.Object ? TaskEvaluatorManager.EvaluateMainThread(() => r.value.ToString()): r.value.ToString();
                             if (replacement.LastIndexOf(' ') != -1)
                                 replacement = '"' + replacement + '"';
                             var pattern = @"[\[\{]?" + Regex.Escape(e.outerText.ToString()) + @"[\}\]]?";

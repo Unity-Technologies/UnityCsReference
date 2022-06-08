@@ -146,8 +146,35 @@ namespace Unity.UI.Builder
                         factoryType = factoryType.BaseType;
                 }
 
-                var newItem = BuilderLibraryContent.CreateItem(
-                    known.uxmlName, elementType == typeof(TemplateContainer) ? nameof(TemplateContainer) : "CustomCSharpElement", elementType, () => known.Create(asset, context));
+                if (elementType == typeof(TemplateContainer))
+                    continue;
+
+                TreeViewItemData<BuilderLibraryTreeItem> newItem = default;
+                
+                // Special case for the TwoPaneSplitView as we need to add two children to not get an error log.
+                if (elementType == typeof(TwoPaneSplitView))
+                {
+                    newItem = BuilderLibraryContent.CreateItem(known.uxmlName, "CustomCSharpElement", elementType, () =>
+                    {
+                        var splitView = known.Create(asset, context);
+                        splitView.Add(new VisualElement());
+                        splitView.Add(new VisualElement());
+                        return splitView;
+                    }, (treeAsset, veaParent, element) =>
+                    {
+                        var visualElementAsset = treeAsset.AddElement(veaParent, element);
+
+                        for (var i = 0; i < element.childCount; ++i)
+                            treeAsset.AddElement(visualElementAsset, element[i]);
+                        
+                        return visualElementAsset;
+                    });
+                }
+                else
+                {
+                    newItem = BuilderLibraryContent.CreateItem(
+                        known.uxmlName, "CustomCSharpElement", elementType, () => known.Create(asset, context));
+                }
                 newItem.data.hasPreview = true;
 
                 if (string.IsNullOrEmpty(split[0]))
@@ -268,7 +295,7 @@ namespace Unity.UI.Builder
                     (inVta, inParent, ve) =>
                     {
                         var vea = inVta.AddTemplateInstance(inParent, assetPath) as VisualElementAsset;
-                        vea.AddProperty("name", vta.name);
+                        vea.SetAttribute("name", vta.name);
                         ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, vta);
                         return vea;
                     },

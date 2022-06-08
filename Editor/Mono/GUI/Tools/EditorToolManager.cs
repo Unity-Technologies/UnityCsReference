@@ -164,14 +164,14 @@ namespace UnityEditor.EditorTools
                 if (previous != null)
                 {
                     previous.Deactivate();
-                    var prev = EditorToolUtility.GetEnumWithEditorTool(previous, activeToolContext);
 
-                    if (prev != Tool.View && prev != Tool.None && !EditorToolUtility.IsComponentTool(previous.GetType()))
+                    var previousEnum = EditorToolUtility.GetEnumWithEditorTool(previous, activeToolContext);
+                    if (previousEnum != Tool.View && previousEnum != Tool.None && (EditorToolUtility.IsBuiltinOverride(previous) || !EditorToolUtility.IsComponentTool(previous.GetType())))
                     {
-                        instance.m_PreviousTool = prev;
+                        instance.m_PreviousTool = previousEnum;
 
-                        if (EditorToolUtility.IsManipulationTool(prev))
-                            instance.m_LastBuiltinTool = prev;
+                        if (EditorToolUtility.IsManipulationTool(previousEnum))
+                            instance.m_LastBuiltinTool = previousEnum;
                         else
                             instance.m_LastCustomTool = previous;
                     }

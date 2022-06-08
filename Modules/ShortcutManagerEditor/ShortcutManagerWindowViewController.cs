@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
@@ -805,6 +806,34 @@ namespace UnityEditor.ShortcutManagement
             SetCategorySelected(m_CommandsWithConflicts);
             GetView().RefreshCategoryList();
         }
+
+        public bool CanImportProfile(string path, bool letUserDecide = true)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+
+            var profileId = m_ShortcutProfileManager.GetProfileId(path);
+
+            // This is mainly intended to disable modal dialogs when running tests
+            letUserDecide = letUserDecide && InternalEditorUtility.isHumanControllingUs && !InternalEditorUtility.inBatchMode;
+
+            if (m_ShortcutProfileManager.GetProfileById(profileId) != null
+                && (!letUserDecide || !EditorUtility.DisplayDialog(L10n.Tr("Profile already exists"),
+                L10n.Tr($"A profile with the \"{profileId}\" id already exists.\nDo you want to overwrite the existing profile with values from the selected file?"),
+                L10n.Tr("Yes"), L10n.Tr("No"))))
+                return false;
+
+            return true;
+        }
+
+        public void ImportProfile(string path)
+        {
+            m_ShortcutProfileManager.ImportProfile(path);
+            activeProfile = m_ShortcutProfileManager.GetProfileId(path);
+        }
+
+        public bool CanExportProfile() => m_ShortcutProfileManager.activeProfile != null;
+
+        public void ExportProfile(string path) => m_ShortcutProfileManager.ExportProfile(path);
     }
 
     class ConflictComparer : IComparer<ShortcutEntry>

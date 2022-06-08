@@ -21,9 +21,10 @@ namespace UnityEditor.Search
 
         public Action<IEnumerable<string>> onAsyncItemsReceived { get; set; }
 
-        public SearchApiSession(params SearchProvider[] providers)
+        public SearchApiSession(ISearchContext searchContext, params SearchProvider[] providers)
         {
             context = new SearchContext(providers);
+            context.runtimeContext = new RuntimeSearchContext() { searchEngineContext = searchContext };
         }
 
         ~SearchApiSession()
@@ -85,7 +86,7 @@ namespace UnityEditor.Search
                 return;
 
             var provider = SearchService.Providers.First(p => p.id == providerId);
-            searchSessions.Add(context.guid, new SearchApiSession(provider));
+            searchSessions.Add(context.guid, new SearchApiSession(context, provider));
         }
 
         public virtual void EndSession(ISearchContext context)
@@ -148,7 +149,7 @@ namespace UnityEditor.Search
             var engineProvider = SearchService.GetProvider(providerId);
 
             var adbProvider = SearchService.GetProvider(AdbProvider.type);
-            var searchSession = new SearchApiSession(adbProvider, engineProvider);
+            var searchSession = new SearchApiSession(context, adbProvider, engineProvider);
             searchSessions.Add(context.guid, searchSession);
         }
 

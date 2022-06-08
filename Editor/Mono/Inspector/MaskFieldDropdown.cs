@@ -260,6 +260,7 @@ namespace UnityEditor
         uint[] m_SelectionMaskValues;
         int m_OptionCount;
         int m_AllLayersMask;
+        List<int> m_FunctioningOptions = new List<int>();
 
         public StaticFieldDropdown(UnityEngine.Object[] targetObjects, string propertyPath)
         {
@@ -317,12 +318,17 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
                 int flagIndex = (int)Math.Pow(2, i);
-                var value = GUILayout.Toggle(toggleVal, new GUIContent(m_OptionNames[i]), toggleStyle);
+                bool isDeprecated = !m_FunctioningOptions.Contains(flagIndex);
 
-                if (EditorGUI.EndChangeCheck())
+                using (new EditorGUI.DisabledScope(isDeprecated))
                 {
-                    m_SelectionMatch[i] = value ? SelectionModes.All : SelectionModes.None;
-                    ChangeMaskValues(flagIndex, value);
+                    var value = GUILayout.Toggle(toggleVal, new GUIContent(m_OptionNames[i], (isDeprecated)?"This static value has been deprecated.":""), toggleStyle);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_SelectionMatch[i] = value ? SelectionModes.All : SelectionModes.None;
+                        ChangeMaskValues(flagIndex, value);
+                    }
                 }
             }
         }
@@ -345,6 +351,7 @@ namespace UnityEditor
 
         public override void OnOpen()
         {
+            m_FunctioningOptions.Clear();
             m_OptionCount = 0;
             List<FieldInfo> filteredFields = new List<FieldInfo>();
             var fields = typeof(StaticEditorFlags).GetFields();
@@ -353,7 +360,21 @@ namespace UnityEditor
                 if (!field.IsDefined(typeof(ObsoleteAttribute), true) && !field.IsSpecialName)
                 {
                     filteredFields.Add(field);
+                    m_FunctioningOptions.Add((int)(field.GetValue(null)));
                     m_OptionCount++;
+                }
+            }
+
+            // Add Obsolete values that were not replaced by a new value
+            foreach (var field in fields)
+            {
+                if (field.IsDefined(typeof(ObsoleteAttribute), true) && !field.IsSpecialName)
+                {
+                    if (!m_FunctioningOptions.Contains((int)(field.GetValue(null))))
+                    {
+                        filteredFields.Add(field);
+                        m_OptionCount++;
+                    }
                 }
             }
 

@@ -12,16 +12,16 @@ namespace Unity.Jobs
     [NativeType(Header = "Runtime/Jobs/ScriptBindings/JobsBindings.h")]
     public struct JobHandle : IEquatable<JobHandle>
     {
+        internal ulong jobGroup;
+        internal int   version; // maps to isManual internally. Remove in 2023
+
+        internal int    debugVersion;
         [NativeDisableUnsafePtrRestriction]
-        internal IntPtr  jobGroup;
-        internal int     version;
-        internal int     debugVersion;
-        [NativeDisableUnsafePtrRestriction]
-        internal IntPtr  debugInfo;
+        internal IntPtr debugInfo;
 
         public void Complete()
         {
-            if (jobGroup == IntPtr.Zero)
+            if (jobGroup == 0)
                 return;
 
             ScheduleBatchedJobsAndComplete(ref this);
@@ -58,10 +58,6 @@ namespace Unity.Jobs
 
         public bool IsCompleted { get { return ScheduleBatchedJobsAndIsCompleted(ref this); } }
 
-        // Jobs are not scheduled immediately.
-        // They are scheduled when you call JobHandle.ScheduleBatchedJobs or JobHandle.Complete();
-        // This is done for performance reasons since scheduling individual jobs results in expensive Semaphore.Signal calls
-        // By scheduling many jobs at the same time delayed this cost will instead be paid only once per ScheduleBatchedJobs calls.
         [NativeMethod("ScheduleBatchedScriptingJobs", IsFreeFunction = true, IsThreadSafe = true)]
         public static extern  void ScheduleBatchedJobs();
 
@@ -109,7 +105,7 @@ namespace Unity.Jobs
 
         public bool Equals(JobHandle other)
         {
-            return jobGroup == other.jobGroup && version == other.version;
+            return jobGroup == other.jobGroup;
         }
 
         public override bool Equals(Object obj)
@@ -119,7 +115,7 @@ namespace Unity.Jobs
 
         public static bool operator ==(JobHandle a, JobHandle b)
         {
-            return a.jobGroup == b.jobGroup && a.version == b.version;
+            return a.jobGroup == b.jobGroup;
         }
 
         public static bool operator !=(JobHandle a, JobHandle b)
@@ -129,7 +125,7 @@ namespace Unity.Jobs
 
         public override int GetHashCode()
         {
-            return jobGroup.GetHashCode() ^ (version.GetHashCode() * 1610612741);
+            return jobGroup.GetHashCode();
         }
     }
 }

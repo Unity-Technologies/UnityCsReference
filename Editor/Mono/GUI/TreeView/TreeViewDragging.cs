@@ -126,7 +126,7 @@ namespace UnityEditor.IMGUI.Controls
             int curPrevRow = (dropPosition == DropPosition.Above) ? targetRow - 1 : targetRow;
             int curNextRow = (dropPosition == DropPosition.Above) ? targetRow : targetRow + 1;
 
-            while (curPrevRow > 0)
+            while (curPrevRow >= 0)
             {
                 var curPreviousItem = m_TreeView.data.GetItem(curPrevRow);
                 if (!m_TreeView.IsDraggingItem(curPreviousItem))
@@ -293,7 +293,7 @@ namespace UnityEditor.IMGUI.Controls
 
             TreeViewItem parentItem = null;
             TreeViewItem dropRelativeToItem = targetItem;
-            bool didChangeTargetToAncector = false;
+            bool didChangeTargetToAncestor = false;
             DropPosition originalDropPosition = dropPosition;
             switch (dropPosition)
             {
@@ -308,7 +308,7 @@ namespace UnityEditor.IMGUI.Controls
                     if (getIndentLevelForMouseCursor != null)
                     {
                         int cursorDepth = getIndentLevelForMouseCursor();
-                        HandleSiblingInsertionAtAvailableDepthsAndChangeTargetIfNeeded(ref dropRelativeToItem, row, ref dropPosition, cursorDepth, out didChangeTargetToAncector);
+                        HandleSiblingInsertionAtAvailableDepthsAndChangeTargetIfNeeded(ref dropRelativeToItem, row, ref dropPosition, cursorDepth, out didChangeTargetToAncestor);
                     }
                     else
                     {
@@ -380,7 +380,7 @@ namespace UnityEditor.IMGUI.Controls
                         m_DropData.rowMarkerControlID = TreeViewController.GetItemControlID(dropRelativeToItem);
                         m_DropData.insertionMarkerYPosition = originalDropPosition == DropPosition.Above ? targetItemRect.y : targetItemRect.yMax;
                         m_DropData.insertRelativeToSibling = dropRelativeToItem;
-                        if (didChangeTargetToAncector)
+                        if (didChangeTargetToAncestor)
                         {
                             m_DropData.ancestorControlID = TreeViewController.GetItemControlID(dropRelativeToItem);
                         }

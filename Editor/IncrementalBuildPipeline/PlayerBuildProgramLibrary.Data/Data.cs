@@ -22,6 +22,20 @@ namespace PlayerBuildProgramLibrary.Data
         public Plugin[] Plugins = new Plugin[0];
     }
 
+    public class GenerateNativePluginsForAssembliesArgs
+    {
+        public string PluginOutputFolder;
+        public string SymbolOutputFolder;
+        public string[] Assemblies;
+    }
+
+    public class GenerateNativePluginsForAssembliesSettings
+    {
+        public bool HasCallback;
+        public string DisplayName;
+        public string[] AdditionalInputFiles = new string[0];
+    }
+
     public class PlayerBuildConfig
     {
         public string DestinationPath;
@@ -38,6 +52,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool GenerateIdeProject;
         public bool Development;
         public bool UseNewInputSystem;
+        public GenerateNativePluginsForAssembliesSettings GenerateNativePluginsForAssembliesSettings;
         public Services Services;
         public string[] ManagedAssemblies;
         public StreamingAssetsFile[] StreamingAssetsFiles;
@@ -67,7 +82,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool EnableDeepProfilingSupport;
         public bool EnableFullGenericSharing;
         public string Profile;
-        public string Defines;
+        public string[] IDEProjectDefines;
 
         public string ConfigurationName;
         public bool GcWBarrierValidation;

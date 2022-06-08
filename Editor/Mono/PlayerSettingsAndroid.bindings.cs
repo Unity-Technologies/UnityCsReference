@@ -348,6 +348,15 @@ namespace UnityEditor
                 set;
             }
 
+            // Enable Armv9 Security Features - Pointer Authentication (PAuth, PAC) and Branch Target Identification (BTI) for Arm64 builds
+            public static extern bool enableArmv9SecurityFeatures
+            {
+                [NativeMethod("GetEnableArmv9SecurityFeatures")]
+                get;
+                [NativeMethod("SetEnableArmv9SecurityFeatures")]
+                set;
+            }
+
             // Support different CPU architectures with each APK (a.k.a. Multiple APK support).
             public static extern bool buildApkPerCpuArchitecture
             {

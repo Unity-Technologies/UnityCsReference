@@ -246,7 +246,8 @@ namespace UnityEditor
         [FreeFunction] extern internal static int GetShaderTotalPassCount([NotNull] Shader shader, int subShaderIndex);
         [FreeFunction] extern internal static int GetSubshaderLOD([NotNull] Shader shader, int subShaderIndex);
         [FreeFunction] extern internal static bool IsGrabPass([NotNull] Shader shader, int subShaderIndex, int passId);
-        [FreeFunction("ShaderUtil::FindSubShaderTagValue")] extern internal static int FindSubShaderTagValue([NotNull] Shader shader, int subShaderIndex, int tagName);
+        [FreeFunction("ShaderUtil::GetShaderSerializedSubshaderCount")] extern internal static int GetShaderSerializedSubshaderCount([NotNull] Shader shader);
+        [FreeFunction("ShaderUtil::FindSerializedSubShaderTagValue")] extern internal static int FindSerializedSubShaderTagValue([NotNull] Shader shader, int subShaderIndex, int tagName);
         [FreeFunction("ShaderUtil::FindPassTagValue")] extern internal static int FindPassTagValue([NotNull] Shader shader, int subShaderIndex, int passIndex, int tagName);
 
         extern public static bool anythingCompiling { get; }
@@ -339,8 +340,10 @@ namespace UnityEditor
 
         [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassAllStageKeywords(Shader s, in PassIdentifier passIdentifier);
         [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassStageKeywords(Shader s, in PassIdentifier passIdentifier, ShaderType shaderType);
+        [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassStageKeywordsForAPI(Shader s, in PassIdentifier passIdentifier, ShaderType shaderType, ShaderCompilerPlatform shaderCompilerPlatform);
         [FreeFunction("ShaderUtil::PassHasKeyword")] extern private static bool PassAnyStageHasKeyword(Shader s, in PassIdentifier passIdentifier, in LocalKeyword keyword);
         [FreeFunction("ShaderUtil::PassHasKeyword")] extern private static bool PassStageHasKeyword(Shader s, in PassIdentifier passIdentifier, in LocalKeyword keyword, ShaderType shaderType);
+        [FreeFunction("ShaderUtil::PassHasKeyword")] extern private static bool PassStageHasKeywordForAPI(Shader s, in PassIdentifier passIdentifier, in LocalKeyword keyword, ShaderType shaderType, ShaderCompilerPlatform shaderCompilerPlatform);
 
         public static LocalKeyword[] GetPassKeywords(Shader s, in PassIdentifier passIdentifier)
         {
@@ -352,6 +355,11 @@ namespace UnityEditor
             return GetPassStageKeywords(s, passIdentifier, shaderType);
         }
 
+        public static LocalKeyword[] GetPassKeywords(Shader s, in PassIdentifier passIdentifier, ShaderType shaderType, ShaderCompilerPlatform shaderCompilerPlatform)
+        {
+            return GetPassStageKeywordsForAPI(s, passIdentifier, shaderType, shaderCompilerPlatform);
+        }
+
         public static bool PassHasKeyword(Shader s, in PassIdentifier passIdentifier, in LocalKeyword keyword)
         {
             return PassAnyStageHasKeyword(s, passIdentifier, keyword);
@@ -360,6 +368,11 @@ namespace UnityEditor
         public static bool PassHasKeyword(Shader s, in PassIdentifier passIdentifier, in LocalKeyword keyword, ShaderType shaderType)
         {
             return PassStageHasKeyword(s, passIdentifier, keyword, shaderType);
+        }
+
+        public static bool PassHasKeyword(Shader s, in PassIdentifier passIdentifier, in LocalKeyword keyword, ShaderType shaderType, ShaderCompilerPlatform shaderCompilerPlatform)
+        {
+            return PassStageHasKeywordForAPI(s, passIdentifier, keyword, shaderType, shaderCompilerPlatform);
         }
     }
 }

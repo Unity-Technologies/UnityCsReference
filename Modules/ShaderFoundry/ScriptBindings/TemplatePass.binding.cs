@@ -12,6 +12,7 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/TemplatePass.h")]
     internal struct TemplatePassInternal
     {
+        internal FoundryHandle m_UsePassNameHandle;
         internal FoundryHandle m_DisplayNameHandle;
         internal FoundryHandle m_ReferenceNameHandle;
         internal FoundryHandle m_PassIdentifierHandle;
@@ -20,9 +21,11 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_CommandDescriptorListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
         internal FoundryHandle m_TagDescriptorListHandle;
+        internal bool m_EnableDebugging;
 
         internal extern static TemplatePassInternal Invalid();
         internal extern bool IsValid();
+        internal extern bool IsUsePass();
     }
 
     [FoundryAPI]
@@ -36,6 +39,9 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
+        public bool IsUsePass => (IsValid && templatePass.IsUsePass());
+        public bool IsNormalPass => (IsValid && !templatePass.IsUsePass());
+        public string UsePassName => container?.GetString(templatePass.m_UsePassNameHandle) ?? string.Empty;
         public string DisplayName => container?.GetString(templatePass.m_DisplayNameHandle) ?? string.Empty;
         public string ReferenceName => container?.GetString(templatePass.m_ReferenceNameHandle) ?? string.Empty;
         // TODO SHADER: The else case should return invalid pass identifier once it's possible to construct this in managed.
@@ -81,6 +87,8 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
+        public bool EnableDebugging => templatePass.m_EnableDebugging;
+
         // private
         internal TemplatePass(ShaderContainer container, FoundryHandle handle)
         {
@@ -98,6 +106,38 @@ namespace UnityEditor.ShaderFoundry
         public static bool operator==(TemplatePass lhs, TemplatePass rhs) => lhs.Equals(rhs);
         public static bool operator!=(TemplatePass lhs, TemplatePass rhs) => !lhs.Equals(rhs);
 
+        internal class UsePassBuilder
+        {
+            ShaderContainer container;
+            string usePassName;
+
+            public UsePassBuilder(ShaderContainer container, string usePassName)
+            {
+                this.container = container;
+                this.usePassName = usePassName;
+            }
+
+            public TemplatePass Build()
+            {
+                FoundryHandle invalid = FoundryHandle.Invalid();
+
+                var templatePassInternal = new TemplatePassInternal()
+                {
+                    m_UsePassNameHandle = container.AddString(usePassName),
+                    m_DisplayNameHandle = invalid,
+                    m_ReferenceNameHandle = invalid,
+                    m_PassIdentifierHandle = invalid,
+                    m_VertexStageElementListHandle = invalid,
+                    m_FragmentStageElementListHandle = invalid,
+                    m_TagDescriptorListHandle = invalid,
+                    m_EnableDebugging = false
+                };
+
+                var passHandle = container.AddTemplatePassInternal(templatePassInternal);
+                return new TemplatePass(container, passHandle);
+            }
+        }
+
         public class Builder
         {
             internal class StageElement
@@ -107,8 +147,6 @@ namespace UnityEditor.ShaderFoundry
             }
 
             ShaderContainer container;
-            string displayName;
-            string referenceName;
             PassIdentifierInternal passIdentifier = new PassIdentifierInternal(uint.MaxValue, uint.MaxValue);
             List<StageElement> vertexStageElements = new List<StageElement>();
             List<StageElement> fragmentStageElements = new List<StageElement>();
@@ -116,8 +154,9 @@ namespace UnityEditor.ShaderFoundry
             List<PragmaDescriptor> pragmaDescriptors;
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
 
-            public string DisplayName { get { return displayName; } set { displayName = value; }}
-            public string ReferenceName { get { return referenceName; } set { referenceName = value; }}
+            public string DisplayName { get; set; }
+            public string ReferenceName { get; set; }
+            public bool EnableDebugging { get; set; }
             public ShaderContainer Container => container;
 
             public Builder(ShaderContainer container)
@@ -185,8 +224,10 @@ namespace UnityEditor.ShaderFoundry
             {
                 var templatePassInternal = new TemplatePassInternal()
                 {
-                    m_DisplayNameHandle = container.AddString(displayName),
-                    m_ReferenceNameHandle = container.AddString(referenceName),
+                    m_UsePassNameHandle = FoundryHandle.Invalid(),
+                    m_DisplayNameHandle = container.AddString(DisplayName),
+                    m_ReferenceNameHandle = container.AddString(ReferenceName),
+                    m_EnableDebugging = EnableDebugging,
                 };
 
                 templatePassInternal.m_PassIdentifierHandle = container.AddPassIdentifier(passIdentifier.SubShaderIndex, passIdentifier.PassIndex);

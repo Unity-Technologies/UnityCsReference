@@ -197,7 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var productId in productIds)
             {
                 var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-                if (localInfo?.updateInfoFetched == false)
+                if (localInfo != null && m_AssetStoreCache.GetUpdateInfo(localInfo.uploadId) == null)
                     localInfos.Add(localInfo);
             }
             var localInfosJsonData = Json.Serialize(localInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());

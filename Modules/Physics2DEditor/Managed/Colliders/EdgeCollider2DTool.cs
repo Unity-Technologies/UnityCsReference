@@ -3,57 +3,46 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor.EditorTools;
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
-    [EditorTool("Edit Polygon Collider 2D", typeof(PolygonCollider2D))]
-    class PolygonCollider2DTool : EditablePathTool
+    [EditorTool("Edit Edge Collider 2D", typeof(EdgeCollider2D))]
+    class EdgeCollider2DTool : EditablePath2DTool
     {
-        public override GUIContent toolbarIcon => PrimitiveBoundsHandle.editModeButton;
-
         protected override void CollectEditablePaths(List<EditablePath2D> paths)
         {
-            var tempPath = new List<Vector2>();
-
             foreach (var collider in targets)
             {
-                if (!(collider is PolygonCollider2D polygon))
-                    continue;
-
-                for (int i = 0, c = polygon.pathCount; i < c; i++)
+                if (collider is EdgeCollider2D edgeCollider2D)
                 {
                     // Only add paths that are valid.
-                    var pathLength = polygon.GetPath(i, tempPath);
-                    if (pathLength > 2)
-                        paths.Add(new PolygonColliderPath(polygon, i));
+                    if (edgeCollider2D.pointCount > 1)
+                        paths.Add(new EdgeColliderPath(edgeCollider2D));
                 }
             }
         }
     }
 
-    class PolygonColliderPath : EditablePath2D
+    class EdgeColliderPath : EditablePath2D
     {
-        public PolygonCollider2D m_Collider;
-        int m_PathIndex;
-        public LineHandle[] handles;
         List<Vector2> m_Points2D;
+        EdgeCollider2D m_Collider;
 
         public override Matrix4x4 localToWorldMatrix => m_Collider.transform.localToWorldMatrix;
 
-        public PolygonColliderPath(PolygonCollider2D target, int shapeIndex) : base(true, 0, 3)
+        public EdgeColliderPath(EdgeCollider2D target) : base(false, 0, 2)
         {
             m_Collider = target;
-            m_PathIndex = shapeIndex;
             m_Points2D = new List<Vector2>();
+            Update();
         }
 
         public override IList<Vector2> GetPoints()
         {
             Vector2 offset = m_Collider.offset;
-            m_Collider.GetPath(m_PathIndex, m_Points2D);
+            m_Collider.GetPoints(m_Points2D);
             for (int i = 0, c = m_Points2D.Count; i < c; i++)
                 m_Points2D[i] += offset;
             return m_Points2D;
@@ -68,7 +57,7 @@ namespace UnityEditor
             for (int i = 0; i < pointCount; i++)
                 m_Points2D.Add((Vector2)points[i] - offset);
             Undo.RecordObject(m_Collider, "Edit Collider");
-            m_Collider.SetPath(m_PathIndex, m_Points2D);
+            m_Collider.SetPoints(m_Points2D);
         }
     }
 }

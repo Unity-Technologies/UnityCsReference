@@ -455,6 +455,13 @@ namespace UnityEngine
         PVRTC_4BPP_RGBA = -127,
     }
 
+    // Keep in sync with TextureColorSpace in Runtime\GfxDevice\GfxDeviceTypes.h
+    internal enum TextureColorSpace
+    {
+        Linear = 0,
+        sRGB = 1,
+    }
+
     public enum CubemapFace
     {
         Unknown   = -1,

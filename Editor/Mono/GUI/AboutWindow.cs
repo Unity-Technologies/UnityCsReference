@@ -11,7 +11,7 @@ namespace UnityEditor
 {
     internal class AboutWindow : EditorWindow
     {
-        static readonly Vector2 WindowSize = new Vector2(640, 410);
+        static readonly Vector2 WindowSize = new Vector2(640, 265);
         internal static void ShowAboutWindow()
         {
             var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
@@ -23,14 +23,8 @@ namespace UnityEditor
             w.m_Parent.window.m_DontSaveToLayout = true;
         }
 
-        float m_TextYPos = 120;
-        float m_TextInitialYPos = 120;
-        float m_TotalCreditsHeight = Mathf.Infinity;
-        double m_LastScrollUpdate = 0.0f;
         bool m_ShowDetailedVersion = false;
         private int m_InternalCodeProgress;
-
-        private const string kSpecialThanksNames = "Thanks to Forest 'Yoggy' Johnson, Graham McAllister, David Janik-Jones, Raimund Schumacher, Alan J. Dickins and Emil 'Humus' Persson";
 
         static class Styles
         {
@@ -39,7 +33,6 @@ namespace UnityEditor
 
             public static readonly GUIStyle mainLayout = new GUIStyle() { margin = new RectOffset(40, 40, 30, 20) };
             public static readonly GUIStyle versionLayout = new GUIStyle() { margin = new RectOffset(0, 0, 10, 15) };
-            public static readonly GUIStyle creditsLayout = new GUIStyle() { margin = new RectOffset(0, 0, 0, 15) };
             public static readonly GUIStyle poweredLayout = new GUIStyle() { margin = new RectOffset(5, 5, 0, 15) };
             public static readonly GUIStyle poweredSectionLayout = new GUIStyle() { margin = new RectOffset(2, 2, 2, 2) };
 
@@ -47,12 +40,6 @@ namespace UnityEditor
 
             public static GUIStyle versionStyle = EditorStyles.FromUSS(aboutWindowLicenseLabel, "About-Version-Label");
             public static GUIStyle thanksStyle = EditorStyles.FromUSS(aboutWindowLicenseLabel, "About-Thanks-Label");
-
-            public static readonly GUIStyle creditText = new GUIStyle(EditorStyles.wordWrappedLabel)
-            {
-                normal = aboutWindowLicenseLabel.normal,
-                fontSize = aboutWindowLicenseLabel.fontSize
-            };
 
             public static readonly GUIContent HeaderLogo = EditorGUIUtility.IconContent("AboutWindow.MainHeader");
             public static readonly GUIContent MonoLogo = EditorGUIUtility.IconContent("MonoLogo");
@@ -70,33 +57,6 @@ namespace UnityEditor
                 var version = InternalEditorUtility.GetUnityVersion();
                 return $"{version.Major}-{version.Minor}";
             }
-        }
-
-        public void OnEnable()
-        {
-            EditorApplication.update += UpdateScroll;
-            m_LastScrollUpdate = EditorApplication.timeSinceStartup;
-
-            AboutWindowNames.ParseCreditsIfNecessary();
-        }
-
-        public void OnDisable()
-        {
-            EditorApplication.update -= UpdateScroll;
-        }
-
-        public void UpdateScroll()
-        {
-            double deltaTime = EditorApplication.timeSinceStartup - m_LastScrollUpdate;
-            m_LastScrollUpdate = EditorApplication.timeSinceStartup;
-
-            if (GUIUtility.hotControl != 0)
-                return;
-
-            m_TextYPos -= 40f * (float)deltaTime;
-            if (m_TextYPos < -m_TotalCreditsHeight)
-                m_TextYPos = m_TextInitialYPos;
-            Repaint();
         }
 
         public void OnGUI()
@@ -134,20 +94,6 @@ namespace UnityEditor
                         return;
                 }
 
-                using (new GUILayout.HorizontalScope(Styles.creditsLayout))
-                {
-                    float chunkOffset = m_TextYPos;
-                    Rect scrollAreaRect = GUILayoutUtility.GetRect(0, mainLayoutWidth, 75f, position.height, GUILayout.ExpandHeight(true));
-                    GUI.BeginGroup(scrollAreaRect);
-                    foreach (string nameChunk in AboutWindowNames.Names(null, true))
-                        chunkOffset = DoCreditsNameChunk(nameChunk, mainLayoutWidth, chunkOffset);
-                    chunkOffset = DoCreditsNameChunk(kSpecialThanksNames, mainLayoutWidth, chunkOffset);
-                    m_TotalCreditsHeight = chunkOffset - m_TextYPos;
-                    GUI.EndGroup();
-
-                    HandleScrollEvents(evt, scrollAreaRect);
-                }
-
                 using (new GUILayout.HorizontalScope(Styles.poweredLayout))
                 {
                     var poweredBySectionMaxWidth = (mainLayoutWidth - Styles.poweredSectionLayout.margin.horizontal * 2) / 2f;
@@ -179,53 +125,6 @@ namespace UnityEditor
                     }
                 }
             }
-        }
-
-        private void HandleScrollEvents(Event evt, Rect scrollAreaRect)
-        {
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-
-            switch (evt.GetTypeForControl(id))
-            {
-                case EventType.MouseDown:
-                    if (scrollAreaRect.Contains(evt.mousePosition))
-                    {
-                        GUIUtility.hotControl = id;
-                        evt.Use();
-                    }
-                    break;
-                case EventType.MouseDrag:
-                    if (GUIUtility.hotControl == id)
-                    {
-                        m_TextYPos += evt.delta.y;
-                        evt.Use();
-                    }
-                    break;
-                case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id)
-                    {
-                        GUIUtility.hotControl = 0;
-                        evt.Use();
-                    }
-                    break;
-                case EventType.ScrollWheel:
-                    if (!scrollAreaRect.Contains(evt.mousePosition))
-                        break;
-                    m_TextYPos += HandleUtility.niceMouseDelta * (evt.shift ? 8f : 4f);
-                    Event.current.Use();
-                    break;
-            }
-
-            m_TextYPos = Mathf.Min(m_TextYPos, m_TextInitialYPos);
-            m_TextYPos = Mathf.Max(m_TextYPos, -m_TotalCreditsHeight);
-        }
-
-        private static float DoCreditsNameChunk(string nameChunk, float creditsWidth, float creditsChunkYOffset)
-        {
-            float creditsNamesHeight = Styles.creditText.CalcHeight(GUIContent.Temp(nameChunk), creditsWidth);
-            Rect creditsNamesRect = new Rect(5, creditsChunkYOffset, creditsWidth, creditsNamesHeight);
-            GUI.Label(creditsNamesRect, nameChunk, Styles.creditText);
-            return creditsNamesRect.yMax;
         }
 
         private void ListenForSecretCodes()

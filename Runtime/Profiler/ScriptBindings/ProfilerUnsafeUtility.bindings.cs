@@ -75,6 +75,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
 
         // Burst shadow
         [ThreadSafe]
+        // This will only be referenced from Burst-generated code, in place of the version without the
+        // __Unmanaged suffix. So we need to make sure it will not get stripped.
+        [RequiredMember]
         internal static extern unsafe ushort CreateCategory__Unmanaged(byte* name, int nameLen, ProfilerCategoryColor colorIndex);
 
         // 256 : Aggressive inlining
@@ -107,6 +110,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern IntPtr CreateMarker(string name, ushort categoryId, MarkerFlags flags, int metadataCount);
         // Burst shadow
         [ThreadSafe]
+        // This will only be referenced from Burst-generated code, in place of the version without the
+        // __Unmanaged suffix. So we need to make sure it will not get stripped.
+        [RequiredMember]
         internal static extern unsafe IntPtr CreateMarker__Unmanaged(byte* name, int nameLen, ushort categoryId, MarkerFlags flags, int metadataCount);
 
         // 256 : Aggressive inlining
@@ -126,6 +132,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern void SetMarkerMetadata(IntPtr markerPtr, int index, string name, byte type, byte unit);
         // Burst shadow
         [ThreadSafe]
+        // This will only be referenced from Burst-generated code, in place of the version without the
+        // __Unmanaged suffix. So we need to make sure it will not get stripped.
+        [RequiredMember]
         internal static extern unsafe void SetMarkerMetadata__Unmanaged(IntPtr markerPtr, int index, byte* name, int nameLen, byte type, byte unit);
 
         // 256 : Aggressive inlining
@@ -154,6 +163,9 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern unsafe void* CreateCounterValue(out IntPtr counterPtr, string name, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
         // Burst shadow
         [ThreadSafe]
+        // This will only be referenced from Burst-generated code, in place of the version without the
+        // __Unmanaged suffix. So we need to make sure it will not get stripped.
+        [RequiredMember]
         internal static extern unsafe void* CreateCounterValue__Unmanaged(out IntPtr counterPtr, byte* name, int nameLen, ushort categoryId, MarkerFlags flags, byte dataType, byte dataUnit, int dataSize, ProfilerCounterOptions counterOptions);
 
         // 256 : Aggressive inlining

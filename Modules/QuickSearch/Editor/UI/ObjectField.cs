@@ -335,7 +335,15 @@ namespace UnityEditor.Search
         {
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchContext.searchText, "object", "objectfield");
             m_OriginalObject = value;
-            var searchViewState = new SearchViewState(searchContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType)
+            var runtimeContext = new RuntimeSearchContext
+            {
+                pickerType = SearchPickerType.ObjectField,
+                currentObject = m_OriginalObject,
+                requiredTypes = new[] { objectType },
+                requiredTypeNames = new[] { objectType.ToString() }
+            };
+            var newContext = new SearchContext(searchContext.providers, searchContext.searchText, searchContext.options, runtimeContext);
+            var searchViewState = new SearchViewState(newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType)
             {
                 title = $"{objectType.Name}"
             }.SetSearchViewFlags(searchViewFlags);
@@ -955,7 +963,7 @@ namespace UnityEditor.Search
 
         static void SendEvent(string eventName, bool exitGUI)
         {
-            if (s_DelegateWindow)
+            if (s_DelegateWindow && s_DelegateWindow.m_Parent != null)
             {
                 Event e = EditorGUIUtility.CommandEvent(eventName);
 

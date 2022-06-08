@@ -318,6 +318,22 @@ namespace UnityEditor
 
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum QNXOsVersion
+    {
+        Neutrino70 = 0,
+        Neutrino71 = 1,
+    }
+
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum QNXArchitecture
+    {
+        Arm64 = 0,
+        Arm32 = 1,
+        X64 = 2,
+        X86 = 3,
+    }
+
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum EmbeddedLinuxArchitecture
     {
         [UnityEngine.InspectorName("Arm64")]
@@ -359,6 +375,24 @@ namespace UnityEditor
 
         [NativeMethod("SetActiveSubTargetFor")]
         internal static extern void SetActiveSubtargetFor(BuildTarget target, int subtarget);
+
+        // QNX OS Version
+        public static extern QNXOsVersion selectedQnxOsVersion
+        {
+            [NativeMethod("GetSelectedQNXOsVersion")]
+            get;
+            [NativeMethod("SetSelectedQNXOsVersion")]
+            set;
+        }
+
+        // QNX Architecture
+        public static extern QNXArchitecture selectedQnxArchitecture
+        {
+            [NativeMethod("GetSelectedQNXArchitecture")]
+            get;
+            [NativeMethod("SetSelectedQNXArchitecture")]
+            set;
+        }
 
         // Embedded Linux Architecture
         public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture

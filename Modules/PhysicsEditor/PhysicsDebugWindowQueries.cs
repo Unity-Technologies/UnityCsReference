@@ -412,9 +412,8 @@ namespace UnityEditor
 
         private void DrawCastsAndOverlaps()
         {
-
-            foreach(var query in m_ShapesToDraw)
-                query.Value.Draw();
+            foreach(var (query, shape) in m_ShapesToDraw)
+                shape.Draw();
         }
 
         private void ClearQueryShapes()

@@ -112,12 +112,22 @@ namespace UnityEngine
 
         public void Activate()
         {
-            ActivateDisplayImpl(nativeDisplay, 0, 0, 60);
+            ActivateDisplayImpl(nativeDisplay, 0, 0, new RefreshRate() { numerator = 60, denominator = 1 });
         }
 
-        public void Activate(int width, int height, int refreshRate)
+        public void Activate(int width, int height, RefreshRate refreshRate)
         {
             ActivateDisplayImpl(nativeDisplay, width, height, refreshRate);
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Activate(int, int, int) is deprecated. Use Activate(int, int, RefreshRate) instead.", false)]
+        public void Activate(int width, int height, int refreshRate)
+        {
+            if (refreshRate < 0)
+                refreshRate = 0;
+
+            ActivateDisplayImpl(nativeDisplay, width, height, new RefreshRate() { numerator = (uint)refreshRate, denominator = 1 });
         }
 
         public void SetParams(int width, int height, int x, int y)
@@ -185,7 +195,7 @@ namespace UnityEngine
         internal delegate void GetRenderingBuffersDelegate(IntPtr nativeDisplay, out RenderBuffer color,
             out RenderBuffer depth);
         internal delegate void SetRenderingResolutionDelegate(IntPtr nativeDisplay, int w, int h);
-        internal delegate void ActivateDisplayDelegate(IntPtr nativeDisplay, int width, int height, int refreshRate);
+        internal delegate void ActivateDisplayDelegate(IntPtr nativeDisplay, int width, int height, RefreshRate refreshRate);
         internal delegate void SetParamsDelegate(IntPtr nativeDisplay, int width, int height, int x, int y);
         internal delegate int RelativeMouseAtDelegate(int x, int y, out int rx, out int ry);
         internal delegate bool GetActiveDelegate(IntPtr nativeDisplay);
@@ -249,7 +259,7 @@ namespace UnityEngine
             onSetRenderingResolution?.Invoke(nativeDisplay, w, h);
         }
 
-        private static void ActivateDisplayImpl(IntPtr nativeDisplay, int width, int height, int refreshRate)
+        private static void ActivateDisplayImpl(IntPtr nativeDisplay, int width, int height, RefreshRate refreshRate)
         {
             onActivateDisplay?.Invoke(nativeDisplay, width, height, refreshRate);
         }

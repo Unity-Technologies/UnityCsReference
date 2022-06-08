@@ -168,7 +168,7 @@ namespace Unity.UI.Builder
                 }
 
                 documentElement.name = value;
-                vea.SetAttributeValue("name", value);
+                vea.SetAttribute("name", value);
             }
 
             selection.NotifyOfHierarchyChange();

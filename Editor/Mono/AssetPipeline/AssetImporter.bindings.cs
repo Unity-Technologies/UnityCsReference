@@ -9,6 +9,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor
 {
@@ -91,6 +92,17 @@ namespace UnityEditor
             get;
             set;
         }
+
+        public static ImportLog GetImportLog(string path)
+        {
+            return GetImportLog(AssetDatabase.GUIDFromAssetPath(path));
+        }
+
+        [FreeFunction("AssetImporter::GetImportLog")]
+        internal static extern ImportLog GetImportLog(GUID guid);
+
+        [FreeFunction("AssetImporter::GetImportLogEntriesCount")]
+        internal static extern bool GetImportLogEntriesCount(GUID guid, out int nbErrors, out int nbWarnings);
 
         [NativeName("SetAssetBundleName")]
         extern public void SetAssetBundleNameAndVariant(string assetBundleName, string assetBundleVariant);
