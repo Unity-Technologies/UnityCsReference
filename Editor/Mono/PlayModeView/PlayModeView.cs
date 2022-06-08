@@ -263,9 +263,15 @@ namespace UnityEditor
             return attributes.Length > 0 ? ((EditorWindowTitleAttribute)attributes[0]).title : type.Name;
         }
 
+        protected static string GetLocalizedWindowTitle(Type type)
+        {
+            var attributes = type.GetCustomAttributes(typeof(EditorWindowTitleAttribute), true);
+            return attributes.Length > 0 ? EditorGUIUtility.TrTextContent(((EditorWindowTitleAttribute)attributes[0]).title).text : type.Name;
+        }
+
         protected Dictionary<Type, string> GetAvailableWindowTypes()
         {
-            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
+            return m_AvailableWindowTypes ?? (m_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetLocalizedWindowTitle));
         }
 
         private void SetSerializedViews(Dictionary<string, string> serializedViews)

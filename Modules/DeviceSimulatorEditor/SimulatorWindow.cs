@@ -58,7 +58,7 @@ namespace UnityEditor.DeviceSimulation
         private void InitPlayModeViewSwapMenu()
         {
             var playModeViewTypeMenu = rootVisualElement.Q<ToolbarMenu>("playmode-view-menu");
-            playModeViewTypeMenu.text = GetWindowTitle(GetType());
+            playModeViewTypeMenu.text = GetLocalizedWindowTitle(GetType());
 
             var types = GetAvailableWindowTypes();
             foreach (var type in types)
