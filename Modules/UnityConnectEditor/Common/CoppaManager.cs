@@ -22,7 +22,7 @@ namespace UnityEditor.Connect
         const string k_CoppaCommonStyleSheetPath = "StyleSheets/ServicesWindow/CoppaCommon.uss";
         const string k_CoppaDarkStyleSheetPath = "StyleSheets/ServicesWindow/CoppaDark.uss";
         const string k_CoppaLightStyleSheetPath = "StyleSheets/ServicesWindow/CoppaLight.uss";
-        const string k_CoppaLearnMoreUrl = "https://docs.unity3d.com/Manual/UnityAnalyticsCOPPA.html";
+        const string k_CoppaLearnMoreUrl = "https://docs.unity.com/ads/COPPACompliance.html";
         const string k_CoppaComplianceEditorConfigurationExceptionMessage = "Unexpected UnityConnect SetCOPPACompliance behavior. " +
             "Coppa compliance was saved successfully on the web dashboard but not within editor configurations. " +
             "Please try again to ensure you synchronize the state of the web dashboard with your application. " +

@@ -382,8 +382,12 @@ namespace UnityEditorInternal
                     float oldLabelWidth = EditorGUIUtility.labelWidth;
                     EditorGUIUtility.labelWidth = FieldLabelSize(rect, prop);
 
-                    var handler = ScriptAttributeUtility.GetHandler(prop);
-                    handler.OnGUI(rect, prop, null, true);
+                    try
+                    {
+                        var handler = ScriptAttributeUtility.GetHandler(prop);
+                        handler.OnGUI(rect, prop, null, true);
+                    }
+                    catch (ObjectDisposedException) { }
                     if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition)) Event.current.Use();
 
                     EditorGUIUtility.labelWidth = oldLabelWidth;
