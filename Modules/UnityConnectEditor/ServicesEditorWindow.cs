@@ -19,6 +19,7 @@ namespace UnityEditor.Connect
     internal class ServicesEditorWindow : EditorWindow
     {
         const string k_PrivacyPolicyUrl = "https://unity3d.com/legal/privacy-policy";
+        const string k_NewServicesLinkUrl = "https://unity.com/solutions/gaming-services";
         const string k_ServicesWindowUxmlPath = "UXML/ServicesWindow/ServicesWindow.uxml";
         const string k_ServiceTemplateUxmlPath = "UXML/ServicesWindow/ServiceTemplate.uxml";
 
@@ -36,6 +37,8 @@ namespace UnityEditor.Connect
         const string k_ServiceStatusClassName = "service-status";
         const string k_ServiceStatusCheckedClassName = "checked";
 
+        const string k_NewServicesPackmanBtnName = "NewServicesPackmanBtn";
+        const string k_NewServicesLinkName = "NewServicesLink";
         const string k_ProjectSettingsBtnName = "ProjectSettingsBtn";
         const string k_PrivacyPolicyLinkName = "PrivacyPolicyLink";
         const string k_DashboardLinkName = "DashboardLink";
@@ -159,6 +162,9 @@ namespace UnityEditor.Connect
                 Notification.Topic.UDPService
             );
 
+            ConfigureNewServicesPackmanButton();
+            ConfigureNewServicesLink();
+
             rootVisualElement.Q<Button>(k_ProjectSettingsBtnName).clicked += () =>
             {
                 ServicesUtils.OpenServicesProjectSettings(GeneralProjectSettings.generalProjectSettingsPath, typeof(GeneralProjectSettings).Name);
@@ -209,6 +215,34 @@ namespace UnityEditor.Connect
                 FinalizeServiceSetup();
                 m_LoadWindowInProgress = false;
             }
+        }
+
+        void ConfigureNewServicesPackmanButton()
+        {
+            rootVisualElement.Q<Button>(k_NewServicesPackmanBtnName).clicked += () => {
+                EditorAnalytics.SendEditorGameServicesEvent(new EditorGameServiceEvent()
+                {
+                    action = "click package manager button",
+                    component = "services window",
+                    package = "Unity Editor"
+                });
+                PackageManagerWindow.OpenPackageManager(null);
+            };
+        }
+
+        void ConfigureNewServicesLink()
+        {
+            var newServicesClickable = new Clickable(() =>
+            {
+                EditorAnalytics.SendEditorGameServicesEvent(new EditorGameServiceEvent()
+                {
+                    action = "click ugs learn more link",
+                    component = "services window",
+                    package = "Unity Editor"
+                });
+                Application.OpenURL(k_NewServicesLinkUrl);
+            });
+            rootVisualElement.Q(k_NewServicesLinkName).AddManipulator(newServicesClickable);
         }
 
         void ListingCurrentPackageProgress()
@@ -364,6 +398,14 @@ namespace UnityEditor.Connect
                     m_StatusLabelByServiceName[serviceName].RemoveFromClassList(k_ServiceStatusCheckedClassName);
                 }
             }
+        }
+
+        [Serializable]
+        public struct EditorGameServiceEvent
+        {
+            public string action;
+            public string component;
+            public string package;
         }
     }
 }

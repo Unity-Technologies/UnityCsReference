@@ -76,7 +76,7 @@ namespace UnityEditor
 
         private static AssemblyDefinition ReadAssembly(string assemblyPath)
         {
-            var assemblyResolver = new DefaultAssemblyResolver();
+            using var assemblyResolver = new DefaultAssemblyResolver();
             assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(assemblyPath));
             var readerParameters = new ReaderParameters
             {
@@ -110,7 +110,7 @@ namespace UnityEditor
 
         private static SequencePoint GetSequencePointForMethod(string assemblyPath, string typeFullName, string methodName)
         {
-            var assemblyDefinition = ReadAssembly(assemblyPath);
+            using var assemblyDefinition = ReadAssembly(assemblyPath);
             var typeDefinition = FindTypeByFullName(assemblyDefinition, typeFullName);
             var methodDefinition = GetMethodByName(typeDefinition, methodName);
 
