@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var sample in m_Samples)
             {
-                var sampleVisualItemLowWidth = new PackageDependencySampleItemLowWidth(m_ResourceLoader, m_Version, sample, m_Selection, m_AssetDatabase, m_Application, m_IOProxy);
+                var sampleVisualItemLowWidth = new PackageSampleItemLowWidth(m_ResourceLoader, m_Version, sample, m_Selection, m_AssetDatabase, m_Application, m_IOProxy);
                 samplesListLowWidth.Add(sampleVisualItemLowWidth);
             }
         }

@@ -111,8 +111,16 @@ namespace UnityEngine.UIElements
         public void SetValueWithoutNotify(bool newValue)
         {
             m_Value = newValue;
-            m_Toggle.value = m_Value;
+            m_Toggle.SetValueWithoutNotify(m_Value);
             contentContainer.style.display = newValue ? DisplayStyle.Flex : DisplayStyle.None;
+            if (m_Value)
+            {
+                pseudoStates |= PseudoStates.Checked;
+            }
+            else
+            {
+                pseudoStates &= ~PseudoStates.Checked;
+            }
         }
 
         /// <summary>
@@ -187,14 +195,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Foldout()
         {
-            m_Value = true;
-
             AddToClassList(ussClassName);
 
-            m_Toggle = new Toggle
+            m_Toggle = new Toggle();
+
+            m_Container = new VisualElement()
             {
-                value = true
+                name = "unity-content",
             };
+
             m_Toggle.RegisterValueChangedCallback((evt) =>
             {
                 value = m_Toggle.value;
@@ -205,14 +214,12 @@ namespace UnityEngine.UIElements
             m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(checkmarkUssClassName);
             hierarchy.Add(m_Toggle);
 
-            m_Container = new VisualElement()
-            {
-                name = "unity-content",
-            };
             m_Container.AddToClassList(contentUssClassName);
             hierarchy.Add(m_Container);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+
+            SetValueWithoutNotify(true);
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)

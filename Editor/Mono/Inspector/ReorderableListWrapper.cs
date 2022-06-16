@@ -175,7 +175,8 @@ namespace UnityEditorInternal
             EditorGUI.BeginChangeCheck();
             EditorGUI.DefaultPropertyField(sizeRect, m_ArraySize, GUIContent.none);
             EditorGUI.LabelField(sizeRect, new GUIContent("", "Array Size"));
-            if (EditorGUI.EndChangeCheck()) m_ReorderableList.InvalidateCache();
+            if (EditorGUI.EndChangeCheck())
+                m_ReorderableList.InvalidateForGUI();
 
             if (headerRect.Contains(Event.current.mousePosition))
             {

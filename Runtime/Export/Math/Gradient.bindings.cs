@@ -98,10 +98,10 @@ namespace UnityEngine
         }
 
 
-        extern public GradientMode mode { get; set; }
-        public extern ColorSpace colorSpace { get; set; }
+        [NativeProperty(IsThreadSafe = true)] extern public GradientMode mode { get; set; }
+        [NativeProperty(IsThreadSafe = true)] extern public ColorSpace colorSpace { get; set; }
 
-        extern internal Color constantColor { get; set; }
+        [NativeProperty(IsThreadSafe = true)] extern internal Color constantColor { get; set; }
 
         // Setup Gradient with an array of color keys and alpha keys
         [FreeFunction(Name = "Gradient_Bindings::SetKeys", IsThreadSafe = true, HasExplicitThis = true)]

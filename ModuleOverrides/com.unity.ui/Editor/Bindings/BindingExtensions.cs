@@ -1509,28 +1509,35 @@ namespace UnityEditor.UIElements.Bindings
             if (evt.target != m_Field)
                 return;
 
-            var bindable = evt.target as IBindable;
-            var binding = bindable?.binding;
-
-            if (binding == this && ResolveProperty())
+            try
             {
-                if (!isFieldAttached)
+                var bindable = evt.target as IBindable;
+                var binding = bindable?.binding;
+
+                if (binding == this && ResolveProperty())
                 {
-                    //we don't update when field is not attached to a panel
-                    //but we don't kill binding either
+                    if (!isFieldAttached)
+                    {
+                        //we don't update when field is not attached to a panel
+                        //but we don't kill binding either
+                        return;
+                    }
+
+                    UpdateLastFieldValue();
+
+                    if (SyncFieldValueToProperty())
+                    {
+                        bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
+                        bindingContext.ResetUpdate();
+                    }
+
+                    BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
                     return;
                 }
-
-                UpdateLastFieldValue();
-
-                if (SyncFieldValueToProperty())
-                {
-                    bindingContext.UpdateRevision(); //we make sure to Poll the ChangeTracker here
-                    bindingContext.ResetUpdate();
-                }
-
-                BindingsStyleHelpers.UpdateElementStyle(field as VisualElement, boundProperty);
-                return;
+            }
+            catch
+            {
+                //this can happen when serializedObject has been disposed of
             }
 
             // Something was wrong

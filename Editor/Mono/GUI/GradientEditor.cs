@@ -180,11 +180,8 @@ namespace UnityEditor
 
             // Gradient texture
             position.y += swatchHeight;
-            if (Event.current.type == EventType.Repaint)
-            {
-                position.height = gradientTextureHeight;
-                DrawGradientWithBackground(position, m_Gradient, m_ColorSpace == ColorSpace.Linear);
-            }
+            position.height = gradientTextureHeight;
+            DrawGradientWithBackground(position, m_Gradient, m_ColorSpace == ColorSpace.Linear);
             position.y += gradientTextureHeight;
             position.height = swatchHeight;
 

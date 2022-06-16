@@ -5800,9 +5800,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\UpdateFoldoutGroup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\UpdateFoldoutGroup.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDependencySampleItemLowWidth.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageDependencySampleItemLowWidth.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetails.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetails.cs</Link>
     </Compile>
@@ -5901,6 +5898,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageReleaseDetailsItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSampleItemLowWidth.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageSampleItemLowWidth.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSelectionEditor.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageSelectionEditor.cs</Link>

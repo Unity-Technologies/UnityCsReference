@@ -26,7 +26,7 @@ namespace UnityEditor
             GameObject terrain = Terrain.CreateTerrainGameObject(terrainData);
             terrain.name = "Terrain";
 
-            GameObjectUtility.SetParentAndAlign(terrain, parent);
+            GameObjectUtility.SetDefaultParentForNewObject(terrain, parent?.transform, true);
             StageUtility.PlaceGameObjectInCurrentStage(terrain);
             GameObjectUtility.EnsureUniqueNameForSibling(terrain);
             Selection.activeObject = terrain;

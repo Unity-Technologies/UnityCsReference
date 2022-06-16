@@ -129,8 +129,8 @@ namespace UnityEngine
         public int BodyInstanceID => m_BodyID;
         public int OtherBodyInstanceID => m_OtherBodyID;
 
-        public Component Body => Object.FindObjectFromInstanceID(m_BodyID) as Component;
-        public Component OtherBody => Object.FindObjectFromInstanceID(m_OtherBodyID) as Component;
+        public Component Body => Physics.GetBodyByInstanceID(m_BodyID) as Component;
+        public Component OtherBody => Physics.GetBodyByInstanceID(m_OtherBodyID) as Component;
 
         public int PairCount => (int)m_NbPairs;
 
@@ -169,8 +169,8 @@ namespace UnityEngine
         public int ColliderInstanceID => m_ColliderID;
         public int OtherColliderInstanceID => m_OtherColliderID;
 
-        public Collider Collider => m_ColliderID == 0 ? null : Object.FindObjectFromInstanceID(m_ColliderID) as Collider;
-        public Collider OtherCollider => m_OtherColliderID == 0 ? null : Object.FindObjectFromInstanceID(m_OtherColliderID) as Collider;
+        public Collider Collider => m_ColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
+        public Collider OtherCollider => m_OtherColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
 
         public int ContactCount => (int)m_NbPoints;
 

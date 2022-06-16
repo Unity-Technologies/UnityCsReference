@@ -140,6 +140,19 @@ namespace UnityEditorInternal
             return false;
         }
 
+        internal void InvalidateForGUI()
+        {
+            if (!m_SerializedObject?.isEditingMultipleObjects ?? true)
+            {
+                InvalidateCache();
+            }
+            else
+            {
+                InvalidateExistingListCaches();
+                EditorApplication.delayCall += InspectorWindow.RefreshInspectors;
+            }
+        }
+
         // class for default rendering and behavior of reorderable list - stores styles and is statically available as s_Defaults
         public class Defaults
         {
@@ -160,7 +173,7 @@ namespace UnityEditorInternal
             internal const int minHeaderHeight = 2;
             const float elementPadding = 2;
             private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
-            private float FieldLabelSize(Rect r, SerializedProperty prop) => r.xMax * 0.45f - 35 - prop.depth * 15 - ArrayCountInPropertyPath(prop) * 10;
+            private float FieldLabelSize(Rect r, SerializedProperty prop) => r.width * 0.45f - 20 - ArrayCountInPropertyPath(prop) * 22 + (prop.depth < 2 ? 7 : 0);
             private static readonly GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
             internal static readonly string undoAdd = "Add Element To Array";
             internal static readonly string undoRemove = "Remove Element From Array";
@@ -279,7 +292,7 @@ namespace UnityEditorInternal
                         Debug.LogError("Cannot add element of type Null.");
                 }
                 Undo.SetCurrentGroupName(undoAdd);
-                list.InvalidateCache();
+                list.InvalidateForGUI();
             }
 
             public void DoAddButton(ReorderableList list)
@@ -323,7 +336,7 @@ namespace UnityEditorInternal
                 }
                 list.index = Mathf.Clamp(lastDeletedIndex - 1, 0, list.count - 1);
                 Undo.SetCurrentGroupName(undoRemove);
-                list.InvalidateCache();
+                list.InvalidateForGUI();
             }
 
             // draw the default header background

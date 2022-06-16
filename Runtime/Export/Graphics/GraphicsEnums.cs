@@ -1295,7 +1295,8 @@ namespace UnityEngine.Rendering
         Meta = 11,
         MotionVectors = 12,
         ScriptableRenderPipeline = 13,
-        ScriptableRenderPipelineDefaultUnlit = 14
+        ScriptableRenderPipelineDefaultUnlit = 14,
+        GrabPass = 15
     }
 
     // Match ShadowCastingMode enum on C++ side

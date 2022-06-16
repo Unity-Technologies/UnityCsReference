@@ -58,6 +58,10 @@ namespace Unity.UI.Builder
             }
         }
 
+        // Internal for tests.
+        // ReSharper disable once ConvertToAutoPropertyWithPrivateSetter
+        internal Texture2D inGamePreviewTexture2D => m_InGamePreviewTexture2D;
+
         // Background Control Containers
         VisualElement m_BackgroundColorModeControls;
         VisualElement m_BackgroundImageModeControls;
@@ -278,8 +282,12 @@ namespace Unity.UI.Builder
         void ApplyBackgroundOptions()
         {
             DeactivateCameraMode();
-            customBackgroundElement.style.backgroundColor = StyleKeyword.Null;
-            customBackgroundElement.style.backgroundImage = StyleKeyword.Null;
+            customBackgroundElement.style.backgroundColor = StyleKeyword.Initial;
+            customBackgroundElement.style.backgroundImage = StyleKeyword.Initial;
+            customBackgroundElement.style.backgroundPositionX = StyleKeyword.Initial;
+            customBackgroundElement.style.backgroundPositionY = StyleKeyword.Initial;
+            customBackgroundElement.style.backgroundRepeat = StyleKeyword.Initial;
+            customBackgroundElement.style.backgroundSize = StyleKeyword.Initial; 
 
             if (settings.EnableCanvasBackground)
             {
@@ -300,6 +308,10 @@ namespace Unity.UI.Builder
                     case BuilderCanvasBackgroundMode.Camera:
                         ActivateCameraMode();
                         customBackgroundElement.style.opacity = settings.CameraModeCanvasBackgroundOpacity;
+                        customBackgroundElement.style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop);
+                        customBackgroundElement.style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop);
+                        customBackgroundElement.style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleAndCrop);
+                        customBackgroundElement.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleAndCrop); 
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -347,7 +359,7 @@ namespace Unity.UI.Builder
 
             m_CameraModeEnabled = false;
 
-            customBackgroundElement.style.backgroundImage = StyleKeyword.Null;
+            customBackgroundElement.style.backgroundImage = StyleKeyword.Initial;
         }
 
         void PlayModeStateChange(PlayModeStateChange state)

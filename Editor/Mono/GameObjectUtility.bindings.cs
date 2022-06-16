@@ -103,6 +103,23 @@ namespace UnityEditor
             SetLayerRecursively(child, parent.layer);
         }
 
+        internal static void SetDefaultParentForNewObject(GameObject gameObject, Transform parent = null, bool align = false)
+        {
+            if (parent == null && (parent = SceneView.GetDefaultParentObjectIfSet()) == null)
+            {
+                return;
+            }
+
+            if(align)
+            {
+                GameObjectUtility.SetParentAndAlign(gameObject, parent?.gameObject);
+            }
+            else
+            {
+                gameObject.transform.SetParent(parent);
+            }
+        }
+
         private static void SetLayerRecursively(GameObject go, int layer)
         {
             go.layer = layer;

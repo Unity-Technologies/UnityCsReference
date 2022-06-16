@@ -416,9 +416,12 @@ namespace UnityEditor.UIElements.Debugger
                     for (int i = 0; i < importedSheet.imports.Length; i++)
                     {
                         var thisImportedSheet = importedSheet.imports[i].styleSheet;
-                        name += "\n(" + thisImportedSheet.name + ")";
-                        matchingContext.AddStyleSheet(thisImportedSheet);
-                        RecursivePrintStyleSheetNames(thisImportedSheet);
+                        if (thisImportedSheet != null)
+                        {
+                            name += "\n(" + thisImportedSheet.name + ")";
+                            matchingContext.AddStyleSheet(thisImportedSheet);
+                            RecursivePrintStyleSheetNames(thisImportedSheet);
+                        }
                     }
                 }
 

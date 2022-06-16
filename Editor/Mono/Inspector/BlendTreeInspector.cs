@@ -1664,7 +1664,7 @@ namespace UnityEditor
 
             if (variance < Mathf.Epsilon)
             {
-                Debug.LogWarning("Could not compute threshold for '" + m_BlendTree.name + "' there is not enough data");
+                Debug.LogWarning($"Can't distribute the motions of '{m_BlendTree.name}', they all have the same threshold value.");
                 m_SerializedObject.Update();
             }
             else

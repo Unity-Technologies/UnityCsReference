@@ -441,7 +441,7 @@ namespace UnityEditor.UIElements
 
                     if (property.propertyPath == "m_Script")
                     {
-                        if ((serializedObject.targetObject != null) || isPartOfPrefabInstance)
+                        if (serializedObject.targetObject != null || property.objectReferenceValue != null || isPartOfPrefabInstance)
                             field.SetEnabled(false);
                     }
 

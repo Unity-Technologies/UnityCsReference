@@ -53,17 +53,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (width <= k_DependencyViewSwitchWidthBreakpoint)
             {
-                UIUtils.SetElementDisplay(dependenciesListLowWidth, true);
-                UIUtils.SetElementDisplay(reverseDependenciesListLowWidth, true);
-                UIUtils.SetElementDisplay(dependenciesNormalView, false);
-                UIUtils.SetElementDisplay(reverseDependenciesNormalView, false);
+                dependenciesNames.Query<SelectableLabel>().ForEach(x => x.AddToClassList("dependencyLabelLowWidth"));
+                reverseDependenciesNames.Query<SelectableLabel>().ForEach(x => x.AddToClassList("dependencyLabelLowWidth"));
             }
             else
             {
-                UIUtils.SetElementDisplay(dependenciesListLowWidth, false);
-                UIUtils.SetElementDisplay(reverseDependenciesListLowWidth, false);
-                UIUtils.SetElementDisplay(dependenciesNormalView, true);
-                UIUtils.SetElementDisplay(reverseDependenciesNormalView, true);
+                dependenciesNames.Query<SelectableLabel>().ForEach(x => x.RemoveFromClassList("dependencyLabelLowWidth"));
+                reverseDependenciesNames.Query<SelectableLabel>().ForEach(x => x.RemoveFromClassList("dependencyLabelLowWidth"));
             }
         }
 
@@ -96,7 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package.Is(PackageType.Feature))
                 return string.Empty;
             if (package.Is(PackageType.BuiltIn))
-                return "---";
+                return "-";
             return dependency.version;
         }
 
@@ -105,7 +101,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageVersion == null || packageVersion.HasTag(PackageTag.Feature))
                 return string.Empty;
             if (packageVersion.HasTag(PackageTag.BuiltIn))
-                return "---";
+                return "-";
             return packageVersion.version.ToString();
         }
 
@@ -131,7 +127,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependenciesNames.Clear();
             dependenciesVersions.Clear();
             dependenciesStatuses.Clear();
-            dependenciesListLowWidth.Clear();
 
             var hasDependencies = dependencies?.Any() ?? false;
             UIUtils.SetElementDisplay(noDependencies, !hasDependencies);
@@ -152,17 +147,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 dependenciesNames.Add(BuildSelectableLabel(nameText, "text"));
                 dependenciesVersions.Add(BuildSelectableLabel(versionText, "text"));
                 dependenciesStatuses.Add(BuildLabel(statusText, "text"));
-
-                var dependencyLowWidthItem = new PackageDependencySampleItemLowWidth(m_ResourceLoader, nameText, versionText, BuildLabel(statusText, "text"));
-                dependenciesListLowWidth.Add(dependencyLowWidthItem);
             }
+
+            ToggleLowWidthDependencyView(rect.width);
         }
 
         private void UpdateReverseDependencies(IEnumerable<IPackageVersion> reverseDependencies)
         {
             reverseDependenciesNames.Clear();
             reverseDependenciesVersions.Clear();
-            reverseDependenciesListLowWidth.Clear();
 
             var hasReverseDependencies = reverseDependencies?.Any() ?? false;
             UIUtils.SetElementDisplay(noReverseDependencies, !hasReverseDependencies);
@@ -179,24 +172,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 reverseDependenciesNames.Add(BuildSelectableLabel(nameText, "text"));
                 reverseDependenciesVersions.Add(BuildSelectableLabel(versionText, "text"));
-
-                var reverseDependencyLowWidthItem = new PackageDependencySampleItemLowWidth(m_ResourceLoader, nameText, versionText, null);
-                reverseDependenciesListLowWidth.Add(reverseDependencyLowWidthItem);
             }
+
+            ToggleLowWidthDependencyView(rect.width);
         }
 
         private readonly  VisualElementCache m_Cache;
-        private VisualElement dependenciesNormalView => m_Cache.Get<VisualElement>("dependenciesNormalView");
         private Label noDependencies => m_Cache.Get<Label>("noDependencies");
         private VisualElement dependenciesNames => m_Cache.Get<VisualElement>("dependenciesNames");
         private VisualElement dependenciesVersions => m_Cache.Get<VisualElement>("dependenciesVersions");
         private VisualElement dependenciesStatuses => m_Cache.Get<VisualElement>("dependenciesStatuses");
-        private VisualElement dependenciesListLowWidth => m_Cache.Get<VisualElement>("dependenciesListLowWidth");
 
-        private VisualElement reverseDependenciesNormalView => m_Cache.Get<VisualElement>("reverseDependenciesNormalView");
         private Label noReverseDependencies => m_Cache.Get<Label>("noReverseDependencies");
         private VisualElement reverseDependenciesNames => m_Cache.Get<VisualElement>("reverseDependenciesNames");
         private VisualElement reverseDependenciesVersions => m_Cache.Get<VisualElement>("reverseDependenciesVersions");
-        private VisualElement reverseDependenciesListLowWidth => m_Cache.Get<VisualElement>("reverseDependenciesListLowWidth");
     }
 }

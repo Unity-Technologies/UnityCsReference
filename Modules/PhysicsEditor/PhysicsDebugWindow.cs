@@ -74,6 +74,7 @@ namespace UnityEditor
             public static readonly GUIContent numOfItems = EditorGUIUtility.TrTextContent("Number of items per row:");
             public static readonly GUIContent clearLocked = EditorGUIUtility.TrTextContent("Clear locked  objects");
             public static readonly GUIContent drawGizmosFor = EditorGUIUtility.TrTextContent("Draw Gizmos for:");
+            public static readonly GUIContent gameObjectField = EditorGUIUtility.TrTextContent("GameObject:");
             public static readonly GUILayoutOption notExpandWidth = GUILayout.ExpandWidth(false);
             public static readonly GUILayoutOption maxWidth50 = GUILayout.MaxWidth(50f);
             public static readonly GUILayoutOption maxWidth75 = GUILayout.MaxWidth(75f);

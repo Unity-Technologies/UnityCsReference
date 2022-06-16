@@ -609,12 +609,10 @@ namespace UnityEditor.UIElements
                     if (NativeClassExtensionUtilities.ExtendsANativeType(target))
                         ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
 
-                    // case 142371: built-in types that are defined on the native side will not reference a C# type, but rather a PPtr<Type>, so in the
+                    // case 1423715: built-in types that are defined on the native side will not reference a C# type, but rather a PPtr<Type>, so in the
                     // case where we can't extract the C# type from the FieldInfo, we need to extract it from the string representation.
                     if (requiredType == null)
                     {
-                        // Fallback type
-                        requiredType = typeof(UnityEngine.Object);
                         var targetTypeName = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
                         foreach (var objectTypes in TypeCache.GetTypesDerivedFrom<UnityEngine.Object>())
                         {
@@ -625,7 +623,10 @@ namespace UnityEditor.UIElements
                         }
                     }
 
-                    field.objectType = requiredType;
+                    field.SetProperty(ObjectField.serializedPropertyKey, property);
+                    field.SetObjectTypeWithoutDisplayUpdate(requiredType);
+                    field.UpdateDisplay();
+
                     return ConfigureField<ObjectField, UnityEngine.Object>(field, property, () => new ObjectField());
                 }
                 case SerializedPropertyType.LayerMask:

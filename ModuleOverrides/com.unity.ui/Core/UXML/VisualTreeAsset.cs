@@ -538,26 +538,19 @@ namespace UnityEngine.UIElements
                 Assert.IsNotNull(rootElement);
                 var rootVe = CloneSetupRecursively(rootElement, idToChildren,
                     new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
-                if (rootVe != null)
-                {
 
-                    // Save reference to the visualElementAsset so elements can be reinitialized when
-                    // we set their attributes in the editor
-                    rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
+                // Save reference to the visualElementAsset so elements can be reinitialized when
+                // we set their attributes in the editor
+                rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
 
-                    // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
-                    // tracked for live reloading on changes, and also accessible for users that need to keep track
-                    // of their cloned VisualTreeAssets.
-                    rootVe.visualTreeAssetSource = this;
+                // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
+                // tracked for live reloading on changes, and also accessible for users that need to keep track
+                // of their cloned VisualTreeAssets.
+                rootVe.visualTreeAssetSource = this;
 
-                    // if contentContainer == this, the shadow and the logical hierarchy are identical
-                    // otherwise, if there is a CC, we want to insert in the shadow
-                    target.hierarchy.Add(rootVe);
-                }
-                else
-                {
-                    Debug.LogWarning("VisualTreeAsset instantiated an empty UI. Check the syntax of your UXML document. ");
-                }
+                // if contentContainer == this, the shadow and the logical hierarchy are identical
+                // otherwise, if there is a CC, we want to insert in the shadow
+                target.hierarchy.Add(rootVe);
             }
         }
 
