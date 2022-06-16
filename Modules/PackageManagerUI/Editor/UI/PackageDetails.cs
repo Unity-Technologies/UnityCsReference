@@ -875,18 +875,11 @@ namespace UnityEditor.PackageManager.UI
                 EditorUtility.DisplayDialog("Unity Package Manager", messageOnNotFound, "Ok");
         }
 
-        private void ViewUrl(IPackageVersion version, Func<IPackageVersion, bool, string[]> getUrls, string messageOnNotFound)
+        private void ViewUrlCascade(string[] urls, IPackageVersion version, Func<IPackageVersion, bool, string[]> getUrls, string messageOnNotFound)
         {
-            if (ApplicationUtil.instance.isInternetReachable)
+            if (urls.Length > 0)
             {
-                m_OnlineUrls = getUrls(version, false);
-                if (m_OnlineUrls.Length == 0)
-                {
-                    ViewOfflineUrl(version, getUrls, messageOnNotFound);
-                    return;
-                }
-
-                var onlineUrl = m_OnlineUrls[0];
+                var onlineUrl = urls[0];
                 var request = UnityWebRequest.Head(onlineUrl);
                 var operation = request.SendWebRequest();
                 operation.completed += (op) =>
@@ -894,18 +887,22 @@ namespace UnityEditor.PackageManager.UI
                     if (request.responseCode != 404)
                         ApplicationUtil.instance.OpenURL(onlineUrl);
                     else
-                        ViewUrl(version, SkipFirstUrl, messageOnNotFound);
+                        ViewUrlCascade(urls.ToList().Skip(1).ToArray(), version, getUrls, messageOnNotFound);
                 };
             }
             else
                 ViewOfflineUrl(version, getUrls, messageOnNotFound);
         }
 
-        private string[] SkipFirstUrl(IPackageVersion version, bool offline)
+        private void ViewUrl(IPackageVersion version, Func<IPackageVersion, bool, string[]> getUrls, string messageOnNotFound)
         {
-            if (m_OnlineUrls.Length > 0)
-                return m_OnlineUrls.ToList().Skip(1).ToArray();
-            return new string[0];
+            if (ApplicationUtil.instance.isInternetReachable)
+            {
+                m_OnlineUrls = getUrls(version, false);
+                ViewUrlCascade(m_OnlineUrls, version, getUrls, messageOnNotFound);
+            }
+            else
+                ViewOfflineUrl(version, getUrls, messageOnNotFound);
         }
 
         private void ViewDocClick()

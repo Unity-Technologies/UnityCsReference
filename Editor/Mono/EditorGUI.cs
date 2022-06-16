@@ -281,6 +281,28 @@ namespace UnityEditor
             }
         }
 
+        internal class DisabledGuiViewInputScope : GUI.Scope
+        {
+            GUIView m_View;
+            bool m_WasDisabled;
+
+            public DisabledGuiViewInputScope(GUIView view, bool disabled)
+            {
+                m_View = view;
+                if (m_View != null)
+                {
+                    m_WasDisabled = view.disableInputEvents;
+                    m_View.disableInputEvents = disabled;
+                }
+            }
+
+            protected override void CloseScope()
+            {
+                if (m_View != null)
+                    m_View.disableInputEvents = m_WasDisabled;
+            }
+        }
+
         internal struct LabelHighlightScope : IDisposable
         {
             bool m_Disposed;

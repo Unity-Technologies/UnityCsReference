@@ -45,6 +45,7 @@ namespace UnityEditor
             public static GUIContent cacheServerNamespacePrefixLabel = EditorGUIUtility.TrTextContent("Namespace prefix");
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download");
             public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload");
+            public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
@@ -195,6 +196,14 @@ namespace UnityEditor
             new PopupElement("Disabled"),
         };
 
+        private GUIContent[] cacheServerValidationPopupList =
+        {
+            EditorGUIUtility.TrTextContent("Disabled", "Content hashes are not calculated for uploaded artifacts and are not validated for downloaded artifacts."),
+            EditorGUIUtility.TrTextContent("Upload Only", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes are not validated for downloaded artifacts." ),
+            EditorGUIUtility.TrTextContent("Enabled", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes, if provided by the Accelerator, are validated for downloaded artifacts."),
+            EditorGUIUtility.TrTextContent("Required", "Content hashes are calculated for uploaded artifacts and sent to the Accelerator. Content hashes are required and validated for downloaded artifacts."),
+        };
+
         private PopupElement[] etcTextureCompressorPopupList =
         {
             new PopupElement("Legacy"),
@@ -231,6 +240,7 @@ namespace UnityEditor
         enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
         private static string s_ForcedAssetPipelineWarning;
+        SerializedProperty m_CacheServerValidationMode;
 
         const int kVCFieldRecentCount = 10;
         const string kVCFieldRecentPrefix = "vcs_ConfigField";
@@ -260,6 +270,8 @@ namespace UnityEditor
 
             m_CacheServerConnectionState = CacheServerConnectionState.Unknown;
             s_ForcedAssetPipelineWarning = null;
+
+            m_CacheServerValidationMode = serializedObject.FindProperty("m_CacheServerValidationMode");
         }
 
         public void OnDisable()
@@ -733,6 +745,7 @@ namespace UnityEditor
 
                 if (index == (int)CacheServerMode.AsPreferences)
                 {
+                    isCacheServerEnabled = false;
                     if (CacheServerPreferences.IsCacheServerV2Enabled)
                     {
                         var cacheServerIP = CacheServerPreferences.CachesServerV2Address;
@@ -741,7 +754,6 @@ namespace UnityEditor
                     }
                     else
                     {
-                        isCacheServerEnabled = false;
                         EditorGUILayout.HelpBox("Disabled", MessageType.None, false);
                     }
                 }
@@ -818,6 +830,11 @@ namespace UnityEditor
                     enableUpload = EditorGUILayout.Toggle(Content.cacheServerEnableUploadLabel, enableUpload);
                     if (EditorGUI.EndChangeCheck())
                         EditorSettings.cacheServerEnableUpload = enableUpload;
+
+
+                    int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
+
+                    EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
                 }
             }
         }
@@ -1100,6 +1117,10 @@ namespace UnityEditor
             EditorSettings.cacheServerMode = (CacheServerMode)data;
         }
 
+        private void SetCacheServerValidationMode(object data)
+        {
+            EditorSettings.cacheServerValidationMode = (CacheServerValidationMode)data;
+        }
 
         private void SetEtcTextureCompressorBehavior(object data)
         {
