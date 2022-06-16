@@ -22,16 +22,16 @@ namespace UnityEngine.Diagnostics
     [NativeHeader("Runtime/Misc/GarbageCollectSharedAssets.h")]
     public static class Utils
     {
-        [FreeFunction("DiagnosticsUtils_Bindings::ForceCrash", ThrowsException = true)]
+        [FreeFunction("DiagnosticsUtils_Bindings::ForceCrash", IsThreadSafe = true, ThrowsException = true)]
         extern public static void ForceCrash(ForcedCrashCategory crashCategory);
 
-        [FreeFunction("DiagnosticsUtils_Bindings::NativeAssert")]
+        [FreeFunction("DiagnosticsUtils_Bindings::NativeAssert", IsThreadSafe = true)]
         extern public static void NativeAssert(string message);
 
-        [FreeFunction("DiagnosticsUtils_Bindings::NativeError")]
+        [FreeFunction("DiagnosticsUtils_Bindings::NativeError", IsThreadSafe = true)]
         extern public static void NativeError(string message);
 
-        [FreeFunction("DiagnosticsUtils_Bindings::NativeWarning")]
+        [FreeFunction("DiagnosticsUtils_Bindings::NativeWarning", IsThreadSafe = true)]
         extern public static void NativeWarning(string message);
 
         [FreeFunction("ValidateHeap")]

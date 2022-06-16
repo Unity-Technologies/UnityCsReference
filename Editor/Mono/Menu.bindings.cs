@@ -67,6 +67,12 @@ namespace UnityEditor
         [FreeFunction("MenuController::RebuildAllMenus")]
         internal static extern void RebuildAllMenus();
 
+        [NativeMethod("MenuController::FindHotkeyStartIndex", true)]
+        internal static extern int FindHotkeyStartIndex(string menuPath);
+
+        [NativeMethod("MenuController::MenuItemExists", true)]
+        internal static extern bool MenuItemExists(string menuPath);
+
         [RequiredByNativeCode]
         private static void OnMenuChanged()
         {

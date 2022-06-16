@@ -1458,8 +1458,8 @@ namespace UnityEngine.UIElements
         void OnScrollWheel(WheelEvent evt)
         {
             var updateContentViewTransform = false;
-            var canUseVerticalScroll = contentContainer.boundingBox.height - layout.height > 0;
-            var canUseHorizontalScroll = contentContainer.boundingBox.width - layout.width > 0;
+            var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && contentContainer.boundingBox.height - layout.height > 0;
+            var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && contentContainer.boundingBox.width - layout.width > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
 
             if (canUseVerticalScroll)

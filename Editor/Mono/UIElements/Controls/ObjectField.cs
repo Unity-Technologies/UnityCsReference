@@ -52,7 +52,7 @@ namespace UnityEditor.UIElements
 
             if (valueChanged)
             {
-                m_ObjectFieldDisplay.Update();
+                UpdateDisplay();
             }
         }
 
@@ -69,9 +69,14 @@ namespace UnityEditor.UIElements
                 if (m_objectType != value)
                 {
                     m_objectType = value;
-                    m_ObjectFieldDisplay.Update();
+                    UpdateDisplay();
                 }
             }
+        }
+
+        internal void SetObjectTypeWithoutDisplayUpdate(Type type)
+        {
+            m_objectType = type;
         }
 
         /// <summary>
@@ -82,6 +87,11 @@ namespace UnityEditor.UIElements
         protected override void UpdateMixedValueContent()
         {
             m_ObjectFieldDisplay?.ShowMixedValue(showMixedValue);
+        }
+
+        internal void UpdateDisplay()
+        {
+            m_ObjectFieldDisplay.Update();
         }
 
         private class ObjectFieldDisplay : VisualElement
@@ -127,7 +137,8 @@ namespace UnityEditor.UIElements
 
             public void Update()
             {
-                GUIContent content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType);
+                var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
+                var content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, property);
                 m_ObjectIcon.image = content.image;
                 m_ObjectLabel.text = content.text;
             }
@@ -161,7 +172,13 @@ namespace UnityEditor.UIElements
                         OnKeyboardDelete();
                     }
                 }
-                else if (evt.eventTypeId == DragUpdatedEvent.TypeId())
+
+                // Drag events should not reach this point but we are adding this check for extra safety, because
+                // it might cause a crash depending on the object type. See case 1416878.
+                if (!enabledInHierarchy)
+                    return;
+
+                if (evt.eventTypeId == DragUpdatedEvent.TypeId())
                     OnDragUpdated(evt);
                 else if (evt.eventTypeId == DragPerformEvent.TypeId())
                     OnDragPerform(evt);
@@ -229,8 +246,9 @@ namespace UnityEditor.UIElements
 
             private Object DNDValidateObject()
             {
-                Object[] references = DragAndDrop.objectReferences;
-                Object validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, m_ObjectField.objectType, null, EditorGUI.ObjectFieldValidatorOptions.None);
+                var references = DragAndDrop.objectReferences;
+                var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
+                var validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, m_ObjectField.objectType, property, EditorGUI.ObjectFieldValidatorOptions.None);
 
                 if (validatedObject != null)
                 {
@@ -314,6 +332,8 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string selectorUssClassName = ussClassName + "__selector";
 
+        internal static readonly PropertyName serializedPropertyKey = new PropertyName("--unity-object-field-serialized-property");
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -346,7 +366,7 @@ namespace UnityEditor.UIElements
             // Get notified when hierarchy or project changes so we can update the display to handle renamed/missing objects.
             // This event is occasionally triggered before the reference in memory is updated, so we give it time to process.
             m_AsyncOnProjectOrHierarchyChangedCallback = () => schedule.Execute(m_OnProjectOrHierarchyChangedCallback);
-            m_OnProjectOrHierarchyChangedCallback = () => m_ObjectFieldDisplay.Update();
+            m_OnProjectOrHierarchyChangedCallback = UpdateDisplay;
             RegisterCallback<AttachToPanelEvent>((evt) =>
             {
                 EditorApplication.projectChanged += m_AsyncOnProjectOrHierarchyChangedCallback;

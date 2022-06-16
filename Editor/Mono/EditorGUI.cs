@@ -2782,7 +2782,7 @@ namespace UnityEditor
             bool draggable = SetDelayedDraggable(ref position, ref dragHotzone, label, id);
 
             BeginChangeCheck();
-            DelayedNumberFieldInternal(position, dragHotzone, id, false, ref dummy, ref longValue, kFloatFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            DelayedNumberFieldInternal(position, dragHotzone, id, false, ref dummy, ref longValue, kIntFieldFormatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateIntDragSensitivity(value) : 0.0f);
             if (EndChangeCheck())
             {
                 if ((int)longValue != value)

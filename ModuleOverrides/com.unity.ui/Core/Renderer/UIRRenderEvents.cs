@@ -275,6 +275,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     ve.renderChainData.data = null;
                 }
             }
+
+            ve.renderChainData.prev = null;
+            ve.renderChainData.next = null;
+
             return deepCount + 1;
         }
 

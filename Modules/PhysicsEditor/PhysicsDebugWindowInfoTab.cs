@@ -201,18 +201,16 @@ namespace UnityEditor
             var locked = m_LockedObjects.ContainsKey(renderedTransform.Transform);
             var lockedPrev = locked;
 
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("GameObject: " + renderedTransform.Transform.name);
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.ObjectField(Style.gameObjectField, renderedTransform.Transform.gameObject, typeof(GameObject), true);
+            EditorGUI.EndDisabledGroup();
 
-            GUILayout.FlexibleSpace();
+            EditorGUILayout.BeginHorizontal();
 
             var state = locked ? m_LockedObjects[renderedTransform.Transform] : VisualisationState.None;
             var statePrev = state;
 
-            EditorGUIUtility.labelWidth = 50f;
-            EditorGUILayout.LabelField(Style.drawGizmosFor, Style.notExpandWidth);
-            EditorGUIUtility.labelWidth = 0f;
-            state = (VisualisationState)EditorGUILayout.EnumPopup(state);
+            state = (VisualisationState)EditorGUILayout.EnumPopup(Style.drawGizmosFor.text, state);
 
             if (locked)
             {

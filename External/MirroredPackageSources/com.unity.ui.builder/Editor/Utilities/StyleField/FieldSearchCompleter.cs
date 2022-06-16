@@ -223,7 +223,7 @@ namespace Unity.UI.Builder
                         m_Popup.elementChosen += (index) =>
                         {
                             textField.value = GetTextFromData(results[index]);
-                            textField.Q(TextField.textInputUssName).Blur();
+                            textField.Blur();
                         };
                         m_Popup.selectionChanged += (index) => selectionChanged?.Invoke(index != -1 ? results[index] : default(TData));
                         UpdatePopup();

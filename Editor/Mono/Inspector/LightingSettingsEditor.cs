@@ -77,7 +77,6 @@ namespace UnityEditor
         SerializedProperty m_PVRSampleCount;
         SerializedProperty m_PVRDirectSampleCount;
         SerializedProperty m_PVRBounces;
-        SerializedProperty m_PVRMinBounces;
         SerializedProperty m_PVRCulling;
         SerializedProperty m_PVRFilteringMode;
         SerializedProperty m_PVRFilterTypeDirect;
@@ -228,7 +227,7 @@ namespace UnityEditor
             public static readonly GUIContent bakeBackend = EditorGUIUtility.TrTextContent("Lightmapper", "Specifies which baking system will be used to generate baked lightmaps.");
             public static readonly GUIContent directSampleCount = EditorGUIUtility.TrTextContent("Direct Samples", "Controls the number of samples the lightmapper will use for direct lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent indirectSampleCount = EditorGUIUtility.TrTextContent("Indirect Samples", "Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
-            public static readonly GUIContent bounces = EditorGUIUtility.TrTextContent("Bounces", "The minimum and maximum number of bounces the Lightmapper computes for indirect lighting.\nMinimum bounces: Lower values reduce bake times, but might increase lightmap noise. To improve performance during bakes, the Lightmapper terminates light paths that contribute little to the appearance of the Scene using a technique called Russian Roulette.\nMaximum bounces: Values of up to 10 are suitable for most Scenes. Values higher than 10 might lead to significantly longer bake times.");
+            public static readonly GUIContent bounces = EditorGUIUtility.TrTextContent("Max Bounces", "The maximum number of bounces the Lightmapper computes for indirect lighting.");
             public static readonly GUIContent denoisingWarningDirect = EditorGUIUtility.TrTextContent("Direct Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
             public static readonly GUIContent denoisingWarningIndirect = EditorGUIUtility.TrTextContent("Indirect Denoiser", "Your hardware does not support denoising. For minimum requirements, please read the documentation.");
             public static readonly GUIContent denoisingWarningAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Denoiser", "Your hardware Your hardware does not support denoising. For minimum requirements, please read the documentation.");
@@ -326,7 +325,6 @@ namespace UnityEditor
                 m_PVRSampleCount = lso.FindProperty("m_PVRSampleCount");
                 m_PVRDirectSampleCount = lso.FindProperty("m_PVRDirectSampleCount");
                 m_PVRBounces = lso.FindProperty("m_PVRBounces");
-                m_PVRMinBounces = lso.FindProperty("m_PVRMinBounces");
                 m_PVRCulling = lso.FindProperty("m_PVRCulling");
                 m_PVRFilteringMode = lso.FindProperty("m_PVRFilteringMode");
                 m_PVRFilterTypeDirect = lso.FindProperty("m_PVRFilterTypeDirect");
@@ -564,7 +562,7 @@ namespace UnityEditor
                                         EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
                                     }
 
-                                    DrawBouncesField(m_PVRMinBounces, m_PVRBounces);
+                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.bounces);
 
                                     // Filtering
                                     EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);
@@ -775,43 +773,6 @@ namespace UnityEditor
             var apis = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
             bool hasSM20Api = apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2);
             return hasSM20Api;
-        }
-
-        static void DrawBouncesField(SerializedProperty minimumProperty, SerializedProperty maximumProperty)
-        {
-            Rect bounceLabelRect = GUILayoutUtility.GetRect(
-                EditorGUILayout.kLabelFloatMinW,
-                EditorGUILayout.kLabelFloatMaxW,
-                EditorGUI.kSingleLineHeight,
-                EditorGUI.kSingleLineHeight,
-                EditorStyles.numberField);
-
-            Rect remainingRect = EditorGUI.PrefixLabel(bounceLabelRect, Styles.bounces);
-
-            float subfieldWidth = remainingRect.width * 0.5f;
-
-            Rect inputRect = remainingRect;
-            Rect labelRect = remainingRect;
-
-            const float postfixLabelWidth = 53.0f;
-            const float minimumInputWidth = 30.0f;
-
-            inputRect.width = Mathf.Max(subfieldWidth - postfixLabelWidth, minimumInputWidth);
-            labelRect.x = labelRect.x + inputRect.width;
-
-            int indent = EditorGUI.indentLevel;
-            EditorGUI.indentLevel = 0;
-
-            minimumProperty.intValue = EditorGUI.DelayedIntField(inputRect, minimumProperty.intValue);
-            EditorGUI.LabelField(labelRect, GUIContent.Temp(" minimum"), EditorStyles.miniLabel);
-
-            inputRect.x += inputRect.width + postfixLabelWidth;
-            labelRect.x += inputRect.width + postfixLabelWidth;
-
-            maximumProperty.intValue = EditorGUI.DelayedIntField(inputRect, maximumProperty.intValue);
-            EditorGUI.LabelField(labelRect, GUIContent.Temp(" maximum"), EditorStyles.miniLabel);
-
-            EditorGUI.indentLevel = indent;
         }
 
         static void DrawPropertyFieldWithPostfixLabel(SerializedProperty property, GUIContent label, GUIContent postfixLabel)

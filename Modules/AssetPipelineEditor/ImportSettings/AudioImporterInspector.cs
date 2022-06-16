@@ -34,7 +34,6 @@ namespace UnityEditor
 
         public SerializedProperty m_ForceToMono;
         public SerializedProperty m_Normalize;
-        public SerializedProperty m_PreloadAudioData;
         public SerializedProperty m_Ambisonic;
         public SerializedProperty m_LoadInBackground;
         public SerializedProperty m_OrigSize;
@@ -172,7 +171,6 @@ namespace UnityEditor
 
             m_ForceToMono = serializedObject.FindProperty("m_ForceToMono");
             m_Normalize = serializedObject.FindProperty("m_Normalize");
-            m_PreloadAudioData = serializedObject.FindProperty("m_PreloadAudioData");
             m_Ambisonic = serializedObject.FindProperty("m_Ambisonic");
             m_LoadInBackground = serializedObject.FindProperty("m_LoadInBackground");
             m_OrigSize = serializedObject.FindProperty("m_PreviewData.m_OrigSize");
@@ -308,12 +306,13 @@ namespace UnityEditor
             //Preload Audio Data
             // If the loadtype is streaming on the selected platform, gray out the "Preload Audio Data" option and show the checkbox as unchecked.
             bool disablePreloadAudioDataOption = (AudioClipLoadType)loadTypeProperty.intValue == AudioClipLoadType.Streaming;
+            var preloadProperty = audioImporterSampleSettings.FindPropertyRelative("preloadAudioData");
             using (new EditorGUI.DisabledScope(disablePreloadAudioDataOption))
             {
                 if (disablePreloadAudioDataOption)
                     EditorGUILayout.Toggle("Preload Audio Data", false);
                 else
-                    EditorGUILayout.PropertyField(m_PreloadAudioData, Style.PreloadAudioData);
+                    EditorGUILayout.PropertyField(preloadProperty, Style.PreloadAudioData);
             }
 
             if (!selectionContainsTrackerFile)
@@ -412,7 +411,6 @@ namespace UnityEditor
                         }
                     }
                 }
-
                 //TODO include the settings for things like HEVAG
 
                 EditorGUILayout.LabelField(Style.SharedSettingInformation, EditorStyles.miniLabel);

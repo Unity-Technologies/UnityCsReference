@@ -209,7 +209,8 @@ namespace UnityEditor
 
         public override void OnClosed(Material material)
         {
-            material.SetShaderPassEnabled("Always", true);
+            material.SetShaderPassEnabled("Always", true); // because grabpass used to use the always pass, we need to force it on, to correct old materials (case 1402353)
+            material.SetShaderPassEnabled("GrabPass", true);
         }
 
         public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader)
@@ -776,7 +777,8 @@ namespace UnityEditor
 
             // Set the define for distortion + grabpass
             SetKeyword(material, "EFFECT_BUMP", useDistortion);
-            material.SetShaderPassEnabled("Always", useDistortion);
+            material.SetShaderPassEnabled("Always", true); // because grabpass used to use the always pass, we need to force it on, to correct old materials (case 1402353)
+            material.SetShaderPassEnabled("GrabPass", useDistortion);
             if (useDistortion)
                 material.SetFloat("_DistortionStrengthScaled", material.GetFloat("_DistortionStrength") * 0.1f);   // more friendly number scale than 1 unit per size of the screen
         }

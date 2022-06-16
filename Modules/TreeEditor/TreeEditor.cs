@@ -307,7 +307,7 @@ namespace TreeEditor
             AssetDatabase.AddObjectToAsset(materialCutoutAsset, prefabAsset);
             AssetDatabase.AddObjectToAsset(data, prefabAsset);
 
-            GameObjectUtility.SetParentAndAlign(prefabInstance, menuCommand.context as GameObject);
+            GameObjectUtility.SetDefaultParentForNewObject(prefabInstance, (menuCommand.context as GameObject)?.transform, true);
 
             // Store Creation undo
             // @TODO: THIS DOESN"T UNDO ASSET CREATION!
@@ -449,7 +449,7 @@ namespace TreeEditor
         {
             // Create a wind zone
             GameObject wind = CreateDefaultWindZone();
-            GameObjectUtility.SetParentAndAlign(wind, menuCommand.context as GameObject);
+            GameObjectUtility.SetDefaultParentForNewObject(wind, (menuCommand.context as GameObject)?.transform, true);
             StageUtility.PlaceGameObjectInCurrentStage(wind);
             Selection.activeObject = wind;
             Undo.RegisterCreatedObjectUndo(wind, "Create Wind Zone");

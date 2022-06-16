@@ -79,6 +79,7 @@ namespace UnityEditor
             public static readonly GUIContent resolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
             public static readonly GUIContent resolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
             public static readonly GUIContent giNotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
+            public static readonly GUIContent terrainProbeNotSupported = EditorGUIUtility.TrTextContent("Legacy Light Probes are enabled in the Project's Render Pipeline. These are not supported by Terrain, therefore the Scene's Ambient Probe will be used instead.");
             public static readonly GUIContent isPresetInfo = EditorGUIUtility.TrTextContent("The Contribute Global Illumination property cannot be stored in a preset.");
             public static readonly GUIContent giMeshNotValid = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for this Mesh because it is missing the required attribute(s). Ensure that this Mesh has normals, vertices, and texture coordinates.");
             public static readonly GUIContent giMeshNotValidMultiple = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for these Meshes because one or more of them are missing the required attribute(s). Ensure that all the Meshes you've selected have normals, vertices, and texture coordinates.");
@@ -358,6 +359,8 @@ namespace UnityEditor
             bool bakedGI = settings.bakedGI;
             bool realtimeGI = settings.realtimeGI;
 
+            ReceiveGI receiveGI = (ReceiveGI)m_ReceiveGI.intValue;
+
             bool contributeGI = isPreset ? true : (m_StaticEditorFlags.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
 
             showLightingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(showLightingSettings.value, Styles.lightingSettings);
@@ -379,10 +382,16 @@ namespace UnityEditor
                     return;
                 }
 
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUILayout.IntPopup(Styles.receiveGITitle, 1, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
-                }
+                bool srpHasAlternativeToLegacyProbes = UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem;
+                EditorGUI.BeginChangeCheck();
+
+                receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.receiveGITitle, (int)receiveGI, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
+
+                if (EditorGUI.EndChangeCheck())
+                    m_ReceiveGI.intValue = (int)receiveGI;
+
+                if (!srpHasAlternativeToLegacyProbes)
+                    EditorGUILayout.HelpBox(Styles.terrainProbeNotSupported.text, MessageType.Warning);
 
                 EditorGUI.indentLevel -= 1;
             }
@@ -390,7 +399,7 @@ namespace UnityEditor
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUILayout.Space();
 
-            if (contributeGI)
+            if (contributeGI && receiveGI == ReceiveGI.Lightmaps)
             {
                 showLightmapSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(showLightmapSettings.value, Styles.lightmapSettings);
 

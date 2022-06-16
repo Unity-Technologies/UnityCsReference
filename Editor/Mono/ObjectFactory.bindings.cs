@@ -114,6 +114,7 @@ namespace UnityEditor
                 AddComponent(go, type);
             }
             go.SetActive(true);
+            GameObjectUtility.SetDefaultParentForNewObject(go);
             return go;
         }
 

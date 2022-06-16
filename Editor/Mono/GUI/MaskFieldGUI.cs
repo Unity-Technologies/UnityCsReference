@@ -115,7 +115,7 @@ namespace UnityEditor
         {
             mask = MaskCallbackInfo.GetSelectedValueForControl(controlID, mask, out changedFlags, out changedToValue);
 
-            GetMenuOptions(mask, flagNames, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out var selectedOptions, enumType);
+            GetMenuOptions(mask, flagNames, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out _, enumType);
 
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
@@ -126,7 +126,7 @@ namespace UnityEditor
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(controlID))
             {
                 MaskCallbackInfo.m_Instance = new MaskCallbackInfo(controlID);
-                PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(optionNames, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate));
+                PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(optionNames, flagValues, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate));
             }
 
             return mask;
@@ -348,10 +348,6 @@ namespace UnityEditor
                 var flagValue = flagValues[flagIndex];
                 var flagSet = ((intermediateMask & flagValue) == flagValue);
                 var newMask = (flagSet ? intermediateMask & ~flagValue : intermediateMask | flagValue);
-
-                // If all flag options are selected the mask becomes everythingValue to be consistent with the "Everything" option
-                if (newMask == flagMask)
-                    newMask = everythingValue;
 
                 optionMaskValues[optionIndex] = newMask;
             }

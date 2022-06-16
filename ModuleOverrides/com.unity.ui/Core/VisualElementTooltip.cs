@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
                         return;
                     }
 
-                    RegisterCallback<TooltipEvent>(SetTooltip, TrickleDown.TrickleDown);
+                    RegisterCallback<TooltipEvent>(SetTooltip);
                 }
 
                 SetProperty(tooltipPropertyKey, value);

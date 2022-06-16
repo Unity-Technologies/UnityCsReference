@@ -104,8 +104,7 @@ namespace UnityEngine
         {
             if (selectAll)
                 SelectAll();
-            else
-                cursorIndex = selectIndex = 0;
+
             revealCursor = true;
         }
 

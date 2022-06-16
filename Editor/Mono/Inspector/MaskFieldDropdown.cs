@@ -20,10 +20,11 @@ namespace UnityEditor
 
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
+        int[] m_flagValues;
         uint[] m_OptionMaskValues;
         uint[] m_SelectionMaskValues;
 
-        int m_AllLayersMask = 0;
+         int m_AllLayersMask = 0;
 
         bool m_SingleSelection = false;
         EditorUtility.SelectMenuItemFunction m_MaskChangeCallback;
@@ -36,6 +37,11 @@ namespace UnityEditor
         }
 
         public MaskFieldDropDown(string[] optionNames, int[] optionMaskValues, int mask, EditorUtility.SelectMenuItemFunction maskChangeCallback)
+            : this(optionNames, null, optionMaskValues, mask, maskChangeCallback)
+        {
+        }
+
+        public MaskFieldDropDown(string[] optionNames, int[] flagValues, int[] optionMaskValues, int mask, EditorUtility.SelectMenuItemFunction maskChangeCallback)
         {
             // these are not flag values, i.e. 1, 2, 4...
             // but the mask & flagValue[0..n] for each possible flag value
@@ -43,14 +49,33 @@ namespace UnityEditor
             m_OptionMaskValues = Array.ConvertAll(optionMaskValues, x=>(uint)x);
             m_OptionNames = (string[])optionNames.Clone();
 
+            m_flagValues = new int[optionNames.Length];
+            if (flagValues == null || flagValues.Length == optionNames.Length - 2)
+            {
+                m_flagValues[0] = 0;
+                m_flagValues[1] = -1;
+            }
+
+            if (flagValues == null)
+            {
+                for (int i = 2; i < m_flagValues.Length; ++i)
+                    m_flagValues[i] = (1 << i);
+            }
+            else
+            {
+                Array.Copy(flagValues, 0, m_flagValues, optionNames.Length - flagValues.Length, flagValues.Length);
+            }
+
             m_SelectionMatch = new SelectionModes[] { SelectionModes.All };
             m_SelectionMaskValues = new uint[] { (uint)mask };
 
             m_SingleSelection = true;
             m_MaskChangeCallback = maskChangeCallback;
 
-            for (int i = 2; i < m_OptionMaskValues.Length; i++)
-                m_AllLayersMask |= ((int)m_SelectionMaskValues[0] ^ (int)m_OptionMaskValues[i]);
+            m_AllLayersMask = 0;
+            foreach (var val in optionMaskValues)
+                if (val != -1 && val != int.MaxValue)
+                    m_AllLayersMask |= val;
         }
 
         public override Vector2 GetWindowSize()
@@ -96,18 +121,23 @@ namespace UnityEditor
                 if ((m_SelectionMaskValues[0] == int.MaxValue || m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1)
                     toggleVal = true;
 
-                EditorGUI.BeginChangeCheck();
                 var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
                 guiRect.width = GetWindowSize().x;
                 guiRect.x = 0;
                 DrawListBackground(guiRect, i % 2 == 0);
-                var value = GUI.Toggle(guiRect, toggleVal, m_OptionNames[i], Styles.menuItem);
 
+                EditorGUI.BeginChangeCheck();
+                bool value = GUI.Toggle(guiRect, toggleVal, m_OptionNames[i], Styles.menuItem);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SelectionMaskValues[0] = m_OptionMaskValues[i];
-                    var oldMaskValues = m_OptionMaskValues.Clone();
+                    var oldMaskValues = (uint[])m_OptionMaskValues.Clone();
                     RecalculateMasks();
+
+                    // If all flag options are selected the mask becomes everythingValue to be consistent with the "Everything" option
+                    if (oldMaskValues[i] == (uint)m_AllLayersMask)
+                        oldMaskValues[i] = ~0u;
+
                     m_MaskChangeCallback.Invoke(oldMaskValues, null, i);
                 }
             }
@@ -115,11 +145,10 @@ namespace UnityEditor
 
         void RecalculateMasks()
         {
-            m_OptionMaskValues[0] = 0;
-            m_OptionMaskValues[1] = int.MaxValue;
+            uint selectedValue = m_SelectionMaskValues[0] == ~0u ? (uint)m_AllLayersMask : m_SelectionMaskValues[0];
 
-            for (var flagIndex = 2; flagIndex < m_OptionMaskValues.Length; flagIndex++)
-                m_OptionMaskValues[flagIndex] = m_SelectionMaskValues[0] ^ (uint)Math.Pow(2, flagIndex - 2);
+            for (var flagIndex = 2; flagIndex < m_flagValues.Length; flagIndex++)
+                m_OptionMaskValues[flagIndex] = selectedValue ^ (uint)m_flagValues[flagIndex];
         }
 
         public override void OnGUI(Rect rect)

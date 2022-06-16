@@ -368,17 +368,21 @@ namespace UnityEditor
                 {
                     m_SearchText = string.Empty;
                     HandleSearchFiltering();
-                    m_TreeViewContainer.Focus();
                     GUIUtility.keyboardControl = m_TreeView.treeViewControlID;
+
+                    EditorApplication.delayCall += () =>
+                    {
+                        m_TreeViewContainer.Focus();
+                    };
+
                     Repaint();
                 }
             }
 
             GUI.SetNextControlName(k_SearchField);
-
             var searchTextRect = GUILayoutUtility.GetRect(0, ImguiStyles.searchFieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField);
             var searchText = EditorGUI.ToolbarSearchField(searchTextRect, m_SearchText, false);
-            if (m_SearchFieldGiveFocus)
+            if (e.type == EventType.Repaint && m_SearchFieldGiveFocus)
             {
                 m_SearchFieldGiveFocus = false;
                 EditorGUI.FocusTextInControl(k_SearchField);
@@ -391,6 +395,11 @@ namespace UnityEditor
             }
 
             GUILayout.EndHorizontal();
+        }
+
+        internal string GetSearchText()
+        {
+            return m_SearchText;
         }
 
         private void DrawSettingsPanel()
@@ -407,6 +416,13 @@ namespace UnityEditor
             }
 
             DrawFooterBar();
+
+            var e = Event.current;
+            if (GUI.GetNameOfFocusedControl() == k_SearchField && e.type == EventType.MouseDown && e.button == 0)
+            {
+                m_SettingsPanel.Focus();
+                GUIUtility.keyboardControl = 0;
+            }
         }
 
         private void DrawControls()
@@ -510,7 +526,12 @@ namespace UnityEditor
 
         internal static SettingsWindow Show(SettingsScope scopes, string settingsPath = null)
         {
-            var settingsWindow = FindWindowByScope(scopes) ?? Create(scopes);
+            var settingsWindow = FindWindowByScope(scopes);
+            if (settingsWindow != null)
+                EditorGUI.FocusTextInControl(k_SearchField);
+            else
+                settingsWindow = Create(scopes);
+
             settingsWindow.Show();
             settingsWindow.InitProviders();
             settingsWindow.Focus();

@@ -529,7 +529,10 @@ namespace UnityEditor.AssetImporters
             base.SaveChanges();
 
             Apply();
-            ImportAssets(GetAssetPaths());
+            // Custom importer editors that don't have apply/revert buttons are handling
+            // their files in a particular way and should not reimport their assets when the inspector is closed.
+            if (needsApplyRevert)
+                ImportAssets(GetAssetPaths());
             // Re-import of assets may change settings dur AssetPostprocessors
             // We have to make sure we update the saved data after the import is done
             // so users see the real state of the importer once the import is finished.
@@ -567,14 +570,12 @@ namespace UnityEditor.AssetImporters
         {
             // When using the cache server we have to write all import settings to disk first.
             // Then perform the import (Otherwise the cache server will not be used for the import)
-            List<string> toReimport = new List<string>();
             foreach (var path in paths)
             {
-                if (AssetDatabase.WriteImportSettingsIfDirty(path))
-                    toReimport.Add(path);
+                AssetDatabase.WriteImportSettingsIfDirty(path);
             }
             AssetDatabase.StartAssetEditing();
-            foreach (string path in toReimport)
+            foreach (string path in paths)
                 AssetDatabase.ImportAsset(path);
             AssetDatabase.StopAssetEditing();
         }

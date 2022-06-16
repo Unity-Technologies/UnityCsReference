@@ -51,6 +51,7 @@ namespace UnityEditor
 
         public float                    quality;
         public int                      conversionMode;
+        public bool                     preloadAudioData;
     }
 
     [NativeHeader("Modules/AssetPipelineEditor/Public/AudioImporter.h")]
@@ -148,6 +149,7 @@ namespace UnityEditor
         //Set/get the way Unity is loading the Audio data.
         public extern bool loadInBackground { get; set; }
 
+        [System.Obsolete("Preload audio data has been moved to AudioImporter.SampleSettings as a per platform local setting", true)]
         public extern bool preloadAudioData { get; set; }
 
         [System.Obsolete("Setting and getting the compression format is not used anymore (use compressionFormat in defaultSampleSettings instead). Source audio file is assumed to be PCM Wav.")]

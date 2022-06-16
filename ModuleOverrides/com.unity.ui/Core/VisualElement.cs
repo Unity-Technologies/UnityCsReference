@@ -1215,11 +1215,16 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal virtual Rect GetTooltipRect()
+        {
+            return this.worldBound;
+        }
+
         void SetTooltip(TooltipEvent e)
         {
             if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
             {
-                e.rect = element.worldBound;
+                e.rect = element.GetTooltipRect();
                 e.tooltip = element.tooltip;
                 e.StopImmediatePropagation();
             }

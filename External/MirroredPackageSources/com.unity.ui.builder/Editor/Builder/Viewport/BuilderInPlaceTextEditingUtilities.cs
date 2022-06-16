@@ -151,7 +151,7 @@ namespace Unity.UI.Builder
             UpdateTextEditorGeometry();
             textElement.RegisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);
 
-            textEditor.schedule.Execute(a => textInput.Focus());
+            textEditor.schedule.Execute(a => textEditor.Focus());
             textEditor.SelectAll();
 
             textInput.RegisterCallback<FocusOutEvent>(OnFocusOutEvent, TrickleDown.TrickleDown);

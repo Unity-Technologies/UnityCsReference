@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    class DefaultEditorWindowBackend : DefaultWindowBackend, IEditorWindowBackend
+    internal class DefaultEditorWindowBackend : DefaultWindowBackend, IEditorWindowBackend
     {
         private const string k_LiveReloadMenuText = "UI Toolkit Live Reload";
         private const string k_LiveReloadPreferenceKeySuffix = ".LiveReloadOn";
@@ -406,7 +406,7 @@ namespace UnityEditor.UIElements
             menu.AddItem(EditorGUIUtility.TextContent(k_LiveReloadMenuText), panel.enableAssetReload, ToggleLiveReloadForWindowType, editorWindowModel.window);
         }
 
-        private void ToggleLiveReloadForWindowType(object userData)
+        internal void ToggleLiveReloadForWindowType(object userData)
         {
             panel.enableAssetReload = !panel.enableAssetReload;
             EditorPrefs.SetBool(m_LiveReloadPreferenceKey, panel.enableAssetReload);

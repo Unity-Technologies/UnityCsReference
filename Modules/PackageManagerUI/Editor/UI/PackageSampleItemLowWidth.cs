@@ -6,32 +6,13 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class PackageDependencySampleItemLowWidth : VisualElement
+    internal class PackageSampleItemLowWidth : VisualElement
     {
         private VisualElementCache cache { get; set; }
 
-        public PackageDependencySampleItemLowWidth(ResourceLoader resourceLoader, string name, string version, Label installStatus)
+        public PackageSampleItemLowWidth(ResourceLoader resourceLoader, IPackageVersion version, Sample sample, SelectionProxy selection, AssetDatabaseProxy assetDatabase, ApplicationProxy application, IOProxy iOProxy)
         {
-            var root = resourceLoader.GetTemplate("PackageDependencySampleItemLowWidth.uxml");
-            Add(root);
-
-            cache = new VisualElementCache(root);
-
-            itemName.text = name;
-            itemName.tooltip = name;
-
-            itemSizeOrVersion.value = version;
-            itemSizeOrVersion.tooltip = version;
-            if (version == "---")
-                UIUtils.SetElementDisplay(itemSizeOrVersion, false);
-
-            if (installStatus != null && !string.IsNullOrEmpty(installStatus.text))
-                item.Add(installStatus);
-        }
-
-        public PackageDependencySampleItemLowWidth(ResourceLoader resourceLoader, IPackageVersion version, Sample sample, SelectionProxy selection, AssetDatabaseProxy assetDatabase, ApplicationProxy application, IOProxy iOProxy)
-        {
-            var root = resourceLoader.GetTemplate("PackageDependencySampleItemLowWidth.uxml");
+            var root = resourceLoader.GetTemplate("PackageSampleItemLowWidth.uxml");
             Add(root);
 
             cache = new VisualElementCache(root);
