@@ -10,6 +10,7 @@ using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Linq;
+using static UnityEditor.EditorGUI;
 
 namespace UnityEditor
 {
@@ -32,7 +33,15 @@ namespace UnityEditor
         public static extern void RevealInFinder(string path);
 
         [FreeFunction("DisplayDialog")]
-        public static extern bool DisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
+        static extern bool DoDisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
+
+        public static bool DisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel)
+        {
+            using (new DisabledGuiViewInputScope(GUIView.current, true))
+            {
+                return DoDisplayDialog(title, message, ok, cancel); ;
+            }
+        }
 
         [ExcludeFromDocs]
         public static bool DisplayDialog(string title, string message, string ok)
