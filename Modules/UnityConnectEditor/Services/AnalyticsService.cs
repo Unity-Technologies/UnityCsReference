@@ -49,7 +49,6 @@ namespace UnityEditor.Connect
             displayToggle = true;
             packageName = "com.unity.analytics";
             serviceFlagName = "analytics";
-            ServicesRepository.AddService(this);
         }
 
         public override bool IsServiceEnabled()

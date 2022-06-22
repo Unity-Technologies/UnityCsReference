@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -64,6 +65,9 @@ namespace UnityEditor.PackageManager.UI
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
+        // This event is currently only used by integration tests to know when the package manager window is ready
+        public static event Action onPackageManagerReady = delegate { };
+
         void CreateGUI()
         {
             this.SetAntiAliasing(4);
@@ -92,6 +96,19 @@ namespace UnityEditor.PackageManager.UI
             m_Root.CreateGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
+
+            if (pageManager.IsInitialFetchingDone())
+                OnFirstRefreshOperationFinish();
+            else
+                pageManager.onRefreshOperationFinish += OnFirstRefreshOperationFinish;
+        }
+
+        private void OnFirstRefreshOperationFinish()
+        {
+            var container = ServicesContainer.instance;
+            var pageManager = container.Resolve<PageManager>();
+            pageManager.onRefreshOperationFinish -= OnFirstRefreshOperationFinish;
+            onPackageManagerReady?.Invoke();
         }
 
         void OnDisable()
@@ -226,6 +243,19 @@ namespace UnityEditor.PackageManager.UI
             instance.m_Root.SelectFilterSubPage(filterTabOrSubPage);
             instance.Show();
         }
+
+        [UsedByNativeCode]
+        internal static void OnEditorFinishLoadingProject()
+        {
+            var servicesContainer = ServicesContainer.instance;
+            var applicationProxy = servicesContainer.Resolve<ApplicationProxy>();
+            if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
+            {
+                var upmClient = servicesContainer.Resolve<UpmClient>();
+                upmClient.List();
+            }
+        }
+
 
         internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
         {

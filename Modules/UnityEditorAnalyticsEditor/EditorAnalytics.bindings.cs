@@ -133,6 +133,11 @@ namespace UnityEditor
             return SendEventWithVersion("assetPostProcessorsUsage", parameters, 2);
         }
 
+        internal static bool SendEditorGameServicesEvent(object parameters)
+        {
+            return EditorAnalytics.SendEvent("editorgameserviceeditor", parameters);
+        }
+
         internal extern static bool SendAssetDownloadEvent(object parameters);
 
         public extern static bool enabled

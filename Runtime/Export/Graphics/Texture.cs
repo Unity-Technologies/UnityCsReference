@@ -829,6 +829,7 @@ namespace UnityEngine
         {
             if (!isReadable) throw CreateNonReadableException(this);
             if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. It needs to be in the range 0 and " + (mipmapCount - 1));
+            if (GetWritableImageData(0).ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             int chainOffset = GetPixelDataOffset(mipLevel);
             int arraySize = GetPixelDataSize(mipLevel);
@@ -1083,6 +1084,7 @@ namespace UnityEngine
             if (!isReadable) throw CreateNonReadableException(this);
             if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through " + (mipmapCount - 1));
             if ((int)face < 0 || (int)face >= 6) throw new ArgumentException("The passed in face " + face + " is invalid. The valid range is 0 through 5.");
+            if (GetWritableImageData(0).ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, (int)face);
             int chainOffset = GetPixelDataOffset(mipLevel, (int)face);
@@ -1277,6 +1279,7 @@ namespace UnityEngine
         {
             if (!isReadable) throw CreateNonReadableException(this);
             if (mipLevel < 0 || mipLevel >= mipmapCount) throw new ArgumentException("The passed in miplevel " + mipLevel + " is invalid. The valid range is 0 through  " + (mipmapCount - 1));
+            if (GetImageDataPointer().ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             int chainOffset = GetPixelDataOffset(mipLevel);
             int arraySize = GetPixelDataSize(mipLevel);
