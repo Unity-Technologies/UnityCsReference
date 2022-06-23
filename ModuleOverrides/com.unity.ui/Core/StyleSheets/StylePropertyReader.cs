@@ -357,7 +357,7 @@ namespace UnityEngine.UIElements.StyleSheets
             Texture2D texture = null;
 
             var valueType = GetValueType(index);
-            bool isCustom = valueType == StyleValueType.ResourcePath || valueType == StyleValueType.AssetReference || valueType == StyleValueType.ScalableImage;
+            bool isCustom = valueType == StyleValueType.ResourcePath || valueType == StyleValueType.AssetReference || valueType == StyleValueType.ScalableImage || valueType == StyleValueType.MissingAssetReference;
 
             if (isCustom)
             {

@@ -813,10 +813,34 @@ namespace Unity.UI.Builder
             {
                 var uiField = fieldElement as ObjectField;
                 var value = GetComputedStyleCursorValue(val);
-                if (useStyleProperty)
-                    value.texture = styleSheet.GetAsset(styleProperty.values[0]) as Texture2D;
 
-                uiField.SetValueWithoutNotify(value.texture);
+                if (useStyleProperty)
+                {
+                    switch (styleProperty.values[0].valueType)
+                    {
+                        case StyleValueType.AssetReference:
+                        case StyleValueType.ResourcePath:
+                        case StyleValueType.ScalableImage:
+                            value.texture = styleSheet.GetAsset(styleProperty.values[0]) as Texture2D;
+                            uiField.SetValueWithoutNotify(value.texture);
+                            break;
+                        case StyleValueType.MissingAssetReference:
+                            uiField.SetValueWithoutNotify(null);
+                            break;
+                        case StyleValueType.Enum:
+                            // TODO: Add support for using the predefined list from the MouseCursor enum.
+                            // This is only available in the editor.
+                            uiField.SetValueWithoutNotify(null);
+                            break;
+                        default:
+                            uiField.SetValueWithoutNotify(null);
+                            break;
+                    }
+                }
+                else
+                {
+                    uiField.SetValueWithoutNotify(null);
+                }
             }
             else if (IsComputedStyleEnum(val, valType))
             {
