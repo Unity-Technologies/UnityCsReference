@@ -696,8 +696,6 @@ namespace UnityEditor
                 treeView.data.SetExpandedWithChildren(item, expand);
         }
 
-
-
         void OnRowGUICallback(int itemID, Rect rect)
         {
             GameObjectTreeViewGUI.UserCallbackRowGUI(itemID, rect);
@@ -1144,8 +1142,16 @@ namespace UnityEditor
 
         void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
+            bool itemIsSelected = Selection.gameObjects.Length > 0;
+
+            if (itemIsSelected)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
+            if (itemIsSelected)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
             else
@@ -1156,17 +1162,22 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
 
             menu.AddSeparator("");
-            // TODO: Add this back in.
-            if (!hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
+
+            if (itemIsSelected && !hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
-            menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
+            if (itemIsSelected)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Duplicate"));
+
+            if (m_CustomParentForNewGameObjects != null && IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects) || !itemIsSelected)
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
+
 
             menu.AddSeparator("");
 

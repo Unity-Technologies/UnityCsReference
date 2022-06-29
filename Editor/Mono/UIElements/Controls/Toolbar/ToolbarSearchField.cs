@@ -72,7 +72,16 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="ToolbarSearchField"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<ToolbarSearchField> {}
+        public new class UxmlFactory : UxmlFactory<ToolbarSearchField, UxmlTraits> {}
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarSearchField"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a ToolbarSearchField element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        public new class UxmlTraits : SearchFieldBase<TextField, string>.UxmlTraits {}
 
         /// <summary>
         /// Constructor.

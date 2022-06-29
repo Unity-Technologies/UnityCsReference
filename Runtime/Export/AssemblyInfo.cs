@@ -24,6 +24,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreCommon.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.EmbeddedLinux.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
@@ -100,6 +101,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Collections")]
 [assembly: InternalsVisibleTo("Unity.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Core")]
+[assembly: InternalsVisibleTo("UnityEngine.Core.Runtime.Tests")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")]

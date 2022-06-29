@@ -9,24 +9,12 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEditor.UIElements.Debugger
 {
-    internal enum RepaintMode
-    {
-        Standard,
-        UIR
-    }
-
     internal static class UIRDebugUtility
     {
         public static UIRenderDevice GetUIRenderDevice(IPanel panel)
         {
             UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);
             return updater?.renderChain?.device as UIRenderDevice;
-        }
-
-        public static RepaintMode GetPanelRepaintMode(IPanel panel)
-        {
-            UIRRepaintUpdater updater = GetUIRRepaintUpdater(panel);
-            return updater != null ? RepaintMode.UIR : RepaintMode.Standard;
         }
 
         private static UIRRepaintUpdater GetUIRRepaintUpdater(IPanel panel)

@@ -679,8 +679,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRMeshBuilder.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRMeshBuilder.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs</Link>
@@ -783,9 +789,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTessellation.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs</Link>
@@ -1792,6 +1795,156 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.deprecated.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+Accept.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+Accept.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+GetProperty.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+GetProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+GetValue.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+GetValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+Path.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+Path.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+SetValue.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+SetValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\VisitReturnCode.cs">
+      <Link>Modules\Properties\Runtime\Algorithms\VisitReturnCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\AssemblyInfo.cs">
+      <Link>Modules\Properties\Runtime\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Attributes.cs">
+      <Link>Modules\Properties\Runtime\Attributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Exceptions.cs">
+      <Link>Modules\Properties\Runtime\Exceptions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\AttributesScope.cs">
+      <Link>Modules\Properties\Runtime\Properties\AttributesScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\DelegateProperty.cs">
+      <Link>Modules\Properties\Runtime\Properties\DelegateProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\ICollectionElementProperty.cs">
+      <Link>Modules\Properties\Runtime\Properties\ICollectionElementProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\Internal\IAttributes.cs">
+      <Link>Modules\Properties\Runtime\Properties\Internal\IAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\Property.cs">
+      <Link>Modules\Properties\Runtime\Properties\Property.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\PropertyPath.cs">
+      <Link>Modules\Properties\Runtime\Properties\PropertyPath.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Properties\ReflectedMemberProperty.cs">
+      <Link>Modules\Properties\Runtime\Properties\ReflectedMemberProperty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\ArrayPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\ArrayPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\ContainerPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\ContainerPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\DictionaryPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\DictionaryPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\HashSetPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\HashSetPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\IPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\IPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\DefaultPropertyBags.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\Internal\DefaultPropertyBags.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\PropertyBagStore.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\Internal\PropertyBagStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\KeyValueCollectionPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\KeyValueCollectionPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\KeyValuePairPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\KeyValuePairPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\ListPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\ListPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag+Accept.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag+Accept.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag+Registration.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag+Registration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag+TypeConstruction.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag+TypeConstruction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyCollection.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\PropertyCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\SetPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\SetPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Adapters\IExcludePropertyAdapter.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\Adapters\IExcludePropertyAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPrimitivesPropertyAdapter.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPrimitivesPropertyAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPropertyAdapter.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPropertyAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\ConcreteTypeVisitor.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\ConcreteTypeVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\ExcludeContext.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\ExcludeContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\IAccept.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\IAccept.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\IVisitor.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\IVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Internal\ReadOnlyAdapterCollection.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\Internal\ReadOnlyAdapterCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\PathVisitor.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\PathVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\PropertyVisitor.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\PropertyVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\VisitContext.cs">
+      <Link>Modules\Properties\Runtime\PropertyVisitors\VisitContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBag.cs">
+      <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs">
+      <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeConversion.cs">
+      <Link>Modules\Properties\Runtime\Utility\TypeConversion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeTraits.cs">
+      <Link>Modules\Properties\Runtime\Utility\TypeTraits.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeUtility.cs">
+      <Link>Modules\Properties\Runtime\Utility\TypeUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs">
       <Link>Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs</Link>
     </Compile>
@@ -2743,6 +2896,9 @@
     <Compile Include="..\..\Runtime\Export\Hashing\SpookyHash.cs">
       <Link>Runtime\Export\Hashing\SpookyHash.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Hmi\HmiPlatform.bindings.cs">
+      <Link>Runtime\Export\Hmi\HmiPlatform.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\IMGUI\GUIElement.bindings.cs">
       <Link>Runtime\Export\IMGUI\GUIElement.bindings.cs</Link>
     </Compile>
@@ -3378,6 +3534,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEventQueueSystem.bindings.cs">
       <Link>Runtime\Export\UnityEvent\UnityEventQueueSystem.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Unsafe\UTF8StringView.bindings.cs">
+      <Link>Runtime\Export\Unsafe\UTF8StringView.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs">
       <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>

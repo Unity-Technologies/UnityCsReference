@@ -79,7 +79,10 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            m_Header.style.display = DisplayStyle.Flex;
+            if (m_Selection.selectionType == BuilderSelectionType.Nothing)
+            {
+                return;
+            }
 
             m_TextField.UnregisterValueChangedCallback(m_SelectorNameChangeCallback);
             m_TextField.UnregisterCallback(m_SelectorEnterKeyDownCallback);

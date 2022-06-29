@@ -12,7 +12,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageList : VisualElement
     {
-        internal new class UxmlFactory : UxmlFactory<PackageList> {}
+        protected new class UxmlFactory : UxmlFactory<PackageList, UxmlTraits> {}
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="PackageList"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a PackageList element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = true;
+            }
+        }
 
         private ResourceLoader m_ResourceLoader;
         private UnityConnectProxy m_UnityConnect;

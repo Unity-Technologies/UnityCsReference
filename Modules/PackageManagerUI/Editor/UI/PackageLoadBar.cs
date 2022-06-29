@@ -184,7 +184,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (m_Total == m_NumberOfPackagesShown)
+            if (m_Total <= m_NumberOfPackagesShown)
             {
                 m_DoShowLoadMoreLabel = false;
                 m_LoadedText = m_Total == 1 ? L10n.Tr("One package shown") : string.Format(L10n.Tr("All {0} packages shown"), m_NumberOfPackagesShown);
@@ -204,7 +204,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_LoadAllDiff = true;
                     m_LoadMore = diff;
                 }
-
                 m_LoadedText = string.Format(L10n.Tr("{0} of {1}"), m_NumberOfPackagesShown, m_Total);
             }
             SetLabels();

@@ -271,25 +271,25 @@ namespace UnityEditor.ShaderFoundry
             NewLine();
         }
 
-        public void DeclareFunction(ShaderFunction function)
+        bool DeclareFunctionSignatureInternal(ShaderFunction function)
         {
             if (!function.IsValid)
             {
                 AddLine("/* ERROR: cannot declare invalid function */");
-                return;
+                return false;
             }
 
             var returnType = function.ReturnType;
             if (!returnType.IsValid)
             {
                 AddLine("/* ERROR: cannot declare function with invalid return type */");
-                return;
+                return false;
             }
 
             if (returnType.IsArray)
             {
                 AddLine("/* ERROR: cannot declare a function with an array return type */");
-                return;
+                return false;
             }
 
             Indentation();
@@ -315,6 +315,23 @@ namespace UnityEditor.ShaderFoundry
                 ++paramIndex;
             }
             Add(_closeParen);
+            return true;
+        }
+
+        public void DeclareFunctionSignature(ShaderFunction function)
+        {
+            if (!DeclareFunctionSignatureInternal(function))
+                return;
+
+            Add(_semicolon);
+            NewLine();
+        }
+
+        public void DeclareFunction(ShaderFunction function)
+        {
+            if (!DeclareFunctionSignatureInternal(function))
+                return;
+
             NewLine();
 
             using (BlockScope())

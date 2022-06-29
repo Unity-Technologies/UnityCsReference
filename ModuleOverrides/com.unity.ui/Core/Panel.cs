@@ -396,6 +396,26 @@ namespace UnityEngine.UIElements
 
         internal PanelClearSettings clearSettings { get; set; } = new PanelClearSettings { clearDepthStencil = true, clearColor = true, color = Color.clear };
 
+        uint m_VertexBudget = 0;
+
+
+        internal uint vertexBudget
+        {
+            get
+            {
+                return m_VertexBudget;
+            }
+            set
+            {
+                //early return to prevent trashing the render chain.
+                if (m_VertexBudget == value)
+                    return;
+
+                m_VertexBudget = value;
+                (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater).DestroyRenderChain();
+            }
+        }
+
         internal bool duringLayoutPhase { get; set; }
 
         internal bool isDirty
@@ -765,7 +785,12 @@ namespace UnityEngine.UIElements
             {
                 name = VisualElementUtils.GetUniqueName("unity-panel-container"),
                 viewDataKey = "PanelContainer",
-                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore
+                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore,
+
+                // Setting eventCallbackCategories will ensure panel.visualTree is always a valid next parent.
+                // This allows deeper elements to have an active tracking version based on their panel
+                // if they would not otherwise have a next parent with callbacks.
+                eventCallbackCategories = 1 << (int)EventCategory.Reserved
             };
 
             // Required!

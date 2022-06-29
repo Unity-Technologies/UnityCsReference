@@ -60,7 +60,7 @@ namespace UnityEditor.ShaderFoundry
         internal extern TagDescriptorInternal GetTagDescriptor(FoundryHandle tagDescriptorHandle);
 
         internal extern FoundryHandle CreateFunctionInternal();
-        internal extern bool SetFunction(FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, FoundryHandle parameterListHandle, FoundryHandle parentBlockHandle, FoundryHandle includeListHandle);
+        internal extern bool SetFunction(FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, FoundryHandle parameterListHandle, FoundryHandle parentBlockHandle, FoundryHandle includeListHandle, FoundryHandle attributeListHandle);
         internal extern ShaderFunctionInternal GetFunction(FoundryHandle functionHandle);
 
         internal extern FoundryHandle AddFunctionParameter(string name, FoundryHandle typeHandle, UInt32 flags);

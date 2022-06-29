@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -19,6 +20,8 @@ namespace UnityEditor.ShortcutManagement
         bool DoContextsConflict(Type context1, Type context2);
         bool playModeContextIsActive { get; }
         object GetContextInstanceOfType(Type type);
+        List<Type> GetActiveContexts();
+        List<string> GetActiveTags();
         void RegisterTag(string tag);
         void RegisterTag(Enum e);
         void UnregisterTag(string tag);
@@ -28,7 +31,22 @@ namespace UnityEditor.ShortcutManagement
 
     class ContextManager : IContextManager
     {
-        const string k_PrefPrefix = "UnityEditor.ShortcutManagement.ContextManager.";
+        class TagManager : ScriptableSingleton<TagManager>
+        {
+            [SerializeField] string[] m_SerializedTags;
+
+            public HashSet<string> Tags { get; private set; }
+
+            void OnEnable()
+            {
+                Tags = new HashSet<string>();
+
+                if (m_SerializedTags == null) return;
+                foreach (string tag in m_SerializedTags) Tags.Add(tag);
+            }
+
+            void OnDisable() => m_SerializedTags = Tags.ToArray();
+        }
 
         internal class GlobalContext {}
 
@@ -41,7 +59,8 @@ namespace UnityEditor.ShortcutManagement
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
         static Dictionary<Type, bool> s_IsPriorityContextCache = new Dictionary<Type, bool>();
-        internal Dictionary<string, bool> m_Tags = new Dictionary<string, bool>();
+
+        public static Action onTagChange;
 
         public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
 
@@ -201,7 +220,11 @@ namespace UnityEditor.ShortcutManagement
 
         internal static string EnumTagFormat(Enum tag) => $"{tag.GetType().Name}.{tag.ToString()}";
 
-        public void RegisterTag(string tag) => m_Tags[tag] = true;
+        public void RegisterTag(string tag)
+        {
+            var change = TagManager.instance.Tags.Add(tag);
+            if (change) onTagChange?.Invoke();
+        }
 
         public void RegisterTag(Enum e)
         {
@@ -212,10 +235,29 @@ namespace UnityEditor.ShortcutManagement
             RegisterTag(EnumTagFormat(e));
         }
 
-        public void UnregisterTag(string tag) => m_Tags[tag] = false;
+        public void UnregisterTag(string tag)
+        {
+            var change = TagManager.instance.Tags.Remove(tag);
+            if (change) onTagChange?.Invoke();
+        }
 
         public void UnregisterTag(Enum e) => UnregisterTag(EnumTagFormat(e));
 
-        public bool HasTag(string tag) => tag != null && m_Tags.TryGetValue(tag, out var result) && result;
+        public bool HasTag(string tag) => tag != null && TagManager.instance.Tags.Contains(tag);
+
+        List<Type> IContextManager.GetActiveContexts()
+        {
+            var result = new List<Type>();
+
+            result.Add(globalContextType);
+            var targetType = m_FocusedWindow.Target?.GetType();
+            if(targetType != null) result.Add(targetType);
+            result.AddRange(m_PriorityContexts.Where(p => p.active).Select(p => p.GetType()));
+            result.AddRange(m_ToolContexts.Where(c => c.active).Select(c => c.GetType()));
+
+            return result;
+        }
+
+        public List<string> GetActiveTags() => TagManager.instance.Tags.ToList();
     }
 }

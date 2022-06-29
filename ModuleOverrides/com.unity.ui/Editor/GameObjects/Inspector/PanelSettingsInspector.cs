@@ -40,6 +40,8 @@ namespace UnityEditor.UIElements.Inspector
         private PropertyField m_ClearColorField;
         private PropertyField m_ColorClearValueField;
 
+        private PropertyField m_VertexBudgetField;
+
         private HelpBox m_MissingThemeHelpBox;
 
         private void ConfigureFields()
@@ -71,6 +73,7 @@ namespace UnityEditor.UIElements.Inspector
 
             m_ClearColorField = m_RootVisualElement.MandatoryQ<PropertyField>("clear-color");
             m_ColorClearValueField = m_RootVisualElement.MandatoryQ<PropertyField>("color-clear-value");
+            m_VertexBudgetField = m_RootVisualElement.MandatoryQ<PropertyField>("vertex-budget");
 
             var choices = new List<int> {0, 1, 2, 3, 4, 5, 6, 7};
             var targetDisplayField = new PopupField<int>("Target Display", choices, 0, i => $"Display {i + 1}", i => $"Display {i + 1}");

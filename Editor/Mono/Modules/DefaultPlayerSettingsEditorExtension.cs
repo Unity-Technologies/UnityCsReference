@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
+using UnityEditor.Build;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Modules
@@ -115,16 +116,16 @@ namespace UnityEditor.Modules
             return m_MTRenderingTooltip;
         }
 
-        public virtual void MultithreadedRenderingGUI(BuildTargetGroup targetGroup)
+        public virtual void MultithreadedRenderingGUI(NamedBuildTarget namedBuildTarget)
         {
             // For platforms defined as IsMTRenderingDisabledByDefault in BuildTargetDiscovery::PreloadKnownBuildTargets (iPhone, tvOS, Android) the "Multithreaded Rendering" feature is controlled by PlayerSettings::m_MobileMTRenderingBaked (whose default is false)
             // For other platforms the "Multithreaded Rendering" feature is controlled by PlayerSettings::m_MTRendering. Default value is true (set during PlayerSettings::Reset)
-            if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.IsMTRenderingDisabledByDefault))
+            if (BuildTargetDiscovery.PlatformGroupHasFlag(namedBuildTarget.ToBuildTargetGroup(), TargetAttributes.IsMTRenderingDisabledByDefault))
             {
-                bool oldValue = PlayerSettings.GetMobileMTRendering(targetGroup);
+                bool oldValue = PlayerSettings.GetMobileMTRendering(namedBuildTarget);
                 bool newValue = EditorGUILayout.Toggle(MultithreadedRenderingGUITooltip(), oldValue);
                 if (oldValue != newValue)
-                    PlayerSettings.SetMobileMTRendering(targetGroup, newValue);
+                    PlayerSettings.SetMobileMTRendering(namedBuildTarget, newValue);
             }
             else EditorGUILayout.PropertyField(m_MTRendering, m_MTRenderingTooltip);
         }

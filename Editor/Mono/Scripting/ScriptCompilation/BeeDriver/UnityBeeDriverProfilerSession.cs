@@ -15,7 +15,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static int m_BeeDriverForCurrentPlayerBuildIndex;
         private static TinyProfiler2 _tinyProfiler;
         private static Stack<IDisposable> m_ProfilerSections = new Stack<IDisposable>();
-        private static Dictionary<NPath, DateTime> _lastWriteCache = new ();
 
         public static TinyProfiler2 ProfilerInstance => _tinyProfiler;
 
@@ -24,27 +23,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             m_CurrentPlayerBuildProfilerOutputFile = path;
             m_BeeDriverForCurrentPlayerBuildIndex = 0;
             _tinyProfiler = new TinyProfiler2();
-
-            // This is a workaround for the switch to BeeDriver2 breaking merging tool trace event files into the buildreport.
-            // This is temporary and will be reverted once bee is fixed
-            _lastWriteCache.Clear();
-            foreach (var file in CollectToolTraceEventsFiles())
-                _lastWriteCache.Add(file, file.GetLastWriteTimeUtc());
         }
 
         static public void Finish()
         {
             if (m_CurrentPlayerBuildProfilerOutputFile == null)
                 return;
-
-            // This is a workaround for the switch to BeeDriver2 breaking merging tool trace event files into the buildreport.
-            // This is temporary and will be reverted once bee is fixed
-            foreach (var file in CollectToolTraceEventsFiles())
-            {
-                if (_lastWriteCache.TryGetValue(file, out var writeTimeAtStart) && writeTimeAtStart == file.GetLastWriteTimeUtc())
-                    continue;
-                _tinyProfiler.AddExternalTraceEventsFile(file.ToString());
-            }
 
             _tinyProfiler.Write(m_CurrentPlayerBuildProfilerOutputFile.ToString(), new ChromeTraceOptions
             {
@@ -54,16 +38,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             });
             m_CurrentPlayerBuildProfilerOutputFile = null;
             _tinyProfiler = null;
-        }
-
-        // This is a workaround for the switch to BeeDriver2 breaking merging tool trace event files into the buildreport.
-        // This is temporary and will be reverted once bee is fixed
-        static IEnumerable<NPath> CollectToolTraceEventsFiles()
-        {
-            var artifactsDirectory = m_CurrentPlayerBuildProfilerOutputFile.Parent.Combine("artifacts");
-            if (!artifactsDirectory.Exists())
-                return System.Linq.Enumerable.Empty<NPath>();
-            return artifactsDirectory.Files("*.traceevents");
         }
 
         static public void BeginSection(string name)

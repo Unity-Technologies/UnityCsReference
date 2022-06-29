@@ -7,7 +7,7 @@ namespace Unity.UI.Builder
     class CheckerboardBackground : VisualElement
     {
         [UsedImplicitly]
-        public new class UxmlFactory : UxmlFactory<CheckerboardBackground, UxmlTraits> {}
+        protected new class UxmlFactory : UxmlFactory<CheckerboardBackground, UxmlTraits> {}
 
         static readonly CustomStyleProperty<int> k_CellSizeProperty = new CustomStyleProperty<int>("--cell-size");
         static readonly CustomStyleProperty<Color> k_OddCellColorProperty = new CustomStyleProperty<Color>("--odd-cell-color");
@@ -24,15 +24,47 @@ namespace Unity.UI.Builder
         Color m_EvenCellColor = k_DefaultEvenCellColor;
 
         Texture2D m_Texture;
+        
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="CheckerboardBackground"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a CheckerboardBackground element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        protected new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+        }
 
         public CheckerboardBackground()
         {
             pickingMode = PickingMode.Ignore;
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             style.position = Position.Absolute;
             generateVisualContent += OnGenerateVisualContent;
         }
 
+        ~CheckerboardBackground()
+        {
+            DestroyTexture();
+        }
+
+        void DestroyTexture()
+        {
+            if (m_Texture != null)
+                Object.DestroyImmediate(m_Texture);
+
+            m_Texture = null;
+        }
+        
         void OnGenerateVisualContent(MeshGenerationContext context)
         {
             var quadSize = localBound.size / k_NumberOfQuadsInRow;
@@ -101,8 +133,7 @@ namespace Unity.UI.Builder
 
         void GenerateResources()
         {
-            if(m_Texture != null)
-                Object.DestroyImmediate(m_Texture);
+            DestroyTexture();
 
             m_Texture = new Texture2D(k_TextureSize, k_TextureSize)
             {
@@ -126,6 +157,11 @@ namespace Unity.UI.Builder
             style.height = veSize * k_NumberOfQuadsInRow;
 
             m_Texture.Apply(false, true);
+        }
+        
+        void OnDetachFromPanel(DetachFromPanelEvent e)
+        {
+            DestroyTexture();
         }
     }
 }

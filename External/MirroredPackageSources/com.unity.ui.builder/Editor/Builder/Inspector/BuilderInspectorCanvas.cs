@@ -167,7 +167,18 @@ namespace Unity.UI.Builder
             m_BackgroundImageModeControls = root.Q("canvas-background-image-mode-controls");
             m_BackgroundCameraModeControls = root.Q("canvas-background-camera-mode-controls");
 
+            root.RegisterCallback<AttachToPanelEvent>(AttachToPanelCallback);
+            root.RegisterCallback<DetachFromPanelEvent>(DetachFromPanelCallback);
+        }
+
+        void AttachToPanelCallback(AttachToPanelEvent e)
+        {
             EditorApplication.playModeStateChanged += PlayModeStateChange;
+        }
+        
+        void DetachFromPanelCallback(DetachFromPanelEvent e)
+        {
+            EditorApplication.playModeStateChanged -= PlayModeStateChange;
         }
 
         // This is for temporarily disable delay on the width and height fields

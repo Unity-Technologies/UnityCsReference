@@ -114,6 +114,23 @@ namespace UnityEditor.Overlays
                 return hashCode;
             }
         }
+
+        public override string ToString()
+        {
+            return $"dockPosition: {dockPosition}" +
+                   $"\ncontainerId: {containerId}" +
+                   $"\nfloating: {floating}" +
+                   $"\ncollapsed: {collapsed}" +
+                   $"\ndisplayed: {displayed}" +
+                   $"\nsnapOffset: {snapOffset}" +
+                   $"\nsnapOffsetDelta: {snapOffsetDelta}" +
+                   $"\nsnapCorner: {snapCorner}" +
+                   $"\nid: {id}" +
+                   $"\nindex: {index}" +
+                   $"\nlayout: {layout}" +
+                   $"\nsize: {size}" +
+                   $"\nsizeOverriden: {sizeOverriden}";
+        }
     }
 
     //Dock position within container
@@ -153,7 +170,7 @@ namespace UnityEditor.Overlays
         internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
         internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
         internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
-        const int k_ContainerCount = 6;
+        internal const int k_OverlayMinVisibleArea = 24;
 
         const string k_FloatingContainer = "overlay-container--floating";
         const string k_ToolbarZone = "overlay-toolbar-zone";
@@ -360,16 +377,17 @@ namespace UnityEditor.Overlays
             return ClampRectToBounds(rootVisualElement.localBound, rect);
         }
 
+        // ensure that a minimum area of a rect is within boundary
         internal static Rect ClampRectToBounds(Rect boundary, Rect rectToClamp)
         {
-            if (rectToClamp.x + rectToClamp.width > boundary.xMax)
-                rectToClamp.x = boundary.xMax - rectToClamp.width;
+            if (rectToClamp.x > boundary.xMax - k_OverlayMinVisibleArea)
+                rectToClamp.x = boundary.xMax - k_OverlayMinVisibleArea;
 
-            if (rectToClamp.x < boundary.xMin)
-                rectToClamp.x = boundary.xMin;
+            if (rectToClamp.xMax < boundary.xMin + k_OverlayMinVisibleArea)
+                rectToClamp.x = (boundary.xMin + k_OverlayMinVisibleArea) - rectToClamp.width;
 
-            if (rectToClamp.y + rectToClamp.height > boundary.yMax)
-                rectToClamp.y = boundary.yMax - rectToClamp.height;
+            if (rectToClamp.y > boundary.yMax - k_OverlayMinVisibleArea)
+                rectToClamp.y = boundary.yMax - k_OverlayMinVisibleArea;
 
             if (rectToClamp.y < boundary.yMin)
                 rectToClamp.y = boundary.yMin;

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Bee.BeeDriver;
 using UnityEditor.DeploymentTargets;
+using UnityEditor.Build;
 using UnityEngine;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -245,7 +246,7 @@ namespace UnityEditor.Modules
 
         bool SupportsMultithreadedRendering();
 
-        void MultithreadedRenderingGUI(BuildTargetGroup targetGroup);
+        void MultithreadedRenderingGUI(NamedBuildTarget targetGroup);
 
         bool SupportsCustomLightmapEncoding();
 

@@ -14,6 +14,7 @@ namespace UnityEditor.ShortcutManagement
         void FindShortcutEntries(List<KeyCombination> combinationSequence, Type[] context, string[] tags, List<ShortcutEntry> outputShortcuts);
         void FindShortcutEntries(List<KeyCombination> combinationSequence, IContextManager contextManager, List<ShortcutEntry> outputShortcuts);
         void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts);
+        void FindPotentialShortcutEntries(IContextManager contextManager, List<ShortcutEntry> outputShortcuts);
         ShortcutEntry FindShortcutEntry(Identifier identifier);
         ShortcutEntry FindShortcutEntry(string identifier);
 

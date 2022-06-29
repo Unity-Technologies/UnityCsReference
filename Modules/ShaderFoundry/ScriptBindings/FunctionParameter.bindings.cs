@@ -71,7 +71,7 @@ namespace UnityEditor.ShaderFoundry
             return FunctionParameterInternal.ValueEquals(container, handle, other.container, other.handle);
         }
 
-        public struct Builder
+        public class Builder
         {
             ShaderContainer container;
             internal string name;

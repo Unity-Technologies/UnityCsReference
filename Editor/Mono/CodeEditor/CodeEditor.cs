@@ -31,10 +31,11 @@ namespace Unity.CodeEditor
         private Installation m_CurrentInstallation;
         internal const string SystemDefaultPath = "";
 
-        public IExternalCodeEditor CurrentCodeEditor {
+        public IExternalCodeEditor CurrentCodeEditor
+        {
             get
             {
-                if(m_CurrentEditor == m_DefaultEditor && !IsCurrentEditorPathExplicitlySet)
+                if (m_CurrentEditor == m_DefaultEditor && !IsCurrentEditorPathExplicitlySet)
                 {
                     // try to resolve first found visual studio installation and enable it
                     try
@@ -46,7 +47,7 @@ namespace Unity.CodeEditor
                             SetCodeEditor(installs[0].Path);
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Debug.LogWarning($"Can't locate Visual Studio installation: {ex.Message}");
                     }
@@ -234,7 +235,7 @@ namespace Unity.CodeEditor
         public static string ParseArgument(string arguments, string path, int line, int column)
         {
             var newArgument = arguments.Replace("$(ProjectPath)", QuoteForProcessStart(Directory.GetParent(Application.dataPath).FullName));
-            newArgument = newArgument.Replace("$(File)", QuoteForProcessStart(path));
+            newArgument = newArgument.Replace("$(File)", string.IsNullOrEmpty(path) ? "" : QuoteForProcessStart(path));
             newArgument = newArgument.Replace("$(Line)", line >= 0 ? line.ToString() : "0");
             newArgument = newArgument.Replace("$(Column)", column >= 0 ? column.ToString() : "0");
             return newArgument;

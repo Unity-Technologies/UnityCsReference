@@ -70,6 +70,24 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string popupVariantUssClassName = ussClassName + "--popup";
 
+        /// <summary>
+        /// Defines <see cref="SearchFieldBase.UxmlTraits"/> for the <see cref="SearchFieldBase"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a SearchFieldBase element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        public new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = true;
+            }
+        }
+
         protected SearchFieldBase()
         {
             isCompositeRoot = true;

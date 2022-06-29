@@ -12,10 +12,14 @@ namespace UnityEngine
 {
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
+    [NativeAsStruct]
     public sealed partial class TreePrototype
     {
+        [NativeName("prefab")]
         internal GameObject m_Prefab;
+        [NativeName("bendFactor")]
         internal float m_BendFactor;
+        [NativeName("navMeshLod")]
         internal int m_NavMeshLod;
 
         public GameObject prefab { get { return m_Prefab; } set { m_Prefab = value; } }
@@ -85,29 +89,49 @@ namespace UnityEngine
     [NativeHeader("TerrainScriptingClasses.h")]
     [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]
     [UsedByNativeCode]
+    [NativeAsStruct]
     public sealed partial class DetailPrototype
     {
         internal static readonly Color DefaultHealthColor = new Color(67 / 255F, 249 / 255F, 42 / 255F, 1);
         internal static readonly Color DefaultDryColor = new Color(205 / 255.0F, 188 / 255.0F, 26 / 255.0F, 1.0F);
 
+        [NativeName("prototype")]
         internal GameObject m_Prototype = null;
+        [NativeName("prototypeTexture")]
         internal Texture2D m_PrototypeTexture = null;
+        [NativeName("healthyColor")]
         internal Color m_HealthyColor = DefaultHealthColor;
+        [NativeName("dryColor")]
         internal Color m_DryColor = DefaultDryColor;
+        [NativeName("minWidth")]
         internal float m_MinWidth = 1.0F;
+        [NativeName("maxWidth")]
         internal float m_MaxWidth = 2.0F;
+        [NativeName("minHeight")]
         internal float m_MinHeight = 1F;
+        [NativeName("maxHeight")]
         internal float m_MaxHeight = 2F;
+        [NativeName("noiseSeed")]
         internal int m_NoiseSeed = 0;
+        [NativeName("noiseSpread")]
         internal float m_NoiseSpread = 0.1F;
+        [NativeName("density")]
         internal float m_Density = 1.0F;
+        [NativeName("holeTestRadius")]
         internal float m_HoleEdgePadding = 0.0F;
+        [NativeName("renderMode")]
         internal int m_RenderMode = 2;
+        [NativeName("usePrototypeMesh")]
         internal int m_UsePrototypeMesh = 0;
+        [NativeName("useInstancing")]
         internal int m_UseInstancing = 0;
+        [NativeName("useDensityScaling")]
         internal int m_UseDensityScaling = 0;
+        [NativeName("alignToGround")]
         internal float m_AlignToGround = 0;
+        [NativeName("positionJitter")]
         internal float m_PositionJitter = 0;
+        [NativeName("targetCoverage")]
         internal float m_TargetCoverage = 1.0F;
 
         public GameObject prototype { get { return m_Prototype; } set { m_Prototype = value; } }
@@ -257,13 +281,20 @@ namespace UnityEngine
 
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
+    [NativeAsStruct]
     public sealed partial class SplatPrototype
     {
+        [NativeName("texture")]
         internal Texture2D m_Texture;
+        [NativeName("normalMap")]
         internal Texture2D m_NormalMap;
+        [NativeName("tileSize")]
         internal Vector2 m_TileSize = new Vector2(15, 15);
+        [NativeName("tileOffset")]
         internal Vector2 m_TileOffset = new Vector2(0, 0);
+        [NativeName("specularMetallic")]
         internal Vector4 m_SpecularMetallic = new Vector4(0, 0, 0, 0);
+        [NativeName("smoothness")]
         internal float m_Smoothness = 0.0f;
 
         public Texture2D texture { get { return m_Texture; } set { m_Texture = value; } }
@@ -789,7 +820,7 @@ namespace UnityEngine
             [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailPrototypes", HasExplicitThis = true)]
             get;
 
-            [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailPrototypes", HasExplicitThis = true, ThrowsException = true)]
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetDetailPrototypes", HasExplicitThis = true)]
             set;
         }
 
@@ -877,7 +908,7 @@ namespace UnityEngine
             [FreeFunction(k_ScriptingInterfacePrefix + "GetTreePrototypes", HasExplicitThis = true)]
             get;
 
-            [FreeFunction(k_ScriptingInterfacePrefix + "SetTreePrototypes", HasExplicitThis = true, ThrowsException = true)]
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetTreePrototypes", HasExplicitThis = true)]
             set;
         }
 
@@ -1013,7 +1044,7 @@ namespace UnityEngine
             [FreeFunction(k_ScriptingInterfacePrefix + "GetSplatPrototypes", HasExplicitThis = true)]
             get;
 
-            [FreeFunction(k_ScriptingInterfacePrefix + "SetSplatPrototypes", HasExplicitThis = true, ThrowsException = true)]
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetSplatPrototypes", HasExplicitThis = true)]
             set;
         }
 

@@ -79,6 +79,14 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                focusable.defaultValue = true;
+            }
+
+            /// <summary>
             /// Initializes <see cref="BaseVerticalCollectionView"/> properties using values from the attribute bag.
             /// </summary>
             /// <param name="ve">The object to initialize.</param>
@@ -172,6 +180,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Called when an item is moved in the itemsSource.
         /// </summary>
+        /// <remarks>
+        /// This callback receives two ids, the first being the id being moved, the second being the destination id.
+        /// In the case of a tree, the destination is the parent id.
+        /// </remarks>
         public event Action<int, int> itemIndexChanged;
 
         /// <summary>
@@ -354,7 +366,7 @@ namespace UnityEngine.UIElements
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
         /// <remarks>
-        /// The default values is <c>false.</c>
+        /// The default value is <c>false</c>.
         /// Set this value to <c>true</c> to allow the user to drag and drop the items in the list. The collection view
         /// provides a default controller to allow standard behavior. It also automatically handles reordering
         /// the items in the data source.
@@ -367,7 +379,9 @@ namespace UnityEngine.UIElements
                 if (m_Dragger?.dragAndDropController == null)
                 {
                     if (value)
-                        InitializeDragAndDropController();
+                    {
+                        InitializeDragAndDropController(true);
+                    }
 
                     return;
                 }
@@ -430,8 +444,8 @@ namespace UnityEngine.UIElements
         /// Takes a value from the <see cref="CollectionVirtualizationMethod"/> enum.
         /// </summary>
         /// <remarks>
-        /// The default values is <c>FixedHeight.</c>
-        /// When using fixed height, you need to specify the <see cref="fixedItemHeight"/> property.
+        /// The default value is <c>FixedHeight</c>.
+        /// When using fixed height, specify the <see cref="fixedItemHeight"/> property.
         /// Fixed height is more performant but offers less flexibility on content.
         /// When using <c>DynamicHeight</c>, the collection will wait for the actual height to be computed.
         /// Dynamic height is more flexible but less performant.
@@ -592,7 +606,7 @@ namespace UnityEngine.UIElements
             return new ListViewDragger(this);
         }
 
-        internal void InitializeDragAndDropController()
+        internal void InitializeDragAndDropController(bool enableReordering)
         {
             if (m_Dragger != null)
             {
@@ -603,6 +617,7 @@ namespace UnityEngine.UIElements
 
             m_Dragger = CreateDragger();
             m_Dragger.dragAndDropController = CreateDragAndDropController();
+            m_Dragger.dragAndDropController.enableReordering = enableReordering;
         }
 
         internal abstract ICollectionDragAndDropController CreateDragAndDropController();
@@ -611,12 +626,6 @@ namespace UnityEngine.UIElements
         {
             m_Dragger ??= CreateDragger();
             m_Dragger.dragAndDropController = dragAndDropController;
-        }
-
-        //Used for unit testing
-        internal ICollectionDragAndDropController GetDragAndDropController()
-        {
-            return m_Dragger?.dragAndDropController;
         }
 
         /// <summary>

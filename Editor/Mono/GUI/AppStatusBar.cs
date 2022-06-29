@@ -168,7 +168,10 @@ namespace UnityEditor
             {
                 GUILayout.Space(2);
                 DrawStatusText();
-                GUILayout.FlexibleSpace();
+
+                if(EditorPrefs.GetBool("EnableHelperBar", false)) ShortcutManagement.HelperWindow.StatusBarShortcuts();
+                else GUILayout.FlexibleSpace();
+
                 if (m_DrawExtraFeatures)
                     DrawSpecialModeLabel();
                 DrawProgressBar();
@@ -437,8 +440,10 @@ namespace UnityEditor
         {
             int iconWidth = 25;
             float specialModeLabelWidth = Styles.statusLabel.CalcSize(new GUIContent(m_SpecialModeLabel)).x + k_SpaceBeforeProgress + 8;
+            float helperBarWidth = (EditorPrefs.GetBool("EnableHelperBar", false) ? ShortcutManagement.HelperWindow.kHelperBarMinWidth : 0);
             float statusRightReservedSpace =
                 specialModeLabelWidth +
+                helperBarWidth + // helper bar
                 iconWidth + // script debugger
                 iconWidth + // cache server
                 (showBakeMode ? iconWidth : 0) + // bake

@@ -3,15 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using UnityEngineInternal;
 
 namespace UnityEditor.ShortcutManagement
 {
+
+
     public abstract class ShortcutBaseAttribute : Attribute
     {
         internal abstract ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo);
@@ -25,35 +25,42 @@ namespace UnityEditor.ShortcutManagement
         internal Type context { get; }
         internal string tag { get; }
         internal ShortcutBinding defaultBinding { get; }
+        internal int priority { get; }
         public string displayName { get; set; }
         Action m_NoArgumentsAction;
 
-        ShortcutAttribute(string id, Type context, string tag, ShortcutBinding defaultBinding)
+        ShortcutAttribute(string id, Type context, string tag, int priority, ShortcutBinding defaultBinding)
         {
             this.identifier = id;
             this.context = context;
             this.tag = tag;
             this.defaultBinding = defaultBinding;
+            this.priority = ShortcutAttributeUtility.AssignPriority(context, priority);
             displayName = identifier;
         }
 
         public ShortcutAttribute(string id, [DefaultValue("null")] Type context = null)
-            : this(id, context, null, ShortcutBinding.empty)
+            : this(id, context, null, int.MaxValue, ShortcutBinding.empty)
         {
         }
 
         public ShortcutAttribute(string id, Type context, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
-            : this(id, context, null, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+            : this(id, context, null, int.MaxValue, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
         {
         }
 
         public ShortcutAttribute(string id, Type context, string tag, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
-            : this(id, context, tag, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+            : this(id, context, tag, int.MaxValue, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+        {
+        }
+
+        public ShortcutAttribute(string id, Type context, string tag, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers, int priority)
+            : this(id, context, tag, priority, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
         {
         }
 
         public ShortcutAttribute(string id, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
-            : this(id, null, null, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+            : this(id, null, null, int.MaxValue, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
         {
         }
 
@@ -85,7 +92,7 @@ namespace UnityEditor.ShortcutManagement
                 action = NoArgumentShortcutMethodProxy;
             }
 
-            return new ShortcutEntry(identifier, defaultCombination, action, context, tag, type, displayName);
+            return new ShortcutEntry(identifier, defaultCombination, action, context, tag, type, displayName, priority);
         }
     }
 
@@ -108,6 +115,11 @@ namespace UnityEditor.ShortcutManagement
         {
         }
 
+        public ClutchShortcutAttribute(string id, Type context, string tag, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers, int priority)
+            : base(id, context, tag, defaultKeyCode, defaultShortcutModifiers, priority)
+        {
+        }
+
         public ClutchShortcutAttribute(string id, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
             : base(id, defaultKeyCode, defaultShortcutModifiers)
         {
@@ -115,5 +127,22 @@ namespace UnityEditor.ShortcutManagement
 
         [RequiredSignature]
         static void ShortcutClutchMethod(ShortcutArguments args) { throw new InvalidOperationException(); }
+    }
+
+    class ShortcutAttributeUtility
+    {
+        internal const int DefaultGlobalPriority = 1_000_000;
+        internal const int DefaultContextPriority = 1_000;
+
+        internal static int AssignPriority(Type context, int suggestedPriority = int.MaxValue)
+        {
+            if (suggestedPriority == int.MaxValue)
+            {
+                if (context == null || context == ContextManager.globalContextType) return DefaultGlobalPriority;
+                else return DefaultContextPriority;
+            }
+
+            return suggestedPriority;
+        }
     }
 }

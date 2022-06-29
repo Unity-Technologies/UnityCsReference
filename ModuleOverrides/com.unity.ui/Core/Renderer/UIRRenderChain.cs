@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements.UIR
 
         public RenderChain(BaseVisualElementPanel panel)
         {
-            Constructor(panel, new UIRenderDevice(), panel.atlas, new VectorImageManager(panel.atlas));
+            Constructor(panel, new UIRenderDevice(panel.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas));
         }
 
         protected RenderChain(BaseVisualElementPanel panel, UIRenderDevice device, AtlasBase atlas, VectorImageManager vectorImageManager)

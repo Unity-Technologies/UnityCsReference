@@ -15,7 +15,7 @@ namespace UnityEditor
             public static readonly GUIContent gamePlayNormalContent = EditorGUIUtility.TrTextContent("Play in Window", "Play inside a game view docked inside unity");
             public static readonly GUIContent gamePlayMaximizedContent = EditorGUIUtility.TrTextContent("Maximized", "Maximize the game view before entering play mode.");
             public static readonly GUIContent gamePlayFullscreenContent = EditorGUIUtility.TrTextContent("Fullscreen on ", "Play the game view on a fullscreen monitor");
-            public static readonly GUIContent playFocusedToggleContent = EditorGUIUtility.TrTextContent("Focused", "Forcilby focus the game view when entering play mode.");
+            public static readonly GUIContent playFocusedToggleContent = EditorGUIUtility.TrTextContent("Focused", "Forcibly focus the game view when entering play mode.");
             public static readonly GUIContent playFocusedToggleDisabledContent = EditorGUIUtility.TrTextContent("Focused", "Focus toggle is currently disabled because a view will play maximized.");
             public static GUIContent vSyncToggleContent = EditorGUIUtility.TrTextContent("VSync", "Enable VSync only for the game view while in playmode.");
             public static GUIContent vSyncUnsupportedContent = EditorGUIUtility.TrTextContent("No VSync", "VSync is not available because it is not supported by this device");

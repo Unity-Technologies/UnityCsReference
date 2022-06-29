@@ -84,7 +84,7 @@ namespace UnityEditor
 
             public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
-
+            public static readonly GUIContent enableHelperBar = EditorGUIUtility.TrTextContent("Enable Helper Bar", "Enables Helper Bar in the status bar at the bottom of the main Unity Editor window.");
         }
 
         class ExternalProperties
@@ -575,7 +575,7 @@ namespace UnityEditor
 
             m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
 
-            EditorGUILayout.Space();
+            DrawEnableHelperBar();
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
 
             EditorGUI.indentLevel++;
@@ -690,6 +690,19 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetBool(bumpMapChecksKeyName, bumpMapChecks);
+            }
+        }
+
+        void DrawEnableHelperBar()
+        {
+            const string helperBarKeyName = "EnableHelperBar";
+            var enableHelperBar = EditorPrefs.GetBool(helperBarKeyName, false);
+
+            EditorGUI.BeginChangeCheck();
+            enableHelperBar = EditorGUILayout.Toggle(GeneralProperties.enableHelperBar, enableHelperBar);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(helperBarKeyName, enableHelperBar);
             }
         }
 

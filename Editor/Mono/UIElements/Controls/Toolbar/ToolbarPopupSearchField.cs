@@ -14,7 +14,16 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Instantiates a <see cref="ToolbarPopupSearchField"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<ToolbarPopupSearchField> {}
+        public new class UxmlFactory : UxmlFactory<ToolbarPopupSearchField, UxmlTraits> {}
+
+        /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarPopupSearchField"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a ToolbarPopupSearchField element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        public new class UxmlTraits : ToolbarSearchField.UxmlTraits {}
 
         /// <summary>
         /// The menu used by the pop-up search field element.

@@ -307,6 +307,7 @@ namespace UnityEditor
         protected override bool OnFocus()
         {
             m_OnFocus?.Invoke();
+            EditorWindow.focusedWindowChanged?.Invoke();
 
             // Callback could have killed us. If so, die now...
             if (!this)
@@ -579,6 +580,7 @@ namespace UnityEditor
                 {
                     m_OnBecameVisible?.Invoke();
                     m_OnFocus?.Invoke();
+                    EditorWindow.focusedWindowChanged?.Invoke();
                 }
                 catch (TargetInvocationException ex)
                 {

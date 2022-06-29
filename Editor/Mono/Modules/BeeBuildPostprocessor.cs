@@ -380,7 +380,7 @@ namespace UnityEditor.Modules
                 searchPaths = $"{il2cppPath}{Path.PathSeparator}";
             }
 
-            return new SystemProcessRunnableProgramDuplicate(NetCoreRunProgram.NetCoreRunPath,
+            return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
                 new[]
                 {
                     buildProgramAssembly.InQuotes(SlashMode.Native),

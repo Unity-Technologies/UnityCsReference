@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
@@ -191,6 +192,21 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Removes all items from the source.
+        /// </summary>
+        public virtual void ClearItems()
+        {
+            if (itemsSource == null)
+                return;
+
+            EnsureItemSourceCanBeResized();
+            var itemsSourceIndices = Enumerable.Range(0, itemsSource.Count - 1);
+            itemsSource.Clear();
+            RaiseItemsRemoved(itemsSourceIndices);
+            RaiseOnSizeChanged();
+        }
+
+        /// <summary>
         /// Invokes the <see cref="itemsSourceSizeChanged"/> event.
         /// </summary>
         protected void RaiseOnSizeChanged()
@@ -265,7 +281,9 @@ namespace UnityEngine.UIElements
 
         void EnsureItemSourceCanBeResized()
         {
-            if (itemsSource == null || itemsSource.IsFixedSize && !itemsSource.GetType().IsArray)
+            var itemsSourceType = itemsSource?.GetType();
+            var itemsSourceIsArray = itemsSourceType?.IsArray ?? false;
+            if (itemsSource == null || itemsSource.IsFixedSize && !itemsSourceIsArray)
                 throw new InvalidOperationException("Cannot add or remove items from source, because it is null or its size is fixed.");
         }
     }

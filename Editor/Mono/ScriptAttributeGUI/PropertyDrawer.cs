@@ -25,7 +25,7 @@ namespace UnityEditor
         {
             ScriptAttributeUtility.s_DrawerStack.Push(this);
             OnGUI(position, property, label);
-            ScriptAttributeUtility.s_DrawerStack.Pop();
+            ScriptAttributeUtility.s_DrawerStack.TryPop(out _);
         }
 
         // Override this method to make your own GUI for the property based on IMGUI.
@@ -45,7 +45,7 @@ namespace UnityEditor
         {
             ScriptAttributeUtility.s_DrawerStack.Push(this);
             float height = GetPropertyHeight(property, label);
-            ScriptAttributeUtility.s_DrawerStack.Pop();
+            ScriptAttributeUtility.s_DrawerStack.TryPop(out _);
             return height;
         }
 
@@ -59,7 +59,7 @@ namespace UnityEditor
         {
             ScriptAttributeUtility.s_DrawerStack.Push(this);
             bool canCache = CanCacheInspectorGUI(property);
-            ScriptAttributeUtility.s_DrawerStack.Pop();
+            ScriptAttributeUtility.s_DrawerStack.TryPop(out _);
             return canCache;
         }
 

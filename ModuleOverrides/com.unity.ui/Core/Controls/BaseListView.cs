@@ -80,13 +80,13 @@ namespace UnityEngine.UIElements
         /// This property controls whether the list view displays the collection size (number of items).
         /// </summary>
         /// <remarks>
-        /// The default values if <c>true</c>.
+        /// The default value is <c>true</c>.
         /// When this property is set to <c>true</c>, Unity displays the collection size as the first item in the list, but does
         /// not make it an actual list item that is part of the list index. If you query for list index 0,
         /// Unity returns the first real list item, and not the collection size.
-        /// If <see cref="showFoldoutHeader"/> is set to <c>true</c>, the collection size field will be included in the header instead.
-        /// This property is usually used to debug a ListView, because it indicates whether the data source is
-        /// linked correctly. In production, the collection size is rarely displayed as a line item in a ListView.
+        /// If <see cref="showFoldoutHeader"/> is set to <c>true</c>, the collection size field is included in the header instead.
+        /// You can use this property to debug a ListView because the property indicates whether the data source is
+        /// linked correctly. In production, the collection size rarely displays as a line item in a ListView.
         /// </remarks>>
         /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
         public bool showBoundCollectionSize
@@ -108,14 +108,14 @@ namespace UnityEngine.UIElements
         bool m_ShowFoldoutHeader;
 
         /// <summary>
-        /// This property controls whether the list view will display a header, in the form of a foldout that can be expanded or collapsed.
+        /// This property controls whether the list view displays a header, in the form of a foldout that can be expanded or collapsed.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>false</c>.
+        /// The default value is <c>false</c>.
         /// When this property is set to <c>true</c>, Unity adds a foldout in the hierarchy of the list view and moves
-        /// the scroll view inside that newly created foldout. The text of this foldout can be changed with <see cref="headerTitle"/>
+        /// the scroll view inside that newly created foldout. You can change the text of this foldout with <see cref="headerTitle"/>
         /// property on the ListView.
-        /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header will include a TextField to control
+        /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header includes a TextField to control
         /// the array size, instead of using the field as part of the list.
         /// </remarks>>
         public bool showFoldoutHeader
@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
                 }
 
                 SetupArraySizeField();
-                UpdateEmpty();
+                UpdateListViewLabel();
 
                 if (showAddRemoveFooter)
                 {
@@ -198,17 +198,19 @@ namespace UnityEngine.UIElements
         /// This property controls whether a footer will be added to the list view.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>false</c>.
+        /// The default value is <c>false</c>.
         /// When this property is set to <c>true</c>, Unity adds a footer under the scroll view.
         /// This footer contains two buttons:
-        /// A "+" button. When clicked, adds a single item at the end of the list view.
-        /// A "-" button. When clicked, removes all selected items, or the last item if none are selected.
+        /// A "+" button. When clicked, it adds a single item at the end of the list view.
+        /// A "-" button. When clicked, it removes all selected items, or the last item if none are selected.
         /// </remarks>
         public bool showAddRemoveFooter
         {
             get => m_Footer != null;
             set => EnableFooter(value);
         }
+
+        internal Foldout headerFoldout => m_Foldout;
 
         void EnableFooter(bool enabled)
         {
@@ -267,6 +269,9 @@ namespace UnityEngine.UIElements
 
         void OnArraySizeFieldChanged(ChangeEvent<string> evt)
         {
+            if (m_ArraySizeField.showMixedValue && TextInputBaseField<string>.mixedValueString == evt.newValue)
+                return;
+
             if (!int.TryParse(evt.newValue, out var value) || value < 0)
             {
                 m_ArraySizeField.SetValueWithoutNotify(evt.previousValue);
@@ -274,6 +279,10 @@ namespace UnityEngine.UIElements
             }
 
             var count = viewController.GetItemsCount();
+
+            if (count == 0 && value == viewController.GetItemsMinCount())
+                return;
+
             if (value > count)
             {
                 viewController.AddItems(value - count);
@@ -286,42 +295,64 @@ namespace UnityEngine.UIElements
                     viewController.RemoveItem(i);
                 }
             }
-        }
-
-        void UpdateArraySizeField()
-        {
-            if (!HasValidDataAndBindings())
-                return;
-
-            m_ArraySizeField?.SetValueWithoutNotify(viewController.GetItemsCount().ToString());
-        }
-
-        Label m_EmptyListLabel;
-
-        void UpdateEmpty()
-        {
-            if (!HasValidDataAndBindings())
-                return;
-
-            if (itemsSource.Count == 0 && !sourceIncludesArraySize)
+            else if (value == 0)
             {
-                if (m_EmptyListLabel != null)
-                    return;
+                // Special case: list view cannot show arrays with more than n elements (see m_IsOverMultiEditLimit)
+                // when multiple objects are selected (so count is already 0 even though array size field shows
+                // a different value) and user wants to reset the number of items for that selection
+                viewController.ClearItems();
+                m_IsOverMultiEditLimit = false;
+            }
 
-                m_EmptyListLabel = new Label("List is Empty"); // TODO localize
-                m_EmptyListLabel.AddToClassList(emptyLabelUssClassName);
-                scrollView.contentViewport.Add(m_EmptyListLabel);
+            UpdateListViewLabel();
+        }
+
+        internal void UpdateArraySizeField()
+        {
+            if (!HasValidDataAndBindings() || m_ArraySizeField == null)
+                return;
+
+            if (!m_ArraySizeField.showMixedValue)
+                m_ArraySizeField.SetValueWithoutNotify(viewController.GetItemsMinCount().ToString());
+
+            footer?.SetEnabled(!m_IsOverMultiEditLimit);
+        }
+
+        Label m_ListViewLabel;
+
+        internal void UpdateListViewLabel()
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            var noItemsCount = itemsSource.Count == 0 && !sourceIncludesArraySize;
+
+            if (m_IsOverMultiEditLimit)
+            {
+                m_ListViewLabel ??= new Label();
+                m_ListViewLabel.text = m_MaxMultiEditStr;
+                scrollView.contentViewport.Add(m_ListViewLabel);
+            }
+            else if (noItemsCount)
+            {
+                m_ListViewLabel ??= new Label();
+                m_ListViewLabel.text = k_EmptyListStr;
+                scrollView.contentViewport.Add(m_ListViewLabel);
             }
             else
             {
-                m_EmptyListLabel?.RemoveFromHierarchy();
-                m_EmptyListLabel = null;
+                m_ListViewLabel?.RemoveFromHierarchy();
+                m_ListViewLabel = null;
             }
+
+            m_ListViewLabel?.EnableInClassList(emptyLabelUssClassName, noItemsCount);
+            m_ListViewLabel?.EnableInClassList(overMaxMultiEditLimitClassName, m_IsOverMultiEditLimit);
         }
 
         void OnAddClicked()
         {
             AddItems(1);
+
             if (binding == null)
             {
                 SetSelection(itemsSource.Count - 1);
@@ -335,6 +366,9 @@ namespace UnityEngine.UIElements
                     ScrollToItem(-1);
                 }).ExecuteLater(100);
             }
+
+            if (HasValidDataAndBindings() && m_ArraySizeField != null)
+                m_ArraySizeField.showMixedValue = false;
         }
 
         void OnRemoveClicked()
@@ -349,16 +383,32 @@ namespace UnityEngine.UIElements
                 var index = itemsSource.Count - 1;
                 viewController.RemoveItem(index);
             }
+
+            if (HasValidDataAndBindings() && m_ArraySizeField != null)
+                m_ArraySizeField.showMixedValue = false;
         }
 
         // Foldout Header
         Foldout m_Foldout;
         TextField m_ArraySizeField;
+        internal TextField arraySizeField => m_ArraySizeField;
+
+        bool m_IsOverMultiEditLimit;
+        int m_MaxMultiEditCount;
+
+        internal void SetOverMaxMultiEditLimit(bool isOverLimit, int maxMultiEditCount)
+        {
+            m_IsOverMultiEditLimit = isOverLimit;
+            m_MaxMultiEditCount = maxMultiEditCount;
+            m_MaxMultiEditStr = $"This field cannot display arrays with more than {m_MaxMultiEditCount} elements when multiple objects are selected.";
+        }
 
         // Add/Remove Buttons Footer
         VisualElement m_Footer;
         Button m_AddButton;
         Button m_RemoveButton;
+
+        internal VisualElement footer => m_Footer;
 
         // View Controller callbacks
         Action<IEnumerable<int>> m_ItemAddedCallback;
@@ -428,9 +478,9 @@ namespace UnityEngine.UIElements
         /// This property controls the drag and drop mode for the list view.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>Simple</c>.
+        /// The default value is <c>Simple</c>.
         /// When this property is set to <c>Animated</c>, Unity adds drag handles in front of every item and the drag and
-        /// drop manipulation will push items with an animation as the reordering happens.
+        /// drop manipulation pushes items with an animation when the reordering happens.
         /// Multiple item reordering is only supported with the <c>Simple</c> drag mode.
         /// </remarks>
         public ListViewReorderMode reorderMode
@@ -441,7 +491,7 @@ namespace UnityEngine.UIElements
                 if (value != m_ReorderMode)
                 {
                     m_ReorderMode = value;
-                    InitializeDragAndDropController();
+                    InitializeDragAndDropController(reorderable);
                     reorderModeChanged?.Invoke();
                     Rebuild();
                 }
@@ -482,6 +532,14 @@ namespace UnityEngine.UIElements
         /// this class affects every empty label located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string emptyLabelUssClassName = ussClassName + "__empty-label";
+
+        /// <summary>
+        /// The USS class name for label displayed when ListView is trying to edit too many items.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the label displayed if the ListView is trying to edit too many items at once.
+        /// </remarks>
+        public static readonly string overMaxMultiEditLimitClassName = ussClassName + "__over-max-multi-edit-limit-label";
 
         /// <summary>
         /// The USS class name for reorderable animated ListView elements.
@@ -575,6 +633,9 @@ namespace UnityEngine.UIElements
         internal static readonly string footerAddButtonName = ussClassName + "__add-button";
         internal static readonly string footerRemoveButtonName = ussClassName + "__remove-button";
 
+        string m_MaxMultiEditStr;
+        static readonly string k_EmptyListStr = "List is empty";
+
         /// <summary>
         /// Creates a <see cref="BaseListView"/> with all default properties. The <see cref="BaseVerticalCollectionView.itemsSource"/>
         /// must all be set for the BaseListView to function properly.
@@ -598,7 +659,7 @@ namespace UnityEngine.UIElements
         private protected override void PostRefresh()
         {
             UpdateArraySizeField();
-            UpdateEmpty();
+            UpdateListViewLabel();
             base.PostRefresh();
         }
     }

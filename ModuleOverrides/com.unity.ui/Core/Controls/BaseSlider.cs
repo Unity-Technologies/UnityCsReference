@@ -39,6 +39,24 @@ namespace UnityEngine.UIElements
         private TValueType m_LowValue;
 
         /// <summary>
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseSlider"/>.
+        /// </summary>
+        /// <remarks>
+        /// This class defines the properties of a BaseSlider element that you can
+        /// use in a UXML asset.
+        /// </remarks>
+        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+        }
+
+        /// <summary>
         /// This is the minimum value that the slider encodes.
         /// </summary>
         public TValueType lowValue
@@ -306,6 +324,7 @@ namespace UnityEngine.UIElements
 
             dragContainer = new VisualElement() { name = "unity-drag-container" };
             dragContainer.AddToClassList(dragContainerUssClassName);
+            dragContainer.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
             visualInput.Add(dragContainer);
 
             trackElement = new VisualElement() { name = "unity-tracker", usageHints = UsageHints.DynamicColor };

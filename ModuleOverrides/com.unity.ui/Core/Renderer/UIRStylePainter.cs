@@ -81,7 +81,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
         // The delegates must be stored to avoid allocations
         MeshBuilder.AllocMeshData.Allocator m_AllocRawVertsIndicesDelegate;
         MeshBuilder.AllocMeshData.Allocator m_AllocThroughDrawMeshDelegate;
-        MeshBuilder.AllocMeshData.Allocator m_AllocThroughDrawGradientsDelegate;
 
         MeshWriteData GetPooledMeshWriteData()
         {
@@ -104,11 +103,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return DrawMesh((int)vertexCount, (int)indexCount, allocatorData.texture, allocatorData.material, allocatorData.flags);
         }
 
-        MeshWriteData AllocThroughDrawGradients(uint vertexCount, uint indexCount, ref MeshBuilder.AllocMeshData allocatorData)
-        {
-            return AddGradientsEntry((int)vertexCount, (int)indexCount, allocatorData.svgTexture, allocatorData.material, allocatorData.flags);
-        }
-
         public UIRStylePainter(RenderChain renderChain)
         {
             m_Owner = renderChain;
@@ -117,7 +111,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_VectorImageManager = renderChain.vectorImageManager;
             m_AllocRawVertsIndicesDelegate = AllocRawVertsIndices;
             m_AllocThroughDrawMeshDelegate = AllocThroughDrawMesh;
-            m_AllocThroughDrawGradientsDelegate = AllocThroughDrawGradients;
             int meshWriteDataPoolStartingSize = 32;
             m_MeshWriteDataPool = new List<MeshWriteData>(meshWriteDataPoolStartingSize);
             for (int i = 0; i < meshWriteDataPoolStartingSize; i++)
@@ -286,6 +279,124 @@ namespace UnityEngine.UIElements.UIR.Implementation
             return mwd;
         }
 
+        internal void TryAtlasTexture(Texture texture, MeshGenerationContext.MeshFlags flags, out Rect outUVRegion, out bool outIsAtlas, out TextureId outTextureId, out VertexFlags outAddFlags)
+        {
+            outUVRegion = new Rect(0, 0, 1, 1);
+            outIsAtlas = false;
+            outTextureId = new TextureId();
+            outAddFlags = VertexFlags.IsSolid;
+            if (texture == null)
+                return;
+            if ((flags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) == MeshGenerationContext.MeshFlags.SkipDynamicAtlas)
+                return;
+            // Attempt to override with an atlas.
+            if (m_Atlas != null && m_Atlas.TryGetAtlas(currentElement, texture as Texture2D, out TextureId atlas, out RectInt atlasRect))
+            {
+                outAddFlags = VertexFlags.IsDynamic;
+                outUVRegion = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
+                outIsAtlas = true;
+                outTextureId = atlas;
+            }
+            else
+            {
+                outAddFlags = VertexFlags.IsTextured;
+                outTextureId = TextureRegistry.instance.Acquire(texture);
+            }
+        }
+
+        internal void BuildEntryFromNativeMesh(MeshWriteDataInterface meshData, Texture texture, TextureId textureId, bool isAtlas, Material material, MeshGenerationContext.MeshFlags flags, Rect uvRegion, VertexFlags addFlags)
+        {
+            if (meshData.vertexCount == 0 || meshData.indexCount == 0)
+                return;
+            NativeSlice<Vertex> vertices;
+            NativeSlice<UInt16> indices;
+            unsafe
+            {
+                vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+            }
+            if (vertices.Length == 0 || indices.Length == 0)
+                return;
+            m_CurrentEntry = new Entry()
+            {
+                vertices = m_VertsPool.Alloc(vertices.Length),
+                indices = m_IndicesPool.Alloc(indices.Length),
+                material = material,
+                uvIsDisplacement = (flags & MeshGenerationContext.MeshFlags.UVisDisplacement) == MeshGenerationContext.MeshFlags.UVisDisplacement,
+                clipRectID = m_ClipRectID,
+                stencilRef = m_StencilRef,
+                maskDepth = m_MaskDepth,
+                addFlags = VertexFlags.IsSolid
+            };
+            if (textureId.index >= 0)
+            {
+                m_CurrentEntry.addFlags = addFlags;
+                m_CurrentEntry.texture = textureId;
+                m_Owner.AppendTexture(currentElement, texture, textureId, isAtlas);
+            }
+            Debug.Assert(m_CurrentEntry.vertices.Length == vertices.Length);
+            Debug.Assert(m_CurrentEntry.indices.Length == indices.Length);
+            m_CurrentEntry.vertices.CopyFrom(vertices);
+            m_CurrentEntry.indices.CopyFrom(indices);
+            m_Entries.Add(m_CurrentEntry);
+            totalVertices += m_CurrentEntry.vertices.Length;
+            totalIndices += m_CurrentEntry.indices.Length;
+            m_CurrentEntry = new Entry();
+        }
+
+        internal void BuildGradientEntryFromNativeMesh(MeshWriteDataInterface meshData, TextureId svgTextureId)
+        {
+            if (meshData.vertexCount == 0 || meshData.indexCount == 0)
+                return;
+            NativeSlice<Vertex> vertices;
+            NativeSlice<UInt16> indices;
+            unsafe
+            {
+                vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+            }
+            if (vertices.Length == 0 || indices.Length == 0)
+                return;
+            m_CurrentEntry = new Entry()
+            {
+                vertices = m_VertsPool.Alloc(vertices.Length),
+                indices = m_IndicesPool.Alloc(indices.Length),
+                texture = svgTextureId,
+                clipRectID = m_ClipRectID,
+                stencilRef = m_StencilRef,
+                maskDepth = m_MaskDepth,
+                addFlags = VertexFlags.IsSvgGradients
+            };
+            Debug.Assert(m_CurrentEntry.vertices.Length == vertices.Length);
+            Debug.Assert(m_CurrentEntry.indices.Length == indices.Length);
+            m_CurrentEntry.vertices.CopyFrom(vertices);
+            m_CurrentEntry.indices.CopyFrom(indices);
+            m_Entries.Add(m_CurrentEntry);
+            totalVertices += m_CurrentEntry.vertices.Length;
+            totalIndices += m_CurrentEntry.indices.Length;
+            m_CurrentEntry = new Entry();
+        }
+
+        public void BuildRawEntryFromNativeMesh(MeshWriteDataInterface meshData)
+        {
+            if (meshData.vertexCount == 0 || meshData.indexCount == 0)
+                return;
+            NativeSlice<Vertex> vertices;
+            NativeSlice<UInt16> indices;
+            unsafe
+            {
+                vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+            }
+            if (vertices.Length == 0 || indices.Length == 0)
+                return;
+            m_CurrentEntry.vertices = m_VertsPool.Alloc((int)meshData.vertexCount);
+            m_CurrentEntry.indices = m_IndicesPool.Alloc((int)meshData.indexCount);
+            m_CurrentEntry.vertices.CopyFrom(vertices);
+
+            m_CurrentEntry.indices.CopyFrom(indices);
+        }
+
         public void DrawText(TextElement te)
         {
             if (!TextUtilities.IsFontAssigned(te))
@@ -382,22 +493,26 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (currentElement.panel.contextType == ContextType.Editor)
                 rectParams.color *= rectParams.playmodeTintColor;
 
-            var meshAlloc = new MeshBuilder.AllocMeshData()
-            {
-                alloc = m_AllocThroughDrawMeshDelegate,
-                texture = rectParams.texture,
-                material = rectParams.material,
-                flags = rectParams.meshFlags
-            };
-
             if (rectParams.vectorImage != null)
                 DrawVectorImage(rectParams);
             else if (rectParams.sprite != null)
                 DrawSprite(rectParams);
-            else if (rectParams.texture != null)
-                MeshBuilder.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc, rectParams.colorPage);
             else
-                MeshBuilder.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ, meshAlloc);
+            {
+                Rect uvRegion;
+                bool isAtlas;
+                TextureId textureId;
+                VertexFlags addFlags;
+                TryAtlasTexture(rectParams.texture, rectParams.meshFlags, out uvRegion, out isAtlas, out textureId, out addFlags);
+
+                MeshWriteDataInterface meshData;
+                if (rectParams.texture != null)
+                    meshData = MeshBuilderNative.MakeTexturedRect(rectParams.ToNativeParams(uvRegion), UIRUtility.k_MeshPosZ);
+                else
+                    meshData = MeshBuilderNative.MakeSolidRect(rectParams.ToNativeParams(uvRegion), UIRUtility.k_MeshPosZ);
+
+                BuildEntryFromNativeMesh(meshData, rectParams.texture, textureId, isAtlas, rectParams.material, rectParams.meshFlags, uvRegion, addFlags);
+            }
         }
 
         public void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams)
@@ -410,12 +525,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 borderParams.bottomColor *= borderParams.playmodeTintColor;
             }
 
-            MeshBuilder.MakeBorder(borderParams, UIRUtility.k_MeshPosZ, new MeshBuilder.AllocMeshData()
-            {
-                alloc = m_AllocThroughDrawMeshDelegate,
-                material = borderParams.material,
-                texture = null
-            });
+            var meshData = MeshBuilderNative.MakeBorder(borderParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
+            BuildEntryFromNativeMesh(meshData, null, new TextureId(), false, null, MeshGenerationContext.MeshFlags.None, new Rect(0,0,1,1), VertexFlags.IsSolid);
         }
 
         public void DrawImmediate(Action callback, bool cullingEnabled)
@@ -543,7 +654,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         background.sprite,
                         ScaleMode.StretchToFill,
                         currentElement.panel.contextType,
-                        radiusParams.HasRadius(Tessellation.kEpsilon),
+                        radiusParams.HasRadius(MeshBuilderNative.kEpsilon),
                         ref slices,
                         true);
 
@@ -1214,22 +1325,17 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             int settingIndexOffset = 0;
 
-            MeshBuilder.AllocMeshData meshAlloc = new MeshBuilder.AllocMeshData();
-            if (vi.atlas != null && m_VectorImageManager != null)
+            TextureId svgTexture = new TextureId();
+            bool isUsingGradients = (vi.atlas != null && m_VectorImageManager != null);
+            if (isUsingGradients)
             {
-                RegisterVectorImageGradient(vi, out settingIndexOffset, out meshAlloc.svgTexture);
-                meshAlloc.alloc = m_AllocThroughDrawGradientsDelegate;
-            }
-            else
-            {
-                // The vector image is solid (no textures/gradients)
-                meshAlloc.alloc = m_AllocThroughDrawMeshDelegate;
+                RegisterVectorImageGradient(vi, out settingIndexOffset, out svgTexture);
             }
 
             int entryCountBeforeSVG = m_Entries.Count;
             int finalVertexCount;
             int finalIndexCount;
-            MeshBuilder.MakeVectorGraphics(rectParams, settingIndexOffset, meshAlloc, out finalVertexCount, out finalIndexCount);
+            MakeVectorGraphics(rectParams, isUsingGradients, svgTexture, settingIndexOffset, out finalVertexCount, out finalIndexCount);
 
             Debug.Assert(entryCountBeforeSVG <= m_Entries.Count + 1);
             if (entryCountBeforeSVG != m_Entries.Count)
@@ -1243,6 +1349,46 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     m_Entries[m_SVGBackgroundEntryIndex] = svgEntry;
                 }
             }
+        }
+
+        void MakeVectorGraphics(MeshGenerationContextUtils.RectangleParams rectParams, bool isUsingGradients, TextureId svgTexture, int settingIndexOffset, out int finalVertexCount, out int finalIndexCount)
+        {
+            var vi = rectParams.vectorImage;
+            Debug.Assert(vi != null);
+            finalVertexCount = 0;
+            finalIndexCount = 0;
+            // Convert the VectorImage's serializable vertices to Vertex instances
+            int vertexCount = vi.vertices.Length;
+            var vertices = new Vertex[vertexCount];
+            for (int i = 0; i < vertexCount; ++i)
+            {
+                var v = vi.vertices[i];
+                vertices[i] = new Vertex() {
+                    position = v.position,
+                    tint = v.tint,
+                    uv = v.uv,
+                    opacityColorPages = new Color32(0, 0, (byte)(v.settingIndex >> 8), (byte)v.settingIndex),
+                    flags = v.flags,
+                    circle = v.circle
+                };
+            }
+            MeshWriteDataInterface meshData;
+            if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                rectParams.bottomSlice <= UIRUtility.k_Epsilon)
+            {
+                meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, settingIndexOffset, ref finalVertexCount, ref finalIndexCount);
+            }
+            else
+            {
+                var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
+                meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, settingIndexOffset);
+            }
+            if (isUsingGradients)
+                BuildGradientEntryFromNativeMesh(meshData, svgTexture);
+            else
+                BuildEntryFromNativeMesh(meshData, null, new TextureId(), false, null, MeshGenerationContext.MeshFlags.None, new Rect(0, 0, 1, 1), VertexFlags.IsSolid);
         }
 
         internal void Reset()
@@ -1327,9 +1473,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_CurrentEntry.maskDepth = m_MaskDepth;
             m_CurrentEntry.isClipRegisterEntry = true;
 
-            MeshBuilder.MakeSolidRect(rp, UIRUtility.k_MaskPosZ, new MeshBuilder.AllocMeshData() { alloc = m_AllocRawVertsIndicesDelegate });
-            if (m_CurrentEntry.vertices.Length > 0 && m_CurrentEntry.indices.Length > 0)
+            var nativeParams = rp.ToNativeParams(new Rect(0,0,1,1));
+
+            var meshData = MeshBuilderNative.MakeSolidRect(nativeParams, UIRUtility.k_MaskPosZ);
+            if (meshData.vertexCount > 0 && meshData.indexCount > 0)
             {
+                BuildRawEntryFromNativeMesh(meshData);
                 m_Entries.Add(m_CurrentEntry);
                 totalVertices += m_CurrentEntry.vertices.Length;
                 totalIndices += m_CurrentEntry.indices.Length;

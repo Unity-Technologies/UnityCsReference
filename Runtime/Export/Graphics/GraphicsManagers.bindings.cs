@@ -14,6 +14,20 @@ using System.Linq;
 
 namespace UnityEngine
 {
+    [Flags]
+    public enum TerrainQualityOverrides
+    {
+        None = 0,
+        PixelError = 1,
+        BasemapDistance = 2,
+        DetailDensity = 4,
+        DetailDistance = 8,
+        TreeDistance = 16,
+        BillboardStart = 32,
+        FadeLength = 64,
+        MaxTrees = 128
+    }
+
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
     [NativeHeader("Runtime/Graphics/QualitySettingsTypes.h")]
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
@@ -113,6 +127,16 @@ namespace UnityEngine
         extern public static bool  billboardsFaceCameraPosition     { get; set; }
         extern public static bool  useLegacyDetailDistribution      { get; set; }
         extern public static float resolutionScalingFixedDPIFactor  { get; set; }
+
+        extern public static TerrainQualityOverrides terrainQualityOverrides { get; set; }
+        extern public static float terrainPixelError { get; set; }
+        extern public static float terrainDetailDensityScale { get; set; }
+        extern public static float terrainBasemapDistance { get; set; }
+        extern public static float terrainDetailDistance { get; set; }
+        extern public static float terrainTreeDistance { get; set; }
+        extern public static float terrainBillboardStart { get; set; }
+        extern public static float terrainFadeLength { get; set; }
+        extern public static float terrainMaxTrees { get; set; }
 
         [NativeName("RenderPipeline")] extern private static ScriptableObject INTERNAL_renderPipeline { get; set; }
         public static RenderPipelineAsset renderPipeline

@@ -13,11 +13,13 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [StaticAccessor("Editor::Progress", StaticAccessorType.DoubleColon)]
-    [NativeHeader("Editor/Src/Progress.h")]
+    [NativeHeader(k_NativeHeader)]
     public static partial class Progress
     {
+        const string k_NativeHeader = "Editor/Src/AsyncProgress/Progress.h";
+
         // Keep in sync with Editor\src\Progress.h
-        [NativeType(Header = "Editor/Src/Progress.h")]
+        [NativeType(Header = k_NativeHeader)]
         public enum Status
         {
             Running,
@@ -27,7 +29,7 @@ namespace UnityEditor
             Paused
         }
 
-        [Flags, NativeType(Header = "Editor/Src/Progress.h")]
+        [Flags, NativeType(Header = k_NativeHeader)]
         public enum Options
         {
             None = 0 << 0,
@@ -38,7 +40,7 @@ namespace UnityEditor
             Unmanaged = 1 << 4
         }
 
-        [NativeType(Header = "Editor/Src/Progress.h")]
+        [NativeType(Header = k_NativeHeader)]
         public enum TimeDisplayMode
         {
             NoTimeShown,
@@ -46,7 +48,7 @@ namespace UnityEditor
             ShowRemainingTime
         }
 
-        [NativeType(Header = "Editor/Src/Progress.h")]
+        [NativeType(Header = k_NativeHeader)]
         public enum Priority
         {
             Unresponsive = 0,
@@ -56,7 +58,7 @@ namespace UnityEditor
             High = 10
         }
 
-        [Flags, NativeType(Header = "Editor/Src/Progress.h")]
+        [Flags, NativeType(Header = k_NativeHeader)]
         internal enum Updates : uint
         {
             NothingChanged = 0,
@@ -78,7 +80,7 @@ namespace UnityEditor
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        [NativeHeader("Editor/Src/Progress.h")]
+        [NativeHeader(k_NativeHeader)]
         [RequiredByNativeCode(GenerateProxy = true)]
         internal struct ProgressIdAndUpdates
         {

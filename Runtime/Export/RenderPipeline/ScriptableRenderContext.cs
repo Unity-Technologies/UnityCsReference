@@ -125,17 +125,16 @@ namespace UnityEngine.Rendering
             GetCameras_Internal(typeof(Camera), results);
         }
 
-        //TODO(ddebaets) temporary disable the obsoletion of the DrawX functions untill SRP2Core is done.
-        //const bool deprecateDrawXmethods = false;
+        const bool deprecateDrawXmethods = false;
 
-        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
+        [Obsolete("DrawRenderers is obsolete and replaced with the RendererList API: construct a RendererList using ScriptableRenderContext.CreateRendererList and execture it using CommandBuffer.DrawRendererList.", deprecateDrawXmethods)]
         public void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings)
         {
             Validate();
             cullingResults.Validate();
             DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, ShaderTagId.none, false, IntPtr.Zero, IntPtr.Zero, 0);
         }
-        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
+        [Obsolete("DrawRenderers is obsolete and replaced with the RendererList API: construct a RendererList using ScriptableRenderContext.CreateRendererList and execture it using CommandBuffer.DrawRendererList.", deprecateDrawXmethods)]
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ref RenderStateBlock stateBlock)
         {
             Validate();
@@ -146,7 +145,7 @@ namespace UnityEngine.Rendering
                 DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, ShaderTagId.none, false, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
             }
         }
-        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
+        [Obsolete("DrawRenderers is obsolete and replaced with the RendererList API: construct a RendererList using ScriptableRenderContext.CreateRendererList and execture it using CommandBuffer.DrawRendererList.", deprecateDrawXmethods)]
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, NativeArray<ShaderTagId> renderTypes, NativeArray<RenderStateBlock> stateBlocks)
         {
             Validate();
@@ -155,7 +154,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException($"Arrays {nameof(renderTypes)} and {nameof(stateBlocks)} should have same length, but {nameof(renderTypes)} had length {renderTypes.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
             DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, kRenderTypeTag, false, (IntPtr)renderTypes.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), renderTypes.Length);
         }
-        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
+        [Obsolete("DrawRenderers is obsolete and replaced with the RendererList API: construct a RendererList using ScriptableRenderContext.CreateRendererList and execture it using CommandBuffer.DrawRendererList.", deprecateDrawXmethods)]
         public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ShaderTagId tagName, bool isPassTagName, NativeArray<ShaderTagId> tagValues, NativeArray<RenderStateBlock> stateBlocks)
         {
             Validate();
@@ -164,7 +163,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException($"Arrays {nameof(tagValues)} and {nameof(stateBlocks)} should have same length, but {nameof(tagValues)} had length {tagValues.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
             DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, tagName, isPassTagName, (IntPtr)tagValues.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), tagValues.Length);
         }
-        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
+        [Obsolete("DrawShadows is obsolete and replaced with the RendererList API: construct a RendererList using ScriptableRenderContext.CreateShadowRendererList and execture it using CommandBuffer.DrawRendererList.", deprecateDrawXmethods)]
         public unsafe void DrawShadows(ref ShadowDrawingSettings settings)
         {
             Validate();
@@ -240,7 +239,7 @@ namespace UnityEngine.Rendering
             Validate();
             StopMultiEye_Internal(camera);
         }
-        //[Obsolete("DrawRenderers is obsolete and replaced with the RendererList API.", deprecateDrawXmethods)]
+        [Obsolete("DrawSkybox is obsolete and replaced with the RendererList API: construct a RendererList using ScriptableRenderContext.CreateSkyboxRendererList and execture it using CommandBuffer.DrawRendererList.", deprecateDrawXmethods)]
         public void DrawSkybox(Camera camera)
         {
             Validate();

@@ -294,7 +294,7 @@ namespace UnityEditor
             // * But once you build to Android/iOS/tvOS or any platform which uses IPlatformIconProvider, it will initialize m_BuildTargetPlatformIcons
             // * Causing ProjectSettings.asset to change after you clicked build
             // * This is bad for incremental builds, at least for the 2nd/sequential build, it will see that ProjectSettings.asset has changed and will start rebuilding resources
-            foreach (var kind in GetSupportedIconKindsForPlatform(buildTarget.ToBuildTargetGroup()))
+            foreach (var kind in GetSupportedIconKinds(buildTarget))
             {
                 GetPlatformIcons(buildTarget, kind);
             }
@@ -325,9 +325,7 @@ namespace UnityEditor
             return icons;
         }
 
-        // TODO: Mark this as obsolete when deprecating BuildTargetGroup parameters in public APIs
-        // [Obsolete("Use GetPlatformIcons(NamedBuildTarget , PlatformIconKind) instead")]
-
+        [Obsolete("Use GetPlatformIcons(NamedBuildTarget , PlatformIconKind) instead")]
         public static PlatformIcon[] GetPlatformIcons(BuildTargetGroup platform, PlatformIconKind kind) =>
             GetPlatformIcons(NamedBuildTarget.FromBuildTargetGroup(platform), kind);
 
@@ -358,6 +356,7 @@ namespace UnityEditor
             return icons;
         }
 
+        [Obsolete("Use SetPlatformIcons(NamedBuildTarget , PlatformIconKind) instead")]
         public static void SetPlatformIcons(BuildTargetGroup platform, PlatformIconKind kind, PlatformIcon[] icons) =>
             SetPlatformIcons(NamedBuildTarget.FromBuildTargetGroup(platform), kind, icons);
 
@@ -391,7 +390,7 @@ namespace UnityEditor
             SetPlatformIconsInternal(buildTarget.TargetName, iconStructs, kind.kind);
         }
 
-        // [Obsolete("Use GetSupportedIconKinds(NamedBuildTarget) instead")]
+        [Obsolete("Use GetSupportedIconKinds(NamedBuildTarget) instead")]
         public static PlatformIconKind[] GetSupportedIconKindsForPlatform(BuildTargetGroup platform) =>
             GetSupportedIconKinds(NamedBuildTarget.FromBuildTargetGroup(platform));
 
@@ -462,7 +461,7 @@ namespace UnityEditor
 
         // Old API methods, will be made obsolete when the new API is implemented for all platforms,
         // currently it functions as a wrapper for the new API for all platforms that support it (iOS, Android & tvOS).
-        // [Obsolete("Use SetIcons(NamedBuildTarget, Texture2D[], IconKind) instead")]
+        [Obsolete("Use SetIcons(NamedBuildTarget, Texture2D[], IconKind) instead")]
         public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons, IconKind kind) =>
             SetIcons(NamedBuildTarget.FromBuildTargetGroup(platform), icons, kind);
 
@@ -490,13 +489,13 @@ namespace UnityEditor
                 SetIconsForPlatform(buildTarget.TargetName, icons, kind);
         }
 
-        // [Obsolete("Use SetIcons(NamedBuildTarget, Texture2D[], IconKind) instead")]
+        [Obsolete("Use SetIcons(NamedBuildTarget, Texture2D[], IconKind) instead")]
         // Assign a list of icons for the specified platform.
         public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons) =>
             SetIcons(NamedBuildTarget.FromBuildTargetGroup(platform), icons, IconKind.Any);
 
         // Returns the list of assigned icons for the specified platform of a specific kind.
-        // [Obsolete("Use GetIcons(NamedBuildTarget, IconKind) instead")]
+        [Obsolete("Use GetIcons(NamedBuildTarget, IconKind) instead")]
         public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform, IconKind kind) =>
             GetIcons(NamedBuildTarget.FromBuildTargetGroup(platform), kind);
 
@@ -554,12 +553,12 @@ namespace UnityEditor
         }
 
         // Returns the list of assigned icons for the specified platform.
-        // [Obsolete("Use GetIcons(NamedBuildTarget, IconKind) instead")]
+        [Obsolete("Use GetIcons(NamedBuildTarget, IconKind) instead")]
         public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform) =>
             GetIcons(NamedBuildTarget.FromBuildTargetGroup(platform), IconKind.Any);
 
         // Returns a list of icon sizes for the specified platform of a specific kind.
-        // [Obsolete("Use GetIconSizes(NamedBuildTarget, IconKind) instead")]
+        [Obsolete("Use GetIconSizes(NamedBuildTarget, IconKind) instead")]
         public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform, IconKind kind) =>
             GetIconSizes(NamedBuildTarget.FromBuildTargetGroup(platform), kind);
 
@@ -583,7 +582,7 @@ namespace UnityEditor
         }
 
         // Returns a list of icon sizes for the specified platform.
-        // [Obsolete("Use GetIconSizes(NamedBuildTarget) instead")]
+        [Obsolete("Use GetIconSizes(NamedBuildTarget) instead")]
         public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform) =>
             GetIconSizes(NamedBuildTarget.FromBuildTargetGroup(platform), IconKind.Any);
     }

@@ -495,7 +495,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.FontSize, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
         }

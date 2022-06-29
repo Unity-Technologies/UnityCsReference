@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngine.Bindings;
 using System.Reflection;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -43,6 +44,7 @@ namespace UnityEditor
         DebugWarning = kScriptingWarning | FromEditor,
         DebugError = kScriptingError | FromEditor,
         DebugException = kScriptingException | FromEditor,
+        DebugAssert = kScriptingAssertion | FromEditor
     }
 
     internal static class LogMessageFlagsExtensions
@@ -82,33 +84,14 @@ namespace UnityEditor
 
     [NativeHeader("Editor/Src/EditorMonoConsole.h")]
     [StructLayout(LayoutKind.Sequential)]
-    internal readonly struct LogEntryUTF8StringView
-    {
-        public readonly IntPtr utf8Ptr;
-        public readonly int utf8Length;
-
-        public LogEntryUTF8StringView(IntPtr ptr, int lengthUtf8)
-        {
-            utf8Ptr = ptr;
-            utf8Length = lengthUtf8;
-        }
-
-        public unsafe LogEntryUTF8StringView(byte* ptr, int lengthUtf8)
-        {
-            utf8Ptr = new IntPtr(ptr);
-            utf8Length = lengthUtf8;
-        }
-    }
-
-    [NativeHeader("Editor/Src/EditorMonoConsole.h")]
-    [StructLayout(LayoutKind.Sequential)]
     internal struct LogEntryStruct
     {
-        public LogEntryUTF8StringView message;
-        public LogEntryUTF8StringView callstack;
-        public LogEntryUTF8StringView timestamp;
+        public UTF8StringView messagePrefix;
+        public UTF8StringView message;
+        public UTF8StringView callstack;
+        public UTF8StringView timestamp;
 
-        public LogEntryUTF8StringView file;
+        public UTF8StringView file;
         public int line;
         public int column;
 

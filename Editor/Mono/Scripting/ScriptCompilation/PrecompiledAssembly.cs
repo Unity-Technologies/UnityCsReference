@@ -31,6 +31,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public abstract PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, string[] extraScriptingDefines = null);
         public abstract Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, string[] extraScriptingDefines);
         public abstract PrecompiledAssembly[] GetUnityAssemblies(bool isEditor, BuildTarget buildTarget);
+        public abstract PrecompiledAssembly[] GetAllPrecompiledAssemblies();
         public abstract PrecompiledAssembly[] CachedEditorPrecompiledAssemblies { get; }
         public abstract PrecompiledAssembly[] CachedUnityAssemblies { get; }
         public abstract void Dirty();
@@ -46,11 +47,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetPrecompiledAssembliesNative(compilationOptions, buildTargetGroup, target, extraScriptingDefines);
         }
 
+        protected virtual PrecompiledAssembly[] GetAllPrecompiledAssembliesInternal()
+        {
+            return GetAllPrecompiledAssembliesNative();
+        }
+
         [FreeFunction("GetPrecompiledAssembliesManaged")]
         protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines);
 
         [FreeFunction("GetUnityAssembliesManaged")]
         protected static extern PrecompiledAssembly[] GetUnityAssembliesNative(bool buildingForEditor, BuildTarget target);
+
+        [FreeFunction("GetAllPrecompiledAssembliesManaged")]
+        protected static extern PrecompiledAssembly[] GetAllPrecompiledAssembliesNative();
     }
 
     [NativeHeader("Editor/Src/ScriptCompilation/RoslynAnalyzers.bindings.h")]
@@ -94,6 +103,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         .SelectMany(x => x).ToArray();
 
         private Dictionary<string, PrecompiledAssembly> m_EditorPrecompiledAssemblies;
+        private PrecompiledAssembly[] m_AllPrecompiledAssemblies;
         public override PrecompiledAssembly[] CachedEditorPrecompiledAssemblies => m_EditorPrecompiledAssemblies?.Values.ToArray();
 
         public override PrecompiledAssembly[] GetUnityAssemblies(bool isEditor, BuildTarget buildTarget)
@@ -117,6 +127,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public override PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, string[] extraScriptingDefines)
         {
             return GetPrecompiledAssembliesDictionary(compilationOptions, buildTargetGroup, buildTarget, extraScriptingDefines).Values.ToArray();
+        }
+
+        public override PrecompiledAssembly[] GetAllPrecompiledAssemblies()
+        {
+            if (m_AllPrecompiledAssemblies != null)
+                return m_AllPrecompiledAssemblies;
+
+            m_AllPrecompiledAssemblies = GetAllPrecompiledAssembliesInternal();
+            return m_AllPrecompiledAssemblies;
         }
 
         public override string[] GetRoslynAnalyzerPaths()
@@ -153,6 +172,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             m_EditorPrecompiledAssemblies = null;
             m_UnityAssemblies = null;
+            m_AllPrecompiledAssemblies = null;
         }
 
         private static Dictionary<string, PrecompiledAssembly> FilenameToPrecompiledAssembly(PrecompiledAssembly[] precompiledAssemblies)

@@ -85,21 +85,24 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public static string GetRuntimePlatformFromIDString(string id)
         {
-            var s = id.Contains(',') ? id.Substring(0, id.IndexOf(',')) : "";
+            var commaIndx = id.IndexOf(',');
+            if (commaIndx == -1)
+                return "";
 
+            var s = id.Substring(0, commaIndx);
             return RuntimePlatform.TryParse(s, out RuntimePlatform result) ? result.ToString() : "";
         }
 
         public static string GetPlayerNameFromIDString(string id)
         {
-            return id.Contains(',') ? id.Substring(id.IndexOf(',') + 1) : id;
+            var commaIndx = id.IndexOf(',');
+            return commaIndx != -1 ? id.Substring(commaIndx + 1) : id;
         }
 
         public static string GetPlayerType(string connectionName)
         {
-            return connectionName.Contains('(')
-                ? connectionName.Substring(0, connectionName.IndexOf('('))
-                : connectionName;
+            var parenthesisIndx = connectionName.IndexOf('(');
+            return parenthesisIndx != -1 ? connectionName.Substring(0, parenthesisIndx) : connectionName;
         }
 
         public static string GetProjectNameFromConnectionIdentifier(int connectionId)

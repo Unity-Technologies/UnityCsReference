@@ -59,7 +59,7 @@ namespace UnityEditor.ShaderFoundry
             return ShaderAttributeParamInternal.ValueEquals(container, handle, other.container, other.handle);
         }
 
-        public struct Builder
+        public class Builder
         {
             ShaderContainer container;
             internal string m_Name;
@@ -144,21 +144,8 @@ namespace UnityEditor.ShaderFoundry
             this.attr = container?.GetShaderAttribute(handle) ?? ShaderAttributeInternal.Invalid();
         }
 
-        public struct Builder
+        public class Builder
         {
-            // TODO : hmm..  this is a little weird because the struct is by-value, but it contains a list that is by-reference
-            // so...  it may not work the way you think if you copy Builders..
-
-            //   Builder A = new Builder().Param("ParamA");
-            //   A.Param("ParamA");
-            //
-            //   Builder B = A;
-            //   B.Param("ParamB");
-            //
-            //   A.Param("ParamA2");
-            //
-            // Now Both A and B have all three parameters... :P
-
             ShaderContainer container;
             internal string name;
             internal List<ShaderAttributeParam> parameters;

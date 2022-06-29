@@ -113,7 +113,6 @@ namespace UnityEditor.ShortcutManagement
             }
 
             bool tagMatch = false;
-
             foreach (var entry in outputShortcuts)
                 tagMatch |= contextManager.HasTag(entry.tag);
 
@@ -138,6 +137,20 @@ namespace UnityEditor.ShortcutManagement
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts)
         {
             FindShortcutEntries(combinationSequence, (Type[])null, null, outputShortcuts);
+        }
+
+        public void FindPotentialShortcutEntries(IContextManager contextManager, List<ShortcutEntry> outputShortcuts)
+        {
+            outputShortcuts.Clear();
+            List<ShortcutEntry> entries = new List<ShortcutEntry>();
+            GetAllShortcuts(entries);
+
+            if (entries == null) return;
+
+            foreach (var entry in entries)
+                if (ShortcutEntrySatisfiesContextManager(contextManager, entry)
+                    && (string.IsNullOrWhiteSpace(entry.tag) || contextManager.HasTag(entry.tag)))
+                    outputShortcuts.Add(entry);
         }
 
         public ShortcutEntry FindShortcutEntry(Identifier identifier)

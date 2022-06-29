@@ -352,6 +352,9 @@ namespace UnityEditor
 
             set
             {
+                if (value == null && !IsBoxedValueNullable())
+                    throw new ArgumentException("Argument to boxedValue cannot be null");
+
                 try
                 {
                     // Note: typecast from System.Object enforces strict match between the boxed type and cast type.
@@ -427,6 +430,12 @@ namespace UnityEditor
             }
         }
 
+
+        private bool IsBoxedValueNullable()
+        {
+            return propertyType == SerializedPropertyType.ManagedReference || propertyType == SerializedPropertyType.ObjectReference
+                || propertyType == SerializedPropertyType.ExposedReference;
+        }
 
         extern private bool EndOfData();
         extern private void SyncSerializedObjectVersion();

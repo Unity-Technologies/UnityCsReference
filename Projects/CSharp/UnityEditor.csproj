@@ -3193,9 +3193,6 @@
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\PotentiallyUpdatableErrorMessages.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\SystemProcessRunnableProgramDuplicate.cs">
-      <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\SystemProcessRunnableProgramDuplicate.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriver.cs">
       <Link>Editor\Mono\Scripting\ScriptCompilation\BeeDriver\UnityBeeDriver.cs</Link>
     </Compile>
@@ -6811,6 +6808,9 @@
     <Compile Include="..\..\Modules\Progress\VisualProgressItem.cs">
       <Link>Modules\Progress\VisualProgressItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PropertiesEditor\Module\PropertiesEditorModule.cs">
+      <Link>Modules\PropertiesEditor\Module\PropertiesEditorModule.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\FuzzySearch.cs">
       <Link>Modules\QuickSearch\Editor\FuzzySearch.cs</Link>
     </Compile>
@@ -7591,6 +7591,9 @@
     <Compile Include="..\..\Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs">
       <Link>Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShortcutManagerEditor\HelperWindow.cs">
+      <Link>Modules\ShortcutManagerEditor\HelperWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\IConflictResolver.cs">
       <Link>Modules\ShortcutManagerEditor\IConflictResolver.cs</Link>
     </Compile>
@@ -8326,7 +8329,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler_20ac/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler_b9dd/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />

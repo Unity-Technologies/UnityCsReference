@@ -2873,7 +2873,7 @@ namespace UnityEditor
                     PrefabUtility.GetPrefabInstanceStatus(s_previousDraggedUponRenderer) == PrefabInstanceStatus.Connected)
                 {
                     var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
-                    PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction);
+                    PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction, false);
                     hasRevert = true;
 
                     if (!hasRevert)

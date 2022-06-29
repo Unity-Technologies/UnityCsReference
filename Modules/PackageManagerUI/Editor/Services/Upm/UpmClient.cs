@@ -526,13 +526,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 || packageInfo.registry?.isDefault != true
                 || string.IsNullOrEmpty(packageInfo.registry?.url)
                 || !packageInfo.versions.all.Any()
-#pragma warning disable 618
-                // Ideally we should be using `packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore` here
-                // because `packageInfo.isAssetStorePackage` is marked as Obsolete. However there's currently a serialization issue (PAK-3869) with
-                // packageInfo.entitlements that sometimes licensingModel is set to None when it should be EntitlementLicensingModel.AssetStore
-                // As a result, we will use the deprecated packageInfo.isAssetStorePackage until the PAK-3869 is fixed.
-                || packageInfo.isAssetStorePackage)
-#pragma warning restore 0618
+                || packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
                 return false;
 
             if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))

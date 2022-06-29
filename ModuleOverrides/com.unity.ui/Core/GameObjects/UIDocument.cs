@@ -578,6 +578,16 @@ namespace UnityEngine.UIElements
             SetupRootClassList();
         }
 
+
+
+        private void OnGUI()
+        {
+            if (m_PanelSettings != null)
+            {
+                m_PanelSettings.UpdateScreenDPI();
+            }
+        }
+
         private void SetupVisualTreeAssetTracker()
         {
             if (m_RootVisualElement == null)

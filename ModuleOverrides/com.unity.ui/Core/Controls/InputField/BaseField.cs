@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         private const int kIndentPerLevel = 15;
 
-        protected static readonly string mixedValueString = "\u2014";
+        protected internal static readonly string mixedValueString = "\u2014";
         protected internal static readonly PropertyName serializedPropertyCopyName = "SerializedPropertyCopyName";
 
         static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");

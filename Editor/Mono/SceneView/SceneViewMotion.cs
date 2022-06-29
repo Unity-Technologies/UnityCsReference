@@ -103,8 +103,16 @@ namespace UnityEditor
         [ClutchShortcut("Scene View/Temporary FPS Tool", typeof(Context3D), KeyCode.Mouse1)]
         static void TemporaryFPS(ShortcutArguments args)
         {
-            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.FPS);
-            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
+            if (args.stage == ShortcutStage.Begin)
+            {
+                TemporaryTool(ViewTool.FPS);
+                s_CameraFlyModeContext.active = true;
+            }
+            else
+            {
+                HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
+                s_CameraFlyModeContext.active = false;
+            }
         }
 
         static KeyCode shortcutKey;

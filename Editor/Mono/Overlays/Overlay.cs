@@ -615,7 +615,11 @@ namespace UnityEditor.Overlays
 
         public void Close() => canvas?.Remove(this);
 
-        void ToggleCollapsedPopup()
+        // Used by tests
+        internal VisualElement popup => m_ModalPopup;
+
+        // Used by tests
+        internal void ToggleCollapsedPopup()
         {
             if (m_ModalPopup != null)
             {

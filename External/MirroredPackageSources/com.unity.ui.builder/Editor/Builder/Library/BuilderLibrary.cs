@@ -78,7 +78,19 @@ namespace Unity.UI.Builder
 
             AddFocusable(m_HeaderButtonStrip);
             BuilderLibraryContent.RegenerateLibraryContent();
+
+            RegisterCallback<AttachToPanelEvent>(AttachToPanelCallback);
+            RegisterCallback<DetachFromPanelEvent>(DetachFromPanelCallback);
+        }
+
+        void AttachToPanelCallback(AttachToPanelEvent e)
+        {
             BuilderLibraryContent.OnLibraryContentUpdated += RebuildView;
+        }
+        
+        void DetachFromPanelCallback(DetachFromPanelEvent e)
+        {
+            BuilderLibraryContent.OnLibraryContentUpdated -= RebuildView;
         }
 
         void SwitchLibraryTab(BuilderLibraryTab newTab)

@@ -134,19 +134,14 @@ namespace UnityEditor.UIElements.Debugger
             while (it.MoveNext())
             {
                 HostView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key) as HostView;
-                if (view == null)
-                    continue;
 
                 // Skip this window
-                if (view.actualView == this)
+                if (view != null && view.actualView == this)
                     continue;
 
                 var panel = it.Current.Value;
-                var panelMode = UIRDebugUtility.GetPanelRepaintMode(panel);
-                if (panelMode != RepaintMode.Standard)
-                {
-                    m_VisualTrees.Add(new VisualTreeDebug() { panel = panel });
-                }
+
+               m_VisualTrees.Add(new VisualTreeDebug() { panel = panel });
             }
         }
 

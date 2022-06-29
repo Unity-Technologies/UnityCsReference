@@ -814,65 +814,64 @@ namespace UnityEditor
 
         // TargetGroup no longer defines the entire build targets space. Now build targets are better
         // identified by a string key (wrapped into NamedBuildTarget), so all the following methods are being replaced.
-        // We need to mark them as obsolete once (if) BuildTargetGroup is completely removed.
 
-        // [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget) instead")]
         public static string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup) =>
             GetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) instead")]
+        [Obsolete("Use GetScriptingDefineSymbols(NamedBuildTarget buildTarget, out string[] defines) instead")]
         public static void GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, out string[] defines) =>
             defines = ConvertScriptingDefineStringToArray(GetScriptingDefineSymbolsForGroup(targetGroup));
 
-        // [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines) instead")]
+        [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string defines) instead")]
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string defines) =>
             SetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup), defines);
 
-        // [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string[] defines) instead")]
+        [Obsolete("Use SetScriptingDefineSymbols(NamedBuildTarget buildTarget, string[] defines) instead")]
         public static void SetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup, string[] defines) =>
             SetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(targetGroup), defines);
 
-        // [Obsolete("Use GetAdditionalCompilerArguments(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetAdditionalCompilerArguments(NamedBuildTarget buildTarget) instead")]
         public static string[] GetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup) =>
             GetAdditionalCompilerArguments(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetAdditionalCompilerArguments(NamedBuildTarget buildTarget, string[] additionalCompilerArguments) instead")]
+        [Obsolete("Use SetAdditionalCompilerArguments(NamedBuildTarget buildTarget, string[] additionalCompilerArguments) instead")]
         public static void SetAdditionalCompilerArgumentsForGroup(BuildTargetGroup targetGroup, string[] additionalCompilerArguments) =>
             SetAdditionalCompilerArguments(NamedBuildTarget.FromBuildTargetGroup(targetGroup), additionalCompilerArguments);
 
-        // [Obsolete("Use GetArchitecture(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetArchitecture(NamedBuildTarget buildTarget) instead")]
         public static int GetArchitecture(BuildTargetGroup targetGroup) =>
             GetArchitecture(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetArchitecture(NamedBuildTarget buildTarget, int architecture) instead")]
+        [Obsolete("Use SetArchitecture(NamedBuildTarget buildTarget, int architecture) instead")]
         public static void SetArchitecture(BuildTargetGroup targetGroup, int architecture) =>
             SetArchitecture(NamedBuildTarget.FromBuildTargetGroup(targetGroup), architecture);
 
-        // [Obsolete("Use GetScriptingBackend(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetScriptingBackend(NamedBuildTarget buildTarget) instead")]
         public static ScriptingImplementation GetScriptingBackend(BuildTargetGroup targetGroup) =>
             GetScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetScriptingBackend(NamedBuildTarget buildTarget, ScriptingImplementation backend) instead")]
+        [Obsolete("Use SetScriptingBackend(NamedBuildTarget buildTarget, ScriptingImplementation backend) instead")]
         public static void SetScriptingBackend(BuildTargetGroup targetGroup, ScriptingImplementation backend) =>
             SetScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(targetGroup), backend);
 
-        // [Obsolete("Use GetDefaultScriptingBackend(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetDefaultScriptingBackend(NamedBuildTarget buildTarget) instead")]
         public static ScriptingImplementation GetDefaultScriptingBackend(BuildTargetGroup targetGroup) =>
             GetDefaultScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use GetApplicationIdentifier(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetApplicationIdentifier(NamedBuildTarget buildTarget) instead")]
         public static string GetApplicationIdentifier(BuildTargetGroup targetGroup) =>
             GetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetApplicationIdentifier(NamedBuildTarget buildTarget, string identifier) instead")]
+        [Obsolete("Use SetApplicationIdentifier(NamedBuildTarget buildTarget, string identifier) instead")]
         public static void SetApplicationIdentifier(BuildTargetGroup targetGroup, string identifier) =>
             SetApplicationIdentifier(NamedBuildTarget.FromBuildTargetGroup(targetGroup), identifier);
 
-        // [Obsolete("Use GetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget) instead")]
         public static Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup) =>
             GetIl2CppCompilerConfiguration(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget, Il2CppCompilerConfiguration configuration) instead")]
+        [Obsolete("Use SetIl2CppCompilerConfiguration(NamedBuildTarget buildTarget, Il2CppCompilerConfiguration configuration) instead")]
         public static void SetIl2CppCompilerConfiguration(BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration) =>
             SetIl2CppCompilerConfiguration(NamedBuildTarget.FromBuildTargetGroup(targetGroup), configuration);
 
@@ -884,35 +883,35 @@ namespace UnityEditor
         public static void SetIncrementalIl2CppBuild(BuildTargetGroup targetGroup, bool enabled) =>
             SetIncrementalIl2CppBuild(NamedBuildTarget.FromBuildTargetGroup(targetGroup), enabled);
 
-        // [Obsolete("Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead")]
+        [Obsolete("Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead")]
         public static void SetManagedStrippingLevel(BuildTargetGroup targetGroup, ManagedStrippingLevel level) =>
             SetManagedStrippingLevel(NamedBuildTarget.FromBuildTargetGroup(targetGroup), level);
 
-        // [Obsolete("Use GetManagedStrippingLevel(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetManagedStrippingLevel(NamedBuildTarget buildTarget) instead")]
         public static ManagedStrippingLevel GetManagedStrippingLevel(BuildTargetGroup targetGroup) =>
             GetManagedStrippingLevel(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use GetApiCompatibilityLevel(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetApiCompatibilityLevel(NamedBuildTarget buildTarget) instead")]
         public static ApiCompatibilityLevel GetApiCompatibilityLevel(BuildTargetGroup buildTargetGroup) =>
             GetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup));
 
-        // [Obsolete("Use SetApiCompatibilityLevel(NamedBuildTarget buildTarget, ApiCompatibilityLevel value) instead")]
+        [Obsolete("Use SetApiCompatibilityLevel(NamedBuildTarget buildTarget, ApiCompatibilityLevel value) instead")]
         public static void SetApiCompatibilityLevel(BuildTargetGroup buildTargetGroup, ApiCompatibilityLevel value) =>
             SetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup), value);
 
-        // [Obsolete("Use GetMobileMTRendering(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetMobileMTRendering(NamedBuildTarget buildTarget) instead")]
         public static bool GetMobileMTRendering(BuildTargetGroup targetGroup) =>
             GetMobileMTRendering(NamedBuildTarget.FromBuildTargetGroup(targetGroup));
 
-        // [Obsolete("Use SetMobileMTRendering(NamedBuildTarget buildTarget, bool enable) instead")]
+        [Obsolete("Use SetMobileMTRendering(NamedBuildTarget buildTarget, bool enable) instead")]
         public static void SetMobileMTRendering(BuildTargetGroup targetGroup, bool enable) =>
             SetMobileMTRendering(NamedBuildTarget.FromBuildTargetGroup(targetGroup), enable);
 
-        // [Obsolete("Use GetNormalMapEncoding(NamedBuildTarget buildTarget) instead")]
+        [Obsolete("Use GetNormalMapEncoding(NamedBuildTarget buildTarget) instead")]
         public static NormalMapEncoding GetNormalMapEncoding(BuildTargetGroup platform) =>
             GetNormalMapEncoding(NamedBuildTarget.FromBuildTargetGroup(platform));
 
-        // [Obsolete("Use SetNormalMapEncoding(NamedBuildTarget buildTarget, NormalMapEncoding encoding) instead")]
+        [Obsolete("Use SetNormalMapEncoding(NamedBuildTarget buildTarget, NormalMapEncoding encoding) instead")]
         public static void SetNormalMapEncoding(BuildTargetGroup platform, NormalMapEncoding encoding) =>
             SetNormalMapEncoding(NamedBuildTarget.FromBuildTargetGroup(platform), encoding);
 
@@ -1398,11 +1397,11 @@ namespace UnityEditor
         // Application (before 5.6 bundle) identifier was shared between iOS, Android and Tizen TV platforms before 5.6.
         public static string applicationIdentifier
         {
-            get { return GetApplicationIdentifier(EditorUserBuildSettings.activeBuildTargetGroup); }
+            get { return GetApplicationIdentifier(NamedBuildTarget.FromActiveSettings(EditorUserBuildSettings.activeBuildTarget)); }
             set
             {
                 Debug.LogWarning("PlayerSettings.applicationIdentifier only changes the identifier for the currently active platform. Please use SetApplicationIdentifier to set it for any platform");
-                SetApplicationIdentifier(EditorUserBuildSettings.activeBuildTargetGroup, value);
+                SetApplicationIdentifier(NamedBuildTarget.FromActiveSettings(EditorUserBuildSettings.activeBuildTarget), value);
             }
         }
 

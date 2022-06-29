@@ -27,6 +27,14 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_HighLimit = new UxmlFloatAttributeDescription { name = "high-limit", defaultValue = float.MaxValue };
 
             /// <summary>
+            /// Constructor.
+            /// </summary>
+            public UxmlTraits()
+            {
+                m_PickingMode.defaultValue = PickingMode.Ignore;
+            }
+
+            /// <summary>
             /// Initialize <see cref="MinMaxSlider"/> properties using values from the attribute bag.
             /// </summary>
             /// <param name="ve">The element to initialize.</param>

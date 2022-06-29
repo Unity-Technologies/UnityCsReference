@@ -19,6 +19,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ParameterListHandle;
         internal FoundryHandle m_ParentBlockHandle;
         internal FoundryHandle m_IncludeListHandle;
+        internal FoundryHandle m_AttributeListHandle;
 
         internal extern static ShaderFunctionInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
@@ -67,6 +68,8 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
+        public IEnumerable<ShaderAttribute> Attributes => function.m_AttributeListHandle.AsListEnumerable(container, (container, handle) => new ShaderAttribute(container, handle));
+
         internal ShaderFunction(ShaderContainer container, FoundryHandle handle)
         {
             this.container = container;
@@ -75,15 +78,16 @@ namespace UnityEditor.ShaderFoundry
         }
 
         // only for use by the Builder
-        ShaderFunction(ShaderContainer container, FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, List<FunctionParameter> parameters, FoundryHandle parentBlockHandle, List<IncludeDescriptor> includes)
+        ShaderFunction(ShaderContainer container, FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, List<FunctionParameter> parameters, FoundryHandle parentBlockHandle, List<IncludeDescriptor> includes, List<ShaderAttribute> attributes)
         {
             this.container = container;
             if (container != null)
             {
                 FoundryHandle parametersList = FixedHandleListInternal.Build(container, parameters, (p) => (p.handle));
                 FoundryHandle includesList = FixedHandleListInternal.Build(container, includes, (p) => (p.handle));
+                FoundryHandle attributeList = FixedHandleListInternal.Build(container, attributes, (p) => (p.handle));
                 handle = functionHandle;
-                container.SetFunction(functionHandle, name, body, returnTypeHandle, parametersList, parentBlockHandle, includesList);
+                container.SetFunction(functionHandle, name, body, returnTypeHandle, parametersList, parentBlockHandle, includesList, attributeList);
                 function = container.GetFunction(handle);
                 return;
             }
@@ -113,6 +117,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderType returnType = ShaderType.Invalid;
             List<FunctionParameter> parameters;
             List<IncludeDescriptor> includes;
+            List<ShaderAttribute> attributes;
             bool finalized = false;
 
             public ShaderContainer Container => container;
@@ -176,6 +181,13 @@ namespace UnityEditor.ShaderFoundry
                 includes.Add(descriptor);
             }
 
+            public void AddAttribute(ShaderAttribute attribute)
+            {
+                if (attributes == null)
+                    attributes = new List<ShaderAttribute>();
+                attributes.Add(attribute);
+            }
+
             public ShaderFunction Build()
             {
                 if (finalized)
@@ -184,7 +196,7 @@ namespace UnityEditor.ShaderFoundry
 
                 FoundryHandle parentBlockHandle = parentBlockBuilder?.blockHandle ?? FoundryHandle.Invalid();
                 var returnTypeHandle = container.AddShaderType(returnType, true);
-                var builtFunction = new ShaderFunction(container, functionHandle, name, ConvertToString(), returnTypeHandle, parameters, parentBlockHandle, includes);
+                var builtFunction = new ShaderFunction(container, functionHandle, name, ConvertToString(), returnTypeHandle, parameters, parentBlockHandle, includes, attributes);
 
                 if (parentBlockBuilder != null)
                 {

@@ -441,6 +441,7 @@ namespace UnityEditor
         SerializedProperty m_StackTraceTypes;
         SerializedProperty m_ManagedStrippingLevel;
         SerializedProperty m_ActiveInputHandler;
+        SerializedProperty m_SelectedPlatform;
 
         // Embedded Linux specific
         SerializedProperty m_ForceSRGBBlit;
@@ -466,7 +467,6 @@ namespace UnityEditor
             s_ColorGamutList.list = PlayerSettings.GetColorGamuts().ToList();
         }
 
-        int selectedPlatform = 0;
         int scriptingDefinesControlID = 0;
 
         int serializedActiveInputHandler = 0;
@@ -585,6 +585,7 @@ namespace UnityEditor
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
             m_ActiveInputHandler            = FindPropertyAssert("activeInputHandler");
             m_AdditionalCompilerArguments   = FindPropertyAssert("additionalCompilerArguments");
+            m_SelectedPlatform              = FindPropertyAssert("selectedPlatform");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -661,7 +662,7 @@ namespace UnityEditor
             s_GraphicsDeviceLists.Clear();
 
             // Setup initial values to prevent immediate script recompile (or editor restart)
-            NamedBuildTarget namedBuildTarget = validPlatforms[selectedPlatform].namedBuildTarget;
+            NamedBuildTarget namedBuildTarget = validPlatforms[m_SelectedPlatform.intValue].namedBuildTarget;
             serializedActiveInputHandler = m_ActiveInputHandler.intValue;
             serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
@@ -840,8 +841,10 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             EditorGUI.BeginChangeCheck();
-            int oldPlatform = selectedPlatform;
-            selectedPlatform = EditorGUILayout.BeginPlatformGrouping(validPlatforms, null);
+            int oldPlatform = m_SelectedPlatform.intValue;
+            m_SelectedPlatform.intValue = EditorGUILayout.BeginPlatformGrouping(validPlatforms, null);
+            int selectedPlatformValue = m_SelectedPlatform.intValue;
+
             if (EditorGUI.EndChangeCheck())
             {
                 // Awesome hackery to get string from delayed textfield when switching platforms
@@ -855,16 +858,18 @@ namespace UnityEditor
                 // Reset focus when changing between platforms.
                 // If we don't do this, the resolution width/height value will not update correctly when they have the focus
                 GUI.FocusControl("");
+
+                m_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
             }
 
-            BuildPlatform platform = validPlatforms[selectedPlatform];
+            BuildPlatform platform = validPlatforms[selectedPlatformValue];
 
             if (!isPreset)
             {
                 CheckUpdatePresetSelectorStatus();
             }
 
-            GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
+            GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatformValue].title.text));
 
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
@@ -880,13 +885,13 @@ namespace UnityEditor
                 }
             }
 
-            m_IconsEditor.IconSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatform], selectedPlatform, sectionIndex++);
+            m_IconsEditor.IconSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
 
-            ResolutionSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
-            PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            ResolutionSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+            m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+            DebugAndCrashReportingGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+            OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
+            PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
 
             if (sectionIndex != kNumberGUISections)
                 Debug.LogError("Mismatched number of GUI sections.");
@@ -1791,7 +1796,7 @@ namespace UnityEditor
             {
                 // Multithreaded rendering
                 if (settingsExtension != null && settingsExtension.SupportsMultithreadedRendering())
-                    settingsExtension.MultithreadedRenderingGUI(platform.namedBuildTarget.ToBuildTargetGroup());
+                    settingsExtension.MultithreadedRenderingGUI(platform.namedBuildTarget);
 
                 // Batching section
                 {
@@ -2797,12 +2802,23 @@ namespace UnityEditor
             {
                 using (var vertical = new EditorGUILayout.VerticalScope())
                 {
-                    lastNamedBuildTarget = platform.namedBuildTarget;
-
                     if (serializedScriptingDefines == null || scriptingDefineSymbolsList == null)
+                    {
                         InitReorderableScriptingDefineSymbolsList(platform.namedBuildTarget);
+                    }
 
-                    scriptingDefineSymbolsList.DoLayoutList();
+                    if (lastNamedBuildTarget.TargetName == platform.namedBuildTarget.TargetName)
+                    {
+                        scriptingDefineSymbolsList.DoLayoutList();
+                    }
+                    else
+                    {
+                        // If platform changes, update define symbols
+                        serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
+                        UpdateScriptingDefineSymbolsLists();
+                    }
+
+                    lastNamedBuildTarget = platform.namedBuildTarget;
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
@@ -2810,8 +2826,7 @@ namespace UnityEditor
 
                         var GUIState = GUI.enabled;
 
-                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines,
-                            EditorStyles.miniButton))
+                        if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
                             EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(platform.namedBuildTarget);
                         }

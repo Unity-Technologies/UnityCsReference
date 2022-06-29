@@ -60,6 +60,7 @@ namespace Unity.UI.Builder
 
         // Header
         BuilderInspectorHeader m_HeaderSection;
+        internal BuilderInspectorHeader headerSection => m_HeaderSection;
 
         // Sections
         BuilderInspectorCanvas m_CanvasSection;
@@ -331,7 +332,7 @@ namespace Unity.UI.Builder
         public void UpdateFieldStatus(VisualElement field, StyleProperty property)
         {
             var valueInfo = FieldValueInfo.Get(this, field, property);
-            
+
             field.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
             UpdateFieldStatusIconAndStyling(field, valueInfo);
             UpdateFieldTooltip(field, valueInfo);
@@ -377,7 +378,7 @@ namespace Unity.UI.Builder
         }
 
         static string GetFieldStatusIndicatorTooltip(FieldValueInfo info)
-        { 
+        {
             if (info.valueSource.type == FieldValueSourceInfoType.Default)
                 return BuilderConstants.FieldStatusIndicatorDefaultTooltip;
             if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
@@ -397,7 +398,7 @@ namespace Unity.UI.Builder
         {
             if (info.type == FieldValueInfoType.None)
                 return "";
-            
+
             var tooltipFormat = BuilderConstants.FieldTooltipWithoutValueFormatString;
             var valueDataText = "";
             var valueDefinitionDataText = "";
@@ -412,7 +413,7 @@ namespace Unity.UI.Builder
                 if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
                     valueDataText = $"\n{GetVariableTooltip(info.valueBinding.variable)}";
             }
-                
+
             // source
             if (info.valueSource.type.IsFromUSSSelector())
                 valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
@@ -423,7 +424,7 @@ namespace Unity.UI.Builder
         static string GetMatchingStyleSheetRuleSourceTooltip(MatchedRule matchedRule)
         {
             var displayPath = matchedRule.displayPath;
-            
+
             // Remove line number
             var index = displayPath.IndexOf(':');
 

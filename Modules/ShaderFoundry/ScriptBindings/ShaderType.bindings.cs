@@ -44,6 +44,7 @@ namespace UnityEditor.ShaderFoundry
         internal extern int MatrixRows { get; }
         internal extern int ArrayElements { get; }
         internal extern FoundryHandle GetArrayElementTypeHandle();
+        internal extern FoundryHandle GetScalarTypeHandle();
 
         internal IEnumerable<StructField> StructFields(ShaderContainer container)
         {
@@ -116,6 +117,7 @@ namespace UnityEditor.ShaderFoundry
         public int MatrixRows => type.IsMatrix ? type.MatrixRows : 0;
         public int ArrayElements => type.IsArray ? type.ArrayElements : 0;
         public ShaderType ArrayElementType => (container != null && IsArray) ? new ShaderType(container, type.GetArrayElementTypeHandle()) : ShaderType.Invalid;
+        public ShaderType ScalarType => (container != null) ? new ShaderType(container, type.GetScalarTypeHandle()) : ShaderType.Invalid;
         public IEnumerable<StructField> StructFields => type.StructFields(container);
         public IEnumerable<ShaderAttribute> Attributes => type.Attributes(container);
         public IEnumerable<IncludeDescriptor> Includes => type.Includes(container);

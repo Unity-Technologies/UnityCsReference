@@ -45,7 +45,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static IncludeDescriptor Invalid => new IncludeDescriptor(null, FoundryHandle.Invalid());
 
-        public struct Builder
+        public class Builder
         {
             ShaderContainer container;
             string value;

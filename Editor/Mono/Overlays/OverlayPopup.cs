@@ -80,6 +80,8 @@ namespace UnityEditor.Overlays
                     placement.position = new Vector2(xAdjusted, placement.position.y);
                 }
 
+                style.maxWidth = canvasWorld.xMax - placement.position.x;
+                style.maxHeight = canvasWorld.yMax - placement.position.y;
                 transform.position = placement.position - canvasWorld.position;
             });
         }

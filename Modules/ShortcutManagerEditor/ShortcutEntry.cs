@@ -62,6 +62,7 @@ namespace UnityEditor.ShortcutManagement
         readonly Type m_Context;
         readonly string m_Tag;
         readonly ShortcutType m_Type;
+        readonly int m_Priority;
 
         public Identifier identifier => m_Identifier;
         public string displayName => m_DisplayName;
@@ -74,13 +75,14 @@ namespace UnityEditor.ShortcutManagement
         public Type context => m_Context;
         public string tag => m_Tag;
         public ShortcutType type => m_Type;
+        public int priority => m_Priority;
 
         ShortcutModifiers m_ReservedModifier;
 
-        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, string displayName = null)
-            : this(id, defaultCombination, action, context, null, type, displayName) {}
+        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, string displayName = null, int priority = int.MaxValue)
+            : this(id, defaultCombination, action, context, null, type, displayName, priority) {}
 
-        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, string tag, ShortcutType type, string displayName = null)
+        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, string tag, ShortcutType type, string displayName = null, int priority = int.MaxValue)
         {
             m_Identifier = id;
             m_DefaultCombinations = defaultCombination.ToList();
@@ -89,6 +91,7 @@ namespace UnityEditor.ShortcutManagement
             m_Action = action;
             m_Type = type;
             m_DisplayName = displayName ?? id.path;
+            m_Priority = ShortcutAttributeUtility.AssignPriority(context, priority);
 
             if (typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
                 foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))

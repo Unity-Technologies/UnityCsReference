@@ -408,6 +408,8 @@ namespace UnityEditor
             }
         }
 
+        static public Action focusedWindowChanged;
+
         // The EditorWindow currently under the mouse cursor (RO)
         static public EditorWindow mouseOverWindow
         {
@@ -1221,6 +1223,13 @@ namespace UnityEditor
         {
             m_OverlayCanvas.OnContainerWindowDisabled();
             SaveViewDataToDisk();
+        }
+
+        internal void ReleaseViewData()
+        {
+            SaveViewDataToDisk();
+            DestroyImmediate(m_ViewDataDictionary);
+            m_ViewDataDictionary = null;
         }
 
         // Internal stuff:

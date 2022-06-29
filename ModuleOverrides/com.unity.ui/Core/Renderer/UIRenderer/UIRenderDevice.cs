@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            m_NextPageVertexCount = Math.Max(initialVertexCapacity, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
+            m_NextPageVertexCount = Math.Max(initialVertexCapacity/2, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
             m_LargeMeshVertexCount = m_NextPageVertexCount;
             m_IndexToVertexCountRatio = (float)initialIndexCapacity / (float)initialVertexCapacity;
             m_IndexToVertexCountRatio = Mathf.Max(m_IndexToVertexCountRatio, 2);

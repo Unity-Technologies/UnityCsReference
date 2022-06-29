@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="SliderInt"/>.
         /// </summary>
-        public new class UxmlTraits : BaseFieldTraits<int, UxmlIntAttributeDescription>
+        public new class UxmlTraits : BaseSlider<int>.UxmlTraits
         {
             UxmlIntAttributeDescription m_LowValue = new UxmlIntAttributeDescription { name = "low-value" };
             UxmlIntAttributeDescription m_HighValue = new UxmlIntAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
