@@ -91,11 +91,7 @@ namespace UnityEngine.UIElements
                     for (var i = 0; i < removeCount; i++)
                     {
                         var lastIndex = m_ActiveItems.Count - 1;
-
-                        var recycledItem = m_ActiveItems[lastIndex];
-                        m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
-                        m_Pool.Release(recycledItem);
-                        m_ActiveItems.RemoveAt(lastIndex);
+                        ReleaseItem(lastIndex);
                     }
                 }
                 else

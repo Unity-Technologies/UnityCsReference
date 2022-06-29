@@ -778,7 +778,7 @@ namespace UnityEngine.UIElements
         void OnItemIndexChanged(int srcIndex, int dstIndex)
         {
             itemIndexChanged?.Invoke(srcIndex, dstIndex);
-            if (binding == null)
+            if (!(binding is IInternalListViewBinding))
                 RefreshItems();
             else
                 schedule.Execute(RefreshItems).ExecuteLater(100);
@@ -964,8 +964,8 @@ namespace UnityEngine.UIElements
         }
 
         // TODO: make private. This doesn't need to be in the public API. Unit tests can be implemented with SendEvent.
-        // Obsoleted for 2021.2. We can obsolete completely in the next version.
-        [Obsolete("OnKeyDown is obsolete and will be removed from ListView. Use the event system instead, i.e. SendEvent(EventBase e).", false)]
+        // Obsoleted as error for 2022.2. We can remove completely in the next version.
+        [Obsolete("OnKeyDown is obsolete and will be removed from ListView. Use the event system instead, i.e. SendEvent(EventBase e).", true)]
         public void OnKeyDown(KeyDownEvent evt)
         {
             m_NavigationManipulator.OnKeyDown(evt);
@@ -1438,7 +1438,7 @@ namespace UnityEngine.UIElements
             OverwriteFromViewData(this, key);
         }
 
-        [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent))]
+        [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent), typeof(BlurEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -1456,6 +1456,11 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 m_VirtualizationController?.OnFocus(evt.leafTarget as VisualElement);
+            }
+            else if (evt.eventTypeId == BlurEvent.TypeId())
+            {
+                BlurEvent e = evt as BlurEvent;
+                m_VirtualizationController.OnBlur(e?.relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {

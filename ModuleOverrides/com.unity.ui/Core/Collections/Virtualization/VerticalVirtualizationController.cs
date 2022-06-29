@@ -93,8 +93,7 @@ namespace UnityEngine.UIElements
                 }
                 else if (isVisible)
                 {
-                    m_Pool.Release(recycledItem);
-                    m_ActiveItems.RemoveAt(i--);
+                    ReleaseItem(i--);
                 }
             }
 
@@ -106,14 +105,14 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected void Setup(T recycledItem, int newIndex, bool forceHide = false)
+        protected void Setup(T recycledItem, int newIndex)
         {
             // We want to skip the item that is being reordered with the animated dragger.
             if (m_CollectionView.dragger is ListViewDraggerAnimated dragger)
                 if (dragger.isDragging && (dragger.draggedItem.index == newIndex || dragger.draggedItem == recycledItem))
                     return;
 
-            if (newIndex >= m_CollectionView.itemsSource.Count || forceHide)
+            if (newIndex >= m_CollectionView.itemsSource.Count)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
                 if (recycledItem.index >= 0 && recycledItem.index < m_CollectionView.itemsSource.Count)
@@ -182,6 +181,16 @@ namespace UnityEngine.UIElements
             }
             else
             {
+                m_LastFocusedElementIndex = -1;
+            }
+        }
+
+        public override void OnBlur(VisualElement willFocus)
+        {
+            // Focus lost and the about-to-be-focused VisualElement is not part of the VerticalVirtualizationController.
+            if (willFocus == null || willFocus != m_ScrollView.contentContainer)
+            {
+                m_LastFocusedElementTreeChildIndexes.Clear();
                 m_LastFocusedElementIndex = -1;
             }
         }
@@ -280,6 +289,20 @@ namespace UnityEngine.UIElements
             item.PreAttachElement();
 
             return item;
+        }
+
+        internal virtual void ReleaseItem(int activeItemsIndex)
+        {
+            var item = m_ActiveItems[activeItemsIndex];
+            var index = item.index;
+
+            if (index >= 0 && index < m_CollectionView.itemsSource.Count)
+            {
+                m_CollectionView.viewController.InvokeUnbindItem(item, index);
+            }
+
+            m_Pool.Release(item);
+            m_ActiveItems.RemoveAt(activeItemsIndex);
         }
     }
 }

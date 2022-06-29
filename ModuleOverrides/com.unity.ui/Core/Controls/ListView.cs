@@ -147,6 +147,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void SetMakeItemWithoutNotify(Func<VisualElement> func)
+        {
+            m_MakeItem = func;
+        }
+
         private Action<VisualElement, int> m_BindItem;
 
         /// <summary>
@@ -167,6 +172,11 @@ namespace UnityEngine.UIElements
                 m_BindItem = value;
                 RefreshItems();
             }
+        }
+
+        internal void SetBindItemWithoutNotify(Action<VisualElement, int> callback)
+        {
+            m_BindItem = callback;
         }
 
         /// <summary>

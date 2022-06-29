@@ -121,7 +121,8 @@ namespace UnityEditor
             public static readonly GUIContent displayResolutionDialogDeprecationWarning = EditorGUIUtility.TrTextContent("The Display Resolution Dialog has been deprecated and will be removed in a future version.");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch*");
-            public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI Flip Model Swapchain for D3D11", "Flip model ensures the best performance. Disable this to fallback to Windows 7-style BitBlt model. This setting affects only D3D11 graphics API.");
+            public static readonly GUIContent useFlipModelSwapChain = EditorGUIUtility.TrTextContent("Use DXGI flip model swapchain for D3D11", "Disable this option to fallback to Windows 7-style BitBlt model. Using flip model (leaving this option enabled) ensures the best performance. This setting affects only D3D11 graphics API.");
+            public static readonly GUIContent flipModelSwapChainWarning = EditorGUIUtility.TrTextContent("Disabling DXGI flip model swapchain will result in Unity falling back to the slower and less efficient BitBlt model. See documentation for more information.");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
@@ -838,7 +839,7 @@ namespace UnityEditor
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
 
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
-            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
+            EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 20);
 
             int sectionIndex = 0;
 
@@ -1072,6 +1073,11 @@ namespace UnityEditor
 
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
                         EditorGUILayout.PropertyField(m_UseFlipModelSwapchain, SettingsContent.useFlipModelSwapChain);
+
+                        if (!PlayerSettings.useFlipModelSwapchain)
+                        {
+                            EditorGUILayout.HelpBox(SettingsContent.flipModelSwapChainWarning.text, MessageType.Warning, true);
+                        }
 
                         if (isPreset)
                             EditorGUI.indentLevel++;

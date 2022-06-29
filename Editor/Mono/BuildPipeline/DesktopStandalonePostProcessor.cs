@@ -37,7 +37,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
         if (PlayerSettings.forceSingleInstance)
             config.AddKey("single-instance");
         if (!PlayerSettings.useFlipModelSwapchain)
-            config.AddKey("force-d3d11-bitblt-mode");
+            config.AddKey("force-d3d11-bitblt-model");
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(NamedBuildTarget.FromActiveSettings(target)))
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableCodeCoverage) != 0)
