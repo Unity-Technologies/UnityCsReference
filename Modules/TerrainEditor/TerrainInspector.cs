@@ -180,6 +180,8 @@ namespace UnityEditor
             public readonly GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
             public readonly GUIContent enableHeightmapRayTracing = EditorGUIUtility.TrTextContent("Enable Ray Tracing", "When enabling this option, RayTracingAccelerationStructure.CullInstances function will populate the acceleration structure with terrain geometries. The option is disabled if the system configuration doesn't support Ray Tracing. Check SystemInfo.supportsRayTracing.");
             public readonly GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
+            public readonly GUIContent qualitySettings = EditorGUIUtility.TrTextContent("Quality Settings");
+            public readonly GUIContent ignoreQualitySettings = EditorGUIUtility.TrTextContent("Ignore Quality Settings", "Toggle whether this terrain should ignore the current active quality settings' terrain overrides.");
             public readonly GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc.) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
             public readonly GUIContent baseMapDist = EditorGUIUtility.TrTextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.");
             public readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Does the terrain cast shadows?");
@@ -1026,6 +1028,15 @@ namespace UnityEditor
             }, approxSize, emptyString, out doubleClick);
         }
 
+        private void ShowOverrideBar()
+        {
+            var rect = EditorGUILayout.s_LastRect;
+            var prevMargin = EditorGUIUtility.leftMarginCoord;
+            EditorGUIUtility.leftMarginCoord = 2;
+            EditorGUI.DrawOverrideBackgroundApplicable(rect);
+            EditorGUIUtility.leftMarginCoord = prevMargin;
+        }
+
         public void ShowDetailStats()
         {
             GUILayout.Space(3);
@@ -1047,6 +1058,7 @@ namespace UnityEditor
         private bool m_ShowBasicTerrainSettings = true;
         private bool m_ShowTreeAndDetailSettings = true;
         private bool m_ShowGrassWindSettings = true;
+        private bool m_ShowTerrainQualitySettings = true;
 
         private static void MarkDirty(Terrain terrain)
         {
@@ -1099,6 +1111,7 @@ namespace UnityEditor
         public void ShowSettings()
         {
             TerrainData terrainData = m_Terrain.terrainData;
+            TerrainQualityOverrides overrideFlags = QualitySettings.terrainQualityOverrides;
 
             m_ShowBasicTerrainSettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowBasicTerrainSettings, styles.basicTerrain);
 
@@ -1125,8 +1138,25 @@ namespace UnityEditor
                 else
                     EditorGUILayout.Toggle(styles.enableHeightmapRayTracing, false);
                 GUI.enabled = true;
-                var heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200); // former string formatting: ""
-                var basemapDistance = TerrainInspectorUtility.PowerSlider(styles.baseMapDist, m_Terrain.basemapDistance, 0.0f, 20000.0f, 2.0f);
+
+                float heightmapPixelError = m_Terrain.heightmapPixelError;
+                bool overridePixelError = overrideFlags.HasFlag(TerrainQualityOverrides.PixelError) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overridePixelError))
+                {
+                    heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200);
+                    if (overridePixelError)
+                        ShowOverrideBar();
+                }
+
+                float basemapDistance = m_Terrain.basemapDistance;
+                bool overrideBasemapDistance = overrideFlags.HasFlag(TerrainQualityOverrides.BasemapDistance) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideBasemapDistance))
+                {
+                    basemapDistance = TerrainInspectorUtility.PowerSlider(styles.baseMapDist, m_Terrain.basemapDistance, 0.0f, 20000.0f, 2.0f);
+                    if (overrideBasemapDistance)
+                        ShowOverrideBar();
+                }
+
                 var shadowCastingMode = (ShadowCastingMode)EditorGUILayout.EnumPopup(styles.castShadows, m_Terrain.shadowCastingMode);
 
                 var reflectionProbeUsage = (ReflectionProbeUsage)EditorGUILayout.EnumPopup(styles.reflectionProbes, m_Terrain.reflectionProbeUsage);
@@ -1213,12 +1243,61 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!bakeLightProbesForTrees))
                     deringLightProbesForTrees = EditorGUILayout.Toggle(styles.deringLightProbesForTrees, deringLightProbesForTrees);
                 var preserveTreePrototypeLayers = EditorGUILayout.Toggle(styles.preserveTreePrototypeLayers, m_Terrain.preserveTreePrototypeLayers);
-                var detailObjectDistance = EditorGUILayout.Slider(styles.detailObjectDistance, m_Terrain.detailObjectDistance, 0, 250); // former string formatting: ""
-                var detailObjectDensity = EditorGUILayout.Slider(styles.detailObjectDensity, m_Terrain.detailObjectDensity, 0.0f, 1.0f);
-                var treeDistance = EditorGUILayout.Slider(styles.treeDistance, m_Terrain.treeDistance, 0, 5000); // former string formatting: ""
-                var treeBillboardDistance = EditorGUILayout.Slider(styles.treeBillboardDistance, m_Terrain.treeBillboardDistance, 5, 2000); // former string formatting: ""
-                var treeCrossFadeLength = EditorGUILayout.Slider(styles.treeCrossFadeLength, m_Terrain.treeCrossFadeLength, 0, 200); // former string formatting: ""
-                var treeMaximumFullLODCount = EditorGUILayout.IntSlider(styles.treeMaximumFullLODCount, m_Terrain.treeMaximumFullLODCount, 0, 10000);
+
+                float detailObjectDistance = m_Terrain.detailObjectDistance;
+                bool overrideDetailDistance = overrideFlags.HasFlag(TerrainQualityOverrides.DetailDistance) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideDetailDistance))
+                {
+                    detailObjectDistance = EditorGUILayout.Slider(styles.detailObjectDistance, m_Terrain.detailObjectDistance, 0, 1000); // former string formatting: ""
+                    if (overrideDetailDistance)
+                        ShowOverrideBar();
+                }
+
+                float detailObjectDensity = m_Terrain.detailObjectDensity;
+                bool overrideDetailDensity = overrideFlags.HasFlag(TerrainQualityOverrides.DetailDensity) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideDetailDensity))
+                {
+                    detailObjectDensity = EditorGUILayout.Slider(styles.detailObjectDensity, m_Terrain.detailObjectDensity, 0.0f, 1.0f);
+                    if (overrideDetailDensity)
+                        ShowOverrideBar();
+                }
+
+                var treeDistance = m_Terrain.treeDistance;
+                bool overrideTreeDistance = overrideFlags.HasFlag(TerrainQualityOverrides.TreeDistance) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideTreeDistance))
+                {
+                    treeDistance = EditorGUILayout.Slider(styles.treeDistance, m_Terrain.treeDistance, 0, 5000); // former string formatting: ""
+                    if (overrideTreeDistance)
+                        ShowOverrideBar();
+                }
+
+                var treeBillboardDistance = m_Terrain.treeBillboardDistance;
+                bool overrideTreeBillboardDistance = overrideFlags.HasFlag(TerrainQualityOverrides.BillboardStart) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideTreeBillboardDistance))
+                {
+                    treeBillboardDistance = EditorGUILayout.Slider(styles.treeBillboardDistance, m_Terrain.treeBillboardDistance, 5, 2000); // former string formatting: ""
+                    if (overrideTreeBillboardDistance)
+                        ShowOverrideBar();
+                }
+
+                var treeCrossFadeLength = m_Terrain.treeCrossFadeLength;
+                bool overrideCrossFadeLength = overrideFlags.HasFlag(TerrainQualityOverrides.FadeLength) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideCrossFadeLength))
+                {
+                    treeCrossFadeLength = EditorGUILayout.Slider(styles.treeCrossFadeLength, m_Terrain.treeCrossFadeLength, 0, 200); // former string formatting: ""
+                    if (overrideCrossFadeLength)
+                        ShowOverrideBar();
+                }
+
+                var treeMaximumFullLODCount = m_Terrain.treeMaximumFullLODCount;
+                bool overrideTreeMaximumFullLODCount = overrideFlags.HasFlag(TerrainQualityOverrides.MaxTrees) && !m_Terrain.ignoreQualitySettings;
+                using (new EditorGUI.DisabledScope(overrideTreeMaximumFullLODCount))
+                {
+                    treeMaximumFullLODCount = EditorGUILayout.IntSlider(styles.treeMaximumFullLODCount, m_Terrain.treeMaximumFullLODCount, 0, 10000);
+                    if (overrideTreeMaximumFullLODCount)
+                        ShowOverrideBar();
+                }
+
                 var detailScatterMode = (DetailScatterMode)EditorGUILayout.EnumPopup(styles.detailScatterMode, m_Terrain.terrainData.detailScatterMode);
 
                 // Only do this check once per frame.
@@ -1319,6 +1398,21 @@ namespace UnityEditor
             RenderLightingFields();
 
             ShowRenderingLayerMask();
+
+            m_ShowTerrainQualitySettings = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowTerrainQualitySettings, styles.qualitySettings);
+            if (m_ShowTerrainQualitySettings)
+            {
+                ++EditorGUI.indentLevel;
+                EditorGUI.BeginChangeCheck();
+                var ignoreQualitySettings = EditorGUILayout.Toggle(styles.ignoreQualitySettings, m_Terrain.ignoreQualitySettings);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(m_Terrain, "Terrain property change");
+                    m_Terrain.ignoreQualitySettings = ignoreQualitySettings;
+                    MarkDirty(m_Terrain);
+                }
+                --EditorGUI.indentLevel;
+            }
         }
 
         // this is a non-serializedProperty version of RendererEditorBase.DrawRenderingLayer()

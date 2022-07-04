@@ -39,6 +39,23 @@ namespace UnityEditor
             public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
             public static readonly GUIContent kAsyncUploadPersistentBuffer = EditorGUIUtility.TrTextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.");
 
+            public static readonly GUIContent kOverrideTerrainPixelError = EditorGUIUtility.TrTextContent("", "Whether to override pixel error in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainBasemapDist = EditorGUIUtility.TrTextContent("", "Whether to override base map distance in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainDensityScale = EditorGUIUtility.TrTextContent("", "Whether to override detail density scale in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainDetailDistance = EditorGUIUtility.TrTextContent("", "Whether to override detail distance in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainTreeDistance = EditorGUIUtility.TrTextContent("", "Whether to override tree distance in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainBillboardStart = EditorGUIUtility.TrTextContent("", "Whether to override billboard start distance in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainFadeLength = EditorGUIUtility.TrTextContent("", "Whether to override billboard fade length in active Terrains.");
+            public static readonly GUIContent kOverrideTerrainMaxTrees = EditorGUIUtility.TrTextContent("", "Whether to override max mesh trees in active Terrains.");
+            public static readonly GUIContent kTerrainPixelError = EditorGUIUtility.TrTextContent("Pixel Error", "Value set to Terrain pixel error (See Terrain settings)");
+            public static readonly GUIContent kTerrainBasemapDistance = EditorGUIUtility.TrTextContent("Base Map Dist.", "Value set to Terrain base map distance (See Terrain settings)");
+            public static readonly GUIContent kTerrainDetailDensityScale = EditorGUIUtility.TrTextContent("Detail Density Scale", "Value set to Terrain detail density scale (See Terrain settings)");
+            public static readonly GUIContent kTerrainDetailDistance = EditorGUIUtility.TrTextContent("Detail Distance", "Value set to Terrain detail object distance (See Terrain settings)");
+            public static readonly GUIContent kTerrainTreeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "Value set to Terrain tree distance (See Terrain settings)");
+            public static readonly GUIContent kTerrainBillboardStart = EditorGUIUtility.TrTextContent("Billboard Start", "Value set to Terrain billboard start distance (See Terrain settings)");
+            public static readonly GUIContent kTerrainFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Value set to Terrain billboard fade length (See Terrain settings)");
+            public static readonly GUIContent kTerrainMaxTrees = EditorGUIUtility.TrTextContent("Max Mesh Trees", "Value set to Terrain max mesh trees (See Terrain settings)");
+
             public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level. It overrides the value set in the Graphics Settings Window.");
         }
 
@@ -473,6 +490,20 @@ namespace UnityEditor
             }
         }
 
+        private bool DrawOverrideToggle(ref SerializedProperty overrideProperty, TerrainQualityOverrides overrideFlag, GUIContent overrideStyle)
+        {
+            var overrideFlagsPropertyValue = (TerrainQualityOverrides)overrideProperty.enumValueFlag;
+            bool overrideActive = overrideFlagsPropertyValue.HasFlag(overrideFlag);
+
+            var overrideRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.toggle, GUILayout.Height(EditorGUIUtility.singleLineHeight), GUILayout.ExpandWidth(false));
+            overrideActive = GUI.Toggle(overrideRect, overrideActive, overrideStyle);
+            overrideProperty.enumValueFlag = overrideActive
+                ? (int)(overrideFlagsPropertyValue | overrideFlag)
+                : (int)(overrideFlagsPropertyValue & ~overrideFlag);
+
+            return overrideActive;
+        }
+
         static List<string> s_PlatformsWithDifferentRPAssets = new();
 
         void CheckSameRenderPipelineAssetForOverridenQualityLevels()
@@ -543,6 +574,15 @@ namespace UnityEditor
             var realtimeReflectionProbes = currentSettings.FindPropertyRelative("realtimeReflectionProbes");
             var billboardsFaceCameraPosition = currentSettings.FindPropertyRelative("billboardsFaceCameraPosition");
             var useLegacyDetailsDistribution = currentSettings.FindPropertyRelative("useLegacyDetailDistribution");
+            var terrainQualityOverridesProperty = currentSettings.FindPropertyRelative("terrainQualityOverrides");
+            var terrainPixelErrorProperty = currentSettings.FindPropertyRelative("terrainPixelError");
+            var terrainDetailDensityScaleProperty = currentSettings.FindPropertyRelative("terrainDetailDensityScale");
+            var terrainBasemapDistanceProperty = currentSettings.FindPropertyRelative("terrainBasemapDistance");
+            var terrainDetailDistanceProperty = currentSettings.FindPropertyRelative("terrainDetailDistance");
+            var terrainTreeDistanceProperty = currentSettings.FindPropertyRelative("terrainTreeDistance");
+            var terrainBillboardStartProperty = currentSettings.FindPropertyRelative("terrainBillboardStart");
+            var terrainFadeLengthProperty = currentSettings.FindPropertyRelative("terrainFadeLength");
+            var terrainMaxTreesProperty = currentSettings.FindPropertyRelative("terrainMaxTrees");
             var vSyncCountProperty = currentSettings.FindPropertyRelative("vSyncCount");
             var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
             var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
@@ -649,6 +689,67 @@ namespace UnityEditor
             GUILayout.Label(EditorGUIUtility.TempContent("Terrain"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
             EditorGUILayout.PropertyField(useLegacyDetailsDistribution, Content.kUseLegacyDistribution);
+
+            GUILayout.Space(5);
+            GUILayout.Label(EditorGUIUtility.TempContent("Terrain Setting Overrides"), EditorStyles.boldLabel);
+
+            var originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth -= EditorStyles.toggle.CalcSize(GUIContent.none).x + EditorStyles.toggle.margin.left;
+
+            EditorGUILayout.BeginHorizontal();
+            bool pixelErrorActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.PixelError, Content.kOverrideTerrainPixelError);
+            using (new EditorGUI.DisabledScope(!pixelErrorActive))
+                EditorGUILayout.Slider(terrainPixelErrorProperty, 1.0f, 200.0f, Content.kTerrainPixelError);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool basemapActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.BasemapDistance, Content.kOverrideTerrainBasemapDist);
+            using (new EditorGUI.DisabledScope(!basemapActive))
+            {
+                EditorGUI.BeginChangeCheck();
+                var newValue = EditorGUILayout.PowerSlider(Content.kTerrainBasemapDistance, Mathf.Clamp(terrainBasemapDistanceProperty.floatValue, 0.0f, 20000.0f), 0.0f, 20000.0f, 2);
+                if (EditorGUI.EndChangeCheck())
+                    terrainBasemapDistanceProperty.floatValue = newValue;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool detailDensityActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.DetailDensity, Content.kOverrideTerrainDensityScale);
+            using (new EditorGUI.DisabledScope(!detailDensityActive))
+                EditorGUILayout.Slider(terrainDetailDensityScaleProperty, 0.0f, 1.0f, Content.kTerrainDetailDensityScale);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool detailDistanceActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.DetailDistance, Content.kOverrideTerrainDetailDistance);
+            using (new EditorGUI.DisabledScope(!detailDistanceActive))
+                EditorGUILayout.Slider(terrainDetailDistanceProperty, 0, 1000, Content.kTerrainDetailDistance);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool treeDistanceActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.TreeDistance, Content.kOverrideTerrainTreeDistance);
+            using (new EditorGUI.DisabledScope(!treeDistanceActive))
+                EditorGUILayout.Slider(terrainTreeDistanceProperty, 0.0f, 5000.0f, Content.kTerrainTreeDistance);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool billboardStartActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.BillboardStart, Content.kOverrideTerrainBillboardStart);
+            using (new EditorGUI.DisabledScope(!billboardStartActive))
+                EditorGUILayout.Slider(terrainBillboardStartProperty, 5, 2000, Content.kTerrainBillboardStart);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool fadeLengthActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.FadeLength, Content.kOverrideTerrainFadeLength);
+            using (new EditorGUI.DisabledScope(!fadeLengthActive))
+                EditorGUILayout.Slider(terrainFadeLengthProperty, 0, 200, Content.kTerrainFadeLength);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            bool maxTreesActive = DrawOverrideToggle(ref terrainQualityOverridesProperty, TerrainQualityOverrides.MaxTrees, Content.kOverrideTerrainMaxTrees);
+            using (new EditorGUI.DisabledScope(!maxTreesActive))
+                EditorGUILayout.IntSlider(terrainMaxTreesProperty, 0, 10000, Content.kTerrainMaxTrees);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUIUtility.labelWidth = originalLabelWidth;
 
             if (!usingSRP || showShadowMaskUsage)
             {

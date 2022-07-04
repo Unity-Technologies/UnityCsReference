@@ -43,7 +43,8 @@ namespace UnityEditorInternal
         BeginSubpass,
         SRPBatch,
         HierarchyLevelBreak,
-        HybridBatch
+        HybridBatch,
+        ConfigureFoveatedRendering,
         // ReSharper restore InconsistentNaming
     }
 
@@ -216,6 +217,7 @@ namespace UnityEditorInternal
         public int rtFormat;
         public int rtDim;
         public int rtFace;
+        public int rtFoveatedRenderingMode;
         public int rtLoadAction;
         public int rtStoreAction;
         public int rtDepthLoadAction;

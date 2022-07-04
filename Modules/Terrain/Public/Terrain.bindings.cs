@@ -128,6 +128,8 @@ namespace UnityEngine
 
         extern public bool collectDetailPatches { get; set; }
 
+        extern public bool ignoreQualitySettings { get; set; }
+
         extern public TerrainRenderFlags editorRenderFlags { get; set; }
 
         extern public Vector3 GetPosition();

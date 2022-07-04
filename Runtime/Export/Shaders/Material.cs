@@ -7,6 +7,19 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
+    // Note: We must manually adapt the managed enum PropertyType into the native enum ShaderPropertySheetType to 'hide' useless enum values to user.
+    // Keep them in sync.
+    public enum MaterialPropertyType
+    {
+        Float,
+        Int,
+        Vector,
+        Matrix,
+        Texture,
+        ConstantBuffer,
+        ComputeBuffer,
+    }
+
     public partial class Material
     {
         // at some point we were having generic methods so all set/set-array/get/get-array could be routed through one impl where we were doing all the checks
@@ -162,6 +175,8 @@ namespace UnityEngine
         public Matrix4x4 GetMatrix(int nameID)   { return GetMatrixImpl(nameID); }
         public Texture   GetTexture(string name) { return GetTextureImpl(Shader.PropertyToID(name)); }
         public Texture   GetTexture(int nameID)  { return GetTextureImpl(nameID); }
+        public GraphicsBufferHandle GetBuffer(string name) { return GetBufferImpl(Shader.PropertyToID(name)); }
+        public GraphicsBufferHandle GetConstantBuffer(string name) { return GetConstantBufferImpl(Shader.PropertyToID(name)); }
 
         public float[]      GetFloatArray(string name)  { return GetFloatArray(Shader.PropertyToID(name)); }
         public float[]      GetFloatArray(int nameID)   { return GetFloatArrayCountImpl(nameID) != 0 ? GetFloatArrayImpl(nameID) : null; }
@@ -190,5 +205,7 @@ namespace UnityEngine
         public Vector2 GetTextureOffset(int nameID)  { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.z, st.w); }
         public Vector2 GetTextureScale(string name)  { return GetTextureScale(Shader.PropertyToID(name)); }
         public Vector2 GetTextureScale(int nameID)   { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.x, st.y); }
+
+        public string[] GetPropertyNames(MaterialPropertyType type) { return GetPropertyNamesImpl((int)type); }
     }
 }
