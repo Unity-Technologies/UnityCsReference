@@ -88,6 +88,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Clear dag directory if it was produced with a different bee_backend, to avoid problem where bee_backend sometimes looses track of files.
             if (dagDirectory.Exists())
             {
+                // When used DeleteMode.Normal, it sometimes was causing an error on Windows:
+                //    Win32Exception: The directory is not empty.
+                //  at NiceIO.NPath + WindowsFileSystem.Directory_Delete(NiceIO.NPath path, System.Boolean recursive)[0x000f4] in C:\buildslave\unity\build\External\NiceIO\NiceIO.cs:1792
+                // Since we're recreating a directory anyways, using DeleteMode.Soft should be fine.
+                var deleteMode = DeleteMode.Soft;
                 if (beeBackendInfoPath.Exists())
                 {
                     var contents = beeBackendInfoPath.ReadAllText();
@@ -99,13 +104,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         !diskInfo.BeeBackendHash.Equals(currentInfo.BeeBackendHash))
                     {
                         Console.WriteLine($"Clearing Bee directory '{dagDirectory}', since bee backend hash ('{beeBackendInfoPath}') is different, previous hash was {diskInfo.BeeBackendHash} (Unity version: {diskInfo.UnityVersion}), current hash is {currentInfo.BeeBackendHash} (Unity version: {currentInfo.UnityVersion}).");
-                        dagDirectory.Delete();
+                        dagDirectory.Delete(deleteMode);
                     }
                 }
                 else
                 {
                     Console.WriteLine($"Clearing Bee directory '{dagDirectory}', since bee backend information ('{beeBackendInfoPath}') is missing.");
-                    dagDirectory.Delete();
+                    dagDirectory.Delete(deleteMode);
                 }
             }
 

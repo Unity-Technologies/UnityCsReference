@@ -207,6 +207,7 @@ namespace UnityEditor.DeviceSimulation
                 "graphicsShaderLevel",
                 "graphicsMultiThreaded",
                 "renderingThreadingMode",
+                "foveatedRenderingCaps",
                 "hasHiddenSurfaceRemovalOnGPU",
                 "hasDynamicUniformArrayIndexingInFragmentShaders",
                 "supportsShadows",

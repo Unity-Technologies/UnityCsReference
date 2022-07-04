@@ -1284,10 +1284,25 @@ namespace UnityEditorInternal
                 else
                     m_TempSB2.AppendLine(FrameDebuggerStyles.EventDetails.k_NotAvailable);
             }
+            else if (m_LastEventData.type == FrameEventType.ConfigureFoveatedRendering)
+            {
+                // No extra data for this event at the moment
+            }
             else
             {
                 m_TempSB1.AppendLine("Memoryless");
                 m_TempSB2.AppendLine((curEventData.rtMemoryless != 0) ? "Yes" : "No");
+
+                m_TempSB1.AppendLine("Foveated Rendering Mode");
+                switch ((FoveatedRenderingMode)curEventData.rtFoveatedRenderingMode)
+                {
+                    case FoveatedRenderingMode.Disabled:
+                        m_TempSB2.AppendLine("Disabled");
+                        break;
+                    case FoveatedRenderingMode.Enabled:
+                        m_TempSB2.AppendLine("Enabled");
+                        break;
+                }
 
                 m_TempSB1.AppendLine();
                 m_TempSB2.AppendLine();

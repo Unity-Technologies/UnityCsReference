@@ -195,6 +195,16 @@ namespace UnityEngine.Rendering
             Internal_SetComputeBufferParam(computeShader, kernelIndex, Shader.PropertyToID(name), buffer);
         }
 
+        public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, int nameID, GraphicsBufferHandle bufferHandle)
+        {
+            Internal_SetComputeGraphicsBufferHandleParam(computeShader, kernelIndex, nameID, bufferHandle);
+        }
+
+        public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, string name, GraphicsBufferHandle bufferHandle)
+        {
+            Internal_SetComputeGraphicsBufferHandleParam(computeShader, kernelIndex, Shader.PropertyToID(name), bufferHandle);
+        }
+
         public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, int nameID, GraphicsBuffer buffer)
         {
             Internal_SetComputeGraphicsBufferParam(computeShader, kernelIndex, nameID, buffer);
@@ -223,6 +233,11 @@ namespace UnityEngine.Rendering
         public void SetComputeConstantBufferParam(ComputeShader computeShader, string name, GraphicsBuffer buffer, int offset, int size)
         {
             Internal_SetComputeConstantGraphicsBufferParam(computeShader, Shader.PropertyToID(name), buffer, offset, size);
+        }
+
+        public void SetComputeParamsFromMaterial(ComputeShader computeShader, int kernelIndex, Material material)
+        {
+            Internal_SetComputeParamsFromMaterial(computeShader, kernelIndex, material);
         }
 
         // Execute a compute shader.

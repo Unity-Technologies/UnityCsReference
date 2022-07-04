@@ -68,6 +68,8 @@ namespace UnityEngine
 
         public virtual Rendering.RenderingThreadingMode renderingThreadingMode => UnityEngine.SystemInfo.renderingThreadingMode;
 
+        public virtual FoveatedRenderingCaps foveatedRenderingCaps => UnityEngine.SystemInfo.foveatedRenderingCaps;
+
         public virtual bool hasHiddenSurfaceRemovalOnGPU => UnityEngine.SystemInfo.hasHiddenSurfaceRemovalOnGPU;
 
         public virtual bool hasDynamicUniformArrayIndexingInFragmentShaders =>

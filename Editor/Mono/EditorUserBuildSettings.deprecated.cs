@@ -32,39 +32,29 @@ namespace UnityEditor
         [Obsolete("forceOptimizeScriptCompilation is obsolete - will always return false. Control script optimization using the 'IL2CPP optimization level' configuration in Player Settings / Other.")]
         public static bool forceOptimizeScriptCompilation { get { return false; } }
 
-        [Obsolete(@"androidDebugMinification is obsolete. Use PlayerSettings.Android.minifyDebug and PlayerSettings.Android.minifyWithR8.")]
+        [Obsolete(@"androidDebugMinification is obsolete. Use PlayerSettings.Android.minifyDebug")]
         public static AndroidMinification androidDebugMinification
         {
             get
             {
-                if (PlayerSettings.Android.minifyDebug)
-                {
-                    return PlayerSettings.Android.minifyWithR8 ? AndroidMinification.Gradle : AndroidMinification.Proguard;
-                }
-                return AndroidMinification.None;
+                return PlayerSettings.Android.minifyDebug ? AndroidMinification.Gradle : AndroidMinification.None;
             }
             set
             {
                 PlayerSettings.Android.minifyDebug = value != AndroidMinification.None;
-                PlayerSettings.Android.minifyWithR8 = value == AndroidMinification.Gradle;
             }
         }
 
-        [Obsolete(@"androidReleaseMinification is obsolete. Use PlayerSettings.Android.minifyRelease and PlayerSettings.Android.minifyWithR8.")]
+        [Obsolete(@"androidReleaseMinification is obsolete. Use PlayerSettings.Android.minifyRelease")]
         public static AndroidMinification androidReleaseMinification
         {
             get
             {
-                if (PlayerSettings.Android.minifyRelease)
-                {
-                    return PlayerSettings.Android.minifyWithR8 ? AndroidMinification.Gradle : AndroidMinification.Proguard;
-                }
-                return AndroidMinification.None;
+                return PlayerSettings.Android.minifyRelease ? AndroidMinification.Gradle : AndroidMinification.None;
             }
             set
             {
                 PlayerSettings.Android.minifyRelease = value != AndroidMinification.None;
-                PlayerSettings.Android.minifyWithR8 = value == AndroidMinification.Gradle;
             }
         }
     }

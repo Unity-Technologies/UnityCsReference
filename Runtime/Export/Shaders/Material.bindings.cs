@@ -192,6 +192,9 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
         public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
 
+        [FreeFunction("MaterialScripting::GetPropertyNames", HasExplicitThis = true)]
+        extern private string[] GetPropertyNamesImpl(int propertyType);
+
         extern public int ComputeCRC();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNames", HasExplicitThis = true)]
@@ -227,8 +230,6 @@ namespace UnityEngine
         }
 
 
-        // TODO: get buffer is missing
-
         [NativeName("SetIntFromScript")]     extern private void SetIntImpl(int name, int value);
         [NativeName("SetFloatFromScript")]   extern private void SetFloatImpl(int name, float value);
         [NativeName("SetColorFromScript")]   extern private void SetColorImpl(int name, Color value);
@@ -245,6 +246,8 @@ namespace UnityEngine
         [NativeName("GetColorFromScript")]   extern private Color     GetColorImpl(int name);
         [NativeName("GetMatrixFromScript")]  extern private Matrix4x4 GetMatrixImpl(int name);
         [NativeName("GetTextureFromScript")] extern private Texture   GetTextureImpl(int name);
+        [NativeName("GetBufferFromScript")] extern private GraphicsBufferHandle GetBufferImpl(int name);
+        [NativeName("GetConstantBufferFromScript")] extern private GraphicsBufferHandle GetConstantBufferImpl(int name);
 
         [FreeFunction(Name = "MaterialScripting::SetFloatArray", HasExplicitThis = true)]  extern private void SetFloatArrayImpl(int name, float[] values, int count);
         [FreeFunction(Name = "MaterialScripting::SetVectorArray", HasExplicitThis = true)] extern private void SetVectorArrayImpl(int name, Vector4[] values, int count);

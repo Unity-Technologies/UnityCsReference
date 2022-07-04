@@ -42,7 +42,8 @@ namespace UnityEditorInternal
             "Begin Subpass",
             "SRP Batch",
             "",                 // on purpose empty string for kFrameEventHierarchyLevelBreak
-            "Hybrid Batch Group"
+            "Hybrid Batch Group",
+            "Configure Foveated Rendering",
         };
 
         // General settings for the Frame Debugger Window and layout
