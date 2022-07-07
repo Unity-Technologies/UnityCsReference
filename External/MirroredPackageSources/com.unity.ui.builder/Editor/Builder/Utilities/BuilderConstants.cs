@@ -312,8 +312,11 @@ namespace Unity.UI.Builder
         public static readonly string SaveDialogChooseUssPathDialogTitle = "Choose USS File Location";
         public static readonly string SaveDialogSaveChangesPromptTitle = "UI Builder - Unsaved Changes Detected";
         public static readonly string SaveDialogSaveChangesPromptMessage = "Do you want to save changes you made?";
-        public static readonly string SaveDialogExternalChangesPromptTitle = "UI Builder - Document has been modified in an external editor";
-        public static readonly string SaveDialogExternalChangesPromptMessage = "Unsaved changes in the UI Builder will be lost.\nPlease avoid changing files externally while they are open in the Builder.";
+        public static readonly string SaveDialogExternalChangesPromptTitle = "The document, {0}, has been changed outside of the UI Builder";
+        public static readonly string SaveDialogExternalChangesPromptMessage = 
+            "The UI Builder will now apply the changes made outside of the UI Builder. This overwrites any unsaved changes you made in the UI Builder.\n\n" +
+            "Note: To avoid conflicting changes, make sure to save any changes you make in the UI Builder before editing a file in an external editor or " +
+            "in a dedicated editor inside Unity (this includes resource files like Font and Sprite assets which have their own editor).";
         public static readonly string SaveDialogInvalidPathMessage = "Can only save in the 'Assets/' or 'Packages/' folders.";
         public static readonly string SaveDialogReplaceWithNewTemplateMessage = "Changes to your template affect this file. In order to replace this template, we need to save your current file.";
 

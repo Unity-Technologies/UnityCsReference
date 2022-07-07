@@ -134,11 +134,6 @@ namespace UnityEditor
                     playModeView.m_Parent.SetAsStartView();
                     playModeView.m_Parent.SetAsLastPlayModeView();
 
-                    if (playModeView.maximized)
-                    {
-                        playModeView.m_Parent.Focus();
-                    }
-
                     if (playModeView is IGameViewOnPlayMenuUser)
                     {
                         if (((IGameViewOnPlayMenuUser)playModeView).playFocused)

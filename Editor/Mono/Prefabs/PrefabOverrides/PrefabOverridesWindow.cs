@@ -22,9 +22,8 @@ namespace UnityEditor
         const float k_HeaderLeftMargin = 6;
         const float k_NoOverridesLabelHeight = 26f;
         const float k_UnusedOverridesButtonHeight = 26f;
-        const float k_ApplyButtonHeight = 36f;
-        const float k_HelpBoxHeight = 40f;
         const float k_RowPadding = 6;
+        float m_ApplyButtonHeight = 0;
         GameObject[] m_SelectedGameObjects = null;
 
         // TreeView not used when there are multiple Prefabs.
@@ -227,49 +226,84 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
+            return CalculateWindowSize();
+        }
+
+        Vector2 CalculateWindowSize()
+        {
             const float k_MaxAllowedTreeViewWidth = 1800f;
             const float k_MaxAllowedTreeViewHeight = 1000f;
             var width = 300f;
             var height = k_HeaderHeight;
 
+            // Match the call order as in OnGUI() to ensure the correct height is calculated
+
             if (!IsShowingActionButton())
             {
-                if (!IsShowingUnusedOverridesButton())
+                if (IsShowingUnusedOverridesButton())
+                    height += k_UnusedOverridesButtonHeight;
+                else
                     height += k_NoOverridesLabelHeight;
+
+                return new Vector2(width, height);
+            }
+
+            if (HasMultiSelection())
+            {
+                if (m_InvalidComponentOnAsset || m_HasManagedReferencesWithMissingTypesOnAsset || m_InvalidComponentOnInstance || m_ModelPrefab || m_Immutable)
+                    height += CalcHeightForHelpBox(Styles.infoMultipleNoApply, MessageType.Info, width);
+                else
+                    height += CalcHeightForHelpBox(Styles.infoMultiple, MessageType.Info, width);
+
+                if (m_UnusedOverridesExist)
+                    height += k_UnusedOverridesButtonHeight + k_RowPadding;
+                else
+                    height += 2;
             }
             else
             {
-                if (DisplayingTreeView())
+                height += k_TreeViewPadding.top;
+                if (m_AnyOverrides)
                 {
-                    height += k_TreeViewPadding.top + Mathf.Min(k_MaxAllowedTreeViewHeight, m_TreeView.totalHeight) + k_TreeViewPadding.bottom;
+                    height += Mathf.Min(k_MaxAllowedTreeViewHeight, m_TreeView.totalHeight);
                     width = Mathf.Max(Mathf.Min(m_TreeView.maxItemWidth, k_MaxAllowedTreeViewWidth), width);
-                }
-                else
-                {
-                    if (!m_AnyOverrides)
-                        height += k_NoOverridesLabelHeight;
-                    else if (IsShowingUnusedOverridesButton())
-                        height += k_HelpBoxHeight - 8;
-                    else
-                        height += k_HelpBoxHeight - 6;
+
+                    if (m_ModelPrefab)
+                    {
+                        height += CalcHeightForHelpBox(Styles.infoModel, MessageType.Info, width);
+                    }
                 }
 
-                height += k_ApplyButtonHeight;
+                if (m_UnusedOverridesExist)
+                {
+                    height += k_UnusedOverridesButtonHeight + k_RowPadding;
+                }
 
                 if (IsShowingApplyWarning())
-                    height += k_HelpBoxHeight; // A second help box in this case.
+                {
+                    if (m_InvalidComponentOnAsset)
+                        height += CalcHeightForHelpBox(Styles.warningInvalidAsset, MessageType.Warning, width);
+                    else if (m_InvalidComponentOnInstance)
+                        height += CalcHeightForHelpBox(Styles.warningInvalidInstance, MessageType.Warning, width);
+                    else if (m_HasManagedReferencesWithMissingTypesOnAsset)
+                        height += CalcHeightForHelpBox(Styles.warningHasManagedReferencesWithMissingTypes, MessageType.Warning, width);
+                    else if (m_Immutable)
+                        height += CalcHeightForHelpBox(Styles.warningImmutable, MessageType.Warning, width);
+                }
             }
 
-            if (IsShowingUnusedOverridesButton())
-            {
-                height += k_UnusedOverridesButtonHeight;
-                if (IsShowingActionButton())
-                    height += k_RowPadding;
-            }
+            if (m_ApplyButtonHeight == 0)
+                m_ApplyButtonHeight = GUI.skin.button.CalcHeight(Styles.applySelectedContent, width) + GUI.skin.button.margin.top + GUI.skin.button.margin.bottom;
 
-            // Width should be no smaller than minimum width, but we could potentially improve
-            // width handling by making it expand if needed based on tree view content.
+            height += m_ApplyButtonHeight + k_RowPadding;
+
             return new Vector2(width, height);
+        }
+
+        float CalcHeightForHelpBox(GUIContent content, MessageType messageType, float width)
+        {
+            var tempContent = EditorGUIUtility.TempContent(content.text, EditorGUIUtility.GetHelpIcon(messageType));
+            return EditorStyles.helpBox.CalcHeight(tempContent, width) + EditorStyles.helpBox.margin.top + EditorStyles.helpBox.margin.bottom;
         }
 
         Color headerBgColor { get { return EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f, 0.2f) : new Color(0.9f, 0.9f, 0.9f, 0.6f); } }
@@ -380,9 +414,9 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(Styles.warningInvalidAsset.text, MessageType.Warning);
                     else if (m_InvalidComponentOnInstance)
                         EditorGUILayout.HelpBox(Styles.warningInvalidInstance.text, MessageType.Warning);
-                    if (m_HasManagedReferencesWithMissingTypesOnAsset)
+                    else if (m_HasManagedReferencesWithMissingTypesOnAsset)
                         EditorGUILayout.HelpBox(Styles.warningHasManagedReferencesWithMissingTypes.text, MessageType.Warning);
-                    else
+                    else if (m_Immutable)
                         EditorGUILayout.HelpBox(Styles.warningImmutable.text, MessageType.Warning);
                 }
             }

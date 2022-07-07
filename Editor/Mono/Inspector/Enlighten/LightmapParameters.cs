@@ -91,7 +91,8 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
-            EditorGUILayout.Slider(m_Pushoff, 0.0f, 1.0f, Styles.pushoffContent);
+            const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
+            EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
             EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
             using (new EditorGUI.DisabledScope(usesEnlightenBackend))
             {

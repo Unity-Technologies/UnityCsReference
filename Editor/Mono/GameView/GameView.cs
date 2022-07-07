@@ -1250,6 +1250,7 @@ namespace UnityEditor
             {
                 enterPlayModeBehavior = EnterPlayModeBehavior.PlayMaximized;
                 fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
+                GameViewOnPlayMenu.SetFocusedToggle(this, true);
             }
             else
             {
