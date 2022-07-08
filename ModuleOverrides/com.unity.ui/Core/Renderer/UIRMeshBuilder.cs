@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Profiling;
 using UnityEngine.TextCore.Text;
+using System.IO;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -16,6 +17,8 @@ namespace UnityEngine.UIElements.UIR
     internal static class MeshBuilder
     {
         static ProfilerMarker s_VectorGraphics9Slice = new ProfilerMarker("UIR.MakeVector9Slice");
+        static ProfilerMarker s_VectorGraphicsSplitTriangle = new ProfilerMarker("UIR.SplitTriangle");
+        static ProfilerMarker s_VectorGraphicsScaleTriangle = new ProfilerMarker("UIR.ScaleTriangle");
         static ProfilerMarker s_VectorGraphicsStretch = new ProfilerMarker("UIR.MakeVectorStretch");
 
         internal static readonly int s_MaxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
@@ -518,36 +521,334 @@ namespace UnityEngine.UIElements.UIR
             s_VectorGraphicsStretch.End();
         }
 
-        private static void MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, bool stretch, Color tint, int settingIndexOffset, AllocMeshData meshAlloc)
+        enum SliceIndices
         {
-            var mwd = meshAlloc.alloc((uint)svgVertices.Length, (uint)svgIndices.Length, ref meshAlloc);
-            mwd.SetAllIndices(svgIndices);
+            SliceIndexL = 0,
+            SliceIndexT = 1,
+            SliceIndexR = 2,
+            SliceIndexB = 3
+        }
 
+        unsafe private static void SplitTriangle(Vertex* vertices, UInt16* indices, ref int vertexCount, int indexToProcess, ref int indexCount, float svgWidth, float svgHeight, Vector4 sliceLTRB, int sliceIndex)
+        {
+
+            // check on which size of the slice we are
+            int axis = ((sliceIndex == (int)SliceIndices.SliceIndexL) || (sliceIndex == (int)SliceIndices.SliceIndexR)) ? 0 : 1;
+
+            int before = 0;
+
+            bool* beforeAxis = stackalloc bool[3];
+            beforeAxis[0] = false;
+            beforeAxis[1] = false;
+            beforeAxis[2] = false;
+
+            float sliceValue = sliceLTRB[sliceIndex];
+
+            if (sliceIndex == (int)SliceIndices.SliceIndexB)
+            {
+                sliceValue = svgHeight - sliceValue;
+            }
+            else if (sliceIndex == (int)SliceIndices.SliceIndexR)
+            {
+                sliceValue = svgWidth - sliceValue;
+            }
+
+            int* originalTriangleIndices = stackalloc int[3];
+
+            originalTriangleIndices[0] = indices[indexToProcess];
+            originalTriangleIndices[1] = indices[indexToProcess + 1];
+            originalTriangleIndices[2] = indices[indexToProcess + 2];
+
+            Vertex* v0 = &vertices[originalTriangleIndices[0]];
+            Vertex* v1 = &vertices[originalTriangleIndices[1]];
+            Vertex* v2 = &vertices[originalTriangleIndices[2]];
+
+            if (v0->position[axis] < sliceValue)
+            {
+                before++;
+                beforeAxis[0] = true;
+            }
+            if (v1->position[axis] < sliceValue)
+            {
+                before++;
+                beforeAxis[1] = true;
+            }
+            if (v2->position[axis] < sliceValue)
+            {
+                before++;
+                beforeAxis[2] = true;
+            }
+
+            if (before == 1 || before == 2)
+            {
+                // check which vertex is alone on its side
+                int singleSideVertexIndex = 0;
+                if (beforeAxis[0] == beforeAxis[1])
+                {
+                    singleSideVertexIndex = 2;
+                }
+                else if (beforeAxis[0] == beforeAxis[2])
+                {
+                    singleSideVertexIndex = 1;
+                }
+
+                int otherSideVertex1 = (singleSideVertexIndex + 1) % 3;
+                int otherSideVertex2 = (singleSideVertexIndex + 2) % 3;
+
+                Vertex** triangle = stackalloc Vertex*[3];
+                triangle[0] = v0;
+                triangle[1] = v1;
+                triangle[2] = v2;
+
+                // We can do simple linear interpolation in X/Y direction
+                float totalAxisA = triangle[otherSideVertex1]->position[axis] - triangle[singleSideVertexIndex]->position[axis];
+                float deltaAxisA = sliceValue - triangle[singleSideVertexIndex]->position[axis];
+                float ratioA = Math.Abs(deltaAxisA) / Math.Abs(totalAxisA);
+
+                Vector3 pA = (triangle[otherSideVertex1]->position - triangle[singleSideVertexIndex]->position) * ratioA + triangle[singleSideVertexIndex]->position;
+                int indexA = vertexCount++;
+                Vertex* vA = &vertices[indexA];
+
+                *vA = *triangle[singleSideVertexIndex];
+                vA->position = pA;
+                vA->tint = Color.LerpUnclamped(triangle[singleSideVertexIndex]->tint, triangle[otherSideVertex1]->tint, ratioA);
+                vA->uv = Vector2.LerpUnclamped(triangle[singleSideVertexIndex]->uv, triangle[otherSideVertex1]->uv, ratioA);
+                vA->opacityColorPages.a = triangle[singleSideVertexIndex]->opacityColorPages.a;
+                vA->opacityColorPages.b = triangle[singleSideVertexIndex]->opacityColorPages.b;
+
+                float totalAxisB = triangle[otherSideVertex2]->position[axis] - triangle[singleSideVertexIndex]->position[axis];
+                float deltaAxisB = sliceValue - triangle[singleSideVertexIndex]->position[axis];
+                float ratioB = Math.Abs(deltaAxisB) / Math.Abs(totalAxisB);
+
+                Vector3 pB = (triangle[otherSideVertex2]->position - triangle[singleSideVertexIndex]->position) * ratioB + triangle[singleSideVertexIndex]->position;
+                int indexB = vertexCount++;
+                Vertex* vB = &vertices[indexB];
+
+                *vB = *triangle[singleSideVertexIndex];
+                vB->position = pB;
+                vB->tint = Color.LerpUnclamped(triangle[singleSideVertexIndex]->tint, triangle[otherSideVertex2]->tint, ratioB);
+                vB->uv = Vector2.LerpUnclamped(triangle[singleSideVertexIndex]->uv, triangle[otherSideVertex2]->uv, ratioB);
+                vB->opacityColorPages.a = triangle[singleSideVertexIndex]->opacityColorPages.a;
+                vB->opacityColorPages.b = triangle[singleSideVertexIndex]->opacityColorPages.b;
+
+                // overwrite input triangle
+                indices[indexToProcess] = (UInt16)indexA;
+                indices[indexToProcess+1] = (UInt16)originalTriangleIndices[otherSideVertex1];
+                indices[indexToProcess+2] = (UInt16)originalTriangleIndices[otherSideVertex2];
+
+                indices[indexCount++] = (UInt16)originalTriangleIndices[otherSideVertex2];
+                indices[indexCount++] = (UInt16)indexB;
+                indices[indexCount++] = (UInt16)indexA;
+
+                indices[indexCount++] = (UInt16)indexA;
+                indices[indexCount++] = (UInt16)indexB;
+                indices[indexCount++] = (UInt16)originalTriangleIndices[singleSideVertexIndex];
+            }
+        }
+
+        unsafe private static void ScaleSplittedTriangles(Vertex* vertices, int vertexCount, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB)
+        {
+            float startWidth = sliceLTRB.x;
+            float endWidth = sliceLTRB.z;
+            float middleWidth = svgWidth - (startWidth + endWidth);
+            float totalWidth = svgWidth;
+            float totalMinusMiddleWidth = totalWidth - middleWidth;
+            float widthOutsideScale = 1.0F;
+            float widthInsideScale = 1.0F;
+            float widthInsideOffset = 0.0F;
+
+            if (targetRect.width < totalMinusMiddleWidth)
+            {
+                widthInsideScale = 0;
+                widthOutsideScale = targetRect.width / totalMinusMiddleWidth;
+            }
+            else
+            {
+                if (middleWidth < 0.001F)
+                {
+                    widthInsideScale = 1.0F;
+                    widthInsideOffset = targetRect.width - totalMinusMiddleWidth;
+                }
+                else
+                {
+                    widthInsideScale = (targetRect.width - totalMinusMiddleWidth) / middleWidth;
+                }
+            }
+
+            float startWidthOffset = startWidth * widthOutsideScale;
+            float middleWidthOffset = (startWidth * widthOutsideScale + middleWidth * widthInsideScale);
+            float startHeight = sliceLTRB.y;
+            float endHeight = sliceLTRB.w;
+            float middleHeight = svgHeight - (startHeight + endHeight);
+            float totalHeight = svgHeight;
+            float totalMinusMiddleHeight = totalHeight - middleHeight;
+            float heightOutsideScale = 1.0F;
+            float heightInsideScale = 1.0F;
+            float heightInsideOffset = 0.0F;
+
+            if (targetRect.height < totalMinusMiddleHeight)
+            {
+                heightInsideScale = 0;
+                heightOutsideScale = targetRect.height / totalMinusMiddleHeight;
+            }
+            else
+            {
+                if (middleHeight < 0.001F)
+                {
+                    heightInsideScale = 1.0F;
+                    heightInsideOffset = targetRect.height - totalMinusMiddleHeight;
+                }
+                else
+                {
+                    heightInsideScale = (targetRect.height - totalMinusMiddleHeight) / middleHeight;
+                }
+            }
+
+            float startHeightOffset = startHeight * heightOutsideScale;
+            float middleHeightOffset = (startHeight * heightOutsideScale + middleHeight * heightInsideScale);
+
+            for (int i = 0; i < vertexCount; ++i)
+            {
+                Vertex* v = &vertices[i];
+
+                if (v->position.x < startWidth)
+                {
+                    v->position.x = targetRect.x + v->position.x * widthOutsideScale;
+                }
+                else if (v->position.x < (startWidth+middleWidth))
+                {
+                    v->position.x = targetRect.x +  (v->position.x - startWidth) * widthInsideScale + startWidthOffset + widthInsideOffset;
+                }
+                else
+                {
+                    v->position.x = targetRect.x + (v->position.x - (startWidth + middleWidth)) * widthOutsideScale + middleWidthOffset + widthInsideOffset;
+                }
+
+                if (v->position.y < startHeight)
+                {
+                    v->position.y = targetRect.y + v->position.y * heightOutsideScale; ;
+                }
+                else if (v->position.y < (startHeight + middleHeight))
+                {
+                    v->position.y = targetRect.y + (v->position.y - startHeight) * heightInsideScale + startHeightOffset + heightInsideOffset;
+                }
+                else
+                {
+                    v->position.y = targetRect.y + (v->position.y - (startHeight + middleHeight)) * heightOutsideScale + middleHeightOffset + heightInsideOffset;
+                }
+            }
+        }
+
+        internal unsafe static void MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, bool stretch, Color tint, int settingIndexOffset, AllocMeshData meshAlloc)
+        {
             if (!stretch)
                 throw new NotImplementedException("Support for repeating 9-slices is not done yet");
 
             s_VectorGraphics9Slice.Begin();
 
-            var uvRegion = mwd.uvRegion;
-            int vertsCount = svgVertices.Length;
-            Vector2 sliceInvSize = new Vector2(1.0f / (svgWidth - sliceLTRB.z - sliceLTRB.x), 1.0f / (svgHeight - sliceLTRB.w - sliceLTRB.y));
-            Vector2 stretchAmount = new Vector2(targetRect.width - svgWidth, targetRect.height - svgHeight);
-            for (int i = 0; i < vertsCount; i++)
+            // Make sure sliceLTRB is valid
+            for (int i = 0; i < 4; ++i)
             {
-                var v = svgVertices[i];
-                Vector2 skinWeight;
-                skinWeight.x = Mathf.Clamp01((v.position.x - sliceLTRB.x) * sliceInvSize.x);
-                skinWeight.y = Mathf.Clamp01((v.position.y - sliceLTRB.y) * sliceInvSize.y);
+                sliceLTRB[i] = Math.Max(0, sliceLTRB[i]);
+            }
+            sliceLTRB[0] = Math.Min(sliceLTRB[0], svgWidth);
+            sliceLTRB[1] = Math.Min(sliceLTRB[1], svgHeight);
+            sliceLTRB[2] = Math.Min(sliceLTRB[2], svgWidth - sliceLTRB[0]);
+            sliceLTRB[3] = Math.Min(sliceLTRB[3], svgHeight - sliceLTRB[1]);
 
-                v.position.x += skinWeight.x * stretchAmount.x;
-                v.position.y += skinWeight.y * stretchAmount.y;
-                v.uv.x = v.uv.x * uvRegion.width + uvRegion.xMin;
-                v.uv.y = v.uv.y * uvRegion.height + uvRegion.yMin;
-                v.tint *= tint;
-                uint settingIndex = (uint)(((v.opacityColorPages.b << 8) | v.opacityColorPages.a) + settingIndexOffset);
-                v.opacityColorPages.b = (byte)(settingIndex >> 8);
-                v.opacityColorPages.a = (byte)settingIndex;
-                mwd.SetNextVertex(v);
+            int indiceCount = svgIndices.Length;
+            int totalNumberOfVertices = 0;
+            int totalNumberOfIndices = 0;
+
+            s_VectorGraphicsSplitTriangle.Begin();
+
+            // worst case is 3^4 times increase in vertex and indices.
+            int maxVertexCount = 3 * (3 * 3 * 3 * 3);
+            UInt16* generatedDryRunIndices = stackalloc UInt16[maxVertexCount];
+            Vertex* generatedDryRunVertices = stackalloc Vertex[maxVertexCount];
+
+            for (int i = 0; i < indiceCount; i += 3)
+            {
+                int index0 = svgIndices[i + 0];
+                int index1 = svgIndices[i + 1];
+                int index2 = svgIndices[i + 2];
+                Vertex v0 = svgVertices[index0];
+                Vertex v1 = svgVertices[index1];
+                Vertex v2 = svgVertices[index2];
+
+                generatedDryRunVertices[0] = v0;
+                generatedDryRunVertices[1] = v1;
+                generatedDryRunVertices[2] = v2;
+
+                generatedDryRunIndices[0] = 0;
+                generatedDryRunIndices[1] = 1;
+                generatedDryRunIndices[2] = 2;
+
+                int vertexCount = 3;
+                int indexCount = 3;
+                for (int sliceIndex = 0; sliceIndex < 4; ++sliceIndex)
+                {
+                    int maxIndexToProcess = indexCount;
+                    for (int j = 0; j < maxIndexToProcess; j += 3)
+                    {
+                        SplitTriangle(generatedDryRunVertices, generatedDryRunIndices, ref vertexCount, j, ref indexCount, svgWidth, svgHeight, sliceLTRB, sliceIndex);
+                    }
+                }
+
+                totalNumberOfVertices += vertexCount;
+                totalNumberOfIndices += indexCount;
+            }
+
+            UInt16* generatedIndices = stackalloc UInt16[totalNumberOfIndices];
+            Vertex* generatedVertices  = stackalloc Vertex[totalNumberOfVertices];
+
+            // copy original vertices
+            for (int i = 0; i < svgVertices.Length; ++i)
+            {
+                generatedVertices[i] = svgVertices[i];
+
+                // Adjust settingsIndex
+                uint settingIndex = (uint)(((generatedVertices[i].opacityColorPages.b << 8) | generatedVertices[i].opacityColorPages.a) + settingIndexOffset);
+                generatedVertices[i].opacityColorPages.b = (byte)(settingIndex >> 8);
+                generatedVertices[i].opacityColorPages.a = (byte)settingIndex;
+            }
+
+            int generatedIndexCount = 0;
+            int generatedVertexCount = svgVertices.Length;
+            int firstIndexToProcess = 0;
+
+            // Since the rendering triangle order is important (overlapping triangles), we have to add a single triangle at a time from the original list and completely split it.
+            for (int i = 0; i < svgIndices.Length; i += 3)
+            {
+                firstIndexToProcess = generatedIndexCount;
+                generatedIndices[generatedIndexCount++] = svgIndices[i];
+                generatedIndices[generatedIndexCount++] = svgIndices[i + 1];
+                generatedIndices[generatedIndexCount++] = svgIndices[i + 2];
+
+                for (int sliceIndex = 0; sliceIndex < 4; ++sliceIndex)
+                {
+                    int lastIndexToProcess = generatedIndexCount;
+                    for (int j = firstIndexToProcess; j < lastIndexToProcess; j += 3)
+                    {
+                        SplitTriangle(generatedVertices, generatedIndices, ref generatedVertexCount, j, ref generatedIndexCount, svgWidth, svgHeight, sliceLTRB, sliceIndex);
+                    }
+                }
+            }
+            s_VectorGraphicsSplitTriangle.End();
+
+            s_VectorGraphicsScaleTriangle.Begin();
+            ScaleSplittedTriangles(generatedVertices, generatedVertexCount, svgWidth, svgHeight, targetRect, sliceLTRB);
+            s_VectorGraphicsScaleTriangle.End();
+
+            var mwd = meshAlloc.alloc((uint)generatedVertexCount, (uint)generatedIndexCount, ref meshAlloc);
+            for (int i = 0; i < generatedIndexCount; i++)
+            {
+                mwd.SetNextIndex(generatedIndices[i]);
+            }
+
+            for (int i = 0; i < generatedVertexCount; i++)
+            {
+                mwd.SetNextVertex(generatedVertices[i]);
             }
 
             s_VectorGraphics9Slice.End();

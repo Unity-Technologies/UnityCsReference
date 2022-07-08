@@ -469,7 +469,7 @@ namespace UnityEditor
             // Set member variables
             m_DelegateView = GUIView.current;
             // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
-            if (m_RequiredTypes == null)
+            if (m_RequiredTypes == null || m_RequiredTypes.Length != requiredTypes.Length)
                 m_RequiredTypes = new string[requiredTypes.Length];
             for (int i = 0; i < requiredTypes.Length; i++)
             {

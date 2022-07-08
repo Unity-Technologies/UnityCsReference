@@ -955,7 +955,8 @@ namespace UnityEditor
                 clearColor = kClearBlack;
                 renderIMGUI = true;
 
-                if (!EditorApplication.isPlaying || (EditorApplication.isPlaying && Time.frameCount % OnDemandRendering.renderFrameInterval == 0))
+                if (!EditorApplication.isPlaying ||
+                    (EditorApplication.isPlaying && (Time.frameCount % OnDemandRendering.renderFrameInterval == 0 && !Unsupported.IsEditorPlayerLoopWaiting())))
                     m_RenderTexture = RenderView(gameMousePosition, clearTexture);
 
                 if (m_TargetClamped)

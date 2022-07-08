@@ -583,8 +583,10 @@ namespace Unity.UI.Builder
                 // what just happened. Adding the ability to save unsaved changes
                 // after a file has been modified externally will require some
                 // major changes to the document flow.
+                var promptTitle = string.Format(BuilderConstants.SaveDialogExternalChangesPromptTitle,
+                    m_Document.uxmlPath);
                 BuilderDialogsUtility.DisplayDialog(
-                    BuilderConstants.SaveDialogExternalChangesPromptTitle,
+                    promptTitle,
                     BuilderConstants.SaveDialogExternalChangesPromptMessage);
 
                 return true;

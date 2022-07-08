@@ -852,7 +852,6 @@ namespace UnityEditor
                 return false;
             }
 
-            bool unpackPrefabs = false;
             var paths = GetMainPathsOfAssets(instanceIDs).ToList();
 
             if (paths.Count == 0)
@@ -870,82 +869,34 @@ namespace UnityEditor
                     title = L10n.Tr("Delete selected asset?");
                 }
 
-                int maxCount = 3;
-                bool containsPrefab = false;
-
                 var infotext = new StringBuilder();
-                for (int i = 0; i < paths.Count; ++i)
+                int pathsCount = Mathf.Min(3, paths.Count);
+                for (int i = 0; i < pathsCount; ++i)
                 {
-                    if (i < maxCount)
-                    {
                         infotext.AppendLine("   " + paths[i]);
-                    }
-
-                    if (paths[i].EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
-                    {
-                        containsPrefab = true;
-                        if (i >= maxCount)
-                        {
-                            break;
-                        }
-                    }
                 }
 
-                if (paths.Count > maxCount)
+                if (paths.Count > pathsCount)
                 {
                     infotext.AppendLine("   ...");
                 }
                 infotext.AppendLine();
                 infotext.AppendLine(L10n.Tr("You cannot undo the delete assets action."));
 
-                if (containsPrefab)
+                if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))
                 {
-                    infotext.AppendLine();
-                    infotext.AppendLine("One or more files are Prefabs. Would you like to unpack their instances in all open scenes?");
-                    int dialogOptionIndex = EditorUtility.DisplayDialogComplex(title, infotext.ToString(), L10n.Tr("Delete and unpack"), L10n.Tr("Delete only"), L10n.Tr("Cancel"));
-                    if (dialogOptionIndex == 2)
-                    {
-                        return false;
-                    }
-
-                    // Delete and unpack option
-                    if (dialogOptionIndex == 0)
-                    {
-                        unpackPrefabs = true;
-                    }
-                }
-                else
-                {
-                    if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 
             bool success = true;
+            List<string> failedPaths = new List<string>();
 
             AssetDatabase.StartAssetEditing();
-
-            string[] pathArray = new string[paths.Count];
-            for (int i = 0; i < pathArray.Length; i++)
-            {
-                pathArray[i] = paths[i];
-                if (unpackPrefabs && paths[i].EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
-                {
-                    var prefabRoot = AssetDatabase.LoadMainAssetAtPath(paths[i]) as GameObject;
-                    if (prefabRoot != null)
-                    {
-                        PrefabUtility.UnpackAllInstancesOfPrefab(prefabRoot, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
-                    }
-                }
-            }
-
-            List<string> failedPaths = new List<string>();
-            if (!AssetDatabase.MoveAssetsToTrash(pathArray, failedPaths))
+            if (!AssetDatabase.MoveAssetsToTrash(paths.ToArray(), failedPaths))
                 success = false;
-
             AssetDatabase.StopAssetEditing();
+
             if (!success)
             {
                 var vcsOffline = false;
