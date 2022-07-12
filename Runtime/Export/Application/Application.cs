@@ -10,6 +10,28 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    public enum ApplicationMemoryUsage
+    {
+        Unknown = 0,
+        Low = 1,
+        Medium = 2,
+        High = 3,
+        Critical = 4,
+    }
+
+    public struct ApplicationMemoryUsageChange
+    {
+        public ApplicationMemoryUsage memoryUsage { get; private set; }
+
+        public ApplicationMemoryUsageChange(ApplicationMemoryUsage usage)
+        {
+            memoryUsage = usage;
+        }
+
+        // If platform specific info is required, implement something like this, don't add per-platform items
+        // public T GetDetails<T>() where T : PlatformMemoryUsageDetails
+    }
+
     public enum StackTraceLogType
     {
         None,
@@ -74,9 +96,32 @@ namespace UnityEngine
         public delegate void LowMemoryCallback();
         public static event LowMemoryCallback lowMemory;
 
+        public delegate void MemoryUsageChangedCallback(in ApplicationMemoryUsageChange usage);
+        public static event MemoryUsageChangedCallback memoryUsageChanged;
+
         [RequiredByNativeCode]
-        internal static void CallLowMemory()
+        internal static void CallLowMemory(ApplicationMemoryUsage usage)
         {
+            var onChanged = memoryUsageChanged;
+            if (onChanged != null)
+            {
+                var change = new ApplicationMemoryUsageChange(usage);
+                onChanged(change);
+            }
+
+            switch (usage)
+            {
+                case ApplicationMemoryUsage.Unknown:
+                case ApplicationMemoryUsage.Low:
+                case ApplicationMemoryUsage.Medium:
+                case ApplicationMemoryUsage.High:
+                    return;
+                case ApplicationMemoryUsage.Critical:
+                    break;
+                default:
+                    throw new Exception($"Unknown application memory usage: {usage}");
+            }
+
             var handler = lowMemory;
             if (handler != null)
                 handler();

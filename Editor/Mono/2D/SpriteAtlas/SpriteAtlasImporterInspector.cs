@@ -412,6 +412,8 @@ namespace UnityEditor.U2D
             base.Apply();
         }
 
+        protected override bool useAssetDrawPreview { get { return false; } }
+
         protected void PackPreviewGUI()
         {
             EditorGUILayout.Space();

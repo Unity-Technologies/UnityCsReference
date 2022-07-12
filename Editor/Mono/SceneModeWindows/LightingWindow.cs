@@ -363,7 +363,7 @@ namespace UnityEditor
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
 
-                bool iterative = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative) && entitiesPackage;
+                bool iterative = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative);
 
                 Rect rect = GUILayoutUtility.GetRect(Styles.continuousBakeLabel, GUIStyle.none);
 
@@ -378,6 +378,9 @@ namespace UnityEditor
 
                 if (EditorGUI.EndChangeCheck())
                 {
+                    if (entitiesPackage)
+                        iterative = false;
+
                     m_WorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
                 }
 

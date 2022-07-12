@@ -183,7 +183,7 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    AddCategoriesToStack(sourceCategory, categoryStack, split);
+                    AddCategoriesToStack(sourceCategory, categoryStack, split, "csharp-");
                     if (categoryStack.Count == 0)
                         sourceCategory.AddChild(newItem);
                     else
@@ -194,7 +194,7 @@ namespace Unity.UI.Builder
             sourceCategory.AddChildren(emptyNamespaceControls);
         }
 
-        static void AddCategoriesToStack(BuilderLibraryItem sourceCategory, List<BuilderLibraryItem> categoryStack, string[] split)
+        static void AddCategoriesToStack(BuilderLibraryItem sourceCategory, List<BuilderLibraryItem> categoryStack, string[] split, string idNamePrefix)
         {
             if (categoryStack.Count > split.Length)
             {
@@ -224,7 +224,7 @@ namespace Unity.UI.Builder
                     var newCategory = BuilderLibraryContent.CreateItem(part,
                         null, null, null,
                         null, null,
-                        null, fullName.GetHashCode());
+                        null,  (idNamePrefix + fullName).GetHashCode());
 
                     if (categoryStack.Count == 0)
                         sourceCategory.AddChild(newCategory);
@@ -272,13 +272,13 @@ namespace Unity.UI.Builder
                 if (packageInfo != null && packageInfo.source != PackageSource.Embedded && packageInfo.source != PackageSource.Local)
                     continue;
 
-                // Anoter way to check the above. Leaving it here for references in case the above stops working.
+                // Another way to check the above. Leaving it here for references in case the above stops working.
                 //AssetDatabase.GetAssetFolderInfo(assetPath, out bool isRoot, out bool isImmutable);
                 //if (isImmutable)
                 //continue;
 
                 var split = prettyPath.Split('/');
-                AddCategoriesToStack(projectCategory, categoryStack, split);
+                AddCategoriesToStack(projectCategory, categoryStack, split, "uxml-");
 
                 var vta = asset.pptrValue as VisualTreeAsset;
                 var newItem = BuilderLibraryContent.CreateItem(asset.name + ".uxml", nameof(TemplateContainer), typeof(TemplateContainer),

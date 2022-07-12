@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Bee.BeeDriver;
 using Bee.Serialization;
 using NiceIO;
@@ -22,6 +23,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
         readonly string _configurationSourcesFilter;
         NPath ProjectRoot { get; }
         RunnableProgram _scriptUpdaterProgram { get; }
+
+        // this is the return code used by ScriptUpdater to report that
+        // some updates were not applied.
+        const int k_UpdatesToFilesInSameProjectWereNotApplied = 3;
 
         public UnityScriptUpdater(NPath projectRoot)
         {
@@ -94,58 +99,102 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var tempOutputDirectory = new NPath($"Temp/ScriptUpdater/{Math.Abs(nodeFinishedMessage.Node.OutputFile.GetHashCode())}").EnsureDirectoryExists();
             var updateTxtFile = tempOutputDirectory.MakeAbsolute().Combine("updates.txt").DeleteIfExists();
+            var updaterMessagesToConsoleFile = tempOutputDirectory.MakeAbsolute().Combine($"messages_{new Random().Next()}.txt").DeleteIfExists();
 
             var args = new[]
             {
-                "cs",
                 $"\"{EditorApplication.applicationContentsPath}\"",
                 $"\"{tempOutputDirectory}\"",
                 $"\"{_configurationSourcesFilter}\"",
-                assemblyInfo.ScriptUpdaterRsp.ToNPath().InQuotes()
+                assemblyInfo.ScriptUpdaterRsp.ToNPath().InQuotes(),
+                updaterMessagesToConsoleFile.InQuotes()
             };
 
             var runningScriptUpdater = _scriptUpdaterProgram.Start(ProjectRoot.ToString(), args);
 
-            return AwaitScriptUpdaterResults(runningScriptUpdater, updateTxtFile, containsUpdatableCompilerMessage, nodeFinishedMessage.Node.OutputFile);
+            return AwaitScriptUpdaterResults(runningScriptUpdater, updateTxtFile, updaterMessagesToConsoleFile, containsUpdatableCompilerMessage, nodeFinishedMessage.Node.OutputFile);
         }
 
-        async Task<Results> AwaitScriptUpdaterResults(RunningProgram runningScriptUpdater, NPath updateTxtFile, CanUpdateAny containsUpdatableCompilerMessage, string nodeOutputFile)
+        async Task<Results> AwaitScriptUpdaterResults(RunningProgram runningScriptUpdater, NPath updateTxtFile, NPath updaterMessagesToConsoleFile, CanUpdateAny containsUpdatableCompilerMessage, string nodeOutputFile)
         {
             //when the user asks us to cancel a build, we do not want to leave stray unity script updaters laying around. we will
             //just wait for them to finish.
             var noToken = CancellationToken.None;
             var scriptUpdaterResult = await runningScriptUpdater.WaitForExitAsync(noToken);
 
-            if (scriptUpdaterResult.ExitCode != 0)
-                return ErrorResult(
-                    $"Script updater for {nodeOutputFile} failed with exitcode {scriptUpdaterResult.ExitCode} and stdout: {scriptUpdaterResult.Output}");
+            var messages = ResultsFromUpdaterImportantMessages(updaterMessagesToConsoleFile);
+            if (scriptUpdaterResult.ExitCode == k_UpdatesToFilesInSameProjectWereNotApplied)
+            {
+                return CollectResultsIfAny(messages, nodeOutputFile, updateTxtFile, CanUpdateAny.Maybe);
+            }
+            else if (scriptUpdaterResult.ExitCode != 0)
+                return ErrorResult($"Script updater for {nodeOutputFile} failed with exitcode {scriptUpdaterResult.ExitCode} and stdout: {scriptUpdaterResult.Output}");
 
             if (!updateTxtFile.FileExists())
                 return ErrorResult($"Script updater for {nodeOutputFile} failed to produce updates.txt file");
 
-            var updateLines = updateTxtFile.ReadAllLines();
-            var updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
-            if (updates.Contains(null))
-                return ErrorResult($"Script updater for {nodeOutputFile} emitted an invalid line to updates.txt");
-
-            return new Results()
-            {
-                Messages = (containsUpdatableCompilerMessage == CanUpdateAny.Certainly && updates.Length == 0)
-                    ? new[]
-                    {
-                        new BeeDriverResult.Message(
-                            $"Script updater for {nodeOutputFile} expected to be able to make an update, but wasn't able to",
-                            BeeDriverResult.MessageKind.Warning)
-                    }
-                    : Array.Empty<BeeDriverResult.Message>(),
-                ProducedUpdates = updates.ToArray()
-            };
+            return CollectResultsIfAny(messages, nodeOutputFile, updateTxtFile, containsUpdatableCompilerMessage);
 
             static Results ErrorResult(string message) => new()
             {
                 Messages = new[] {new BeeDriverResult.Message(message, BeeDriverResult.MessageKind.Error)},
                 ProducedUpdates = Array.Empty<Update>()
             };
+
+            BeeDriverResult.Message[] ResultsFromUpdaterImportantMessages(NPath updaterMessagesToConsoleFile)
+            {
+                try
+                {
+                    var lines = Regex.Split(updaterMessagesToConsoleFile.ReadAllText(), "^(?<kind>Warning|Error):", RegexOptions.Multiline, TimeSpan.FromSeconds(5));
+                    if (lines.Length <= 1) // first split line is always empty..
+                        return Array.Empty<BeeDriverResult.Message>();
+
+                    // first line = warning/error, second line = actual message
+                    var messages = new List<BeeDriverResult.Message>((lines.Length - 1)/2);
+                    for (int i = 1; i < lines.Length; i+=2)
+                    {
+                        var messageKind = lines[i] switch
+                        {
+                            "Error" => BeeDriverResult.MessageKind.Error,
+                            "Warning" => BeeDriverResult.MessageKind.Warning,
+                            _ => BeeDriverResult.MessageKind.Warning,
+                        };
+                        messages.Add(new BeeDriverResult.Message(lines[i + 1], messageKind));
+                    }
+
+                    return messages.ToArray();
+                }
+                catch(System.IO.IOException)
+                {
+                    return Array.Empty<BeeDriverResult.Message>();
+                }
+            }
+
+            static Results CollectResultsIfAny(BeeDriverResult.Message[] messages, string nodeOutputFile, NPath updateTxtFile, CanUpdateAny containsUpdatableCompilerMessage)
+            {
+                var updates = Array.Empty<Update>();
+                if (updateTxtFile.FileExists())
+                {
+                    var updateLines = updateTxtFile.ReadAllLines();
+
+                    updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
+                    if (updates.Contains(null))
+                        return ErrorResult($"Script updater for {nodeOutputFile} emitted an invalid line to {updateTxtFile}");
+
+                    if (containsUpdatableCompilerMessage == CanUpdateAny.Certainly && updates.Length == 0)
+                    {
+                        var temp = new List<BeeDriverResult.Message>(messages);
+                        temp.Add(new BeeDriverResult.Message($"Script updater for {nodeOutputFile} expected to be able to make an update, but wasn't able to", BeeDriverResult.MessageKind.Warning));
+                        messages = temp.ToArray();
+                    }
+                }
+
+                return new Results()
+                {
+                    Messages = messages,
+                    ProducedUpdates = updates
+                };
+            }
         }
 
         internal static Update ParseLineIntoUpdate(string line)

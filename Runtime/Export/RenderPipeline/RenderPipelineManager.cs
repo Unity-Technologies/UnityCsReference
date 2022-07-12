@@ -106,7 +106,7 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        static void DoRenderLoop_Internal(RenderPipelineAsset pipe, IntPtr loopPtr, List<Camera.RenderRequest> renderRequests, AtomicSafetyHandle safety)
+        static void DoRenderLoop_Internal(RenderPipelineAsset pipe, IntPtr loopPtr, Object renderRequest, AtomicSafetyHandle safety)
         {
             PrepareRenderPipeline(pipe);
 
@@ -118,10 +118,10 @@ namespace UnityEngine.Rendering
             s_Cameras.Clear();
 
             loop.GetCameras(s_Cameras);
-            if (renderRequests == null)
+            if (renderRequest == null)
                 currentPipeline.InternalRender(loop, s_Cameras);
             else
-                currentPipeline.InternalRenderWithRequests(loop, s_Cameras, renderRequests);
+                currentPipeline.InternalProcessRenderRequests(loop, s_Cameras[0], renderRequest);
 
             s_Cameras.Clear();
         }

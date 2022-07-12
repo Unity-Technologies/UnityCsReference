@@ -10,7 +10,8 @@ namespace UnityEngine.Rendering
     public abstract class RenderPipeline
     {
         protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
-        protected virtual void ProcessRenderRequests(ScriptableRenderContext context, Camera camera, List<Camera.RenderRequest> renderRequests) {}
+        protected virtual void ProcessRenderRequests<RequestData>(ScriptableRenderContext context, Camera camera, RequestData renderRequest) { }
+        protected virtual bool IsRenderRequestSupported<RequestData>(Camera camera, RequestData data) { return false; }
 
         protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
@@ -55,12 +56,39 @@ namespace UnityEngine.Rendering
             Render(context, cameras);
         }
 
-        internal void InternalRenderWithRequests(ScriptableRenderContext context, List<Camera> cameras, List<Camera.RenderRequest> renderRequests)
+        internal void InternalProcessRenderRequests<RequestData>(ScriptableRenderContext context, Camera camera, RequestData renderRequest)
         {
             if (disposed)
                 throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed a RenderPipeline.", this));
 
-            ProcessRenderRequests(context, (cameras == null || cameras.Count == 0) ? null : cameras[0], renderRequests);
+            ProcessRenderRequests(context, camera, renderRequest);
+        }
+
+        public static bool SupportsRenderRequest<RequestData>(Camera camera, RequestData data)
+        {
+            if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                if(RenderPipelineManager.currentPipeline == null)
+                {
+                    RenderPipelineManager.PrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+                }
+                return RenderPipelineManager.currentPipeline.IsRenderRequestSupported(camera, data);
+            }
+
+            return false;
+        }
+
+        public static void SubmitRenderRequest<RequestData>(Camera camera, RequestData data)
+        {
+            camera.SubmitRenderRequest(data);
+        }
+
+        public class StandardRequest
+        {
+            public RenderTexture destination = null;
+            public int mipLevel = 0;
+            public CubemapFace face = CubemapFace.Unknown;
+            public int slice = 0;
         }
 
         public bool disposed { get; private set; }
