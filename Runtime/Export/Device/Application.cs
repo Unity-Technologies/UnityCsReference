@@ -83,6 +83,12 @@ namespace UnityEngine.Device
             remove => ShimManager.applicationShim.lowMemory -= value;
         }
 
+        public static event UnityEngine.Application.MemoryUsageChangedCallback memoryUsageChanged
+        {
+            add => ShimManager.applicationShim.memoryUsageChanged += value;
+            remove => ShimManager.applicationShim.memoryUsageChanged -= value;
+        }
+
         public static event UnityAction onBeforeRender
         {
             add => ShimManager.applicationShim.onBeforeRender += value;

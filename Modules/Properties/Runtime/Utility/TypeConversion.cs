@@ -267,7 +267,8 @@ namespace Unity.Properties
                 return false;
             }
 
-            if (typeof(UnityEngine.Object).IsAssignableFrom(typeof(TSource)))
+            if (typeof(UnityEngine.Object).IsAssignableFrom(typeof(TSource)) ||
+                source is UnityEngine.Object)
             {
                 if (null == source)
                 {

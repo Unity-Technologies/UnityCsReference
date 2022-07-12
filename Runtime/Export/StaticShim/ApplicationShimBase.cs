@@ -96,6 +96,12 @@ namespace UnityEngine
             remove => UnityEngine.Application.lowMemory -= value;
         }
 
+        public virtual event UnityEngine.Application.MemoryUsageChangedCallback memoryUsageChanged
+        {
+            add => UnityEngine.Application.memoryUsageChanged += value;
+            remove => UnityEngine.Application.memoryUsageChanged -= value;
+        }
+
         public virtual event UnityAction onBeforeRender
         {
             add => UnityEngine.Application.onBeforeRender += value;

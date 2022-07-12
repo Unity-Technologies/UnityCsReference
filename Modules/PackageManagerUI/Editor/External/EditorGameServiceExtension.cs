@@ -212,25 +212,32 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (editorGameService.ContainsKey(k_ProjectDashboardUrlType))
                     {
                         var dashboardUrlType = editorGameService[k_ProjectDashboardUrlType] as string;
+                        string formattedDashboardUrl = "";
                         switch (dashboardUrlType)
                         {
                             case k_OrganizationKeyAndProjectGuid:
-                                if (!string.IsNullOrEmpty(cloudProjectSettings.projectId) &&
-                                    !string.IsNullOrEmpty(cloudProjectSettings.organizationKey))
+                                if (ProjectSettingsHasProjectId() &&
+                                    ProjectSettingsHasOrgKey() &&
+                                    TryFormatDashboardUrl(dashboardUrl, version, out formattedDashboardUrl,
+                                        cloudProjectSettings.organizationKey, cloudProjectSettings.projectId))
                                 {
-                                    return string.Format(dashboardUrl, cloudProjectSettings.organizationKey, cloudProjectSettings.projectId);
+                                    return formattedDashboardUrl;
                                 }
                                 break;
                             case k_OrganizationKey:
-                                if (!string.IsNullOrEmpty(cloudProjectSettings.organizationKey))
+                                if (ProjectSettingsHasOrgKey() &&
+                                    TryFormatDashboardUrl(dashboardUrl, version, out formattedDashboardUrl,
+                                        cloudProjectSettings.organizationKey))
                                 {
-                                    return string.Format(dashboardUrl, cloudProjectSettings.organizationKey);
+                                    return formattedDashboardUrl;
                                 }
                                 break;
                             case k_ProjectGuid:
-                                if (!string.IsNullOrEmpty(cloudProjectSettings.projectId))
+                                if (ProjectSettingsHasProjectId() &&
+                                    TryFormatDashboardUrl(dashboardUrl, version, out formattedDashboardUrl,
+                                        cloudProjectSettings.projectId))
                                 {
-                                    return string.Format(dashboardUrl, cloudProjectSettings.projectId);
+                                    return formattedDashboardUrl;
                                 }
                                 break;
                         }
@@ -250,6 +257,48 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (editorGameService == null || !editorGameService.ContainsKey(k_UseCasesUrl))
                 return string.Empty;
             return editorGameService[k_UseCasesUrl] as string;
+        }
+
+        private static bool ProjectSettingsHasProjectId()
+        {
+            return !string.IsNullOrEmpty(cloudProjectSettings.projectId);
+        }
+
+        private static bool ProjectSettingsHasOrgKey()
+        {
+            return !string.IsNullOrEmpty(cloudProjectSettings.organizationKey);
+        }
+
+        /// <summary>
+        /// Tries to format the dashboard url while providing exception checks
+        /// </summary>
+        /// <param name="url">The string to format</param>
+        /// <param name="packageVersion">IPackageVersion contaning package information</param>
+        /// <param name="result">The result string</param>
+        /// <param name="input">All the arguments to format into the string</param>
+        /// <returns>False when generating an exception, True otherwise</returns>
+        private static bool TryFormatDashboardUrl(string url, IPackageVersion packageVersion, out string result,
+            params object[] input)
+        {
+            result = "";
+
+            try
+            {
+                result = string.Format(url, input);
+            }
+            catch (FormatException e)
+            {
+                Debug.LogWarning("The projectDashboardUrl in package " + packageVersion.name + " does not follow a" +
+                                 " valid format. " + e);
+                return false;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                return false;
+            }
+
+            return true;
         }
     }
 }

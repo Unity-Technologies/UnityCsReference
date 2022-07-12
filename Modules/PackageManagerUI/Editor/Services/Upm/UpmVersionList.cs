@@ -258,7 +258,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
             }
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
-            SetLifecycleVersions(mainInfo?.unityLifecycle?.version, mainInfo?.unityLifecycle?.nextVersion);
+            var recommendedVersion = mainInfo?.unityLifecycle?.recommendedVersion;
+            if (String.IsNullOrEmpty(recommendedVersion))
+                recommendedVersion = mainInfo?.unityLifecycle?.version;
+            SetLifecycleVersions(recommendedVersion, mainInfo?.unityLifecycle?.nextVersion);
             UpdateExtraPackageInfos(extraVersions, isUnityPackage);
         }
 

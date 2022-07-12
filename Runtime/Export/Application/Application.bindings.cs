@@ -58,6 +58,10 @@ namespace UnityEngine
             get;
         }
 
+        // for testing
+        [FreeFunction("UpdateMemoryUsage")]
+        internal static extern void SimulateMemoryUsage(ApplicationMemoryUsage usage);
+
         [Obsolete("Streaming was a Unity Web Player feature, and is removed. This function is deprecated and always returns 1.0 for valid level indices.")]
         public static float GetStreamProgressForLevel(int levelIndex)
         {
