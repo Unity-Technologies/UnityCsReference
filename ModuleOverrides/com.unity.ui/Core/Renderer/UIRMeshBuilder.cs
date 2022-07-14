@@ -453,6 +453,8 @@ namespace UnityEngine.UIElements.UIR
             s_VectorGraphicsStretch.Begin();
 
             posOffset -= svgSubRectOffset * posScale;
+            posOffset.x += targetRect.x;
+            posOffset.y += targetRect.y;
 
             int newVertexCount = svgVertices.Length;
             int newIndexCount = svgIndices.Length;

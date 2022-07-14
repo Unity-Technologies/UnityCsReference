@@ -891,8 +891,8 @@ namespace UnityEditor
             {
                 // When connected to the player, we send deep profiler mode command immediately.
                 ProfilerDriver.deepProfiling = deep;
-                deepProfileChanged?.Invoke(deep);
             }
+            deepProfileChanged?.Invoke(deep);
         }
 
         string PickFrameLabel()
@@ -1673,20 +1673,24 @@ namespace UnityEditor
         {
             var doApply = true;
 
-            // When enabling / disabling deep script profiling we need to reload scripts.
-            // In play mode this might be intrusive. So ask the user first.
-            if (EditorApplication.isPlaying)
+            if (ProcessService.level == ProcessLevel.Main)
             {
-                if (deep)
-                    doApply = EditorUtility.DisplayDialog(Styles.enableDeepProfilingWarningDialogTitle, Styles.enableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton, DialogOptOutDecisionType.ForThisSession, kProfilerDeepProfilingWarningSessionKey);
-                else
-                    doApply = EditorUtility.DisplayDialog(Styles.disableDeepProfilingWarningDialogTitle, Styles.disableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton, DialogOptOutDecisionType.ForThisSession, kProfilerDeepProfilingWarningSessionKey);
+                // When enabling / disabling deep script profiling we need to reload scripts.
+                // In play mode this might be intrusive. So ask the user first.
+                if (EditorApplication.isPlaying)
+                {
+                    if (deep)
+                        doApply = EditorUtility.DisplayDialog(Styles.enableDeepProfilingWarningDialogTitle, Styles.enableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton, DialogOptOutDecisionType.ForThisSession, kProfilerDeepProfilingWarningSessionKey);
+                    else
+                        doApply = EditorUtility.DisplayDialog(Styles.disableDeepProfilingWarningDialogTitle, Styles.disableDeepProfilingWarningDialogContent, Styles.domainReloadWarningDialogButton, Styles.cancelDialogButton, DialogOptOutDecisionType.ForThisSession, kProfilerDeepProfilingWarningSessionKey);
+                }
             }
 
             if (doApply)
             {
                 ProfilerDriver.deepProfiling = deep;
-                EditorUtility.RequestScriptReload();
+                if (ProcessService.level == ProcessLevel.Main)
+                    EditorUtility.RequestScriptReload();
             }
 
             return doApply;

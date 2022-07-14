@@ -172,6 +172,8 @@ namespace UnityEditor.UIElements.Debugger
                 textElement.text = EditorGUILayout.TextField("Text", textElement.text);
             }
 
+            m_SelectedElement.viewDataKey = EditorGUILayout.TextField("View Data Key", m_SelectedElement.viewDataKey);
+
             m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 
             if (m_SelectedElement.pseudoStates != 0)
@@ -184,6 +186,12 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             EditorGUILayout.LabelField("Focusable", m_SelectedElement.focusable.ToString());
+
+            if (m_SelectedElement is IBindable bindableElement)
+            {
+                using (new EditorGUI.DisabledScope(true))
+                    bindableElement.bindingPath = EditorGUILayout.TextField("Binding Path", bindableElement.bindingPath);
+            }
 
             m_SelectedElement.usageHints = (UsageHints)EditorGUILayout.EnumFlagsField("Usage Hints", m_SelectedElement.usageHints);
 

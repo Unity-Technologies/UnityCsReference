@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Reflection;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -164,36 +165,80 @@ namespace UnityEditor
         // Invokes the menu item in the specified path.
         public static bool ExecuteMenuItem(string menuItemPath)
         {
+            var sanitizedPath = MenuService.SanitizeMenuItemName(menuItemPath);
             var isDefaultMode = ModeService.currentId == ModeService.k_DefaultModeId;
-            var result = ExecuteMenuItemInternal(menuItemPath, isDefaultMode);
+            var result = ExecuteMenuItemInternal(sanitizedPath, isDefaultMode);
             if (result)
-                return result;
+                return true;
 
             if (!isDefaultMode)
             {
+                // Check if the menu was found first. If so, it means that the menu just
+                // didn't pass validation. No need to check further.
+                if (Menu.MenuItemExists(sanitizedPath))
+                    return false;
+
                 var menuItems = TypeCache.GetMethodsWithAttribute<MenuItem>();
+                MethodInfo validateItem = null;
+                MethodInfo executeItem = null;
                 foreach (var item in menuItems)
                 {
                     MenuItem itemData = (MenuItem)item.GetCustomAttributes(typeof(MenuItem), false)[0];
-                    if (!itemData.validate && itemData.menuItem == menuItemPath)
+                    var hotKeyIndex = Menu.FindHotkeyStartIndex(itemData.menuItem);
+                    var hasHotkey = hotKeyIndex != -1 && hotKeyIndex != itemData.menuItem.Length;
+                    bool matches;
+                    if (!hasHotkey)
                     {
-                        if (item.GetParameters().Length == 0)
-                        {
-                            item.Invoke(null, new object[0]);
-                            return true;
-                        }
-                        else if (item.GetParameters()[0].ParameterType == typeof(MenuCommand))
-                        {
-                            item.Invoke(null, new[] { new MenuCommand(null) });
-                            return true;
-                        }
-                        break;
+                        matches = itemData.menuItem == sanitizedPath;
                     }
+                    else
+                    {
+                        var stringView = itemData.menuItem.AsSpan(0, hotKeyIndex);
+                        stringView = stringView.TrimEnd();
+                        matches = stringView == sanitizedPath;
+                    }
+                    if (!matches)
+                        continue;
+
+                    if (itemData.validate)
+                        validateItem = item;
+                    else
+                        executeItem = item;
+
+                    if (validateItem != null && executeItem != null)
+                        break;
+                }
+
+                if (validateItem != null)
+                {
+                    if (!ExecuteMenuItem(validateItem, true))
+                        return false;
+                }
+
+                if (executeItem != null)
+                {
+                    return ExecuteMenuItem(executeItem, false);
                 }
 
                 Debug.LogError($"ExecuteMenuItem failed because there is no menu named '{menuItemPath}'");
             }
 
+            return false;
+        }
+
+        static bool ExecuteMenuItem(MethodInfo menuMethodInfo, bool validate)
+        {
+            if (menuMethodInfo.GetParameters().Length == 0)
+            {
+                var result = menuMethodInfo.Invoke(null, new object[0]);
+                return !validate || (bool)result;
+            }
+
+            if (menuMethodInfo.GetParameters()[0].ParameterType == typeof(MenuCommand))
+            {
+                var result = menuMethodInfo.Invoke(null, new[] { new MenuCommand(null) });
+                return !validate || (bool)result;
+            }
             return false;
         }
 

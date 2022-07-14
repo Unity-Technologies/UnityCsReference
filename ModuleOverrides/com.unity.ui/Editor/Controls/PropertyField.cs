@@ -505,6 +505,7 @@ namespace UnityEditor.UIElements
             listView.bindingPath = property.propertyPath;
             listView.viewDataKey = property.propertyPath;
             listView.name = "unity-list-" + property.propertyPath;
+            listView.headerFoldout.viewDataKey = property.propertyPath;
             listView.Bind(property.serializedObject);
             return listView;
         }

@@ -430,12 +430,14 @@ namespace UnityEditor
             }
         }
 
-        private static string SanitizeMenuItemName(string menuName)
+        internal static string SanitizeMenuItemName(string menuName)
         {
             while (menuName.StartsWith("/"))
             {
                 menuName = menuName.Substring(1);
             }
+            // replace double // separators with /
+            menuName = System.Text.RegularExpressions.Regex.Replace(menuName, "//", "/");
             // removing trailing "/" is already done when building the tree because we're removing empty entries when splitting the menu name with /
             return menuName;
         }

@@ -23,7 +23,12 @@ namespace UnityEngine.Animations
         static readonly AnimationLayerMixerPlayable m_NullPlayable = new AnimationLayerMixerPlayable(PlayableHandle.Null);
         public static AnimationLayerMixerPlayable Null { get { return m_NullPlayable; } }
 
-        public static AnimationLayerMixerPlayable Create(PlayableGraph graph, int inputCount = 0, bool singleLayerOptimization = true)
+        public static AnimationLayerMixerPlayable Create(PlayableGraph graph, int inputCount = 0)
+        {
+            return Create(graph, inputCount,true);
+        }
+
+        public static AnimationLayerMixerPlayable Create(PlayableGraph graph, int inputCount ,bool singleLayerOptimization)
         {
             var handle = CreateHandle(graph, inputCount);
             var mixer = new AnimationLayerMixerPlayable(handle, singleLayerOptimization);
