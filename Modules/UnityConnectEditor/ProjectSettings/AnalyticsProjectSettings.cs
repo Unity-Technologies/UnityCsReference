@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -71,15 +72,31 @@ namespace UnityEditor.Connect
         [SettingsProvider]
         public static SettingsProvider CreateServicesProvider()
         {
-            return new AnalyticsProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
+            bool analyticsEnabled = AnalyticsService.instance.IsServiceEnabled();
+
+            String packageId = "com.unity.analytics";
+            bool analyticsPackageInstalled = false;
+
+            if (File.Exists("Packages/manifest.json") )
             {
-                L10n.Tr(k_KeywordAnalytics),
-                L10n.Tr(k_KeywordInsights),
-                L10n.Tr(k_KeywordEvents),
-                L10n.Tr(k_KeywordMonetization),
-                L10n.Tr(k_KeywordDashboard),
-                L10n.Tr(k_KeywordValidator),
-            });
+                string jsonText = File.ReadAllText("Packages/manifest.json");
+                analyticsPackageInstalled = jsonText.Contains( packageId );
+            }
+
+            if(!analyticsPackageInstalled && !analyticsEnabled)
+                return null;
+            else
+            {
+                return new AnalyticsProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
+                {
+                    L10n.Tr(k_KeywordAnalytics),
+                    L10n.Tr(k_KeywordInsights),
+                    L10n.Tr(k_KeywordEvents),
+                    L10n.Tr(k_KeywordMonetization),
+                    L10n.Tr(k_KeywordDashboard),
+                    L10n.Tr(k_KeywordValidator),
+                });
+            }
         }
 
         protected override SingleService serviceInstance

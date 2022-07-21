@@ -1276,8 +1276,8 @@ namespace UnityEngine.Rendering
         XboxOneD3D12 = 23,
         GameCoreXboxOne = 24,
         [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
-        GameCoreScarlett = 25,
-        GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally set to the same as GameCoreScarlett
+        GameCoreScarlett = -1,
+        GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally _NOT_ set to the same as GameCoreScarlett
         PlayStation5 = 26,
         PlayStation5NGGC = 27
     }

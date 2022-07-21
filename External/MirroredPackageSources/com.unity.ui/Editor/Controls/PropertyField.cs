@@ -422,11 +422,12 @@ namespace UnityEditor.UIElements
 
                     if (enumType != null && enumType.IsDefined(typeof(FlagsAttribute), false))
                     {
+                        // Use property.longValue instead of property.intValue to support long-based enum types.
                         var enumData = EnumDataUtility.GetCachedEnumData(enumType);
                         var field = new EnumFlagsField
                         {
                             choices = enumData.displayNames.ToList(),
-                            value = (Enum) Enum.ToObject(enumType, property.intValue)
+                            value = (Enum) Enum.ToObject(enumType, property.longValue)
                         };
                         return ConfigureField<EnumFlagsField, Enum>(field, property);
                     }

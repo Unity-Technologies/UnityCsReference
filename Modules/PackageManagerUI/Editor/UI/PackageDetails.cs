@@ -410,6 +410,7 @@ namespace UnityEditor.PackageManager.UI
 
                 RefreshPurchasedDate();
                 RefreshLabels();
+                RefreshName();
             }
 
             // Set visibility
@@ -591,6 +592,19 @@ namespace UnityEditor.PackageManager.UI
                 AddToLinks(new Button(ViewLicensesClick) { text = L10n.Tr("View licenses"), classList = { "unity-button", "link" } });
 
             UIUtils.SetElementDisplay(detailLinksContainer, detailLinksContainer.childCount != 0);
+        }
+
+        private void RefreshName()
+        {
+            if (!string.IsNullOrEmpty(m_Version.name) && !package.Is(PackageType.AssetStore))
+            {
+                UIUtils.SetElementDisplay(detailName, true);
+                detailName.SetValueWithoutNotify(m_Version.name);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(detailName, false);
+            }
         }
 
         private void AddToLinks(VisualElement item)
@@ -1365,6 +1379,7 @@ namespace UnityEditor.PackageManager.UI
         private VisualElement detailContainer { get { return cache.Get<VisualElement>("detail"); } }
         private SelectableLabel detailTitle { get { return cache.Get<SelectableLabel>("detailTitle"); } }
         private SelectableLabel detailVersion { get { return cache.Get<SelectableLabel>("detailVersion"); } }
+        private SelectableLabel detailName { get { return  cache.Get<SelectableLabel>("detailName"); } }
         private HelpBox previewInfoBox { get { return cache.Get<HelpBox>("previewInfoBox"); } }
         private HelpBox disabledInfoBox { get { return cache.Get<HelpBox>("disabledInfoBox"); } }
         private VisualElement detailPurchasedDateContainer { get { return cache.Get<VisualElement>("detailPurchasedDateContainer"); } }

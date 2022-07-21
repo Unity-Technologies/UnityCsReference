@@ -900,6 +900,9 @@ namespace UnityEditorInternal
         [FreeFunction("GetPrecompiledAssembliesManaged")]
         extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines = null);
 
+        [FreeFunction("GetPrecompiledAssemblyPathsManaged")]
+        extern internal static string[] GetPrecompiledAssemblyPaths();
+
         [Obsolete("The Module Manager is deprecated", error: true)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void ShowPackageManagerWindow() { throw new NotSupportedException("The Module Manager is deprecated"); }

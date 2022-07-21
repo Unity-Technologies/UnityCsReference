@@ -11,6 +11,7 @@ using UnityEngine.Rendering;
 using System.Linq;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using UnityEditor.ShortcutManagement;
 using UnityEditorInternal.VR;
 using UnityEngine.XR;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
@@ -91,7 +92,10 @@ namespace UnityEditor
             public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
             public static GUIContent vsyncContent = EditorGUIUtility.TrTextContent("VSync");
             public static GUIContent maximizeOnPlayContent = EditorGUIUtility.TrTextContent("Maximize On Play");
-            public static GUIContent muteContent = EditorGUIUtility.TrTextContent("Mute Audio");
+            public static GUIContent muteOffContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Mute Audio");
+            public static GUIContent muteOnContent = EditorGUIUtility.TrIconContent("SceneviewAudio Off", "Mute Audio");
+            public static GUIContent shortcutsOnContent = EditorGUIUtility.TrIconContent("Keyboard", "Unity Shortcuts");
+            public static GUIContent shortcutsOffContent = EditorGUIUtility.TrIconContent("KeyboardShortcutsDisabled", "Unity Shortcuts");
             public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
             public static GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
             public static GUIContent loadRenderDocContent = EditorGUIUtility.TrTextContent(UnityEditor.RenderDocUtil.loadRenderDocLabel);
@@ -645,7 +649,11 @@ namespace UnityEditor
 
                 maximizeOnPlay = GUILayout.Toggle(maximizeOnPlay, Styles.maximizeOnPlayContent, EditorStyles.toolbarButton);
 
-                EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute, Styles.muteContent, EditorStyles.toolbarButton);
+                EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute,
+                    EditorUtility.audioMasterMute ? Styles.muteOnContent : Styles.muteOffContent, EditorStyles.toolbarButton);
+
+                ShortcutIntegration.ignoreWhenPlayModeFocused = GUILayout.Toggle(ShortcutIntegration.ignoreWhenPlayModeFocused,
+                    ShortcutIntegration.ignoreWhenPlayModeFocused ? Styles.shortcutsOffContent : Styles.shortcutsOnContent, EditorStyles.toolbarButton);
 
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
