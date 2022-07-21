@@ -1754,6 +1754,8 @@ namespace UnityEditor.UIElements.Bindings
         private int lastFieldValueIndex;
 
         private List<string> originalChoices;
+        private List<int> displayIndexToEnumIndex;
+        private List<int> enumIndexToDisplayIndex;
         private int originalIndex;
 
         public static void CreateBind(PopupField<string> field,  SerializedObjectBindingContext context,
@@ -1774,18 +1776,47 @@ namespace UnityEditor.UIElements.Bindings
             this.field = c;
             this.originalChoices = field.choices;
             this.originalIndex = field.index;
-            this.field.choices = property.enumLocalizedDisplayNames.ToList();
+            
+            // We need to keep bidirectional lists of indices to translate between Popup choice index and
+            // SerializedProperty enumValueIndex because the Popup choices might be displayed in another language
+            // (using property.enumLocalizedDisplayNames), or in another display order (using enumData.displayNames).
+            // We need to build the bidirectional lists when we assign field.choices, using any of the above options.
+            if (displayIndexToEnumIndex == null)
+                displayIndexToEnumIndex = new List<int>();
+            else
+                displayIndexToEnumIndex.Clear();
+
+            if (enumIndexToDisplayIndex == null)
+                enumIndexToDisplayIndex = new List<int>();
+            else
+                enumIndexToDisplayIndex.Clear();
 
             Type enumType;
             ScriptAttributeUtility.GetFieldInfoFromProperty(property, out enumType);
             if (enumType != null)
             {
                 var enumData = EnumDataUtility.GetCachedEnumData(enumType, true);
-                this.field.choices = enumData.displayNames.ToList();
+                this.field.choices = new List<string>(enumData.displayNames);
+
+                // The call to EditorGUI.EnumNamesCache.GetEnumNames returns an ordered version of the enum. We use the
+                // actual enum values, not the display names, in order to make sure we can compare them to the values in
+                // enumData.names, because the display names may actually be different (if the enum has the InspectorName
+                // attribute, for example).
+                var sortedEnumNames = property.enumNames;
+                foreach (var enumName in enumData.names)
+                    displayIndexToEnumIndex.Add(Array.IndexOf(sortedEnumNames, enumName));
+                foreach (var sortedEnumName in sortedEnumNames)
+                    enumIndexToDisplayIndex.Add(Array.IndexOf(enumData.names, sortedEnumName));
             }
             else
             {
-                this.field.choices = property.enumLocalizedDisplayNames.ToList();
+                c.choices = new List<string>(property.enumLocalizedDisplayNames);
+
+                for (int i = 0; i < c.choices.Count; i++)
+                {
+                    displayIndexToEnumIndex.Add(i);
+                    enumIndexToDisplayIndex.Add(i);
+                }
             }
 
             var originalValue = this.lastFieldValueIndex = c.index;
@@ -1819,16 +1850,13 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int propValueIndex = p.enumValueIndex;
-            if (propValueIndex != lastFieldValueIndex)
+            if (propValueIndex >= 0 && propValueIndex < enumIndexToDisplayIndex.Count)
             {
-                if (propValueIndex >= 0 && propValueIndex < field.choices.Count)
-                {
-                    c.index = lastFieldValueIndex = propValueIndex;
-                }
-                else
-                {
-                    c.index = lastFieldValueIndex = kDefaultValueIndex;
-                }
+                c.index = lastFieldValueIndex = enumIndexToDisplayIndex[propValueIndex];
+            }
+            else
+            {
+                c.index = lastFieldValueIndex = kDefaultValueIndex;
             }
         }
 
@@ -1846,10 +1874,10 @@ namespace UnityEditor.UIElements.Bindings
 
         protected override bool SyncFieldValueToProperty()
         {
-            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < originalChoices.Count
-                && lastFieldValueIndex != boundProperty.enumValueIndex)
+            if (lastFieldValueIndex >= 0 && lastFieldValueIndex < displayIndexToEnumIndex.Count
+                && boundProperty.enumValueIndex != displayIndexToEnumIndex[lastFieldValueIndex])
             {
-                boundProperty.enumValueIndex = lastFieldValueIndex;
+                boundProperty.enumValueIndex = displayIndexToEnumIndex[lastFieldValueIndex];
                 boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 return true;
             }

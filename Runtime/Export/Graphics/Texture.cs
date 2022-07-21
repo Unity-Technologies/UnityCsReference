@@ -660,6 +660,7 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (GetWritableImageData(0).ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             int chainOffset = GetPixelDataOffset(mipLevel);
             int arraySize = GetPixelDataSize(mipLevel);
@@ -864,6 +865,7 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel, CubemapFace face) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (GetWritableImageData(0).ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             int singleElementDataSize = GetPixelDataOffset(this.mipmapCount, (int)face);
             int chainOffset = GetPixelDataOffset(mipLevel, (int)face);
@@ -1037,6 +1039,7 @@ namespace UnityEngine
         public unsafe NativeArray<T> GetPixelData<T>(int mipLevel) where T : struct
         {
             if (!isReadable) throw CreateNonReadableException(this);
+            if (GetImageDataPointer().ToInt64() == 0) throw new UnityException($"Texture '{name}' has no data.");
 
             int chainOffset = GetPixelDataOffset(mipLevel);
             int arraySize = GetPixelDataSize(mipLevel);

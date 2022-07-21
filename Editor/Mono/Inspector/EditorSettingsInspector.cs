@@ -913,6 +913,13 @@ namespace UnityEditor
         private void SetAssetSerializationMode(object data)
         {
             int popupIndex = (int)data;
+
+            if (m_SerializationMode.intValue == popupIndex) return;
+
+            if (!EditorUtility.DisplayDialog("Change Asset Serialization Mode?",
+                    "Changing the serialization method for assets may force a reimport of some or all assets immediately in the project.\n\nAre you sure you wish to change the asset serialization mode?",
+                    "Yes", "No")) return;
+
             m_SerializationMode.intValue = popupIndex;
             if (m_IsGlobalSettings)
                 EditorSettings.serializationMode = (SerializationMode)popupIndex;

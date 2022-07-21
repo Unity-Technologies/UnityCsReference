@@ -129,6 +129,9 @@ namespace UnityEditor
 
         Vector2 m_TextScroll = Vector2.zero;
 
+        int m_LastActiveEntryIndex = -1;
+        bool m_RestoreLatestSelection;
+
         //Make sure the minimum height of the panels can accomodate the cpmplete scroll bar icons
         SplitterState spl = SplitterState.FromRelative(new float[] {70, 30}, new float[] {60, 60}, null);
 
@@ -557,7 +560,10 @@ namespace UnityEditor
             bool setErrorFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelError), new GUIContent((errorCount <= 999 ? errorCount.ToString() : "999+"), errorCount > 0 ? iconErrorSmall : iconErrorMono), Constants.MiniButtonRight);
             // Active entry index may no longer be valid
             if (EditorGUI.EndChangeCheck())
+            {
                 SetActiveEntry(null);
+                m_LastActiveEntryIndex = -1;
+            }
 
             SetFlag(ConsoleFlags.LogLevelLog, setLogFlag);
             SetFlag(ConsoleFlags.LogLevelWarning, setWarningFlag);
@@ -578,11 +584,27 @@ namespace UnityEditor
                 int selectedRow = -1;
                 bool openSelectedItem = false;
                 bool collapsed = HasFlag(ConsoleFlags.Collapse);
+                float scrollPosY = m_ListView.scrollPos.y;
+
                 foreach (ListViewElement el in ListViewGUI.ListView(m_ListView, ListViewOptions.wantsRowMultiSelection, Constants.Box))
                 {
+                    // Destroy latest restore entry if needed
+                    if (e.type == EventType.ScrollWheel || e.type == EventType.Used)
+                        DestroyLatestRestoreEntry();
+
+                    // Make sure that scrollPos.y is always up to date after restoring last entry
+                    if (m_RestoreLatestSelection)
+                    {
+                        m_ListView.scrollPos.y = scrollPosY;
+                    }
+
                     if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
                     {
                         selectedRow = m_ListView.row;
+                        DestroyLatestRestoreEntry();
+                        LogEntry entry = new LogEntry();
+                        LogEntries.GetEntryInternal(m_ListView.row, entry);
+                        m_LastActiveEntryIndex = entry.globalLineIndex;
                         if (e.clickCount == 2)
                             openSelectedItem = true;
                     }
@@ -663,20 +685,27 @@ namespace UnityEditor
                 if (m_ListView.totalRows == 0 || m_ListView.row >= m_ListView.totalRows || m_ListView.row < 0)
                 {
                     if (m_ActiveText.Length != 0)
+                    {
                         SetActiveEntry(null);
+                        DestroyLatestRestoreEntry();
+                    }
                 }
                 else
                 {
                     LogEntry entry = new LogEntry();
                     LogEntries.GetEntryInternal(m_ListView.row, entry);
                     SetActiveEntry(entry);
+                    m_LastActiveEntryIndex = entry.globalLineIndex;
+
 
                     // see if selected entry changed. if so - clear additional info
                     LogEntries.GetEntryInternal(m_ListView.row, entry);
                     if (m_ListView.selectionChanged || !m_ActiveText.Equals(entry.message))
                     {
                         SetActiveEntry(entry);
+                        m_LastActiveEntryIndex = entry.globalLineIndex;
                     }
+
 
                     // If copy, get the messages from selected rows
                     if (e.type == EventType.ExecuteCommand && e.commandName == EventCommandNames.Copy && m_ListView.selectedItems != null)
@@ -751,6 +780,7 @@ namespace UnityEditor
             }
 
             string searchText = m_SearchText;
+
             if (e.type == EventType.KeyDown)
             {
                 if (e.keyCode == KeyCode.Escape)
@@ -758,6 +788,8 @@ namespace UnityEditor
                     searchText = string.Empty;
                     GUIUtility.keyboardControl = m_ListView.ID;
                     Repaint();
+                    if (!String.IsNullOrEmpty(m_SearchText))
+                        RestoreLastActiveEntry();
                 }
                 else if ((e.keyCode == KeyCode.UpArrow || e.keyCode == KeyCode.DownArrow) &&
                          GUI.GetNameOfFocusedControl() == searchBarName)
@@ -942,6 +974,7 @@ namespace UnityEditor
 
         private void SetFilter(string filteringText)
         {
+            m_RestoreLatestSelection = String.IsNullOrEmpty(filteringText) && !String.IsNullOrEmpty(m_SearchText) && m_LastActiveEntryIndex != -1;
             if (filteringText == null)
             {
                 m_SearchText = "";
@@ -952,7 +985,38 @@ namespace UnityEditor
                 m_SearchText = filteringText;
                 LogEntries.SetFilteringText(filteringText); // Reset the active entry when we change the filtering text
             }
-            SetActiveEntry(null);
+
+            if (m_RestoreLatestSelection)
+            {
+                RestoreLastActiveEntry();
+            }
+            else
+            {
+                SetActiveEntry(null);
+                DestroyLatestRestoreEntry();
+            }
+        }
+
+        void RestoreLastActiveEntry()
+        {
+            int rowIndex = LogEntries.GetEntryRowIndex(m_LastActiveEntryIndex);
+            if (rowIndex != -1)
+            {
+                ShowConsoleRow(rowIndex);
+                m_ListView.selectedItems = new bool[rowIndex + 1];
+                m_ListView.selectedItems[rowIndex] = true;
+                m_ListView.scrollPos.y = rowIndex * m_ListView.rowHeight;
+            }
+            else
+            {
+                SetActiveEntry(null);
+            }
+        }
+
+        void DestroyLatestRestoreEntry()
+        {
+            m_LastActiveEntryIndex = -1;
+            m_RestoreLatestSelection = false;
         }
 
         [UsedImplicitly] private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;

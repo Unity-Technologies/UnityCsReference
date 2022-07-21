@@ -25,6 +25,8 @@ namespace UnityEditor.ShortcutManagement
     [InitializeOnLoad]
     static class ShortcutIntegration
     {
+        static string kIgnoreWhenPlayModeFocused = "GameView.IgnoreWhenPlayModeFocused";
+
         class LastUsedProfileIdProvider : ILastUsedProfileIdProvider
         {
             static string lastUsedProfileIdEditorPrefKey => $"ShortcutManagement_LastUsedShortcutProfileId_{ModeService.currentId}";
@@ -78,6 +80,22 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        public static bool ignoreWhenPlayModeFocused
+        {
+            get
+            {
+                return s_IgnoreWhenPlayModeFocused;
+            }
+            set
+            {
+                if (s_IgnoreWhenPlayModeFocused == value) return;
+                EditorPrefs.SetBool(kIgnoreWhenPlayModeFocused, value);
+                s_IgnoreWhenPlayModeFocused = value;
+            }
+
+        }
+        internal static bool s_IgnoreWhenPlayModeFocused;
+
         [RequiredByNativeCode]
         internal static void SetShortcutIntegrationEnabled(bool enable)
         {
@@ -104,6 +122,7 @@ namespace UnityEditor.ShortcutManagement
 
         static void EventHandler()
         {
+            if (s_IgnoreWhenPlayModeFocused && EditorWindow.focusedWindow is GameView && Application.isPlaying) return;
             instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
             instance.HandleKeyEvent(Event.current);
         }
@@ -135,6 +154,7 @@ namespace UnityEditor.ShortcutManagement
             s_Instance.trigger.invokingAction += OnInvokingAction;
 
             enabled = true;
+            ignoreWhenPlayModeFocused = EditorPrefs.GetBool(kIgnoreWhenPlayModeFocused, false);
             EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
             EditorApplication.focusChanged += OnFocusChanged;
         }
