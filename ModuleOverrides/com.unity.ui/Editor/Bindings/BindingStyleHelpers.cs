@@ -229,7 +229,8 @@ namespace UnityEditor.UIElements.Bindings
                         var prefabOverrideBar = new VisualElement();
                         prefabOverrideBar.name = BindingExtensions.prefabOverrideBarName;
                         prefabOverrideBar.userData = element;
-                        prefabOverrideBar.AddToClassList(BindingExtensions.prefabOverrideBarUssClassName);
+                        string ussClass = PrefabUtility.CanPropertyBeAppliedToSource(prop) ? BindingExtensions.prefabOverrideBarUssClassName : BindingExtensions.prefabOverrideBarNotApplicableUssClassName;
+                        prefabOverrideBar.AddToClassList(ussClass);
                         barContainer.Add(prefabOverrideBar);
 
                         element.SetProperty(BindingExtensions.prefabOverrideBarName, prefabOverrideBar);

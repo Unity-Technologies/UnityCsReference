@@ -37,6 +37,7 @@ namespace UnityEditor.UIElements
         internal static readonly string prefabOverrideBarName = "unity-binding-prefab-override-bar";
         internal static readonly string prefabOverrideBarContainerName = "unity-prefab-override-bars-container";
         internal static readonly string prefabOverrideBarUssClassName = "unity-binding__prefab-override-bar";
+        internal static readonly string prefabOverrideBarNotApplicableUssClassName = "unity-binding__prefab-override-bar-not-applicable";
         internal static readonly string animationAnimatedUssClassName = "unity-binding--animation-animated";
         internal static readonly string animationRecordedUssClassName = "unity-binding--animation-recorded";
         internal static readonly string animationCandidateUssClassName = "unity-binding--animation-candidate";

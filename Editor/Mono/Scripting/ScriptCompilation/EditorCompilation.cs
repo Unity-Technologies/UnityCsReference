@@ -1733,6 +1733,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths != null)
                     scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths
                         .Concat(scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths)
+                        .Distinct()
                         .ToArray();
 
                 if (!string.IsNullOrEmpty(assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath))
