@@ -17,9 +17,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly string k_ViewUseCasesText = L10n.Tr("Use Cases");
         public static readonly string k_ViewDashboardText = L10n.Tr("Go to Dashboard");
 
-        public static readonly string k_ViewDisabledDocumentationToolTip = L10n.Tr("Install to view documentation");
-        public static readonly string k_ViewDisabledChangelogToolTip = L10n.Tr("Install to view changelog");
-        public static readonly string k_ViewDisabledLicensesToolTip = L10n.Tr("Install to view licenses");
+        public static readonly string k_InstallToViewDocumentationTooltip = L10n.Tr("Install to view documentation");
+        public static readonly string k_InstallToViewChangelogTooltip = L10n.Tr("Install to view changelog");
+        public static readonly string k_InstallToViewLicenseTooltip = L10n.Tr("Install to view licenses");
+        public static readonly string k_UnavailableDocumentationTooltip = L10n.Tr("Documentation unavailable");
+        public static readonly string k_UnavailableChangelogTooltip = L10n.Tr("Changelog unavailable");
+        public static readonly string k_UnavailableLicenseTooltip = L10n.Tr("Licenses unavailable");
 
         public const string k_LinkClass = "link";
 
@@ -30,6 +33,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private IOProxy m_IOProxy;
+
+        private enum LinkState
+        {
+            NotVisible,
+            Enabled,
+            Disabled
+        }
+
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -51,15 +62,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package == null || version == null)
                 return;
 
+            AddAssetStoreLinks(package, version);
+            AddUpmLinks(package,version);
+
+            UIUtils.SetElementDisplay(this, childCount != 0);
+        }
+
+        private void AddAssetStoreLinks(IPackage package, IPackageVersion version)
+        {
             var assetStoreLinks = new VisualElement { classList = { "left" }, name = "packageDetailHeaderAssetStoreLinks" };
-            Add(assetStoreLinks);
 
             // add links from the package
             foreach (var link in package.links)
             {
                 if (string.IsNullOrEmpty(link.name) || string.IsNullOrEmpty(link.url))
                     continue;
-                AddToLinks(assetStoreLinks, new Button(() =>
+                AddToParentWithSeparator(assetStoreLinks, new Button(() =>
                 {
                     m_Application.OpenURL(link.url);
                     if (!string.IsNullOrEmpty(link.analyticsEventName))
@@ -69,64 +87,117 @@ namespace UnityEditor.PackageManager.UI.Internal
                     text = link.name,
                     tooltip = link.url,
                     classList = { k_LinkClass }
-                }, package.links.First() != link);
+                });
             }
 
+            if (assetStoreLinks.Children().Any())
+                Add(assetStoreLinks);
+        }
+
+        private void AddUpmLinks(IPackage package, IPackageVersion version)
+        {
             var upmLinks = new VisualElement { classList = { "left" }, name = "packageDetailHeaderUPMLinks" };
             var documentationButton = new Button(ViewDocClick) { text = k_ViewDocumentationText, classList = { k_LinkClass } };
             var changelogButton = new Button(ViewChangelogClick) { text = k_ViewChangelogText, classList = { k_LinkClass } };
             var licensesButton = new Button(ViewLicensesClick) { text = k_ViewLicensesText, classList = { k_LinkClass } };
 
-            // add links related to the upm version
-            if (UpmPackageDocs.HasDocs(version))
-                AddToLinks(upmLinks, documentationButton, false);
 
-            if (UpmPackageDocs.HasChangelog(version))
-                AddToLinks(upmLinks, changelogButton);
+            (LinkState, string) docsStateAndTooltip = GetDocLinkStateAndTooltip(package, version);
+            (LinkState, string) changelogStateAndTooltip = GetChangelogLinkStateAndTooltip(package, version);
+            (LinkState, string) licenseStateAndTooltip = GetLicenseLinkStateAndTooltip(package, version);
+            if (docsStateAndTooltip.Item1 != LinkState.NotVisible)
+                AddToParentWithSeparator(upmLinks, documentationButton);
 
-            if (UpmPackageDocs.HasLicenses(version))
-                AddToLinks(upmLinks, licensesButton);
+            if (changelogStateAndTooltip.Item1 != LinkState.NotVisible)
+                AddToParentWithSeparator(upmLinks, changelogButton);
+
+            if (licenseStateAndTooltip.Item1 != LinkState.NotVisible)
+                AddToParentWithSeparator(upmLinks, licensesButton);
 
 
-            if (UpmPackageDocs.HasUseCases(version))
-                AddToLinks(upmLinks, new Button(ViewUseCasesClick) { text = k_ViewUseCasesText, classList = { k_LinkClass } });
-
-            if (UpmPackageDocs.HasDashboard(version))
-                AddToLinks(upmLinks, new Button(ViewDashboardClick) { text = k_ViewDashboardText, classList = { k_LinkClass } });
-
-            var upmVersion = version as UpmPackageVersion;
-            if (upmLinks.Children().Any())
+            if (docsStateAndTooltip.Item1 == LinkState.Disabled)
             {
-                Add(upmLinks);
-                if (package.Is(PackageType.AssetStore) && !version.isInstalled)
-                {
-                    if (string.IsNullOrEmpty(upmVersion.documentationUrl))
-                    {
-                        documentationButton.SetEnabled(false);
-                        documentationButton.tooltip = k_ViewDisabledDocumentationToolTip;
-                    }
-                    if (string.IsNullOrEmpty(upmVersion.changelogUrl))
-                    {
-                        changelogButton.SetEnabled(false);
-                        changelogButton.tooltip = k_ViewDisabledChangelogToolTip;
-                    }
-                    if (string.IsNullOrEmpty(upmVersion.licensesUrl))
-                    {
-                        licensesButton.SetEnabled(false);
-                        licensesButton.tooltip = k_ViewDisabledLicensesToolTip;
-                    }
-                }
+                documentationButton.SetEnabled(false);
+                documentationButton.tooltip = docsStateAndTooltip.Item2;
+            }
+            if (changelogStateAndTooltip.Item1 == LinkState.Disabled)
+            {
+                changelogButton.SetEnabled(false);
+                changelogButton.tooltip = changelogStateAndTooltip.Item2;
+            }
+            if (licenseStateAndTooltip.Item1 == LinkState.Disabled)
+            {
+                licensesButton.SetEnabled(false);
+                licensesButton.tooltip = licenseStateAndTooltip.Item2;
             }
 
-            UIUtils.SetElementDisplay(this, childCount != 0);
+            if (UpmPackageDocs.HasUseCases(version))
+                AddToParentWithSeparator(upmLinks, new Button(ViewUseCasesClick) { text = k_ViewUseCasesText, classList = { k_LinkClass } });
+
+            if (UpmPackageDocs.HasDashboard(version))
+                AddToParentWithSeparator(upmLinks, new Button(ViewDashboardClick) { text = k_ViewDashboardText, classList = { k_LinkClass } });
+
+            if (upmLinks.Children().Any())
+                Add(upmLinks);
         }
 
-        private void AddToLinks(VisualElement parent, VisualElement item, bool showSeparator = true)
+        private void AddToParentWithSeparator(VisualElement parent, VisualElement item)
         {
-            // Add a seperator between links to make them less crowded together
-            if (childCount > 0 && showSeparator)
+            if (parent.childCount > 0)
                 parent.Add(new Label("|") { classList = { "separator" } });
             parent.Add(item);
+        }
+
+        private (LinkState state, string tooltip) GetDocLinkStateAndTooltip(IPackage package, IPackageVersion version)
+        {
+            var upmVersion = version as UpmPackageVersion;
+
+            if (upmVersion == null || version.HasTag(PackageTag.Feature))
+                return (LinkState.NotVisible, "");
+
+            if (UpmPackageDocs.GetDocumentationUrl(upmVersion).Any() ||
+                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, version)) ||
+                version.HasTag(PackageTag.BuiltIn))
+                return (LinkState.Enabled, "");
+
+            if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+                return (LinkState.Disabled, k_InstallToViewDocumentationTooltip);
+
+            return (LinkState.Disabled, k_UnavailableDocumentationTooltip);
+        }
+
+        private (LinkState state, string tooltip) GetChangelogLinkStateAndTooltip(IPackage package, IPackageVersion version)
+        {
+            var upmVersion = version as UpmPackageVersion;
+
+            if (upmVersion == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
+                return (LinkState.NotVisible, "");
+
+            if (!string.IsNullOrEmpty(UpmPackageDocs.GetChangelogUrl(upmVersion)) ||
+                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineChangelog(m_IOProxy, upmVersion)))
+                return (LinkState.Enabled, "");
+
+            if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+                return (LinkState.Disabled, k_InstallToViewChangelogTooltip);
+
+            return (LinkState.Disabled, k_UnavailableChangelogTooltip);
+        }
+
+        private (LinkState state, string tooltip) GetLicenseLinkStateAndTooltip(IPackage package, IPackageVersion version)
+        {
+            var upmVersion = version as UpmPackageVersion;
+
+            if (upmVersion == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
+                return (LinkState.NotVisible, "");
+
+            if (!string.IsNullOrEmpty(UpmPackageDocs.GetLicensesUrl(upmVersion)) ||
+                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineLicenses(m_IOProxy, upmVersion)))
+                return (LinkState.Enabled, "");
+
+            if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+                return (LinkState.Disabled, k_InstallToViewLicenseTooltip);
+
+            return (LinkState.Disabled, k_UnavailableLicenseTooltip);
         }
 
         private void ViewUrl(string[] onlineUrls, string offlineDocPath, string docType, string analyticsEvent)
@@ -138,7 +209,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     UpmPackageDocs.HandleInvalidOrUnreachableOnlineUrl(string.Empty, offlineDocPath, docType, analyticsEvent, m_Version, m_Package, m_Application);
                     return;
                 }
-
                 UpmPackageDocs.OpenWebUrl(onlineUrls[0], m_Version, m_Application, analyticsEvent, () =>
                 {
                     var urls = new List<string>(onlineUrls).Skip(1).ToArray();

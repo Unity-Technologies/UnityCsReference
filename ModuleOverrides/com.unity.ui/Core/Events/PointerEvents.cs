@@ -265,6 +265,19 @@ namespace UnityEngine.UIElements
         bool recomputeTopElementUnderPointer { get; set; }
     }
 
+    internal static class PointerEventHelper
+    {
+        public static EventBase GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button,
+            int clickCount, EventModifiers modifiers)
+        {
+            if (eventType == EventType.MouseDown && !PointerDeviceState.HasAdditionalPressedButtons(PointerId.mousePointerId, button))
+                return PointerDownEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
+            if (eventType == EventType.MouseUp && !PointerDeviceState.HasAdditionalPressedButtons(PointerId.mousePointerId, button))
+                return PointerUpEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
+            return PointerMoveEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
+        }
+    }
+
     /// <summary>
     /// This is the base class for pointer events.
     /// </summary>
@@ -287,6 +300,9 @@ namespace UnityEngine.UIElements
     public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal
         where T : PointerEventBase<T>, new()
     {
+        // See HTML spec for pointer pressure: https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/pressure
+        private const float k_DefaultButtonPressure = 0.5f;
+
         private bool m_AltitudeNeedsConversion = true;
         private bool m_AzimuthNeedsConversion = true;
         private float m_AltitudeAngle = 0f;
@@ -745,7 +761,7 @@ namespace UnityEngine.UIElements
             switch (systemEvent.pointerType)
             {
                 default:
-                    e.pressure = e.pressedButtons == 0 ? 0f : 0.5f;
+                    e.pressure = e.pressedButtons == 0 ? 0f : k_DefaultButtonPressure;
                     break;
                 case UnityEngine.PointerType.Touch:
                     e.pressure = systemEvent.pressure;
@@ -757,6 +773,41 @@ namespace UnityEngine.UIElements
 
             e.tangentialPressure = 0;
 
+            ((IPointerEventInternal)e).triggeredByOS = true;
+
+            return e;
+        }
+
+        internal static T GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button, int clickCount, EventModifiers modifiers)
+        {
+            T e = GetPooled();
+
+            e.pointerId = PointerId.mousePointerId;
+            e.pointerType = PointerType.mouse;
+            e.isPrimary = true;
+
+            if (eventType == EventType.MouseDown)
+            {
+                PointerDeviceState.PressButton(e.pointerId, button);
+                e.button = button;
+            }
+            else if (eventType == EventType.MouseUp)
+            {
+                PointerDeviceState.ReleaseButton(e.pointerId, button);
+                e.button = button;
+            }
+            else
+            {
+                e.button = -1;
+            }
+
+            e.pressedButtons = PointerDeviceState.GetPressedButtons(e.pointerId);
+            e.position = mousePosition;
+            e.localPosition = mousePosition;
+            e.deltaPosition = delta;
+            e.clickCount = clickCount;
+            e.modifiers = modifiers;
+            e.pressure = e.pressedButtons == 0 ? 0f : k_DefaultButtonPressure;
             ((IPointerEventInternal)e).triggeredByOS = true;
 
             return e;

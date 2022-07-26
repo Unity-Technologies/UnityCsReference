@@ -158,7 +158,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version?.isFullyFetched == false)
                 m_PackageDatabase.FetchExtraInfo(version);
 
-            var detailVisible = package != null && version != null && !inProgressView.Refresh(package);
+            var shouldDisplayProgress = inProgressView.ShouldDisplayProgress(package);
+            inProgressView.Refresh(shouldDisplayProgress ? package : null);
+
+            var detailVisible = package != null && version != null && !shouldDisplayProgress;
             var detailEnabled = version == null || version.isFullyFetched;
 
             if (!detailVisible)
@@ -174,6 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // Set visibility
+            UIUtils.SetElementDisplay(inProgressView, shouldDisplayProgress);
             UIUtils.SetElementDisplay(detail, detailVisible);
             UIUtils.SetElementDisplay(toolbar, detailVisible);
             UIUtils.SetElementDisplay(multiSelectDetails, false);

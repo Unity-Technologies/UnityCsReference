@@ -476,6 +476,21 @@ namespace UnityEditor
             return changed;
         }
 
+        public struct MixedValueScope : IDisposable
+        {
+            bool m_DefaultMixedValue;
+
+            public MixedValueScope(bool newMixedValue)
+            {
+                m_DefaultMixedValue = showMixedValue;
+                showMixedValue = newMixedValue;
+            }
+            void IDisposable.Dispose()
+            {
+                showMixedValue = m_DefaultMixedValue;
+            }
+        }
+
         internal class RecycledTextEditor : TextEditor
         {
             internal static bool s_ActuallyEditing = false; // internal so we can save this state.

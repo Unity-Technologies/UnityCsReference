@@ -128,6 +128,8 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal Action onShowPresets;
+
         internal static AnimationCurve CopyCurve(AnimationCurve other)
         {
             AnimationCurve curveCopy = new AnimationCurve();
@@ -265,9 +267,10 @@ namespace UnityEditor.UIElements
             CurveEditorSettings settings = new CurveEditorSettings();
             if (rawValue == null)
                 rawValue = new AnimationCurve();
+            onShowPresets?.Invoke();
+
             CurveEditorWindow.instance.Show(OnCurveChanged, settings);
             CurveEditorWindow.curve = rawValue;
-
             CurveEditorWindow.color = curveColor;
         }
 

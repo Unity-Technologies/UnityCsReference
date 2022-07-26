@@ -24,7 +24,7 @@ namespace Unity.UI.Builder
         Color m_EvenCellColor = k_DefaultEvenCellColor;
 
         Texture2D m_Texture;
-        
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="CheckerboardBackground"/>.
         /// </summary>
@@ -64,7 +64,7 @@ namespace Unity.UI.Builder
 
             m_Texture = null;
         }
-        
+
         void OnGenerateVisualContent(MeshGenerationContext context)
         {
             var quadSize = localBound.size / k_NumberOfQuadsInRow;
@@ -158,7 +158,7 @@ namespace Unity.UI.Builder
 
             m_Texture.Apply(false, true);
         }
-        
+
         void OnDetachFromPanel(DetachFromPanelEvent e)
         {
             DestroyTexture();

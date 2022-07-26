@@ -10,6 +10,7 @@ using System;
 
 namespace UnityEditor
 {
+    [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
     public enum XboxOneEncryptionLevel
     {
         None = 0,
@@ -17,12 +18,14 @@ namespace UnityEditor
         FullEncryption = 2
     }
 
+    [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
     public enum XboxOnePackageUpdateGranularity
     {
         Chunk = 1,
         File = 2
     }
 
+    [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
     public enum XboxOneLoggingLevel
     {
         AllLogging = 4,
@@ -39,6 +42,9 @@ namespace UnityEditor
 
     public sealed partial class PlayerSettings
     {
+
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
+
         [NativeHeader("Runtime/Misc/PlayerSettings.h")]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
         public sealed partial class XboxOne

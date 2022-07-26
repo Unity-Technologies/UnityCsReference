@@ -189,7 +189,7 @@ namespace Unity.UI.Builder
                     else
                         categoryStack.Last().AddChild(newItem);
                 }
-                
+
                 vta.Destroy();
             }
 

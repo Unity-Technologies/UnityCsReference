@@ -27,21 +27,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(m_Description);
         }
 
-        public bool Refresh(IPackage package)
+        public virtual bool ShouldDisplayProgress(IPackage package)
         {
-            if (package?.progress == PackageProgress.Installing && package is PlaceholderPackage)
+            return package?.progress == PackageProgress.Installing &&
+                   package?.versions?.primary?.HasTag(PackageTag.Placeholder) == true;
+        }
+
+        public void Refresh(IPackage package)
+        {
+            if (package == null)
             {
-                m_Title.text = L10n.Tr("Please wait, installing a package...");
-                m_Description.text = package.uniqueId;
-                m_Spinner.Start();
-                UIUtils.SetElementDisplay(this, true);
-                return true;
+                m_Title.text = string.Empty;
+                m_Description.text = string.Empty;
+                m_Spinner.Stop();
+                return;
             }
-            m_Title.text = string.Empty;
-            m_Description.text = string.Empty;
-            m_Spinner.Stop();
-            UIUtils.SetElementDisplay(this, false);
-            return false;
+            m_Title.text = L10n.Tr("Please wait, installing a package...");
+            m_Description.text = package.uniqueId;
+            m_Spinner.Start();
         }
     }
 }

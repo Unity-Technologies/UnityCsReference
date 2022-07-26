@@ -51,7 +51,7 @@ namespace Unity.UI.Builder
             m_MixedValueLine = new VisualElement();
             m_MixedValueLine.name = "mixed-value-line";
             m_MixedValueLine.AddToClassList(k_MixedValueLineClassName);
-            m_ColorField.Q<IMGUIContainer>().hierarchy.Add(m_MixedValueLine);
+            m_ColorField.Q(ColorField.internalColorFieldName).hierarchy.Add(m_MixedValueLine);
         }
 
         public override void UpdateFromChildFields()

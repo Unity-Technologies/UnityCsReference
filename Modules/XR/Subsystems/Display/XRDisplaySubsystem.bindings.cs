@@ -55,6 +55,16 @@ namespace UnityEngine.XR
         extern public bool  sRGB { get; set; }
         extern public float occlusionMaskScale { get; set;}
 
+        [Flags]
+        public enum FoveatedRenderingFlags
+        {
+            None = 0,
+            GazeAllowed = 1 << 0
+        }
+
+        extern public float foveatedRenderingLevel { get; set; }
+        extern public FoveatedRenderingFlags foveatedRenderingFlags { get; set; }
+
         public enum LateLatchNode
         {
             Head = 0,
@@ -183,6 +193,8 @@ namespace UnityEngine.XR
 
             public int cullingPassIndex;
 
+            public IntPtr foveatedRenderingInfo;
+
             [NativeMethod(Name = "XRRenderPassScriptApi::GetRenderParameter", IsFreeFunction = true, HasExplicitThis = true, ThrowsException = true)]
             [NativeConditional("ENABLE_XR")]
             extern public void GetRenderParameter(Camera camera, int renderParameterIndex, out XRRenderParameter renderParameter);
@@ -219,6 +231,7 @@ namespace UnityEngine.XR
             public int srcTexArraySlice;
             public Rect srcRect;
             public Rect destRect;
+            public IntPtr foveatedRenderingInfo;
         }
 
         [NativeHeader("Modules/XR/Subsystems/Display/XRDisplaySubsystem.bindings.h")]

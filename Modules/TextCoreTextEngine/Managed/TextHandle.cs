@@ -364,6 +364,138 @@ namespace UnityEngine.TextCore.Text
             return closest;
         }
 
+        /// <summary>
+        /// Function returning the index of the Link at the given position (if any).
+        /// </summary>
+        /// <returns></returns>
+        public int FindIntersectingLink(Vector3 position, bool inverseYAxis = true)
+        {
+            if (inverseYAxis)
+                position.y = textGenerationSettings.screenRect.height - position.y;
+
+            for (int i = 0; i < textInfo.linkCount; i++)
+            {
+                var linkInfo = textInfo.linkInfo[i];
+
+                bool isBeginRegion = false;
+
+                Vector3 bl = Vector3.zero;
+                Vector3 tl = Vector3.zero;
+                Vector3 br = Vector3.zero;
+                Vector3 tr = Vector3.zero;
+
+                // Iterate through each character of the word
+                for (int j = 0; j < linkInfo.linkTextLength; j++)
+                {
+                    int characterIndex = linkInfo.linkTextfirstCharacterIndex + j;
+                    var currentCharInfo = textInfo.textElementInfo[characterIndex];
+                    int currentLine = currentCharInfo.lineNumber;
+
+                    if (!isBeginRegion)
+                    {
+                        isBeginRegion = true;
+
+                        bl = new Vector3(currentCharInfo.bottomLeft.x, currentCharInfo.descender, 0);
+                        tl = new Vector3(currentCharInfo.bottomLeft.x, currentCharInfo.ascender, 0);
+
+                        //Debug.Log("Start Word Region at [" + currentCharInfo.character + "]");
+
+                        // If Word is one character
+                        if (linkInfo.linkTextLength == 1)
+                        {
+                            isBeginRegion = false;
+
+                            br = new Vector3(currentCharInfo.topRight.x, currentCharInfo.descender, 0);
+                            tr = new Vector3(currentCharInfo.topRight.x, currentCharInfo.ascender, 0);
+
+                            // Check for Intersection
+                            if (PointIntersectRectangle(position, bl, tl, tr, br))
+                                return i;
+
+                            //Debug.Log("End Word Region at [" + currentCharInfo.character + "]");
+                        }
+                    }
+
+                    // Last Character of Word
+                    if (isBeginRegion && j == linkInfo.linkTextLength - 1)
+                    {
+                        isBeginRegion = false;
+
+                        br = new Vector3(currentCharInfo.topRight.x, currentCharInfo.descender, 0);
+                        tr = new Vector3(currentCharInfo.topRight.x, currentCharInfo.ascender, 0);
+
+                        // Check for Intersection
+                        if (PointIntersectRectangle(position, bl, tl, tr, br))
+                            return i;
+
+                        //Debug.Log("End Word Region at [" + currentCharInfo.character + "]");
+                    }
+                    // If Word is split on more than one line.
+                    else if (isBeginRegion && currentLine != textInfo.textElementInfo[characterIndex + 1].lineNumber)
+                    {
+                        isBeginRegion = false;
+
+                        br = new Vector3(currentCharInfo.topRight.x, currentCharInfo.descender, 0);
+                        tr = new Vector3(currentCharInfo.topRight.x, currentCharInfo.ascender, 0);
+
+                        // Check for Intersection
+                        if (PointIntersectRectangle(position, bl, tl, tr, br))
+                            return i;
+
+                        //Debug.Log("End Word Region at [" + currentCharInfo.character + "]");
+                    }
+                }
+
+                //Debug.Log("Word at Index: " + i + " is located at (" + bl + ", " + tl + ", " + tr + ", " + br + ").");
+
+            }
+
+            return -1;
+        }
+
+        private static bool PointIntersectRectangle(Vector3 m, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+        {
+            Vector3 ab = b - a;
+            Vector3 am = m - a;
+            Vector3 bc = c - b;
+            Vector3 bm = m - b;
+
+            float abamDot = Vector3.Dot(ab, am);
+            float bcbmDot = Vector3.Dot(bc, bm);
+
+            return 0 <= abamDot && abamDot <= Vector3.Dot(ab, ab) && 0 <= bcbmDot && bcbmDot <= Vector3.Dot(bc, bc);
+        }
+
+        /// <summary>
+        /// Function returning the Square Distance from a Point to a Line.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        private static float DistanceToLine(Vector3 a, Vector3 b, Vector3 point)
+        {
+            Vector3 n = b - a;
+            Vector3 pa = a - point;
+
+            float c = Vector3.Dot( n, pa );
+
+            // Closest point is a
+            if ( c > 0.0f )
+                return Vector3.Dot( pa, pa );
+
+            Vector3 bp = point - b;
+
+            // Closest point is b
+            if (Vector3.Dot( n, bp ) > 0.0f )
+                return Vector3.Dot( bp, bp );
+
+            // Closest point is between a and b
+            Vector3 e = pa - n * (c / Vector3.Dot( n, n ));
+
+            return Vector3.Dot( e, e );
+        }
+
         public int GetLineNumber(int index)
         {
             if (index <= 0)
@@ -504,49 +636,6 @@ namespace UnityEngine.TextCore.Text
             TextGenerator.GenerateText(tgs, textInfo);
             textGenerationSettings = tgs;
             return textInfo;
-        }
-
-        private static bool PointIntersectRectangle(Vector3 m, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
-        {
-            Vector3 ab = b - a;
-            Vector3 am = m - a;
-            Vector3 bc = c - b;
-            Vector3 bm = m - b;
-
-            float abamDot = Vector3.Dot(ab, am);
-            float bcbmDot = Vector3.Dot(bc, bm);
-
-            return 0 <= abamDot && abamDot <= Vector3.Dot(ab, ab) && 0 <= bcbmDot && bcbmDot <= Vector3.Dot(bc, bc);
-        }
-
-        /// <summary>
-        /// Function returning the Square Distance from a Point to a Line.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        private static float DistanceToLine(Vector3 a, Vector3 b, Vector3 point)
-        {
-            Vector3 n = b - a;
-            Vector3 pa = a - point;
-
-            float c = Vector3.Dot( n, pa );
-
-            // Closest point is a
-            if ( c > 0.0f )
-                return Vector3.Dot( pa, pa );
-
-            Vector3 bp = point - b;
-
-            // Closest point is b
-            if (Vector3.Dot( n, bp ) > 0.0f )
-                return Vector3.Dot( bp, bp );
-
-            // Closest point is between a and b
-            Vector3 e = pa - n * (c / Vector3.Dot( n, n ));
-
-            return Vector3.Dot( e, e );
         }
     }
 }

@@ -23,7 +23,6 @@ namespace UnityEditor.UIElements
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetOrCreateDefaultTheme;
             DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
-
         }
 
         private static GenericOSMenu CreateGenericOSMenu()

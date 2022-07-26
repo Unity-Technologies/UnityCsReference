@@ -88,6 +88,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void Reset()
+        {
+            m_LastMousePressButton = -1;
+            m_NextMousePressTime = 0f;
+            m_LastMouseClickCount = 0;
+            m_LastMousePosition = Vector2.zero;
+            m_MouseProcessedAtLeastOnce = false;
+        }
+
         public enum UpdateMode
         {
             Always,
@@ -104,6 +113,11 @@ namespace UnityEngine.UIElements
             // touch needs to take precedence because of the mouse emulation layer
             if (!m_SendingPenEvent)
                 m_SendingTouchEvents = ProcessTouchEvents();
+
+            if (!m_SendingPenEvent && !m_SendingTouchEvents)
+                ProcessMouseEvents();
+            else
+                m_MouseProcessedAtLeastOnce = false; // don't send mouse move after pen/touch until mouse truly moves
 
             using (FocusBasedEventSequence())
             {
@@ -152,29 +166,94 @@ namespace UnityEngine.UIElements
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
                     ProcessTabEvent(m_Event, m_CurrentModifiers);
                 }
-                else if (!m_SendingTouchEvents && !m_SendingPenEvent && input.mousePresent)
+                else if (!m_SendingTouchEvents && !m_SendingPenEvent && m_Event.pointerType != UnityEngine.PointerType.Mouse ||
+                         m_Event.type == EventType.MouseEnterWindow || m_Event.type == EventType.MouseLeaveWindow)
                 {
-                    var pointerType = m_Event.pointerType == UnityEngine.PointerType.Mouse
-                        ? PointerId.mousePointerId
-                        : PointerId.penPointerIdBase;
-                    var screenPosition = GetLocalScreenPosition(m_Event, out var targetDisplay);
-                    if (m_Event.type == EventType.ScrollWheel)
+                    int pointerType =
+                        m_Event.pointerType == UnityEngine.PointerType.Mouse ? PointerId.mousePointerId :
+                        m_Event.pointerType == UnityEngine.PointerType.Touch ? PointerId.touchPointerIdBase :
+                        PointerId.penPointerIdBase;
+                    Vector3 screenPosition = UIElementsRuntimeUtility.MultiDisplayToLocalScreenPosition(m_Event.mousePosition, out var targetDisplay);
+                    Vector2 screenDelta = m_Event.delta;
+                    SendPositionBasedEvent(screenPosition, screenDelta, pointerType, targetDisplay, (panelPosition, panelDelta, evt) =>
                     {
-                        SendPositionBasedEvent(screenPosition, m_Event.delta, pointerType, targetDisplay, (panelPosition, panelDelta, self) =>
-                        {
-                            self.m_Event.mousePosition = panelPosition;
-                            return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
-                        }, this);
-                    }
-                    else
+                        evt.mousePosition = panelPosition;
+                        evt.delta = panelDelta;
+                        return UIElementsRuntimeUtility.CreateEvent(evt);
+                    }, m_Event, deselectIfNoTarget: m_Event.type == EventType.MouseDown || m_Event.type == EventType.TouchDown);
+                }
+            }
+        }
+
+        private int m_LastMousePressButton = -1;
+        private float m_NextMousePressTime = 0f;
+        private int m_LastMouseClickCount = 0;
+        private Vector2 m_LastMousePosition = Vector2.zero;
+        private bool m_MouseProcessedAtLeastOnce;
+
+        private void ProcessMouseEvents()
+        {
+            if (!input.mousePresent)
+                return;
+
+            var position = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(input.mousePosition, out var targetDisplay);
+            var delta = position - m_LastMousePosition;
+            var scrollDelta = input.mouseScrollDelta;
+
+            if (!m_MouseProcessedAtLeastOnce)
+            {
+                delta = Vector2.zero;
+                m_LastMousePosition = position;
+                m_MouseProcessedAtLeastOnce = true;
+            }
+            else
+            {
+                if (!Mathf.Approximately(delta.x, 0f) || !Mathf.Approximately(delta.y, 0f))
+                {
+                    // Only adjust lastMousePosition if we send a PointerMoveEvent, otherwise let the delta accumulate.
+                    m_LastMousePosition = position;
+
+                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
+                        (panelPosition, panelDelta, self) => PointerMoveEvent.GetPooled(EventType.MouseMove,
+                            panelPosition, panelDelta, -1, 0, self.m_CurrentModifiers), this);
+                }
+
+                if (!Mathf.Approximately(scrollDelta.x, 0f) || !Mathf.Approximately(scrollDelta.y, 0f))
+                {
+                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
+                        (panelPosition, _, t) => WheelEvent.GetPooled(panelPosition, -1, 0, t.scrollDelta, t.modifiers),
+                        (modifiers: m_CurrentModifiers, scrollDelta));
+                }
+            }
+
+            int mouseButtonCount = input.mouseButtonCount;
+            for (var button = 0; button < mouseButtonCount; button++)
+            {
+                if (input.GetMouseButtonDown(button))
+                {
+                    if (m_LastMousePressButton != button || Time.unscaledTime >= m_NextMousePressTime)
                     {
-                        SendPositionBasedEvent(screenPosition, m_Event.delta, pointerType, targetDisplay, (panelPosition, panelDelta, self) =>
-                        {
-                            self.m_Event.mousePosition = panelPosition;
-                            self.m_Event.delta = panelDelta;
-                            return UIElementsRuntimeUtility.CreateEvent(self.m_Event);
-                        }, this, deselectIfNoTarget: m_Event.type == EventType.MouseDown);
+                        m_LastMousePressButton = button;
+                        m_LastMouseClickCount = 0;
+                        m_NextMousePressTime = Time.unscaledTime + Event.GetDoubleClickTime();
                     }
+
+                    var clickCount = ++m_LastMouseClickCount;
+
+                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
+                        (panelPosition, panelDelta, t) => PointerEventHelper.GetPooled(EventType.MouseDown,
+                            panelPosition, panelDelta, t.button, t.clickCount, t.modifiers),
+                        (button, clickCount, modifiers: m_CurrentModifiers), deselectIfNoTarget:true);
+                }
+
+                if (input.GetMouseButtonUp(button))
+                {
+                    var clickCount = m_LastMouseClickCount;
+
+                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
+                        (panelPosition, panelDelta, t) => PointerEventHelper.GetPooled(EventType.MouseUp,
+                            panelPosition, panelDelta, t.button, t.clickCount, t.modifiers),
+                        (button, clickCount, modifiers: m_CurrentModifiers));
                 }
             }
         }
@@ -503,12 +582,6 @@ namespace UnityEngine.UIElements
             return moveDirection != NavigationMoveEvent.Direction.None;
         }
 
-        static Vector2 GetLocalScreenPosition(Event evt, out int? targetDisplay)
-        {
-            targetDisplay = null; // TODO: find why evt.displayIndex doesn't work
-            return evt.mousePosition;
-        }
-
         void ProcessTabEvent(Event e, EventModifiers modifiers)
         {
             if (e.type == EventType.KeyDown && e.character == '\t')
@@ -533,6 +606,11 @@ namespace UnityEngine.UIElements
             int touchCount { get; }
             Touch GetTouch(int index);
             bool mousePresent { get; }
+            bool GetMouseButtonDown(int button);
+            bool GetMouseButtonUp(int button);
+            Vector3 mousePosition { get; }
+            Vector2 mouseScrollDelta { get; }
+            int mouseButtonCount { get; }
             bool anyKey { get; }
         }
 
@@ -548,6 +626,11 @@ namespace UnityEngine.UIElements
             public int touchCount => UnityEngine.Input.touchCount;
             public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
             public bool mousePresent => UnityEngine.Input.mousePresent;
+            public bool GetMouseButtonDown(int button) => UnityEngine.Input.GetMouseButtonDown(button);
+            public bool GetMouseButtonUp(int button) => UnityEngine.Input.GetMouseButtonUp(button);
+            public Vector3 mousePosition => UnityEngine.Input.mousePosition;
+            public Vector2 mouseScrollDelta => UnityEngine.Input.mouseScrollDelta;
+            public int mouseButtonCount => 3;
             public bool anyKey => UnityEngine.Input.anyKey;
         }
 
@@ -563,6 +646,11 @@ namespace UnityEngine.UIElements
             public PenData GetPenEvent(int index) => default;
             public PenData GetLastPenContactEvent() => default;
             public bool mousePresent => false;
+            public bool GetMouseButtonDown(int button) => false;
+            public bool GetMouseButtonUp(int button) => false;
+            public Vector3 mousePosition => default;
+            public Vector2 mouseScrollDelta => default;
+            public int mouseButtonCount => 0;
             public bool anyKey => false;
         }
     }

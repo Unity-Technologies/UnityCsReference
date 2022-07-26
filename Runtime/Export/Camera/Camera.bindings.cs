@@ -326,6 +326,7 @@ namespace UnityEngine
             return RenderToCubemapEyeImpl(cubemap, faceMask, stereoEye);
         }
 
+        [Obsolete("The RenderRequest struct is obsolete, use the function overload with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
         public enum RenderRequestMode
         {
             None = 0,
@@ -344,7 +345,7 @@ namespace UnityEngine
             DiffuseColor = 13
         }
 
-
+        [Obsolete("The RenderRequest struct is obsolete, use the function overload with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
         public enum RenderRequestOutputSpace
         {
             ScreenSpace = -1,
@@ -359,6 +360,7 @@ namespace UnityEngine
             UV8 = 8,
         }
 
+        [Obsolete("The RenderRequest struct is obsolete, use the function overload with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
         public struct RenderRequest
         {
             readonly RenderRequestMode m_CameraRenderMode;
@@ -391,6 +393,7 @@ namespace UnityEngine
         [FreeFunction("CameraScripting::RenderWithShader", HasExplicitThis = true)]  extern public void RenderWithShader(Shader shader, string replacementTag);
         [FreeFunction("CameraScripting::RenderDontRestore", HasExplicitThis = true)] extern public void RenderDontRestore();
 
+        [Obsolete("SubmitRenderRequests is obsolete, use SubmitRenderRequest with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
         public void SubmitRenderRequests(List<RenderRequest> renderRequests)
         {
             if (renderRequests == null || renderRequests.Count == 0)
@@ -402,6 +405,19 @@ namespace UnityEngine
                 return;
             }
             SubmitRenderRequestsInternal(renderRequests);
+        }
+
+        public void SubmitRenderRequest<RequestData>(RequestData renderRequest)
+        {
+            if (renderRequest == null)
+                throw new ArgumentException($"{nameof(SubmitRenderRequests)} is invoked with invalid renderRequests");
+
+            if (GraphicsSettings.currentRenderPipeline == null)
+            {
+                Debug.LogWarning("Trying to invoke 'SubmitRenderRequests' when no SRP is set. A scriptable render pipeline is needed for this function call");
+                return;
+            }
+            SubmitRenderRequestsInternal(renderRequest);
         }
 
         [FreeFunction("CameraScripting::SubmitRenderRequests", HasExplicitThis = true)]  extern private void SubmitRenderRequestsInternal(object requests);

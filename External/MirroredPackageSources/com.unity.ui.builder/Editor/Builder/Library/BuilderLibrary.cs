@@ -87,7 +87,7 @@ namespace Unity.UI.Builder
         {
             BuilderLibraryContent.OnLibraryContentUpdated += RebuildView;
         }
-        
+
         void DetachFromPanelCallback(DetachFromPanelEvent e)
         {
             BuilderLibraryContent.OnLibraryContentUpdated -= RebuildView;

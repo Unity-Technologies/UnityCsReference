@@ -175,7 +175,7 @@ namespace Unity.UI.Builder
         {
             EditorApplication.playModeStateChanged += PlayModeStateChange;
         }
-        
+
         void DetachFromPanelCallback(DetachFromPanelEvent e)
         {
             EditorApplication.playModeStateChanged -= PlayModeStateChange;
@@ -298,7 +298,7 @@ namespace Unity.UI.Builder
             customBackgroundElement.style.backgroundPositionX = StyleKeyword.Initial;
             customBackgroundElement.style.backgroundPositionY = StyleKeyword.Initial;
             customBackgroundElement.style.backgroundRepeat = StyleKeyword.Initial;
-            customBackgroundElement.style.backgroundSize = StyleKeyword.Initial; 
+            customBackgroundElement.style.backgroundSize = StyleKeyword.Initial;
 
             if (settings.EnableCanvasBackground)
             {
@@ -322,7 +322,7 @@ namespace Unity.UI.Builder
                         customBackgroundElement.style.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop);
                         customBackgroundElement.style.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop);
                         customBackgroundElement.style.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleAndCrop);
-                        customBackgroundElement.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleAndCrop); 
+                        customBackgroundElement.style.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleAndCrop);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();

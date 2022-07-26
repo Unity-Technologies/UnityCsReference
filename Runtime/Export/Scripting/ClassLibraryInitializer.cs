@@ -34,7 +34,11 @@ namespace UnityEngine
             }
         }
 
-        [RequiredByNativeCode]
+        // If the AssemblyResolve call fails to load the assembly, this could lead
+        // to infinite recursion.  Mono projects against this, but CoreCLR does not,
+        // So this causes infinite recursion on CoreCLR.
+        // This logic should be handled by the AssemblyLoadContext in the CoreCLR host
+        [RequiredByNativeCode(Optional = true)]
         static void InitAssemblyRedirections()
         {
             AppDomain.CurrentDomain.AssemblyResolve += (object _, ResolveEventArgs args) =>

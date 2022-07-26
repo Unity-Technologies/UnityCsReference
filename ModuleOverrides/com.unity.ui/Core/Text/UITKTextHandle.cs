@@ -57,8 +57,235 @@ namespace UnityEngine.UIElements
             }
 
             textGenerationSettings.screenRect = new Rect(Vector2.zero, size);
+            Update(textGenerationSettings);
+            HandleATag();
+            HandleLinkTag();
 
-            return Update(textGenerationSettings);
+            return textInfo;
+        }
+
+        void ATagOnPointerUp(PointerUpEvent pue)
+        {
+            var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
+            var intersectingLink = FindIntersectingLink(pos);
+            if (intersectingLink < 0)
+                return;
+
+            var link = textInfo.linkInfo[intersectingLink];
+            if (link.hashCode == (int)MarkupTag.HREF)
+            {
+                if (link.linkId != null && link.linkIdLength > 0)
+                {
+                    var href = link.GetLinkId();
+                    if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
+                        Application.OpenURL(href);
+                }
+            }
+        }
+
+        internal bool isOverridingCursor = false;
+        void ATagOnPointerOver(PointerOverEvent _)
+        {
+            isOverridingCursor = false;
+        }
+        void ATagOnPointerMove(PointerMoveEvent pme)
+        {
+            var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
+            var intersectingLink = FindIntersectingLink(pos);
+            var cursorManager = (m_TextElement.panel as BaseVisualElementPanel)?.cursorManager;
+            if (intersectingLink >= 0)
+            {
+                var link = textInfo.linkInfo[intersectingLink];
+                if (link.hashCode == (int)MarkupTag.HREF)
+                {
+                    if (!isOverridingCursor)
+                    {
+                        isOverridingCursor = true;
+                        // defaultCursorId maps to the UnityEditor.MouseCursor enum where 4 is the link cursor.
+                        cursorManager?.SetCursor(new Cursor { defaultCursorId = 4 });
+                    }
+
+                    return;
+                }
+            }
+            if (isOverridingCursor)
+            {
+                cursorManager?.SetCursor(m_TextElement.computedStyle.cursor);
+                isOverridingCursor = false;
+            }
+        }
+
+        void ATagOnPointerOut(PointerOutEvent _)
+        {
+            isOverridingCursor = false;
+        }
+
+        internal void LinkTagOnPointerDown(PointerDownEvent pde)
+        {
+            var pos = pde.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
+            var intersectingLink = FindIntersectingLink(pos);
+            if (intersectingLink < 0)
+                return;
+
+            var link = textInfo.linkInfo[intersectingLink];
+            if (link.hashCode != (int)MarkupTag.HREF)
+            {
+                if (link.linkId != null && link.linkIdLength > 0)
+                {
+                    using (Experimental.PointerDownLinkTagEvent e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, link.GetLinkId(), link.GetLinkText(textInfo)))
+                    {
+                        e.target = m_TextElement;
+                        m_TextElement.SendEvent(e);
+                    }
+                }
+            }
+        }
+
+        internal void LinkTagOnPointerUp(PointerUpEvent pue)
+        {
+            var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
+            var intersectingLink = FindIntersectingLink(pos);
+            if (intersectingLink < 0)
+                return;
+
+            var link = textInfo.linkInfo[intersectingLink];
+            if (link.hashCode != (int)MarkupTag.HREF)
+            {
+                if (link.linkId != null && link.linkIdLength > 0)
+                {
+                    using (Experimental.PointerUpLinkTagEvent e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, link.GetLinkId(), link.GetLinkText(textInfo)))
+                    {
+                        e.target = m_TextElement;
+                        m_TextElement.SendEvent(e);
+                    }
+                }
+            }
+        }
+
+        // Used in automated test
+        internal int currentLinkIDHash = -1;
+        internal void LinkTagOnPointerMove(PointerMoveEvent pme)
+        {
+            var pos = pme.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
+            var intersectingLink = FindIntersectingLink(pos);
+            if (intersectingLink >= 0)
+            {
+                var link = textInfo.linkInfo[intersectingLink];
+                if (link.hashCode != (int)MarkupTag.HREF)
+                {
+                    // PointerOver
+                    if (currentLinkIDHash == -1)
+                    {
+                        currentLinkIDHash = link.hashCode;
+                        using (Experimental.PointerOverLinkTagEvent e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
+                        {
+                            e.target = m_TextElement;
+                            m_TextElement.SendEvent(e);
+                        }
+
+                        return;
+                    }
+                    // PointerMove
+                    if (currentLinkIDHash == link.hashCode)
+                    {
+                        using (Experimental.PointerMoveLinkTagEvent e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
+                        {
+                            e.target = m_TextElement;
+                            m_TextElement.SendEvent(e);
+                        }
+
+                        return;
+                    }
+                }
+            }
+
+            // PointerOut
+            if (currentLinkIDHash != -1)
+            {
+                currentLinkIDHash = -1;
+                using (Experimental.PointerOutLinkTagEvent e = Experimental.PointerOutLinkTagEvent.GetPooled(pme, String.Empty))
+                {
+                    e.target = m_TextElement;
+                    m_TextElement.SendEvent(e);
+                }
+            }
+        }
+
+        void LinkTagOnPointerOut(PointerOutEvent poe)
+        {
+            if (currentLinkIDHash != -1)
+            {
+                using (Experimental.PointerOutLinkTagEvent e = Experimental.PointerOutLinkTagEvent.GetPooled(poe, String.Empty))
+                {
+                    e.target = m_TextElement;
+                    m_TextElement.SendEvent(e);
+                }
+
+                currentLinkIDHash = -1;
+            }
+        }
+
+        // Used by our automated tests.
+        internal bool hasLinkTag = false;
+        void HandleLinkTag()
+        {
+            for(int i = 0; i < textInfo.linkCount; i++)
+            {
+                var linkInfo = textInfo.linkInfo[i];
+                if (linkInfo.hashCode != (int)MarkupTag.HREF)
+                {
+                    m_TextElement.RegisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+                    hasLinkTag = true;
+                    return;
+                }
+            }
+
+            if (hasLinkTag)
+            {
+                hasLinkTag = false;
+                m_TextElement.UnregisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+            }
+        }
+
+        // Used by our automated tests.
+        internal bool hasATag = false;
+        void HandleATag()
+        {
+            for(int i = 0; i < textInfo.linkCount; i++)
+            {
+                var linkInfo = textInfo.linkInfo[i];
+                if (linkInfo.hashCode == (int)MarkupTag.HREF)
+                {
+                    m_TextElement.RegisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
+                    // Switching the cursor to the Link cursor has been disable at runtime until OS cursor support is available at runtime.
+                    if (m_TextElement.panel.contextType == ContextType.Editor)
+                    {
+                        m_TextElement.RegisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
+                        m_TextElement.RegisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
+                        m_TextElement.RegisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
+                    }
+                    hasATag = true;
+                    return;
+                }
+            }
+
+            if (hasATag)
+            {
+                hasATag = false;
+                m_TextElement.UnregisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
+                if (m_TextElement.panel.contextType == ContextType.Editor)
+                {
+                    m_TextElement.UnregisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
+                }
+            }
         }
 
         TextOverflowMode GetTextOverflowMode()
@@ -80,7 +307,7 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        void ConvertUssToTextGenerationSettings(UnityEngine.TextCore.Text.TextGenerationSettings tgs)
+        internal void ConvertUssToTextGenerationSettings(UnityEngine.TextCore.Text.TextGenerationSettings tgs)
         {
             var style = m_TextElement.computedStyle;
 
@@ -177,8 +404,8 @@ namespace UnityEngine.UIElements
             }
 
             // Case 1215962: round up as yoga could decide to round down and text would start wrapping
-            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint);
-            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint);
+            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, 0.0f);
+            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, 0.0f);
             var roundedValues = new Vector2(roundedWidth, roundedHeight);
 
             te.uitkTextHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);

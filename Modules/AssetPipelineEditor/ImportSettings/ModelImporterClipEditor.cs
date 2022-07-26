@@ -94,6 +94,8 @@ namespace UnityEditor
         SerializedProperty m_MotionNodeName;
         [CacheProperty]
         SerializedProperty m_RemoveConstantScaleCurves;
+        [CacheProperty]
+        SerializedProperty m_ContainsAnimation;
 #pragma warning restore 0649
 
         public int motionNodeIndex { get; set; }
@@ -209,7 +211,7 @@ namespace UnityEditor
 
             public GUIContent Mask = EditorGUIUtility.TrTextContent("Mask", "Configure the mask for this clip to remove unnecessary curves.");
 
-            public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TrTextContent("Animated Custom Properties", "Controls if animated custom properties are imported.");
+            public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TrTextContent("Import Animated Custom Properties", "Controls if animated custom properties are imported.");
             public GUIContent ImportConstraints = EditorGUIUtility.TrTextContent("Import Constraints", "Controls if the constraints are imported.");
             public GUIContent RemoveConstantScaleCurves = EditorGUIUtility.TrTextContent("Remove Constant Scale Curves", "Removes constant animation curves with values identical to the object initial scale value.");
 
@@ -299,11 +301,12 @@ namespace UnityEditor
                 TakeInfo takeInfo = singleImporter.importedTakeInfos[i];
 
                 string uniqueName = MakeUniqueClipName(takeInfo.defaultClipName, allClipNames);
+                string uniqueIdentifier = MakeUniqueClipName(takeInfo.name, allClipNames);
                 allClipNames.Add(uniqueName);
 
                 arrayElemProp.Next(false);
                 AnimationClipInfoProperties info = new AnimationClipInfoProperties(arrayElemProp);
-                InitAnimationClipInfoProperties(info, takeInfo,uniqueName,0);
+                InitAnimationClipInfoProperties(info, takeInfo,uniqueName, uniqueIdentifier,0);
             }
             UpdateList();
 
@@ -446,9 +449,14 @@ namespace UnityEditor
                     DeserializeClips();
             }
 
+            if (m_ImportAnimation.boolValue)
+            {
+                EditorGUILayout.PropertyField(m_ImportAnimatedCustomProperties, styles.ImportAnimatedCustomProperties);
+            }
+
             if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)
             {
-                bool hasNoValidAnimationData = targets.Length == 1 && singleImporter.importedTakeInfos.Length == 0 && singleImporter.animationType != ModelImporterAnimationType.None;
+                bool hasNoValidAnimationData = targets.Length == 1 && !m_ContainsAnimation.boolValue && singleImporter.animationType != ModelImporterAnimationType.None;
                 if (IsDeprecatedMultiAnimationRootImport())
                     EditorGUILayout.HelpBox(styles.AnimationDataWas);
                 else if (hasNoValidAnimationData)
@@ -475,7 +483,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsHave);
                 else if (animationType == ModelImporterAnimationType.None)
                     EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsAre);
-                else
+                else if (singleImporter.importedTakeInfos.Length != 0)
                 {
                     AnimationClipGUI();
                 }
@@ -532,7 +540,6 @@ namespace UnityEditor
                 GUILayout.Label(styles.AnimationCompressionHelp, EditorStyles.helpBox);
             }
 
-            EditorGUILayout.PropertyField(m_ImportAnimatedCustomProperties, styles.ImportAnimatedCustomProperties);
             EditorGUILayout.PropertyField(m_RemoveConstantScaleCurves, styles.RemoveConstantScaleCurves);
         }
 
@@ -691,80 +698,83 @@ namespace UnityEditor
                 SelectClipInList(m_ClipList);
             }
 
-            m_ClipList.DoLayoutList();
-
-            EditorGUI.BeginChangeCheck();
-
-            // Show selected clip info
+            if (singleImporter.importedTakeInfos.Length > 0)
             {
-                AnimationClipInfoProperties clip = GetSelectedClipInfo();
-                if (clip == null)
-                    return;
+                m_ClipList.DoLayoutList();
 
-                if (m_AnimationClipEditor != null)
+                EditorGUI.BeginChangeCheck();
+
+                // Show selected clip info
                 {
-                    GUILayout.Space(5);
+                    AnimationClipInfoProperties clip = GetSelectedClipInfo();
+                    if (clip == null)
+                        return;
 
-                    AnimationClip actualClip = m_AnimationClipEditor.target as AnimationClip;
-
-                    if (!actualClip.legacy)
-                        clip.AssignToPreviewClip(actualClip);
-
-                    TakeInfo[] importedTakeInfos = singleImporter.importedTakeInfos;
-                    string[] takeNames = new string[importedTakeInfos.Length];
-                    for (int i = 0; i < importedTakeInfos.Length; i++)
-                        takeNames[i] = importedTakeInfos[i].name;
-
-                    EditorGUI.BeginChangeCheck();
-                    string currentName = clip.name;
-                    int takeIndex = ArrayUtility.IndexOf(takeNames, clip.takeName);
-                    m_AnimationClipEditor.takeNames = takeNames;
-                    m_AnimationClipEditor.takeIndex = ArrayUtility.IndexOf(takeNames, clip.takeName);
-                    m_AnimationClipEditor.DrawHeader();
-
-                    if (EditorGUI.EndChangeCheck())
+                    if (m_AnimationClipEditor != null)
                     {
-                        clip.name = clip.name.Trim();
-                        if (clip.name == String.Empty)
-                        {
-                            clip.name = currentName;
-                        }
-                        // We renamed the clip name, try to maintain the localIdentifierInFile so we don't lose any data.
-                        if (clip.name != currentName)
-                        {
-                            var newName = clip.name;
-                            clip.name = currentName;
-                            clip.name = MakeUniqueClipName(newName);
+                        GUILayout.Space(5);
 
+                        AnimationClip actualClip = m_AnimationClipEditor.target as AnimationClip;
+
+                        if (!actualClip.legacy)
+                            clip.AssignToPreviewClip(actualClip);
+
+                        TakeInfo[] importedTakeInfos = singleImporter.importedTakeInfos;
+                        string[] takeNames = new string[importedTakeInfos.Length];
+                        for (int i = 0; i < importedTakeInfos.Length; i++)
+                            takeNames[i] = importedTakeInfos[i].name;
+
+                        EditorGUI.BeginChangeCheck();
+                        string currentName = clip.name;
+                        int takeIndex = ArrayUtility.IndexOf(takeNames, clip.takeName);
+                        m_AnimationClipEditor.takeNames = takeNames;
+                        m_AnimationClipEditor.takeIndex = ArrayUtility.IndexOf(takeNames, clip.takeName);
+                        m_AnimationClipEditor.DrawHeader();
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            clip.name = clip.name.Trim();
+                            if (clip.name == String.Empty)
+                            {
+                                clip.name = currentName;
+                            }
+                            // We renamed the clip name, try to maintain the localIdentifierInFile so we don't lose any data.
+                            if (clip.name != currentName)
+                            {
+                                var newName = clip.name;
+                                clip.name = currentName;
+                                clip.name = MakeUniqueClipName(newName);
+
+                                TransferDefaultClipsToCustomClips();
+                                UnityType animationClipType = UnityType.FindTypeByName("AnimationClip");
+                                ImportSettingInternalID.Rename(serializedObject, animationClipType, currentName, clip.name);
+                            }
+
+                            int newTakeIndex = m_AnimationClipEditor.takeIndex;
+                            if (newTakeIndex != -1 && newTakeIndex != takeIndex)
+                            {
+                                clip.name = MakeUniqueClipName(takeNames[newTakeIndex]);
+                                SetupTakeNameAndFrames(clip, importedTakeInfos[newTakeIndex]);
+                                GUIUtility.keyboardControl = 0;
+                                SelectClip(m_ClipList.index);
+
+                                // actualClip has been changed by SelectClip
+                                actualClip = m_AnimationClipEditor.target as AnimationClip;
+                            }
+                        }
+
+                        m_AnimationClipEditor.OnInspectorGUI();
+
+                        AvatarMaskSettings(clip);
+
+                        if (!actualClip.legacy)
+                            clip.ExtractFromPreviewClip(actualClip);
+
+                        if (EditorGUI.EndChangeCheck() || m_AnimationClipEditor.needsToGenerateClipInfo)
+                        {
                             TransferDefaultClipsToCustomClips();
-                            UnityType animationClipType = UnityType.FindTypeByName("AnimationClip");
-                            ImportSettingInternalID.Rename(serializedObject, animationClipType, currentName, clip.name);
+                            m_AnimationClipEditor.needsToGenerateClipInfo = false;
                         }
-
-                        int newTakeIndex = m_AnimationClipEditor.takeIndex;
-                        if (newTakeIndex != -1 && newTakeIndex != takeIndex)
-                        {
-                            clip.name = MakeUniqueClipName(takeNames[newTakeIndex]);
-                            SetupTakeNameAndFrames(clip, importedTakeInfos[newTakeIndex]);
-                            GUIUtility.keyboardControl = 0;
-                            SelectClip(m_ClipList.index);
-
-                            // actualClip has been changed by SelectClip
-                            actualClip = m_AnimationClipEditor.target as AnimationClip;
-                        }
-                    }
-
-                    m_AnimationClipEditor.OnInspectorGUI();
-
-                    AvatarMaskSettings(clip);
-
-                    if (!actualClip.legacy)
-                        clip.ExtractFromPreviewClip(actualClip);
-
-                    if (EditorGUI.EndChangeCheck() || m_AnimationClipEditor.needsToGenerateClipInfo)
-                    {
-                        TransferDefaultClipsToCustomClips();
-                        m_AnimationClipEditor.needsToGenerateClipInfo = false;
                     }
                 }
             }
@@ -897,20 +907,20 @@ namespace UnityEditor
             m_ClipAnimations.InsertArrayElementAtIndex(m_ClipAnimations.arraySize);
             var property = m_ClipAnimations.GetArrayElementAtIndex(m_ClipAnimations.arraySize - 1);
             AnimationClipInfoProperties info = new AnimationClipInfoProperties(property);
-            InitAnimationClipInfoProperties(info, takeInfo, uniqueName, m_ClipAnimations.arraySize - 1);
+            InitAnimationClipInfoProperties(info, takeInfo, uniqueName,uniqueName, m_ClipAnimations.arraySize - 1);
             UpdateList();
         }
 
-        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo,string uniqueName,int clipOffset)
+        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo,string uniqueName,string uniqueIdentifier,int clipOffset)
         {
             SetupTakeNameAndFrames(info, takeInfo);
 
             var animationClipType = UnityType.FindTypeByName("AnimationClip");
 
-            long id = ImportSettingInternalID.FindInternalID(serializedObject, animationClipType, uniqueName);
+            long id = ImportSettingInternalID.FindInternalID(serializedObject, animationClipType, uniqueIdentifier);
 
             info.internalID = id == 0L
-                ? AssetImporter.MakeLocalFileIDWithHash(animationClipType.persistentTypeID, uniqueName, clipOffset)
+                ? AssetImporter.MakeLocalFileIDWithHash(animationClipType.persistentTypeID, uniqueIdentifier, clipOffset)
                 : id;
 
             info.name = uniqueName;

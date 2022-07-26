@@ -1247,7 +1247,7 @@ namespace UnityEditor
             instance.AddToAuxWindowList();
             win.SetInvisible();
             instance.SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));
-            Vector2 p = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+            Vector2 p = GUIUtility.GUIToScreenPoint(Event.current != null ? Event.current.mousePosition : Vector2.zero);
             win.position = new Rect(p.x - kDummyWindowSize / 2, p.y - kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
             instance.wantsMouseMove = true;
             instance.SetEyeDropperOpen(true);

@@ -381,6 +381,8 @@ namespace UnityEditor
             return guid.Empty() ? "" : guid.ToString();
         }
 
+        extern public static bool AssetPathExists(string path);
+
         extern public static Hash128 GetAssetDependencyHash(GUID guid);
 
         public static Hash128 GetAssetDependencyHash(string path)

@@ -203,6 +203,8 @@ namespace UnityEditor
             UpdateShaderAsset(null, shader, source, compileInitialShaderVariants);
         }
 
+        extern public static ComputeShader CreateComputeShaderAsset(AssetImportContext context, string source);
+
         [FreeFunction("GetShaderNameRegistry().AddShader")] extern public static void RegisterShader([NotNull("NullExceptionObject")] Shader shader);
 
 

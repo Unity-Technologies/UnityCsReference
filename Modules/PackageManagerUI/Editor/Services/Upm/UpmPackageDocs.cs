@@ -132,16 +132,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static string[] GetDocumentationUrl(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
+
             if (upmVersion == null)
                 return new string[] { };
 
             if (!string.IsNullOrEmpty(upmVersion.documentationUrl))
-                return new string[] { upmVersion.documentationUrl };
+                return new [] { upmVersion.documentationUrl };
 
             if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
                 return FetchUrlsFromDescription(upmVersion);
 
-            return new string[] { $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html" };
+            return upmVersion.isUnityPackage
+                ? new [] { $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html" }
+                : new string[] { };
         }
 
         public static string GetQuickStartUrl(IPackageVersion version, UpmCache upmCache)
@@ -159,7 +162,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(upmVersion.changelogUrl))
                 return upmVersion.changelogUrl;
 
-            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html";
+            return upmVersion.isUnityPackage
+                ? $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html"
+                : string.Empty;
         }
 
         public static string GetOfflineChangelog(IOProxy IOProxy, IPackageVersion version)
@@ -185,7 +190,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(upmVersion.licensesUrl))
                 return upmVersion.licensesUrl;
 
-            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
+            return upmVersion.isUnityPackage
+                ? $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html"
+                : string.Empty;
         }
 
         public static string GetOfflineLicenses(IOProxy IOProxy, IPackageVersion version)
@@ -222,26 +229,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static bool HasDocs(IPackageVersion version)
-        {
-            var upmVersion = version as UpmPackageVersion;
-            if (!string.IsNullOrEmpty(upmVersion?.documentationUrl))
-                return true;
-            return upmVersion != null && !version.HasTag(PackageTag.Feature);
-        }
-
         public static bool HasChangelog(IPackageVersion version)
         {
             var upmVersion = version as UpmPackageVersion;
             if (!string.IsNullOrEmpty(upmVersion?.changelogUrl))
-                return true;
-            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
-        }
-
-        public static bool HasLicenses(IPackageVersion version)
-        {
-            var upmVersion = version as UpmPackageVersion;
-            if (!string.IsNullOrEmpty(upmVersion?.licensesUrl))
                 return true;
             return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
         }

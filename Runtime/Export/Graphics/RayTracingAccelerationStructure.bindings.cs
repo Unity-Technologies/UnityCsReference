@@ -4,8 +4,9 @@
 
 using System;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
+using UnityEngine.Internal;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.Rendering
 {
@@ -117,6 +118,42 @@ namespace UnityEngine.Experimental.Rendering
         public bool transformsChanged;
     }
 
+    public struct RayTracingMeshInstanceConfig
+    {
+        public RayTracingMeshInstanceConfig(Mesh mesh, uint subMeshIndex, Material material)
+        {
+            this.mesh = mesh;
+            this.subMeshIndex = subMeshIndex;
+            this.material = material;
+            subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            dynamicGeometry = false;
+            materialProperties = null;
+            enableTriangleCulling = true;
+            frontTriangleCounterClockwise = false;
+            layer = 0;
+            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            mask = 0xFF;
+            motionVectorMode = MotionVectorGenerationMode.Camera;
+            lightProbeUsage = LightProbeUsage.Off;
+            lightProbeProxyVolume = null;
+
+        }
+        public Mesh mesh;
+        public uint subMeshIndex;
+        public RayTracingSubMeshFlags subMeshFlags;
+        public bool dynamicGeometry;
+        public Material material;
+        public MaterialPropertyBlock materialProperties;
+        public bool enableTriangleCulling;
+        public bool frontTriangleCounterClockwise;
+        public int layer;
+        public uint renderingLayerMask;
+        public uint mask;
+        public MotionVectorGenerationMode motionVectorMode;
+        public LightProbeUsage lightProbeUsage;
+        public LightProbeProxyVolume lightProbeProxyVolume;
+    }
+
     public sealed class RayTracingAccelerationStructure : IDisposable
     {
         [Flags]
@@ -219,6 +256,17 @@ namespace UnityEngine.Experimental.Rendering
             return AddInstance_Procedural(aabbBuffer, aabbCount, dynamicData, matrix, material, opaqueMaterial, properties, mask, id);
         }
 
+        unsafe public int AddInstance(in RayTracingMeshInstanceConfig config, Matrix4x4 matrix, [DefaultValue("null")] Matrix4x4? prevMatrix = null, uint id = 0xFFFFFFFF)
+        {
+            if (prevMatrix.HasValue)
+            {
+                Matrix4x4 temp = prevMatrix.Value;
+                return AddMeshInstance(config, matrix, &temp, id);
+            }
+            else
+                return AddMeshInstance(config, matrix, null, id);
+        }
+
         public void RemoveInstance(Renderer targetRenderer)
         {
             RemoveInstance_Renderer(targetRenderer);
@@ -308,5 +356,8 @@ namespace UnityEngine.Experimental.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
         extern private void AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
+
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstance", HasExplicitThis = true, ThrowsException = true)]
+        extern unsafe private int AddMeshInstance(RayTracingMeshInstanceConfig config, Matrix4x4 matrix, Matrix4x4* prevMatrix, uint id = 0xFFFFFFFF);
     }
 }

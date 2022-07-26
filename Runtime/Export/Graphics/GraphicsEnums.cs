@@ -1948,6 +1948,22 @@ namespace UnityEngine.Rendering
         Multiview
     }
 
+    // Must match c++ FoveatedRenderingCaps from GfxDeviceTypes.h
+    [Flags]
+    public enum FoveatedRenderingCaps
+    {
+        None = 0,
+        FoveationImage = 1 << 0,
+        NonUniformRaster = 1 << 1,
+    }
+
+    // Must match c++ FoveatedRenderingMode from GfxDeviceTypes.h
+    public enum FoveatedRenderingMode
+    {
+        Disabled = 0,
+        Enabled = 1,
+    }
+
     //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
     public enum CommandBufferExecutionFlags
     {

@@ -29,7 +29,7 @@ namespace Unity.UI.Builder
             {
                 focusable.defaultValue = true;
             }
-            
+
             UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription { name = "title" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

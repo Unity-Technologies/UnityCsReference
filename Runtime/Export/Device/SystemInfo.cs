@@ -67,6 +67,8 @@ namespace UnityEngine.Device
 
         public static Rendering.RenderingThreadingMode renderingThreadingMode => ShimManager.systemInfoShim.renderingThreadingMode;
 
+        public static FoveatedRenderingCaps foveatedRenderingCaps => ShimManager.systemInfoShim.foveatedRenderingCaps;
+
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.systemInfoShim.hasHiddenSurfaceRemovalOnGPU;
 
         public static bool hasDynamicUniformArrayIndexingInFragmentShaders =>

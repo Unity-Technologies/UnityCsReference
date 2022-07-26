@@ -110,6 +110,7 @@ namespace UnityEditor.DeviceSimulation
         public int graphicsShaderLevel;
         public bool graphicsMultiThreaded;
         public RenderingThreadingMode renderingThreadingMode;
+        public FoveatedRenderingCaps foveatedRenderingCaps;
         public bool hasHiddenSurfaceRemovalOnGPU;
         public bool hasDynamicUniformArrayIndexingInFragmentShaders;
         public bool supportsShadows;

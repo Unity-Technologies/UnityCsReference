@@ -221,6 +221,11 @@ namespace UnityEngine
             get { return GetRenderingThreadingMode(); }
         }
 
+        public static FoveatedRenderingCaps foveatedRenderingCaps
+        {
+            get { return GetFoveatedRenderingCaps(); }
+        }
+
         public static bool hasHiddenSurfaceRemovalOnGPU
         {
             get { return HasHiddenSurfaceRemovalOnGPU(); }
@@ -752,6 +757,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetRenderingThreadingMode")]
         static extern Rendering.RenderingThreadingMode GetRenderingThreadingMode();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetFoveatedRenderingCaps")]
+        static extern FoveatedRenderingCaps GetFoveatedRenderingCaps();
 
         [FreeFunction("ScriptingGraphicsCaps::HasHiddenSurfaceRemovalOnGPU")]
         static extern bool HasHiddenSurfaceRemovalOnGPU();

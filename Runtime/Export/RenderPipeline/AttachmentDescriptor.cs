@@ -6,6 +6,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Rendering
 {
@@ -182,4 +184,94 @@ namespace UnityEngine.Rendering
             return !left.Equals(right);
         }
     }
+
+    [Flags]
+    public enum SubPassFlags
+    {
+        None = 0,
+        ReadOnlyDepth = 1 << 1,
+        ReadOnlyStencil = 1 << 2,
+        ReadOnlyDepthStencil = ReadOnlyDepth | ReadOnlyStencil
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AttachmentIndexArray
+    {
+        public static AttachmentIndexArray Emtpy = new AttachmentIndexArray(0);
+
+        // This is a fixed size struct that emulates itself as an array
+        // similar to how Unity.Math emulates size arrays
+        // KEEP IN SYNC with existing c++ code, 8 for now
+        public const int MaxAttachments = 8;
+        private int a0, a1, a2, a3, a4, a5, a6, a7;
+        private int activeAttachments;
+
+        public AttachmentIndexArray(int numAttachments)
+        {
+            if (numAttachments < 0 || numAttachments > MaxAttachments)
+            {
+                throw new ArgumentException($"AttachmentIndexArray - numAttachments must be in range of [0, {MaxAttachments}[");
+            }
+            a0 = a1 = a2 = a3 = a4 = a5 = a6 = a7 = -1;
+            activeAttachments = numAttachments;
+        }
+        public AttachmentIndexArray(int[] attachments) : this(attachments.Length)
+        {
+            for (int i = 0; i < activeAttachments; ++i)
+            {
+                this[i] = attachments[i];
+            }
+        }
+        public AttachmentIndexArray(NativeArray<int> attachments) : this(attachments.Length)
+        {
+            for (int i = 0; i < activeAttachments; ++i)
+            {
+                this[i] = attachments[i];
+            }
+        }
+
+
+        public int this[int index]
+        {
+            get
+            {
+                if ((uint)index >= MaxAttachments)
+                    throw new IndexOutOfRangeException($"AttachmentIndexArray - index must be in range of [0, {MaxAttachments}[");
+                if ((uint)index >= activeAttachments)
+                    throw new IndexOutOfRangeException($"AttachmentIndexArray - index must be in range of [0, {activeAttachments}[");
+                unsafe
+                {
+                    fixed (AttachmentIndexArray* self = &this)
+                    {
+                        int* array = (int*)self;
+                        return array[index];
+                    }
+                }
+            }
+            set
+            {
+                if ((uint)index >= MaxAttachments)
+                    throw new IndexOutOfRangeException($"AttachmentIndexArray - index must be in range of [0, {MaxAttachments}[");
+                if ((uint)index >= activeAttachments)
+                    throw new IndexOutOfRangeException($"AttachmentIndexArray - index must be in range of [0, {activeAttachments}[");
+                unsafe
+                {
+                    fixed (AttachmentIndexArray* self = &this)
+                    {
+                        int* array = (int*)self;
+                        array[index] = value;
+                    }
+                }
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SubPassDescriptor
+    {
+        public AttachmentIndexArray inputs;
+        public AttachmentIndexArray colorOutputs;
+        public SubPassFlags flags;
+    }
+
 }

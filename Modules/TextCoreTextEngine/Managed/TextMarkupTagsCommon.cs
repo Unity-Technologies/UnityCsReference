@@ -130,6 +130,7 @@ namespace UnityEngine.TextCore.Text
         BR = 2256,                          // <br> Line Feed (LF) \u0A
         CR = 2289,                          // <cr> Carriage Return (CR) \u000D
         ZWSP = 3288238,                     // <zwsp> Zero Width Space \u200B
+        ZWJ = 99623,                        // <zwj> Zero Width Space \u200D
         NBSP = 2869039,                     // <nbsp> Non Breaking Space \u00A0
         SHY = 92674,                        // <SHY> Soft Hyphen \u00AD
 

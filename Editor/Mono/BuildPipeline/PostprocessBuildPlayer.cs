@@ -373,10 +373,14 @@ namespace UnityEditor
                 {
                     postprocessor.PostProcess(args, out props);
                 }
-                catch (System.Exception e)
+                catch (BuildFailedException)
+                {
+                    throw;
+                }
+                catch (Exception e)
                 {
                     // Rethrow exceptions during build postprocessing as BuildFailedException, so we don't pretend the build was fine.
-                    throw new UnityEditor.Build.BuildFailedException(e);
+                    throw new BuildFailedException(e);
                 }
                 report.AddAppendix(props);
 

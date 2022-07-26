@@ -180,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.package.Is(PackageType.AssetStore) == true && string.IsNullOrEmpty((m_Version as UpmPackageVersion)?.changelogUrl);
                 versionHistoryItemChangeLogLink.SetEnabled(!disableIfNotInstall);
-                versionHistoryItemChangeLogLink.tooltip = disableIfNotInstall ? PackageDetailsLinks.k_ViewDisabledChangelogToolTip : string.Empty;
+                versionHistoryItemChangeLogLink.tooltip = disableIfNotInstall ? PackageDetailsLinks.k_InstallToViewChangelogTooltip : string.Empty;
             }
         }
 

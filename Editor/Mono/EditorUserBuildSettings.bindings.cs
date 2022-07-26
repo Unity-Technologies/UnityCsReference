@@ -86,6 +86,7 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [Obsolete("The XDK Xbox One platform was removed in 2021.1", true)]
     public enum XboxOneDeployMethod
     {
         // copies files to the kit
@@ -99,6 +100,7 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
     public enum XboxOneDeployDrive
     {
         Default = 0,
@@ -490,7 +492,12 @@ namespace UnityEditor
         // Scripts only build
         public static extern bool buildScriptsOnly { get; set; }
 
+        // 0..X levels are all considered part of the launch set of streaming install chunks
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", true)]
+        public static extern int streamingInstallLaunchRange { get; set; }
+
         //XboxOne Build subtarget
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", true)]
         public static extern XboxBuildSubtarget xboxBuildSubtarget
         {
             [NativeMethod("GetSelectedXboxBuildSubtarget")]
@@ -499,10 +506,8 @@ namespace UnityEditor
             set;
         }
 
-        // 0..X levels are all considered part of the launch set of streaming install chunks
-        public static extern int streamingInstallLaunchRange { get; set; }
-
         //selected Xbox One Deploy Method
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", true)]
         public static extern XboxOneDeployMethod xboxOneDeployMethod
         {
             [NativeMethod("GetSelectedXboxOneDeployMethod")]
@@ -512,6 +517,7 @@ namespace UnityEditor
         }
 
         //selected Xbox One Deployment Drive
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
         public static extern XboxOneDeployDrive xboxOneDeployDrive
         {
             [NativeMethod("GetSelectedXboxOneDeployDrive")]
@@ -532,7 +538,9 @@ namespace UnityEditor
         // manifest for our test systems. This is required to
         // allow the XboxOne to open the required ports in its
         // manifest.
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
         public static string xboxOneAdditionalDebugPorts { get; set; }
+        [Obsolete("The XDK Xbox One platform was removed in 2021.1", false)]
         public static bool xboxOneRebootIfDeployFailsAndRetry { get; set; }
 
         // Android platform options.

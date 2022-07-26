@@ -7,7 +7,7 @@ namespace Unity.UI.Builder
         BaseOverlayPainter m_Painter;
 
         protected new class UxmlFactory : UxmlFactory<OverlayPainterHelperElement, UxmlTraits> { }
-        
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="OverlayPainterHelperElement"/>.
         /// </summary>

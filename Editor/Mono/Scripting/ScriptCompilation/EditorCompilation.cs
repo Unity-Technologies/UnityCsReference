@@ -207,7 +207,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal static void ClearBeeBuildArtifacts()
         {
-            new NPath("Library/Bee").DeleteIfExists(DeleteMode.Soft);
+            NPath beeFolder = "Library/Bee";
+            if (beeFolder.DirectoryExists())
+            {
+                foreach (var path in beeFolder.Contents()
+                             .Where(p =>
+                                 // We should not delete the tundra build state file, as we then lose any information on which files we built.
+                                 // This information is used to delete stale output files which are no longer needed. If we delete this file,
+                                 // you can end up with old output files included in your builds, which we should not ship with.
+                                 p.FileName != "TundraBuildState.state" &&
+
+                                 // If the bee_backend.info file changes, we delete the dag folder (See `UnityBeeDriver.RecreateDagDirectoryIfNeeded`)
+                                 // which makes the above not work, unless we also keep this file.
+                                 p.FileName != "bee_backend.info"))
+                    path.Delete(DeleteMode.Soft);
+            }
+
             Mono.Utils.Pram.PramDataDirectory.DeleteIfExists(DeleteMode.Soft);
         }
 
@@ -1733,6 +1748,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths != null)
                     scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths
                         .Concat(scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths)
+                        .Distinct()
                         .ToArray();
 
                 if (!string.IsNullOrEmpty(assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath))

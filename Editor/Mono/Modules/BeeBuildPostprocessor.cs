@@ -637,7 +637,7 @@ namespace UnityEditor.Modules
                         ReportBuildOutputFiles(args);
                         args.report.EndBuildStep(buildStep);
                     } else
-                        throw new BuildFailedException("Incremental Player build failed!");
+                        throw new BuildFailedException($"Player build failed: {args.report.SummarizeErrors()}", silent: true);
                 }
             }
             catch (OperationCanceledException)

@@ -69,12 +69,16 @@ namespace UnityEditor
         {
             // Anchors are relative to the body here, and that includes scale.
             // However, we don't want to pass scale to DrawingScope - because that transforms the gizmos themselves.
-            // For that reason, we add and remove scale manually when drawing.
-            var bodySpace = Matrix4x4.TRS(Vector3.zero, body.transform.rotation, Vector3.one);
+            // For that reason, we add and remove scale to the position manually when drawing.
+            Vector3 lossyScale = body.transform.lossyScale;
+            Vector3 inverseScale = new Vector3(1 / lossyScale.x, 1 / lossyScale.y, 1 / lossyScale.z);
+            var bodySpace = Matrix4x4.TRS(body.transform.position, body.transform.rotation, Vector3.one);
             using (new Handles.DrawingScope(bodySpace))
             {
-                anchorRot = Handles.RotationHandle(anchorRot, body.transform.TransformPoint(anchorPos));
-                anchorPos = body.transform.InverseTransformPoint(Handles.PositionHandle(body.transform.TransformPoint(anchorPos), anchorRot));
+                Vector3 scaledPos = Vector3.Scale(anchorPos, lossyScale);
+                anchorRot = Handles.RotationHandle(anchorRot, scaledPos);
+                // We use the scaled vector to position the gizmo, but we need to unscale it before applying the position when editing
+                anchorPos = Vector3.Scale(Handles.PositionHandle(scaledPos, anchorRot), inverseScale);
             }
         }
     }
