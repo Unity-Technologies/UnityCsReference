@@ -973,7 +973,7 @@ namespace UnityEngine.UIElements
 
         private bool Apply(KeyboardNavigationOperation op, bool shiftKey)
         {
-            if (!HasValidDataAndBindings())
+            if (selectionType == SelectionType.None || !HasValidDataAndBindings())
             {
                 return false;
             }
@@ -1004,11 +1004,8 @@ namespace UnityEngine.UIElements
                     ClearSelection();
                     return true;
                 case KeyboardNavigationOperation.Submit:
-                    if (m_SelectionType != SelectionType.None)
-                    {
-                        onItemsChosen?.Invoke(m_SelectedItems);
-                        ScrollToItem(selectedIndex);
-                    }
+                    onItemsChosen?.Invoke(m_SelectedItems);
+                    ScrollToItem(selectedIndex);
                     return true;
                 case KeyboardNavigationOperation.Previous:
                     if (selectedIndex > 0)
@@ -1173,13 +1170,13 @@ namespace UnityEngine.UIElements
             if (clickedIndex > viewController.itemsSource.Count - 1)
                 return;
 
+            if (selectionType == SelectionType.None)
+                return;
+
             var clickedItemId = viewController.GetIdForIndex(clickedIndex);
             switch (clickCount)
             {
                 case 1:
-                    if (selectionType == SelectionType.None)
-                        return;
-
                     if (selectionType == SelectionType.Multiple && actionKey)
                     {
                         // Add/remove single clicked element
