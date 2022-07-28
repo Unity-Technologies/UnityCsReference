@@ -493,7 +493,7 @@ namespace UnityEngine.UIElements
         {
             // We assume users will want their UIDocument to look as closely as possible to what they look like in the UIBuilder.
             // This is no guarantee, but it's the best we can do at the moment.
-            referenceDpi = Screen.dpi;
+            referenceDpi = ScreenDPI;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
             themeUss = GetOrCreateDefaultTheme?.Invoke();
             m_AtlasBlitShader = m_RuntimeShader = m_RuntimeWorldShader = null;
@@ -518,6 +518,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            UpdateScreenDPI();
             InitializeShaders();
         }
 
@@ -529,6 +530,13 @@ namespace UnityEngine.UIElements
         internal void DisposePanel()
         {
             m_PanelAccess.DisposePanel();
+        }
+
+        private float ScreenDPI { get; set; }
+
+        internal void UpdateScreenDPI()
+        {
+            ScreenDPI = Screen.dpi;
         }
 
         private void ApplyThemeStyleSheet(VisualElement root = null)
@@ -580,8 +588,9 @@ namespace UnityEngine.UIElements
         {
             Rect oldTargetRect = m_TargetRect;
             float oldResolvedScaling = m_ResolvedScale;
+
             m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
-            m_ResolvedScale = ResolveScale(m_TargetRect, Screen.dpi); // dpi should be constant across all displays
+            m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
 
             if (visualTree.style.width.value == 0 || // TODO is this check valid? This prevents having to resize the game view!
                 m_ResolvedScale != oldResolvedScaling ||

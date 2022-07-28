@@ -487,6 +487,9 @@ namespace UnityEngine.UIElements
 
         private void AddRootVisualElementToTree()
         {
+            if (!enabled)
+                return; // Case 1388963, don't add the root if the component is disabled
+
             // If we do have a parent, it will add us.
             if (parentUI != null)
             {
@@ -574,6 +577,14 @@ namespace UnityEngine.UIElements
             AddRootVisualElementToTree();
 
             SetupRootClassList();
+        }
+
+        private void OnGUI()
+        {
+            if (m_PanelSettings != null)
+            {
+                m_PanelSettings.UpdateScreenDPI();
+            }
         }
 
         internal void OnLiveReloadOptionChanged()

@@ -337,6 +337,8 @@ namespace UnityEngine.UIElements
             set => EnableFooter(value);
         }
 
+        internal Foldout headerFoldout => m_Foldout;
+
         void EnableFooter(bool enabled)
         {
             EnableInClassList(listViewWithFooterUssClassName, enabled);
