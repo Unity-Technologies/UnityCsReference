@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
                 }
 
                 SetupArraySizeField();
-                UpdateEmpty();
+                UpdateListViewLabel();
 
                 if (showAddRemoveFooter)
                 {
@@ -269,6 +269,9 @@ namespace UnityEngine.UIElements
 
         void OnArraySizeFieldChanged(ChangeEvent<string> evt)
         {
+            if (m_ArraySizeField.showMixedValue && TextInputBaseField<string>.mixedValueString == evt.newValue)
+                return;
+
             if (!int.TryParse(evt.newValue, out var value) || value < 0)
             {
                 m_ArraySizeField.SetValueWithoutNotify(evt.previousValue);
@@ -276,6 +279,10 @@ namespace UnityEngine.UIElements
             }
 
             var count = viewController.GetItemsCount();
+
+            if (count == 0 && value == viewController.GetItemsMinCount())
+                return;
+
             if (value > count)
             {
                 viewController.AddItems(value - count);
@@ -288,42 +295,61 @@ namespace UnityEngine.UIElements
                     viewController.RemoveItem(i);
                 }
             }
-        }
-
-        void UpdateArraySizeField()
-        {
-            if (!HasValidDataAndBindings())
-                return;
-
-            m_ArraySizeField?.SetValueWithoutNotify(viewController.GetItemsCount().ToString());
-        }
-
-        Label m_EmptyListLabel;
-
-        void UpdateEmpty()
-        {
-            if (!HasValidDataAndBindings())
-                return;
-
-            if (itemsSource.Count == 0 && !sourceIncludesArraySize)
+            else if (value == 0)
             {
-                if (m_EmptyListLabel != null)
-                    return;
+                // Special case: list view cannot show arrays with more than n elements (see m_IsOverMultiEditLimit)
+                // when multiple objects are selected (so count is already 0 even though array size field shows
+                // a different value) and user wants to reset the number of items for that selection
+                viewController.ClearItems();
+                m_IsOverMultiEditLimit = false;
+            }
 
-                m_EmptyListLabel = new Label("List is Empty"); // TODO localize
-                m_EmptyListLabel.AddToClassList(emptyLabelUssClassName);
-                scrollView.contentViewport.Add(m_EmptyListLabel);
+            UpdateListViewLabel();
+        }
+
+        internal void UpdateArraySizeField()
+        {
+            if (!HasValidDataAndBindings() || m_ArraySizeField == null)
+                return;
+            if (!m_ArraySizeField.showMixedValue)
+                m_ArraySizeField.SetValueWithoutNotify(viewController.GetItemsMinCount().ToString());
+            footer?.SetEnabled(!m_IsOverMultiEditLimit);
+        }
+        Label m_ListViewLabel;
+
+        internal void UpdateListViewLabel()
+        {
+            if (!HasValidDataAndBindings())
+                return;
+
+            var noItemsCount = itemsSource.Count == 0 && !sourceIncludesArraySize;
+
+            if (m_IsOverMultiEditLimit)
+            {
+                m_ListViewLabel ??= new Label();
+                m_ListViewLabel.text = m_MaxMultiEditStr;
+                scrollView.contentViewport.Add(m_ListViewLabel);
+            }
+            else if (noItemsCount)
+            {
+                m_ListViewLabel ??= new Label();
+                m_ListViewLabel.text = k_EmptyListStr;
+                scrollView.contentViewport.Add(m_ListViewLabel);
             }
             else
             {
-                m_EmptyListLabel?.RemoveFromHierarchy();
-                m_EmptyListLabel = null;
+                m_ListViewLabel?.RemoveFromHierarchy();
+                m_ListViewLabel = null;
             }
+
+            m_ListViewLabel?.EnableInClassList(emptyLabelUssClassName, noItemsCount);
+            m_ListViewLabel?.EnableInClassList(overMaxMultiEditLimitClassName, m_IsOverMultiEditLimit);
         }
 
         void OnAddClicked()
         {
             AddItems(1);
+
             if (binding == null)
             {
                 SetSelection(itemsSource.Count - 1);
@@ -337,6 +363,9 @@ namespace UnityEngine.UIElements
                     ScrollToItem(-1);
                 }).ExecuteLater(100);
             }
+
+            if (HasValidDataAndBindings() && m_ArraySizeField != null)
+                m_ArraySizeField.showMixedValue = false;
         }
 
         void OnRemoveClicked()
@@ -351,16 +380,30 @@ namespace UnityEngine.UIElements
                 var index = itemsSource.Count - 1;
                 viewController.RemoveItem(index);
             }
+
+            if (HasValidDataAndBindings() && m_ArraySizeField != null)
+                m_ArraySizeField.showMixedValue = false;
         }
 
         // Foldout Header
         Foldout m_Foldout;
         TextField m_ArraySizeField;
+        internal TextField arraySizeField => m_ArraySizeField;
+        bool m_IsOverMultiEditLimit;
+        int m_MaxMultiEditCount;
+        internal void SetOverMaxMultiEditLimit(bool isOverLimit, int maxMultiEditCount)
+        {
+            m_IsOverMultiEditLimit = isOverLimit;
+            m_MaxMultiEditCount = maxMultiEditCount;
+            m_MaxMultiEditStr = $"This field cannot display arrays with more than {m_MaxMultiEditCount} elements when multiple objects are selected.";
+        }
 
         // Add/Remove Buttons Footer
         VisualElement m_Footer;
         Button m_AddButton;
         Button m_RemoveButton;
+
+        internal VisualElement footer => m_Footer;
 
         // View Controller callbacks
         Action<IEnumerable<int>> m_ItemAddedCallback;
@@ -486,6 +529,14 @@ namespace UnityEngine.UIElements
         public static readonly string emptyLabelUssClassName = ussClassName + "__empty-label";
 
         /// <summary>
+        /// /// The USS class name for label displayed when ListView is trying to edit too many items.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the label displayed if the ListView is trying to edit too many items at once.
+        /// </remarks>
+        public static readonly string overMaxMultiEditLimitClassName = ussClassName + "__over-max-multi-edit-limit-label";
+
+        /// <summary>
         /// The USS class name for reorderable animated ListView elements.
         /// </summary>
         /// <remarks>
@@ -577,6 +628,9 @@ namespace UnityEngine.UIElements
         internal static readonly string footerAddButtonName = ussClassName + "__add-button";
         internal static readonly string footerRemoveButtonName = ussClassName + "__remove-button";
 
+        string m_MaxMultiEditStr;
+        static readonly string k_EmptyListStr = "List is empty";
+
         /// <summary>
         /// Creates a <see cref="BaseListView"/> with all default properties. The <see cref="BaseVerticalCollectionView.itemsSource"/>
         /// must all be set for the BaseListView to function properly.
@@ -600,7 +654,7 @@ namespace UnityEngine.UIElements
         private protected override void PostRefresh()
         {
             UpdateArraySizeField();
-            UpdateEmpty();
+            UpdateListViewLabel();
             base.PostRefresh();
         }
     }

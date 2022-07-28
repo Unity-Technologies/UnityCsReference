@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -16,6 +16,11 @@ namespace UnityEditor.UIElements.Bindings
         public override int GetItemsCount()
         {
             return serializedObjectList?.Count ?? 0;
+        }
+
+        internal override int GetItemsMinCount()
+        {
+            return serializedObjectList?.ArrayProperty.minArraySize ?? 0;
         }
 
         public override void AddItems(int itemCount)
@@ -86,6 +91,15 @@ namespace UnityEditor.UIElements.Bindings
                 ListPool<int>.Release(indices);
             }
 
+            RaiseOnSizeChanged();
+        }
+
+        public override void ClearItems()
+        {
+            var itemsSourceIndices = Enumerable.Range(0, GetItemsMinCount() - 1);
+            serializedObjectList.ArrayProperty.arraySize = 0;
+            serializedObjectList.ApplyChanges();
+            RaiseItemsRemoved(itemsSourceIndices);
             RaiseOnSizeChanged();
         }
 

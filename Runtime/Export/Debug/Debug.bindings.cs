@@ -161,9 +161,13 @@ namespace UnityEngine
             LogInformation(message, fileName, lineNumber, columnNumber);
         }
 
+        [ThreadAndSerializationSafe]
         internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier);
+        [ThreadAndSerializationSafe]
         private static extern void LogCompilerWarning(string message, string fileName, int lineNumber, int columnNumber);
+        [ThreadAndSerializationSafe]
         private static extern void LogCompilerError(string message, string fileName, int lineNumber, int columnNumber);
+        [ThreadAndSerializationSafe]
         private static extern void LogInformation(string message, string fileName, int lineNumber, int columnNumber);
 
         // Clears errors from the developer console.
@@ -178,6 +182,7 @@ namespace UnityEngine
         // A variant of Debug.Log that logs an error message to the console.
         public static void LogException(Exception exception, Object context) { unityLogger.LogException(exception, context); }
 
+        [ThreadAndSerializationSafe]
         internal static extern void LogPlayerBuildError(string message, string file, int line, int column);
 
         // A variant of Debug.Log that logs a warning message to the console.

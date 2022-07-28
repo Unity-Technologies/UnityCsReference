@@ -1043,7 +1043,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.FontSize:
                     inheritedData.Write().fontSize = newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.Height:
                     layoutData.Write().height = newValue;
@@ -3384,13 +3384,8 @@ namespace UnityEngine.UIElements
                     changes |= VersionChangeType.Color;
                 }
 
-                if (x.fontSize != y.fontSize ||
-                    x.whiteSpace != y.whiteSpace)
-                {
-                    changes |= VersionChangeType.Layout;
-                }
-
                 if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unityFont != y.unityFont ||
+                    x.fontSize != y.fontSize ||
                     x.unityFontDefinition != y.unityFontDefinition ||
                     x.unityFontStyleAndWeight != y.unityFontStyleAndWeight ||
                     x.unityTextOutlineWidth != y.unityTextOutlineWidth ||
@@ -3407,6 +3402,11 @@ namespace UnityEngine.UIElements
                     x.unityTextOutlineColor != y.unityTextOutlineColor))
                 {
                     changes |= VersionChangeType.Repaint;
+                }
+
+                if (x.whiteSpace != y.whiteSpace)
+                {
+                    changes |= VersionChangeType.Layout;
                 }
             }
 

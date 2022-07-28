@@ -653,10 +653,10 @@ namespace UnityEngine
             return isValid;
         }
 
-        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex)
+        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex, string mipmapLimitGroupName)
         {
             if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
+                Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
         }
 
         [uei.ExcludeFromDocs]
@@ -667,23 +667,35 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, DefaultFormat format, int mipCount, TextureCreationFlags flags)
-           : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero)
+           : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, null)
+        {
+        }
+
+        [uei.ExcludeFromDocs]
+        public Texture2D(int width, int height, DefaultFormat format, int mipCount, string mipmapLimitGroupName, TextureCreationFlags flags)
+           : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, mipmapLimitGroupName)
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags)
-            : this(width, height, format, flags, Texture.GenerateAllMips, IntPtr.Zero)
+            : this(width, height, format, flags, Texture.GenerateAllMips, IntPtr.Zero, null)
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, GraphicsFormat format, int mipCount, TextureCreationFlags flags)
-            : this(width, height, format, flags, mipCount, IntPtr.Zero)
+            : this(width, height, format, flags, mipCount, IntPtr.Zero, null)
         {
         }
 
-        internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex, bool createUninitialized)
+        [uei.ExcludeFromDocs]
+        public Texture2D(int width, int height, GraphicsFormat format, int mipCount, string mipmapLimitGroupName, TextureCreationFlags flags)
+            : this(width, height, format, flags, mipCount, IntPtr.Zero, mipmapLimitGroupName)
+        {
+        }
+
+        internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex, bool createUninitialized, bool ignoreMipmapLimit, string mipmapLimitGroupName)
         {
             if (!ValidateFormat(textureFormat, width, height))
                 return;
@@ -694,38 +706,45 @@ namespace UnityEngine
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
-            Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
+            if (ignoreMipmapLimit)
+                flags |= TextureCreationFlags.IgnoreMipmapLimit;
+            Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
-            : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, false)
+            : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, false, false, null)
         {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized)
-           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized)
+           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, false, null)
+        {
+        }
+
+        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized, [uei.DefaultValue("false")] bool ignoreMipmapLimit, [uei.DefaultValue("null")] string mipmapLimitGroupName)
+           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, ignoreMipmapLimit, mipmapLimitGroupName)
         {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("true")] bool mipChain, [uei.DefaultValue("false")] bool linear)
-            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, false)
+            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, false, false, null)
         {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("true")] bool mipChain, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized)
-           : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, createUninitialized)
+           : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, createUninitialized, false, null)
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain)
-            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, false, IntPtr.Zero, false)
+            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, false, IntPtr.Zero, false, false, null)
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height)
-            : this(width, height, TextureFormat.RGBA32, Texture.GenerateAllMips, false, IntPtr.Zero, false)
+            : this(width, height, TextureFormat.RGBA32, Texture.GenerateAllMips, false, IntPtr.Zero, false, false, null)
         {
         }
 
@@ -733,7 +752,7 @@ namespace UnityEngine
         {
             if (nativeTex == IntPtr.Zero)
                 throw new ArgumentException("nativeTex can not be null");
-            return new Texture2D(width, height, format, mipChain ? -1 : 1, linear, nativeTex, false);
+            return new Texture2D(width, height, format, mipChain ? -1 : 1, linear, nativeTex, false, false, null);
         }
 
         [uei.ExcludeFromDocs]

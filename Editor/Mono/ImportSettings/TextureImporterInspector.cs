@@ -277,6 +277,9 @@ namespace UnityEditor
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout to Gray");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
+            public readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Disable this if the number of mips to upload should not be limited by the quality settings. (effectively: always upload at full resolution, regardless of the global mipmap limit or mipmap limit groups)");
+            public readonly GUIContent mipmapLimitGroupName = EditorGUIUtility.TrTextContent("Mipmap Limit Group", "Select a Mipmap Limit Group for this texture. If you do not add this texture to a Mipmap Limit Group, or Unity cannot find the group name you provide, Unity limits the number of mips it uploads to the maximum defined by the Global Texture Mipmap Limit (see Quality Settings). If Unity can find the Mipmap Limit Group you specify, it respects that group's limit.");
+            public readonly GUIContent mipmapLimitGroupWarning = EditorGUIUtility.TrTextContent("This texture takes the default mipmap limit settings because Unity cannot find the mipmap limit group you have designated. Consult your project's Quality Settings for a list of mipmap limit groups.");
             public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Mip Streaming", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
             public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Priority", "Mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
             public readonly GUIContent vtOnly = EditorGUIUtility.TrTextContent("Virtual Texture Only", "Texture is optimized for use as a virtual texture and can only be used as a virtual texture.");
@@ -432,6 +435,8 @@ namespace UnityEditor
         SerializedProperty m_IsReadable;
         SerializedProperty m_StreamingMipmaps;
         SerializedProperty m_StreamingMipmapsPriority;
+        SerializedProperty m_IgnoreMipmapLimit;
+        SerializedProperty m_MipmapLimitGroupName;
 
         SerializedProperty m_VTOnly;
         SerializedProperty m_sRGBTexture;
@@ -499,6 +504,8 @@ namespace UnityEditor
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
             m_StreamingMipmaps = serializedObject.FindProperty("m_StreamingMipmaps");
             m_StreamingMipmapsPriority = serializedObject.FindProperty("m_StreamingMipmapsPriority");
+            m_IgnoreMipmapLimit = serializedObject.FindProperty("m_IgnoreMipmapLimit");
+            m_MipmapLimitGroupName = serializedObject.FindProperty("m_MipmapLimitGroupName");
             m_VTOnly = serializedObject.FindProperty("m_VTOnly");
             m_sRGBTexture = serializedObject.FindProperty("m_sRGBTexture");
             m_EnableMipMap = serializedObject.FindProperty("m_EnableMipMap");
@@ -692,6 +699,7 @@ namespace UnityEditor
             m_IsReadable.intValue = settings.readable ? 1 : 0;
             m_StreamingMipmaps.intValue = settings.streamingMipmaps ? 1 : 0;
             m_StreamingMipmapsPriority.intValue = settings.streamingMipmapsPriority;
+            m_IgnoreMipmapLimit.intValue = settings.ignoreMipmapLimit ? 1 : 0;
             m_VTOnly.intValue = settings.vtOnly ? 1 : 0;
             m_EnableMipMap.intValue = settings.mipmapEnabled ? 1 : 0;
             m_sRGBTexture.intValue = settings.sRGBTexture ? 1 : 0;
@@ -775,6 +783,8 @@ namespace UnityEditor
                 settings.streamingMipmaps = m_StreamingMipmaps.intValue > 0;
             if (!m_StreamingMipmapsPriority.hasMultipleDifferentValues)
                 settings.streamingMipmapsPriority = m_StreamingMipmapsPriority.intValue;
+            if (!m_IgnoreMipmapLimit.hasMultipleDifferentValues)
+                settings.ignoreMipmapLimit = m_IgnoreMipmapLimit.intValue > 0;
 
             if (!m_VTOnly.hasMultipleDifferentValues)
                 settings.vtOnly = m_VTOnly.intValue > 0;
@@ -1150,6 +1160,79 @@ namespace UnityEditor
             EditorGUI.indentLevel--;
         }
 
+        internal static void DoMipmapLimitsGUI(SerializedProperty ignoreMipmapLimitProp, SerializedProperty groupNameProp)
+        {
+            if (s_Styles == null)
+                s_Styles = new Styles();
+
+            // The property itself is "ignoreMipmapLimit". However, in the UI, we display it
+            // as "Use Mipmap Limits" as it makes more sense to hide the group names dropdown
+            // when "Use Mipmap Limits" is toggled off rather than when "Ignore Mipmap Limit"
+            // is toggled on.
+            Rect rect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
+            GUIContent label = EditorGUI.BeginProperty(rect, s_Styles.useMipmapLimits, ignoreMipmapLimitProp);
+            bool useMipmapLimits = ignoreMipmapLimitProp.propertyType == SerializedPropertyType.Integer ? ignoreMipmapLimitProp.intValue == 0 : !ignoreMipmapLimitProp.boolValue;
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                useMipmapLimits = EditorGUI.Toggle(rect, label, useMipmapLimits);
+                if (changed.changed)
+                {
+                    if (ignoreMipmapLimitProp.propertyType == SerializedPropertyType.Integer)
+                    {
+                        ignoreMipmapLimitProp.intValue = useMipmapLimits ? 0 : 1;
+                    }
+                    else
+                    {
+                        ignoreMipmapLimitProp.boolValue = !useMipmapLimits;
+                    }
+                }
+            }
+            EditorGUI.EndProperty();
+
+            if (useMipmapLimits)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    List<string> options = new List<string>();
+                    options.Add(L10n.Tr("None (Use Global Mipmap Limit)"));
+
+                    // Add all known groups
+                    var groupNames = TextureMipmapLimitGroups.GetGroups();
+                    if (groupNames.Length > 0)
+                    {
+                        options.Add(string.Empty); // Separator
+                        options.AddRange(groupNames);
+                    }
+
+                    // If a group is not known, make sure to add it to the options anyway
+                    if (groupNameProp.stringValue != string.Empty && !options.Contains(groupNameProp.stringValue))
+                    {
+                        options.Add(string.Empty); // Seperator
+                        options.Add(groupNameProp.stringValue);
+                    }
+
+                    rect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
+                    label = EditorGUI.BeginProperty(rect, s_Styles.mipmapLimitGroupName, groupNameProp);
+                    using (var changed = new EditorGUI.ChangeCheckScope())
+                    {
+                        int selectedIndex = groupNameProp.hasMultipleDifferentValues ? -1 : ((groupNameProp.stringValue == string.Empty) ? 0 : options.IndexOf(groupNameProp.stringValue));
+                        selectedIndex = EditorGUI.Popup(rect, label, selectedIndex, options.ToArray());
+                        if (changed.changed)
+                        {
+                            groupNameProp.stringValue = selectedIndex == 0 ? string.Empty : options[selectedIndex];
+                        }
+                    }
+                    EditorGUI.EndProperty();
+
+                    bool displayGroupNameWarning = groupNameProp.stringValue.Length > 0 && !TextureMipmapLimitGroups.HasGroup(groupNameProp.stringValue);
+                    if (displayGroupNameWarning)
+                    {
+                        EditorGUILayout.HelpBox(s_Styles.mipmapLimitGroupWarning.text, MessageType.Warning, true);
+                    }
+                }
+            }
+        }
+
         void MipMapGUI(TextureInspectorGUIElement guiElements)
         {
             ToggleFromInt(m_EnableMipMap, s_Styles.generateMipMaps);
@@ -1163,6 +1246,11 @@ namespace UnityEditor
             if (EditorGUILayout.BeginFadeGroup(m_ShowMipMapSettings.faded))
             {
                 EditorGUI.indentLevel++;
+
+                if ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2D)
+                {
+                    DoMipmapLimitsGUI(m_IgnoreMipmapLimit, m_MipmapLimitGroupName);
+                }
 
                 StreamingMipmapsGUI();
 

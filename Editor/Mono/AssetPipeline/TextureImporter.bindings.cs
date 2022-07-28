@@ -251,7 +251,8 @@ namespace UnityEditor
         [NativeProperty("VTOnly")]
         public extern bool vtOnly { get; set; }
 
-        internal extern bool ignoreMasterTextureLimit { get; set; }
+        public extern bool ignoreMipmapLimit { get; set; }
+        public extern string mipmapLimitGroupName { get; set; }
 
         // Generate mip maps for the texture?
         public extern bool mipmapEnabled { get; set; }

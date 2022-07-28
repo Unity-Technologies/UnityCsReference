@@ -9,13 +9,9 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEditor;
-using UnityEditor.UIElements;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 using Cursor = UnityEngine.UIElements.Cursor;
-using Toolbar = UnityEditor.UIElements.Toolbar;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -43,6 +39,12 @@ namespace UnityEditor.UIElements.Debugger
         private bool m_ShowAll;
 
         private VisualElement m_SelectedElement;
+
+        internal bool showAll
+        {
+            get => m_ShowAll;
+            set => m_ShowAll = value;
+        }
 
         static StylePropertyDebugger()
         {
@@ -130,9 +132,10 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            foreach (var sv in m_SelectedElement.inlineStyleAccess.m_Values)
+            foreach (var id in StylePropertyUtil.AllPropertyIds())
             {
-                m_PropertySpecificityDictionary[sv.id] = StyleDebug.InlineSpecificity;
+                if (m_SelectedElement.inlineStyleAccess.IsValueSet(id))
+                    m_PropertySpecificityDictionary[id] = StyleDebug.InlineSpecificity;
             }
         }
 
@@ -177,11 +180,9 @@ namespace UnityEditor.UIElements.Debugger
                     continue;
 
                 var id = propertyInfo.id;
-                object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
-                Type type = propertyInfo.type;
+                var val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
 
-                int specificity = 0;
-                m_PropertySpecificityDictionary.TryGetValue(id, out specificity);
+                m_PropertySpecificityDictionary.TryGetValue(id, out var specificity);
 
                 StyleField sf = null;
                 m_IdToFieldDictionary.TryGetValue(id, out sf);
@@ -244,7 +245,7 @@ namespace UnityEditor.UIElements.Debugger
             m_PropertyName = propInfo.name;
 
             m_SpecificityLabel = new Label();
-            m_SpecificityLabel.AddToClassList("unity-style-field__specifity-label");
+            m_SpecificityLabel.AddToClassList("unity-style-field__specificity-label");
 
             RefreshPropertyValue(value, specificity);
         }
@@ -253,33 +254,32 @@ namespace UnityEditor.UIElements.Debugger
         {
             if (val is float floatValue)
             {
-                FloatField field = GetOrCreateField<FloatField, float>();
+                var field = GetOrCreateField<FloatField, float>();
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(floatValue);
             }
             else if (val is int intValue)
             {
-                IntegerField field = GetOrCreateField<IntegerField, int>();
+                var field = GetOrCreateField<IntegerField, int>();
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(intValue);
             }
             else if (val is Length lengthValue)
             {
-                StyleLengthField field = GetOrCreateField<StyleLengthField, StyleLength>();
+                var field = GetOrCreateField<StyleLengthField, StyleLength>();
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(new StyleLength(lengthValue));
             }
             else if (val is Color colorValue)
             {
-                ColorField field = GetOrCreateField<ColorField, Color>();
+                var field = GetOrCreateField<ColorField, Color>();
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(colorValue);
             }
             // Note: val may be null in case of reference type like "Font"
             else if (m_PropertyInfo.type == typeof(StyleFont))
             {
-                ObjectField field;
-                field = GetOrCreateObjectField<Font>();
+                var field = GetOrCreateObjectField<Font>();
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(val as Font);
             }
@@ -351,11 +351,11 @@ namespace UnityEditor.UIElements.Debugger
                 }
                 else
                 {
-                    int mouseId = cursorValue.defaultCursorId;
+                    var mouseId = cursorValue.defaultCursorId;
                     var uiField = new EnumField(m_PropertyName, (MouseCursor)mouseId);
                     uiField.RegisterValueChangedCallback(e =>
                     {
-                        int cursorId = Convert.ToInt32(e.newValue);
+                        var cursorId = Convert.ToInt32(e.newValue);
                         var cursor = new Cursor() { defaultCursorId = cursorId };
                         SetPropertyValue(new StyleCursor(cursor));
                     });
@@ -366,15 +366,15 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is TextShadow textShadow)
             {
-                ColorField colorFieldfield = GetOrCreateFields<ColorField, Color>(m_PropertyName, 0);
+                var colorFieldfield = GetOrCreateFields<ColorField, Color>(m_PropertyName, 0);
                 if (!IsFocused(colorFieldfield))
                     colorFieldfield.SetValueWithoutNotify(textShadow.color);
 
-                Vector2Field vector2Field = GetOrCreateFields<Vector2Field, Vector2>("offset", 1);
+                var vector2Field = GetOrCreateFields<Vector2Field, Vector2>("offset", 1);
                 if (!IsFocused(vector2Field))
                     vector2Field.SetValueWithoutNotify(textShadow.offset);
 
-                FloatField floatField = GetOrCreateFields<FloatField, float>("blur", 2);
+                var floatField = GetOrCreateFields<FloatField, float>("blur", 2);
                 if (!IsFocused(floatField))
                     floatField.SetValueWithoutNotify(textShadow.blurRadius);
 
@@ -383,7 +383,7 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is Rotate rotate)
             {
-                FloatField floatField = GetOrCreateFields<FloatField, float>(m_PropertyName, 0);
+                var floatField = GetOrCreateFields<FloatField, float>(m_PropertyName, 0);
                 if (!IsFocused(floatField))
                     floatField.SetValueWithoutNotify(rotate.angle.value);
                 Add(m_SpecificityLabel);
@@ -391,7 +391,7 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is Scale scale)
             {
-                Vector3Field vector3Field = GetOrCreateFields<Vector3Field, Vector3>(m_PropertyName, 0);
+                var vector3Field = GetOrCreateFields<Vector3Field, Vector3>(m_PropertyName, 0);
                 if (!IsFocused(vector3Field))
                     vector3Field.SetValueWithoutNotify(scale.value);
                 Add(m_SpecificityLabel);
@@ -399,13 +399,13 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is Translate translate)
             {
-                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>(m_PropertyName, 0);
+                var fieldx = GetOrCreateFields<StyleLengthField, StyleLength>(m_PropertyName, 0);
                 if (!IsFocused(fieldx))
                     fieldx.SetValueWithoutNotify(translate.x);
-                StyleLengthField fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 1);
+                var fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 1);
                 if (!IsFocused(fieldy))
                     fieldy.SetValueWithoutNotify(translate.x);
-                FloatField floatField = GetOrCreateFields<FloatField, float>("z", 2);
+                var floatField = GetOrCreateFields<FloatField, float>("z", 2);
                 if (!IsFocused(floatField))
                     floatField.SetValueWithoutNotify(translate.z);
                 Add(m_SpecificityLabel);
@@ -414,13 +414,13 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is TransformOrigin transformOrigin)
             {
-                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>(m_PropertyName, 0);
+                var fieldx = GetOrCreateFields<StyleLengthField, StyleLength>(m_PropertyName, 0);
                 if (!IsFocused(fieldx))
                     fieldx.SetValueWithoutNotify(transformOrigin.x);
-                StyleLengthField fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 1);
+                var fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 1);
                 if (!IsFocused(fieldy))
                     fieldy.SetValueWithoutNotify(transformOrigin.x);
-                FloatField floatField = GetOrCreateFields<FloatField, float>("z", 2);
+                var floatField = GetOrCreateFields<FloatField, float>("z", 2);
                 if (!IsFocused(floatField))
                     floatField.SetValueWithoutNotify(transformOrigin.z);
                 Add(m_SpecificityLabel);
@@ -429,35 +429,37 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is Enum)
             {
-                Enum enumValue = (Enum)val;
-                EnumField field = GetOrCreateEnumField(enumValue);
+                var enumValue = (Enum)val;
+                var field = GetOrCreateEnumField(enumValue);
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(enumValue);
+                Add(m_SpecificityLabel);
             }
             else if (val is BackgroundPosition backgroundPosition)
             {
-                Enum keyword = backgroundPosition.keyword;
-                EnumField field = GetOrCreateEnumField(keyword);
+                var keyword = backgroundPosition.keyword;
+                var field = GetOrCreateEnumField(keyword);
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(keyword);
 
-                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>("x", 2);
-                if (!IsFocused(fieldx))
-                    fieldx.SetValueWithoutNotify(backgroundPosition.offset);
+                var propertyName = m_PropertyName.EndsWith("x") ? "x" : "y";
+                var fieldX = GetOrCreateFields<StyleLengthField, StyleLength>(propertyName, 1);
+                if (!IsFocused(fieldX))
+                    fieldX.SetValueWithoutNotify(backgroundPosition.offset);
 
                 Add(m_SpecificityLabel);
                 SetSpecificity(specificity);
             }
             else if (val is BackgroundRepeat backgroundRepeat)
             {
-                Enum enumValue1 = backgroundRepeat.x;
-                EnumField field1 = GetOrCreateEnumField(enumValue1);
+                var enumValue1 = backgroundRepeat.x;
+                var field1 = GetOrCreateEnumField(enumValue1);
                 if (!IsFocused(field1))
                     field1.SetValueWithoutNotify(enumValue1);
 
-                Enum enumValue2 = backgroundRepeat.y;
-                bool isCreation = childCount == 2;
-                EnumField field2 = GetOrCreateFields<EnumField, Enum>("y", 2);
+                var enumValue2 = backgroundRepeat.y;
+                var isCreation = childCount == 1;
+                var field2 = GetOrCreateFields<EnumField, Enum>("y", 1);
                 if (isCreation)
                     field2.Init(enumValue2);
                 if (!IsFocused(field2))
@@ -468,18 +470,18 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is BackgroundSize backgroundSize)
             {
-                Enum type = backgroundSize.sizeType;
-                EnumField field = GetOrCreateEnumField(type);
+                var type = backgroundSize.sizeType;
+                var field = GetOrCreateEnumField(type);
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(type);
 
-                StyleLengthField fieldx = GetOrCreateFields<StyleLengthField, StyleLength>("x", 2);
-                if (!IsFocused(fieldx))
-                    fieldx.SetValueWithoutNotify(backgroundSize.x);
+                var fieldX = GetOrCreateFields<StyleLengthField, StyleLength>("x", 1);
+                if (!IsFocused(fieldX))
+                    fieldX.SetValueWithoutNotify(backgroundSize.x);
 
-                StyleLengthField fieldy = GetOrCreateFields<StyleLengthField, StyleLength>("y", 3);
-                if (!IsFocused(fieldy))
-                    fieldy.SetValueWithoutNotify(backgroundSize.y);
+                var fieldY = GetOrCreateFields<StyleLengthField, StyleLength>("y", 2);
+                if (!IsFocused(fieldY))
+                    fieldY.SetValueWithoutNotify(backgroundSize.y);
 
                 Add(m_SpecificityLabel);
                 SetSpecificity(specificity);
@@ -510,8 +512,8 @@ namespace UnityEditor.UIElements.Debugger
 
         private ObjectField GetOrCreateObjectField<T>()
         {
-            bool isCreation = childCount == 0;
-            ObjectField field = GetOrCreateField<ObjectField, UnityEngine.Object>();
+            var isCreation = childCount == 0;
+            var field = GetOrCreateField<ObjectField, UnityEngine.Object>();
             if (isCreation)
                 field.objectType = typeof(T);
             return field;
@@ -519,8 +521,8 @@ namespace UnityEditor.UIElements.Debugger
 
         private EnumField GetOrCreateEnumField(Enum enumValue)
         {
-            bool isCreation = childCount == 0;
-            EnumField field = GetOrCreateField<EnumField, Enum>();
+            var isCreation = childCount == 0;
+            var field = GetOrCreateFields<EnumField, Enum>(m_PropertyName, 0);
             if (isCreation)
                 field.Init(enumValue);
             return field;
@@ -577,7 +579,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private void SetSpecificity(int specificity)
         {
-            string specificityString = "";
+            var specificityString = "";
             switch (specificity)
             {
                 case StyleDebug.UnitySpecificity:
@@ -601,8 +603,8 @@ namespace UnityEditor.UIElements.Debugger
 
         private void SetPropertyValue(object newValue, int childIndex = -1)
         {
-            object val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
-            Type type = m_PropertyInfo.type;
+            var val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, m_PropertyInfo.id);
+            var type = m_PropertyInfo.type;
 
             if (newValue == null)
             {
@@ -661,7 +663,7 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         backgroundPosition.keyword = (BackgroundPositionKeyword)newValue;
                     }
-                    else if (childIndex == 2)
+                    else if (childIndex == 1)
                     {
                         if (newValue is StyleLength l)
                         {
@@ -677,7 +679,7 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         backgroundRepeat.x = (Repeat)newValue;
                     }
-                    else if (childIndex == 2)
+                    else if (childIndex == 1)
                     {
                         backgroundRepeat.y = (Repeat)newValue;
                     }
@@ -690,14 +692,14 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         backgroundSize.sizeType = (BackgroundSizeType)newValue;
                     }
-                    else if (childIndex == 2)
+                    else if (childIndex == 1)
                     {
                         if (newValue is StyleLength l)
                         {
                             backgroundSize.x = l.value;
                         }
                     }
-                    else if (childIndex == 3)
+                    else if (childIndex == 2)
                     {
                         if (newValue is StyleLength l)
                         {
