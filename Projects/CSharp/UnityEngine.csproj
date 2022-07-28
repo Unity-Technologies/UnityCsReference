@@ -2893,6 +2893,9 @@
     <Compile Include="..\..\Runtime\Export\Hashing\SpookyHash.cs">
       <Link>Runtime\Export\Hashing\SpookyHash.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Hmi\HmiPlatform.bindings.cs">
+      <Link>Runtime\Export\Hmi\HmiPlatform.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\IMGUI\GUIElement.bindings.cs">
       <Link>Runtime\Export\IMGUI\GUIElement.bindings.cs</Link>
     </Compile>

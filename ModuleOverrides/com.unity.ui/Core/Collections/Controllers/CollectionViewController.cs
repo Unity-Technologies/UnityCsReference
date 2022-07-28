@@ -95,6 +95,8 @@ namespace UnityEngine.UIElements
             return m_ItemsSource?.Count ?? 0;
         }
 
+        internal virtual int GetItemsMinCount() => GetItemsCount();
+
         /// <summary>
         /// Returns the index for the specified id.
         /// </summary>

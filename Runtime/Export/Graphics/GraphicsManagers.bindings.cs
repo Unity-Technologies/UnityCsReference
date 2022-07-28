@@ -86,6 +86,32 @@ namespace UnityEngine
         [StaticAccessor("RenderSettingsScripting", StaticAccessorType.DoubleColon)] extern internal static void Reset();
     }
 
+    // Keep in sync with MipmapLimitSettings in Runtime\Graphics\Texture.h
+    public struct TextureMipmapLimitSettings
+    {
+        public TextureMipmapLimitBiasMode limitBiasMode { get; set; }
+        public int limitBias { get; set; }
+    };
+
+    [NativeHeader("Runtime/Graphics/QualitySettings.h")]
+    [StaticAccessor("GetQualitySettings()", StaticAccessorType.Dot)]
+    public static class TextureMipmapLimitGroups
+    {
+        [NativeName("CreateTextureMipmapLimitGroup")]
+        [NativeThrows]
+        extern public static void CreateGroup([NotNull] string groupName);
+
+        [NativeName("RemoveTextureMipmapLimitGroup")]
+        [NativeThrows]
+        extern public static void RemoveGroup([NotNull] string groupName);
+
+        [NativeName("GetTextureMipmapLimitGroupNames")]
+        extern public static string[] GetGroups();
+
+        [NativeName("HasTextureMipmapLimitGroup")]
+        extern public static bool HasGroup([NotNull] string groupName);
+    }
+
     [NativeHeader("Runtime/Graphics/QualitySettings.h")]
     [StaticAccessor("GetQualitySettings()", StaticAccessorType.Dot)]
     public sealed partial class QualitySettings : Object
@@ -107,7 +133,9 @@ namespace UnityEngine
         [NativeProperty("LODBias")] extern public static float lodBias { get; set; }
         [NativeProperty("AnisotropicTextures")] extern public static AnisotropicFiltering anisotropicFiltering { get; set; }
 
-        extern public static int   masterTextureLimit    { get; set; }
+        [Obsolete("masterTextureLimit has been deprecated. Use globalTextureMipmapLimit instead (UnityUpgradable) -> globalTextureMipmapLimit", false)]
+        [NativeProperty("GlobalTextureMipmapLimit")] extern public static int   masterTextureLimit    { get; set; }
+        extern public static int   globalTextureMipmapLimit { get; set; }
         extern public static int   maximumLODLevel       { get; set; }
         extern public static bool  enableLODCrossFade    { get; set; }
         extern public static int   particleRaycastBudget { get; set; }
@@ -122,6 +150,13 @@ namespace UnityEngine
         [NativeName("SetLODSettings")]
         extern public static void SetLODSettings(float lodBias, int maximumLODLevel, bool setDirty = true);
 
+        [NativeName("SetTextureMipmapLimitSettings")]
+        [NativeThrows]
+        extern public static void SetTextureMipmapLimitSettings(string groupName, TextureMipmapLimitSettings textureMipmapLimitSettings);
+
+        [NativeName("GetTextureMipmapLimitSettings")]
+        [NativeThrows]
+        extern public static TextureMipmapLimitSettings GetTextureMipmapLimitSettings(string groupName);
 
         extern public static bool  realtimeReflectionProbes         { get; set; }
         extern public static bool  billboardsFaceCameraPosition     { get; set; }

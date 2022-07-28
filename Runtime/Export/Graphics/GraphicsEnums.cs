@@ -572,7 +572,7 @@ namespace UnityEngine
             // All usage of TextureCreationFlags should remain undocumented for the time being.
             // This will hopefully be documented as part of the push to move GraphicsFormat out of Experimental.
 
-            // keep this in sync with the TextureCreationFlags enum in Texture.h
+            // keep this in sync with the TextureCreationFlags enum in Format.h
             [Flags]
             public enum TextureCreationFlags
             {
@@ -587,6 +587,7 @@ namespace UnityEngine
                 //IsNativeTexture = 1 << 8, // this is only used internally.
                 //DontCheckGraphicsCaps = 1 << 9, // this is only used internally.
                 DontUploadUponCreate = 1 << 10,
+                IgnoreMipmapLimit = 1 << 11,
             }
 
             // Keep in sync with FormatUsage in Runtime/Graphics/Format.h
@@ -927,6 +928,13 @@ namespace UnityEngine
         [System.Obsolete("Enum member Local has been deprecated. Use TransformZ instead (UnityUpgradable) -> TransformZ", false)]
         Local = 1,
         TransformZ = 1,
+    }
+
+    // Keep in sync with MipmapLimitBiasMode in Runtime/Graphics/Texture.h
+    public enum TextureMipmapLimitBiasMode
+    {
+        OffsetGlobalLimit = 0,
+        OverrideGlobalLimit = 1,
     }
 } // namespace UnityEngine
 

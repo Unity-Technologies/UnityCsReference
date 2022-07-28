@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections;
 
@@ -158,7 +157,15 @@ namespace UnityEditor.UIElements.Bindings
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;
             m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
+
+            var isOverMaxMultiEditLimit = m_DataList.IsOverMaxMultiEditLimit;
+            listView.footer?.SetEnabled(!isOverMaxMultiEditLimit);
+            listView.SetOverMaxMultiEditLimit(isOverMaxMultiEditLimit, m_DataList.ArrayProperty.serializedObject.maxArraySizeForMultiEditing);
+
             listView.RefreshItems();
+
+            if (listView.arraySizeField != null)
+                listView.arraySizeField.showMixedValue = m_ArraySize.hasMultipleDifferentValues;
         }
 
         public override void Release()
@@ -219,7 +226,14 @@ namespace UnityEditor.UIElements.Bindings
 
                 isUpdating = true;
 
-                if (listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
+                var currentArraySize = m_ArraySize.intValue;
+                var listViewShowsMixedValue = listView.arraySizeField is {showMixedValue: true};
+                if (listViewShowsMixedValue ||
+                    (listView.arraySizeField == null || int.Parse(listView.arraySizeField.value) == currentArraySize) &&
+                    listView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
+                    return;
+                if (currentArraySize != m_ListViewArraySize ||
+                    listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
                 {
                     UpdateArraySize();
                 }
@@ -333,6 +347,8 @@ namespace UnityEditor.UIElements.Bindings
             get { return (properties as ICollection).SyncRoot; }
         }
 
+        internal bool IsOverMaxMultiEditLimit => ArrayProperty.minArraySize > ArrayProperty.serializedObject.maxArraySizeForMultiEditing && ArrayProperty.serializedObject.isEditingMultipleObjects;
+
         public int Add(object value)
         {
             throw new NotImplementedException();
@@ -425,8 +441,11 @@ namespace UnityEditor.UIElements.Bindings
                 for (var i = index + 1; i < ArraySize.intValue; i++)
                 {
                     var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
-                    currentProperty.isExpanded = nextProperty.isExpanded;
-                    currentProperty = nextProperty;
+                    if (nextProperty != null)
+                    {
+                        currentProperty.isExpanded = nextProperty.isExpanded;
+                        currentProperty = nextProperty;
+                    }
                 }
 
                 ArrayProperty.DeleteArrayElementAtIndex(index);
