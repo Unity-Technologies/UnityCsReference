@@ -45,10 +45,12 @@ namespace UnityEngine.TextCore.Text
         public TagUnitType unitType;
     }
 
+    // TODO TextProcessingElement is defined twice in TMP...
     [System.Diagnostics.DebuggerDisplay("Unicode ({unicode})  '{(char)unicode}'")]
-    internal struct UnicodeChar
+    internal struct TextProcessingElement
     {
-        public int unicode;
+        public TextProcessingElementType elementType;
+        public uint unicode;
         public int stringIndex;
         public int length;
     }
@@ -58,6 +60,11 @@ namespace UnityEngine.TextCore.Text
     /// </summary>
     struct TextBackingContainer
     {
+        public uint[] Text
+        {
+            get { return m_Array; }
+        }
+
         public int Capacity
         {
             get { return m_Array.Length; }
@@ -467,7 +474,7 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         /// <param name="hex"></param>
         /// <returns></returns>
-        public static int HexToInt(char hex)
+        public static uint HexToInt(char hex)
         {
             switch (hex)
             {
@@ -624,167 +631,167 @@ namespace UnityEngine.TextCore.Text
             return output;
         }
 
-        /// <summary>
-        /// Method to store the content of a string into an integer array.
-        /// </summary>
-        /// <param name="sourceText"></param>
-        /// <param name="charBuffer"></param>
-        /// <param name="styleStack"></param>
-        /// <param name="generationSettings"></param>
-        public static void StringToCharArray(string sourceText, ref int[] charBuffer, ref TextProcessingStack<int> styleStack, TextGenerationSettings generationSettings)
-        {
-            if (sourceText == null)
-            {
-                charBuffer[0] = 0;
-                return;
-            }
-
-            if (charBuffer == null)
-                charBuffer = new int[8];
-
-            // Clear the Style stack.
-            styleStack.SetDefault(0);
-
-            int writeIndex = 0;
-
-            for (int i = 0; i < sourceText.Length; i++)
-            {
-                if (sourceText[i] == 92 && sourceText.Length > i + 1)
-                {
-                    switch ((int)sourceText[i + 1])
-                    {
-                        case 85: // \U00000000 for UTF-32 Unicode
-                            if (sourceText.Length > i + 9)
-                            {
-                                if (writeIndex == charBuffer.Length)
-                                    ResizeInternalArray(ref charBuffer);
-
-                                charBuffer[writeIndex] = GetUtf32(sourceText, i + 2);
-                                i += 9;
-                                writeIndex += 1;
-                                continue;
-                            }
-                            break;
-                        case 92: // \ escape
-                            if (!generationSettings.parseControlCharacters)
-                                break;
-
-                            if (sourceText.Length <= i + 2)
-                                break;
-
-                            if (writeIndex + 2 > charBuffer.Length)
-                                ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex] = sourceText[i + 1];
-                            charBuffer[writeIndex + 1] = sourceText[i + 2];
-                            i += 2;
-                            writeIndex += 2;
-                            continue;
-                        case 110: // \n LineFeed
-                            if (!generationSettings.parseControlCharacters)
-                                break;
-
-                            if (writeIndex == charBuffer.Length)
-                                ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex] = (char)10;
-                            i += 1;
-                            writeIndex += 1;
-                            continue;
-                        case 114: // \r
-                            if (!generationSettings.parseControlCharacters)
-                                break;
-
-                            if (writeIndex == charBuffer.Length)
-                                ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex] = (char)13;
-                            i += 1;
-                            writeIndex += 1;
-                            continue;
-                        case 116: // \t Tab
-                            if (!generationSettings.parseControlCharacters)
-                                break;
-
-                            if (writeIndex == charBuffer.Length)
-                                ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex] = (char)9;
-                            i += 1;
-                            writeIndex += 1;
-                            continue;
-                        case 117: // \u0000 for UTF-16 Unicode
-                            if (sourceText.Length > i + 5)
-                            {
-                                if (writeIndex == charBuffer.Length)
-                                    ResizeInternalArray(ref charBuffer);
-
-                                charBuffer[writeIndex] = (char)GetUtf16(sourceText, i + 2);
-                                i += 5;
-                                writeIndex += 1;
-                                continue;
-                            }
-                            break;
-                    }
-                }
-
-                // Handle UTF-32 in the input text (string). // Not sure this is needed //
-                if (Char.IsHighSurrogate(sourceText[i]) && Char.IsLowSurrogate(sourceText[i + 1]))
-                {
-                    if (writeIndex == charBuffer.Length)
-                        ResizeInternalArray(ref charBuffer);
-
-                    charBuffer[writeIndex] = Char.ConvertToUtf32(sourceText[i], sourceText[i + 1]);
-                    i += 1;
-                    writeIndex += 1;
-                    continue;
-                }
-
-                //// Handle inline replacement of <stlye> and <br> tags.
-                if (sourceText[i] == 60 && generationSettings.richText)
-                {
-                    if (IsTagName(ref sourceText, "<BR>", i))
-                    {
-                        if (writeIndex == charBuffer.Length)
-                            ResizeInternalArray(ref charBuffer);
-
-                        charBuffer[writeIndex] = 10;
-                        writeIndex += 1;
-                        i += 3;
-
-                        continue;
-                    }
-                    if (IsTagName(ref sourceText, "<STYLE=", i))
-                    {
-                        int srcOffset;
-                        if (ReplaceOpeningStyleTag(ref sourceText, i, out srcOffset, ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings))
-                        {
-                            i = srcOffset;
-                            continue;
-                        }
-                    }
-                    else if (IsTagName(ref sourceText, "</STYLE>", i))
-                    {
-                        ReplaceClosingStyleTag(ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings);
-
-                        // Strip </style> even if style is invalid.
-                        i += 7;
-                        continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length)
-                    ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex] = sourceText[i];
-                writeIndex += 1;
-            }
-
-            if (writeIndex == charBuffer.Length)
-                ResizeInternalArray(ref charBuffer);
-
-            charBuffer[writeIndex] = (char)0;
-        }
+        // /// <summary>
+        // /// Method to store the content of a string into an integer array.
+        // /// </summary>
+        // /// <param name="sourceText"></param>
+        // /// <param name="charBuffer"></param>
+        // /// <param name="styleStack"></param>
+        // /// <param name="generationSettings"></param>
+        // public static void StringToCharArray(string sourceText, ref int[] charBuffer, ref TextProcessingStack<int> styleStack, TextGenerationSettings generationSettings)
+        // {
+        //     if (sourceText == null)
+        //     {
+        //         charBuffer[0] = 0;
+        //         return;
+        //     }
+        //
+        //     if (charBuffer == null)
+        //         charBuffer = new int[8];
+        //
+        //     // Clear the Style stack.
+        //     styleStack.SetDefault(0);
+        //
+        //     int writeIndex = 0;
+        //
+        //     for (int i = 0; i < sourceText.Length; i++)
+        //     {
+        //         if (sourceText[i] == 92 && sourceText.Length > i + 1)
+        //         {
+        //             switch ((int)sourceText[i + 1])
+        //             {
+        //                 case 85: // \U00000000 for UTF-32 Unicode
+        //                     if (sourceText.Length > i + 9)
+        //                     {
+        //                         if (writeIndex == charBuffer.Length)
+        //                             ResizeInternalArray(ref charBuffer);
+        //
+        //                         charBuffer[writeIndex] = GetUtf32(sourceText, i + 2);
+        //                         i += 9;
+        //                         writeIndex += 1;
+        //                         continue;
+        //                     }
+        //                     break;
+        //                 case 92: // \ escape
+        //                     if (!generationSettings.parseControlCharacters)
+        //                         break;
+        //
+        //                     if (sourceText.Length <= i + 2)
+        //                         break;
+        //
+        //                     if (writeIndex + 2 > charBuffer.Length)
+        //                         ResizeInternalArray(ref charBuffer);
+        //
+        //                     charBuffer[writeIndex] = sourceText[i + 1];
+        //                     charBuffer[writeIndex + 1] = sourceText[i + 2];
+        //                     i += 2;
+        //                     writeIndex += 2;
+        //                     continue;
+        //                 case 110: // \n LineFeed
+        //                     if (!generationSettings.parseControlCharacters)
+        //                         break;
+        //
+        //                     if (writeIndex == charBuffer.Length)
+        //                         ResizeInternalArray(ref charBuffer);
+        //
+        //                     charBuffer[writeIndex] = (char)10;
+        //                     i += 1;
+        //                     writeIndex += 1;
+        //                     continue;
+        //                 case 114: // \r
+        //                     if (!generationSettings.parseControlCharacters)
+        //                         break;
+        //
+        //                     if (writeIndex == charBuffer.Length)
+        //                         ResizeInternalArray(ref charBuffer);
+        //
+        //                     charBuffer[writeIndex] = (char)13;
+        //                     i += 1;
+        //                     writeIndex += 1;
+        //                     continue;
+        //                 case 116: // \t Tab
+        //                     if (!generationSettings.parseControlCharacters)
+        //                         break;
+        //
+        //                     if (writeIndex == charBuffer.Length)
+        //                         ResizeInternalArray(ref charBuffer);
+        //
+        //                     charBuffer[writeIndex] = (char)9;
+        //                     i += 1;
+        //                     writeIndex += 1;
+        //                     continue;
+        //                 case 117: // \u0000 for UTF-16 Unicode
+        //                     if (sourceText.Length > i + 5)
+        //                     {
+        //                         if (writeIndex == charBuffer.Length)
+        //                             ResizeInternalArray(ref charBuffer);
+        //
+        //                         charBuffer[writeIndex] = (char)GetUtf16(sourceText, i + 2);
+        //                         i += 5;
+        //                         writeIndex += 1;
+        //                         continue;
+        //                     }
+        //                     break;
+        //             }
+        //         }
+        //
+        //         // Handle UTF-32 in the input text (string). // Not sure this is needed //
+        //         if (Char.IsHighSurrogate(sourceText[i]) && Char.IsLowSurrogate(sourceText[i + 1]))
+        //         {
+        //             if (writeIndex == charBuffer.Length)
+        //                 ResizeInternalArray(ref charBuffer);
+        //
+        //             charBuffer[writeIndex] = Char.ConvertToUtf32(sourceText[i], sourceText[i + 1]);
+        //             i += 1;
+        //             writeIndex += 1;
+        //             continue;
+        //         }
+        //
+        //         //// Handle inline replacement of <stlye> and <br> tags.
+        //         if (sourceText[i] == 60 && generationSettings.richText)
+        //         {
+        //             if (IsTagName(ref sourceText, "<BR>", i))
+        //             {
+        //                 if (writeIndex == charBuffer.Length)
+        //                     ResizeInternalArray(ref charBuffer);
+        //
+        //                 charBuffer[writeIndex] = 10;
+        //                 writeIndex += 1;
+        //                 i += 3;
+        //
+        //                 continue;
+        //             }
+        //             if (IsTagName(ref sourceText, "<STYLE=", i))
+        //             {
+        //                 int srcOffset;
+        //                 if (ReplaceOpeningStyleTag(ref sourceText, i, out srcOffset, ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings))
+        //                 {
+        //                     i = srcOffset;
+        //                     continue;
+        //                 }
+        //             }
+        //             else if (IsTagName(ref sourceText, "</STYLE>", i))
+        //             {
+        //                 ReplaceClosingStyleTag(ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings);
+        //
+        //                 // Strip </style> even if style is invalid.
+        //                 i += 7;
+        //                 continue;
+        //             }
+        //         }
+        //
+        //         if (writeIndex == charBuffer.Length)
+        //             ResizeInternalArray(ref charBuffer);
+        //
+        //         charBuffer[writeIndex] = sourceText[i];
+        //         writeIndex += 1;
+        //     }
+        //
+        //     if (writeIndex == charBuffer.Length)
+        //         ResizeInternalArray(ref charBuffer);
+        //
+        //     charBuffer[writeIndex] = (char)0;
+        // }
 
         public static void ResizeInternalArray<T>(ref T[] array)
         {
@@ -842,78 +849,41 @@ namespace UnityEngine.TextCore.Text
             return true;
         }
 
-        /// <summary>
-        /// Method to handle inline replacement of style tag by opening style definition.
-        /// </summary>
-        /// <param name="sourceText"></param>
-        /// <param name="srcIndex"></param>
-        /// <param name="srcOffset"></param>s
-        /// <param name="charBuffer"></param>
-        /// <param name="writeIndex"></param>
-        /// <param name="styleStack"></param>
-        /// <returns></returns>
-        public static bool ReplaceOpeningStyleTag(ref int[] sourceText, int srcIndex, out int srcOffset, ref int[] charBuffer, ref int writeIndex, ref TextProcessingStack<int> styleStack, ref TextGenerationSettings generationSettings)
+        internal static void InsertOpeningTextStyle(TextStyle style, ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
         {
-            // Validate <style> tag.
-            int hashCode = GetTagHashCode(ref sourceText, srcIndex + 7, out srcOffset);
-
-            TextStyle style = GetStyle(generationSettings, hashCode);
-
             // Return if we don't have a valid style.
-            if (style == null || srcOffset == 0)
-                return false;
+            if (style == null)
+                return;
 
-            styleStack.Add(style.hashCode);
+            // Increase style depth
+            textStyleStackDepth += 1;
 
-            int styleLength = style.styleOpeningTagArray.Length;
+            // Push style hashcode onto stack
+            textStyleStacks[textStyleStackDepth].Push(style.hashCode);
 
             // Replace <style> tag with opening definition
-            int[] openingTagArray = style.styleOpeningTagArray;
+            uint[] styleDefinition = style.styleOpeningTagArray;
 
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = openingTagArray[i];
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
 
-                if (c == 60)
-                {
-                    if (IsTagName(ref openingTagArray, "<BR>", i))
-                    {
-                        if (writeIndex == charBuffer.Length)
-                            ResizeInternalArray(ref charBuffer);
+            textStyleStackDepth -= 1;
+        }
 
-                        charBuffer[writeIndex] = 10;
-                        writeIndex += 1;
-                        i += 3;
+        internal static void InsertClosingTextStyle(TextStyle style, ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
+        {
+            // Return if we don't have a valid style.
+            if (style == null) return;
 
-                        continue;
-                    }
-                    if (IsTagName(ref openingTagArray, "<STYLE=", i))
-                    {
-                        int offset;
-                        if (ReplaceOpeningStyleTag(ref openingTagArray, i, out offset, ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings))
-                        {
-                            i = offset;
-                            continue;
-                        }
-                    }
-                    else if (IsTagName(ref openingTagArray, "</STYLE>", i))
-                    {
-                        ReplaceClosingStyleTag(ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings);
+            // Increase style depth
+            textStyleStackDepth += 1;
 
-                        // Strip </style> even if style is invalid.
-                        i += 7;
-                        continue;
-                    }
-                }
+            // Push style hashcode onto stack
+            textStyleStacks[textStyleStackDepth].Push(style.hashCode);
+            uint[] styleDefinition = style.styleClosingTagArray;
 
-                if (writeIndex == charBuffer.Length)
-                    ResizeInternalArray(ref charBuffer);
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
 
-                charBuffer[writeIndex] = c;
-                writeIndex += 1;
-            }
-
-            return true;
+            textStyleStackDepth -= 1;
         }
 
         /// <summary>
@@ -924,138 +894,122 @@ namespace UnityEngine.TextCore.Text
         /// <param name="srcOffset"></param>
         /// <param name="charBuffer"></param>
         /// <param name="writeIndex"></param>
-        /// <param name="styleStack"></param>
         /// <returns></returns>
-        static bool ReplaceOpeningStyleTag(ref string sourceText, int srcIndex, out int srcOffset, ref int[] charBuffer, ref int writeIndex, ref TextProcessingStack<int> styleStack, ref TextGenerationSettings generationSettings)
+        public static bool ReplaceOpeningStyleTag(ref TextBackingContainer sourceText, int srcIndex, out int srcOffset, ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
         {
             // Validate <style> tag.
-            int hashCode = GetTagHashCode(ref sourceText, srcIndex + 7, out srcOffset);
-
-            TextStyle style = GetStyle(generationSettings, hashCode);
+            int styleHashCode = GetStyleHashCode(ref sourceText, srcIndex + 7, out srcOffset);
+            TextStyle style = GetStyle(generationSettings, styleHashCode);
 
             // Return if we don't have a valid style.
-            if (style == null || srcOffset == 0)
-                return false;
+            if (style == null || srcOffset == 0) return false;
 
-            styleStack.Add(style.hashCode);
+            // Increase style depth
+            textStyleStackDepth += 1;
 
-            int styleLength = style.styleOpeningTagArray.Length;
+            // Push style hashcode onto stack
+            textStyleStacks[textStyleStackDepth].Push(style.hashCode);
 
             // Replace <style> tag with opening definition
-            int[] openingTagArray = style.styleOpeningTagArray;
+            uint[] styleDefinition = style.styleOpeningTagArray;
 
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = openingTagArray[i];
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
 
-                if (c == 60)
-                {
-                    if (IsTagName(ref openingTagArray, "<BR>", i))
-                    {
-                        if (writeIndex == charBuffer.Length)
-                            ResizeInternalArray(ref charBuffer);
+            textStyleStackDepth -= 1;
+            return true;
+        }
 
-                        charBuffer[writeIndex] = 10;
-                        writeIndex += 1;
-                        i += 3;
 
-                        continue;
-                    }
-                    if (IsTagName(ref openingTagArray, "<STYLE=", i))
-                    {
-                        int offset;
-                        if (ReplaceOpeningStyleTag(ref openingTagArray, i, out offset, ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings))
-                        {
-                            i = offset;
-                            continue;
-                        }
-                    }
-                    else if (IsTagName(ref openingTagArray, "</STYLE>", i))
-                    {
-                        ReplaceClosingStyleTag(ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings);
+        /// <summary>
+        /// Method to handle inline replacement of style tag by opening style definition.
+        /// </summary>
+        /// <param name="sourceText"></param>
+        /// <param name="srcIndex"></param>
+        /// <param name="srcOffset"></param>
+        /// <param name="charBuffer"></param>
+        /// <param name="writeIndex"></param>
+        /// <returns></returns>
+        public static void ReplaceOpeningStyleTag(ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
+        {
+            // Get style from the Style Stack
+            int styleHashCode = textStyleStacks[textStyleStackDepth + 1].Pop();
+            TextStyle style = GetStyle(generationSettings, styleHashCode);
 
-                        // Strip </style> even if style is invalid.
-                        i += 7;
-                        continue;
-                    }
-                }
+            // Return if we don't have a valid style.
+            if (style == null) return;
 
-                if (writeIndex == charBuffer.Length)
-                    ResizeInternalArray(ref charBuffer);
+            // Increase style depth
+            textStyleStackDepth += 1;
 
-                charBuffer[writeIndex] = c;
-                writeIndex += 1;
-            }
+            // Replace <style> tag with opening definition
+            uint[] styleDefinition = style.styleOpeningTagArray;
+
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
+
+            textStyleStackDepth -= 1;
+        }
+
+        /// <summary>
+        /// Method to handle inline replacement of style tag by opening style definition.
+        /// </summary>
+        /// <param name="sourceText"></param>
+        /// <param name="srcIndex"></param>
+        /// <param name="srcOffset"></param>
+        /// <param name="charBuffer"></param>
+        /// <param name="writeIndex"></param>
+        /// <returns></returns>
+        static bool ReplaceOpeningStyleTag(ref uint[] sourceText, int srcIndex, out int srcOffset, ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
+        {
+            // Validate <style> tag.
+            int styleHashCode = GetStyleHashCode(ref sourceText, srcIndex + 7, out srcOffset);
+            TextStyle style = GetStyle(generationSettings, styleHashCode);
+
+            // Return if we don't have a valid style.
+            if (style == null || srcOffset == 0) return false;
+
+            // Increase style depth
+            textStyleStackDepth += 1;
+
+            // Push style hashcode onto stack
+            textStyleStacks[textStyleStackDepth].Push(style.hashCode);
+
+            // Replace <style> tag with opening definition
+            uint[] styleDefinition = style.styleOpeningTagArray;
+
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
+
+            textStyleStackDepth -= 1;
 
             return true;
         }
 
+
         /// <summary>
         /// Method to handle inline replacement of style tag by closing style definition.
         /// </summary>
+        /// <param name="sourceText"></param>
+        /// <param name="srcIndex"></param>
         /// <param name="charBuffer"></param>
         /// <param name="writeIndex"></param>
-        /// <param name="styleStack"></param>
         /// <returns></returns>
-        public static void ReplaceClosingStyleTag(ref int[] charBuffer, ref int writeIndex, ref TextProcessingStack<int> styleStack, ref TextGenerationSettings generationSettings)
+        public static void ReplaceClosingStyleTag(ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
         {
             // Get style from the Style Stack
-            int hashCode = styleStack.CurrentItem();
-            TextStyle style = GetStyle(generationSettings, hashCode);
-
-            styleStack.Remove();
+            int styleHashCode = textStyleStacks[textStyleStackDepth + 1].Pop();
+            TextStyle style = GetStyle(generationSettings, styleHashCode);
 
             // Return if we don't have a valid style.
-            if (style == null)
-                return;
+            if (style == null) return;
 
-            int styleLength = style.styleClosingTagArray.Length;
+            // Increase style depth
+            textStyleStackDepth += 1;
 
             // Replace <style> tag with opening definition
-            int[] closingTagArray = style.styleClosingTagArray;
+            uint[] styleDefinition = style.styleClosingTagArray;
 
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = closingTagArray[i];
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
 
-                if (c == 60)
-                {
-                    if (IsTagName(ref closingTagArray, "<BR>", i))
-                    {
-                        if (writeIndex == charBuffer.Length)
-                            ResizeInternalArray(ref charBuffer);
-
-                        charBuffer[writeIndex] = 10;
-                        writeIndex += 1;
-                        i += 3;
-
-                        continue;
-                    }
-                    if (IsTagName(ref closingTagArray, "<STYLE=", i))
-                    {
-                        int offset;
-                        if (ReplaceOpeningStyleTag(ref closingTagArray, i, out offset, ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings))
-                        {
-                            i = offset;
-                            continue;
-                        }
-                    }
-                    else if (IsTagName(ref closingTagArray, "</STYLE>", i))
-                    {
-                        ReplaceClosingStyleTag(ref charBuffer, ref writeIndex, ref styleStack, ref generationSettings);
-
-                        // Strip </style> even if style is invalid.
-                        i += 7;
-                        continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length)
-                    ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex] = c;
-                writeIndex += 1;
-            }
+            textStyleStackDepth -= 1;
         }
 
         /// <summary>
@@ -1066,655 +1020,19 @@ namespace UnityEngine.TextCore.Text
         /// <param name="charBuffer"></param>
         /// <param name="writeIndex"></param>
         /// <returns></returns>
-        public static bool InsertOpeningStyleTag(TextStyle style, int srcIndex, ref UnicodeChar[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
+        internal static void InsertOpeningStyleTag(TextStyle style, ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
         {
             // Return if we don't have a valid style.
-            if (style == null) return false;
+            if (style == null) return;
 
             textStyleStacks[0].Push(style.hashCode);
 
-            int styleLength = style.styleOpeningTagArray.Length;
-
             // Replace <style> tag with opening definition
-            int[] tagDefinition = style.styleOpeningTagArray;
+            uint[] styleDefinition = style.styleOpeningTagArray;
 
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = tagDefinition[i];
-
-                if (c == '\\' && i + 1 < styleLength)
-                {
-                    switch (tagDefinition[i + 1])
-                    {
-                        case '\\':
-                            i += 1;
-                            break;
-                        case 'n':
-                            c = 10;
-                            i += 1;
-                            break;
-                        case 'r':
-                            break;
-                        case 't':
-                            break;
-                        case 'u':
-                            // UTF16 format is "\uFF00" or u + 2 hex pairs.
-                            if (i + 5 < styleLength)
-                            {
-                                c = GetUTF16(tagDefinition, i + 2);
-
-                                i += 5;
-                            }
-                            break;
-                        case 'U':
-                            // UTF32 format is "\UFF00FF00" or U + 4 hex pairs.
-                            if (i + 9 < styleLength)
-                            {
-                                c = GetUTF32(tagDefinition, i + 2);
-
-                                i += 9;
-                            }
-                            break;
-                    }
-                }
-
-                if (c == '<')
-                {
-                    int hashCode = GetMarkupTagHashCode(tagDefinition, i + 1);
-
-                    switch ((MarkupTag)hashCode)
-                    {
-                        case MarkupTag.BR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 10;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.CR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 13;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.NBSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 160;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.ZWSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = k_ZeroWidthSpace;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.SHY:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 0xAD;
-                            writeIndex += 1;
-                            i += 4;
-                            continue;
-                        case MarkupTag.STYLE:
-                            if (ReplaceOpeningStyleTag(ref tagDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
-                            {
-                                i = offset;
-                                continue;
-                            }
-                            break;
-                        case MarkupTag.SLASH_STYLE:
-                            ReplaceClosingStyleTag(ref tagDefinition, i, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
-
-                            i += 7;
-                            continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex].unicode = c;
-                writeIndex += 1;
-            }
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
 
             textStyleStackDepth = 0;
-
-            return true;
-        }
-
-        /// <summary>
-        /// Method to handle inline replacement of style tag by opening style definition.
-        /// </summary>
-        /// <param name="sourceText"></param>
-        /// <param name="srcIndex"></param>
-        /// <param name="srcOffset"></param>
-        /// <param name="charBuffer"></param>
-        /// <param name="writeIndex"></param>
-        /// <returns></returns>
-        public static bool ReplaceOpeningStyleTag(ref TextBackingContainer sourceText, int srcIndex, out int srcOffset, ref UnicodeChar[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
-        {
-            // Validate <style> tag.
-            int styleHashCode = GetStyleHashCode(ref sourceText, srcIndex + 7, out srcOffset);
-            TextStyle style = GetStyle(generationSettings, styleHashCode);
-
-            // Return if we don't have a valid style.
-            if (style == null || srcOffset == 0) return false;
-
-            // Increase style depth
-            textStyleStackDepth += 1;
-
-            // Push style hashcode onto stack
-            textStyleStacks[textStyleStackDepth].Push(style.hashCode);
-
-            int styleLength = style.styleOpeningTagArray.Length;
-
-            // Replace <style> tag with opening definition
-            int[] tagDefinition = style.styleOpeningTagArray;
-
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = tagDefinition[i];
-
-                if (c == '\\' && i + 1 < styleLength)
-                {
-                    switch (tagDefinition[i + 1])
-                    {
-                        case '\\':
-                            i += 1;
-                            break;
-                        case 'n':
-                            c = 10;
-                            i += 1;
-                            break;
-                        case 'r':
-                            break;
-                        case 't':
-                            break;
-                        case 'u':
-                            // UTF16 format is "\uFF00" or u + 2 hex pairs.
-                            if (i + 5 < styleLength)
-                            {
-                                c = GetUTF16(tagDefinition, i + 2);
-
-                                i += 5;
-                            }
-                            break;
-                        case 'U':
-                            // UTF32 format is "\UFF00FF00" or U + 4 hex pairs.
-                            if (i + 9 < styleLength)
-                            {
-                                c = GetUTF32(tagDefinition, i + 2);
-
-                                i += 9;
-                            }
-                            break;
-                    }
-                }
-
-                if (c == '<')
-                {
-                    int hashCode = GetMarkupTagHashCode(tagDefinition, i + 1);
-
-                    switch ((MarkupTag)hashCode)
-                    {
-                        case MarkupTag.BR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 10;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.CR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 13;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.NBSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 160;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.ZWSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = k_ZeroWidthSpace;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.SHY:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 0xAD;
-                            writeIndex += 1;
-                            i += 4;
-                            continue;
-                        case MarkupTag.STYLE:
-                            if (ReplaceOpeningStyleTag(ref tagDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
-                            {
-                                i = offset;
-                                continue;
-                            }
-                            break;
-                        case MarkupTag.SLASH_STYLE:
-                            ReplaceClosingStyleTag(ref tagDefinition, i, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
-
-                            i += 7;
-                            continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex].unicode = c;
-                writeIndex += 1;
-            }
-
-            textStyleStackDepth -= 1;
-
-            return true;
-        }
-
-        /// <summary>
-        /// Method to handle inline replacement of style tag by closing style definition.
-        /// </summary>
-        /// <param name="sourceText"></param>
-        /// <param name="srcIndex"></param>
-        /// <param name="charBuffer"></param>
-        /// <param name="writeIndex"></param>
-        /// <returns></returns>
-        public static void ReplaceClosingStyleTag(ref int[] sourceText, int srcIndex, ref UnicodeChar[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
-        {
-            // Get style from the Style Stack
-            int styleHashCode = textStyleStacks[textStyleStackDepth + 1].Pop();
-            TextStyle style = GetStyle(generationSettings, styleHashCode);
-
-            // Return if we don't have a valid style.
-            if (style == null) return;
-
-            // Increase style depth
-            textStyleStackDepth += 1;
-
-            int styleLength = style.styleClosingTagArray.Length;
-
-            // Replace <style> tag with opening definition
-            int[] tagDefinition = style.styleClosingTagArray;
-
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = tagDefinition[i];
-
-                if (c == '\\' && i + 1 < styleLength)
-                {
-                    switch (tagDefinition[i + 1])
-                    {
-                        case '\\':
-                            i += 1;
-                            break;
-                        case 'n':
-                            c = 10;
-                            i += 1;
-                            break;
-                        case 'r':
-                            break;
-                        case 't':
-                            break;
-                        case 'u':
-                            // UTF16 format is "\uFF00" or u + 2 hex pairs.
-                            if (i + 5 < styleLength)
-                            {
-                                c = GetUTF16(tagDefinition, i + 2);
-
-                                i += 5;
-                            }
-                            break;
-                        case 'U':
-                            // UTF32 format is "\UFF00FF00" or U + 4 hex pairs.
-                            if (i + 9 < styleLength)
-                            {
-                                c = GetUTF32(tagDefinition, i + 2);
-
-                                i += 9;
-                            }
-                            break;
-                    }
-                }
-
-                if (c == '<')
-                {
-                    int hashCode = GetMarkupTagHashCode(tagDefinition, i + 1);
-
-                    switch ((MarkupTag)hashCode)
-                    {
-                        case MarkupTag.BR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 10;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.CR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 13;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.NBSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 160;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.ZWSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = k_ZeroWidthSpace;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.SHY:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 0xAD;
-                            writeIndex += 1;
-                            i += 4;
-                            continue;
-                        case MarkupTag.STYLE:
-                            if (ReplaceOpeningStyleTag(ref tagDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
-                            {
-                                i = offset;
-                                continue;
-                            }
-                            break;
-                        case MarkupTag.SLASH_STYLE:
-                            ReplaceClosingStyleTag(ref tagDefinition, i, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
-
-                            i += 7;
-                            continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex].unicode = c;
-                writeIndex += 1;
-            }
-
-            textStyleStackDepth -= 1;
-        }
-
-        /// <summary>
-        /// Method to handle inline replacement of style tag by closing style definition.
-        /// </summary>
-        /// <param name="sourceText"></param>
-        /// <param name="srcIndex"></param>
-        /// <param name="charBuffer"></param>
-        /// <param name="writeIndex"></param>
-        /// <returns></returns>
-        public static void ReplaceClosingStyleTag(ref TextBackingContainer sourceText, int srcIndex, ref UnicodeChar[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
-        {
-            // Get style from the Style Stack
-            int styleHashCode = textStyleStacks[textStyleStackDepth + 1].Pop();
-            TextStyle style = GetStyle(generationSettings, styleHashCode);
-
-            // Return if we don't have a valid style.
-            if (style == null) return;
-
-            // Increase style depth
-            textStyleStackDepth += 1;
-
-            int styleLength = style.styleClosingTagArray.Length;
-
-            // Replace <style> tag with opening definition
-            int[] tagDefinition = style.styleClosingTagArray;
-
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = tagDefinition[i];
-
-                if (c == '\\' && i + 1 < styleLength)
-                {
-                    switch (tagDefinition[i + 1])
-                    {
-                        case '\\':
-                            i += 1;
-                            break;
-                        case 'n':
-                            c = 10;
-                            i += 1;
-                            break;
-                        case 'r':
-                            break;
-                        case 't':
-                            break;
-                        case 'u':
-                            // UTF16 format is "\uFF00" or u + 2 hex pairs.
-                            if (i + 5 < styleLength)
-                            {
-                                c = GetUTF16(tagDefinition, i + 2);
-
-                                i += 5;
-                            }
-                            break;
-                        case 'U':
-                            // UTF32 format is "\UFF00FF00" or U + 4 hex pairs.
-                            if (i + 9 < styleLength)
-                            {
-                                c = GetUTF32(tagDefinition, i + 2);
-
-                                i += 9;
-                            }
-                            break;
-                    }
-                }
-
-                if (c == '<')
-                {
-                    int hashCode = GetMarkupTagHashCode(tagDefinition, i + 1);
-
-                    switch ((MarkupTag)hashCode)
-                    {
-                        case MarkupTag.BR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 10;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.CR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 13;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.NBSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 160;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.ZWSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = k_ZeroWidthSpace;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.SHY:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 0xAD;
-                            writeIndex += 1;
-                            i += 4;
-                            continue;
-                        case MarkupTag.STYLE:
-                            if (ReplaceOpeningStyleTag(ref tagDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
-                            {
-                                i = offset;
-                                continue;
-                            }
-                            break;
-                        case MarkupTag.SLASH_STYLE:
-                            ReplaceClosingStyleTag(ref tagDefinition, i, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
-
-                            i += 7;
-                            continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex].unicode = c;
-                writeIndex += 1;
-            }
-
-            textStyleStackDepth -= 1;
-        }
-
-        /// <summary>
-        /// Method to handle inline replacement of style tag by opening style definition.
-        /// </summary>
-        /// <param name="sourceText"></param>
-        /// <param name="srcIndex"></param>
-        /// <param name="srcOffset"></param>
-        /// <param name="charBuffer"></param>
-        /// <param name="writeIndex"></param>
-        /// <returns></returns>
-        public static bool ReplaceOpeningStyleTag(ref int[] sourceText, int srcIndex, out int srcOffset, ref UnicodeChar[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
-        {
-            // Validate <style> tag.
-            int styleHashCode = GetStyleHashCode(ref sourceText, srcIndex + 7, out srcOffset);
-            TextStyle style = GetStyle(generationSettings, styleHashCode);
-
-            // Return if we don't have a valid style.
-            if (style == null || srcOffset == 0) return false;
-
-            // Increase style depth
-            textStyleStackDepth += 1;
-
-            // Push style hashcode onto stack
-            textStyleStacks[textStyleStackDepth].Push(style.hashCode);
-
-            int styleLength = style.styleOpeningTagArray.Length;
-
-            // Replace <style> tag with opening definition
-            int[] tagDefinition = style.styleOpeningTagArray;
-
-            for (int i = 0; i < styleLength; i++)
-            {
-                int c = tagDefinition[i];
-
-                if (c == '\\' && i + 1 < styleLength)
-                {
-                    switch (tagDefinition[i + 1])
-                    {
-                        case '\\':
-                            i += 1;
-                            break;
-                        case 'n':
-                            c = 10;
-                            i += 1;
-                            break;
-                        case 'r':
-                            break;
-                        case 't':
-                            break;
-                        case 'u':
-                            // UTF16 format is "\uFF00" or u + 2 hex pairs.
-                            if (i + 5 < styleLength)
-                            {
-                                c = GetUTF16(tagDefinition, i + 2);
-
-                                i += 5;
-                            }
-                            break;
-                        case 'U':
-                            // UTF32 format is "\UFF00FF00" or U + 4 hex pairs.
-                            if (i + 9 < styleLength)
-                            {
-                                c = GetUTF32(tagDefinition, i + 2);
-
-                                i += 9;
-                            }
-                            break;
-                    }
-                }
-
-                if (c == '<')
-                {
-                    int hashCode = GetMarkupTagHashCode(tagDefinition, i + 1);
-
-                    switch ((MarkupTag)hashCode)
-                    {
-                        case MarkupTag.BR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 10;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.CR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 13;
-                            writeIndex += 1;
-                            i += 3;
-                            continue;
-                        case MarkupTag.NBSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 160;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.ZWSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = k_ZeroWidthSpace;
-                            writeIndex += 1;
-                            i += 5;
-                            continue;
-                        case MarkupTag.SHY:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                            charBuffer[writeIndex].unicode = 0xAD;
-                            writeIndex += 1;
-                            i += 4;
-                            continue;
-                        case MarkupTag.STYLE:
-                            if (ReplaceOpeningStyleTag(ref tagDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
-                            {
-                                i = offset;
-                                continue;
-                            }
-                            break;
-                        case MarkupTag.SLASH_STYLE:
-                            ReplaceClosingStyleTag(ref tagDefinition, i, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
-
-                            i += 7;
-                            continue;
-                    }
-                }
-
-                if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
-
-                charBuffer[writeIndex].unicode = c;
-                writeIndex += 1;
-            }
-
-            textStyleStackDepth -= 1;
-
-            return true;
         }
 
         /// <summary>
@@ -1722,24 +1040,35 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         /// <param name="charBuffer"></param>
         /// <param name="writeIndex"></param>
-        public static void InsertClosingStyleTag(ref UnicodeChar[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
+        internal static void InsertClosingStyleTag(ref TextProcessingElement[] charBuffer, ref int writeIndex, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
         {
             // Get style from the Style Stack
             int styleHashCode = textStyleStacks[0].Pop();
             TextStyle style = GetStyle(generationSettings, styleHashCode);
 
-            int styleLength = style.styleClosingTagArray.Length;
-
             // Replace <style> tag with opening definition
-            int[] tagDefinition = style.styleClosingTagArray;
+            uint[] styleDefinition = style.styleClosingTagArray;
+
+            InsertTextStyleInTextProcessingArray(ref charBuffer, ref writeIndex, styleDefinition, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
+
+            textStyleStackDepth = 0;
+        }
+
+        private static void InsertTextStyleInTextProcessingArray(ref TextProcessingElement[] charBuffer, ref int writeIndex, uint[] styleDefinition, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
+        {
+            var tagNoParsing = generationSettings.tagNoParsing;
+            int styleLength = styleDefinition.Length;
+
+            // Make sure text processing buffer is of sufficient size
+            if (writeIndex + styleLength >= charBuffer.Length)
+                ResizeInternalArray(ref charBuffer, writeIndex + styleLength);
 
             for (int i = 0; i < styleLength; i++)
             {
-                int c = tagDefinition[i];
-
+                uint c = styleDefinition[i];
                 if (c == '\\' && i + 1 < styleLength)
                 {
-                    switch (tagDefinition[i + 1])
+                    switch (styleDefinition[i + 1])
                     {
                         case '\\':
                             i += 1;
@@ -1756,86 +1085,113 @@ namespace UnityEngine.TextCore.Text
                             // UTF16 format is "\uFF00" or u + 2 hex pairs.
                             if (i + 5 < styleLength)
                             {
-                                c = GetUTF16(tagDefinition, i + 2);
+                                c = GetUTF16(styleDefinition, i + 2);
 
                                 i += 5;
                             }
+
                             break;
                         case 'U':
                             // UTF32 format is "\UFF00FF00" or U + 4 hex pairs.
                             if (i + 9 < styleLength)
                             {
-                                c = GetUTF32(tagDefinition, i + 2);
+                                c = GetUTF32(styleDefinition, i + 2);
 
                                 i += 9;
                             }
+
                             break;
                     }
                 }
 
                 if (c == '<')
                 {
-                    int hashCode = GetMarkupTagHashCode(tagDefinition, i + 1);
-
+                    int hashCode = GetMarkupTagHashCode(styleDefinition, i + 1);
                     switch ((MarkupTag)hashCode)
                     {
+                        case MarkupTag.NO_PARSE:
+                            tagNoParsing = true;
+                            break;
+                        case MarkupTag.SLASH_NO_PARSE:
+                            tagNoParsing = false;
+                            break;
+
                         case MarkupTag.BR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
+                            if (tagNoParsing) break;
 
                             charBuffer[writeIndex].unicode = 10;
                             writeIndex += 1;
                             i += 3;
                             continue;
                         case MarkupTag.CR:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
+                            if (tagNoParsing) break;
 
                             charBuffer[writeIndex].unicode = 13;
                             writeIndex += 1;
                             i += 3;
                             continue;
                         case MarkupTag.NBSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
+                            if (tagNoParsing) break;
 
                             charBuffer[writeIndex].unicode = 160;
                             writeIndex += 1;
                             i += 5;
                             continue;
                         case MarkupTag.ZWSP:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
+                            if (tagNoParsing) break;
 
-                            charBuffer[writeIndex].unicode = k_ZeroWidthSpace;
+                            charBuffer[writeIndex].unicode = 0x200B;
                             writeIndex += 1;
                             i += 5;
                             continue;
+                        case MarkupTag.ZWJ:
+                            if (tagNoParsing) break;
+
+                            charBuffer[writeIndex].unicode = 0x200D;
+                            writeIndex += 1;
+                            i += 4;
+                            continue;
                         case MarkupTag.SHY:
-                            if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
+                            if (tagNoParsing) break;
 
                             charBuffer[writeIndex].unicode = 0xAD;
                             writeIndex += 1;
                             i += 4;
                             continue;
                         case MarkupTag.STYLE:
-                            if (ReplaceOpeningStyleTag(ref tagDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
+                            if (tagNoParsing) break;
+
+                            if (ReplaceOpeningStyleTag(ref styleDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
                             {
                                 i = offset;
                                 continue;
                             }
+
                             break;
                         case MarkupTag.SLASH_STYLE:
-                            ReplaceClosingStyleTag(ref tagDefinition, i, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
+                            if (tagNoParsing) break;
+
+                            ReplaceClosingStyleTag(ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings);
 
                             i += 7;
                             continue;
                     }
+
+                    // Validate potential text markup element
+                    // if (TryGetTextMarkupElement(tagDefinition, ref i, out TextProcessingElement markupElement))
+                    // {
+                    //     m_TextProcessingArray[writeIndex] = markupElement;
+                    //     writeIndex += 1;
+                    //     continue;
+                    // }
                 }
 
-                if (writeIndex == charBuffer.Length) ResizeInternalArray(ref charBuffer);
+                // Lookup character and glyph data
+                // TODO: Add future implementation for character and glyph lookups
 
                 charBuffer[writeIndex].unicode = c;
                 writeIndex += 1;
             }
-
-            textStyleStackDepth = 0;
         }
 
         public static TextStyle GetStyle(TextGenerationSettings generationSetting, int hashCode)
@@ -1869,7 +1225,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="index"></param>
         /// <param name="closeIndex"></param>
         /// <returns></returns>
-        public static int GetStyleHashCode(ref int[] text, int index, out int closeIndex)
+        public static int GetStyleHashCode(ref uint[] text, int index, out int closeIndex)
         {
             int hashCode = 0;
             closeIndex = 0;
@@ -1914,60 +1270,9 @@ namespace UnityEngine.TextCore.Text
             return hashCode;
         }
 
-        /// <summary>
-        /// Convert UTF-32 Hex to Char
-        /// </summary>
-        /// <returns>The Unicode hex.</returns>
-        /// <param name="text"></param>
-        /// <param name="i">The index.</param>
-        public static int GetUtf32(string text, int i)
+        public static uint GetUTF16(uint[] text, int i)
         {
-            int unicode = 0;
-            unicode += HexToInt(text[i]) << 30;
-            unicode += HexToInt(text[i + 1]) << 24;
-            unicode += HexToInt(text[i + 2]) << 20;
-            unicode += HexToInt(text[i + 3]) << 16;
-            unicode += HexToInt(text[i + 4]) << 12;
-            unicode += HexToInt(text[i + 5]) << 8;
-            unicode += HexToInt(text[i + 6]) << 4;
-            unicode += HexToInt(text[i + 7]);
-            return unicode;
-        }
-
-        /// <summary>
-        /// Convert UTF-16 Hex to Char
-        /// </summary>
-        /// <returns>The Unicode hex.</returns>
-        /// <param name="text"></param>
-        /// <param name="i">The index.</param>
-        public static int GetUtf16(string text, int i)
-        {
-            int unicode = 0;
-            unicode += HexToInt(text[i]) << 12;
-            unicode += HexToInt(text[i + 1]) << 8;
-            unicode += HexToInt(text[i + 2]) << 4;
-            unicode += HexToInt(text[i + 3]);
-            return unicode;
-        }
-
-        /// <summary>
-        /// Convert UTF-16 Hex to Char
-        /// </summary>
-        /// <returns>The Unicode hex.</returns>
-        /// <param name="i">The index.</param>
-        public static int GetUTF16(string text, int i)
-        {
-            int unicode = 0;
-            unicode += HexToInt(text[i]) << 12;
-            unicode += HexToInt(text[i + 1]) << 8;
-            unicode += HexToInt(text[i + 2]) << 4;
-            unicode += HexToInt(text[i + 3]);
-            return unicode;
-        }
-
-        public static int GetUTF16(int[] text, int i)
-        {
-            int unicode = 0;
+            uint unicode = 0;
             unicode += HexToInt((char)text[i]) << 12;
             unicode += HexToInt((char)text[i + 1]) << 8;
             unicode += HexToInt((char)text[i + 2]) << 4;
@@ -1975,9 +1280,9 @@ namespace UnityEngine.TextCore.Text
             return unicode;
         }
 
-        public static int GetUTF16(uint[] text, int i)
+        public static uint GetUTF16(TextBackingContainer text, int i)
         {
-            int unicode = 0;
+            uint unicode = 0;
             unicode += HexToInt((char)text[i]) << 12;
             unicode += HexToInt((char)text[i + 1]) << 8;
             unicode += HexToInt((char)text[i + 2]) << 4;
@@ -1985,53 +1290,9 @@ namespace UnityEngine.TextCore.Text
             return unicode;
         }
 
-        /// <summary>
-        /// Convert UTF-16 Hex to Char
-        /// </summary>
-        /// <returns>The Unicode hex.</returns>
-        /// <param name="i">The index.</param>
-        public static int GetUTF16(StringBuilder text, int i)
+        public static uint GetUTF32(uint[] text, int i)
         {
-            int unicode = 0;
-            unicode += HexToInt(text[i]) << 12;
-            unicode += HexToInt(text[i + 1]) << 8;
-            unicode += HexToInt(text[i + 2]) << 4;
-            unicode += HexToInt(text[i + 3]);
-            return unicode;
-        }
-
-        public static int GetUTF16(TextBackingContainer text, int i)
-        {
-            int unicode = 0;
-            unicode += HexToInt((char)text[i]) << 12;
-            unicode += HexToInt((char)text[i + 1]) << 8;
-            unicode += HexToInt((char)text[i + 2]) << 4;
-            unicode += HexToInt((char)text[i + 3]);
-            return unicode;
-        }
-
-        /// <summary>
-        /// Convert UTF-32 Hex to Char
-        /// </summary>
-        /// <returns>The Unicode hex.</returns>
-        /// <param name="i">The index.</param>
-        public static int GetUTF32(string text, int i)
-        {
-            int unicode = 0;
-            unicode += HexToInt(text[i]) << 28;
-            unicode += HexToInt(text[i + 1]) << 24;
-            unicode += HexToInt(text[i + 2]) << 20;
-            unicode += HexToInt(text[i + 3]) << 16;
-            unicode += HexToInt(text[i + 4]) << 12;
-            unicode += HexToInt(text[i + 5]) << 8;
-            unicode += HexToInt(text[i + 6]) << 4;
-            unicode += HexToInt(text[i + 7]);
-            return unicode;
-        }
-
-        public static int GetUTF32(int[] text, int i)
-        {
-            int unicode = 0;
+            uint unicode = 0;
             unicode += HexToInt((char)text[i]) << 28;
             unicode += HexToInt((char)text[i + 1]) << 24;
             unicode += HexToInt((char)text[i + 2]) << 20;
@@ -2043,42 +1304,9 @@ namespace UnityEngine.TextCore.Text
             return unicode;
         }
 
-        public static int GetUTF32(uint[] text, int i)
+        public static uint GetUTF32(TextBackingContainer text, int i)
         {
-            int unicode = 0;
-            unicode += HexToInt((char)text[i]) << 28;
-            unicode += HexToInt((char)text[i + 1]) << 24;
-            unicode += HexToInt((char)text[i + 2]) << 20;
-            unicode += HexToInt((char)text[i + 3]) << 16;
-            unicode += HexToInt((char)text[i + 4]) << 12;
-            unicode += HexToInt((char)text[i + 5]) << 8;
-            unicode += HexToInt((char)text[i + 6]) << 4;
-            unicode += HexToInt((char)text[i + 7]);
-            return unicode;
-        }
-
-        /// <summary>
-        /// Convert UTF-32 Hex to Char
-        /// </summary>
-        /// <returns>The Unicode hex.</returns>
-        /// <param name="i">The index.</param>
-        public static int GetUTF32(StringBuilder text, int i)
-        {
-            int unicode = 0;
-            unicode += HexToInt(text[i]) << 28;
-            unicode += HexToInt(text[i + 1]) << 24;
-            unicode += HexToInt(text[i + 2]) << 20;
-            unicode += HexToInt(text[i + 3]) << 16;
-            unicode += HexToInt(text[i + 4]) << 12;
-            unicode += HexToInt(text[i + 5]) << 8;
-            unicode += HexToInt(text[i + 6]) << 4;
-            unicode += HexToInt(text[i + 7]);
-            return unicode;
-        }
-
-        public static int GetUTF32(TextBackingContainer text, int i)
-        {
-            int unicode = 0;
+            uint unicode = 0;
             unicode += HexToInt((char)text[i]) << 28;
             unicode += HexToInt((char)text[i + 1]) << 24;
             unicode += HexToInt((char)text[i + 2]) << 20;
@@ -2389,23 +1617,23 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         ///
         /// </summary>
-        /// <param name="tagDefinition"></param>
+        /// <param name="styleDefinition"></param>
         /// <param name="readIndex"></param>
         /// <returns></returns>
-        public static int GetMarkupTagHashCode(TextBackingContainer tagDefinition, int readIndex)
+        public static int GetMarkupTagHashCode(TextBackingContainer styleDefinition, int readIndex)
         {
             int hashCode = 0;
             int maxReadIndex = readIndex + 16;
-            int tagDefinitionLength = tagDefinition.Capacity;
+            int styleDefinitionLength = styleDefinition.Capacity;
 
-            for (; readIndex < maxReadIndex && readIndex < tagDefinitionLength; readIndex++)
+            for (; readIndex < maxReadIndex && readIndex < styleDefinitionLength; readIndex++)
             {
-                uint c = tagDefinition[readIndex];
+                uint c = styleDefinition[readIndex];
 
                 if (c == '>' || c == '=' || c == ' ')
                     return hashCode;
 
-                hashCode = ((hashCode << 5) + hashCode) ^ (int)ToUpperASCIIFast((uint)c);
+                hashCode = ((hashCode << 5) + hashCode) ^ (int)ToUpperASCIIFast(c);
             }
 
             return hashCode;
@@ -2417,15 +1645,15 @@ namespace UnityEngine.TextCore.Text
         /// <param name="tagDefinition"></param>
         /// <param name="readIndex"></param>
         /// <returns></returns>
-        public static int GetMarkupTagHashCode(int[] tagDefinition, int readIndex)
+        public static int GetMarkupTagHashCode(uint[] styleDefinition, int readIndex)
         {
             int hashCode = 0;
             int maxReadIndex = readIndex + 16;
-            int tagDefinitionLength = tagDefinition.Length;
+            int tagDefinitionLength = styleDefinition.Length;
 
             for (; readIndex < maxReadIndex && readIndex < tagDefinitionLength; readIndex++)
             {
-                int c = tagDefinition[readIndex];
+                uint c = styleDefinition[readIndex];
 
                 if (c == '>' || c == '=' || c == ' ')
                     return hashCode;
@@ -2562,6 +1790,55 @@ namespace UnityEngine.TextCore.Text
             }
 
             return true;
+        }
+
+                internal static bool IsEmoji(uint c)
+        {
+            return /*c == 0x23 || c == 0x2A || c >= 0x30 && c <= 0x39 || c == 0xA9 || c == 0xAE || */
+                   c == 0x200D || c == 0x203C || c == 0x2049 || c == 0x20E3 || c == 0x2122 || c == 0x2139 || c >= 0x2194 && c <= 0x2199 || c >= 0x21A9 && c <= 0x21AA || c >= 0x231A && c <= 0x231B || c == 0x2328 || c == 0x2388 || c == 0x23CF || c >= 0x23E9 && c <= 0x23F3 || c >= 0x23F8 && c <= 0x23FA || c == 0x24C2 || c >= 0x25AA && c <= 0x25AB || c == 0x25B6 || c == 0x25C0 || c >= 0x25FB && c <= 0x25FE || c >= 0x2600 && c <= 0x2605 || c >= 0x2607 && c <= 0x2612 || c >= 0x2614 && c <= 0x2685 || c >= 0x2690 && c <= 0x2705 || c >= 0x2708 && c <= 0x2712 || c == 0x2714 || c == 0x2716 || c == 0x271D || c == 0x2721 || c == 0x2728 || c >= 0x2733 && c <= 0x2734 || c == 0x2744 || c == 0x2747 || c == 0x274C || c == 0x274E || c >= 0x2753 && c <= 0x2755 || c == 0x2757 || c >= 0x2763 && c <= 0x2767 || c >= 0x2795 && c <= 0x2797 || c == 0x27A1 || c == 0x27B0 || c == 0x27BF || c >= 0x2934 && c <= 0x2935 || c >= 0x2B05 && c <= 0x2B07 || c >= 0x2B1B && c <= 0x2B1C || c == 0x2B50 || c == 0x2B55 ||
+                   c == 0x3030 || c == 0x303D || c == 0x3297 || c == 0x3299 ||
+                   c == 0xFE0F ||
+                   c >= 0x1F000 && c <= 0x1F0FF || c >= 0x1F10D && c <= 0x1F10F || c == 0x1F12F || c >= 0x1F16C && c <= 0x1F171 || c >= 0x1F17E && c <= 0x1F17F || c == 0x1F18E || c >= 0x1F191 && c <= 0x1F19A || c >= 0x1F1AD && c <= 0x1F1FF || c >= 0x1F201 && c <= 0x1F20F || c == 0x1F21A || c == 0x1F22F || c >= 0x1F232 && c <= 0x1F23A || c >= 0x1F23C && c <= 0x1F23F || c >= 0x1F249 && c <= 0x1F53D || c >= 0x1F546 && c <= 0x1F64F || c >= 0x1F680 && c <= 0x1F6FF || c >= 0x1F774 && c <= 0x1F77F || c >= 0x1F7D5 && c <= 0x1F7FF || c >= 0x1F80C && c <= 0x1F80F || c >= 0x1F848 && c <= 0x1F84F || c >= 0x1F85A && c <= 0x1F85F || c >= 0x1F888 && c <= 0x1F88F || c >= 0x1F8AE && c <= 0x1F8FF || c >= 0x1F90C && c <= 0x1F93A || c >= 0x1F93C && c <= 0x1F945 || c >= 0x1F947 && c <= 0x1FAFF || c >= 0x1FC00 && c <= 0x1FFFD ||
+                   c >= 0xE0020 && c <= 0xE007F;
+        }
+
+        internal static bool IsHangul(uint c)
+        {
+            return c >= 0x1100 && c <= 0x11ff || /* Hangul Jamo */
+                   c >= 0xA960 && c <= 0xA97F || /* Hangul Jamo Extended-A */
+                   c >= 0xD7B0 && c <= 0xD7FF || /* Hangul Jamo Extended-B */
+                   c >= 0x3130 && c <= 0x318F || /* Hangul Compatibility Jamo */
+                   c >= 0xFFA0 && c <= 0xFFDC || /* Halfwidth Jamo */
+                   c >= 0xAC00 && c <= 0xD7AF;   /* Hangul Syllables */
+        }
+
+        internal static bool IsCJK(uint c)
+        {
+            return c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
+                   c >= 0x31A0  && c <= 0x31BF  || /* Bopomofo Extended */
+                   c >= 0x4E00  && c <= 0x9FFF  || /* CJK Unified Ideographs (Han) */
+                   c >= 0x3400  && c <= 0x4DBF  || /* CJK Extension A */
+                   c >= 0x20000 && c <= 0x2A6DF || /* CJK Extension B */
+                   c >= 0x2A700 && c <= 0x2B73F || /* CJK Extension C */
+                   c >= 0x2B740 && c <= 0x2B81F || /* CJK Extension D */
+                   c >= 0x2B820 && c <= 0x2CEAF || /* CJK Extension E */
+                   c >= 0x2CEB0 && c <= 0x2EBE0 || /* CJK Extension F */
+                   c >= 0x30000 && c <= 0x3134A || /* CJK Extension G */
+                   c >= 0xF900  && c <= 0xFAFF  || /* CJK Compatibility Ideographs */
+                   c >= 0x2F800 && c <= 0x2FA1F || /* CJK Compatibility Ideographs Supplement */
+                   c >= 0x2F00  && c <= 0x2FDF  || /* CJK Radicals / Kangxi Radicals */
+                   c >= 0x2E80  && c <= 0x2EFF  || /* CJK Radicals Supplement */
+                   c >= 0x31C0  && c <= 0x31EF  || /* CJK Strokes */
+                   c >= 0x2FF0  && c <= 0x2FFF  || /* Ideographic Description Characters */
+                   c >= 0x3040  && c <= 0x309F  || /* Hiragana */
+                   c >= 0x1B100 && c <= 0x1B12F || /* Kana Extended-A */
+                   c >= 0x1AFF0 && c <= 0x1AFFF || /* Kana Extended-B */
+                   c >= 0x1B000 && c <= 0x1B0FF || /* Kana Supplement */
+                   c >= 0x1B130 && c <= 0x1B16F || /* Small Kana Extension */
+                   c >= 0x3190  && c <= 0x319F  || /* Kanbun */
+                   c >= 0x30A0  && c <= 0x30FF  || /* Katakana */
+                   c >= 0x31F0  && c <= 0x31FF  || /* Katakana Phonetic Extensions */
+                   c >= 0xFF65  && c <= 0xFF9F;    /* Halfwidth Katakana */
         }
     }
 }

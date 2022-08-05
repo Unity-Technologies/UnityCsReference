@@ -196,6 +196,17 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected UnicodeLineBreakingRules m_UnicodeLineBreakingRules;
 
+        /// <summary>
+        /// Determines if Modern or Traditional line breaking rules should be used for Korean text.
+        /// </summary>
+        public bool useModernHangulLineBreakingRules
+        {
+            get { return m_UseModernHangulLineBreakingRules; }
+            set { m_UseModernHangulLineBreakingRules = value; }
+        }
+        [SerializeField]
+        private bool m_UseModernHangulLineBreakingRules;
+
         // =============================================
         // Text object specific settings
         // =============================================

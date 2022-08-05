@@ -29,14 +29,7 @@ namespace UnityEditor
         private static Font m_MonospaceFont;
         private static int m_DefaultFontSize;
         private static List<MethodInfo> s_MethodsToHideInCallstack = null;
-        private static Dictionary<HideInCallstackGenericMethodKey, Regex> s_GenericMethodSignatureRegex = null;
-
-        internal struct HideInCallstackGenericMethodKey
-        {
-            internal string namespaceName;
-            internal string className;
-            internal string methodName;
-        }
+        private static Dictionary<MethodInfo, Regex> s_GenericMethodSignatureRegex = null;
 
         //TODO: move this out of here
         internal class Constants
@@ -908,7 +901,7 @@ namespace UnityEditor
             return textWithHyperlinks.ToString();
         }
 
-        internal static string GetCallstackFormattedSignatureFromGenericMethod(Dictionary<HideInCallstackGenericMethodKey, Regex> methodSignatureRegex, MethodInfo method, string line)
+        internal static string GetCallstackFormattedSignatureFromGenericMethod(Dictionary<MethodInfo, Regex> methodSignatureRegex, MethodInfo method, string line)
         {
             if (string.IsNullOrEmpty(line) || method == null || methodSignatureRegex == null)
                 return null;
@@ -917,14 +910,7 @@ namespace UnityEditor
             if (classType == null)
                 return null;
 
-            var ns = classType.Namespace;
-            var key = new HideInCallstackGenericMethodKey()
-            {
-                namespaceName = ns,
-                className = classType.Name,
-                methodName = method.Name
-            };
-            if (!methodSignatureRegex.TryGetValue(key, out Regex regex))
+            if (!methodSignatureRegex.TryGetValue(method, out Regex regex))
                 return null;
 
             if (regex == null)
@@ -1004,7 +990,7 @@ namespace UnityEditor
             return sb.ToString();
         }
 
-        internal static string[] StripCallstack(Mode mode, Dictionary<HideInCallstackGenericMethodKey, Regex> methodSignatureRegex, List<MethodInfo> methodsToHideInCallstack, string[] lines)
+        internal static string[] StripCallstack(Mode mode, Dictionary<MethodInfo, Regex> methodSignatureRegex, List<MethodInfo> methodsToHideInCallstack, string[] lines)
         {
             if (methodsToHideInCallstack == null || methodSignatureRegex == null || lines == null)
                 return lines;
@@ -1140,14 +1126,14 @@ namespace UnityEditor
             SetFlag(ConsoleFlags.StripLoggingCallstack, s_StripLoggingCallstack);
         }
 
-        internal static (List<MethodInfo>, Dictionary<HideInCallstackGenericMethodKey, Regex>) InitializeHideInCallstackMethodsCache()
+        internal static (List<MethodInfo>, Dictionary<MethodInfo, Regex>) InitializeHideInCallstackMethodsCache()
         {
             var methods = TypeCache.GetMethodsWithAttribute<HideInCallstackAttribute>();
             if (methods.Count == 0)
                 return (null, null);
 
             var methodsToHideInCallstack = new List<MethodInfo>();
-            var genericMethodSignatureRegexes = new Dictionary<HideInCallstackGenericMethodKey, Regex>();
+            var genericMethodSignatureRegexes = new Dictionary<MethodInfo, Regex>();
             foreach (var method in methods)
             {
                 methodsToHideInCallstack.Add(method);
@@ -1161,13 +1147,8 @@ namespace UnityEditor
                     var pattern = $"{(string.IsNullOrEmpty(ns) ? "" : $@"({ns})\.")}(" + classType.Name +
                                   @")\:(" + method.Name + @")([^\(]*)\s*\(([^\)]+)\)";
                     var regex = new Regex(pattern, RegexOptions.Compiled);
-                    var key = new HideInCallstackGenericMethodKey()
-                    {
-                        namespaceName = ns,
-                        className = classType.Name,
-                        methodName = method.Name
-                    };
-                    genericMethodSignatureRegexes.Add(key, regex);
+                    if (!genericMethodSignatureRegexes.TryAdd(method, regex))
+                        continue;
                 }
             }
 

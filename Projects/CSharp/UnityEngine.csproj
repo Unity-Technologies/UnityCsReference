@@ -544,6 +544,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\LayoutEvents.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Events\LayoutEvents.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\LinkTagEvent.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Events\LinkTagEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Events\MouseCaptureDispatchingStrategy.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Events\MouseCaptureDispatchingStrategy.cs</Link>
     </Compile>
@@ -2166,6 +2169,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextMarkupTagsCommon.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextMarkupTagsCommon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextProcessingCommon.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextProcessingCommon.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextProcessingStacks.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextProcessingStacks.cs</Link>

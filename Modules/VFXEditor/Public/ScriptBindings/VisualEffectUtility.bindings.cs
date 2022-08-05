@@ -18,16 +18,6 @@ namespace UnityEditor.VFX
     [NativeHeader("Modules/VFXEditor/Public/VisualEffectUtility.h")]
     internal static class VisualEffectUtility
     {
-        //TODO : Remove this internal function once all reference in package test has been removed
-        static public VFXSpawnerState GetSpawnerState(VisualEffect effect, uint systemIndex)
-        {
-            var vfxSpawnerState = new VFXSpawnerState();
-            GetSpawnerState(effect, vfxSpawnerState.GetPtr(), systemIndex);
-            return vfxSpawnerState;
-        }
-
-        [FreeFunction(Name = "VisualEffectUtility::GetSpawnerState", ThrowsException = true)] static extern private void GetSpawnerState([NotNull] VisualEffect effect, IntPtr spawnerState, uint systemIndex);
-
         [FreeFunction(Name = "VisualEffectUtility::GetExpressionValue<bool>", ThrowsException = true)] static extern public bool GetExpressionBool([NotNull] VisualEffect effect, uint expressionIndex);
         [FreeFunction(Name = "VisualEffectUtility::GetExpressionValue<int>", ThrowsException = true)] static extern public int GetExpressionInt([NotNull] VisualEffect effect, uint expressionIndex);
         [FreeFunction(Name = "VisualEffectUtility::GetExpressionValue<UInt32>", ThrowsException = true)] static extern public uint GetExpressionUInt([NotNull] VisualEffect effect, uint expressionIndex);

@@ -453,6 +453,7 @@ namespace UnityEditor.VFX
             VFXShaderSourceDesc[] shaderSourceDesc,
             ShadowCastingMode shadowCastingMode,
             MotionVectorGenerationMode motionVectorGenerationMode,
+            VFXInstancingDisabledReason instancingDisabledReason,
             uint version = defaultVersion)
         {
             var internalSheet = new VFXExpressionSheetInternal();
@@ -461,7 +462,7 @@ namespace UnityEditor.VFX
             internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
 
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, version);
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, instancingDisabledReason, version);
         }
 
         //This version is for backward compatibility
@@ -491,6 +492,7 @@ namespace UnityEditor.VFX
             VFXShaderSourceDesc[] shaderSourceDesc,
             ShadowCastingMode shadowCastingMode,
             MotionVectorGenerationMode motionVectorGenerationMode,
+            VFXInstancingDisabledReason instancingDisabledReason,
             uint version);
 
 
@@ -516,6 +518,8 @@ namespace UnityEditor.VFX
             set;
         }
         extern public VFXCullingFlags cullingFlags { get; set; }
+        extern public VFXInstancingMode instancingMode { get; set; }
+        extern public uint instancingCapacity { get; set; }
 
         extern public void MarkRuntimeVersion();
         extern public void ValidateAsset();
@@ -587,8 +591,5 @@ namespace UnityEditor.VFX
 
         internal static Action<VisualEffectResource> onCompileResource;
         internal static Action<VisualEffectResource, Material, UnityObject> onSetupMaterial;
-
-        extern internal void EnableInstancing();
-        extern internal void DisableInstancing(VFXInstancingDisabledReason reason = VFXInstancingDisabledReason.Unknown);
     }
 }

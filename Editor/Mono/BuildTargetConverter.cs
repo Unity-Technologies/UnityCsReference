@@ -42,8 +42,6 @@ namespace UnityEditor
                     return RuntimePlatform.tvOS;
                 case BuildTarget.WebGL:
                     return RuntimePlatform.WebGLPlayer;
-                case BuildTarget.Lumin:
-                    return RuntimePlatform.Lumin;
                 case BuildTarget.GameCoreXboxSeries:
                     return RuntimePlatform.GameCoreXboxSeries;
                 case BuildTarget.GameCoreXboxOne:

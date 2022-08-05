@@ -118,6 +118,7 @@ namespace UnityEditor
 
         Switch = 38,
 
+        [System.Obsolete("Lumin has been removed in 2022.2")]
         Lumin = 39,
 
         Stadia = 40,

@@ -45,6 +45,11 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VisualEffectAssetBindings::GetTextureDimension", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull] List<VFXExposedProperty> exposedProperties);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetEvents", HasExplicitThis = true)] extern public void GetEvents([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::HasSystemFromScript", HasExplicitThis = true)] extern internal bool HasSystem(int nameID);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetSystemNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetParticleSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetParticleSystemNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetOutputEventNamesFromScript", HasExplicitThis = true)] extern internal void GetOutputEventNames([NotNull] List<string> names);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetSpawnSystemNamesFromScript", HasExplicitThis = true)] extern internal void GetSpawnSystemNames([NotNull] List<string> names);
 
         public UnityEngine.Rendering.TextureDimension GetTextureDimension(string name)
         {
@@ -235,7 +240,6 @@ namespace UnityEngine.VFX
 
         [FreeFunction(Name = "VisualEffectBindings::Internal_GetAnimationCurveFromScript", HasExplicitThis = true)] extern private void Internal_GetAnimationCurve(int nameID, AnimationCurve curve);
 
-        [FreeFunction(Name = "VisualEffectBindings::HasSystemFromScript", HasExplicitThis = true)] extern public bool HasSystem(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern public VFXParticleSystemInfo GetParticleSystemInfo(int nameID);
         [FreeFunction(Name = "VisualEffectBindings::GetSpawnSystemInfo", HasExplicitThis = true, ThrowsException = true)] extern private void GetSpawnSystemInfo(int nameID, IntPtr spawnerState);
         extern public bool HasAnySystemAwake();
@@ -260,10 +264,59 @@ namespace UnityEngine.VFX
             return spawnState;
         }
 
-        [FreeFunction(Name = "VisualEffectBindings::GetSystemNamesFromScript", HasExplicitThis = true)] extern public void GetSystemNames([NotNull] List<string> names);
-        [FreeFunction(Name = "VisualEffectBindings::GetParticleSystemNamesFromScript", HasExplicitThis = true)] extern public void GetParticleSystemNames([NotNull] List<string> names);
-        [FreeFunction(Name = "VisualEffectBindings::GetOutputEventNamesFromScript", HasExplicitThis = true)] extern public void GetOutputEventNames([NotNull] List<string> names);
-        [FreeFunction(Name = "VisualEffectBindings::GetSpawnSystemNamesFromScript", HasExplicitThis = true)] extern public void GetSpawnSystemNames([NotNull] List<string> names);
+        public bool HasSystem(int nameID)
+        {
+            var vfxAsset = visualEffectAsset;
+            return vfxAsset != null && vfxAsset.HasSystem(nameID);
+        }
+
+        public void GetSystemNames(List<string> names)
+        {
+            if (names == null)
+                throw new ArgumentNullException(nameof(names));
+
+            var vfxAsset = visualEffectAsset;
+            if (vfxAsset)
+                vfxAsset.GetSystemNames(names);
+            else
+                names.Clear();
+        }
+
+        public void GetParticleSystemNames(List<string> names)
+        {
+            if (names == null)
+                throw new ArgumentNullException(nameof(names));
+
+            var vfxAsset = visualEffectAsset;
+            if (vfxAsset)
+                vfxAsset.GetParticleSystemNames(names);
+            else
+                names.Clear();
+        }
+
+        public void GetOutputEventNames(List<string> names)
+        {
+            if (names == null)
+                throw new ArgumentNullException(nameof(names));
+
+            var vfxAsset = visualEffectAsset;
+            if (vfxAsset)
+                vfxAsset.GetOutputEventNames(names);
+            else
+                names.Clear();
+        }
+
+        public void GetSpawnSystemNames(List<string> names)
+        {
+            if (names == null)
+                throw new ArgumentNullException(nameof(names));
+
+            var vfxAsset = visualEffectAsset;
+            if (vfxAsset)
+                vfxAsset.GetSpawnSystemNames(names);
+            else
+                names.Clear();
+        }
 
         public void ResetOverride(string name)
         {
