@@ -197,11 +197,11 @@ namespace UnityEngine.UIElements
             if (textToMeasure == null || !IsFontAssigned(te))
                 return new Vector2(measuredWidth, measuredHeight);
 
-            var elementScaling = te.ComputeGlobalScale();
-            if (elementScaling.x + elementScaling.y <= 0 || te.scaledPixelsPerPoint <= 0)
+            float pixelsPerPoint = te.scaledPixelsPerPoint;
+
+            if ( pixelsPerPoint <= 0)
                 return Vector2.zero;
 
-            float pixelsPerPoint = te.scaledPixelsPerPoint;
             if (widthMode == VisualElement.MeasureMode.Exactly)
             {
                 measuredWidth = width;

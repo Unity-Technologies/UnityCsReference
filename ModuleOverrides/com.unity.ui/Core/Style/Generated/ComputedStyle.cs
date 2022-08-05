@@ -1471,7 +1471,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Scale:
                     transformData.Write().scale = newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Transform);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Scale' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));

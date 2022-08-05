@@ -454,23 +454,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [EventInterest(typeof(TooltipEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        internal override Rect GetTooltipRect()
         {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt.eventTypeId == TooltipEvent.TypeId())
-            {
-                TooltipEvent e = (TooltipEvent)evt;
-
-                //When a label is present, set the tooltip position centered on the label, otherwise center it on the entire field.
-                e.rect = !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
-
-                if(!string.IsNullOrEmpty(tooltip))
-                    e.tooltip = tooltip;
-
-                e.StopImmediatePropagation();
-            }
+            return !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
         }
     }
 

@@ -145,6 +145,7 @@ namespace UnityEngine.Experimental.AI
                 throw new ArgumentException($"The path node pool size ({pathNodePoolSize}) must be greater than or equal to 0 and less than {ushort.MaxValue + 1}.");
             m_NavMeshQuery = Create(world, pathNodePoolSize);
 
+            UnsafeUtility.LeakRecord(m_NavMeshQuery, LeakCategory.NavMeshQuery, 0);
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);
             AddQuerySafety(m_NavMeshQuery, m_Safety);
         }
@@ -162,6 +163,7 @@ namespace UnityEngine.Experimental.AI
 
             if (removeQuery)
                 RemoveQuerySafety(m_NavMeshQuery, m_Safety);
+            UnsafeUtility.LeakErase(m_NavMeshQuery, LeakCategory.NavMeshQuery);
             Destroy(m_NavMeshQuery);
             m_NavMeshQuery = IntPtr.Zero;
         }

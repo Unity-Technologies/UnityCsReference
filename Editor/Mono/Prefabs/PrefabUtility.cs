@@ -79,6 +79,15 @@ namespace UnityEditor
         ReplaceNameBased = 2,
     }
 
+    // This must match C++ MergeStatus
+    internal enum MergeStatus
+    {
+        NotMerged,                       // Initial state, before trying to merge
+        NormalMerge,                     // Prefab source was found and merged successfully
+        MergedAsMissing,                 // Prefab source was missing and the Prefab couldn't be merged
+        MergedAsMissingWithSceneBackup   // Prefab source was missing, but Prefab data was found in the scene file - no merging was done
+    }
+
     internal delegate void AddApplyMenuItemDelegate(GUIContent menuItem, Object sourceObject, Object instanceOrAssetObject);
 
     public sealed partial class PrefabUtility
@@ -1581,8 +1590,15 @@ namespace UnityEditor
             if (EditorUtility.IsPersistent(instanceRoot))
                 throw new ArgumentException("Can't save persistent object as a Prefab asset");
 
-            if (IsPrefabAssetMissing(instanceRoot))
-                throw new ArgumentException("Can't save Prefab instance with missing asset as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+            if (IsPartOfNonAssetPrefabInstance(instanceRoot))
+            {
+                // A PrefabInstance with missing asset can be correctly restored only if CorrespondingObjects info is available
+                // CorrespondingObject info is available when a PrefabInstance with missing asset was merged before deleting the asset (kNormalMerge) or when it has a scene backup (kMergedAsMissingWithSceneBackup)
+                var mergeStatus = GetMergeStatus(instanceRoot);
+                var hasCorrespondingSourceObjectInfo = mergeStatus == MergeStatus.NormalMerge || mergeStatus == MergeStatus.MergedAsMissingWithSceneBackup;
+                if (IsPrefabAssetMissing(instanceRoot) && !hasCorrespondingSourceObjectInfo)
+                    throw new ArgumentException("Can't save Prefab instance with missing asset and scene backup as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+            }
 
             var actualInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
             if (actualInstanceRoot)

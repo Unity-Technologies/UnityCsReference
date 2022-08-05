@@ -328,7 +328,7 @@ namespace UnityEngine.UIElements
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
         /// <remarks>
-        /// The default values is <c>false.</c>
+        /// The default value is <c>false</c>.
         /// Set this value to <c>true</c> to allow the user to drag and drop the items in the list. The collection view
         /// provides a default controller to allow standard behavior. It also automatically handles reordering
         /// the items in the data source.
@@ -404,8 +404,8 @@ namespace UnityEngine.UIElements
         /// Takes a value from the <see cref="CollectionVirtualizationMethod"/> enum.
         /// </summary>
         /// <remarks>
-        /// The default values is <c>FixedHeight.</c>
-        /// When using fixed height, you need to specify the <see cref="fixedItemHeight"/> property.
+        /// The default value is <c>FixedHeight</c>.
+        /// When using fixed height, specify the <see cref="fixedItemHeight"/> property.
         /// Fixed height is more performant but offers less flexibility on content.
         /// When using <c>DynamicHeight</c>, the collection will wait for the actual height to be computed.
         /// Dynamic height is more flexible but less performant.

@@ -38,21 +38,10 @@ namespace UnityEngine.UIElements
                         return;
                     }
 
-                    RegisterCallback<TooltipEvent>(evt => OnTooltip(evt));
+                    RegisterCallback<TooltipEvent>(SetTooltip);
                 }
 
                 SetProperty(tooltipPropertyKey, value);
-            }
-        }
-
-        static void OnTooltip(TooltipEvent e)
-        {
-            VisualElement element = e.currentTarget as VisualElement;
-            if (element != null && !string.IsNullOrEmpty(element.tooltip))
-            {
-                e.rect = element.worldBound;
-                e.tooltip = element.tooltip;
-                e.StopImmediatePropagation();
             }
         }
     }

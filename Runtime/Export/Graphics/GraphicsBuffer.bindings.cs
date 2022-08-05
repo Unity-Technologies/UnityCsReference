@@ -127,10 +127,13 @@ namespace UnityEngine
             {
                 // Release native resources
                 DestroyBuffer(this);
+
+                RemoveBufferFromLeakDetector();
             }
             else if (m_Ptr != IntPtr.Zero)
             {
-                Debug.LogWarning($"GarbageCollector disposing of GraphicsBuffer allocated in {GetFileName()} at line {GetLineNumber()}. Please use GraphicsBuffer.Release() or .Dispose() to manually release the buffer.");
+                if(UnsafeUtility.GetLeakDetectionMode() == NativeLeakDetectionMode.Disabled)
+                    Debug.LogWarning("GarbageCollector disposing of GraphicsBuffer. Please use GraphicsBuffer.Release() or .Dispose() to manually release the buffer. To see the stack trace where the leaked resource was allocated, set the UnsafeUtility LeakDetectionMode to EnabledWithStackTrace.");
             }
 
             m_Ptr = IntPtr.Zero;
@@ -168,16 +171,12 @@ namespace UnityEngine
             var usageFlags = onlyVBIB ? UsageFlags.LockBufferForWrite : UsageFlags.None;
 
             InternalInitialization(target, usageFlags, count, stride);
-
-            SaveCallstack(2);
         }
 
         // Create a Graphics Buffer.
         public GraphicsBuffer(Target target, UsageFlags usageFlags, int count, int stride)
         {
             InternalInitialization(target, usageFlags, count, stride);
-
-            SaveCallstack(2);
         }
 
         private void InternalInitialization(Target target, UsageFlags usageFlags, int count, int stride)
@@ -215,6 +214,7 @@ namespace UnityEngine
 
             m_Ptr = InitBuffer(target, usageFlags, count, stride);
 
+            AddBufferToLeakDetector();
         }
 
         // Release a Graphics Buffer.
@@ -472,14 +472,20 @@ namespace UnityEngine
             CopyCountGG(src, dst, dstOffsetBytes);
         }
 
-        [ThreadSafe] extern string GetFileName();
-        [ThreadSafe] extern int GetLineNumber();
-        internal void SaveCallstack(int stackDepth)
+        internal void AddBufferToLeakDetector()
         {
-            var frame = new StackFrame(stackDepth, true);
-            SetAllocationData(frame.GetFileName(), frame.GetFileLineNumber());
+            if (m_Ptr == null)
+                return;
+
+            UnsafeUtility.LeakRecord(m_Ptr, LeakCategory.Persistent, 2);
         }
 
-        extern void SetAllocationData(string fileName, int lineNumber);
+        internal void RemoveBufferFromLeakDetector()
+        {
+            if (m_Ptr == null)
+                return;
+
+            UnsafeUtility.LeakErase(m_Ptr, LeakCategory.Persistent);
+        }
     }
 }

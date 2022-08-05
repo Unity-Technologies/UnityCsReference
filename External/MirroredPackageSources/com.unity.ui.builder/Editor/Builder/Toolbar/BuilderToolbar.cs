@@ -339,6 +339,8 @@ namespace Unity.UI.Builder
             if (viewportWindow == null)
                 return;
 
+            m_Explorer.elementHierarchyView.RegisterTreeState();
+
             // Set asset.
             var userConfirmed = document.SaveNewDocument(viewportWindow.documentRootElement, isSaveAs, out var needFullRefresh);
             if (!userConfirmed)

@@ -438,7 +438,7 @@ namespace UnityEngine.UIElements
                 // The layout need to be regenerated because the TextNative requires the scale to mesure it's size to be pixel perfect.
                 if (SetInlineScale(value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform | VersionChangeType.Layout);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Transform);
                 }
             }
         }

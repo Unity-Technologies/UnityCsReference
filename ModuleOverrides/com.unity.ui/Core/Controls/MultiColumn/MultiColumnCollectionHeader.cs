@@ -20,8 +20,6 @@ namespace UnityEngine.UIElements.Internal
         {
             bool m_HasPersistedData;
 
-            public MultiColumnCollectionHeader header { get; set; }
-
             /// <summary>
             /// State of columns.
             /// </summary>
@@ -44,8 +42,8 @@ namespace UnityEngine.UIElements.Internal
             /// <summary>
             /// Saves the state of the specified header control.
             /// </summary>
-            /// <param name="header">The header control of which state will be saved.</param>
-            void Save(MultiColumnCollectionHeader header)
+            /// <param name="header">The header control of which state to save.</param>
+            internal void Save(MultiColumnCollectionHeader header)
             {
                 m_SortDescriptions.Clear();
                 m_OrderedColumnStates.Clear();
@@ -61,23 +59,20 @@ namespace UnityEngine.UIElements.Internal
 
                     m_OrderedColumnStates.Add(columnState);
                 }
+
+                m_HasPersistedData = true;
             }
 
             /// <summary>
             /// Applies the state of the specified header control.
             /// </summary>
-            public void Apply()
+            internal void Apply(MultiColumnCollectionHeader header)
             {
-                if (m_HasPersistedData)
-                {
-                    Apply(header);
-                }
-            }
+                if (!m_HasPersistedData)
+                    return;
 
-            void Apply(MultiColumnCollectionHeader header)
-            {
-                int minCount = Math.Min(m_OrderedColumnStates.Count, header.columns.Count);
-                int nextValidOrderedIndex = 0;
+                var minCount = Math.Min(m_OrderedColumnStates.Count, header.columns.Count);
+                var nextValidOrderedIndex = 0;
 
                 for (var orderedIndex = 0; (orderedIndex < m_OrderedColumnStates.Count) && (nextValidOrderedIndex < minCount); orderedIndex++)
                 {
@@ -124,11 +119,7 @@ namespace UnityEngine.UIElements.Internal
 
             public void OnBeforeSerialize()
             {
-                if (header != null)
-                {
-                    m_HasPersistedData = true;
-                    Save(header);
-                }
+                m_HasPersistedData = true;
             }
 
             public void OnAfterDeserialize()
@@ -780,8 +771,7 @@ namespace UnityEngine.UIElements.Internal
                 var key = GetFullHierarchicalViewDataKey();
 
                 m_ViewState = GetOrCreateViewData<ViewState>(m_ViewState, key);
-                m_ViewState.header = this;
-                m_ViewState.Apply();
+                m_ViewState.Apply(this);
             }
             finally
             {
@@ -793,6 +783,8 @@ namespace UnityEngine.UIElements.Internal
         {
             if (m_ApplyingViewState)
                 return;
+
+            m_ViewState?.Save(this);
             SaveViewData();
         }
 

@@ -44,6 +44,8 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             rect = default(Rect);
             tooltip = string.Empty;
+            //Composite roots should not interfere with tooltips events
+            ignoreCompositeRoots = true;
         }
 
         internal static TooltipEvent GetPooled(string tooltip, Rect rect)

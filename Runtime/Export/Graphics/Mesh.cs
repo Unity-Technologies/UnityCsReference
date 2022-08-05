@@ -746,8 +746,8 @@ namespace UnityEngine
             if (this == null)
                 throw new NullReferenceException();
             var buf = GetVertexBufferImpl(index);
-            if (buf != null)
-                buf.SaveCallstack(2);
+            if(buf != null)
+                buf.AddBufferToLeakDetector();
             return buf;
         }
 
@@ -757,7 +757,7 @@ namespace UnityEngine
                 throw new NullReferenceException();
             var buf = GetIndexBufferImpl();
             if (buf != null)
-                buf.SaveCallstack(2);
+                buf.AddBufferToLeakDetector();
             return buf;
         }
 

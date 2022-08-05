@@ -110,6 +110,10 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
+        extern private static MergeStatus GetMergeStatus(GameObject componentOrGameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
         extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]

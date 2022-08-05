@@ -80,13 +80,13 @@ namespace UnityEngine.UIElements
         /// This property controls whether the list view displays the collection size (number of items).
         /// </summary>
         /// <remarks>
-        /// The default values if <c>true</c>.
+        /// The default value is <c>true</c>.
         /// When this property is set to <c>true</c>, Unity displays the collection size as the first item in the list, but does
         /// not make it an actual list item that is part of the list index. If you query for list index 0,
         /// Unity returns the first real list item, and not the collection size.
-        /// If <see cref="showFoldoutHeader"/> is set to <c>true</c>, the collection size field will be included in the header instead.
-        /// This property is usually used to debug a ListView, because it indicates whether the data source is
-        /// linked correctly. In production, the collection size is rarely displayed as a line item in a ListView.
+        /// If <see cref="showFoldoutHeader"/> is set to <c>true</c>, the collection size field is included in the header instead.
+        /// You can use this property to debug a ListView because the property indicates whether the data source is
+        /// linked correctly. In production, the collection size rarely displays as a line item in a ListView.
         /// </remarks>>
         /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
         public bool showBoundCollectionSize
@@ -108,14 +108,14 @@ namespace UnityEngine.UIElements
         bool m_ShowFoldoutHeader;
 
         /// <summary>
-        /// This property controls whether the list view will display a header, in the form of a foldout that can be expanded or collapsed.
+        /// This property controls whether the list view displays a header, in the form of a foldout that can be expanded or collapsed.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>false</c>.
+        /// The default value is <c>false</c>.
         /// When this property is set to <c>true</c>, Unity adds a foldout in the hierarchy of the list view and moves
-        /// the scroll view inside that newly created foldout. The text of this foldout can be changed with <see cref="headerTitle"/>
+        /// the scroll view inside that newly created foldout. You can change the text of this foldout with <see cref="headerTitle"/>
         /// property on the ListView.
-        /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header will include a TextField to control
+        /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header includes a TextField to control
         /// the array size, instead of using the field as part of the list.
         /// </remarks>>
         public bool showFoldoutHeader
@@ -198,11 +198,11 @@ namespace UnityEngine.UIElements
         /// This property controls whether a footer will be added to the list view.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>false</c>.
+        /// The default value is <c>false</c>.
         /// When this property is set to <c>true</c>, Unity adds a footer under the scroll view.
         /// This footer contains two buttons:
-        /// A "+" button. When clicked, adds a single item at the end of the list view.
-        /// A "-" button. When clicked, removes all selected items, or the last item if none are selected.
+        /// A "+" button. When clicked, it adds a single item at the end of the list view.
+        /// A "-" button. When clicked, it removes all selected items, or the last item if none are selected.
         /// </remarks>
         public bool showAddRemoveFooter
         {
@@ -430,9 +430,9 @@ namespace UnityEngine.UIElements
         /// This property controls the drag and drop mode for the list view.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>Simple</c>.
+        /// The default value is <c>Simple</c>.
         /// When this property is set to <c>Animated</c>, Unity adds drag handles in front of every item and the drag and
-        /// drop manipulation will push items with an animation as the reordering happens.
+        /// drop manipulation pushes items with an animation when the reordering happens.
         /// Multiple item reordering is only supported with the <c>Simple</c> drag mode.
         /// </remarks>
         public ListViewReorderMode reorderMode
