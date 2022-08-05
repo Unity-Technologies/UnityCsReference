@@ -321,6 +321,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2),
                 new CustomScriptAssemblyPlatform("LinuxStandalone32", BuildTarget.StandaloneLinux),
                 new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", BuildTarget.StandaloneLinuxUniversal),
+                new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
             };
 #pragma warning restore 0618
         }

@@ -95,6 +95,7 @@ namespace UnityEditor
 
         Switch = 27,
 
+        [Obsolete("Lumin has been removed in 2022.2")]
         Lumin = 28,
 
         Stadia = 29,

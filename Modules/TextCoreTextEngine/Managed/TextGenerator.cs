@@ -51,6 +51,7 @@ namespace UnityEngine.TextCore.Text
         public bool extraPadding;
         public bool parseControlCharacters = true;
         public bool isOrthographic = true;
+        public bool tagNoParsing = false;
 
         public float characterSpacing;
         public float wordSpacing;
@@ -425,7 +426,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// Array containing the Unicode characters to be parsed.
         /// </summary>
-        internal UnicodeChar[] m_TextProcessingArray = new UnicodeChar[8];
+        internal TextProcessingElement[] m_TextProcessingArray = new TextProcessingElement[8];
 
         /// <summary>
         /// The number of Unicode characters that have been parsed and contained in the m_InternalParsingBuffer
@@ -464,7 +465,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="text">The source text that contains the missing character.</param>
         /// <param name="fontAsset">The font asset that is missing the requested characters.</param>
         /// <param name="textComponent">The text component where the requested character is missing.</param>
-        public delegate void MissingCharacterEventCallback(int unicode, int stringIndex, TextInfo text, FontAsset fontAsset);
+        public delegate void MissingCharacterEventCallback(uint unicode, int stringIndex, TextInfo text, FontAsset fontAsset);
 
         /// <summary>
         /// Event delegate to be called when the requested Unicode character is missing from the font asset.
@@ -555,7 +556,7 @@ namespace UnityEngine.TextCore.Text
         WordWrapState m_SavedLastValidState = new WordWrapState();
         WordWrapState m_SavedSoftLineBreakState = new WordWrapState();
         TextElementType m_TextElementType;
-        bool m_IsParsingText;
+        bool m_isTextLayoutPhase;
         int m_SpriteIndex;
         Color32 m_SpriteColor;
         TextElement m_CachedTextElement;
@@ -681,7 +682,7 @@ namespace UnityEngine.TextCore.Text
             m_SizeStack.SetDefault(m_CurrentFontSize);
             float fontSizeDelta = 0;
 
-            int charCode = 0; // Holds the character code of the currently being processed character.
+            uint charCode = 0; // Holds the character code of the currently being processed character.
 
             m_FontStyleInternal = generationSettings.fontStyle; // Set the default style.
             m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
@@ -839,7 +840,7 @@ namespace UnityEngine.TextCore.Text
                 #region Parse Rich Text Tag
                 if (generationSettings.richText && charCode == '<')
                 {
-                    m_IsParsingText = true;
+                    m_isTextLayoutPhase = true;
                     m_TextElementType = TextElementType.Character;
                     int endTagIndex;
 
@@ -866,7 +867,7 @@ namespace UnityEngine.TextCore.Text
                 int previousMaterialIndex = m_CurrentMaterialIndex;
                 bool isUsingAltTypeface = textInfo.textElementInfo[m_CharacterCount].isUsingAlternateTypeface;
 
-                m_IsParsingText = false;
+                m_isTextLayoutPhase = false;
 
                 // Handle potential character substitutions
                 #region Character Substitutions
@@ -874,7 +875,7 @@ namespace UnityEngine.TextCore.Text
 
                 if (characterToSubstitute.index == m_CharacterCount)
                 {
-                    charCode = (int)characterToSubstitute.unicode;
+                    charCode = characterToSubstitute.unicode;
                     m_TextElementType = TextElementType.Character;
                     isInjectedCharacter = true;
 
@@ -971,7 +972,7 @@ namespace UnityEngine.TextCore.Text
 
                     // Sprites are assigned in the E000 Private Area + sprite Index
                     if (charCode == '<')
-                        charCode = 57344 + m_SpriteIndex;
+                        charCode = 57344 + (uint)m_SpriteIndex;
                     else
                         m_SpriteColor = Color.white;
 
@@ -3441,7 +3442,7 @@ namespace UnityEngine.TextCore.Text
             return index;
         }
 
-        protected bool ValidateHtmlTag(UnicodeChar[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo)
+        protected bool ValidateHtmlTag(TextProcessingElement[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             TextSettings textSettings = generationSettings.textSettings;
 
@@ -3459,7 +3460,7 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = startIndex; i < chars.Length && chars[i].unicode != 0 && tagCharCount < m_HtmlTag.Length && chars[i].unicode != '<'; i++)
             {
-                int unicode = chars[i].unicode;
+                uint unicode = chars[i].unicode;
 
                 if (unicode == '>') // ASCII Code of End HTML tag '>'
                 {
@@ -3538,7 +3539,7 @@ namespace UnityEngine.TextCore.Text
                                 m_XmlAttribute[attributeIndex].valueLength = 0;
 
                             }
-                            else if (attributeFlag != 2)
+                            else
                             {
                                 m_XmlAttribute[attributeIndex].valueLength += 1;
                             }
@@ -4189,11 +4190,37 @@ namespace UnityEngine.TextCore.Text
                         return true;
 
                     case MarkupTag.A:
-                        return false;
-                    case MarkupTag.SLASH_A:
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
+                        {
+                            if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
+                            {
+                                // Make sure linkInfo array is of appropriate size.
+                                int index = textInfo.linkCount;
+
+                                if (index + 1 > textInfo.linkInfo.Length)
+                                    TextInfo.Resize(ref textInfo.linkInfo, index + 1);
+
+                                textInfo.linkInfo[index].hashCode = (int)MarkupTag.HREF;
+                                textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
+                                textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[1].valueStartIndex;
+                                textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
+                            }
+                        }
                         return true;
+
+                    case MarkupTag.SLASH_A:
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
+                        {
+                            int index = textInfo.linkCount;
+
+                            textInfo.linkInfo[index].linkTextLength = m_CharacterCount - textInfo.linkInfo[index].linkTextfirstCharacterIndex;
+
+                            textInfo.linkCount += 1;
+                        }
+                        return true;
+
                     case MarkupTag.LINK:
-                        if (m_IsParsingText && !m_IsCalculatingPreferredValues)
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
                             int index = textInfo.linkCount;
 
@@ -4204,12 +4231,11 @@ namespace UnityEngine.TextCore.Text
                             textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
 
                             textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[0].valueStartIndex;
-                            textInfo.linkInfo[index].linkIdLength = m_XmlAttribute[0].valueLength;
                             textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
                         }
                         return true;
                     case MarkupTag.SLASH_LINK:
-                        if (m_IsParsingText && !m_IsCalculatingPreferredValues)
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
                             if (textInfo.linkCount < textInfo.linkInfo.Length)
                             {
@@ -4453,7 +4479,7 @@ namespace UnityEngine.TextCore.Text
                         }
                         return true;
                     case MarkupTag.SLASH_CHARACTER_SPACE:
-                        if (!m_IsParsingText) return true;
+                        if (!m_isTextLayoutPhase) return true;
 
                         // Adjust xAdvance to remove extra space from last character.
                         if (m_CharacterCount > 0)
@@ -4648,7 +4674,7 @@ namespace UnityEngine.TextCore.Text
 
                                     m_SpriteIndex = (int)m_AttributeParameterValues[0];
 
-                                    if (m_IsParsingText)
+                                    if (m_isTextLayoutPhase)
                                     {
                                         // It is possible for a sprite to get animated when it ends up being truncated.
                                         // Should consider moving the animation of the sprite after text geometry upload.
@@ -4864,21 +4890,19 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.ACTION:
                         int actionID = m_XmlAttribute[0].valueHashCode;
 
-                        if (m_IsParsingText)
+                        if (m_isTextLayoutPhase)
                         {
                             m_ActionStack.Add(actionID);
 
                             Debug.Log("Action ID: [" + actionID + "] First character index: " + m_CharacterCount);
-
-
                         }
-                        //if (m_IsParsingText)
+                        //if (m_isTextLayoutPhase)
                         //{
                         // TMP_Action action = TMP_Action.GetAction(m_XmlAttribute[0].valueHashCode);
                         //}
                         return true;
                     case MarkupTag.SLASH_ACTION:
-                        if (m_IsParsingText)
+                        if (m_isTextLayoutPhase)
                         {
                             Debug.Log("Action ID: [" + m_ActionStack.CurrentItem() + "] Last character index: " + (m_CharacterCount - 1));
                         }
@@ -5020,9 +5044,14 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             vertexColor.a = m_FontColor32.a < vertexColor.a ? m_FontColor32.a : vertexColor.a;
 
+            bool isColorGlyph = false;
+
             // Handle Vertex Colors & Vertex Color Gradient
-            if (generationSettings.fontColorGradient == null)
+            if (generationSettings.fontColorGradient == null || isColorGlyph)
             {
+                // Special handling for color glyphs
+                vertexColor = isColorGlyph ? new Color32(255, 255, 255, vertexColor.a) : vertexColor;
+
                 textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.color = vertexColor;
                 textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.color = vertexColor;
                 textInfo.textElementInfo[m_CharacterCount].vertexTopRight.color = vertexColor;
@@ -5057,7 +5086,7 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
-            if (m_ColorGradientPreset != null)
+            if (m_ColorGradientPreset != null && !isColorGlyph)
             {
                 if (m_ColorGradientPresetIsTinted)
                 {
@@ -5205,8 +5234,7 @@ namespace UnityEngine.TextCore.Text
             if (m_Underline.character == null)
             {
                 if (textSettings.displayWarnings)
-                    Debug.LogWarning("Unable to add underline since the primary Font Asset doesn't contain the underline character.");
-
+                    Debug.LogWarning("Unable to add underline or strikethrough since the character [0x5F] used by these features is not present in the Font Asset assigned to this text object.");
                 return;
             }
 
@@ -5510,7 +5538,7 @@ namespace UnityEngine.TextCore.Text
             m_IsMaskingEnabled = false;
         }
 
-        internal int SetArraySizes(UnicodeChar[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
+        internal int SetArraySizes(TextProcessingElement[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             TextSettings textSettings = generationSettings.textSettings;
 
@@ -5518,7 +5546,7 @@ namespace UnityEngine.TextCore.Text
 
             m_TotalCharacterCount = 0;
             m_IsUsingBold = false;
-            m_IsParsingText = false;
+            m_isTextLayoutPhase = false;
             m_TagNoParsing = false;
             m_FontStyleInternal = generationSettings.fontStyle;
             m_FontStyleStack.Clear();
@@ -5603,7 +5631,7 @@ namespace UnityEngine.TextCore.Text
                 if (textInfo.textElementInfo == null || m_TotalCharacterCount >= textInfo.textElementInfo.Length)
                     TextInfo.Resize(ref textInfo.textElementInfo, m_TotalCharacterCount + 1, true);
 
-                int unicode = textProcessingArray[i].unicode;
+                uint unicode = textProcessingArray[i].unicode;
                 int prevMaterialIndex = m_CurrentMaterialIndex;
 
                 // PARSE XML TAGS
@@ -5708,10 +5736,10 @@ namespace UnityEngine.TextCore.Text
                     DoMissingGlyphCallback(unicode, textProcessingArray[i].stringIndex, m_CurrentFontAsset, textInfo);
 
                     // Save the original unicode character
-                    int srcGlyph = unicode;
+                    uint srcGlyph = unicode;
 
                     // Try replacing the missing glyph character by the Settings file Missing Glyph or Square (9633) character.
-                    unicode = textProcessingArray[i].unicode = textSettings.missingCharacterUnicode == 0 ? k_Square : textSettings.missingCharacterUnicode;
+                    unicode = textProcessingArray[i].unicode = (uint)textSettings.missingCharacterUnicode == 0 ? k_Square : (uint)textSettings.missingCharacterUnicode;
 
                     // Check for the missing glyph character in the currently assigned font asset and its fallbacks
                     character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
@@ -5944,7 +5972,24 @@ namespace UnityEngine.TextCore.Text
 
         internal TextElement GetTextElement(TextGenerationSettings generationSettings, uint unicode, FontAsset fontAsset, FontStyles fontStyle, TextFontWeight fontWeight, out bool isUsingAlternativeTypeface)
         {
+            //Debug.Log("Unicode: " + unicode.ToString("X8"));
+
             TextSettings textSettings = generationSettings.textSettings;
+            // if (m_EmojiFallbackSupport && TextGeneratorUtilities.IsEmoji(unicode))
+            // {
+            //     if (TMP_Settings.emojiFallbackTextAssets != null && TMP_Settings.emojiFallbackTextAssets.Count > 0)
+            //     {
+            //         TMP_TextElement textElement = TMP_FontAssetUtilities.GetTextElementFromTextAssets(unicode, fontAsset, TMP_Settings.emojiFallbackTextAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+            //
+            //         if (textElement != null)
+            //         {
+            //             // Add character to font asset lookup cache
+            //             //fontAsset.AddCharacterToLookupCache(unicode, character);
+            //
+            //             return textElement;
+            //         }
+            //     }
+            // }
 
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface);
 
@@ -6131,14 +6176,7 @@ namespace UnityEngine.TextCore.Text
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
 
             if (character != null)
-            {
                 m_Underline = new SpecialCharacter(character, 0);
-            }
-            else
-            {
-                if (textSettings.displayWarnings)
-                    Debug.LogWarning("The character used for Underline is not available in font asset [" + fontAsset.name + "].");
-            }
         }
 
         /// <summary>
@@ -6366,7 +6404,7 @@ namespace UnityEngine.TextCore.Text
             // Parse through Character buffer to read HTML tags and begin creating mesh.
             for (int i = 0; i < m_TextProcessingArray.Length && m_TextProcessingArray[i].unicode != 0; i++)
             {
-                int charCode = m_TextProcessingArray[i].unicode;
+                uint charCode = m_TextProcessingArray[i].unicode;
 
                 // Skip characters that have been substituted.
                 if (charCode == 0x1A)
@@ -6376,7 +6414,7 @@ namespace UnityEngine.TextCore.Text
                 #region Parse Rich Text Tag
                 if (generationSettings.richText && charCode == k_LesserThan)  // '<'
                 {
-                    m_IsParsingText = true;
+                    m_isTextLayoutPhase = true;
                     m_TextElementType = TextElementType.Character;
                     int endTagIndex;
 
@@ -6401,7 +6439,7 @@ namespace UnityEngine.TextCore.Text
                 int prevMaterialIndex = m_CurrentMaterialIndex;
                 bool isUsingAltTypeface = textInfo.textElementInfo[m_CharacterCount].isUsingAlternateTypeface;
 
-                m_IsParsingText = false;
+                m_isTextLayoutPhase = false;
 
                 // Handle potential character substitutions
                 #region Character Substitutions
@@ -6409,7 +6447,7 @@ namespace UnityEngine.TextCore.Text
 
                 if (characterToSubstitute.index == m_CharacterCount)
                 {
-                    charCode = (int)characterToSubstitute.unicode;
+                    charCode = characterToSubstitute.unicode;
                     m_TextElementType = TextElementType.Character;
                     isInjectedCharacter = true;
 
@@ -6502,7 +6540,7 @@ namespace UnityEngine.TextCore.Text
 
                     // Sprites are assigned in the E000 Private Area + sprite Index
                     if (charCode == k_LesserThan)
-                        charCode = 57344 + m_SpriteIndex;
+                        charCode = 57344 + (uint)m_SpriteIndex;
 
                     // The sprite scale calculations are based on the font asset assigned to the text object.
                     if (m_CurrentSpriteAsset.faceInfo.pointSize > 0)
@@ -7077,27 +7115,23 @@ namespace UnityEngine.TextCore.Text
                 #region Save Word Wrapping State
                 if ((textWrapMode != TextWrappingMode.NoWrap && textWrapMode != TextWrappingMode.PreserveWhitespaceNoWrap) || generationSettings.overflowMode == TextOverflowMode.Truncate || generationSettings.overflowMode == TextOverflowMode.Ellipsis)
                 {
+                    bool shouldSaveHardLineBreak = false;
+                    bool shouldSaveSoftLineBreak = false;
+
                     if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == 0x2D || charCode == 0xAD) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != 0xA0 && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
-                        // We store the state of numerous variables for the most recent Space, LineFeed or Carriage Return to enable them to be restored
-                        // for Word Wrapping.
-                        SaveWordWrappingState(ref internalWordWrapState, i, m_CharacterCount, textInfo);
-                        isFirstWordOfLine = false;
+                        // Ignore Hyphen (0x2D) when preceded by a whitespace
+                        if ((charCode == 0x2D && m_CharacterCount > 0 && char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
+                        {
+                            isFirstWordOfLine = false;
+                            shouldSaveHardLineBreak = true;
 
-                        // Reset soft line breaking point since we now have a valid hard break point.
-                        internalSoftLineBreak.previousWordBreak = -1;
+                            // Reset soft line breaking point since we now have a valid hard break point.
+                            internalSoftLineBreak.previousWordBreak = -1;
+                        }
                     }
-                    // Handling for East Asian languages
-                    else if (m_IsNonBreakingSpace == false &&
-                             ((charCode > k_HangulJamoStart && charCode < k_HangulJamoEnd || /* Hangul Jamo */
-                               charCode > k_HangulJameExtendedStart && charCode < k_HangulJameExtendedEnd || /* Hangul Jamo Extended-A */
-                               charCode > k_HangulSyllablesStart && charCode < k_HangulSyllablesEnd) && /* Hangul Syllables */
-                              textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false ||
-
-                              (charCode > k_CjkStart && charCode < k_CjkEnd || /* CJK */
-                               charCode > k_CjkIdeographsStart && charCode < k_CjkIdeographsEnd || /* CJK Compatibility Ideographs */
-                               charCode > k_CjkFormsStart && charCode < k_CjkFormsEnd || /* CJK Compatibility Forms */
-                               charCode > k_CjkHalfwidthStart && charCode < k_CjkHalfwidthEnd))) /* CJK Halfwidth */
+                    // Handling for East Asian scripts
+                    else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul((uint)charCode) && textSettings.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK((uint)charCode)))
                     {
                         bool isCurrentLeadingCharacter = textSettings.lineBreakingRules.leadingCharactersLookup.Contains((uint)charCode);
                         bool isNextFollowingCharacter = m_CharacterCount < totalCharacterCount - 1 && textSettings.lineBreakingRules.leadingCharactersLookup.Contains(m_InternalTextElementInfo[m_CharacterCount + 1].character);
@@ -7106,17 +7140,17 @@ namespace UnityEngine.TextCore.Text
                         {
                             if (isNextFollowingCharacter == false)
                             {
-                                SaveWordWrappingState(ref internalWordWrapState, i, m_CharacterCount, textInfo);
                                 isFirstWordOfLine = false;
+                                shouldSaveHardLineBreak = true;
                             }
 
                             if (isFirstWordOfLine)
                             {
                                 // Special handling for non-breaking space and soft line breaks
                                 if (isWhiteSpace)
-                                    SaveWordWrappingState(ref internalSoftLineBreak, i, m_CharacterCount, textInfo);
+                                    shouldSaveSoftLineBreak = true;
 
-                                SaveWordWrappingState(ref internalWordWrapState, i, m_CharacterCount, textInfo);
+                                shouldSaveHardLineBreak = true;
                             }
                         }
                         else
@@ -7125,9 +7159,9 @@ namespace UnityEngine.TextCore.Text
                             {
                                 // Special handling for non-breaking space and soft line breaks
                                 if (isWhiteSpace)
-                                    SaveWordWrappingState(ref m_SavedSoftLineBreakState, i, m_CharacterCount, textInfo);
+                                    shouldSaveSoftLineBreak = true;
 
-                                SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
+                                shouldSaveHardLineBreak = true;
                             }
                         }
                     }
@@ -7135,10 +7169,18 @@ namespace UnityEngine.TextCore.Text
                     {
                         // Special handling for non-breaking space and soft line breaks
                         if (isWhiteSpace && charCode != 0xA0 || (charCode == 0xAD && isSoftHyphenIgnored == false))
-                            SaveWordWrappingState(ref internalSoftLineBreak, i, m_CharacterCount, textInfo);
+                            shouldSaveSoftLineBreak = true;
 
-                        SaveWordWrappingState(ref internalWordWrapState, i, m_CharacterCount, textInfo);
+                        shouldSaveHardLineBreak = true;
                     }
+
+                    // Save potential Hard lines break
+                    if (shouldSaveHardLineBreak)
+                        SaveWordWrappingState(ref internalWordWrapState, i, m_CharacterCount, textInfo);
+
+                    // Save potential Soft line break
+                    if (shouldSaveSoftLineBreak)
+                        SaveWordWrappingState(ref internalSoftLineBreak, i, m_CharacterCount, textInfo);
                 }
                 #endregion Save Word Wrapping State
 
@@ -7330,11 +7372,13 @@ namespace UnityEngine.TextCore.Text
             int writeIndex = 0;
 
             int styleHashCode = m_TextStyleStacks[0].Pop();
-            TextStyle style = TextGeneratorUtilities.GetStyle(generationSettings, styleHashCode);
+            TextStyle textStyle = TextGeneratorUtilities.GetStyle(generationSettings, styleHashCode);
 
             // Insert Opening Style
-            if (style != null && style.hashCode != (int)MarkupTag.NORMAL)
-                TextGeneratorUtilities.InsertOpeningStyleTag(style, 0, ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
+            if (textStyle != null && textStyle.hashCode != (int)MarkupTag.NORMAL)
+                TextGeneratorUtilities.InsertOpeningStyleTag(textStyle, ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
+
+            var tagNoParsing = generationSettings.tagNoParsing;
 
             int readIndex = 0;
             for (; readIndex < srcLength; readIndex++)
@@ -7346,36 +7390,19 @@ namespace UnityEngine.TextCore.Text
 
                 // TODO: Since we do not set the TextInputSource at this very moment, we have defaulted this conditional to check for
                 //       TextInputSource.TextString whereas in TMP, it checks for TextInputSource.TextInputBox
-                if (generationSettings.inputSource == TextInputSource.TextString && c == '\\' && readIndex < srcLength - 1)
+                if (/*generationSettings.inputSource == TextInputSource.TextString && */ c == '\\' && readIndex < srcLength - 1)
                 {
                     switch (m_TextBackingArray[readIndex + 1])
                     {
                         case 92: // \ escape
                             if (!generationSettings.parseControlCharacters) break;
 
-                            if (srcLength <= readIndex + 2) break;
-
-                            if (writeIndex + 2 > m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                            m_TextProcessingArray[writeIndex].unicode = (int)m_TextBackingArray[readIndex + 1];
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 1;
-
-                            m_TextProcessingArray[writeIndex + 1].unicode = (int)m_TextBackingArray[readIndex + 2];
-                            m_TextProcessingArray[writeIndex + 1].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex + 1].length = 1;
-
-                            readIndex += 2;
-                            writeIndex += 2;
-                            continue;
+                            readIndex += 1;
+                            break;
                         case 110: // \n LineFeed
                             if (!generationSettings.parseControlCharacters) break;
 
-                            if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                            m_TextProcessingArray[writeIndex].unicode = 10;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 1;
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 1, unicode = 10 };
 
                             readIndex += 1;
                             writeIndex += 1;
@@ -7383,11 +7410,7 @@ namespace UnityEngine.TextCore.Text
                         case 114: // \r Carriage Return
                             if (!generationSettings.parseControlCharacters) break;
 
-                            if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                            m_TextProcessingArray[writeIndex].unicode = 13;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 1;
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 1, unicode = 13 };
 
                             readIndex += 1;
                             writeIndex += 1;
@@ -7395,11 +7418,7 @@ namespace UnityEngine.TextCore.Text
                         case 116: // \t Tab
                             if (!generationSettings.parseControlCharacters) break;
 
-                            if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                            m_TextProcessingArray[writeIndex].unicode = 9;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 1;
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 1, unicode = 9 };
 
                             readIndex += 1;
                             writeIndex += 1;
@@ -7407,11 +7426,7 @@ namespace UnityEngine.TextCore.Text
                         case 118: // \v Vertical tab used as soft line break
                             if (!generationSettings.parseControlCharacters) break;
 
-                            if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                            m_TextProcessingArray[writeIndex].unicode = 11;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 1;
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 1, unicode = 11 };
 
                             readIndex += 1;
                             writeIndex += 1;
@@ -7419,11 +7434,7 @@ namespace UnityEngine.TextCore.Text
                         case 117: // \u0000 for UTF-16 Unicode
                             if (srcLength > readIndex + 5 && TextGeneratorUtilities.IsValidUTF16(m_TextBackingArray, readIndex + 2))
                             {
-                                if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                                m_TextProcessingArray[writeIndex].unicode = TextGeneratorUtilities.GetUTF16(m_TextBackingArray, readIndex + 2);
-                                m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                                m_TextProcessingArray[writeIndex].length = 6;
+                                m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 6, unicode = TextGeneratorUtilities.GetUTF16(m_TextBackingArray, readIndex + 2) };
 
                                 readIndex += 5;
                                 writeIndex += 1;
@@ -7433,11 +7444,7 @@ namespace UnityEngine.TextCore.Text
                         case 85: // \U00000000 for UTF-32 Unicode
                             if (srcLength > readIndex + 9 && TextGeneratorUtilities.IsValidUTF32(m_TextBackingArray, readIndex + 2))
                             {
-                                if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                                m_TextProcessingArray[writeIndex].unicode = TextGeneratorUtilities.GetUTF32(m_TextBackingArray, readIndex + 2);
-                                m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                                m_TextProcessingArray[writeIndex].length = 10;
+                                m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 10, unicode = TextGeneratorUtilities.GetUTF32(m_TextBackingArray, readIndex + 2) };
 
                                 readIndex += 9;
                                 writeIndex += 1;
@@ -7447,14 +7454,10 @@ namespace UnityEngine.TextCore.Text
                     }
                 }
 
-                // Handle surrogate pair conversion in string, StringBuilder and char[] source.
+                // Handle surrogate pair conversion
                 if (c >= CodePoint.HIGH_SURROGATE_START && c <= CodePoint.HIGH_SURROGATE_END && srcLength > readIndex + 1 && m_TextBackingArray[readIndex + 1] >= CodePoint.LOW_SURROGATE_START && m_TextBackingArray[readIndex + 1] <= CodePoint.LOW_SURROGATE_END)
                 {
-                    if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
-
-                    m_TextProcessingArray[writeIndex].unicode = (int)TextGeneratorUtilities.ConvertToUTF32(c, m_TextBackingArray[readIndex + 1]);
-                    m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                    m_TextProcessingArray[writeIndex].length = 2;
+                    m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 2, unicode = TextGeneratorUtilities.ConvertToUTF32(c, m_TextBackingArray[readIndex + 1]) };
 
                     readIndex += 1;
                     writeIndex += 1;
@@ -7469,57 +7472,69 @@ namespace UnityEngine.TextCore.Text
 
                     switch ((MarkupTag)hashCode)
                     {
+                        case MarkupTag.NO_PARSE:
+                            tagNoParsing = true;
+                            break;
+                        case MarkupTag.SLASH_NO_PARSE:
+                            tagNoParsing = false;
+                            break;
                         case MarkupTag.BR:
+                            if (tagNoParsing) break;
                             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                            m_TextProcessingArray[writeIndex].unicode = 10;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 4;
-
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 4, unicode = 10 };
                             writeIndex += 1;
                             readIndex += 3;
                             continue;
                         case MarkupTag.CR:
+                            if (tagNoParsing) break;
                             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                            m_TextProcessingArray[writeIndex].unicode = 13;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 4;
-
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 4, unicode = 13 };
                             writeIndex += 1;
                             readIndex += 3;
                             continue;
                         case MarkupTag.NBSP:
+                            if (tagNoParsing) break;
                             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                            m_TextProcessingArray[writeIndex].unicode = 160;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 6;
-
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 6, unicode = 0xA0 };
                             writeIndex += 1;
                             readIndex += 5;
                             continue;
                         case MarkupTag.ZWSP:
+                            if (tagNoParsing) break;
                             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                            m_TextProcessingArray[writeIndex].unicode = k_ZeroWidthSpace;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 6;
-
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 6, unicode = 0x200B };
                             writeIndex += 1;
                             readIndex += 5;
                             continue;
-                        case MarkupTag.SHY:
+                        case MarkupTag.ZWJ:
+                            if (tagNoParsing) break;
                             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                            m_TextProcessingArray[writeIndex].unicode = 0xAD;
-                            m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                            m_TextProcessingArray[writeIndex].length = 5;
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 5, unicode = 0x200D };
+                            writeIndex += 1;
+                            readIndex += 4;
+                            continue;
+                        case MarkupTag.SHY:
+                            if (tagNoParsing) break;
+                            if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
+
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 5, unicode = 0xAD };
 
                             writeIndex += 1;
                             readIndex += 4;
                             continue;
+                        case MarkupTag.A:
+                            // Additional check
+                            if (m_TextBackingArray.Count > readIndex + 4 && m_TextBackingArray[readIndex + 3] == 'h' && m_TextBackingArray[readIndex + 4] == 'r')
+                                TextGeneratorUtilities.InsertOpeningTextStyle(TextGeneratorUtilities.GetStyle(generationSettings, (int)MarkupTag.A), ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
+                            break;
                         case MarkupTag.STYLE:
+                            if (tagNoParsing) break;
+
                             int openWriteIndex = writeIndex;
                             if (TextGeneratorUtilities.ReplaceOpeningStyleTag(ref m_TextBackingArray, readIndex, out int srcOffset, ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings))
                             {
@@ -7534,9 +7549,14 @@ namespace UnityEngine.TextCore.Text
                                 continue;
                             }
                             break;
+                        case MarkupTag.SLASH_A:
+                            TextGeneratorUtilities.InsertClosingTextStyle(TextGeneratorUtilities.GetStyle(generationSettings, (int)MarkupTag.A), ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
+                            break;
                         case MarkupTag.SLASH_STYLE:
+                            if (tagNoParsing) break;
+
                             int closeWriteIndex = writeIndex;
-                            TextGeneratorUtilities.ReplaceClosingStyleTag(ref m_TextBackingArray, readIndex, ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
+                            TextGeneratorUtilities.ReplaceClosingStyleTag(ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
 
                             // Update potential text elements added by the closing style.
                             for (; closeWriteIndex < writeIndex; closeWriteIndex++)
@@ -7548,13 +7568,21 @@ namespace UnityEngine.TextCore.Text
                             readIndex += 7;
                             continue;
                     }
+
+                    // Validate potential text markup element
+                    // if (TryGetTextMarkupElement(m_TextBackingArray.Text, ref readIndex, out TextProcessingElement markupElement))
+                    // {
+                    //     m_TextProcessingArray[writeIndex] = markupElement;
+                    //     writeIndex += 1;
+                    //     continue;
+                    // }
                 }
 
+                // Lookup character and glyph data
+                // TODO: Add future implementation for character and glyph lookups
                 if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                m_TextProcessingArray[writeIndex].unicode = (int)c;
-                m_TextProcessingArray[writeIndex].stringIndex = readIndex;
-                m_TextProcessingArray[writeIndex].length = 1;
+                m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 1, unicode = c };
 
                 writeIndex += 1;
             }
@@ -7562,7 +7590,7 @@ namespace UnityEngine.TextCore.Text
             m_TextStyleStackDepth = 0;
 
             // Insert Closing Style
-            if (style != null && style.hashCode != (int)MarkupTag.NORMAL)
+            if (textStyle != null && textStyle.hashCode != (int)MarkupTag.NORMAL)
                 TextGeneratorUtilities.InsertClosingStyleTag(ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
 
             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
@@ -7651,7 +7679,7 @@ namespace UnityEngine.TextCore.Text
             m_XAdvance = 0 + m_TagIndent;
         }
 
-        protected void DoMissingGlyphCallback(int unicode, int stringIndex, FontAsset fontAsset, TextInfo textInfo)
+        protected void DoMissingGlyphCallback(uint unicode, int stringIndex, FontAsset fontAsset, TextInfo textInfo)
         {
             // Event to allow users to modify the content of the text info before the text is rendered.
             OnMissingCharacter?.Invoke(unicode, stringIndex, textInfo, fontAsset);

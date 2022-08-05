@@ -302,7 +302,8 @@ namespace UnityEngine.VFX
         SystemAutomaticBounds = 1 << 5,
         SystemInWorldSpace = 1 << 6,
         SystemHasDirectLink = 1 << 7,
-        SystemHasAttributeBuffer = 1 << 8
+        SystemHasAttributeBuffer = 1 << 8,
+        SystemUsesInstancedRendering = 1 << 9
     }
 
     [Flags]
@@ -332,17 +333,30 @@ namespace UnityEngine.VFX
 
     internal enum VFXInstancingMode
     {
-        Disabled,
+        Disabled = -1,
         [InspectorName("Automatic batch capacity")]
-        Auto,
+        Auto = 0,
         [InspectorName("Custom batch capacity")]
         Custom
     };
 
+    [Flags]
     internal enum VFXInstancingDisabledReason
     {
         None = 0,
-        [Description("Unknown reason")]
+        [Description("A system is using indirect draw.")]
+        IndirectDraw = 1 << 0,
+        [Description("The effect is using output events.")]
+        OutputEvent = 1 << 1,
+        [Description("The effect is using GPU events.")]
+        GPUEvent = 1 << 2,
+        [Description("An Initialize node has Bounds Mode set to 'Automatic'.")]
+        AutomaticBounds = 1 << 3,
+        [Description("The effect contains a mesh output.")]
+        MeshOutput = 1 << 4,
+        [Description("The effect has exposed texture, mesh or graphics buffer properties.")]
+        ExposedObject = 1 << 5,
+        [Description("Unknown reason.")]
         Unknown = -1
     };
 

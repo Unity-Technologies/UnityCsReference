@@ -6,6 +6,7 @@ using System;
 
 namespace UnityEngine.Lumin
 {
+    [System.Obsolete("Lumin is no longer supported in Unity 2022.2")]
     [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true)]
     public sealed class UsesLuminPrivilegeAttribute : System.Attribute
     {

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.TextCore.Text
 {
     /// <summary>
@@ -17,6 +19,8 @@ namespace UnityEngine.TextCore.Text
         public int linkTextLength;
 
         internal char[] linkId;
+        string m_LinkIdString;
+        string m_LinkTextString;
 
         internal void SetLinkId(char[] text, int startIndex, int length)
         {
@@ -24,6 +28,10 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < length; i++)
                 linkId[i] = text[startIndex + i];
+
+            linkIdLength = length;
+            m_LinkIdString = null;
+            m_LinkTextString = null;
         }
 
         /// <summary>
@@ -32,12 +40,11 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public string GetLinkText(TextInfo textInfo)
         {
-            string text = string.Empty;
+            if (string.IsNullOrEmpty(m_LinkTextString))
+                for (int i = linkTextfirstCharacterIndex; i < linkTextfirstCharacterIndex + linkTextLength; i++)
+                    m_LinkTextString += textInfo.textElementInfo[i].character;
 
-            for (int i = linkTextfirstCharacterIndex; i < linkTextfirstCharacterIndex + linkTextLength; i++)
-                text += textInfo.textElementInfo[i].character;
-
-            return text;
+            return m_LinkTextString;
         }
 
         /// <summary>
@@ -46,7 +53,10 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public string GetLinkId()
         {
-            return new string(linkId, 0, linkIdLength);
+            if (string.IsNullOrEmpty(m_LinkIdString))
+                m_LinkIdString = new string(linkId, 0, linkIdLength);
+
+            return m_LinkIdString;
         }
     }
 }

@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(string newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            textEdition.UpdateText(rawValue);
+            ((INotifyValueChanged<string>)textInput.textElement).SetValueWithoutNotify(rawValue);
         }
 
         [EventInterest(typeof(BlurEvent))]

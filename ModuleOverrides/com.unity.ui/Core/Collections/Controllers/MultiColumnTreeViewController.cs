@@ -201,7 +201,7 @@ namespace UnityEngine.UIElements
             if (rebuildTree)
                 RebuildTree();
 
-            RaiseItemIndexChanged(GetIndexForId(id), GetIndexForId(newParentId) + childIndex + 1);
+            RaiseItemIndexChanged(id, newParentId);
         }
 
         bool IsChildOf(int childId, int id)

@@ -256,7 +256,8 @@ namespace UnityEditor
         ASTC = 3,
         PVRTC = 4,
         DXTC = 5,
-        BPTC = 6
+        BPTC = 6,
+        DXTC_RGTC = 7
     }
 
     public enum InsecureHttpOption

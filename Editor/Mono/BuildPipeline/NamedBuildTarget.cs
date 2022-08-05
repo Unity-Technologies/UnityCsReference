@@ -105,8 +105,6 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.QNX;
 
                 // Build targets that are not explicitly listed
-                case BuildTargetGroup.Lumin:
-                    return new NamedBuildTarget("Lumin");
                 case BuildTargetGroup.GameCoreXboxSeries:
                     return new NamedBuildTarget("GameCoreScarlett");
                 case BuildTargetGroup.GameCoreXboxOne:
