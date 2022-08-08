@@ -125,7 +125,7 @@ namespace UnityEditor.EditorTools
                     // Tool types can resolve to either global or instance tools
                     if (IsComponentTool(resolved))
                     {
-                        var instance = EditorToolManager.GetComponentTool(resolved);
+                        var instance = EditorToolManager.GetComponentTool(resolved, true);
                         if (instance == null)
                         {
                             Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +

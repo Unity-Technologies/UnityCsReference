@@ -265,24 +265,42 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button(Styles.RemapMaterialsInProject))
                         {
+                            bool bStartedAssetEditing = false;
                             try
                             {
-                                AssetDatabase.StartAssetEditing();
-
                                 foreach (var t in targets)
                                 {
-                                    var importer = t as SpeedTreeImporter;
-                                    var folderToSearch = importer.materialFolderPath;
+                                    SpeedTreeImporter importer = t as SpeedTreeImporter;
+                                    string folderToSearch = importer.materialFolderPath;
                                     folderToSearch = EditorUtility.OpenFolderPanel(Styles.SelectMaterialFolder.text, importer.materialFolderPath, "");
-                                    importer.SearchAndRemapMaterials(FileUtil.GetProjectRelativePath(folderToSearch));
 
-                                    AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
-                                    AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
+                                    bool bUserSelectedAFolder = folderToSearch != ""; // folderToSearch is empty if the user cancels the window
+                                    if (bUserSelectedAFolder)
+                                    {
+                                        string projectRelativePath = FileUtil.GetProjectRelativePath(folderToSearch);
+                                        bool bRelativePathIsNotEmpty = projectRelativePath != "";
+                                        if (bRelativePathIsNotEmpty)
+                                        {
+                                            AssetDatabase.StartAssetEditing();
+                                            bStartedAssetEditing = true;
+                                            importer.SearchAndRemapMaterials(projectRelativePath);
+
+                                            AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
+                                            AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
+                                        }
+                                        else
+                                        {
+                                            Debug.LogWarning("Selected folder is outside of the project's folder hierarchy, please provide a folder from the project.\n");
+                                        }
+                                    }
                                 }
                             }
                             finally
                             {
-                                AssetDatabase.StopAssetEditing();
+                                if (bStartedAssetEditing)
+                                {
+                                    AssetDatabase.StopAssetEditing();
+                                }
                             }
 
                             return true;

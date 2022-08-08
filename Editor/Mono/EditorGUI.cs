@@ -6977,7 +6977,7 @@ namespace UnityEditor
         }
 
         // This will return appriopriate material to use with the texture according to its usage mode
-        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool normals2Linear = false, bool useVTMaterialWhenPossible = true)
+        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null, bool manualTex2Linear = false, bool useVTMaterialWhenPossible = true)
         {
             bool useVT = useVTMaterialWhenPossible && UseVTMaterial(t);
 
@@ -6992,14 +6992,20 @@ namespace UnityEditor
                 return lightmapDoubleLDRMaterial;
             else if (usage == TextureUsageMode.BakedLightmapFullHDR)
                 return lightmapFullHDRMaterial;
-            else if (usage == TextureUsageMode.NormalmapDXT5nm || (usage == TextureUsageMode.NormalmapPlain && format == TextureFormat.BC5))
+            else if (TextureUtil.IsNormalMapUsageMode(usage))
             {
                 var normalMat = useVT ? normalmapVTMaterial : normalmapMaterial;
-                normalMat.SetFloat("_ManualTex2Linear", normals2Linear ? 1.0f : 0.0f);
+                normalMat.SetFloat("_IsPlainNormalmap", usage == TextureUsageMode.NormalmapPlain && format != TextureFormat.BC5 ? 1.0f : 0.0f);
+                normalMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
                 return normalMat;
             }
             else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
-                return useVT ? alphaVTMaterial : alphaMaterial;
+            {
+                var alphaOnlyMat = useVT ? alphaVTMaterial : alphaMaterial;
+                alphaOnlyMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
+                return alphaOnlyMat;
+            }
+
             return defaultMat;
         }
 

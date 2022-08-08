@@ -934,7 +934,10 @@ namespace UnityEditor
 
         void ColorSpaceGUI(TextureInspectorGUIElement guiElements)
         {
-            ToggleFromInt(m_sRGBTexture, s_Styles.sRGBTexture);
+            if (CountImportersWithHDR(targets, out int countHDR) && countHDR == 0)
+            {
+                ToggleFromInt(m_sRGBTexture, s_Styles.sRGBTexture);
+            }
         }
 
         void POTScaleGUI(TextureInspectorGUIElement guiElements)

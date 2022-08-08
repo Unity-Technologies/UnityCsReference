@@ -1384,27 +1384,12 @@ namespace UnityEngine.UIElements
             // and set it back in Setup().
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
-                m_LastFocusedElementTreeChildIndexes.Clear();
-                var target = evt.leafTarget as VisualElement;
-
-                if (m_ScrollView.contentContainer.FindElementInTree(target, m_LastFocusedElementTreeChildIndexes))
-                {
-                    var recycledElement = m_ScrollView.contentContainer[m_LastFocusedElementTreeChildIndexes[0]];
-                    foreach (var recycledItem in activeItems)
-                    {
-                        if (recycledItem.rootElement == recycledElement)
-                        {
-                            m_LastFocusedElementIndex = recycledItem.index;
-                            break;
-                        }
-                    }
-
-                    m_LastFocusedElementTreeChildIndexes.RemoveAt(0);
-                }
-                else
-                {
-                    m_LastFocusedElementIndex = -1;
-                }
+                m_VirtualizationController.OnFocus(evt.leafTarget as VisualElement);
+            }
+            else if (evt.eventTypeId == BlurEvent.TypeId())
+            {
+                BlurEvent e = evt as BlurEvent;
+                m_VirtualizationController.OnBlur(e?.relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {
@@ -1413,21 +1398,6 @@ namespace UnityEngine.UIElements
                     m_ScrollView.contentContainer.Focus();
                 }
             }
-        }
-
-        // Used to store the focused element to enable scrolling without losing it.
-        int m_LastFocusedElementIndex = -1;
-        List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
-
-        internal void HandleFocus(ReusableCollectionItem recycledItem)
-        {
-            if (m_LastFocusedElementIndex == -1)
-                return;
-
-            if (m_LastFocusedElementIndex == recycledItem.index)
-                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Focus();
-            else
-                recycledItem.rootElement.ElementAtTreePath(m_LastFocusedElementTreeChildIndexes)?.Blur();
         }
 
         private void OnSizeChanged(GeometryChangedEvent evt)

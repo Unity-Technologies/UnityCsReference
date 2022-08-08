@@ -15,6 +15,9 @@ namespace UnityEditor
     {
         Player = 0,
         Server = 1,
+        // *undocumented*
+        [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
+        NoSubtarget = -1,
     }
 
     namespace Build

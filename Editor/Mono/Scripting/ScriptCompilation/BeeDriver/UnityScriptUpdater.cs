@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Bee.BeeDriver;
 using NiceIO;
 using ScriptCompilationBuildProgram.Data;
@@ -17,6 +18,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         NPath ProjectRoot { get; }
         private RunnableProgram _scriptUpdaterProgram { get; }
+
+        // this is the return code used by ScriptUpdater to report that
+        // some updates were not applied.
+        const int k_UpdatesToFilesInSameProjectWereNotApplied = 3;
 
         public UnityScriptUpdater(NPath projectRoot, RunnableProgram customScriptUpdaterProgram = null)
         {
@@ -36,20 +41,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             private NPath _updateTxtFile { get; }
 
+            //ScriptUpdater output to be shown in Editor console.
+            //Format is one message per line, starting with "Error" or "Warning" followed by a collon (:) and the message.
+            private NPath _updaterMessagesToConsole { get; }
+
             public UnityScriptUpdaterTask(NPath scriptUpdaterRsp, NPath projectRoot,
                                           RunnableProgram unityScriptUpdaterProgram, NodeResult nodeResult,
                                           bool produceErrorIfNoUpdatesAreProduced) : base(nodeResult, produceErrorIfNoUpdatesAreProduced)
             {
                 var tempOutputDirectory = new NPath($"Temp/ScriptUpdater/{Math.Abs(nodeResult.outputfile.GetHashCode())}").EnsureDirectoryExists();
                 _updateTxtFile = tempOutputDirectory.MakeAbsolute().Combine("updates.txt").DeleteIfExists();
+                _updaterMessagesToConsole = tempOutputDirectory.MakeAbsolute().Combine("messages.txt").DeleteIfExists();
 
                 var args = new[]
                 {
-                    "cs",
                     $"\"{EditorApplication.applicationContentsPath}\"",
                     $"\"{tempOutputDirectory}\"",
                     $"\"{APIUpdaterManager.ConfigurationSourcesFilter}\"",
-                    scriptUpdaterRsp.InQuotes()
+                    scriptUpdaterRsp.InQuotes(),
+                    _updaterMessagesToConsole.InQuotes()
                 };
 
                 RunningProgram = unityScriptUpdaterProgram.Start(projectRoot.ToString(), args);
@@ -83,27 +93,68 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 };
             }
 
+            BeeDriverResult.Message[] ResultsFromUpdaterImportantMessages()
+            {
+                try
+                {
+                    var lines = Regex.Split(_updaterMessagesToConsole.ReadAllText(), "^(?<kind>Warning|Error):", RegexOptions.Multiline, TimeSpan.FromSeconds(5));
+                    if (lines.Length <= 1) // first split line is always empty..
+                        return Array.Empty<BeeDriverResult.Message>();
+
+                    // first line = warning/error, second line = actual message
+                    var messages = new List<BeeDriverResult.Message>((lines.Length - 1)/2);
+                    for (int i = 1; i < lines.Length; i+=2)
+                    {
+                        var messageKind = lines[i] switch
+                        {
+                            "Error" => BeeDriverResult.MessageKind.Error,
+                            "Warning" => BeeDriverResult.MessageKind.Warning,
+                            _ => BeeDriverResult.MessageKind.Warning,
+                        };
+                        messages.Add(new BeeDriverResult.Message(lines[i + 1], messageKind));
+                    }
+
+                    return messages.ToArray();
+                }
+                catch(System.IO.IOException)
+                {
+                    return Array.Empty<BeeDriverResult.Message>();
+                }
+            }
+
             private Results GatherResults()
             {
                 if (!RunningProgram.HasExited)
                     throw new ArgumentException($"Script updater for {NodeResult.outputfile}: results requested while RunningProgram has not exited");
-                if (RunningProgram.ExitCode != 0)
+
+                var messages = ResultsFromUpdaterImportantMessages();
+                if (RunningProgram.ExitCode == k_UpdatesToFilesInSameProjectWereNotApplied)
+                {
+                    ProduceErrorIfNoUpdatesAreProduced = false;
+                    return CollectResultsIfAny(messages);
+                }
+                else if (RunningProgram.ExitCode != 0)
                     return ErrorResult($"Script updater for {NodeResult.outputfile} failed with exitcode {RunningProgram.ExitCode} and stdout: {RunningProgram.GetStdoutAndStdErrCombined()}");
 
                 if (!_updateTxtFile.FileExists())
                     return ErrorResult($"Script updater for {NodeResult.outputfile} failed to produce updates.txt file");
 
-                var updateLines = _updateTxtFile.ReadAllLines();
+                return CollectResultsIfAny(messages);
+            }
 
-                var updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
-                if (updates.Contains(null))
-                    return ErrorResult($"Script updater for {NodeResult.outputfile} emitted an invalid line to updates.txt");
-
-                return new Results()
+            private Results CollectResultsIfAny(BeeDriverResult.Message[] messages)
+            {
+                var updates = Array.Empty<Update>();
+                if (_updateTxtFile.FileExists())
                 {
-                    Messages = Array.Empty<BeeDriverResult.Message>(),
-                    ProducedUpdates = updates.ToArray()
-                };
+                    var updateLines = _updateTxtFile.ReadAllLines();
+
+                    updates = updateLines.Select(ParseLineIntoUpdate).ToArray();
+                    if (updates.Contains(null))
+                        return ErrorResult($"Script updater for {NodeResult.outputfile} emitted an invalid line to {_updateTxtFile}");
+                }
+
+                return new Results() { Messages = messages, ProducedUpdates = updates };
             }
 
             internal static Update ParseLineIntoUpdate(string line)
