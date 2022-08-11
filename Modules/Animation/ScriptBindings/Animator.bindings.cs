@@ -113,8 +113,12 @@ namespace UnityEngine
     public enum AnimatorUpdateMode
     {
         Normal = 0,
-        AnimatePhysics = 1,
-        UnscaledTime = 2
+        Fixed = 1,
+        UnscaledTime = 2,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Enum member AnimatorUpdateMode.AnimatePhysics has been deprecated. Use AnimatorUpdateMode.Fixed to evaluate in FixedUpdate time and Animator.animatePhysics to sync transforms for physics. (UnityUpgradable) -> Fixed", true)]
+        AnimatePhysics = 1
     }
 
     #pragma warning disable 649 //Field is never assigned to and will always have its default value
@@ -414,12 +418,11 @@ namespace UnityEngine
             set;
         }
 
-        // When turned on, animations will be executed in the physics loop. This is only useful in conjunction with kinematic rigidbodies.
-        [Obsolete("Animator.animatePhysics has been deprecated. Use Animator.updateMode instead.")]
-        public bool animatePhysics
+        // When turned on, animations will synchronize transforms with physics. This is only useful in conjunction with kinematic rigidbodies.
+        extern public bool animatePhysics
         {
-            get { return updateMode == AnimatorUpdateMode.AnimatePhysics; }
-            set { updateMode =  (value ? AnimatorUpdateMode.AnimatePhysics : AnimatorUpdateMode.Normal); }
+            get;
+            set;
         }
 
         extern public AnimatorUpdateMode updateMode

@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a <see cref="VisualElement"/> background.
     /// </summary>
-    public struct Background : IEquatable<Background>
+    public partial struct Background : IEquatable<Background>
     {
         Texture2D m_Texture;
         /// <summary>

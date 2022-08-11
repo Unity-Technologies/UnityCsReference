@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents the point of origin where the (<see cref="Scale"/>, <see cref="Translate"/>, <see cref="Rotate"/>) transformations are applied.
     /// </summary>
-    public struct TransformOrigin : IEquatable<TransformOrigin>
+    public partial struct TransformOrigin : IEquatable<TransformOrigin>
     {
         /// <undoc/>
         public TransformOrigin(Length x, Length y , float z)

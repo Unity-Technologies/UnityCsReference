@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Properties;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -144,6 +145,11 @@ namespace UnityEngine.UIElements
 
     internal partial class InlineStyleAccess : StyleValueCollection
     {
+        static InlineStyleAccess()
+        {
+            PropertyBag.Register(new InlineStyleAccessPropertyBag());
+        }
+
         private static StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
 
         private List<StyleValueManaged> m_ValuesManaged;

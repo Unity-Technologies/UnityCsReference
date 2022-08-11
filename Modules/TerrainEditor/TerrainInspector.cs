@@ -178,7 +178,7 @@ namespace UnityEditor
             public readonly GUIContent allowAutoConnect = EditorGUIUtility.TrTextContent("Auto Connect", "Allow the current terrain tile to automatically connect to neighboring tiles sharing the same grouping ID.");
             public readonly GUIContent attemptReconnect = EditorGUIUtility.TrTextContent("Reconnect", "Will attempt to re-run auto connection");
             public readonly GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
-            public readonly GUIContent enableHeightmapRayTracing = EditorGUIUtility.TrTextContent("Enable Ray Tracing", "When enabling this option, RayTracingAccelerationStructure.CullInstances function will populate the acceleration structure with terrain geometries. The option is disabled if the system configuration doesn't support Ray Tracing. Check SystemInfo.supportsRayTracing.");
+            public readonly GUIContent enableHeightmapRayTracing = EditorGUIUtility.TrTextContent("Enable Ray Tracing Support", "When enabling this option, RayTracingAccelerationStructure.CullInstances function will populate the acceleration structure with terrain geometries.");
             public readonly GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
             public readonly GUIContent qualitySettings = EditorGUIUtility.TrTextContent("Quality Settings");
             public readonly GUIContent ignoreQualitySettings = EditorGUIUtility.TrTextContent("Ignore Quality Settings", "Toggle whether this terrain should ignore the current active quality settings' terrain overrides.");
@@ -1130,14 +1130,7 @@ namespace UnityEditor
 
                 var drawHeightmap = EditorGUILayout.Toggle(styles.drawTerrain, m_Terrain.drawHeightmap);
                 var drawInstanced = EditorGUILayout.Toggle(styles.drawInstancedTerrain, m_Terrain.drawInstanced);
-
-                var enableHeightmapRayTracing = m_Terrain.enableHeightmapRayTracing;
-                GUI.enabled = SystemInfo.supportsRayTracing;
-                if (SystemInfo.supportsRayTracing)
-                    enableHeightmapRayTracing = EditorGUILayout.Toggle(styles.enableHeightmapRayTracing, m_Terrain.enableHeightmapRayTracing);
-                else
-                    EditorGUILayout.Toggle(styles.enableHeightmapRayTracing, false);
-                GUI.enabled = true;
+                var enableHeightmapRayTracing = EditorGUILayout.Toggle(styles.enableHeightmapRayTracing, m_Terrain.enableHeightmapRayTracing);
 
                 float heightmapPixelError = m_Terrain.heightmapPixelError;
                 bool overridePixelError = overrideFlags.HasFlag(TerrainQualityOverrides.PixelError) && !m_Terrain.ignoreQualitySettings;
@@ -1626,14 +1619,12 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(styles.importRaw))
-            {
-                TerrainMenus.ImportRaw();
-            }
-            if (GUILayout.Button(styles.exportRaw))
-            {
-                TerrainMenus.ExportHeightmapRaw();
-            }
+
+            // calling functions in the middle of GUI rendering code can cause errors with GUI clips popping
+            // so set it to a bool and call the function at the end
+            bool importRaw = GUILayout.Button(styles.importRaw);
+            bool exportRaw = GUILayout.Button(styles.exportRaw);
+
             GUILayout.EndHorizontal();
 
             // alphamap resolution
@@ -1657,6 +1648,10 @@ namespace UnityEditor
             --EditorGUI.indentLevel;
 
             EditorGUILayout.EndFoldoutHeaderGroup();
+
+            // calling the appropriate functions at the end
+            if (importRaw) TerrainMenus.ImportRaw();
+            if (exportRaw) TerrainMenus.ExportHeightmapRaw();
         }
 
         private bool m_ShowResolution = true;

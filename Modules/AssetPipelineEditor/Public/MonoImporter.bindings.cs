@@ -20,14 +20,6 @@ namespace UnityEditor
         [FreeFunction("MonoImporterBindings::SetMonoScriptExecutionOrder")]
         public static extern void SetExecutionOrder([NotNull("NullExceptionObject")] MonoScript script, int order);
 
-        // The same functionality is now available using public APIs, so this method should be removed.
-        // As a warning to Asset Store developers, the underlying C++ function displays the same message as a warning,
-        // since the [Obsolete] attribute will not be triggered when using this method via reflection.
-        // TODO(@markv): remove this method in Unity 2022.2
-        [System.Obsolete("CopyMonoScriptIconToImporters is deprecated and will be removed in a future version of Unity. Please use https://docs.unity3d.com/ScriptReference/MonoImporter.SetIcon.html or https://docs.unity3d.com/ScriptReference/PluginImporter.SetIcon.html instead.")]
-        [FreeFunction("MonoImporterBindings::CopyMonoScriptIconToImporters")]
-        internal static extern void CopyMonoScriptIconToImporters([NotNull("NullExceptionObject")] MonoScript script);
-
         [FreeFunction("MonoImporterBindings::GetExecutionOrder")]
         public static extern int GetExecutionOrder([NotNull("NullExceptionObject")] MonoScript script);
 

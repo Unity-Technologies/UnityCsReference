@@ -19,6 +19,7 @@ namespace UnityEditor
         private SerializedProperty m_BackSortingOrder;
         private SerializedProperty m_BackSortingLayerID;
         private SerializedProperty m_SpriteSortPoint;
+        private SerializedProperty m_MaskSource;
         private AnimBool m_ShowCustomRangeValues;
 
         class Styles
@@ -31,7 +32,11 @@ namespace UnityEditor
             public static readonly GUIContent frontLabel = EditorGUIUtility.TrTextContent("Front");
             public static readonly GUIContent backLabel = EditorGUIUtility.TrTextContent("Back");
             public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting");
+            public static readonly GUIContent maskSourceLabel = EditorGUIUtility.TrTextContent("Mask Source", "Determines which source will be used for the mask");
+            public static readonly GUIContent supportedRendererlabel = EditorGUIUtility.TrTextContent("Supported Renderer", "The supported renderer used as the source for the mask");
         }
+
+        private SpriteMask spriteMask => target as SpriteMask;
 
         public override void OnEnable()
         {
@@ -47,14 +52,26 @@ namespace UnityEditor
             m_ShowCustomRangeValues = new AnimBool(ShouldShowCustomRangeValues());
             m_ShowCustomRangeValues.valueChanged.AddListener(Repaint);
             m_SpriteSortPoint = serializedObject.FindProperty("m_SpriteSortPoint");
+            m_MaskSource = serializedObject.FindProperty("m_MaskSource");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_Sprite, Styles.spriteLabel);
-
+            EditorGUILayout.PropertyField(m_MaskSource, Styles.maskSourceLabel);
+            if (m_MaskSource.intValue == (int)SpriteMask.MaskSource.Sprite)
+            {
+                EditorGUILayout.PropertyField(m_Sprite, Styles.spriteLabel);
+                EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
+            }
+            else
+            {
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.ObjectField(Styles.supportedRendererlabel, spriteMask.cachedSupportedRenderer, typeof(Renderer), false);
+                }
+            }
             EditorGUILayout.Slider(m_AlphaCutoff, 0f, 1f, Styles.alphaCutoffLabel);
 
             EditorGUILayout.Space();
@@ -74,8 +91,6 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
-
-            EditorGUILayout.PropertyField(m_SpriteSortPoint, Styles.spriteSortPointLabel);
 
             DrawRenderingLayer();
 

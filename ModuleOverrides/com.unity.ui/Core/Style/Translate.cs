@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a translation of the object. Percentage values in X and Y are relative to the width and height of the visual element where the style value is applied.
     /// </summary>
-    public struct Translate : IEquatable<Translate>
+    public partial struct Translate : IEquatable<Translate>
     {
         /// <undoc/>
         public Translate(Length x, Length y , float z)

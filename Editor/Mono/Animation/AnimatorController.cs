@@ -248,7 +248,13 @@ namespace UnityEditor.Animations
         public static AnimatorController CreateAnimatorControllerAtPathWithClip(string path, AnimationClip clip)
         {
             AnimatorController controller = CreateAnimatorControllerAtPath(path);
-            controller.AddMotion(clip);
+
+            AnimatorStateMachine stateMachine = controller.layers[0].stateMachine;
+            stateMachine.pushUndo = false;
+            var state = stateMachine.AddState(clip.name);
+            state.motion = clip;
+            stateMachine.pushUndo = true;
+
             return controller;
         }
 

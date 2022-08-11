@@ -15,11 +15,11 @@ namespace UnityEditor
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
     public enum StandaloneBuildSubtarget
     {
-        Player = 0,
-        Server = 1,
         // *undocumented*
         [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
-        NoSubtarget = -1,
+        Default = 0,
+        Player = 2,
+        Server = 1
     }
 
     namespace Build
@@ -53,6 +53,7 @@ namespace UnityEditor
         /// SA: EditorUserBuildSettings.ps4BuildSubtarget.
         Package = 1,
         Iso = 2,
+        GP4Project = 3,
     }
 
 
@@ -322,16 +323,26 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum QNXOsVersion
     {
+        [UnityEngine.InspectorName("Neutrino RTOS 7.0")]
         Neutrino70 = 0,
+
+        [UnityEngine.InspectorName("Neutrino RTOS 7.1")]
         Neutrino71 = 1,
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum QNXArchitecture
     {
+        [UnityEngine.InspectorName("Arm64")]
         Arm64 = 0,
+
+        [UnityEngine.InspectorName("Arm32")]
         Arm32 = 1,
+
+        [UnityEngine.InspectorName("X64")]
         X64 = 2,
+
+        [UnityEngine.InspectorName("X86")]
         X86 = 3,
     }
 

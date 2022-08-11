@@ -238,27 +238,61 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!UIUtils.IsElementVisible(this))
                 return;
 
-            // Since the Keyboard Navigation Manipulator only works when the list view is focused, we need to do a special handling
-            // when the focus is not on the ListView so that the behaviour is consistent with the scroll view. Note that once the
-            // ListView is focused, this function won't trigger because the KeyDownEvent would get intercepted at the ListView level
-            // and will not bubble up. Only the arrow keys are supported in the scroll view, so we do the same for ListView for now.
-            if ((evt.keyCode == KeyCode.UpArrow && SelectNext(true)) || (evt.keyCode == KeyCode.DownArrow && SelectNext(false)) ||
-                (evt.keyCode == KeyCode.A && evt.ctrlKey))
+            // We use keyboard events for ctrl, shift, A, and esc because UIToolkit does not
+            // handle naigation events for them (18/07/2022)
+            int index;
+            switch (evt.keyCode)
             {
-                if (evt.keyCode == KeyCode.A && evt.ctrlKey) SelectAll();
-                Focus();
-                evt.StopPropagation();
+                case KeyCode.A when evt.actionKey:
+                    SelectAll();
+                    break;
+                case KeyCode.PageUp:
+                    if (!selectedIndices.Any()) return;
+                    index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
+                    HandleSelectionAndScroll(index, evt.shiftKey);
+                    break;
+                case KeyCode.PageDown:
+                    if (!selectedIndices.Any()) return;
+                    index = Mathf.Min(viewController.itemsSource.Count - 1,
+                        selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));
+                    HandleSelectionAndScroll(index, evt.shiftKey);
+                    break;
             }
+
+            Focus();
+            evt.StopPropagation();
         }
 
-        private bool SelectNext(bool reverseOrder)
+        public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
         {
-            var newSelectedIndex = reverseOrder ? selectedIndex - 1 : selectedIndex + 1;
+            if (!UIUtils.IsElementVisible(this))
+                return;
+
+            var newSelectedIndex = -1;
+            switch (evt.direction)
+            {
+                case NavigationMoveEvent.Direction.Up:
+                    newSelectedIndex = selectedIndex - 1;
+                    break;
+                case NavigationMoveEvent.Direction.Down:
+                    newSelectedIndex = selectedIndex + 1;
+                    break;
+            }
+
             if (newSelectedIndex < 0 || newSelectedIndex >= itemsSource.Count)
-                return false;
-            selectedIndex = newSelectedIndex;
-            ScrollToItem(newSelectedIndex);
-            return true;
+                return;
+            HandleSelectionAndScroll(newSelectedIndex, evt.shiftKey);
+            Focus();
+            evt.StopPropagation();
+        }
+
+        private void HandleSelectionAndScroll(int index, bool shiftKey)
+        {
+            if (shiftKey)
+                DoRangeSelection(index);
+            else
+                selectedIndex = index;
+            ScrollToItem(index);
         }
 
         internal override ICollectionDragAndDropController CreateDragAndDropController() => null;

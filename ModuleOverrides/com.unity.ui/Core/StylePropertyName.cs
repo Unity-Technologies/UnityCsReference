@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines the name of a style property.
     /// </summary>
-    public struct StylePropertyName : IEquatable<StylePropertyName>
+    public partial struct StylePropertyName : IEquatable<StylePropertyName>
     {
         internal StylePropertyId id { get; }
         private string name { get; }

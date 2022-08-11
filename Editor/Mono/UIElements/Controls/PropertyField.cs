@@ -76,6 +76,8 @@ namespace UnityEditor.UIElements
         private SerializedProperty m_SerializedProperty;
         private PropertyField m_ParentPropertyField;
         private int m_FoldoutDepth;
+        private VisualElement m_InspectorElement;
+        private VisualElement m_ContextWidthElement;
 
         private int m_DrawNestingLevel;
         private PropertyField m_DrawParentProperty;
@@ -95,6 +97,10 @@ namespace UnityEditor.UIElements
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public static readonly string inputUssClassName = ussClassName + "__input";
+        /// <summary>
+        /// USS class name of property fields in inspector elements
+        /// </summary>
+        public static readonly string inspectorElementUssClassName = ussClassName + "__inspector-property";
 
         /// <summary>
         /// PropertyField constructor.
@@ -127,6 +133,7 @@ namespace UnityEditor.UIElements
             this.label = label;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
 
             if (property == null)
                 return;
@@ -140,6 +147,29 @@ namespace UnityEditor.UIElements
                 return;
 
             m_FoldoutDepth = this.GetFoldoutDepth();
+
+            var currentElement = parent;
+            while (currentElement != null)
+            {
+                if (currentElement.ClassListContains(InspectorElement.ussClassName))
+                {
+                    AddToClassList(inspectorElementUssClassName);
+                    m_InspectorElement = currentElement;
+                }
+
+                if (currentElement.ClassListContains(PropertyEditor.s_MainContainerClassName))
+                {
+                    m_ContextWidthElement = currentElement;
+                    break;
+                }
+
+                currentElement = currentElement.parent;
+            }
+        }
+
+        private void OnDetachFromPanelEvent(DetachFromPanelEvent evt)
+        {
+            RemoveFromClassList(inspectorElementUssClassName);
         }
 
         [EventInterest(typeof(SerializedPropertyBindEvent))]
@@ -213,6 +243,7 @@ namespace UnityEditor.UIElements
                     if (customPropertyGUI == null)
                     {
                         customPropertyGUI = CreatePropertyIMGUIContainer();
+                        m_imguiChildField = customPropertyGUI;
                     }
                     else
                     {
@@ -293,9 +324,11 @@ namespace UnityEditor.UIElements
         {
             GUIContent customLabel = string.IsNullOrEmpty(label) ? null : new GUIContent(label);
 
-            return new IMGUIContainer(() =>
+            var imguiContainer = new IMGUIContainer(() =>
             {
                 var originalWideMode = InspectorElement.SetWideModeForWidth(this);
+                var oldLabelWidth = EditorGUIUtility.labelWidth;
+
                 try
                 {
                     if (!serializedProperty.isValid)
@@ -304,8 +337,29 @@ namespace UnityEditor.UIElements
                     EditorGUI.BeginChangeCheck();
                     serializedProperty.serializedObject.Update();
 
-                    if (m_FoldoutDepth > 0)
-                        EditorGUI.indentLevel += m_FoldoutDepth;
+                    if (classList.Contains(inspectorElementUssClassName))
+                    {
+                        var spacing = 0f;
+
+                        if (m_imguiChildField != null)
+                        {
+                            spacing = m_imguiChildField.worldBound.x - m_InspectorElement.worldBound.x - m_InspectorElement.resolvedStyle.paddingLeft;
+                        }
+
+                        var imguiSpacing = EditorGUI.kLabelWidthMargin - EditorGUI.kLabelWidthPadding;
+                        var contextWidthElement = m_ContextWidthElement ?? m_InspectorElement;
+                        var contextWidth = contextWidthElement.resolvedStyle.width;
+                        var labelWidth = (contextWidth * EditorGUI.kLabelWidthRatio - imguiSpacing - spacing);
+                        var minWidth = EditorGUI.kMinLabelWidth + EditorGUI.kLabelWidthPadding;
+                        var minLabelWidth = Mathf.Max(minWidth - spacing, 0f);
+
+                        EditorGUIUtility.labelWidth = Mathf.Max(labelWidth, minLabelWidth);
+                    }
+                    else
+                    {
+                        if (m_FoldoutDepth > 0)
+                            EditorGUI.indentLevel += m_FoldoutDepth;
+                    }
 
                     // Wait at last minute to call GetHandler, sometimes the handler cache is cleared between calls.
                     var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
@@ -325,8 +379,11 @@ namespace UnityEditor.UIElements
                         }
                     }
 
-                    if (m_FoldoutDepth > 0)
-                        EditorGUI.indentLevel -= m_FoldoutDepth;
+                    if (!classList.Contains(inspectorElementUssClassName))
+                    {
+                        if (m_FoldoutDepth > 0)
+                            EditorGUI.indentLevel -= m_FoldoutDepth;
+                    }
 
                     serializedProperty.serializedObject.ApplyModifiedProperties();
                     if (EditorGUI.EndChangeCheck())
@@ -337,8 +394,15 @@ namespace UnityEditor.UIElements
                 finally
                 {
                     EditorGUIUtility.wideMode = originalWideMode;
+
+                    if (classList.Contains(inspectorElementUssClassName))
+                    {
+                        EditorGUIUtility.labelWidth = oldLabelWidth;
+                    }
                 }
             });
+
+            return imguiContainer;
         }
 
         private void ComputeNestingLevel()
@@ -413,6 +477,8 @@ namespace UnityEditor.UIElements
         /// stores the child field if there is only a single child. Used for updating bindings when this field is rebound.
         /// </summary>
         private VisualElement m_ChildField;
+
+        private VisualElement m_imguiChildField;
         private VisualElement m_ChildrenContainer;
 
         void TrimChildrenContainerSize(int targetSize)
@@ -534,6 +600,14 @@ namespace UnityEditor.UIElements
             field.visualInput.AddToClassList(inputUssClassName);
             field.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
 
+            var nestedFields = field.visualInput.Query<VisualElement>(
+                classes: new []{BaseField<TValue>.ussClassName, BaseCompositeField<int, IntegerField, int>.ussClassName} );
+
+            nestedFields.ForEach(x =>
+            {
+                x.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
+            });
+
             field.RegisterValueChangedCallback((evt) =>
             {
                 if (evt.target == field)
@@ -545,10 +619,12 @@ namespace UnityEditor.UIElements
             return field;
         }
 
-        VisualElement ConfigureListView(ListView listView, SerializedProperty property)
+        VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
         {
+            listView ??= factory();
             var propertyCopy = property.Copy();
             listView.reorderMode = ListViewReorderMode.Animated;
+            listView.reorderable = PropertyHandler.IsArrayReorderable(property);
             listView.showBorder = true;
             listView.showAddRemoveFooter = true;
             listView.showBoundCollectionSize = true;
@@ -569,7 +645,7 @@ namespace UnityEditor.UIElements
         {
             var propertyType = property.propertyType;
 
-            if (EditorGUI.HasVisibleChildFields(property, true))
+            if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray)
                 return CreateFoldout(property, originalField);
 
             TrimChildrenContainerSize(0);
@@ -740,7 +816,7 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Generic:
                     return property.isArray
-                        ? ConfigureListView(new ListView(), property)
+                        ? ConfigureListView(originalField as ListView, property, () => new ListView())
                         : null;
 
                 default:

@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AssemblyName>UnityEditor</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -2781,6 +2782,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\TransformVisitor.cs">
       <Link>Editor\Mono\Prefabs\PrefabOverrides\TransformVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Prefabs\PrefabReplaceUtility.cs">
+      <Link>Editor\Mono\Prefabs\PrefabReplaceUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Prefabs\PrefabUtility.bindings.cs">
       <Link>Editor\Mono\Prefabs\PrefabUtility.bindings.cs</Link>
@@ -7519,6 +7523,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PackageRequirement.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\PackageRequirement.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassIdentifier.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PassIdentifier.cs</Link>
     </Compile>
@@ -8329,7 +8336,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler_b9dd/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_d2c3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />

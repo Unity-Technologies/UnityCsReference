@@ -48,6 +48,14 @@ namespace UnityEngine.UIElements
         DynamicHeight,
     }
 
+    [Serializable]
+    class SerializedVirtualizationData
+    {
+        public Vector2 scrollOffset;
+        public int firstVisibleIndex;
+        public float storedPadding;
+    }
+
     /// <summary>
     /// Base class for controls that display virtualized vertical content inside a scroll view.
     /// </summary>
@@ -231,7 +239,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Callback for binding a data item to the visual element.
         /// </summary>
-        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
+        [Obsolete("bindItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> bindItem
         {
             get => throw new UnityException("bindItem has been moved to ListView and TreeView. Use these ones instead.");
@@ -241,7 +249,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Callback for unbinding a data item from the VisualElement.
         /// </summary>
-        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
+        [Obsolete("unbindItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> unbindItem
         {
             get => throw new UnityException("unbindItem has been moved to ListView and TreeView. Use these ones instead.");
@@ -251,7 +259,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Callback invoked when a <see cref="VisualElement"/> created via <see cref="makeItem"/> is no longer needed and will be destroyed.
         /// </summary>
-        [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
+        [Obsolete("destroyItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement> destroyItem
         {
             get => throw new UnityException("destroyItem has been moved to ListView and TreeView. Use these ones instead.");
@@ -434,7 +442,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static readonly int s_DefaultItemHeight = 30;
+        // If we ever change the default item height, we should consider changing the default max height of the view when
+        // used in property fields. The rule to look for is ".unity-property-field > .unity-collection-view"
+        internal static readonly int s_DefaultItemHeight = 22;
         internal float m_FixedItemHeight = s_DefaultItemHeight;
         internal bool m_ItemHeightIsInline;
         CollectionVirtualizationMethod m_VirtualizationMethod;
@@ -507,7 +517,7 @@ namespace UnityEngine.UIElements
         KeyboardNavigationManipulator m_NavigationManipulator;
 
         [SerializeField]
-        internal Vector2 m_ScrollOffset;
+        internal SerializedVirtualizationData serializedVirtualizationData = new SerializedVirtualizationData();
 
         // Persisted. It's why this can't be a HashSet(). :(
         [SerializeField]
@@ -713,7 +723,6 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassName);
 
             selectionType = SelectionType.Single;
-            m_ScrollOffset = Vector2.zero;
 
             m_ScrollView = new ScrollView();
             m_ScrollView.viewDataKey = "list-view__scroll-view";
@@ -1260,7 +1269,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoRangeSelection(int rangeSelectionFinalIndex)
+        internal void DoRangeSelection(int rangeSelectionFinalIndex)
         {
             var selectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Max() : m_SelectedIndices.Min();
 
@@ -1499,7 +1508,7 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 BlurEvent e = evt as BlurEvent;
-                m_VirtualizationController.OnBlur(e?.relatedTarget as VisualElement);
+                m_VirtualizationController?.OnBlur(e?.relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {

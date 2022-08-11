@@ -566,6 +566,22 @@ namespace UnityEditor
             EditorGUILayout.EndHorizontal();
         }
 
+        bool HandleDragPrefabAssetOverObjectFieldPopupMenu(Rect rect)
+        {
+            var evt = Event.current;
+            bool perform = evt.type == EventType.DragPerform;
+            if (rect.Contains(evt.mousePosition) && (perform ||evt.type == EventType.DragUpdated))
+            {
+                DragAndDropVisualMode visualMode;
+                if (PrefabReplaceUtility.GetDragVisualModeAndShowMenuWithReplaceMenuItemsWhenNeeded((GameObject)target, true, perform, false, false, out visualMode))
+                {
+                    DragAndDrop.visualMode = visualMode;
+                    return perform;
+                }
+            }
+            return false;
+        }
+
         void PrefabObjectField()
         {
             // Change Prefab asset for instance
@@ -579,10 +595,15 @@ namespace UnityEditor
                     bool disabled = !m_IsPrefabInstanceOutermostRoot || m_IsInstanceRootInPrefabContents;
                     using (new EditorGUI.DisabledScope(disabled))
                     {
+                        Rect r = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
+                        if (HandleDragPrefabAssetOverObjectFieldPopupMenu(r))
+                        {
+                            GUIUtility.ExitGUI(); // handled by popup menu
+                        }
                         if (m_IsMissingArtifact)
-                            newAsset = EditorGUILayout.ObjectField(m_MissingGameObject, typeof(GameObject), false) as GameObject;
+                            newAsset = EditorGUI.ObjectField(r, m_MissingGameObject, typeof(GameObject), false) as GameObject;
                         else
-                            newAsset = EditorGUILayout.ObjectField(m_AllPrefabInstanceRootsAreFromThisAsset, typeof(GameObject), false) as GameObject;
+                            newAsset = EditorGUI.ObjectField(r, m_AllPrefabInstanceRootsAreFromThisAsset, typeof(GameObject), false) as GameObject;
                     }
 
                     if (disabled)
@@ -617,8 +638,11 @@ namespace UnityEditor
 
                             if (string.IsNullOrEmpty(errorMsg))
                             {
+                                // targets are in reverse order from the Hierarchy selection so we reverse it here so we get the same result as repalcing from the Hierarchy
+                                var replaceTargets = new List<UnityObject>(targets);
+                                replaceTargets.Reverse();
                                 if (targets.Length > 1)
-                                    PrefabUtility.ReplacePrefabAssetOfPrefabInstances(targets.Select(e => (GameObject)e).ToArray(), newAsset, InteractionMode.UserAction);
+                                    PrefabUtility.ReplacePrefabAssetOfPrefabInstances(replaceTargets.Select(e => (GameObject)e).ToArray(), newAsset, InteractionMode.UserAction);
                                 else
                                     PrefabUtility.ReplacePrefabAssetOfPrefabInstance((GameObject)target, newAsset, InteractionMode.UserAction);
                                 CalculatePrefabStatus(); // Updates the cached m_FirstPrefabInstanceOutermostRootAsset to the newly selected Prefab

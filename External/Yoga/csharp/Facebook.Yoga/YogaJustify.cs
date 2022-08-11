@@ -16,5 +16,6 @@ namespace UnityEngine.Yoga
         FlexEnd,
         SpaceBetween,
         SpaceAround,
+        SpaceEvenly
     }
 }

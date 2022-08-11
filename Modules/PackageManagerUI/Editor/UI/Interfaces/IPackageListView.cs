@@ -16,5 +16,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         void OnListUpdate(ListUpdateArgs args);
         void OnFilterTabChanged(PackageFilterTab filterTab);
         void OnKeyDownShortcut(KeyDownEvent evt);
+        void OnNavigationMoveShortcut(NavigationMoveEvent evt);
     }
 }

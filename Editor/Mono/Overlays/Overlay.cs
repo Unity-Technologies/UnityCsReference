@@ -173,7 +173,7 @@ namespace UnityEditor.Overlays
         }
 
         // layout is the preferred layout, active layout is what this overlay is actually using
-        internal Layout activeLayout => m_ActiveLayout;
+        protected internal Layout activeLayout => m_ActiveLayout;
 
         public bool collapsed
         {
@@ -714,7 +714,7 @@ namespace UnityEditor.Overlays
             m_Layout = data.layout;
             m_FloatingSnapOffset = data.snapOffset;
             m_SnapOffsetDelta = data.snapOffsetDelta;
-            m_SizeOverridden = data.sizeOverriden;
+            m_SizeOverridden = data.sizeOverridden;
             m_Size = data.size;
         }
     }

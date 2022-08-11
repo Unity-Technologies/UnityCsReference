@@ -102,9 +102,14 @@ namespace UnityEngine.UIElements
         public bool isActive { get; private set; }
         public bool isDetaching { get; private set; }
 
+        EventCallback<AttachToPanelEvent> m_OnAttachToPanelCallback;
+        EventCallback<DetachFromPanelEvent> m_OnDetachFromPanelCallback;
+
         public VisualElementPanelActivator(IVisualElementPanelActivatable activatable)
         {
             m_Activatable = activatable;
+            m_OnAttachToPanelCallback = OnEnter;
+            m_OnDetachFromPanelCallback = OnLeave;
         }
 
         public void SetActive(bool action)
@@ -114,14 +119,14 @@ namespace UnityEngine.UIElements
                 isActive = action;
                 if (isActive)
                 {
-                    m_Activatable.element.RegisterCallback<AttachToPanelEvent>(OnEnter);
-                    m_Activatable.element.RegisterCallback<DetachFromPanelEvent>(OnLeave);
+                    m_Activatable.element.RegisterCallback(m_OnAttachToPanelCallback);
+                    m_Activatable.element.RegisterCallback(m_OnDetachFromPanelCallback);
                     SendActivation();
                 }
                 else
                 {
-                    m_Activatable.element.UnregisterCallback<AttachToPanelEvent>(OnEnter);
-                    m_Activatable.element.UnregisterCallback<DetachFromPanelEvent>(OnLeave);
+                    m_Activatable.element.UnregisterCallback(m_OnAttachToPanelCallback);
+                    m_Activatable.element.UnregisterCallback(m_OnDetachFromPanelCallback);
                     SendDeactivation();
                 }
             }

@@ -11,6 +11,9 @@ namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : SerializedObjectBindingBase, IInternalListViewBinding
     {
+        public static ObjectPool<ListViewSerializedObjectBinding> s_Pool =
+            new ObjectPool<ListViewSerializedObjectBinding>(() => new ListViewSerializedObjectBinding(), 32);
+
         ListView listView
         {
             get { return boundElement as ListView; }
@@ -22,15 +25,19 @@ namespace UnityEditor.UIElements.Bindings
         SerializedProperty m_ArraySize;
         int m_ListViewArraySize;
 
-        bool m_MakeItemSet;
-        bool m_BindItemSet;
-        bool m_UnbindItemSet;
+        bool m_IsBinding;
+        Func<VisualElement> m_DefaultMakeItem;
+        Action<VisualElement, int> m_DefaultBindItem;
+        Action<VisualElement, int> m_DefaultUnbindItem;
+        Action<VisualElement> m_DefaultDestroyItem;
+        EventCallback<SerializedObjectBindEvent> m_SerializedObjectBindEventCallback;
 
         public static void CreateBind(ListView listView,
             SerializedObjectBindingContext context,
             SerializedProperty prop)
         {
-            var newBinding = new ListViewSerializedObjectBinding();
+            var newBinding = s_Pool.Get();
+            newBinding.isReleased = false;
             newBinding.SetBinding(listView, context, prop);
         }
 
@@ -40,53 +47,62 @@ namespace UnityEditor.UIElements.Bindings
             m_DataList = new SerializedObjectList(prop, listView.sourceIncludesArraySize);
             m_ArraySize = m_DataList.ArraySize;
 
+            m_DefaultMakeItem = MakeListViewItem;
+            m_DefaultBindItem = BindListViewItem;
+            m_DefaultUnbindItem = UnbindListViewItem;
+            m_DefaultDestroyItem = DestroyListViewItem;
+            m_SerializedObjectBindEventCallback = SerializedObjectBindEventCallback;
+
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
             m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
             SetListView(listView);
             SetContext(context, m_ArraySize);
 
-
-            if (m_ListViewArraySize == -1)
-                UpdateArraySize();
+            listView.RefreshItems();
         }
 
         private void SetListView(ListView lv)
         {
             if (listView != null)
             {
-                if (m_BindItemSet)
-                    listView.SetBindItemWithoutNotify(null);
-                if (m_MakeItemSet)
-                    listView.SetMakeItemWithoutNotify(null);
-                if (m_UnbindItemSet)
-                    listView.unbindItem = null;
-
                 listView.itemsSource = null;
+                listView.Rebuild();
+
+                if (listView.bindItem == m_DefaultBindItem)
+                    listView.SetBindItemWithoutNotify(null);
+                if (listView.makeItem == m_DefaultMakeItem)
+                    listView.SetMakeItemWithoutNotify(null);
+                if (listView.unbindItem == m_DefaultUnbindItem)
+                    listView.unbindItem = null;
+                if (listView.destroyItem == m_DefaultDestroyItem)
+                    listView.destroyItem = null;
+
                 listView.SetViewController(null);
                 listView.SetDragAndDropController(null);
             }
 
             listView = lv;
 
-            m_MakeItemSet = m_BindItemSet = m_UnbindItemSet = false;
             if (listView != null)
             {
                 if (listView.makeItem == null)
                 {
-                    listView.SetMakeItemWithoutNotify(MakeListViewItem);
-                    m_MakeItemSet = true;
+                    listView.SetMakeItemWithoutNotify(m_DefaultMakeItem);
                 }
 
                 if (listView.bindItem == null)
                 {
-                    listView.SetBindItemWithoutNotify(BindListViewItem);
-                    m_BindItemSet = true;
+                    listView.SetBindItemWithoutNotify(m_DefaultBindItem);
                 }
 
                 if (listView.unbindItem == null)
                 {
-                    listView.unbindItem = UnbindListViewItem;
-                    m_UnbindItemSet = true;
+                    listView.unbindItem = m_DefaultUnbindItem;
+                }
+
+                if (listView.destroyItem == null)
+                {
+                    listView.destroyItem = m_DefaultDestroyItem;
                 }
 
                 listView.SetViewController(new EditorListViewController());
@@ -97,19 +113,25 @@ namespace UnityEditor.UIElements.Bindings
 
         VisualElement MakeListViewItem()
         {
-            return new PropertyField();
+            var prop = new PropertyField();
+            prop.RegisterCallback(m_SerializedObjectBindEventCallback);
+            return prop;
+        }
+
+        void DestroyListViewItem(VisualElement element)
+        {
+            element.UnregisterCallback(m_SerializedObjectBindEventCallback);
         }
 
         void BindListViewItem(VisualElement ve, int index)
         {
-            if (m_ArraySize.intValue != m_ListViewArraySize)
+            if (m_ListViewArraySize != -1 && m_ArraySize.intValue != m_ListViewArraySize)
             {
                 // We need to wait for array size to be updated, which triggers a refresh anyway.
                 return;
             }
 
-            var field = ve as IBindable;
-            if (field == null)
+            if (ve is not IBindable field)
             {
                 //we find the first Bindable
                 field = ve.Query().Where(x => x is IBindable).First() as IBindable;
@@ -121,21 +143,28 @@ namespace UnityEditor.UIElements.Bindings
                 throw new InvalidOperationException("Can't find BindableElement: please provide BindableVisualElements or provide your own Listview.bindItem callback");
             }
 
-            var item = listView.itemsSource[index];
+            var item = m_DataList[index];
             var itemProp = item as SerializedProperty;
 
             // No need to rebind to the same path. We should use a Rebuild if we need to force it.
             if (field.bindingPath == itemProp.propertyPath)
                 return;
 
+            m_IsBinding = true;
             field.bindingPath = itemProp.propertyPath;
             bindingContext.ContinueBinding(ve, itemProp);
+            m_IsBinding = false;
         }
 
         void UnbindListViewItem(VisualElement ve, int index)
         {
-            var field = ve as IBindable;
-            if (field == null)
+            if (m_ListViewArraySize != -1 && m_ArraySize.intValue != m_ListViewArraySize)
+            {
+                // We need to wait for array size to be updated, which triggers a refresh anyway.
+                return;
+            }
+
+            if (ve is not IBindable field)
             {
                 //we find the first Bindable
                 field = ve.Query().Where(x => x is IBindable).First() as IBindable;
@@ -149,6 +178,15 @@ namespace UnityEditor.UIElements.Bindings
 
             ve.Unbind();
             field.bindingPath = null;
+        }
+
+        void SerializedObjectBindEventCallback(SerializedObjectBindEvent evt)
+        {
+            if (!m_IsBinding)
+            {
+                evt.PreventDefault();
+                evt.StopPropagation();
+            }
         }
 
         void UpdateArraySize()
@@ -178,6 +216,9 @@ namespace UnityEditor.UIElements.Bindings
             m_DataList = null;
             m_ArraySize = null;
             m_ListViewArraySize = -1;
+
+            ResetCachedValues();
+            s_Pool.Release(this);
         }
 
         private bool m_LastSourceIncludesArraySize;
@@ -293,7 +334,6 @@ namespace UnityEditor.UIElements.Bindings
 
         public void RefreshProperties(bool includeArraySize)
         {
-
             var property = ArrayProperty.Copy();
             var endProperty = property.GetEndProperty();
 
@@ -392,31 +432,9 @@ namespace UnityEditor.UIElements.Bindings
             if (srcIndex == destIndex)
                 return;
 
-            var sourceExpanded = ArrayProperty.GetArrayElementAtIndex(srcIndex).isExpanded;
-            if (srcIndex < destIndex)
-            {
-                var currentProperty = ArrayProperty.GetArrayElementAtIndex(srcIndex);
-                for (var i = srcIndex + 1; i <= destIndex; i++)
-                {
-                    var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
-                    currentProperty.isExpanded = nextProperty.isExpanded;
-                    currentProperty = nextProperty;
-                }
-            }
-            else
-            {
-                var currentPropertyExpanded = ArrayProperty.GetArrayElementAtIndex(destIndex).isExpanded;
-                for (var i = destIndex + 1; i <= srcIndex; i++)
-                {
-                    var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
-                    var nextPropertyExpanded = nextProperty.isExpanded;
-                    nextProperty.isExpanded = currentPropertyExpanded;
-                    currentPropertyExpanded = nextPropertyExpanded;
-                }
-            }
-
-            ArrayProperty.GetArrayElementAtIndex(destIndex).isExpanded = sourceExpanded;
             ArrayProperty.MoveArrayElement(srcIndex, destIndex);
+            EditorGUIUtility.MoveArrayExpandedState(ArrayProperty, srcIndex, destIndex);
+            RefreshProperties(properties.Count > 0 && properties[0] == ArraySize);
         }
 
         public void ApplyChanges()

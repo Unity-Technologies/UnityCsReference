@@ -59,6 +59,22 @@ namespace UnityEditor
             }
         }
 
+        void OnEnable()
+        {
+            EditorApplication.modifierKeysChanged += ModifierKeysChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.modifierKeysChanged -= ModifierKeysChanged;
+        }
+
+        void ModifierKeysChanged()
+        {
+            // because we show the detailed version string when Option (Alt) is pressed
+            Repaint();
+        }
+
         public void OnGUI()
         {
             var evt = Event.current;

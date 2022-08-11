@@ -142,6 +142,9 @@ namespace UnityEditor.ShaderFoundry
         internal extern FoundryHandle AddCustomizationPointInstanceInternal(CustomizationPointInstanceInternal customizationPointInstance);
         internal extern CustomizationPointInstanceInternal GetCustomizationPointInstance(FoundryHandle customizationPointInstanceHandle);
 
+        internal extern FoundryHandle AddPackageRequirementInternal(PackageRequirementInternal packageRequirement);
+        internal extern PackageRequirementInternal GetPackageRequirement(FoundryHandle packageRequirementHandle);
+
         internal extern FoundryHandle AddTemplatePassStageElementInternal(TemplatePassStageElementInternal templatePassStageElement);
         internal extern TemplatePassStageElementInternal GetTemplatePassStageElement(FoundryHandle templatePassStageElementHandle);
 

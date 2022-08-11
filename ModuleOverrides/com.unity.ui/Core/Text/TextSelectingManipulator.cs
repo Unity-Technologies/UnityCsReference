@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements
 
         const int k_DragThresholdSqr = 16;
 
+        private int m_ConsecutiveMouseDownCount;
+        private long m_LastMouseDownTimeStamp = 0;
         private bool isClicking
         {
             get => m_IsClicking;
@@ -125,18 +127,27 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
         }
 
+        //Changed to not rely on evt.clickCount to fix https://fogbugz.unity3d.com/f/cases/1409098/
+        //This is necessary because default event system doesn't support triple click
         void OnMouseDownEvent(MouseDownEvent evt)
         {
             var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                if (evt.clickCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
+                //only move cursor to position if it wasnt a double or triple click.
+                if (evt.timestamp - m_LastMouseDownTimeStamp < Event.GetDoubleClickTime())
+                    m_ConsecutiveMouseDownCount++;
+                else
+                    m_ConsecutiveMouseDownCount = 1;
+
+                if (m_ConsecutiveMouseDownCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
                     m_SelectingUtilities.SelectCurrentWord();
-                else if (evt.clickCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
+                else if (m_ConsecutiveMouseDownCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else
                     m_SelectingUtilities.MoveCursorToPosition_Internal(mousePosition, evt.shiftKey);
 
+                m_LastMouseDownTimeStamp = evt.timestamp;
                 isClicking = true;
                 m_ClickStartPosition = mousePosition;
                 evt.StopPropagation();

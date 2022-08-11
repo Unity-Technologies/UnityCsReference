@@ -1144,10 +1144,8 @@ namespace UnityEditor
 
             if (picked == PickingObject.Empty && pickGameObjectCustomPasses != null)
             {
-                if(s_PickingGameObjectIgnore == null)
-                    s_PickingGameObjectIgnore = CreatePickingObjectArray(ignore);
-                if(s_PickingGameObjectFilter == null)
-                    s_PickingGameObjectFilter = CreatePickingObjectArray(filter);
+                s_PickingGameObjectIgnore = CreatePickingObjectArray(ignore);
+                s_PickingGameObjectFilter = CreatePickingObjectArray(filter);
 
                 foreach (var method in pickGameObjectCustomPasses.GetInvocationList())
                 {

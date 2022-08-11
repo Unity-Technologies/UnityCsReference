@@ -1163,7 +1163,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     ? activeBuildStatus.Progress.Value.nodesFinishedOrUpToDate / (float) activeBuildStatus.Progress.Value.totalNodesQeueued
                     : 0f;
 
-                if (EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", "ScriptCompilation: "+activeBuildStatus.Description, progress))
+                if (EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", activeBuildStatus.Description, progress))
                 {
                     EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", "Canceling compilation", 1.0f);
                     _currentBeeScriptCompilationState.CancellationTokenSource.Cancel();

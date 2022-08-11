@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents an angle value.
     /// </summary>
-    public struct Angle : IEquatable<Angle>
+    public partial struct Angle : IEquatable<Angle>
     {
         // Extension of the AngleUnit to include keywords that can be used with StyleAngle
         private enum Unit

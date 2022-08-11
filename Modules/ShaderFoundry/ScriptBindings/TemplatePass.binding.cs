@@ -21,6 +21,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_CommandDescriptorListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
         internal FoundryHandle m_TagDescriptorListHandle;
+        internal FoundryHandle m_PackageRequirementListHandle;
         internal bool m_EnableDebugging;
 
         internal extern static TemplatePassInternal Invalid();
@@ -87,6 +88,8 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
+        public IEnumerable<PackageRequirement> PackageRequirements => templatePass.m_PackageRequirementListHandle.AsListEnumerable<PackageRequirement>(container, (container, handle) => (new PackageRequirement(container, handle)));
+
         public bool EnableDebugging => templatePass.m_EnableDebugging;
 
         // private
@@ -130,6 +133,7 @@ namespace UnityEditor.ShaderFoundry
                     m_VertexStageElementListHandle = invalid,
                     m_FragmentStageElementListHandle = invalid,
                     m_TagDescriptorListHandle = invalid,
+                    m_PackageRequirementListHandle = invalid,
                     m_EnableDebugging = false
                 };
 
@@ -153,6 +157,7 @@ namespace UnityEditor.ShaderFoundry
             List<CommandDescriptor> commandDescriptors;
             List<PragmaDescriptor> pragmaDescriptors;
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
+            List<PackageRequirement> packageRequirements;
 
             public string DisplayName { get; set; }
             public string ReferenceName { get; set; }
@@ -186,6 +191,16 @@ namespace UnityEditor.ShaderFoundry
             public void AddTagDescriptor(TagDescriptor tagDescriptor)
             {
                 tagDescriptors.Add(tagDescriptor);
+            }
+
+            public void AddPackageRequirement(PackageRequirement packageRequirement)
+            {
+                if (packageRequirement.IsValid)
+                {
+                    if (packageRequirements == null)
+                        packageRequirements = new List<PackageRequirement>();
+                    packageRequirements.Add(packageRequirement);
+                }
             }
 
             public void AppendBlockInstance(BlockInstance blockInstance, Rendering.ShaderType stageType)
@@ -236,6 +251,7 @@ namespace UnityEditor.ShaderFoundry
                 templatePassInternal.m_CommandDescriptorListHandle = FixedHandleListInternal.Build(container, commandDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PragmaDescriptorListHandle = FixedHandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
                 templatePassInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
+                templatePassInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
 
                 var returnTypeHandle = container.AddTemplatePassInternal(templatePassInternal);
                 return new TemplatePass(container, returnTypeHandle);

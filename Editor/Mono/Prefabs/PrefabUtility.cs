@@ -84,6 +84,7 @@ namespace UnityEditor
     {
         NoMatchingPerformed = 0,
         ByName = 1,
+        ByHierarchy = 2
     }
 
     [Flags]
@@ -105,6 +106,19 @@ namespace UnityEditor
     {
         public ObjectMatchMode objectMatchMode { get; set; } = ObjectMatchMode.ByName;
         public PrefabOverridesOptions prefabOverridesOptions { get; set; } = PrefabOverridesOptions.KeepAllPossibleOverrides;
+        public bool changeRootNameToAssetName { get; set; } = true;
+        public bool logInfo { get; set; } = false;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeAsStruct]
+    public class ConvertToPrefabInstanceSettings
+    {
+        public ObjectMatchMode objectMatchMode { get; set; } = ObjectMatchMode.ByHierarchy;
+        public bool componentsNotMatchedBecomesOverride { get; set; } = false;
+        public bool gameObjectsNotMatchedBecomesOverride { get; set; } = false;
+        public bool recordPropertyOverridesOfMatches { get; set; } = false;
+        public bool changeRootNameToAssetName { get; set; } = true;
         public bool logInfo { get; set; } = false;
     }
 
@@ -271,6 +285,11 @@ namespace UnityEditor
 
         public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
+            ApplyPrefabInstance(instanceRoot, action, undoFlushTrackedObjects:true);
+        }
+
+        static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action, bool undoFlushTrackedObjects)
+        {
             DateTime startTime = DateTime.UtcNow;
 
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
@@ -288,9 +307,9 @@ namespace UnityEditor
                     Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
                 }
 
-                PrefabUtility.ApplyPrefabInstance(prefabInstanceRoot);
+                ApplyPrefabInstance(prefabInstanceRoot);
 
-                if (action == InteractionMode.UserAction)
+                if (undoFlushTrackedObjects && action == InteractionMode.UserAction)
                     Undo.FlushTrackedObjects();
             }
 
@@ -302,6 +321,34 @@ namespace UnityEditor
                 startTime,
                 false
             );
+        }
+
+        public static void ApplyPrefabInstances(GameObject[] instanceRoots, InteractionMode action)
+        {
+            if (instanceRoots == null)
+                throw new ArgumentNullException(nameof(instanceRoots));
+
+            foreach (var instanceRoot in instanceRoots)
+            {
+                ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
+            }
+
+            // Apply sequentially but import after all input have been saved to disk
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                foreach (var instanceRoot in instanceRoots)
+                {
+                    ApplyPrefabInstance(instanceRoot, action, undoFlushTrackedObjects:false);
+                }
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
+
+            if (action == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects(); // Needs to be called after StopAssetEditing() to fix UUM-6917
         }
 
         private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, Object prefabSourceObject)
@@ -2095,6 +2142,9 @@ namespace UnityEditor
             if (checkValidAsset)
                 ThrowIfInvalidAssetForReplacePrefabInstance(prefabAssetRoot, mode);
 
+            if (!IsPartOfNonAssetPrefabInstance(prefabInstanceRoot))
+                throw new InvalidOperationException(string.Format("Input '{0}' is not a Prefab instance, for plain GameObjects use ConvertToPrefabInstance() instead", prefabInstanceRoot.name));
+
             if (!IsOutermostPrefabInstanceRoot(prefabInstanceRoot))
                 throw new ArgumentException("Input instance is not an outermost Prefab instance root. Input instance: " + prefabInstanceRoot.name, nameof(prefabInstanceRoot));
             if (EditorUtility.IsPersistent(prefabInstanceRoot))
@@ -2107,10 +2157,16 @@ namespace UnityEditor
             if (prefabInstanceRoot.transform.GetType() != prefabAssetRoot.transform.GetType())
                 throw new InvalidOperationException(string.Format("Cannot replace the Prefab instance '{0}' with root transform of type {1} with a Prefab asset with root transform of type {2}. Transform types must match.", prefabInstanceRoot.name, prefabInstanceRoot.transform.GetType().Name, prefabAssetRoot.transform.GetType().Name));
 
-            // Recording undo does not handle missing scripts
-            var gameObjectsWithInvalidScript = FindGameObjectsWithInvalidComponent(prefabInstanceRoot);
-            if (mode == InteractionMode.UserAction && gameObjectsWithInvalidScript.Count > 0)
-                throw new InvalidOperationException(string.Format($"Cannot replace the Prefab instance when it has a missing script. GameObject '{gameObjectsWithInvalidScript[0].name}' has a missing script."));
+            if (prefabInstanceRoot.hideFlags.HasFlag(HideFlags.DontSaveInEditor) || prefabInstanceRoot.transform.hideFlags.HasFlag(HideFlags.DontSaveInEditor))
+                throw new ArgumentException("Input instance root is using the HideFlags.DontSaveInEditor flag which is not supported when replacing: Input instance: " + prefabInstanceRoot.name, nameof(prefabInstanceRoot));
+
+            if (mode == InteractionMode.UserAction)
+            {
+                // Recording undo does not handle missing scripts
+                var gameObjectsWithInvalidScript = FindGameObjectsWithInvalidComponent(prefabInstanceRoot);
+                if (gameObjectsWithInvalidScript.Count > 0)
+                    throw new InvalidOperationException(string.Format($"Cannot replace the Prefab instance when it has a missing script. GameObject '{gameObjectsWithInvalidScript[0].name}' has a missing script. Use InteractionMode.AutomatedAction to force the replace."));
+            }
         }
 
         public static void ReplacePrefabAssetOfPrefabInstances(GameObject[] prefabInstanceRoots, GameObject prefabAssetRoot, InteractionMode mode)
@@ -2122,6 +2178,9 @@ namespace UnityEditor
         {
             if (prefabInstanceRoots == null)
                 throw new ArgumentNullException(nameof(prefabInstanceRoots));
+
+            if (prefabInstanceRoots.Length == 0)
+                throw new ArgumentException(nameof(prefabInstanceRoots) + " has no objects");
 
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings));
@@ -2154,6 +2213,12 @@ namespace UnityEditor
 
         private static void ReplacePrefabAssetOfPrefabInstance_NoInputValidation(GameObject prefabInstanceRoot, GameObject prefabAssetRoot, PrefabReplacingSettings settings, InteractionMode mode)
         {
+            if (GetCorrespondingConnectedObjectFromSource(prefabInstanceRoot) == prefabAssetRoot)
+            {
+                // No need to replace, already using the input Prefab Asset
+                return;
+            }
+
             var undoActionName = "Replace Prefab Instance";
             if (mode == InteractionMode.UserAction)
             {
@@ -2170,6 +2235,140 @@ namespace UnityEditor
 
             if (mode == InteractionMode.UserAction)
                 Undo.FlushTrackedObjects();
+        }
+
+        internal static void ThrowIfInvalidArgumentsForConvertToPrefabInstance(GameObject plainGameObject, GameObject prefabAssetRoot, bool checkValidAsset, InteractionMode mode)
+        {
+            if (plainGameObject == null)
+                throw new ArgumentNullException(nameof(plainGameObject));
+
+            if (prefabAssetRoot == null)
+                throw new ArgumentNullException(nameof(prefabAssetRoot));
+
+            if (IsPartOfNonAssetPrefabInstance(plainGameObject))
+                throw new InvalidOperationException(string.Format("Input '{0}' is not a plain GameObject, it is already a Prefab instance. Use ReplacePrefabAssetOfPrefabInstance() instead.", plainGameObject.name));
+
+            if (EditorUtility.IsPersistent(plainGameObject))
+                throw new ArgumentException("Input is from a Prefab asset, this is not supported. Input GameObject: " + plainGameObject.name, nameof(plainGameObject));
+
+            if (checkValidAsset)
+                ThrowIfInvalidAssetForReplacePrefabInstance(prefabAssetRoot, mode);
+
+            if (plainGameObject.transform.GetType() != prefabAssetRoot.transform.GetType())
+                throw new InvalidOperationException(string.Format("Cannot convert the GameObject '{0}' with root transform of type {1} with a Prefab asset with root transform of type {2}. Transform types must match.", plainGameObject.name, plainGameObject.transform.GetType().Name, prefabAssetRoot.transform.GetType().Name));
+
+            if (plainGameObject.hideFlags.HasFlag(HideFlags.DontSaveInEditor) || plainGameObject.transform.hideFlags.HasFlag(HideFlags.DontSaveInEditor))
+                throw new ArgumentException("Input GameObject is using the HideFlags.DontSaveInEditor flag which is not supported when converting to Prefab instance: GameObject: " + plainGameObject.name, nameof(plainGameObject));
+
+            if (mode == InteractionMode.UserAction)
+            {
+                // Recording undo does not handle missing scripts
+                var gameObjectsWithInvalidScript = FindGameObjectsWithInvalidComponent(plainGameObject);
+                if (gameObjectsWithInvalidScript.Count > 0)
+                    throw new InvalidOperationException(string.Format($"Cannot convert the GameObject when it has a missing script. GameObject '{gameObjectsWithInvalidScript[0].name}' has a missing script. This is not supported by the Undo system. Use InteractionMode.AutomatedAction instead."));
+            }
+        }
+
+        public static void ConvertToPrefabInstance(GameObject plainGameObject, GameObject prefabAssetRoot, ConvertToPrefabInstanceSettings settings, InteractionMode mode)
+        {
+            ThrowIfInvalidArgumentsForConvertToPrefabInstance(plainGameObject, prefabAssetRoot, true, mode);
+
+            ConvertToPrefabInstance_NoInputValidation(plainGameObject, prefabAssetRoot, settings, mode);
+
+            EditorUtility.ForceRebuildInspectors();
+        }
+
+        public static void ConvertToPrefabInstances(GameObject[] plainGameObjects, GameObject prefabAssetRoot, ConvertToPrefabInstanceSettings settings, InteractionMode mode)
+        {
+            if (plainGameObjects == null)
+                throw new ArgumentNullException(nameof(plainGameObjects));
+
+            if (plainGameObjects.Length == 0)
+                throw new ArgumentException(nameof(plainGameObjects) + " has no objects");
+
+            foreach(var go in plainGameObjects)
+                if (go == null)
+                    throw new ArgumentException(nameof(plainGameObjects) + " has a null GameObject");
+
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+
+            ThrowIfInvalidAssetForReplacePrefabInstance(prefabAssetRoot, mode);
+
+            var topLevelGameObjects = GetTopLevelGameObjects(plainGameObjects);
+            foreach (var go in topLevelGameObjects)
+                ThrowIfInvalidArgumentsForConvertToPrefabInstance(go, prefabAssetRoot, false, mode);
+
+            foreach (var go in topLevelGameObjects)
+                ConvertToPrefabInstance_NoInputValidation(go, prefabAssetRoot, settings, mode);
+
+            EditorUtility.ForceRebuildInspectors();
+        }
+
+        private static void ConvertToPrefabInstance_NoInputValidation(GameObject plainGameObject, GameObject prefabAssetRoot, ConvertToPrefabInstanceSettings settings, InteractionMode mode)
+        {
+            var undoActionName = "Convert to Prefab Instance";
+            if (mode == InteractionMode.UserAction)
+            {
+                Undo.FlushTrackedObjects();
+
+                // Make sure all instance are unpacked so the merge code can delete GameObjects that are not matched
+                TransformVisitor visitor = new TransformVisitor();
+                visitor.VisitAll(plainGameObject.transform, (transform, userdata) => {
+                    GameObject go = transform.gameObject;
+                    if (IsOutermostPrefabInstanceRoot(go))
+                    {
+                        UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
+                    }
+                }, null);
+
+                Undo.SetCurrentGroupName(undoActionName);
+                Undo.RegisterFullObjectHierarchyUndo(plainGameObject, undoActionName);
+            }
+
+            bool success = ConvertToPrefabInstance_Internal(plainGameObject, prefabAssetRoot, settings);
+            if (!success)
+            {
+                Debug.LogError(string.Format("Converting plain GameObject to Prefab instance failed for GameObject '{0}' using asset '{1}' at '{2}'", plainGameObject.name, prefabAssetRoot.name, AssetDatabase.GetAssetPath(prefabAssetRoot)), plainGameObject);
+            }
+
+            if (mode == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects();
+        }
+
+        static bool ContainsParent(GameObject go, HashSet<GameObject> gameObjectSet)
+        {
+            Transform parent = go.transform.parent;
+            while (parent)
+            {
+                if (gameObjectSet.Contains(parent.gameObject))
+                    break;
+                parent = parent.parent;
+            }
+
+            if (parent == null)
+                return false;
+            else
+                return true;
+        }
+
+        static List<GameObject> GetTopLevelGameObjects(GameObject[] gameObjects)
+        {
+            List<GameObject> result = new List<GameObject>();
+            HashSet<GameObject> gameObjectHashSet = new HashSet<GameObject>(gameObjects);
+
+            foreach (var go in gameObjects)
+            {
+                if (!ContainsParent(go, gameObjectHashSet))
+                    result.Add(go);
+            }
+
+            return result;
+        }
+
+        internal static void InstantiateDraggedPrefabUpon(GameObject draggedUponGameObject, GameObject prefabAssetRoot)
+        {
+            InstantiateDraggedPrefabUpon_Internal(draggedUponGameObject, prefabAssetRoot);
         }
 
         [Obsolete("Use SaveAsPrefabAsset with a path instead.")]
@@ -2470,6 +2669,9 @@ namespace UnityEditor
             {
                 UnpackPrefabInstanceAndReturnNewOutermostRoots(instanceRoot, unpackMode);
             }
+
+            if (action == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects();
         }
 
         public static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots(GameObject instanceRoot, PrefabUnpackMode unpackMode)
@@ -2497,7 +2699,6 @@ namespace UnityEditor
                 UnpackPrefabInstance(prefabInstance, unpackMode, action);
             }
         }
-
 
         internal static List<GameObject> FindGameObjectsWithInvalidComponent(GameObject rootOfSearch)
         {

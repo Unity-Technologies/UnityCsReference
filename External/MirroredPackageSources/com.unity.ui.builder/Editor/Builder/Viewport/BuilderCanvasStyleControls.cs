@@ -290,6 +290,7 @@ namespace Unity.UI.Builder
             button.RemoveFromClassList("flex-end");
             button.RemoveFromClassList("space-between");
             button.RemoveFromClassList("space-around");
+            button.RemoveFromClassList("space-evenly");
 
             switch (resolvedStyle)
             {
@@ -298,6 +299,7 @@ namespace Unity.UI.Builder
                 case Justify.FlexEnd: button.AddToClassList("flex-end"); break;
                 case Justify.SpaceBetween: button.AddToClassList("space-between"); break;
                 case Justify.SpaceAround: button.AddToClassList("space-around"); break;
+                case Justify.SpaceEvenly: button.AddToClassList("space-evenly"); break;
             }
         }
 
@@ -310,7 +312,8 @@ namespace Unity.UI.Builder
                 case Justify.Center: result = Justify.FlexEnd; break;
                 case Justify.FlexEnd: result = Justify.SpaceBetween; break;
                 case Justify.SpaceBetween: result = Justify.SpaceAround; break;
-                case Justify.SpaceAround: result = Justify.FlexStart; break;
+                case Justify.SpaceAround: result = Justify.SpaceEvenly; break;
+                case Justify.SpaceEvenly: result = Justify.FlexStart; break;
             }
             JustifyContentUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_JustifyContentName, result);

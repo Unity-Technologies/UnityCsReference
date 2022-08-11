@@ -161,7 +161,8 @@ namespace UnityEditor
             {
                 GUILayout.Label(Styles.cameraSettings, EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(m_TransparencySortMode);
-                EditorGUILayout.PropertyField(m_TransparencySortAxis);
+                if ((TransparencySortMode) m_TransparencySortMode.intValue == TransparencySortMode.CustomAxis)
+                    EditorGUILayout.PropertyField(m_TransparencySortAxis);
 
                 EditorGUILayout.Space();
             }

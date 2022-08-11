@@ -473,24 +473,23 @@ namespace UnityEditor.Animations
 
         private AnimatorStateTransition AddAnyStateTransition()
         {
-            undoHandler.DoUndo(this, "AnyState Transition Added");
-
-            AnimatorStateTransition[] transitionsVector = anyStateTransitions;
             AnimatorStateTransition newTransition = new AnimatorStateTransition();
             newTransition.hasExitTime = false;
             newTransition.hasFixedDuration = true;
             newTransition.duration = 0.25f;
             newTransition.exitTime = 0.75f;
+            newTransition.hideFlags = HideFlags.HideInHierarchy;
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(newTransition, AssetDatabase.GetAssetPath(this));
 
             undoHandler.DoUndoCreated(newTransition, "AnyState Transition Created");
 
-            newTransition.hideFlags = HideFlags.HideInHierarchy;
+            undoHandler.DoUndo(this, "AnyState Transition Added");
+
+            AnimatorStateTransition[] transitionsVector = anyStateTransitions;
             ArrayUtility.Add(ref transitionsVector, newTransition);
             anyStateTransitions = transitionsVector;
-
 
             return newTransition;
         }
@@ -550,7 +549,7 @@ namespace UnityEditor.Animations
 
         public AnimatorTransition AddStateMachineTransition(AnimatorStateMachine sourceStateMachine, AnimatorStateMachine destinationStateMachine)
         {
-            AnimatorTransition newTransition = new AnimatorTransition();
+            var newTransition = new AnimatorTransition();
             newTransition.destinationStateMachine = destinationStateMachine;
             AddStateMachineTransition(sourceStateMachine, newTransition);
             return newTransition;
@@ -558,7 +557,7 @@ namespace UnityEditor.Animations
 
         public AnimatorTransition AddStateMachineTransition(AnimatorStateMachine sourceStateMachine, AnimatorState destinationState)
         {
-            AnimatorTransition newTransition = new AnimatorTransition();
+            var newTransition = new AnimatorTransition();
             newTransition.destinationState = destinationState;
             AddStateMachineTransition(sourceStateMachine, newTransition);
             return newTransition;
@@ -566,23 +565,23 @@ namespace UnityEditor.Animations
 
         internal void AddStateMachineTransition(AnimatorStateMachine sourceStateMachine, AnimatorTransition transition)
         {
-            undoHandler.DoUndo(this, "StateMachine Transition Added");
-
-            AnimatorTransition[] transitionsVector = GetStateMachineTransitions(sourceStateMachine);
+            transition.hideFlags = HideFlags.HideInHierarchy;
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(transition, AssetDatabase.GetAssetPath(this));
 
             undoHandler.DoUndoCreated(transition, "StateMachine Transition Created");
 
-            transition.hideFlags = HideFlags.HideInHierarchy;
+            undoHandler.DoUndo(this, "StateMachine Transition Added");
+
+            AnimatorTransition[] transitionsVector = GetStateMachineTransitions(sourceStateMachine);
             ArrayUtility.Add(ref transitionsVector, transition);
             SetStateMachineTransitions(sourceStateMachine, transitionsVector);
         }
 
         public AnimatorTransition AddStateMachineExitTransition(AnimatorStateMachine sourceStateMachine)
         {
-            AnimatorTransition newTransition = new AnimatorTransition();
+            var newTransition = new AnimatorTransition();
             newTransition.isExit = true;
             AddStateMachineTransition(sourceStateMachine, newTransition);
             return newTransition;
@@ -605,16 +604,16 @@ namespace UnityEditor.Animations
 
         private AnimatorTransition AddEntryTransition()
         {
-            undoHandler.DoUndo(this, "Entry Transition Added");
-            AnimatorTransition[] transitionsVector = entryTransitions;
             AnimatorTransition newTransition = new AnimatorTransition();
+            newTransition.hideFlags = HideFlags.HideInHierarchy;
 
             if (AssetDatabase.GetAssetPath(this) != "")
                 AssetDatabase.AddObjectToAsset(newTransition, AssetDatabase.GetAssetPath(this));
 
             undoHandler.DoUndoCreated(newTransition, "Entry Transition Created");
 
-            newTransition.hideFlags = HideFlags.HideInHierarchy;
+            undoHandler.DoUndo(this, "Entry Transition Added");
+            AnimatorTransition[] transitionsVector = entryTransitions;
             ArrayUtility.Add(ref transitionsVector, newTransition);
             entryTransitions = transitionsVector;
 

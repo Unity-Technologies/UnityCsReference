@@ -18,6 +18,8 @@ namespace UnityEditor.Overlays
         DockPosition m_DefaultDockPosition;
         int m_DefaultDockIndex;
         Layout m_DefaultLayout;
+        float m_DefaultWidth;
+        float m_DefaultHeight;
 
         public Type editorWindowType
         {
@@ -73,6 +75,18 @@ namespace UnityEditor.Overlays
             set => m_DefaultLayout = value;
         }
 
+        public float defaultWidth
+        {
+            get => m_DefaultWidth;
+            set => m_DefaultWidth = value;
+        }
+
+        public float defaultHeight
+        {
+            get => m_DefaultHeight;
+            set => m_DefaultHeight = value;
+        }
+
         public OverlayAttribute()
         {
             m_EditorWindowType = null;
@@ -84,6 +98,8 @@ namespace UnityEditor.Overlays
             m_DefaultDockPosition = DockPosition.Bottom;
             m_DefaultDockIndex = int.MaxValue;
             m_DefaultLayout = Layout.Panel;
+            m_DefaultWidth = float.NegativeInfinity;
+            m_DefaultHeight = float.NegativeInfinity;
             if (string.IsNullOrEmpty(m_UssName)) m_UssName = m_Id;
         }
 

@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> background-position style property <see cref="IStyle.BackgroundPosition"/>.
     /// </summary>
-    public struct BackgroundPosition : IEquatable<BackgroundPosition>
+    public partial struct BackgroundPosition : IEquatable<BackgroundPosition>
     {
         /// <summary>
         /// Background position type

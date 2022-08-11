@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides rotation information for visual elements that rotates around the <see cref="TransformOrigin"/>. Positive values represent clockwise rotation.
     /// </summary>
-    public struct Rotate : IEquatable<Rotate>
+    public partial struct Rotate : IEquatable<Rotate>
     {
         internal Rotate(Angle angle, Vector3 axis)
         {

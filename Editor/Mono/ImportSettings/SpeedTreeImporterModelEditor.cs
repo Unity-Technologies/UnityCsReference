@@ -132,8 +132,24 @@ namespace UnityEditor
 
         private bool DoMaterialsHaveDifferentShader()
         {
+            if(assetTargets is null || assetTargets.Length == 0)
+            {
+                return false;
+            }
+
+            // Check whether the imported asset is a valid one.
+            // GameObject cast will fail for non-geometry SpeedTree files
+            // such as collections on some v7 assets. If the object is not valid,
+            // the IEnumerable<GameObject>::ToArray() function call below will throw
+            // an InvalidType exception, hence we do an explicit source check here.
+            GameObject obj = assetTargets[0] as GameObject;
+            if (obj == null)
+            {
+                return false;
+            }
+
+            var prefabs = assetTargets?.Cast<GameObject>()?.ToArray();
             var importerArray = importers.ToArray();
-            var prefabs = assetTargets?.Cast<GameObject>().ToArray();
 
             // In tests assetTargets can become null
             for (int i = 0; i < Math.Min(importerArray.Length, prefabs?.Length ?? 0); ++i)

@@ -17,6 +17,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;                        // string
         internal FoundryHandle m_PassListHandle;                    // List<TemplatePass>
         internal FoundryHandle m_TagDescriptorListHandle;           // List<FoundryHandle>
+        internal FoundryHandle m_LODHandle;                         // string
+        internal FoundryHandle m_PackageRequirementListHandle;      // List<PackageRequirements>
         internal FoundryHandle m_AdditionalShaderIDStringHandle;    // string
         internal FoundryHandle m_LinkerHandle;                      // ILinker (in C# container only)
 
@@ -54,6 +56,8 @@ namespace UnityEditor.ShaderFoundry
         }
 
         public IEnumerable<TagDescriptor> TagDescriptors => template.m_TagDescriptorListHandle.AsListEnumerable<TagDescriptor>(container, (container, handle) => (new TagDescriptor(container, handle)));
+        public string LOD => container?.GetString(template.m_LODHandle) ?? string.Empty;
+        public IEnumerable<PackageRequirement> PackageRequirements => template.m_PackageRequirementListHandle.AsListEnumerable<PackageRequirement>(container, (container, handle) => (new PackageRequirement(container, handle)));
         public IEnumerable<ShaderDependency> ShaderDependencies => template.m_ShaderDependencyListHandle.AsListEnumerable(container, (container, handle) => new ShaderDependency(container, handle));
         public ShaderCustomEditor CustomEditor => new ShaderCustomEditor(container, template.m_ShaderCustomEditorHandle);
 
@@ -84,6 +88,8 @@ namespace UnityEditor.ShaderFoundry
             public string AdditionalShaderID { get; set; }
             ITemplateLinker linker;
             List<TagDescriptor> tagDescriptors;
+            public string LOD;
+            List<PackageRequirement> packageRequirements;
             List<ShaderDependency> shaderDependencies;
             public ShaderCustomEditor CustomEditor { get; set; } = ShaderCustomEditor.Invalid;
             public string ShaderFallback { get; set; }
@@ -118,6 +124,16 @@ namespace UnityEditor.ShaderFoundry
                     if (tagDescriptors == null)
                         tagDescriptors = new List<TagDescriptor>();
                     tagDescriptors.Add(tagDescriptor);
+                }
+            }
+
+            public void AddPackageRequirement(PackageRequirement packageRequirement)
+            {
+                if (packageRequirement.IsValid)
+                {
+                    if (packageRequirements == null)
+                        packageRequirements = new List<PackageRequirement>();
+                    packageRequirements.Add(packageRequirement);
                 }
             }
 
@@ -161,6 +177,8 @@ namespace UnityEditor.ShaderFoundry
                 };
 
                 templateInternal.m_PassListHandle = FixedHandleListInternal.Build(container, passes, (p) => (p.handle));
+                templateInternal.m_LODHandle =  container.AddString(LOD);
+                templateInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
                 templateInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (t) => (t.handle));
                 templateInternal.m_ShaderDependencyListHandle = FixedHandleListInternal.Build(container, shaderDependencies, (sd) => sd.handle);
                 templateInternal.m_ShaderCustomEditorHandle = CustomEditor.IsValid ? CustomEditor.handle : FoundryHandle.Invalid();

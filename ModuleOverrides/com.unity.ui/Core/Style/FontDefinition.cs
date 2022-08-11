@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a <see cref="VisualElement"/> font.
     /// </summary>
-    public struct FontDefinition : IEquatable<FontDefinition>
+    public partial struct FontDefinition : IEquatable<FontDefinition>
     {
         private Font m_Font;
         /// <summary>

@@ -149,9 +149,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         SpaceBetween = YogaJustify.SpaceBetween,
         /// <summary>
+        /// Items are evenly distributed in the line with equal space around them. Space on the edge is half of the space between objects.
+        /// </summary>
+        SpaceAround = YogaJustify.SpaceAround,
+        /// <summary>
         /// Items are evenly distributed in the line with equal space around them.
         /// </summary>
-        SpaceAround = YogaJustify.SpaceAround
+        SpaceEvenly = YogaJustify.SpaceEvenly,
+
     }
 
     /// <summary>

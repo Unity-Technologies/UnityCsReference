@@ -539,7 +539,7 @@ namespace Unity.UI.Builder
                 m_RegisteredState.expandedIndices = m_TreeView.expandedItemIds.Select(id => m_TreeView.viewController.GetIndexForId(id)).Where(index => index != -1).ToList();
                 m_RegisteredState.expandedIndices.Sort();
                 m_RegisteredState.selectedIndices = m_TreeView.selectedIndices.ToList();
-                m_RegisteredState.scrollOffset = m_TreeView.m_ScrollOffset;
+                m_RegisteredState.scrollOffset = m_TreeView.serializedVirtualizationData.scrollOffset;
             }
         }
 
@@ -566,7 +566,7 @@ namespace Unity.UI.Builder
                 return;
 
             m_TreeView.SetSelection(m_RegisteredState.selectedIndices);
-            m_TreeView.m_ScrollOffset = m_RegisteredState.scrollOffset;
+            m_TreeView.serializedVirtualizationData.scrollOffset = m_RegisteredState.scrollOffset;
             m_TreeView.RefreshItems();
 
             m_RegisteredState.selectedIndices.Clear();

@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents the scale applied as element transformations. The center point that doesn't move when the scaling is applied is the <see cref="TransformOrigin"/>.
     /// </summary>
-    public struct Scale : IEquatable<Scale>
+    public partial struct Scale : IEquatable<Scale>
     {
         /// <summary>
         /// Creates a new Scale from a <see cref="Vector2"/>.

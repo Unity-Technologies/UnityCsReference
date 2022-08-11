@@ -128,6 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             RegisterCallback<KeyDownEvent>(IgnoreEscapeKeyDown, TrickleDown.TrickleDown);
+            panel.visualTree.RegisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
         }
 
         private void OnLeavePanel(DetachFromPanelEvent e)
@@ -136,11 +137,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             UnregisterCallback<KeyDownEvent>(IgnoreEscapeKeyDown, TrickleDown.TrickleDown);
+            panel.visualTree.UnregisterCallback<NavigationMoveEvent>(OnNavigationMoveShortcut);
         }
 
         private void OnKeyDownShortcut(KeyDownEvent evt)
         {
             currentView.OnKeyDownShortcut(evt);
+        }
+
+        private void OnNavigationMoveShortcut(NavigationMoveEvent evt)
+        {
+            currentView.OnNavigationMoveShortcut(evt);
         }
 
         // The default ListView escape key behaviour is to clear all selections, however, we want to always have something selected

@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a distance value.
     /// </summary>
-    public struct Length : IEquatable<Length>
+    public partial struct Length : IEquatable<Length>
     {
         // Float clamping value (2 ^ 23).
         internal const float k_MaxValue = 8388608.0f;

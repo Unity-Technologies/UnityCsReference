@@ -129,6 +129,57 @@ namespace UnityEditor.ShortcutManagement
         static void ShortcutClutchMethod(ShortcutArguments args) { throw new InvalidOperationException(); }
     }
 
+    // We want GameView shortcuts to trigger even in play mode so we declare them as menu shortcuts
+    internal class GameViewShortcutAttribute : ShortcutBaseAttribute
+    {
+        internal string identifier { get; }
+        internal ShortcutBinding defaultBinding { get; }
+        public string displayName { get; set; }
+        Action m_NoArgumentsAction;
+
+        GameViewShortcutAttribute(string id, ShortcutBinding defaultBinding)
+        {
+            this.identifier = id;
+            this.defaultBinding = defaultBinding;
+            displayName = identifier;
+        }
+
+        public GameViewShortcutAttribute(string id) : this(id, ShortcutBinding.empty)
+        {
+        }
+
+        public GameViewShortcutAttribute(string id, KeyCode defaultKeyCode, [DefaultValue("None")] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : this(id, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+        {
+        }
+
+        void NoArgumentShortcutMethodProxy(ShortcutArguments arguments)
+        {
+            m_NoArgumentsAction();
+        }
+
+        internal override ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo)
+        {
+            var defaultCombination = defaultBinding.keyCombinationSequence;
+            var type = ShortcutType.Menu;
+            var methodParams = methodInfo.GetParameters();
+            Action<ShortcutArguments> action;
+
+            // We instantiate this as the specific delegate type in advance,
+            // because passing ShortcutArguments in object[] via MethodInfo.Invoke() causes boxing/allocation
+            if (methodParams.Any())
+                action = (Action<ShortcutArguments>)Delegate.CreateDelegate(typeof(Action<ShortcutArguments>), null, methodInfo);
+            else
+            {
+                m_NoArgumentsAction = (Action)Delegate.CreateDelegate(typeof(Action), null, methodInfo);
+                action = NoArgumentShortcutMethodProxy;
+            }
+
+            return new ShortcutEntry(new Identifier(identifier), defaultCombination, action, typeof(GameView), null, type, displayName);
+        }
+    }
+
+
     class ShortcutAttributeUtility
     {
         internal const int DefaultGlobalPriority = 1_000_000;

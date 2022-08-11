@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a time value.
     /// </summary>
-    public struct TimeValue : IEquatable<TimeValue>
+    public partial struct TimeValue : IEquatable<TimeValue>
     {
         /// <summary>
         /// The time value.

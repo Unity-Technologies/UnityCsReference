@@ -14,7 +14,7 @@ namespace UnityEditor.ShortcutManagement
     {
         readonly string m_AllUnityCommands = L10n.Tr("All Unity Commands");
         readonly string m_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
-        readonly string m_MainMenu = L10n.Tr("Main Menu");
+        internal static readonly string s_MainMenu = L10n.Tr("Main Menu");
 
         const int k_AllUnityCommandsIndex = 0;
         const int k_ConflictsIndex = 1;
@@ -171,7 +171,7 @@ namespace UnityEditor.ShortcutManagement
                 var identifier = entry.displayName;
                 m_AllEntries.Add(entry);
 
-                if (entry.type == ShortcutType.Menu)
+                if (entry.type == ShortcutType.Menu && entry.displayName.StartsWith(s_MainMenu))
                 {
                     menuItems.Add(entry);
                 }
@@ -202,7 +202,7 @@ namespace UnityEditor.ShortcutManagement
 
             UpdateCommandsWithConflicts();
             menuItems.Sort(shortcutNameComparer);
-            m_CategoryToEntriesList.Add(m_MainMenu, menuItems);
+            m_CategoryToEntriesList.Add(s_MainMenu, menuItems);
 
 
             m_Categories = categories.ToList();
@@ -210,7 +210,7 @@ namespace UnityEditor.ShortcutManagement
             m_Categories.Sort();
             m_Categories.Insert(k_AllUnityCommandsIndex, m_AllUnityCommands);
             m_Categories.Insert(k_ConflictsIndex, m_CommandsWithConflicts);
-            m_Categories.Insert(k_MainMenuIndex, m_MainMenu);
+            m_Categories.Insert(k_MainMenuIndex, s_MainMenu);
         }
 
         void UpdateCommandsWithConflicts()

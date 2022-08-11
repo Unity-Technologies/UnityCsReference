@@ -14,6 +14,12 @@ namespace UnityEngine
     [NativeType(Header = "Modules/SpriteMask/Public/SpriteMask.h")]
     public sealed partial class SpriteMask : Renderer
     {
+        public enum MaskSource
+        {
+            Sprite = 0,
+            SupportedRenderers = 1,
+        }
+
         extern public int frontSortingLayerID { get; set; }
         extern public int frontSortingOrder { get; set; }
         extern public int backSortingLayerID { get; set; }
@@ -23,6 +29,10 @@ namespace UnityEngine
         extern public bool isCustomRangeActive {[NativeMethod("IsCustomRangeActive")] get; [NativeMethod("SetCustomRangeActive")] set; }
 
         public extern SpriteSortPoint spriteSortPoint { get; set; }
+
+        public extern MaskSource maskSource { get; set; }
+
+        internal extern Renderer cachedSupportedRenderer { get; }
 
         internal extern Bounds GetSpriteBounds();
     }

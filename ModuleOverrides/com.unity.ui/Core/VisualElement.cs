@@ -472,9 +472,8 @@ namespace UnityEngine.UIElements
             get { return panel == null ? GUIUtility.pixelsPerPoint : (panel as BaseVisualElementPanel).scaledPixelsPerPoint; }
         }
 
-        StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(
-            computedStyle.backgroundPositionX, computedStyle.backgroundPositionY,
-            computedStyle.backgroundRepeat, computedStyle.backgroundSize);
+        [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
+        StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => resolvedStyle.unityBackgroundScaleMode;
 
         Rect m_Layout;
 

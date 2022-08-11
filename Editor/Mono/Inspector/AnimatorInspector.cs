@@ -19,6 +19,7 @@ namespace UnityEditor
         SerializedProperty m_Avatar;
         SerializedProperty m_Controller;
         SerializedProperty m_ApplyRootMotion;
+        SerializedProperty m_AnimatePhysics;
         SerializedProperty m_CullingMode;
         SerializedProperty m_UpdateMode;
         SerializedProperty m_WarningMessage;
@@ -34,12 +35,14 @@ namespace UnityEditor
             public GUIContent applyRootMotion = new GUIContent(EditorGUIUtility.TrTextContent("Apply Root Motion"));
             public GUIContent updateMode = new GUIContent(EditorGUIUtility.TrTextContent("Update Mode"));
             public GUIContent cullingMode = new GUIContent(EditorGUIUtility.TrTextContent("Culling Mode"));
+            public GUIContent animatePhysics = new GUIContent(EditorGUIUtility.TrTextContent("Animate Physics"));
 
             public Styles()
             {
                 applyRootMotion.tooltip = "Automatically move the object using the root motion from the animations";
                 updateMode.tooltip = "Controls when and how often the Animator is updated";
                 cullingMode.tooltip = "Controls what is updated when the object has been culled";
+                animatePhysics.tooltip = "Notify physics system of animated transforms.";
             }
         }
         static Styles styles;
@@ -69,6 +72,7 @@ namespace UnityEditor
         {
             m_Avatar = serializedObject.FindProperty("m_Avatar");
             m_ApplyRootMotion = serializedObject.FindProperty("m_ApplyRootMotion");
+            m_AnimatePhysics = serializedObject.FindProperty("m_AnimatePhysics");
             m_Controller = serializedObject.FindProperty("m_Controller");
             m_CullingMode = serializedObject.FindProperty("m_CullingMode");
             m_UpdateMode = serializedObject.FindProperty("m_UpdateMode");
@@ -127,6 +131,8 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox("Root position or rotation are controlled by curves", MessageType.Info, true);
                 }
             }
+
+            EditorGUILayout.PropertyField(m_AnimatePhysics, styles.animatePhysics);
 
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_UpdateMode, styles.updateMode);

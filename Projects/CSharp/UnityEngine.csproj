@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AssemblyName>UnityEngine</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -121,14 +122,23 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Atlas.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Atlas.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundPosition.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundPosition.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundPosition.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\BackgroundPosition.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundPropertyHelper.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\BackgroundPropertyHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\BackgroundRepeat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundSize.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\BackgroundSize.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\BackgroundSize.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\BackgroundSize.cs</Link>
@@ -415,8 +425,17 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Conversions\SetValueVisitor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Conversions\SetValueVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Conversions\UIConversion.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Conversions\UIConversion.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Cursor.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Cursor.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Cursor.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Cursor.cs</Link>
@@ -844,6 +863,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyAnimationSystem.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyAnimationSystem.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyName.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyName.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyName.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyName.cs</Link>
     </Compile>
@@ -946,8 +968,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StyleValidator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StyleSheets\Validation\StyleValidator.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Angle.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Angle.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Angle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Angle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Background.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Background.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Background.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Background.cs</Link>
@@ -961,8 +989,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\CustomStyle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\CustomStyle.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\EasingFunction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\FontDefinition.cs</Link>
@@ -982,8 +1016,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccess.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccess.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccessPropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\InlineStyleAccessPropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccess.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs</Link>
@@ -1009,14 +1049,32 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\IStyle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\IStyle.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\InlineStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Length.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Length.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Length.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Length.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\ResolvedStyleAccess.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Rotate.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Rotate.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Rotate.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Rotate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Scale.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Scale.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Scale.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Scale.cs</Link>
@@ -1087,11 +1145,23 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleTypes.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\StyleValue.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\StyleValue.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TimeValue.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\TimeValue.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TimeValue.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\TimeValue.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.PropertyBag.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\TransformOrigin.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Translate.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Translate.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Translate.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Translate.cs</Link>
@@ -1107,6 +1177,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextShadow.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\TextShadow.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextShadow.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\TextShadow.cs</Link>
@@ -1188,6 +1261,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VectorImage.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VectorImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElement.PropertyBag.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\VisualElement.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualElement.cs</Link>
@@ -2554,6 +2630,9 @@
     <Compile Include="..\..\Runtime\Export\Caching\Caching.deprecated.cs">
       <Link>Runtime\Export\Caching\Caching.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Camera\AssetNotificationSystem.bindings.cs">
+      <Link>Runtime\Export\Camera\AssetNotificationSystem.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs">
       <Link>Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs</Link>
     </Compile>
@@ -2745,6 +2824,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\GI\LightingSettings.bindings.cs">
       <Link>Runtime\Export\GI\LightingSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\GI\LightingSettings.deprecated.cs">
+      <Link>Runtime\Export\GI\LightingSettings.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs">
       <Link>Runtime\Export\GI\Lightmapping.cs</Link>
@@ -3702,6 +3784,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
       <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\ManagedAttributeManagerTests.cs">
+      <Link>Runtime\Scripting\ManagedAttributeManagerTests.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\RectTransform.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\RectTransform.bindings.cs</Link>

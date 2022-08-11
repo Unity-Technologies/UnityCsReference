@@ -248,7 +248,9 @@ namespace UnityEditor
 
                         if (validatedObject != null)
                         {
-                            DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                            if (DragAndDrop.visualMode == DragAndDropVisualMode.None)
+                                DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+
                             if (eventType == EventType.DragPerform)
                             {
                                 if (property != null)

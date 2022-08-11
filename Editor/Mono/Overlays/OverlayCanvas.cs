@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -29,7 +30,8 @@ namespace UnityEditor.Overlays
         public int index = k_InvalidIndex;
         public Layout layout = Layout.Panel;
         public Vector2 size;
-        public bool sizeOverriden;
+        [FormerlySerializedAs("sizeOverriden")]
+        public bool sizeOverridden;
 
         public SaveData() { }
 
@@ -47,7 +49,7 @@ namespace UnityEditor.Overlays
             index = other.index;
             layout = other.layout;
             size = other.size;
-            sizeOverriden = other.sizeOverriden;
+            sizeOverridden = other.sizeOverridden;
         }
 
         public SaveData(Overlay overlay, int indexInContainer = k_InvalidIndex)
@@ -68,6 +70,8 @@ namespace UnityEditor.Overlays
             snapCorner = overlay.floatingSnapCorner;
             snapOffset = overlay.floatingSnapOffset - overlay.m_SnapOffsetDelta;
             snapOffsetDelta = overlay.m_SnapOffsetDelta;
+            size = overlay.sizeToSave;
+            sizeOverridden = overlay.sizeOverridden;
         }
 
         public bool Equals(SaveData other)
@@ -85,7 +89,9 @@ namespace UnityEditor.Overlays
                 && snapCorner == other.snapCorner
                 && id == other.id
                 && index == other.index
-                && layout == other.layout;
+                && layout == other.layout
+                && size == other.size
+                && sizeOverridden == other.sizeOverridden;
         }
 
         public override bool Equals(object obj)
@@ -111,6 +117,8 @@ namespace UnityEditor.Overlays
                 hashCode = (hashCode * 397) ^ (id != null ? id.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ index;
                 hashCode = (hashCode * 397) ^ (int)layout;
+                hashCode = (hashCode * 397) ^ size.GetHashCode();
+                hashCode = (hashCode * 397) ^ sizeOverridden.GetHashCode();
                 return hashCode;
             }
         }
@@ -129,7 +137,7 @@ namespace UnityEditor.Overlays
                    $"\nindex: {index}" +
                    $"\nlayout: {layout}" +
                    $"\nsize: {size}" +
-                   $"\nsizeOverriden: {sizeOverriden}";
+                   $"\nsizeOverridden: {sizeOverridden}";
         }
     }
 
@@ -676,6 +684,16 @@ namespace UnityEditor.Overlays
                     data.snapCorner = SnapCorner.TopLeft;
                     data.layout = attrib.defaultLayout;
                     data.displayed = attrib.defaultDisplay;
+
+                    if (!float.IsNegativeInfinity(attrib.defaultWidth) && !float.IsNegativeInfinity(attrib.defaultHeight))
+                    {
+                        data.size = new Vector2(attrib.defaultWidth, attrib.defaultHeight);
+                        data.sizeOverridden = true;
+                    }
+                    else
+                    {
+                        data.sizeOverridden = false;
+                    }
                 }
             }
 

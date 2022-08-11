@@ -80,8 +80,6 @@ namespace UnityEditor.Animations
 
         internal BlendTree CreateBlendTreeChild(Vector2 position, float threshold)
         {
-            Undo.RecordObject(this, "Created BlendTree Child");
-
             BlendTree tree = new BlendTree();
             tree.name = "BlendTree";
             tree.hideFlags = HideFlags.HideInHierarchy;
@@ -89,6 +87,8 @@ namespace UnityEditor.Animations
                 AssetDatabase.AddObjectToAsset(tree, AssetDatabase.GetAssetPath(this));
 
             Undo.RegisterCreatedObjectUndo(tree, "Blend Tree Created");
+
+            Undo.RecordObject(this, "Created BlendTree Child");
 
             AddChild(tree, position, threshold);
             return tree;

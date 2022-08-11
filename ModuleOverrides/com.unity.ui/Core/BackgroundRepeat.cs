@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> background-repeat style property <see cref="IStyle.backgroundRepeat"/>.
     /// </summary>
-    public struct BackgroundRepeat : IEquatable<BackgroundRepeat>
+    public partial struct BackgroundRepeat : IEquatable<BackgroundRepeat>
     {
         /// <summary>
         /// Background repeat in the x direction.

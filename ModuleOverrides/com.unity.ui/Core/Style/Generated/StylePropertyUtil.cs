@@ -549,6 +549,12 @@ namespace UnityEngine.UIElements.StyleSheets
                         return true;
                     }
 
+                    if (string.Equals(value, "space-evenly", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Justify.SpaceEvenly;
+                        return true;
+                    }
+
                     break;
                 case StyleEnumType.Overflow:
                     if (string.Equals(value, "visible", StringComparison.OrdinalIgnoreCase))

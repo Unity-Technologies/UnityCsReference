@@ -1018,6 +1018,8 @@ namespace UnityEditorInternal
             if (controller == null)
             {
                 controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerForClip(newClip, animator.gameObject);
+
+                Undo.RecordObject(animator, "Set Controller");
                 UnityEditor.Animations.AnimatorController.SetAnimatorController(animator, controller);
 
                 if (controller != null)

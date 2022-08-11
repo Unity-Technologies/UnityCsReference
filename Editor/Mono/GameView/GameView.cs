@@ -113,6 +113,9 @@ namespace UnityEditor
             public static GUIContent suppressMessage = EditorGUIUtility.TrTextContent("This GameView is suppressed from rendering during Fullscreen.");
             public static GUIContent disableFullscreenMainDisplayFormatContent = EditorGUIUtility.TrTextContent("Press {0} to exit fullscreen.");
 
+            public const string k_StatsShortcutID = "Game View/Toggle Stats";
+            public const string k_StatsTooltip = "View general rendering information";
+
             public static GUIContent renderdocContent;
             public static GUIStyle gameViewBackgroundStyle;
 
@@ -823,6 +826,11 @@ namespace UnityEditor
                 ShortcutIntegration.ignoreWhenPlayModeFocused = GUILayout.Toggle(ShortcutIntegration.ignoreWhenPlayModeFocused,
                     ShortcutIntegration.ignoreWhenPlayModeFocused ? Styles.shortcutsOffContent : Styles.shortcutsOnContent, EditorStyles.toolbarButton);
 
+                Styles.statsContent.tooltip = Styles.k_StatsTooltip;
+                var shortcutString = KeyCombination.SequenceToString(ShortcutManager.instance.GetShortcutBinding(Styles.k_StatsShortcutID).keyCombinationSequence);
+                if(!string.IsNullOrWhiteSpace(shortcutString))
+                    Styles.statsContent.tooltip += $" ({shortcutString})";
+
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
 
                 if (EditorGUILayout.DropDownToggle(ref m_Gizmos, Styles.gizmosContent, EditorStyles.toolbarDropDownToggleRight))
@@ -836,6 +844,14 @@ namespace UnityEditor
             }
             GUILayout.EndHorizontal();
             MirrorFullscreenToolbarSettings();
+        }
+
+        [GameViewShortcut(Styles.k_StatsShortcutID)]
+        static void ToggleStats()
+        {
+            var gameView = GetLastFocusedPlayModeView() as GameView;
+            gameView.m_Stats = !gameView.m_Stats;
+            gameView.Repaint();
         }
 
         private int XRTranslateMirrorViewBlitModeToRenderMode(int mirrorViewBlitMode)

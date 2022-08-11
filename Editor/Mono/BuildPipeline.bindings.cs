@@ -320,6 +320,14 @@ namespace UnityEditor
 
         public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
+            if ((buildPlayerOptions.target == BuildTarget.StandaloneLinux64 ||
+                buildPlayerOptions.target == BuildTarget.StandaloneOSX ||
+                buildPlayerOptions.target == BuildTarget.StandaloneWindows) &&
+                buildPlayerOptions.subtarget == (int)StandaloneBuildSubtarget.Default)
+            {
+                buildPlayerOptions.subtarget = (int) EditorUserBuildSettings.standaloneBuildSubtarget;
+            }
+
             return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.subtarget, buildPlayerOptions.options, buildPlayerOptions.extraScriptingDefines);
         }
 

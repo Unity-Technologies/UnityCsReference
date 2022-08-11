@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> background-size style property <see cref="IStyle.BackgroundSize"/>.
     /// </summary>
-    public struct BackgroundSize : IEquatable<BackgroundSize>
+    public partial struct BackgroundSize : IEquatable<BackgroundSize>
     {
         /// <summary>
         /// Background size type

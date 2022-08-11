@@ -78,7 +78,7 @@ namespace UnityEngine.UIElements
             return recycledItem != null && dragAndDropController.CanStartDrag(new[] { recycledItem.index });
         }
 
-        protected override StartDragArgs StartDrag(Vector3 pointerPosition)
+        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition)
         {
             if (targetListView.selectedIndices.Any())
                 return dragAndDropController.SetupDragAndDrop(targetListView.selectedIndices);
@@ -90,7 +90,7 @@ namespace UnityEngine.UIElements
             return dragAndDropController.SetupDragAndDrop(new[] { recycledItem.index });
         }
 
-        protected override DragVisualMode UpdateDrag(Vector3 pointerPosition)
+        protected internal override DragVisualMode UpdateDrag(Vector3 pointerPosition)
         {
             var dragPosition = new DragPosition();
             var visualMode = GetVisualMode(pointerPosition, ref dragPosition);
@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements
             return dragAndDropController.HandleDragAndDrop(args);
         }
 
-        protected override void OnDrop(Vector3 pointerPosition)
+        protected internal override void OnDrop(Vector3 pointerPosition)
         {
             var dragPosition = new DragPosition();
             if (!TryGetDragPosition(pointerPosition, ref dragPosition))

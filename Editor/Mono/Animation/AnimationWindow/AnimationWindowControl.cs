@@ -695,7 +695,10 @@ namespace UnityEditorInternal
                     }
 
                     if (!m_CandidateClip.empty)
+                    {
+                        StartCandidateRecording();
                         AnimationMode.AddCandidates(state.activeRootGameObject, m_CandidateClip);
+                    }
 
                     m_ClipPlayable.SetSampleRate(playing ? -1 : state.activeAnimationClip.frameRate);
 

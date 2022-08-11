@@ -226,8 +226,22 @@ namespace UnityEditor
         {
             int n = messages.Length;
 
+            int errorCount = 0;
+            int warningCount = 0;
+
+            for (int i = 0; i < n; ++i)
+            {
+                ShaderCompilerMessageSeverity severity = messages[i].severity;
+
+                if (severity == ShaderCompilerMessageSeverity.Warning)
+                    warningCount++;
+                else if (severity == ShaderCompilerMessageSeverity.Error)
+                    errorCount++;
+            }
+
             GUILayout.Space(kSpace);
-            GUILayout.Label(string.Format("Errors ({0}):", n), EditorStyles.boldLabel);
+            GUILayout.Label(string.Format("({0}) Error{1} and ({2}) Warning{3}:", errorCount, (errorCount != 1) ? "s" : "", warningCount, (warningCount != 1) ? "s" : ""), EditorStyles.boldLabel);
+
             int errorListID = GUIUtility.GetControlID(kErrorViewHash, FocusType.Passive);
             float height = Mathf.Min(n * 20f + 40f, 150f);
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUISkin.current.box, GUILayout.MinHeight(height));

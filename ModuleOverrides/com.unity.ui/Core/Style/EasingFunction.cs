@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Determines how intermediate values are calculated for a transition.
     /// </summary>
-    public struct EasingFunction : IEquatable<EasingFunction>
+    public partial struct EasingFunction : IEquatable<EasingFunction>
     {
         /// <summary>
         /// The value of the <see cref="EasingMode"/>.

@@ -57,6 +57,12 @@ namespace UnityEngine
         BasedOnUserBounds = 3
     }
 
+    public enum AnimationUpdateMode
+    {
+        Normal = 0,
+        Fixed = 1
+    }
+
     internal enum AnimationEventSource
     {
         NoSource = 0,
@@ -169,6 +175,8 @@ namespace UnityEngine
         }
 
         extern public bool animatePhysics { get; set; }
+
+        extern public AnimationUpdateMode updateMode { get; set; }
 
         [System.Obsolete("Use cullingType instead")]
         public extern  bool animateOnlyIfVisible

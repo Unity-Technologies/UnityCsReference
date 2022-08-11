@@ -150,11 +150,6 @@ namespace UnityEditor
             TextureImporterFormat.BC7
         };
 
-        enum CookieMode
-        {
-            Spot = 0, Directional = 1, Point = 2
-        }
-
         readonly AnimBool m_ShowBumpGenerationSettings = new AnimBool();
         readonly AnimBool m_ShowCubeMapSettings = new AnimBool();
         readonly AnimBool m_ShowElementsAtlasSettings = new AnimBool();
@@ -275,6 +270,8 @@ namespace UnityEditor
             public readonly GUIContent textureFormat = EditorGUIUtility.TrTextContent("Format");
 
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout to Gray");
+            public readonly GUIContent mipmapFadeStartMip = EditorGUIUtility.TrTextContent("Fade Start Mip");
+            public readonly GUIContent mipmapFadeEndMip = EditorGUIUtility.TrTextContent("Fade End Mip");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Mip Streaming", "Only load larger mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
@@ -466,6 +463,11 @@ namespace UnityEditor
         SerializedProperty m_FlipbookColumns;
 
         SerializedProperty m_SingleChannelComponent;
+
+        SerializedProperty m_CookieLightType;
+
+        SerializedProperty m_PlatformSettingsArrProp;
+
         List<TextureImporterType> m_TextureTypes;
         internal SpriteImportMode spriteImportMode
         {
@@ -534,6 +536,10 @@ namespace UnityEditor
 
             m_FlipbookRows = serializedObject.FindProperty("m_FlipbookRows");
             m_FlipbookColumns = serializedObject.FindProperty("m_FlipbookColumns");
+
+            m_CookieLightType = serializedObject.FindProperty("m_CookieLightType");
+
+            m_PlatformSettingsArrProp = serializedObject.FindProperty("m_PlatformSettings");
 
             m_TextureTypes = new List<TextureImporterType>();
             foreach (var o in targets)
@@ -858,26 +864,11 @@ namespace UnityEditor
         void CookieGUI(TextureInspectorGUIElement guiElements)
         {
             EditorGUI.BeginChangeCheck();
-            CookieMode cm;
-            if (m_BorderMipMap.intValue > 0)
-                cm = CookieMode.Spot;
-            else if (m_TextureShape.intValue == (int)TextureImporterShape.TextureCube)
-                cm = CookieMode.Point;
-            else
-                cm = CookieMode.Directional;
 
-            cm = (CookieMode)EditorGUILayout.Popup(s_Styles.cookieType, (int)cm, s_Styles.cookieOptions);
+            EditorGUILayout.Popup(m_CookieLightType, s_Styles.cookieOptions, s_Styles.cookieType);
+
             if (EditorGUI.EndChangeCheck())
-                SetCookieMode(cm);
-
-            if (cm == CookieMode.Point)
-            {
-                m_TextureShape.intValue = (int)TextureImporterShape.TextureCube;
-            }
-            else
-            {
-                m_TextureShape.intValue = (int)TextureImporterShape.Texture2D;
-            }
+                SetCookieLightTypeDefaults((TextureImporterCookieLightType)m_CookieLightType.intValue);
         }
 
         void CubemapMappingGUI(TextureInspectorGUIElement guiElements)
@@ -889,14 +880,18 @@ namespace UnityEditor
                 {
                     using (new EditorGUI.DisabledScope(!m_IsPOT && m_NPOTScale.intValue == (int)TextureImporterNPOTScale.None))
                     {
+                        Rect controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                        GUIContent label = EditorGUI.BeginProperty(controlRect, s_Styles.cubemap, m_GenerateCubemap);
+
                         EditorGUI.showMixedValue = m_GenerateCubemap.hasMultipleDifferentValues || m_SeamlessCubemap.hasMultipleDifferentValues;
 
                         EditorGUI.BeginChangeCheck();
 
-                        int value = EditorGUILayout.IntPopup(s_Styles.cubemap, m_GenerateCubemap.intValue, s_Styles.cubemapOptions, s_Styles.cubemapValues2);
+                        int value = EditorGUI.IntPopup(controlRect, label, m_GenerateCubemap.intValue, s_Styles.cubemapOptions, s_Styles.cubemapValues2);
                         if (EditorGUI.EndChangeCheck())
                             m_GenerateCubemap.intValue = value;
 
+                        EditorGUI.EndProperty();
                         EditorGUI.indentLevel++;
 
                         // Convolution
@@ -911,7 +906,6 @@ namespace UnityEditor
                         ToggleFromInt(m_SeamlessCubemap, s_Styles.seamlessCubemap);
 
                         EditorGUI.indentLevel--;
-                        EditorGUI.showMixedValue = false;
                         EditorGUILayout.Space();
                     }
                 }
@@ -1020,15 +1014,7 @@ namespace UnityEditor
             bool showAlphaSource = true;
             if (ShouldDisplayGUIElement(guiElements, TextureInspectorGUIElement.SingleChannelComponent))
             {
-                EditorGUI.showMixedValue = m_SingleChannelComponent.hasMultipleDifferentValues;
-                EditorGUI.BeginChangeCheck();
-                int newSingleChannelComponent = EditorGUILayout.IntPopup(s_Styles.singleChannelComponent, m_SingleChannelComponent.intValue, s_Styles.singleChannelComponentOptions, s_Styles.singleChannelComponentValues);
-
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_SingleChannelComponent.intValue = newSingleChannelComponent;
-                }
+                EditorGUILayout.IntPopup(m_SingleChannelComponent, s_Styles.singleChannelComponentOptions, s_Styles.singleChannelComponentValues, s_Styles.singleChannelComponent);
 
                 showAlphaSource = (m_SingleChannelComponent.intValue == (int)TextureImporterSingleChannelComponent.Alpha);
             }
@@ -1041,15 +1027,7 @@ namespace UnityEditor
                 bool success = CountImportersWithAlpha(targets, out countWithAlpha);
                 success = success && CountImportersWithHDR(targets, out countHDR);
 
-                EditorGUI.showMixedValue = m_AlphaSource.hasMultipleDifferentValues;
-                EditorGUI.BeginChangeCheck();
-                int newAlphaUsage = EditorGUILayout.IntPopup(s_Styles.alphaSource, m_AlphaSource.intValue, s_Styles.alphaSourceOptions, s_Styles.alphaSourceValues);
-
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_AlphaSource.intValue = newAlphaUsage;
-                }
+                EditorGUILayout.IntPopup(m_AlphaSource, s_Styles.alphaSourceOptions, s_Styles.alphaSourceValues, s_Styles.alphaSource);
 
                 bool showAlphaIsTransparency = success && (TextureImporterAlphaSource)m_AlphaSource.intValue != TextureImporterAlphaSource.None && countHDR == 0; // AlphaIsTransparency is not properly implemented for HDR texture yet.
                 using (new EditorGUI.DisabledScope(assetTarget != null && !showAlphaIsTransparency))
@@ -1182,15 +1160,41 @@ namespace UnityEditor
                 ToggleFromInt(m_FadeOut, s_Styles.mipmapFadeOutToggle);
                 if (m_FadeOut.intValue > 0)
                 {
+                    const int minLimit = 0;
+                    const int maxLimit = 10;
+
+                    // For presets, we need two separate controls as we have 2 separate SerializedProperties.
                     EditorGUI.indentLevel++;
-                    EditorGUI.BeginChangeCheck();
-                    float min = m_MipMapFadeDistanceStart.intValue;
-                    float max = m_MipMapFadeDistanceEnd.intValue;
-                    EditorGUILayout.MinMaxSlider(s_Styles.mipmapFadeOut, ref min, ref max, 0, 10);
-                    if (EditorGUI.EndChangeCheck())
+                    if (Presets.Preset.IsEditorTargetAPreset(target))
                     {
-                        m_MipMapFadeDistanceStart.intValue = Mathf.RoundToInt(min);
-                        m_MipMapFadeDistanceEnd.intValue = Mathf.RoundToInt(max);
+                        // Fade Start
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.PropertyField(m_MipMapFadeDistanceStart, s_Styles.mipmapFadeStartMip);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_MipMapFadeDistanceStart.intValue = Math.Clamp(m_MipMapFadeDistanceStart.intValue, minLimit, m_MipMapFadeDistanceEnd.intValue);
+                        }
+
+                        // Fade End
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.PropertyField(m_MipMapFadeDistanceEnd, s_Styles.mipmapFadeEndMip);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_MipMapFadeDistanceEnd.intValue = Math.Clamp(m_MipMapFadeDistanceEnd.intValue, m_MipMapFadeDistanceStart.intValue, maxLimit);
+                        }
+                    }
+                    else
+                    {
+                        // Fade Range
+                        EditorGUI.BeginChangeCheck();
+                        float min = m_MipMapFadeDistanceStart.intValue;
+                        float max = m_MipMapFadeDistanceEnd.intValue;
+                        EditorGUILayout.MinMaxSlider(s_Styles.mipmapFadeOut, ref min, ref max, minLimit, maxLimit);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_MipMapFadeDistanceStart.intValue = Mathf.RoundToInt(min);
+                            m_MipMapFadeDistanceEnd.intValue = Mathf.RoundToInt(max);
+                        }
                     }
                     EditorGUI.indentLevel--;
                 }
@@ -1310,13 +1314,7 @@ namespace UnityEditor
             }
 
             // Filter mode
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = m_FilterMode.hasMultipleDifferentValues;
-            FilterMode filter = (FilterMode)m_FilterMode.intValue;
-            filter = (FilterMode)EditorGUILayout.IntPopup(s_Styles.filterMode, (int)filter, s_Styles.filterModeOptions, m_FilterModeOptions);
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
-                m_FilterMode.intValue = (int)filter;
+            EditorGUILayout.IntPopup(m_FilterMode, s_Styles.filterModeOptions, m_FilterModeOptions, s_Styles.filterMode);
 
             // Aniso
             bool showAniso = (FilterMode)m_FilterMode.intValue != FilterMode.Point
@@ -1325,14 +1323,9 @@ namespace UnityEditor
                 && (TextureImporterShape)m_TextureShape.intValue != TextureImporterShape.Texture3D;
             using (new EditorGUI.DisabledScope(!showAniso))
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = m_Aniso.hasMultipleDifferentValues;
-                int aniso = EditorGUILayout.IntSlider("Aniso Level", m_Aniso.intValue, 0, 16);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                    m_Aniso.intValue = aniso;
+                EditorGUILayout.IntSlider(m_Aniso, 0, 16, "Aniso Level");
 
-                TextureInspector.DoAnisoGlobalSettingNote(aniso);
+                TextureInspector.DoAnisoGlobalSettingNote(m_Aniso.intValue);
             }
         }
 
@@ -1348,13 +1341,13 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Texture Usage
+            int oldTextureType = m_TextureType.intValue;
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = m_TextureType.hasMultipleDifferentValues;
-            int newTextureType = EditorGUILayout.IntPopup(s_Styles.textureTypeTitle, m_TextureType.intValue, s_Styles.textureTypeOptions, s_Styles.textureTypeValues);
-            EditorGUI.showMixedValue = false;
+            EditorGUILayout.IntPopup(m_TextureType, s_Styles.textureTypeOptions, s_Styles.textureTypeValues, s_Styles.textureTypeTitle);
             // (case 857001) EndChangeCheck will return true even if the same value is selected.
             // Consequently the sprite will be reset to Single mode and looks very confusing to the user.
-            if (EditorGUI.EndChangeCheck() && (m_TextureType.intValue != newTextureType))
+            int newTextureType = m_TextureType.intValue;
+            if (EditorGUI.EndChangeCheck() && (oldTextureType != newTextureType))
             {
                 // please note that in GetSerializedPropertySettings() we will init TextureImporterSettings from current state
                 //   and at this point m_TextureType still has *old* value
@@ -1364,7 +1357,6 @@ namespace UnityEditor
                 TextureImporterSettings settings = GetSerializedPropertySettings();
                 settings.ApplyTextureType((TextureImporterType)newTextureType);
                 settings.textureType = (TextureImporterType)newTextureType;
-                m_TextureType.intValue = newTextureType;
 
                 SetSerializedPropertySettings(settings);
 
@@ -1375,12 +1367,7 @@ namespace UnityEditor
             int[] shapeArray = s_Styles.textureShapeValuesDictionnary[m_TextureTypeGUIElements[(int)newTextureType].shapeCaps];
             using (new EditorGUI.DisabledScope(shapeArray.Length == 1 || m_TextureType.intValue == (int)TextureImporterType.Cookie)) // Cookie is a special case because the cookie type drives the shape of the texture
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = m_TextureShape.hasMultipleDifferentValues;
-                int newTextureShape = EditorGUILayout.IntPopup(s_Styles.textureShape, m_TextureShape.intValue, s_Styles.textureShapeOptionsDictionnary[m_TextureTypeGUIElements[(int)newTextureType].shapeCaps], s_Styles.textureShapeValuesDictionnary[m_TextureTypeGUIElements[(int)newTextureType].shapeCaps]);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                    m_TextureShape.intValue = newTextureShape;
+                EditorGUILayout.IntPopup(m_TextureShape, s_Styles.textureShapeOptionsDictionnary[m_TextureTypeGUIElements[(int)newTextureType].shapeCaps], s_Styles.textureShapeValuesDictionnary[m_TextureTypeGUIElements[(int)newTextureType].shapeCaps], s_Styles.textureShape);
             }
 
             // Switching usage can lead to a subset of the current available shapes.
@@ -1436,6 +1423,7 @@ namespace UnityEditor
             TextureSettingsGUI();
 
             BaseTextureImportPlatformSettings.InitPlatformSettings(m_PlatformSettings.ConvertAll<BaseTextureImportPlatformSettings>(x => x as BaseTextureImportPlatformSettings));
+            m_PlatformSettings.ForEach(settings => settings.CacheSerializedProperties(m_PlatformSettingsArrProp));
             GUILayout.Space(10);
 
             //Show platform grouping
@@ -1553,23 +1541,26 @@ namespace UnityEditor
             }
         }
 
-        void SetCookieMode(CookieMode cm)
+        void SetCookieLightTypeDefaults(TextureImporterCookieLightType cookieLightType)
         {
-            switch (cm)
+            // Note that, out of all of these, only the TextureShape is truly strongly enforced.
+            // The other settings are nothing more than recommended defaults and can be modified
+            // by the user at any time.
+            switch (cookieLightType)
             {
-                case CookieMode.Spot:
+                case TextureImporterCookieLightType.Spot:
                     m_BorderMipMap.intValue = 1;
                     m_WrapU.intValue = m_WrapV.intValue = m_WrapW.intValue = (int)TextureWrapMode.Clamp;
                     m_GenerateCubemap.intValue = (int)TextureImporterGenerateCubemap.AutoCubemap;
                     m_TextureShape.intValue = (int)TextureImporterShape.Texture2D;
                     break;
-                case CookieMode.Point:
+                case TextureImporterCookieLightType.Point:
                     m_BorderMipMap.intValue = 0;
                     m_WrapU.intValue = m_WrapV.intValue = m_WrapW.intValue = (int)TextureWrapMode.Clamp;
                     m_GenerateCubemap.intValue = (int)TextureImporterGenerateCubemap.Spheremap;
                     m_TextureShape.intValue = (int)TextureImporterShape.TextureCube;
                     break;
-                case CookieMode.Directional:
+                case TextureImporterCookieLightType.Directional:
                     m_BorderMipMap.intValue = 0;
                     m_WrapU.intValue = m_WrapV.intValue = m_WrapW.intValue = (int)TextureWrapMode.Repeat;
                     m_GenerateCubemap.intValue = (int)TextureImporterGenerateCubemap.AutoCubemap;

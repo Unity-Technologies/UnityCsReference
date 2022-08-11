@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"flex-wrap", "nowrap | wrap | wrap-reverse"},
             {"font-size", "<length-percentage>"},
             {"height", "<length-percentage> | auto"},
-            {"justify-content", "flex-start | flex-end | center | space-between | space-around"},
+            {"justify-content", "flex-start | flex-end | center | space-between | space-around | space-evenly"},
             {"left", "<length-percentage> | auto"},
             {"letter-spacing", "<length>"},
             {"margin", "[ <length-percentage> | auto ]{1,4}"},

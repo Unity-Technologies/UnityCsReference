@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Unity.Properties;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -19,12 +20,15 @@ namespace UnityEngine.UIElements
     {
         internal static CustomStyleAccess s_CustomStyleAccess = new CustomStyleAccess();
         internal InlineStyleAccess inlineStyleAccess;
+        internal ResolvedStyleAccess resolvedStyleAccess;
+
         /// <summary>
         /// Reference to the style object of this element.
         /// </summary>
         /// <remarks>
         /// Contains data computed from USS files or inline styles written to this object in C#.
         /// </remarks>
+        [CreateProperty]
         public IStyle style
         {
             get
@@ -33,6 +37,21 @@ namespace UnityEngine.UIElements
                     inlineStyleAccess = new InlineStyleAccess(this);
 
                 return inlineStyleAccess;
+            }
+        }
+
+        /// <summary>
+        /// Returns the <see cref="VisualElement"/> resolved style values.
+        /// </summary>
+        [CreateProperty]
+        public IResolvedStyle resolvedStyle
+        {
+            get
+            {
+                if (resolvedStyleAccess == null)
+                    resolvedStyleAccess = new ResolvedStyleAccess(this);
+
+                return resolvedStyleAccess;
             }
         }
 
@@ -98,7 +117,7 @@ namespace UnityEngine.UIElements
             styleSheets.Remove(sheetAsset);
         }
 
-        private StyleFloat ResolveLengthValue(Length length, bool isRow)
+        internal StyleFloat ResolveLengthValue(Length length, bool isRow)
         {
             if (length.IsAuto())
                 return new StyleFloat(StyleKeyword.Auto);
@@ -117,7 +136,7 @@ namespace UnityEngine.UIElements
             return length.value * parentSize / 100;
         }
 
-        private Vector3 ResolveTranslate()
+        internal Vector3 ResolveTranslate()
         {
             var translationOperation = computedStyle.translate;
             float x;
@@ -148,7 +167,7 @@ namespace UnityEngine.UIElements
             return new Vector3(x, y, z);
         }
 
-        private Vector3 ResolveTransformOrigin()
+        internal Vector3 ResolveTransformOrigin()
         {
             var transformOrigin = computedStyle.transformOrigin;
 

@@ -496,17 +496,12 @@ namespace UnityEditor.SceneManagement
             m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(m_PrefabAssetPath, scene);
             if (m_PrefabContentsRoot != null)
             {
-                // Corresponds to which breadcrumb this is.
-                int stagePriority = StageNavigationManager.instance.stageHistory.IndexOf(this);
-
                 if (isUIPrefab)
                 {
                     m_PrefabContentsRoot.GetComponentsInChildren<Canvas>(true, s_ReusableCanvasList);
-                    foreach (Canvas canvas in s_ReusableCanvasList)
-                        canvas.stagePriority = (byte)stagePriority;
 
                     if (m_Mode == Mode.InIsolation && m_PrefabContentsRoot.transform.parent == null)
-                        PrefabStageUtility.HandleUIReparentingIfNeeded(m_PrefabContentsRoot, stagePriority);
+                        PrefabStageUtility.HandleUIReparentingIfNeeded(m_PrefabContentsRoot, 0);
                 }
 
                 m_PrefabFileIcon = DeterminePrefabFileIconFromInstanceRootGameObject();
@@ -545,7 +540,6 @@ namespace UnityEditor.SceneManagement
                             {
                                 dummyCanvas.sortingOrder = instanceCanvas.sortingOrder;
                                 dummyCanvas.referencePixelsPerUnit = instanceCanvas.referencePixelsPerUnit;
-                                dummyCanvas.stagePriority = (byte)stagePriority;
                             }
                         }
 

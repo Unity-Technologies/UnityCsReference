@@ -68,7 +68,7 @@ namespace UnityEditor
                 MonoScript monoScript = m_TargetObject as MonoScript;
                 if (monoScript != null)
                 {
-                    // If callback is set then it is the callback owner responsiblity to call CopyMonoScriptIconToImporters
+                    // If callback is set then it is the callback owner's responsiblity to copy the script icon to the importer
                     if (m_MonoScriptIconChangedCallback != null)
                         m_MonoScriptIconChangedCallback(monoScript);
                     else

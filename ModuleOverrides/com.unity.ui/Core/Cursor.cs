@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> cursor style property <see cref="IStyle.cursor"/>.
     /// </summary>
-    public struct Cursor : IEquatable<Cursor>
+    public partial struct Cursor : IEquatable<Cursor>
     {
         /// <summary>
         /// The texture to use for the cursor style. To use a texture as a cursor, import the texture with "Read/Write enabled" in the texture importer (or using the "Cursor" defaults).
