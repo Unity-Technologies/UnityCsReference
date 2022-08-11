@@ -71,7 +71,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal ITextEdition edition => this;
 
-        internal TextEditingManipulator m_EditingManipulator;
+        internal TextEditingManipulator editingManipulator;
 
         bool m_Multiline;
 
@@ -102,10 +102,10 @@ namespace UnityEngine.UIElements
                 if (!value)
                 {
                     isSelectable = true;
-                    m_EditingManipulator = new TextEditingManipulator(this);
+                    editingManipulator = new TextEditingManipulator(this);
                 }
                 else
-                    m_EditingManipulator = null;
+                    editingManipulator = null;
 
                 m_IsReadOnly = value;
             }
@@ -169,7 +169,7 @@ namespace UnityEngine.UIElements
 
         DropdownMenuAction.Status PasteActionStatus(DropdownMenuAction a)
         {
-            var canPaste = m_EditingManipulator.editingUtilities.CanPaste();
+            var canPaste = editingManipulator.editingUtilities.CanPaste();
             return enabledInHierarchy
                 ? canPaste ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
                 : DropdownMenuAction.Status.Hidden;
@@ -185,10 +185,10 @@ namespace UnityEngine.UIElements
             if (isSelectable)
             {
                 // Selecting is currently not supported with softKeyboard.
-                if (!m_EditingManipulator?.touchScreenTextField ?? true)
+                if (!editingManipulator?.touchScreenTextField ?? true)
                     m_SelectingManipulator.ExecuteDefaultActionAtTarget(evt);
                 if (!edition.isReadOnly)
-                    m_EditingManipulator?.ExecuteDefaultActionAtTarget(evt);
+                    editingManipulator?.ExecuteDefaultActionAtTarget(evt);
                 elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())

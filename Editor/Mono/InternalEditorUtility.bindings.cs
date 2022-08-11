@@ -891,9 +891,6 @@ namespace UnityEditorInternal
         [FreeFunction("GetUnityAssembliesManaged")]
         extern private static PrecompiledAssembly[] GetUnityAssembliesInternal(bool buildingForEditor, BuildTarget target);
 
-        [FreeFunction("GetPrecompiledAssembliesManaged")]
-        extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target, string[] extraScriptingDefines = null);
-
         [FreeFunction("GetPrecompiledAssemblyPathsManaged")]
         extern internal static string[] GetPrecompiledAssemblyPaths();
 

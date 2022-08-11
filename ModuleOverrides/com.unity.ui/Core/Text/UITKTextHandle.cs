@@ -50,11 +50,6 @@ namespace UnityEngine.UIElements
             return textHandle.GetCursorPositionFromStringIndexUsingLineHeight(index);
         }
 
-        public Vector2 GetCursorPositionFromIndexUsingCharacterHeight(int index)
-        {
-            return textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(index);
-        }
-
         public float ComputeTextWidth(string textToMeasure, bool wordWrap, float width, float height)
         {
             ConvertUssToTextGenerationSettings(s_LayoutSettings);
@@ -162,6 +157,7 @@ namespace UnityEngine.UIElements
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
+
             tgs.wordWrap = style.whiteSpace == WhiteSpace.Normal;
 
             tgs.wordWrappingRatio = 0.4f;

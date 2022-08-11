@@ -382,4 +382,12 @@ namespace UnityEditor
         Zero = 8,
         One = 9
     }
+
+    // Cookie light type mode for [[TextureImporter]].
+    internal enum TextureImporterCookieLightType
+    {
+        Spot = 0,
+        Directional = 1,
+        Point = 2
+    }
 }

@@ -220,24 +220,17 @@ namespace UnityEngine.UIElements
                 get { return textEdition.multiline; }
                 set
                 {
-                    textEdition.multiline = value;
-                    if (!value)
-                        text = text.Replace("\n", "");
-                    SetTextAlign();
-                }
-            }
+                    if (textEdition.multiline == value)
+                        return;
 
-            private void SetTextAlign()
-            {
-                if (multiline)
-                {
-                    RemoveFromClassList(singleLineInputUssClassName);
-                    AddToClassList(multilineInputUssClassName);
-                }
-                else
-                {
-                    RemoveFromClassList(multilineInputUssClassName);
-                    AddToClassList(singleLineInputUssClassName);
+                    textEdition.multiline = value;
+                    if (value)
+                        SetMultiline();
+                    else
+                    {
+                        text = text.Replace("\n", "");
+                        SetSingleLine();
+                    }
                 }
             }
 

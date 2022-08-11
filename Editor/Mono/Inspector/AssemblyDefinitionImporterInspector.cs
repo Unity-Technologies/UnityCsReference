@@ -675,7 +675,10 @@ namespace UnityEditor
             if (selectedIndex > 0)
             {
                 var selectedAssemblyName = m_PrecompileReferenceListEntry[selectedIndex];
-                var assembly = m_AssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
+                var assembly = m_AssemblyProvider.GetPrecompiledAssemblies(
+                    EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                    EditorUserBuildSettings.activeBuildTargetGroup,
+                    EditorUserBuildSettings.activeBuildTarget)
                     .First(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
                 nameProp.stringValue = selectedAssemblyName;
                 pathProp.stringValue = assembly.Path;
@@ -800,7 +803,10 @@ namespace UnityEditor
             }
 
             var nameToPrecompiledReference = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider
-                .GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget)
+                .GetPrecompiledAssemblies(
+                    EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                    EditorUserBuildSettings.activeBuildTargetGroup,
+                    EditorUserBuildSettings.activeBuildTarget)
                 .Where(x => (x.Flags & AssemblyFlags.UserAssembly) == AssemblyFlags.UserAssembly)
                 .Distinct()
                 .ToDictionary(x => AssetPath.GetFileName(x.Path), x => x);
