@@ -76,7 +76,6 @@ namespace UnityEditor
 
             public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Menu", "Additional Options");
             public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)");
-            public const string linkToManual = "https://docs.unity3d.com/Manual/ProfilerWindow.html";
             public static readonly GUIContent preferencesButtonContent = EditorGUIUtility.TrTextContent("Preferences", "Open User Preferences for the Profiler");
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors");
@@ -1032,7 +1031,8 @@ namespace UnityEditor
             // Open Manual
             if (GUILayout.Button(Styles.helpButtonContent, EditorStyles.toolbarButton))
             {
-                Application.OpenURL(Styles.linkToManual);
+                var help = Help.FindHelpNamed("ProfilerWindow");
+                Application.OpenURL(help);
             }
 
             // Overflow Menu

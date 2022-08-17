@@ -167,5 +167,10 @@ namespace UnityEditor.Build
         {
             return GetValidPlatforms(false);
         }
+
+        public static string[] GetValidPlatformNames()
+        {
+            return instance.GetValidPlatforms().ConvertAll(platform => platform.name).ToArray();
+        }
     }
 }

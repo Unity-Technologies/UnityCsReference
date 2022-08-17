@@ -856,6 +856,11 @@ namespace UnityEditor.Connect
                 {
                     newLinkButton.clicked += () =>
                     {
+                        EditorAnalytics.SendEventNewLink(new ProjectBindManager.ProjectBindState()
+                        {
+                            bound = false,
+                            projectName = UnityConnect.instance.projectInfo.projectName
+                        });
                         stateMachine.ProcessEvent(Event.Unbinding);
                     };
                 }
@@ -864,6 +869,11 @@ namespace UnityEditor.Connect
                 {
                     refreshAccessButton.clicked += () =>
                     {
+                        EditorAnalytics.SendEventRefreshAccess(new ProjectBindManager.ProjectBindState()
+                        {
+                            bound = false,
+                            projectName = UnityConnect.instance.projectInfo.projectName
+                        });
                         NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_PermissionRefreshedMessage));
                         UnityConnect.instance.RefreshProject();
                     };

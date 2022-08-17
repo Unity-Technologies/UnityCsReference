@@ -60,7 +60,13 @@ namespace UnityEditor
         private static IEnumerable GetFilteredInternal(System.Type type, SelectionMode mode)
         {
             if (typeof(Component).IsAssignableFrom(type) || type.IsInterface)
-                return GetTransforms(mode).Select(t => t.GetComponent(type)).Where(c => c != null);
+            {
+                return GetTransforms(mode).Select(t =>
+                {
+                    t.TryGetComponent(type, out var component);
+                    return component;
+                }).Where(c => !ReferenceEquals(c, null));
+            }
             else if (typeof(GameObject).IsAssignableFrom(type))
                 return GetTransforms(mode).Select(t => t.gameObject);
             else

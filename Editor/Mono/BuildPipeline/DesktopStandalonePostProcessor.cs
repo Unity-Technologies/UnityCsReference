@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using NiceIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 {
     readonly bool m_HasIl2CppPlayers;
     protected const string k_MonoDirectoryName = "MonoBleedingEdge";
+    private const string kSettingCreateSolution = "CreateSolution";
 
     protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers)
     {
@@ -33,7 +35,61 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                 return "Currently selected scripting backend (IL2CPP) is not installed.";
         }
 
-        return null;
+        NPath buildFolder = new NPath(EditorUserBuildSettings.GetBuildLocation(target)).Parent;
+
+        // Skip the following checks when building to an empty folder
+        if (buildFolder.Contents().Length == 0)
+            return base.PrepareForBuild(options, target);
+
+        // ... Otherwise continue with backend and vs .sln creation checks
+        ScriptingImplementation selectedScriptingImplementation = PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(target));
+
+        string selectedScriptingBackend = Enum.GetName(typeof(ScriptingImplementation), selectedScriptingImplementation);
+        string originalScriptingBackend = "";
+
+        bool builtWithCreateVsSln = false;
+
+        if (buildFolder.Combine("GameAssembly.dll").FileExists())
+        {
+            originalScriptingBackend = Enum.GetName(typeof(ScriptingImplementation), ScriptingImplementation.IL2CPP);
+        }
+        else if (buildFolder.Combine("Il2CppOutputProject").DirectoryExists())
+        {
+            originalScriptingBackend = Enum.GetName(typeof(ScriptingImplementation), ScriptingImplementation.IL2CPP);
+            builtWithCreateVsSln = true;
+        }
+        else if (new NPath($"{buildFolder}/MonoBleedingEdge").DirectoryExists())
+        {
+            originalScriptingBackend = Enum.GetName(typeof(ScriptingImplementation), ScriptingImplementation.Mono2x);
+        }
+        else if (new[] { "x64/Debug", "x64/Release", "x64/Master", "x86/Debug", "x86/Release", "x86/Master",
+                }.Any(subFolder => new NPath($"{buildFolder}/build/bin/{subFolder}/MonoBleedingEdge").DirectoryExists()))
+        {
+            originalScriptingBackend = Enum.GetName(typeof(ScriptingImplementation), ScriptingImplementation.Mono2x);
+            builtWithCreateVsSln = true;
+        }
+        else
+        {
+            // None determinate state - We don't recognise the content of the target folder so the following check aren't reliable,
+            //  just continue with the build process as normal.
+            return base.PrepareForBuild(options, target);
+        }
+
+        bool shouldCreateSln = EditorUserBuildSettings.GetPlatformSettings(DesktopStandaloneUserBuildSettings.PlatformName, kSettingCreateSolution).ToLower() == "true";
+
+        if (shouldCreateSln != builtWithCreateVsSln)
+        {
+            throw new BuildFailedException(string.Format("Build path contains a project previously built {0} the \"Create Visual Studio Solution\" option." +
+                "\nPlease use an alternative destination or change the option", builtWithCreateVsSln ? "with" : "without"));
+        }
+
+        if (originalScriptingBackend.Length > 0 && originalScriptingBackend.Equals(selectedScriptingBackend) == false)
+        {
+            throw new BuildFailedException("Build path contains a project previously built with the " + originalScriptingBackend + " scripting backend, the current setting is for " + selectedScriptingBackend +
+                "\nPlease use an alternative destination or change the configured scripting backend");
+        }
+
+        return base.PrepareForBuild(options, target);
     }
 
     public override void PostProcess(BuildPostProcessArgs args)

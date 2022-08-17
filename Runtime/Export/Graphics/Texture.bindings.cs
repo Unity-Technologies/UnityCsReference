@@ -175,6 +175,12 @@ namespace UnityEngine
     {
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
+        extern public bool ignoreMipmapLimit
+        {
+            [NativeName("IgnoreMasterTextureLimit")] get;
+            [NativeName("SetIgnoreMasterTextureLimitAndReload")] set;
+        }
+
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D redTexture { get; }
