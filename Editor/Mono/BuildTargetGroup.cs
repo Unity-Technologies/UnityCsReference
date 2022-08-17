@@ -108,4 +108,22 @@ namespace UnityEditor
 
         PS5 = 33,
     }
+
+    internal static class BuildTargetGroupExtensions
+    {
+        public static string AsBuildTargetGroupShortName(this BuildTargetGroup group)
+        {
+            // this maps the same names as defined in BuildTargetGroupNames.h
+#pragma warning disable CS0618 // Type or member is obsolete
+            return group switch
+            {
+                BuildTargetGroup.iOS => "iPhone",
+                BuildTargetGroup.WSA => "Windows Store Apps",
+                BuildTargetGroup.WP8 => "Windows Store Apps",
+                BuildTargetGroup.Switch => "Nintendo Switch",
+                _ => group.ToString()
+            };
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+    }
 }

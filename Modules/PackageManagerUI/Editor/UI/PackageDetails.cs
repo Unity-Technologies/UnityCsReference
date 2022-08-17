@@ -1245,28 +1245,20 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
+        private void ViewUrlCascade(string[] urls,IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
         {
-            var onlineUrls = getUrl(m_IOProxy, version, false);
-            string EmptyUrl(IOProxy IOProxy, IPackageVersion version, bool offline) => string.Empty;
-
-            if (m_Application.isInternetReachable)
-            {
-                if (onlineUrls.Length == 0)
+            var onlineUrls = getUrl(m_IOProxy, version, true);
+            if (urls.Length > 0)
+            { 
+                OpenWebUrl(urls[0], () =>
                 {
-                    ViewOfflineDocs(version, EmptyUrl, messageOnNotFound);
-                    return;
-                }
-
-                OpenWebUrl(onlineUrls[0], () =>
-                {
-                    string[] GetUrls(IOProxy IOProxy, IPackageVersion version, bool offline) => new List<string>(onlineUrls).Skip(1).ToArray();
-                    ViewUrl(version, GetUrls, messageOnNotFound);
+                   ViewUrlCascade(urls.ToList().Skip(1).ToArray(), version, getUrl, messageOnNotFound);
                 });
             }
             else
             {
-                ViewOfflineDocs(version, EmptyUrl, messageOnNotFound);
+                string GetUrls(IOProxy IOProxy, IPackageVersion version, bool offline) => onlineUrls[0];
+                ViewOfflineDocs(version, GetUrls, messageOnNotFound);
             }
         }
 
@@ -1282,6 +1274,20 @@ namespace UnityEditor.PackageManager.UI
                 return;
             }
             ViewOfflineDocs(version, getUrl, messageOnNotFound);
+        }
+
+        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
+        {
+            var onlineUrl = getUrl(m_IOProxy, version, false);
+            if (m_Application.isInternetReachable)
+            {
+                ViewUrlCascade(onlineUrl, version, getUrl, messageOnNotFound);
+            }
+            else
+            {
+                string GetUrls(IOProxy IOProxy, IPackageVersion version, bool offline) => onlineUrl[0];
+                ViewOfflineDocs(version, GetUrls, messageOnNotFound);
+            }
         }
 
         private void ViewDocClick()

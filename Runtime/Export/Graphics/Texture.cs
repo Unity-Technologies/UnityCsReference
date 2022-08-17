@@ -701,7 +701,7 @@ namespace UnityEngine
 
         public bool Resize(int width, int height, TextureFormat format, bool hasMipMap)
         {
-            return ResizeWithFormatImpl(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, activeTextureColorSpace == ColorSpace.Linear), hasMipMap);
+            return ResizeWithFormatImpl(width, height, GraphicsFormatUtility.GetGraphicsFormat(format, activeTextureColorSpace == ColorSpace.Gamma), hasMipMap);
         }
 
         public bool Resize(int width, int height, GraphicsFormat format, bool hasMipMap)

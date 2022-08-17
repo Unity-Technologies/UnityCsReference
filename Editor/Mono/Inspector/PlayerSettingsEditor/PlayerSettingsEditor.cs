@@ -2300,7 +2300,7 @@ namespace UnityEditor
 
         private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup.AsBuildTargetGroupShortName(), out var entry))
                 return (ApiCompatibilityLevel)entry.FindPropertyRelative("second").intValue;
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
@@ -2376,7 +2376,7 @@ namespace UnityEditor
 
                             if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
                             {
-                                m_APICompatibilityLevel.SetMapValue(targetGroup.ToString(), (int)currentAPICompatibilityLevel);
+                                m_APICompatibilityLevel.SetMapValue(targetGroup.AsBuildTargetGroupShortName(), (int)currentAPICompatibilityLevel);
                                 serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
 
                                 if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)

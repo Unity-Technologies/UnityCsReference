@@ -20,13 +20,8 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public sealed partial class TextureImporter : AssetImporter
     {
-        private string GetFixedPlatformName(string platform)
-        {
-            var targetGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
-            if (targetGroup != BuildTargetGroup.Unknown)
-                return BuildPipeline.GetBuildTargetGroupName(targetGroup);
-            return platform;
-        }
+        [FreeFunction]
+        private static extern string GetFixedPlatformName(string platform);
 
         [Obsolete("textureFormat is no longer accessible at the TextureImporter level. For old 'simple' formats use the textureCompression property for the equivalent automatic choice (Uncompressed for TrueColor, Compressed and HQCommpressed for 16 bits). For platform specific formats use the [[PlatformTextureSettings]] API. Using this setter will setup various parameters to match the new automatic system as well as possible. Getter will return the last value set.")]
         public extern TextureImporterFormat textureFormat
@@ -98,7 +93,9 @@ namespace UnityEditor
             return GetPlatformTextureSettings(platform, out maxTextureSize, out textureFormat, out compressionQuality, out etc1AlphaSplitEnabled);
         }
 
-        // C++ implementation will return default platform if the requested platform does not have any settings yet.
+        // C++ implementation will return default platform if the requested platform is not valid.
+        // See "Editor/Mono/BuildPipeline/BuildPlatform.cs" -> "GetValidPlatformNames" for more
+        // information regarding what is considered to be a valid platform.
         [NativeName("GetPlatformTextureSettings")]
         private extern TextureImporterPlatformSettings GetPlatformTextureSetting_Internal(string platform);
 
