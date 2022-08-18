@@ -3920,9 +3920,6 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSelection.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSelection.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSettingsProvider.cs">
-      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\BuilderSettingsProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocument.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Document\BuilderDocument.cs</Link>
     </Compile>
@@ -4612,6 +4609,12 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIElementsViewImporter.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UIElementsViewImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIToolkitProjectSettings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIToolkitProjectSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIToolkitSettingsProvider.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UIToolkitSettingsProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>

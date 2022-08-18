@@ -47,7 +47,6 @@ namespace Unity.UI.Builder
         public const string IconsResourcesPath = UIBuilderPackageRootPath + "/Icons";
         public const string UIBuilderTestsRootPath = "Assets/Editor";
         public const string LibraryUIPath = UIBuilderPackagePath + "/Library";
-        public const string SettingsUIPath = UIBuilderPackagePath + "/Settings";
         public const string LibraryUssPathNoExt = UIBuilderPackagePath + "/Library/BuilderLibrary";
         public const string InspectorUssPathNoExt = UIBuilderPackagePath + "/Inspector/BuilderInspector";
 

@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
         internal bool selectAllOnMouseUp { get; set; }
 
         /// <summary>
-        /// The position of the text cursor inside the element"/>.
+        /// The position of the text cursor inside the element.
         /// </summary>
         public Vector2 cursorPosition { get; }
         internal float lineHeightAtCursorPosition  { get; }

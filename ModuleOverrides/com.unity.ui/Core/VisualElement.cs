@@ -1144,7 +1144,7 @@ namespace UnityEngine.UIElements
                 out m_DefaultActionAtTargetEventCategories);
         }
 
-        [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(PointerEnterEvent),
+        [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(MouseCaptureOutEvent), typeof(PointerEnterEvent),
             typeof(PointerLeaveEvent), typeof(PointerCaptureEvent), typeof(PointerCaptureOutEvent),
             typeof(BlurEvent), typeof(FocusEvent), typeof(TooltipEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
@@ -1155,7 +1155,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId())
+            if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId() || evt.eventTypeId == MouseCaptureOutEvent.TypeId())
             {
                 // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
                 // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
@@ -2099,16 +2099,36 @@ namespace UnityEngine.UIElements
 
         private void UpdateCursorStyle(long eventType)
         {
-            if (elementPanel != null)
+            if (elementPanel == null)
+                return;
+
+            if (eventType == MouseCaptureOutEvent.TypeId())
             {
-                if (eventType == MouseOverEvent.TypeId() && elementPanel.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
+                // Make sure to update the cursor when an element release the capture
+                var elementUnderPointer = elementPanel.GetTopElementUnderPointer(PointerId.mousePointerId);
+                if (elementUnderPointer != null)
                 {
-                    elementPanel.cursorManager.SetCursor(computedStyle.cursor);
+                    elementPanel.cursorManager.SetCursor(elementUnderPointer.computedStyle.cursor);
                 }
-                else if (eventType == MouseOutEvent.TypeId())
+                else
                 {
                     elementPanel.cursorManager.ResetCursor();
                 }
+                return;
+            }
+
+            var capturingElement = elementPanel.GetCapturingElement(PointerId.mousePointerId);
+            if (capturingElement != null && capturingElement != this)
+                return;
+
+            if (eventType == MouseOverEvent.TypeId() && elementPanel.GetTopElementUnderPointer(PointerId.mousePointerId) == this)
+            {
+                elementPanel.cursorManager.SetCursor(computedStyle.cursor);
+            }
+            // Only allows cursor reset when mouse capture is released
+            else if (eventType == MouseOutEvent.TypeId() && capturingElement == null)
+            {
+                elementPanel.cursorManager.ResetCursor();
             }
         }
 

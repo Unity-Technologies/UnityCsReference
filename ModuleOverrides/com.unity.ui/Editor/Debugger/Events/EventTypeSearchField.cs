@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEditor.UIElements.Debugger
 {

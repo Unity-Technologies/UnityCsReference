@@ -13,10 +13,10 @@ namespace Unity.Properties
     public static class TypeTraits
     {
         /// <summary>
-        /// Returns <see lanword="true"/> if the given type can be treated as a container. i.e. not primitive, pointer, enum or string.
+        /// Returns <see langword="true"/> if the given type can be treated as a container. i.e. not primitive, pointer, enum or string.
         /// </summary>
         /// <param name="type">The type to test.</param>
-        /// <returns><see lanword="true"/> if the given type is a container type; <see lanword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the given type is a container type; <see langword="false"/> otherwise.</returns>
         /// <exception cref="ArgumentNullException">The given type is null.</exception>
         public static bool IsContainer(Type type)
         {

@@ -1111,6 +1111,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
 
             EditorPrefs.SetBool("EnableConstrainProportionsTransformScale", m_EnableConstrainProportionsScalingForNewObjects);
+            EditorPrefs.SetBool("UseInspectorExpandedState", AnnotationUtility.useInspectorExpandedState);
             EditorPrefs.SetBool("EnableExtendedLogging", m_EnableExtendedLogging);
         }
 
@@ -1201,6 +1202,7 @@ namespace UnityEditor
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
 
             m_EnableConstrainProportionsScalingForNewObjects = EditorPrefs.GetBool("EnableConstrainProportionsTransformScale", false);
+            AnnotationUtility.useInspectorExpandedState = EditorPrefs.GetBool("UseInspectorExpandedState", false);
 
             if (EditorPrefs.HasKey(kContentScalePrefKey))
             {

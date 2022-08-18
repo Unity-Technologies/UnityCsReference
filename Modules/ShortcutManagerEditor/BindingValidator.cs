@@ -77,6 +77,12 @@ namespace UnityEditor.ShortcutManagement
                     invalidBindingMessage = $"Binding of global shortcut '{shortcut.displayName}' uses key code {keyCombination.keyCode} that is not allowed for shortcut with this context type";
                     return false;
                 }
+
+                if((keyCombination.keyCode == KeyCode.WheelUp || keyCombination.keyCode == KeyCode.WheelDown) && shortcut.type == ShortcutType.Clutch)
+                {
+                    invalidBindingMessage = $"Binding of shortcut '{shortcut.displayName}' uses key code {keyCombination.keyCode} that is not allowed for clutch shortcuts";
+                    return false;
+                }
             }
 
             invalidBindingMessage = null;

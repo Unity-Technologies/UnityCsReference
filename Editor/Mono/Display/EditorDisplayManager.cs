@@ -103,7 +103,7 @@ namespace UnityEditor
                 m_views[i] = view;
                 if (view != null)
                 {
-                    EditorDisplayUtility.AddVirtualDisplay(i, (int)view.targetSize.x, (int)view.targetSize.y);
+                    EditorDisplayUtility.AddVirtualDisplay(i, Mathf.RoundToInt(view.targetSize.x), Mathf.RoundToInt(view.targetSize.y));
                 }
                 else
                 {

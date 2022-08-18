@@ -121,7 +121,7 @@ namespace Unity.UI.Builder
 
                 m_JustifyContentButton.style.display = DisplayStyle.Flex;
                 JustifyContentUpdateToggleIcon();
-                
+
                 m_AlignSelfButton.style.display = DisplayStyle.Flex;
                 AlignSelfUpdateToggleIcon();
             }
@@ -486,7 +486,7 @@ namespace Unity.UI.Builder
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextWrapName });
         }
-        
+
         //
         // Align Self
         //
@@ -499,7 +499,7 @@ namespace Unity.UI.Builder
         void AlignSelfUpdateToggleIcon(Align resolvedStyle)
         {
             var button = m_AlignSelfButton;
-            
+
             button.EnableInClassList("auto", resolvedStyle == Align.Auto);
             button.EnableInClassList("flex-start", resolvedStyle == Align.FlexStart);
             button.EnableInClassList("center", resolvedStyle == Align.Center);

@@ -64,15 +64,17 @@ namespace UnityEngine.UIElements
         /// Clickable MouseManipulator for this Button.
         /// </summary>
         /// <remarks>
+        /// <example>
         /// The default <see cref="Clickable"/> object provides a list of actions that are called using
         /// one or more activation filters.
         ///
-        /// To add or remove activation triggers, modify <see cref="clickable.activators"/>.
+        /// To add or remove activation triggers, modify <see cref="Clickable.activators"/>.
         /// An activation trigger can be any mouse button, pressed any number of times, with any modifier key.
         /// For details, see <see cref="ManipulatorActivationFilter"/>.
         /// <code>clickable.activators.Add(new ManipulatorActivationFilter(...))</code>
         /// or
         /// <code>clickable.activators.Clear()</code>
+        /// </example>
         /// </remarks>
         public Clickable clickable
         {
@@ -161,6 +163,7 @@ namespace UnityEngine.UIElements
             // Click-once behaviour
             clickable = new Clickable(clickEvent);
             focusable = true;
+            tabIndex = 0;
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
         }

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.UIElements.Experimental.Debugger;
+
 namespace UnityEditor.UIElements.Debugger
 {
     internal static class EditorWindowExtensions

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {

@@ -443,7 +443,7 @@ namespace UnityEngine.UIElements
             {
                 // windows does not provide altitude or azimuth for touch events, so there's nothing to convert
                 if (!(Application.platform == RuntimePlatform.WindowsEditor ||
-                      Application.platform == RuntimePlatform.WindowsPlayer) && this.pointerType == PointerType.touch &&  m_TiltNeeded)
+                      Application.platform == RuntimePlatform.WindowsPlayer) && this.pointerType == PointerType.touch && m_TiltNeeded)
                 {
                     m_Tilt = AzimuthAndAlitutudeToTilt(m_AltitudeAngle, m_AzimuthAngle);
                     m_TiltNeeded = false;

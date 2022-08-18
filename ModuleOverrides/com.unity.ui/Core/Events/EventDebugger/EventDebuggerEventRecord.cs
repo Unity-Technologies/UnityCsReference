@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnityEngine.UIElements
+namespace UnityEngine.UIElements.Experimental
 {
     [Serializable]
     internal class EventDebuggerRecordList

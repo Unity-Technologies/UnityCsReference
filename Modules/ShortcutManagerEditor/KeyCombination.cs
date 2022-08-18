@@ -79,8 +79,7 @@ namespace UnityEditor.ShortcutManagement
 
         internal static KeyCombination FromInput(Event evt)
         {
-            KeyCode keyCode = evt.isMouse ? evt.button + KeyCode.Mouse0 : evt.keyCode;
-            return FromKeyboardInput(keyCode, evt.modifiers);
+            return FromKeyboardInput(evt.keyCode, evt.modifiers);
         }
 
         internal static KeyCombination FromKeyboardInput(Event evt)
@@ -416,6 +415,8 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.KeypadPlus, "Num +" },
             { KeyCode.KeypadEnter, "Num Enter" },
             { KeyCode.KeypadEquals, "Num =" },
+            { KeyCode.WheelUp, "Wheel Up"},
+            { KeyCode.WheelDown, "Wheel Down"},
             { KeyCode.Mouse0, "Mouse 0"},
             { KeyCode.Mouse1, "Mouse 1"},
             { KeyCode.Mouse2, "Mouse 2"},

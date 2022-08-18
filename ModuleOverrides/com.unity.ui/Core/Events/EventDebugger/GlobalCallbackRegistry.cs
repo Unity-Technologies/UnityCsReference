@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace UnityEngine.UIElements
+namespace UnityEngine.UIElements.Experimental
 {
     internal static class GlobalCallbackRegistry
     {

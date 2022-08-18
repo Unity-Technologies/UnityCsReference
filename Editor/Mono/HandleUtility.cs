@@ -1291,14 +1291,19 @@ namespace UnityEditor
             // alternatively a GameObject with the SelectionBaseAttribute assigned.
             Transform tr = go.transform;
             GameObject outerMostSelectableRoot = null;
+            GameObject prefabBaseGo = null;
 
             while (tr != null)
             {
                 if (!SceneVisibilityState.IsGameObjectPickingDisabled(tr.gameObject))
                 {
-                    // If we come across the prefab base, no need to search further
-                    if (tr == prefabBase)
-                        return tr.gameObject;
+                    // If we come across the prefab base, we still need to make sure there are no
+                    // go with the SelectionBaseAttribute assigned before returning prefabBaseGo.
+                    if (tr == prefabBase && prefabBaseGo == null)
+                    {
+                        prefabBaseGo = tr.gameObject;
+                        continue;
+                    }
 
                     // Only test again nested prefab if go is already part of a prefab to avoid selecting a
                     // parent prefab is the current go is only child of this prefab but does not belong to it
@@ -1311,13 +1316,17 @@ namespace UnityEditor
                             outerMostSelectableRoot = tr.gameObject;
                     }
 
-                    // If a SelectionBaseAttribute is found, select the nearest to the picked GameObject
+                    // If a SelectionBaseAttribute is found, select the nearest to the picked GameObject.
+                    // GameObjects with the SelectionBaseAttribute should have priority over all others.
                     if (AttributeHelper.GameObjectContainsAttribute<SelectionBaseAttribute>(tr.gameObject))
                         return tr.gameObject;
                 }
 
                 tr = tr.parent;
             }
+
+            if (prefabBaseGo != null)
+                return prefabBaseGo;
 
             return outerMostSelectableRoot;
         }

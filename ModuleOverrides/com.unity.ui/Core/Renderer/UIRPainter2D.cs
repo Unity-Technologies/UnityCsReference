@@ -380,8 +380,8 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Fills the currently defined path.
-        /// <param name="fillRule">The fill rule (non-zero or odd-even) to use. Default is non-zero.</param>
         /// </summary>
+        /// <param name="fillRule">The fill rule (non-zero or odd-even) to use. Default is non-zero.</param>
         public void Fill(FillRule fillRule = FillRule.NonZero)
         {
             using (s_FillMarker.Auto())

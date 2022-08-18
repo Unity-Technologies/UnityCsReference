@@ -833,7 +833,7 @@ namespace Unity.UI.Builder
         {
             var projectSettingsWindow = EditorWindow.GetWindow<ProjectSettingsWindow>();
             projectSettingsWindow.Show();
-            projectSettingsWindow.SelectProviderByName(BuilderSettingsProvider.name);
+            projectSettingsWindow.SelectProviderByName(UIToolkitSettingsProvider.name);
         }
 
         public void SelectionChanged() { }

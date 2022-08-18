@@ -214,6 +214,7 @@ namespace UnityEditor
             public static Texture2D prefabOverlayRemovedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayRemoved Icon");
             public static readonly GUIStyle linkButton = "FloatFieldLinkButton";
             public static Texture2D repaintDot = EditorGUIUtility.LoadIcon("RepaintDot");
+            public static string revertPropertyValueIdenticalToSource = L10n.Tr("Revert (identical value to Prefab '{0}')");
         }
 
         static EditorGUI()
@@ -3027,6 +3028,14 @@ namespace UnityEditor
                     }
                     else if (shouldDisplayPrefabContextMenuItems)
                     {
+                        bool samePropertyValueAsSource = false;
+
+                        Object source = PrefabUtility.GetCorrespondingObjectFromSource(targetObject);
+                        SerializedObject sourceSerializedObject = new SerializedObject(source);
+                        SerializedProperty sourceProperty = sourceSerializedObject.FindProperty(property.propertyPath);
+
+                        samePropertyValueAsSource = SerializedProperty.DataEquals(property, sourceProperty);
+
                         PrefabUtility.HandleApplyRevertMenuItems(
                             null,
                             targetObject,
@@ -3045,7 +3054,18 @@ namespace UnityEditor
                             (menuItemContent) =>
                             {
                                 // Add revert menu item.
-                                pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
+                                GUIContent content;
+                                if (samePropertyValueAsSource)
+                                {
+                                    GameObject sourceRoot = PrefabUtility.GetRootGameObject(source);
+                                    content = new GUIContent(string.Format(Styles.revertPropertyValueIdenticalToSource, sourceRoot.name));
+                                }
+                                else
+                                {
+                                    content = menuItemContent;
+                                }
+
+                                pm.AddItem(content, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
                             },
                             false,
                             property.serializedObject.targetObjectsCount
@@ -5827,12 +5847,10 @@ namespace UnityEditor
 
         internal static bool EnableCheckBoxInTitlebar(Object targetObj)
         {
-            if (targetObj is ScriptableObject && targetObj is StateMachineBehaviour)
-                return true;
-            else if (targetObj is ScriptableObject)
+            if (targetObj is ScriptableObject && targetObj is not StateMachineBehaviour)
                 return false;
-            else
-                return true;
+
+            return true;
         }
 
         // Make an inspector-window-like titlebar.
@@ -5865,17 +5883,24 @@ namespace UnityEditor
             int enabled = -1;
             foreach (Object targetObj in targetObjs)
             {
-                int thisEnabled = EditorUtility.GetObjectEnabled(targetObj);
-                if (enabled == -1)
+                if (comp is MonoBehaviour)
                 {
-                    if (EnableCheckBoxInTitlebar(targetObj))
-                        enabled = thisEnabled;
+                    enabled = 1;
                 }
-                else if (enabled != thisEnabled)
+                else
                 {
-                    enabled = -2;
-                    // Early out: mix value mode
-                    break;
+                    int thisEnabled = EditorUtility.GetObjectEnabled(targetObj);
+                    if (enabled == -1)
+                    {
+                        if (EnableCheckBoxInTitlebar(targetObj))
+                            enabled = thisEnabled;
+                    }
+                    else if (enabled != thisEnabled)
+                    {
+                        enabled = -2;
+                        // Early out: mix value mode
+                        break;
+                    }
                 }
             }
 

@@ -1319,7 +1319,7 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
             {
                 coupledAssetComponent = assetComponent.GetCoupledComponent();
-                if(!FileUtil.ReadFileContentBinary(assetPath, out originalFileContent, out string errorMessage))
+                if (!FileUtil.ReadFileContentBinary(assetPath, out originalFileContent, out string errorMessage))
                     Debug.LogError($"No undo was registered when removing {assetComponent.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
             }
 
@@ -1475,7 +1475,7 @@ namespace UnityEditor
                 throw new ArgumentNullException(nameof(assetGameObject), "Prefab source must not be null.");
             if (!IsPrefabInstanceObjectOf(gameObjectInInstance, PrefabUtility.GetPrefabAssetHandle(assetGameObject)))
                 throw new ArgumentException("Prefab instance must match Prefab source.");
-            if(assetGameObject.transform.root == assetGameObject.transform)
+            if (assetGameObject.transform.root == assetGameObject.transform)
                 throw new ArgumentException("The asset GameObject cannot be the root as the root cannot be removed as an override.");
 
             var actionName = "Apply Prefab removed GameObject";
@@ -1511,7 +1511,7 @@ namespace UnityEditor
                     }
                 }
 
-                if(!success)
+                if (!success)
                     Debug.LogError($"GameObject {assetGameObject} could not be found and deleted from corresponding asset.");
             }
 
@@ -2807,6 +2807,15 @@ namespace UnityEditor
                 throw new ArgumentException("Specified object is not part of Prefab contents");
             }
             var scene = contentsRoot.scene;
+            UnloadPrefabContents(scene);
+        }
+
+        private static void UnloadPrefabContents(Scene scene)
+        {
+            if (!scene.IsValid())
+            {
+                throw new ArgumentException("Scene is not valid");
+            }
             EditorSceneManager.ClosePreviewScene(scene);
         }
 
@@ -2925,6 +2934,7 @@ namespace UnityEditor
 
             ClearPrefabInstanceNonDefaultOverridesCache_Internal(gameObject);
         }
+
         internal static void ClearPrefabInstanceUnusedOverridesCache(GameObject gameObject)
         {
             if (gameObject == null)
@@ -3372,7 +3382,7 @@ namespace UnityEditor
         internal static InstanceOverridesInfo[] GetPrefabInstancesOverridesInfos(GameObject[] selectedGameObjects)
         {
             if (selectedGameObjects == null || !selectedGameObjects.Any())
-                return new InstanceOverridesInfo[] { };
+                return new InstanceOverridesInfo[] {};
 
             List<InstanceOverridesInfo> allInstanceMods = new List<InstanceOverridesInfo>();
 
@@ -3399,7 +3409,7 @@ namespace UnityEditor
 
         internal static bool DoRemovePrefabInstanceUnusedOverridesDialog(InstanceOverridesInfo[] instanceOverridesInfos)
         {
-            string titleCheckForUnusedOverrides = EditorGUIUtility.TrTextContent("Check for unused overrides").text;
+            string titleCheckForUnusedOverrides = EditorGUIUtility.TrTextContent("Remove Unused Overrides").text;
             string msgNoOverridesWereFound = EditorGUIUtility.TrTextContent("No unused overrides were found.").text;
 
             string title = titleCheckForUnusedOverrides;
@@ -3613,7 +3623,6 @@ namespace UnityEditor
             return true;
         }
 
-
         internal static class Analytics
         {
             public enum ApplyScope
@@ -3712,17 +3721,27 @@ namespace UnityEditor
         {
             public readonly string assetPath;
             public readonly GameObject prefabContentsRoot;
+            Scene scene;
 
             public EditPrefabContentsScope(string assetPath)
             {
                 this.assetPath = assetPath;
                 prefabContentsRoot = LoadPrefabContents(assetPath);
+                scene = prefabContentsRoot.scene;
             }
 
             public void Dispose()
             {
-                SaveAsPrefabAsset(prefabContentsRoot, assetPath);
-                UnloadPrefabContents(prefabContentsRoot);
+                if (prefabContentsRoot != null)
+                {
+                    SaveAsPrefabAsset(prefabContentsRoot, assetPath);
+                }
+                else
+                {
+                    Debug.LogError("Prefab root is null: Saving an empty prefab we would create an invalid Prefab Asset");
+                }
+
+                UnloadPrefabContents(scene);
             }
         }
     }

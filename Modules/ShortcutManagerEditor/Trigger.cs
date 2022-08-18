@@ -31,18 +31,16 @@ namespace UnityEditor.ShortcutManagement
         {
             if (evt == null) return;
 
-            KeyCode keyCode = evt.isMouse ? evt.button + KeyCode.Mouse0 : evt.keyCode;
-
-            if (keyCode == KeyCode.None) return;
+            if (evt.keyCode == KeyCode.None) return;
 
             if (evt.type == EventType.KeyUp || evt.type == EventType.MouseUp)
             {
                 KeyValuePair<ShortcutEntry, object> clutchKeyValuePair;
-                if (m_ActiveClutches.TryGetValue(keyCode, out clutchKeyValuePair))
+                if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchKeyValuePair))
                 {
-                    var clutchContext = m_ActiveClutches[keyCode].Value;
+                    var clutchContext = m_ActiveClutches[evt.keyCode].Value;
 
-                    m_ActiveClutches.Remove(keyCode);
+                    m_ActiveClutches.Remove(evt.keyCode);
                     var args = new ShortcutArguments
                     {
                         context = clutchContext,
@@ -56,7 +54,7 @@ namespace UnityEditor.ShortcutManagement
             }
 
             // Use the event and return if the key is currently used in an active clutch
-            if (m_ActiveClutches.ContainsKey(keyCode))
+            if (m_ActiveClutches.ContainsKey(evt.keyCode))
             {
                 evt.Use();
                 return;
@@ -91,7 +89,7 @@ namespace UnityEditor.ShortcutManagement
                     var shortcutEntry = entries.Single();
                     if (ShortcutFullyMatchesKeyCombination(shortcutEntry))
                     {
-                        if (keyCode != m_KeyCombinationSequence.Last().keyCode)
+                        if (evt.keyCode != m_KeyCombinationSequence.Last().keyCode)
                             break;
 
                         var args = new ShortcutArguments();
@@ -107,9 +105,9 @@ namespace UnityEditor.ShortcutManagement
                                 break;
 
                             case ShortcutType.Clutch:
-                                if (!m_ActiveClutches.ContainsKey(keyCode))
+                                if (!m_ActiveClutches.ContainsKey(evt.keyCode))
                                 {
-                                    m_ActiveClutches.Add(keyCode, new KeyValuePair<ShortcutEntry, object>(shortcutEntry, args.context));
+                                    m_ActiveClutches.Add(evt.keyCode, new KeyValuePair<ShortcutEntry, object>(shortcutEntry, args.context));
                                     args.stage = ShortcutStage.Begin;
                                     invokingAction?.Invoke(shortcutEntry, args);
                                     shortcutEntry.action(args);

@@ -89,8 +89,8 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Determines whether the current collection contains a specific value.
-        /// <param name="item">The object to locate in the current collection.</param>
         /// </summary>
+        /// <param name="item">The object to locate in the current collection.</param>
         /// <returns>Whether the item is in the collection or not.</returns>
         public bool Contains(SortColumnDescription  item)
         {

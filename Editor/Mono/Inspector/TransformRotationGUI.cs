@@ -10,6 +10,7 @@ namespace UnityEditor
     internal class TransformRotationGUI
     {
         private GUIContent rotationContent = EditorGUIUtility.TrTextContent("Rotation", "The local rotation of this Game Object relative to the parent.");
+        private const float kQuaternionFloatPrecision = 1e-6f;
 
         EditorGUI.NumberFieldValue[] m_EulerFloats =
         {
@@ -61,9 +62,20 @@ namespace UnityEditor
 
             Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * (EditorGUIUtility.wideMode ? 1 : 2));
             GUIContent label = EditorGUI.BeginProperty(r, rotationContent, m_Rotation);
-            m_EulerFloats[0].doubleVal = eulerAngles0.x;
-            m_EulerFloats[1].doubleVal = eulerAngles0.y;
-            m_EulerFloats[2].doubleVal = eulerAngles0.z;
+
+            if (m_Rotation.isLiveModified)
+            {
+                Vector3 eulerValue = m_Rotation.quaternionValue.eulerAngles;
+                m_EulerFloats[0].doubleVal = Mathf.Floor(eulerValue.x / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+                m_EulerFloats[1].doubleVal = Mathf.Floor(eulerValue.y / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+                m_EulerFloats[2].doubleVal = Mathf.Floor(eulerValue.z / kQuaternionFloatPrecision) * kQuaternionFloatPrecision;
+            }
+            else
+            {
+                m_EulerFloats[0].doubleVal = eulerAngles0.x;
+                m_EulerFloats[1].doubleVal = eulerAngles0.y;
+                m_EulerFloats[2].doubleVal = eulerAngles0.z;
+            }
 
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, r);
             if (AnimationMode.InAnimationMode() && transform0.rotationOrder != RotationOrder.OrderZXY)
@@ -150,9 +162,17 @@ namespace UnityEditor
                             }
                         }
                     }
-                    tr.SetLocalEulerAngles(trEuler, tr.rotationOrder);
-                    if (tr.parent != null)
-                        tr.SendTransformChangedScale(); // force scale update, needed if tr has non-uniformly scaled parent.
+
+                    if (m_Rotation.isLiveModified)
+                    {
+                        m_Rotation.quaternionValue = Quaternion.Euler(trEuler.x, trEuler.y, trEuler.z);
+                    }
+                    else
+                    {
+                        tr.SetLocalEulerAngles(trEuler, tr.rotationOrder);
+                        if (tr.parent != null)
+                            tr.SendTransformChangedScale(); // force scale update, needed if tr has non-uniformly scaled parent.
+                    }
                 }
                 m_Rotation.serializedObject.SetIsDifferentCacheDirty();
             }

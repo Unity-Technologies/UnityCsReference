@@ -30,5 +30,6 @@ namespace UnityEditor.ShaderFoundry
 
         // This is extremely temporary!!  Use at your own risk as it will go away soon.
         internal UInt32 Handle { get { return m_Handle; } set { m_Handle = value; }}
+        internal UInt32 LegacyHandle { get { return m_Handle - 1; } set{ m_Handle = value + 1; } }
     }
 }

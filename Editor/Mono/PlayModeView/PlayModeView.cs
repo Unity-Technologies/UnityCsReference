@@ -241,8 +241,10 @@ namespace UnityEditor
             using (var renderingView = new RenderingView(this))
             {
                 SetPlayModeViewSize(targetSize);
+                int width = Mathf.RoundToInt(targetSize.x);
+                int height = Mathf.RoundToInt(targetSize.y);
                 // This should be called configure virtual display or sth
-                EditorDisplayUtility.AddVirtualDisplay(targetDisplay, (int)targetSize.x, (int)targetSize.y);
+                EditorDisplayUtility.AddVirtualDisplay(targetDisplay, width, height);
                 // EditorDisplayManager.UpdateVirtualDisplay(this);
                 var currentTargetDisplay = 0;
                 if (ModuleManager.ShouldShowMultiDisplayOption())
@@ -253,7 +255,7 @@ namespace UnityEditor
                 }
 
                 bool hdr = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
-                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName, hdr);
+                ConfigureTargetTexture(width, height, clearTexture, playModeViewName, hdr);
 
                 if (Event.current == null || Event.current.type != EventType.Repaint)
                     return m_TargetTexture;

@@ -1322,7 +1322,7 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, UnpackPrefab);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, UnpackPrefabCompletely);
                 menu.AddSeparator("Prefab/");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Check for Unused Overrides"), false, RemoveSelectedPrefabInstanceUnusedOverrides);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveSelectedPrefabInstanceUnusedOverrides);
             }
 
             GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();
@@ -1493,7 +1493,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Check for Unused Overrides"), false, RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
             // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)

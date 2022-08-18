@@ -3,8 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {
@@ -214,7 +213,7 @@ namespace UnityEngine.UIElements
         /// <see cref="CallbackEventHandler.ExecuteDefaultAction"/>, or <see cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
         /// for more predictable results.
         /// </remarks>
-        /// <seealso cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEventType}"/>
         /// <seealso cref="CallbackEventHandler.ExecuteDefaultAction"/>
         /// <seealso cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
         [Obsolete("The virtual method CallbackEventHandler.HandleEvent is deprecated and will be removed in " +

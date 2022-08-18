@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace UnityEngine.UIElements
+namespace UnityEngine.UIElements.Experimental
 {
     struct EventDebuggerLogCall : IDisposable
     {

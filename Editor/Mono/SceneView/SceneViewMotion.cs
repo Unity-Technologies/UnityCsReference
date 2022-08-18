@@ -73,7 +73,8 @@ namespace UnityEditor
             public static bool IsActive
             {
                 get => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
-                    && SceneView.lastActiveSceneView.rootVisualElement.worldBound.Contains(Event.current.mousePosition);
+                    && (SceneView.lastActiveSceneView?.rootVisualElement?.worldBound.Contains(
+                        Event.current?.mousePosition ?? Vector2.one * float.NegativeInfinity) ?? false);
             }
         }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {
@@ -458,8 +459,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            // This will copy Event.current into evt.
-            UIElementsUtility.EndContainerGUI(evt, layoutSize);
+                // This will copy Event.current into evt. End the container by now since the container
+                // should end at this point no matter an exception occured or not. Not ending the container will make the GUIDepth off by 1.
+                UIElementsUtility.EndContainerGUI(evt, layoutSize);
             RestoreGlobals();
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes

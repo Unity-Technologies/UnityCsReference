@@ -174,7 +174,7 @@ namespace UnityEditor.ShaderFoundry
                 throw new Exception($"Template linker '{linker}' has already been registered.");
 
             FoundryHandle handle = new FoundryHandle();
-            handle.Handle = (uint)m_TemplateLinkers.Count;
+            handle.LegacyHandle = (uint)m_TemplateLinkers.Count;
             m_TemplateLinkers.Add(linker);
 
             return handle;
@@ -182,8 +182,8 @@ namespace UnityEditor.ShaderFoundry
 
         internal ITemplateLinker GetTemplateLinker(FoundryHandle linkerHandle)
         {
-            if (linkerHandle.IsValid && (linkerHandle.Handle < m_TemplateLinkers.Count))
-                return m_TemplateLinkers[(int)linkerHandle.Handle];
+            if (linkerHandle.IsValid && (linkerHandle.LegacyHandle < m_TemplateLinkers.Count))
+                return m_TemplateLinkers[(int)linkerHandle.LegacyHandle];
 
             return null;
         }

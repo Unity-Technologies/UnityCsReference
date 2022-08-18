@@ -333,8 +333,7 @@ namespace UnityEngine.UIElements
         /// <param name="modifiers">The modifier keys held down during the event.</param>
         /// <returns>An initialized navigation event.</returns>
         /// <remarks>
-        /// This method doesn't set any move vector. For NavigationMoveEvents using move vector information, see
-        /// <see cref="GetPooled(UnityEngine.Vector2,UnityEngine.EventModifiers,UnityEngine.UIElements.NavigationDeviceType)"/>.
+        /// This method doesn't set any move vector. See other overload of the method for more information.
         /// </remarks>
         public static NavigationMoveEvent GetPooled(Direction direction, EventModifiers modifiers = EventModifiers.None)
         {

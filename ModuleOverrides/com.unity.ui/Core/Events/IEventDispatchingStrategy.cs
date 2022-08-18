@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Pool;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {
@@ -12,7 +13,7 @@ namespace UnityEngine.UIElements
     /// The propagation phases of an event.
     /// </summary>
     /// <remarks>
-    /// >When an element receives an event, the event propagates from the panel's root element to the target element.
+    /// When an element receives an event, the event propagates from the panel's root element to the target element.
     ///
     /// In the TrickleDown phase, the event is sent from the panel's root element to the target element's parent.
     ///

@@ -8,16 +8,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEditor;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
+using UnityEditor.UIElements.Debugger;
 
-namespace UnityEditor.UIElements.Debugger
+namespace UnityEditor.UIElements.Experimental.Debugger
 {
+    [InitializeOnLoad]
     class UIElementsEventsDebugger : EditorWindow
     {
         [SerializeField]
         UIElementsEventsDebuggerImpl m_DebuggerImpl;
 
-        [MenuItem("Window/UI Toolkit/Event Debugger", false, 3010)]
+        static UIElementsEventsDebugger()
+        {
+            Menu.menuChanged += AddMenuItem;
+        }
+
+        private static void AddMenuItem()
+        {
+            Menu.menuChanged -= AddMenuItem;
+            if (UIToolkitProjectSettings.enableEventDebugger)
+                Menu.AddMenuItem("Window/UI Toolkit/Event Debugger", "", false, 3010, ShowUIElementsEventDebugger, null);
+        }
+
         public static void ShowUIElementsEventDebugger()
         {
             var window = EditorWindow.GetWindow<UIElementsEventsDebugger>();
@@ -410,6 +425,15 @@ namespace UnityEditor.UIElements.Debugger
 
             var toolbar = rootVisualElement.MandatoryQ<Toolbar>("searchToolbar");
             m_Toolbar = toolbar;
+            var experimentalElement = new Label(L10n.Tr("Experimental"));
+            VisualElement experimentalContainer = new VisualElement();
+            VisualElement spacerElement = new VisualElement();
+            spacerElement.style.flexGrow = 1.0f;
+            experimentalContainer.Add(spacerElement);
+            experimentalContainer.Add(experimentalElement);
+            experimentalContainer.AddToClassList("unity-toolbar-experimental-container");
+            experimentalElement.AddToClassList("unity-toolbar-experimental");
+            toolbar.Add(experimentalContainer);
 
             base.Initialize(debuggerWindow);
 

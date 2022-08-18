@@ -50,9 +50,11 @@ namespace UnityEditor
         // internal blend ratio for static colors
         internal static float staticBlend = 0.6f;
 
-        static PrefColor s_ElementPreselectionColor => new PrefColor("Scene/Element Preselection", .29f, .93f, .88f, 1f);
-        static PrefColor s_ElementSelectionColor => new PrefColor("Scene/Element Selection", .93f, 1f, .99f, 1f);
+        static PrefColor s_ElementColor => new PrefColor("Scene/Element Default", 0f, 224f / 255f, 1f, 1f);
+        static PrefColor s_ElementPreselectionColor => new PrefColor("Scene/Element Preselection", 1f, 207f / 255f, 112f / 255f, 1f);
+        static PrefColor s_ElementSelectionColor => new PrefColor("Scene/Element Selection",  1f, 182f / 255f, 40f / 255f, 1f);
 
+        public static Color elementColor => s_ElementColor;
         public static Color elementPreselectionColor => s_ElementPreselectionColor;
         public static Color elementSelectionColor => s_ElementSelectionColor;
 

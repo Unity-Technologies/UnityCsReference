@@ -11,10 +11,10 @@ namespace UnityEngine.UIElements
     {
         /// <summary>
         /// Transforms a screen absolute position to its equivalent local coordinate on given panel.
+        /// </summary>
         /// <param name="panel">The local coordinates reference panel.</param>
         /// <param name="screenPosition">The screen position to transform.</param>
         /// <returns>A position in panel coordinates that corresponds to the provided screen position.</returns>
-        /// </summary>
         public static Vector2 ScreenToPanel(IPanel panel, Vector2 screenPosition)
         {
             return ((BaseRuntimePanel)panel).ScreenToPanel(screenPosition);
@@ -23,11 +23,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Transforms a world absolute position to its equivalent local coordinate on given panel,
         /// using provided camera for internal WorldToScreen transformation.
+        /// </summary>
         /// <param name="panel">The local coordinates reference panel.</param>
         /// <param name="worldPosition">The world position to transform.</param>
         /// <param name="camera">The Camera used for internal WorldToScreen transformation.</param>
         /// <returns>A position in panel coordinates that corresponds to the provided world position.</returns>
-        /// </summary>
         public static Vector2 CameraTransformWorldToPanel(IPanel panel, Vector3 worldPosition, Camera camera)
         {
             Vector2 screenPoint = camera.WorldToScreenPoint(worldPosition);
@@ -38,6 +38,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Transforms a world position and size (in world units) to their equivalent local position and size
         /// on given panel, using provided camera for internal WorldToScreen transformation.
+        /// </summary>
         /// <param name="panel">The local coordinates reference panel.</param>
         /// <param name="worldPosition">The world position to transform.</param>
         /// <param name="worldSize">The world size to transform. The object in the panel will appear to have
@@ -45,7 +46,6 @@ namespace UnityEngine.UIElements
         /// <param name="camera">The Camera used for internal WorldToScreen transformation.</param>
         /// <returns>A (position, size) Rect in panel coordinates that corresponds to the provided world position
         /// and size.</returns>
-        /// </summary>
         public static Rect CameraTransformWorldToPanelRect(IPanel panel, Vector3 worldPosition, Vector2 worldSize, Camera camera)
         {
             worldSize.y = -worldSize.y; // BottomRight has negative y offset

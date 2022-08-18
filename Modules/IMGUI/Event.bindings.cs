@@ -24,7 +24,20 @@ namespace UnityEngine
         [NativeProperty("penStatus", false, TargetType.Field)] public extern PenStatus penStatus { get; set; }
         [NativeProperty("clickCount", false, TargetType.Field)] public extern int clickCount { get; set; }
         [NativeProperty("character", false, TargetType.Field)] public extern char character { get; set; }
-        [NativeProperty("keycode", false, TargetType.Field)] public extern KeyCode keyCode { get; set; }
+        [NativeProperty("keycode", false, TargetType.Field)] extern KeyCode Internal_keyCode { get; set; }
+        public KeyCode keyCode
+        {
+            get
+            {
+                var key = isMouse ? KeyCode.Mouse0 + button : Internal_keyCode;
+
+                if(isScrollWheel)
+                    key = delta.y < 0 ? KeyCode.WheelUp : KeyCode.WheelDown;
+
+                return key;
+            }
+            set => Internal_keyCode = value;
+        }
         [NativeProperty("displayIndex", false, TargetType.Field)] public extern int displayIndex { get; set; }
 
         public extern EventType type

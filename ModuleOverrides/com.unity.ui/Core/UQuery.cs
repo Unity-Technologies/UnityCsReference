@@ -1033,7 +1033,7 @@ namespace UnityEngine.UIElements
         private static UQueryState<VisualElement> SingleElementTypeAndNameAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Name(String.Empty).Class(String.Empty).Build();
 
         /// <summary>
-        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
+        /// Convenience overload, shorthand for <see cref="UQueryExtensions.Query(UnityEngine.UIElements.VisualElement,string,string[])">Query()</see>.<see cref="UQueryBuilder{T}.Build()">Build()</see>.<see cref="UQueryBuilder{T}.First()">First()</see>
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1045,7 +1045,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
+        /// Convenience overload, shorthand for <see cref="UQueryExtensions.Query(UnityEngine.UIElements.VisualElement,string,string[])">Query()</see>.<see cref="UQueryBuilder{T}.Build()">Build()</see>.<see cref="UQueryBuilder{T}.First()">First()</see>
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1057,7 +1057,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
+        /// Convenience overload, shorthand for <see cref="UQueryExtensions.Query(UnityEngine.UIElements.VisualElement,string,string[])">Query()</see>.<see cref="UQueryBuilder{T}.Build()">Build()</see>.<see cref="UQueryBuilder{T}.First()">First()</see>
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>

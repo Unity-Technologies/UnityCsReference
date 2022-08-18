@@ -58,6 +58,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent paddingLabel = EditorGUIUtility.TrTextContent("Padding", "The amount of extra padding between packed sprites.");
 
             public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
+            public readonly GUIContent packPreviewLabel = EditorGUIUtility.TrTextContent("Pack Preview", "Save and preview packed Sprite Atlas textures.");
             public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
@@ -152,6 +153,7 @@ namespace UnityEditor.U2D
 
         private float m_MipLevel = 0;
         private bool m_ShowAlpha;
+        private bool m_Discard = false;
 
         private List<string> m_PlatformSettingsOptions;
         private int m_SelectedPlatformSettings = 0;
@@ -406,7 +408,11 @@ namespace UnityEditor.U2D
             if (HasModified())
             {
                 if (spriteAtlasAsset)
+                {
                     SpriteAtlasAsset.Save(spriteAtlasAsset, m_AssetPath);
+                    AssetDatabase.ImportAsset(m_AssetPath);
+                }
+
                 m_ContentHash = GetInspectorHash();
             }
             base.Apply();
@@ -424,7 +430,7 @@ namespace UnityEditor.U2D
                 {
                     GUILayout.FlexibleSpace();
 
-                    if (GUILayout.Button("Pack Preview"))
+                    if (GUILayout.Button(styles.packPreviewLabel))
                     {
                         GUI.FocusControl(null);
                         SpriteAtlasUtility.EnableV2Import(true);
@@ -445,7 +451,7 @@ namespace UnityEditor.U2D
 
         public override bool HasModified()
         {
-            return base.HasModified() || m_ContentHash != GetInspectorHash();
+            return !m_Discard && (base.HasModified() || m_ContentHash != GetInspectorHash());
         }
 
         private void ValidateMasterAtlas()
@@ -827,6 +833,20 @@ namespace UnityEditor.U2D
                 m_PackableList.DoLayoutList();
                 EditorGUI.indentLevel--;
             }
+        }
+
+        public override void SaveChanges()
+        {
+            if (!m_Discard)
+                base.SaveChanges();
+            m_ContentHash = GetInspectorHash();
+        }
+
+        public override void DiscardChanges()
+        {
+            m_Discard = true;
+            base.DiscardChanges();
+            m_ContentHash = GetInspectorHash();
         }
 
         void CachePreviewTexture()

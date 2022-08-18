@@ -193,6 +193,7 @@ namespace UnityEditor.ShortcutManagement
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
             bindingField.RegisterValueChangedCallback(EditingShortcutEntryBindingChanged);
+            bindingField.RegisterCallback<WheelEvent>(EditingShortcutEntryBindingChangedToScrollWheel);
 
             var conflict = m_ViewController.IsEntryPartOfConflict(shortcutEntry);
 
@@ -238,6 +239,14 @@ namespace UnityEditor.ShortcutManagement
             }
 
             m_ViewController.RequestRebindOfSelectedEntry(evt.newValue);
+            EndRebind();
+        }
+
+        void EditingShortcutEntryBindingChangedToScrollWheel(WheelEvent evt)
+        {
+            m_ViewController.RequestRebindOfSelectedEntry(new List<KeyCombination>() { KeyCombination.FromInput(evt.imguiEvent) });
+            Event.current?.Use();
+            evt.StopPropagation();
             EndRebind();
         }
 
@@ -740,6 +749,8 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableRightClickDown(MouseDownEvent evt)
         {
+            evt.StopPropagation();
+
             var slider = m_ShortcutsTable.Q<Scroller>(className: Scroller.verticalVariantUssClassName);
             var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.ResolveItemHeight());
 
@@ -754,8 +765,11 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableRightClickUp(MouseUpEvent evt)
         {
-            if (evt.button != 1 || m_ViewController.selectedEntry == null)
+            evt.StopPropagation();
+
+            if (evt.button != (int)MouseButton.RightMouse || m_ViewController.selectedEntry == null)
                 return;
+
             GenericMenu menu = GetContextMenuForEntries(new[] { m_ViewController.selectedEntry });
             menu?.ShowAsContext();
         }
@@ -852,7 +866,8 @@ namespace UnityEditor.ShortcutManagement
 
     abstract class Device : VisualElement
     {
-        protected const int k_HorizontalPadding = 10;
+        protected const string k_DeviceContainer = "deviceContainer";
+
         protected const string k_ActiveClass = "active";
         protected const string k_ContextBoundClass = "contextuallyBound";
         protected const string k_FirstClass = "first";
@@ -1071,66 +1086,64 @@ namespace UnityEditor.ShortcutManagement
 
     class Mouse : Device
     {
+        const string k_Body = "mouseBody";
+        const string k_ButtonRow = "mouseButtonRow";
+
+        const string k_PrimaryButton = "mousePrimaryButton";
+        const string k_LeftButton = "left";
+        const string k_RightButton = "right";
+        const string k_Middle = "mouseMiddle";
+        const string k_MiddleButton = "mouseMiddleButton";
+
+        const string k_WheelUp = "wheelUp";
+        const string k_WheelDown = "wheelDown";
+
+        const string k_MouseXButton = "mouseXButton";
+        const string k_MouseTopXButton = "top";
+
         public Mouse(IKeyBindingStateProvider keyBindingStateProvider, KeyCode initiallySelectedKey = KeyCode.None, EventModifiers initiallyActiveModifiers = EventModifiers.None)
             : base(keyBindingStateProvider, initiallySelectedKey, initiallyActiveModifiers)
         {
             var mainContainer = new VisualElement() { name = "mouseContainer" };
-
-            var mouseButtons = new VisualElement() { name = "mouseButtons" };
-            mouseButtons.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
-
-            var mouse0 = new Key(KeyCode.Mouse0, "M0");
-            mouse0.style.width = 50;
-            mouse0.style.height = 96;
-            mouse0.style.borderTopLeftRadius = new StyleLength(25f);
-            mouse0.style.borderBottomRightRadius = new StyleLength(8);
-            mouse0.style.borderTopRightRadius = mouse0.style.borderBottomLeftRadius = new StyleLength(0f);
-            mouse0.style.borderBottomWidth = mouse0.style.borderRightWidth = 2f;
-            mouse0.style.borderTopWidth = mouse0.style.borderLeftWidth = 0f;
-            mouse0.style.marginTop = mouse0.style.marginRight = 0f;
-
-            var mouseButtonMiddle = new VisualElement() { name = "mouseButtonMiddle" };
-            mouseButtonMiddle.style.paddingLeft = mouseButtonMiddle.style.paddingRight = 3f;
-            mouseButtonMiddle.style.paddingTop = mouseButtonMiddle.style.paddingBottom = 24f;
-
-            var mouse2 = new Key(KeyCode.Mouse2, "M2");
-            mouse2.style.borderTopRightRadius = mouse2.style.borderTopLeftRadius = mouse2.style.borderBottomLeftRadius = mouse2.style.borderBottomRightRadius = new StyleLength(8f);
-            mouse2.style.borderBottomWidth = mouse2.style.borderRightWidth = mouse2.style.borderLeftWidth = mouse2.style.borderTopWidth = 2f;
-            mouse2.style.marginTop = mouse2.style.marginRight = 0f;
-            mouse2.style.width = new StyleLength(StyleKeyword.Auto);
-            mouse2.style.flexGrow = 1f;
-            mouseButtonMiddle.Add(mouse2);
-
-            var mouse1 = new Key(KeyCode.Mouse1, "M1");
-            mouse1.style.width = 50;
-            mouse1.style.height = 96;
-            mouse1.style.borderTopRightRadius = new StyleLength(25f);
-            mouse1.style.borderBottomLeftRadius = new StyleLength(8);
-            mouse1.style.borderTopLeftRadius = mouse1.style.borderBottomRightRadius = new StyleLength(0f);
-            mouse1.style.borderBottomWidth = mouse1.style.borderLeftWidth = 2f;
-            mouse1.style.borderTopWidth = mouse1.style.borderRightWidth = 0f;
-            mouse1.style.marginTop = mouse1.style.marginRight = 0f;
+            mainContainer.AddToClassList(k_DeviceContainer);
 
             var mouseBody = new Key(KeyCode.None, "") { name = "mouseBody" };
-            mouseBody.style.width = 124;
-            mouseBody.style.height = 226;
-            mouseBody.style.borderTopRightRadius = mouseBody.style.borderTopLeftRadius = new StyleLength(25f);
-            mouseBody.style.borderBottomLeftRadius = mouseBody.style.borderBottomRightRadius = new StyleLength(67f);
-            mouseBody.Add(mouseButtons);
+            mouseBody.AddToClassList(k_Body);
+
+            var mouseButtonRow = new VisualElement() { name = "mouseButtonRow" };
+            mouseButtonRow.AddToClassList(k_ButtonRow);
+            mouseBody.Add(mouseButtonRow);
+
+            var mouse0 = new Key(KeyCode.Mouse0, "M0");
+            mouse0.AddToClassList(k_PrimaryButton);
+            mouse0.AddToClassList(k_LeftButton);
+
+            var mouseMiddle = new VisualElement() { name = "mouseMiddle" };
+            mouseMiddle.AddToClassList(k_Middle);
+
+            var wheelUp = new Key(KeyCode.WheelUp, "↑");
+            wheelUp.AddToClassList(k_WheelUp);
+            mouseMiddle.Add(wheelUp);
+
+            var mouse2 = new Key(KeyCode.Mouse2, "M2");
+            mouse2.AddToClassList(k_MiddleButton);
+            mouseMiddle.Add(mouse2);
+
+            var wheelDown = new Key(KeyCode.WheelDown, "↓");
+            wheelDown.AddToClassList(k_WheelDown);
+            mouseMiddle.Add(wheelDown);
+
+            var mouse1 = new Key(KeyCode.Mouse1, "M1");
+            mouse1.AddToClassList(k_PrimaryButton);
+            mouse1.AddToClassList(k_RightButton);
+
+            var mouse4 = new Key(KeyCode.Mouse4, "M4");
+            mouse4.AddToClassList(k_MouseXButton);
+            mouse4.AddToClassList(k_MouseTopXButton);
+            mouseBody.Add(mouse4);
 
             var mouse3 = new Key(KeyCode.Mouse3, "M3");
-            var mouse4 = new Key(KeyCode.Mouse4, "M4");
-            mouse3.style.width = mouse4.style.width = 28;
-            mouse3.style.height = mouse4.style.height = 32;
-            mouse3.style.marginLeft = mouse4.style.marginLeft = 3;
-            mouse3.style.borderBottomWidth = mouse3.style.borderLeftWidth = mouse3.style.borderRightWidth = mouse3.style.borderTopWidth =
-                mouse4.style.borderBottomWidth = mouse4.style.borderLeftWidth = mouse4.style.borderRightWidth = mouse4.style.borderTopWidth = 2f;
-            mouse3.style.borderBottomRightRadius = mouse3.style.borderBottomLeftRadius = mouse3.style.borderTopRightRadius = mouse3.style.borderTopLeftRadius =
-                mouse4.style.borderBottomRightRadius = mouse4.style.borderBottomLeftRadius = mouse4.style.borderTopRightRadius = mouse4.style.borderTopLeftRadius = 8;
-
-            mouse4.style.marginTop = 8;
-            mouse3.style.marginTop = 2;
-            mouseBody.Add(mouse4);
+            mouse3.AddToClassList(k_MouseXButton);
             mouseBody.Add(mouse3);
 
             AssignButtonClasses(mouse0);
@@ -1139,14 +1152,14 @@ namespace UnityEditor.ShortcutManagement
             AssignButtonClasses(mouse3);
             AssignButtonClasses(mouse4);
 
-            mouseButtons.Add(mouse0);
-            mouseButtons.Add(mouseButtonMiddle);
-            mouseButtons.Add(mouse1);
+            AssignButtonClasses(wheelUp);
+            AssignButtonClasses(wheelDown);
+
+            mouseButtonRow.Add(mouse0);
+            mouseButtonRow.Add(mouseMiddle);
+            mouseButtonRow.Add(mouse1);
 
             mainContainer.Add(mouseBody);
-
-            mainContainer.style.paddingLeft = mainContainer.style.paddingRight = k_HorizontalPadding;
-
             Add(mainContainer);
 
             mainContainer.RegisterCallback<MouseDownEvent>(OnMouseDown);
@@ -1335,6 +1348,7 @@ namespace UnityEditor.ShortcutManagement
             };
 
             var mainContainer = new VisualElement() { name = "fullKeyboardContainer" };
+            mainContainer.AddToClassList(k_DeviceContainer);
 
             var compactContainer = new VisualElement() { name = "compactKeyboardContainer" };
             var cursorControlContainer = new VisualElement() { name = "cursorControlKeyboardContainer" };
@@ -1342,7 +1356,6 @@ namespace UnityEditor.ShortcutManagement
             BuildKeyboardVisualTree(keysList, dictionaryKeyStyle, compactContainer);
             BuildKeyboardVisualTree(cursorControlKeysList, dictionaryKeyStyle, cursorControlContainer);
 
-            mainContainer.style.paddingLeft = mainContainer.style.paddingRight = k_HorizontalPadding;
             compactContainer.style.width = (keysList[0].Length) * k_KeySize;
 
             mainContainer.Add(compactContainer);

@@ -283,11 +283,11 @@ namespace Unity.Properties
                 }
             }
 
-            if (TryConvert(ref source, out UnityEngine.Object obj) &&
-                obj is TDestination d)
+            if (s_GlobalConverters.TryGetConverter(typeof(TSource), typeof(UnityEngine.Object), out var converter))
             {
-                destination = d;
-                return true;
+                var unityObject = ((TypeConverter<TSource, UnityEngine.Object>) converter)(ref source);
+                destination = (TDestination)(object)unityObject;
+                return unityObject;
             }
 
             destination = default;

@@ -308,6 +308,12 @@ namespace UnityEngine
         // Menu key
         Menu        = 319,
 
+        // Mouse wheel up (roll forward)
+        // This code overlaps SDL_EURO value (for European keyboards) which we don't currently use
+        WheelUp = 321,
+        // Mouse wheel down (roll backward)
+        // This code overlaps SDL_UNDO value (for Atari keyboards) which we don't currently use
+        WheelDown = 322,
         // First (primary) mouse button
         Mouse0      = 323,
         // Second (secondary) mouse button

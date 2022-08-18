@@ -893,9 +893,6 @@ namespace UnityEngine.UIElements
         /// <param name="offset">The position offset where to draw the vector image.</param>
         /// <param name="rotationAngle">The rotation of the vector image.</param>
         /// <param name="scale">The scale of the vector image</param>
-        /// <remarks>
-        ///
-        /// <remarks>
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale)
         {
             using (s_DrawVectorImageMarker.Auto())

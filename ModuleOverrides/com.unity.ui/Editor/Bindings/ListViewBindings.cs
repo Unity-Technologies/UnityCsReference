@@ -79,6 +79,13 @@ namespace UnityEditor.UIElements.Bindings
 
                 listView.SetViewController(null);
                 listView.SetDragAndDropController(null);
+
+                var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
+                if (foldoutInput != null)
+                {
+                    foldoutInput.UnregisterCallback<DragUpdatedEvent>(OnDragUpdated);
+                    foldoutInput.UnregisterCallback<DragPerformEvent>(OnDragPerform);
+                }
             }
 
             listView = lv;
@@ -108,6 +115,13 @@ namespace UnityEditor.UIElements.Bindings
                 listView.SetViewController(new EditorListViewController());
                 listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
                 listView.itemsSource = m_DataList;
+
+                var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
+                if (foldoutInput != null)
+                {
+                    foldoutInput.RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
+                    foldoutInput.RegisterCallback<DragPerformEvent>(OnDragPerform);
+                }
             }
         }
 
@@ -187,6 +201,36 @@ namespace UnityEditor.UIElements.Bindings
                 evt.PreventDefault();
                 evt.StopPropagation();
             }
+        }
+
+        void OnDragUpdated(DragUpdatedEvent evt)
+        {
+            ValidateObjectReferences(_ => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
+        }
+
+        void OnDragPerform(DragPerformEvent evt)
+        {
+            ValidateObjectReferences(obj =>
+            {
+                listView.viewController.AddItems(1);
+                m_DataList.ArrayProperty.GetArrayElementAtIndex(m_DataList.ArraySize.intValue - 1).objectReferenceValue = obj;
+                m_DataList.ApplyChanges();
+            });
+        }
+
+        void ValidateObjectReferences(Action<UnityEngine.Object> onValidated)
+        {
+            var objReferences = DragAndDrop.objectReferences;
+            foreach (var o in objReferences)
+            {
+                var validatedObject = EditorGUI.ValidateObjectFieldAssignment(new[] { o }, typeof(UnityEngine.Object), m_DataList.ArrayProperty, EditorGUI.ObjectFieldValidatorOptions.None);
+                if (validatedObject != null)
+                {
+                    onValidated.Invoke(validatedObject);
+                }
+            }
+
+            DragAndDrop.AcceptDrag();
         }
 
         void UpdateArraySize()
