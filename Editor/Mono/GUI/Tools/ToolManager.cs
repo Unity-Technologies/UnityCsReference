@@ -24,7 +24,7 @@ namespace UnityEditor.EditorTools
 
             if (EditorToolUtility.IsComponentEditor(ctx))
             {
-                var instance = EditorToolManager.GetComponentContext(ctx);
+                var instance = EditorToolManager.GetComponentContext(ctx, true);
                 if (instance == null)
                     throw new InvalidOperationException("The current selection does not contain any objects editable " +
                         $"by the component tool of type: {context}");

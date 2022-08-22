@@ -141,8 +141,7 @@ namespace UnityEditor
             int elementIndex = 0;
             for (int i = 0; i < objs.Length; i++)
             {
-                // we don't want to list hidden objects
-                if (objs[i] == null || objs[i].hideFlags == HideFlags.HideAndDontSave || objs[i].hideFlags == HideFlags.HideInHierarchy)
+                if (objs[i] == null)
                     continue;
 
                 m_Elements[elementIndex] = new Data(objs[i], m_PropNames);
@@ -164,7 +163,7 @@ namespace UnityEditor
 
             for (int i = 0; i < objs.Length; i++)
             {
-                if (objs[i] == null || objs[i].hideFlags == HideFlags.HideAndDontSave || objs[i].hideFlags == HideFlags.HideInHierarchy)
+                if (objs[i] == null)
                     continue;
 
                 if (objs[i] is Component)
