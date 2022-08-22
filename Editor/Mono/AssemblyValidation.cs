@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Mono.Cecil;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -195,14 +196,14 @@ namespace UnityEditor
             return pluginImporter.GetCompatibleWithEditor();
         }
 
-        public static bool ShouldValidateReferences(string path)
+        public static bool ShouldValidateReferences(string path,
+            Dictionary<string, PrecompiledAssembly> allPrecompiledAssemblies)
         {
-            var pluginImporter = AssetImporter.GetAtPath(path) as PluginImporter;
 
-            if (pluginImporter == null)
+            if (!allPrecompiledAssemblies.TryGetValue(path, out var precompiledAssembly))
                 return true;
 
-            return pluginImporter.ValidateReferences;
+            return precompiledAssembly.Flags.HasFlag(AssemblyFlags.ValidateAssembly);
         }
 
         public static void PrintAssemblyDefinitions(AssemblyDefinition[] assemblyDefinitions)
@@ -289,6 +290,11 @@ namespace UnityEditor
                 };
             }
 
+            var precompiledAssemblies = EditorCompilationInterface.Instance
+                .PrecompiledAssemblyProvider.GetAllPrecompiledAssemblies()
+                .Where(x => x.Flags.HasFlag(AssemblyFlags.UserAssembly));
+            var allPrecompiledAssemblies = precompiledAssemblies.ToDictionary(x => AssetPath.ReplaceSeparators(x.Path));
+
             for (int i = 0; i < assemblyPaths.Length; ++i)
             {
                 if (errors[i].HasFlag(ErrorFlags.IncompatibleWithEditor))
@@ -298,7 +304,7 @@ namespace UnityEditor
 
                 // Check if "Validate References" option is enabled
                 // in the PluginImporter
-                if (!ShouldValidateReferences(assemblyPath))
+                if (!ShouldValidateReferences(AssetPath.ReplaceSeparators(assemblyPath), allPrecompiledAssemblies))
                     continue;
 
                 ResolveAndSetupReferences(i,

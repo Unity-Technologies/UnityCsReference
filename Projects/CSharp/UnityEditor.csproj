@@ -2782,6 +2782,9 @@
     <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\TransformVisitor.cs">
       <Link>Editor\Mono\Prefabs\PrefabOverrides\TransformVisitor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Prefabs\PrefabReplaceUtility.cs">
+      <Link>Editor\Mono\Prefabs\PrefabReplaceUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Prefabs\PrefabUtility.bindings.cs">
       <Link>Editor\Mono\Prefabs\PrefabUtility.bindings.cs</Link>
     </Compile>

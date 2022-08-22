@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -137,9 +138,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
+            var isInvalidProjectDependencyVersion = !string.IsNullOrEmpty(version.packageInfo?.projectDependenciesEntry) &&
+                                                    (!SemVersionParser.TryParse(version.packageInfo.projectDependenciesEntry, out var semVersion) || semVersion?.ToString() != version.packageInfo.projectDependenciesEntry);
+            var isInvalidVersion = version.isInstalled &&
+                                   version.isDirectDependency &&
+                                   isInvalidProjectDependencyVersion;
             var isInstalledAsDependency = version.package.versions.installed == version
                 && (!version.isDirectDependency || version.IsDifferentVersionThanRequested);
-            yield return new ButtonDisableCondition(isInstalledAsDependency,
+            yield return new ButtonDisableCondition(!isInvalidVersion && isInstalledAsDependency,
                 string.Format(L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details."), version.package.GetDescriptor()));
         }
 

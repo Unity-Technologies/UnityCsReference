@@ -54,15 +54,6 @@ namespace UnityEngine.UIElements
         public static extern MeshWriteDataInterface Fill(IntPtr handle, FillRule fillRule);
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct MeshWriteDataInterface
-    {
-        public IntPtr vertices;
-        public IntPtr indices;
-        public int vertexCount;
-        public int indexCount;
-    }
-
     /// <summary>
     /// The fill rule to use when filling shapes with <see cref="Painter2D.Fill(FillRule)"/>.
     /// </summary>

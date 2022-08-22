@@ -139,35 +139,35 @@ namespace UnityEditor
         public delegate void OnStartedFunction();
         public delegate void OnCompletedFunction();
 
-//        [Obsolete("Lightmapping.giWorkflowMode is obsolete, use Lightmapping.lightingSettings.autoGenerate instead. ", false)]
+//        [Obsolete("Lightmapping.giWorkflowMode is obsolete, use LightingSettings.autoGenerate instead. ", false)]
         public static GIWorkflowMode giWorkflowMode
         {
             get { return GetLightingSettingsOrDefaultsFallback().autoGenerate ? GIWorkflowMode.Iterative : GIWorkflowMode.OnDemand; }
             set { GetOrCreateLightingsSettings().autoGenerate = (value == GIWorkflowMode.Iterative); }
         }
 
-//        [Obsolete("Lightmapping.realtimeGI is obsolete, use Lightmapping.lightingSettings.realtimeGI instead. ", false)]
+//        [Obsolete("Lightmapping.realtimeGI is obsolete, use LightingSettings.realtimeGI instead. ", false)]
         public static bool realtimeGI
         {
             get { return GetLightingSettingsOrDefaultsFallback().realtimeGI; }
             set { GetOrCreateLightingsSettings().realtimeGI = value; }
         }
 
-//        [Obsolete("Lightmapping.bakedGI is obsolete, use Lightmapping.lightingSettings.bakedGI instead. ", false)]
+//        [Obsolete("Lightmapping.bakedGI is obsolete, use LightingSettings.bakedGI instead. ", false)]
         public static bool bakedGI
         {
             get { return GetLightingSettingsOrDefaultsFallback().bakedGI; }
             set { GetOrCreateLightingsSettings().bakedGI = value; }
         }
 
-        [Obsolete("Lightmapping.indirectOutputScale is obsolete, use Lightmapping.lightingSettings.indirectScale instead. ", false)]
+        [Obsolete("Lightmapping.indirectOutputScale is obsolete, use LightingSettings.indirectScale instead. ", false)]
         public static float indirectOutputScale
         {
             get { return GetLightingSettingsOrDefaultsFallback().indirectScale; }
             set { GetOrCreateLightingsSettings().indirectScale = value; }
         }
 
-        [Obsolete("Lightmapping.bounceBoost is obsolete, use Lightmapping.lightingSettings.albedoBoost instead. ", false)]
+        [Obsolete("Lightmapping.bounceBoost is obsolete, use LightingSettings.albedoBoost instead. ", false)]
         public static float bounceBoost
         {
             get { return GetLightingSettingsOrDefaultsFallback().albedoBoost; }
@@ -196,21 +196,21 @@ namespace UnityEditor
         [NativeName("CachePath")]
         internal static extern string diskCachePath { get; }
 
-        [Obsolete("Lightmapping.enlightenForceWhiteAlbedo is obsolete, use Lightmapping.lightingSettings.realtimeForceWhiteAlbedo instead. ", false)]
+        [Obsolete("Lightmapping.enlightenForceWhiteAlbedo is obsolete, use LightingSettings.realtimeForceWhiteAlbedo instead. ", false)]
         internal static bool enlightenForceWhiteAlbedo
         {
             get { return GetLightingSettingsOrDefaultsFallback().realtimeForceWhiteAlbedo; }
             set { GetOrCreateLightingsSettings().realtimeForceWhiteAlbedo = value; }
         }
 
-        [Obsolete("Lightmapping.enlightenForceUpdates is obsolete, use Lightmapping.lightingSettings.realtimeForceUpdates instead. ", false)]
+        [Obsolete("Lightmapping.enlightenForceUpdates is obsolete, use LightingSettings.realtimeForceUpdates instead. ", false)]
         internal static bool enlightenForceUpdates
         {
             get { return GetLightingSettingsOrDefaultsFallback().realtimeForceUpdates; }
             set { GetOrCreateLightingsSettings().realtimeForceUpdates = value; }
         }
 
-        [Obsolete("Lightmapping.filterMode is obsolete, use Lightmapping.lightingSettings.lightmapFilterMode instead. ", false)]
+        [Obsolete("Lightmapping.filterMode is obsolete, use LightingSettings.lightmapFilterMode instead. ", false)]
         internal static FilterMode filterMode
         {
             get { return GetLightingSettingsOrDefaultsFallback().lightmapFilterMode; }
@@ -741,7 +741,7 @@ namespace UnityEditor.Experimental
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         public static extern ReadOnlySpan<Vector4> GetCustomBakeResultsNoCopy();
 
-        [Obsolete("UnityEditor.Experimental.Lightmapping.extractAmbientOcclusion is obsolete, use Lightmapping.lightingSettings.extractAO instead. ", false)]
+        [Obsolete("UnityEditor.Experimental.Lightmapping.extractAmbientOcclusion is obsolete, use LightingSettings.extractAO instead. ", false)]
         public static bool extractAmbientOcclusion
         {
             get { return UnityEditor.Lightmapping.GetLightingSettingsOrDefaultsFallback().extractAO; }

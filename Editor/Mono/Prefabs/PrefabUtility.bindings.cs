@@ -143,13 +143,32 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene);
+        extern static private bool ConvertToPrefabInstance_Internal([NotNull] GameObject plainGameObject, [NotNull] GameObject assetRootRoot, ConvertToPrefabInstanceSettings settings);
 
-        // Connect the source prefab to the game object, which replaces the instance content with the content of the prefab
-        [Obsolete("Use RevertPrefabInstance. Prefabs instances can no longer be connected to Prefab Assets they are not an instance of to begin with.")]
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern public static GameObject ConnectGameObjectToPrefab([NotNull] GameObject go, [NotNull] GameObject sourcePrefab);
+        extern static private bool InstantiateDraggedPrefabUpon_Internal([NotNull] GameObject draggedUponGameObject, [NotNull] GameObject assetRootRoot);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeThrows]
+        extern public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene);
+
+        [Obsolete("Use ConvertToPrefabInstance() or ReplacePrefabAssetOfPrefabInstance() which has settings for better control.")]
+        public static GameObject ConnectGameObjectToPrefab(GameObject go, GameObject sourcePrefab)
+        {
+            if (GetPrefabInstanceStatus(go) == PrefabInstanceStatus.NotAPrefab)
+            {
+                var settings = new ConvertToPrefabInstanceSettings();
+                ConvertToPrefabInstance(go, sourcePrefab, settings, InteractionMode.AutomatedAction);
+            }
+            else if (IsOutermostPrefabInstanceRoot(go))
+            {
+                var settings = new PrefabReplacingSettings();
+                ReplacePrefabAssetOfPrefabInstance(go, sourcePrefab, settings, InteractionMode.AutomatedAction);
+            }
+
+            return go;
+        }
 
         // Returns the topmost game object that has the same prefab parent as /target/
         [FreeFunction]

@@ -815,7 +815,7 @@ namespace UnityEditor
             {
                 case LightingSettings.FilterType.Gaussian:
                     DrawFieldWithPostfixLabel(
-                            (Rect propertyRect) => { EditorGUI.IntSlider(propertyRect, gaussSetting, 0, 5, gaussLabel); },
+                            (Rect propertyRect) => { EditorGUI.Slider(propertyRect, gaussSetting, 0.0f, 5.0f, gaussLabel); },
                             Styles.texels,
                             EditorStyles.toolbarSlider,
                             minimumWidth,

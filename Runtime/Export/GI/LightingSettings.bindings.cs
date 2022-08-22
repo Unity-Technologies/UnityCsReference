@@ -259,15 +259,15 @@ namespace UnityEngine
 
         // Which radius is used for the direct light path tracer filter if gauss is chosen.
         [NativeName("PVRFilteringGaussRadiusDirect")]
-        public extern int filteringGaussRadiusDirect { get; set; }
+        public extern float filteringGaussianRadiusDirect { get; set; }
 
         // Which radius is used for the indirect light path tracer filter if gauss is chosen.
         [NativeName("PVRFilteringGaussRadiusIndirect")]
-        public extern int filteringGaussRadiusIndirect { get; set; }
+        public extern float filteringGaussianRadiusIndirect { get; set; }
 
         // Which radius is used for AO path tracer filter if gauss is chosen.
         [NativeName("PVRFilteringGaussRadiusAO")]
-        public extern int filteringGaussRadiusAO { get; set; }
+        public extern float filteringGaussianRadiusAO { get; set; }
 
         // Which position sigma is used for the direct light path tracer filter if Atrous is chosen.
         [NativeName("PVRFilteringAtrousPositionSigmaDirect")]

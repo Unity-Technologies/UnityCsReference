@@ -37,6 +37,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<TermOfServiceAgreementStatus> onTermOfServiceAgreementStatusChange = delegate {};
 
         private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
+        // we added m_Feature to speed up reverse dependencies lookup
+        private readonly Dictionary<string, IPackage> m_Features = new Dictionary<string, IPackage>();
 
         private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
 
@@ -210,6 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (version?.dependencies == null)
                 return null;
+
             var installedRoots = allPackages.Select(p => p.versions.installed).Where(p => p?.isDirectDependency ?? false);
             return installedRoots.Where(p
                 => (directDependenciesOnly ? p.dependencies : p.resolvedDependencies)?.Any(r => r.name == version.name) ?? false);
@@ -217,7 +220,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)
         {
-            return GetReverseDependencies(version, true)?.Where(p => p.HasTag(PackageTag.Feature)) ?? Enumerable.Empty<IPackageVersion>();
+            if (version?.dependencies == null)
+                return Enumerable.Empty<IPackageVersion>();
+
+            var installedFeatures = m_Features.Values.Select(p => p.versions.installed)
+                .Where(p => p?.isDirectDependency ?? false);
+            return installedFeatures.Where(f => f.dependencies?.Any(r => r.name == version.name) ?? false);
         }
 
         public virtual IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null)
@@ -254,7 +262,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var p in serializedPackages)
             {
                 p.LinkPackageAndVersions();
-                m_Packages[p.uniqueId] = p;
+                AddPackage(p.uniqueId, p);
             }
         }
 
@@ -363,6 +371,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient.ClearCache();
 
             m_Packages.Clear();
+            m_Features.Clear();
             m_SerializedUpmPackages = new List<UpmPackage>();
             m_SerializedAssetStorePackages = new List<AssetStorePackage>();
 
@@ -424,7 +433,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var notInstalledAssetStorePackages = m_Packages.Values.Where(p => p.Is(PackageType.AssetStore) && p.versions.installed == null).ToArray();
                 foreach (var p in notInstalledAssetStorePackages)
-                    m_Packages.Remove(p.uniqueId);
+                    RemovePackage(p.uniqueId);
                 TriggerOnPackagesChanged(removed: notInstalledAssetStorePackages);
             }
         }
@@ -453,6 +462,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!packages.Any())
                 return;
 
+            var featuresWithDependencyChange = new Dictionary<string, IPackage>();
             var packagesAdded = new List<IPackage>();
             var packagesRemoved = new List<IPackage>();
 
@@ -465,6 +475,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var package in packages)
             {
+                foreach (var feature in GetFeaturesThatUseThisPackage(package.versions.primary))
+                {
+                    if (!featuresWithDependencyChange.ContainsKey(feature.uniqueId))
+                        featuresWithDependencyChange[feature.uniqueId] = feature.package;
+                }
+
                 var packageUniqueId = package.uniqueId;
                 var isEmptyPackage = !package.versions.Any();
                 var oldPackage = GetPackage(packageUniqueId);
@@ -472,11 +488,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (oldPackage != null && isEmptyPackage)
                 {
                     packagesRemoved.Add(oldPackage);
-                    m_Packages.Remove(packageUniqueId);
+                    RemovePackage(packageUniqueId);
                 }
                 else if (!isEmptyPackage)
                 {
-                    m_Packages[packageUniqueId] = package;
+                    AddPackage(packageUniqueId, package);
                     if (oldPackage != null)
                     {
                         packagesPreUpdate.Add(oldPackage);
@@ -503,7 +519,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (packageWithNameAsUniqueId != null)
                     {
                         packagesRemoved.Add(packageWithNameAsUniqueId);
-                        m_Packages.Remove(package.name);
+                        RemovePackage(package.name);
                     }
                 }
 
@@ -513,6 +529,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primaryVersion?.isFullyFetched == false)
                     m_UpmClient.ExtraFetch(primaryVersion.uniqueId);
             }
+
+            packagesUpdated.AddRange(featuresWithDependencyChange.Values.Where(p => !packagesUpdated.Contains(p)));
 
             TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated);
 
@@ -548,6 +566,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                     RemoveSpecialInstallation(specialUniqueId);
                 }
             }
+        }
+
+        private void RemovePackage(string packageUniqueId)
+        {
+            m_Packages.Remove(packageUniqueId);
+            m_Features.Remove(packageUniqueId);
+        }
+
+        private void AddPackage(string packageUniqueId, IPackage package)
+        {
+            m_Packages[packageUniqueId] = package;
+            if (package.Is(PackageType.Feature))
+                m_Features[packageUniqueId] = package;
         }
 
         private void OnUpmAddAndRemoveOperation(UpmAddAndRemoveOperation operation)
@@ -599,7 +630,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Fix issue where package was added by id without version. Remove package from package database only if it's a placeholder
             if (placeHolderPackage is PlaceholderPackage)
             {
-                m_Packages.Remove(specialUniqueId);
+                RemovePackage(specialUniqueId);
                 TriggerOnPackagesChanged(removed: new[] { placeHolderPackage });
             }
             m_UpmClient.specialInstallations.Remove(specialUniqueId);

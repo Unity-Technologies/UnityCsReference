@@ -1175,7 +1175,6 @@ namespace UnityEditor
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Children"));
 
-
             menu.AddSeparator("");
 
             GameObject selectedObject = null;
@@ -1213,10 +1212,14 @@ namespace UnityEditor
                 }
             }
 
-            if (!string.IsNullOrEmpty(assetPath))
-            {
+            var contextClickedGameObject = contextClickedItemID == 0 ? null : EditorUtility.InstanceIDToObject(contextClickedItemID) as GameObject;
+            var isSelectPrefabRootAvailable = IsSelectPrefabRootAvailable();
+
+            if (contextClickedGameObject != null || !string.IsNullOrEmpty(assetPath))
                 menu.AddSeparator("");
 
+            if (!string.IsNullOrEmpty(assetPath))
+            {
                 if (PrefabUtility.IsPartOfModelPrefab(prefabAsset))
                 {
                     menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Model"), false, () =>
@@ -1239,6 +1242,7 @@ namespace UnityEditor
 
             if (!string.IsNullOrEmpty(assetPath))
             {
+                menu.AddSeparator("Prefab/");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Asset"), false, () =>
                 {
                     Selection.activeObject = prefabAsset;
@@ -1246,7 +1250,7 @@ namespace UnityEditor
                 });
             }
 
-            if (IsSelectPrefabRootAvailable())
+            if (isSelectPrefabRootAvailable)
             {
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Root"), false, SelectPrefabRoot);
             }
@@ -1289,10 +1293,24 @@ namespace UnityEditor
                 );
             }
 
+            if (contextClickedGameObject != null)
+            {
+                menu.AddSeparator("Prefab/");
+                List<GameObject> listOfInstanceRoots;
+                List<GameObject> listOfPlainGameObjects;
+                PrefabReplaceUtility.FindGameObjectsToReplace(contextClickedGameObject, out listOfPlainGameObjects, out listOfInstanceRoots);
+
+                var multiselection = listOfInstanceRoots.Count > 1 || listOfPlainGameObjects.Count > 1;
+
+                PrefabReplaceUtility.AddReplaceMenuItemsToMenuBasedOnCurrentSelection(menu, "Prefab/", contextClickedGameObject, listOfInstanceRoots, listOfPlainGameObjects, null);
+            }
+
             if (AnyOutermostPrefabRoots())
             {
+                menu.AddSeparator("Prefab/");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, UnpackPrefab);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, UnpackPrefabCompletely);
+                menu.AddSeparator("Prefab/");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Check for Unused Overrides"), false, RemoveSelectedPrefabInstanceUnusedOverrides);
             }
 
