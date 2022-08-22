@@ -524,19 +524,20 @@ namespace UnityEditor
             public static readonly GUIContent duplicateSelected = EditorGUIUtility.TrTextContent("Duplicate Selected", "Duplicate the selected Light Probes.");
             public static readonly GUIContent performDeringing = EditorGUIUtility.TrTextContent("Remove Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
 
-            // Toolbar
-            public static readonly GUIContent editModeButton = EditorGUIUtility.TrIconContent("EditCollider", "Edit Light Probes");
-            public static readonly EditMode.SceneViewEditMode[] toolbarModes = {EditMode.SceneViewEditMode.LightProbeGroup};
-            public static readonly GUIContent[] toolbarButtons = { editModeButton };
+            public static readonly GUIContent[] enterToolbarButtons = { EditorGUIUtility.TrTextContent("Edit Light Probe Positions", "Change positions for Light Probes.") };
+            public static readonly GUIContent[] exitToolbarButtons = { EditorGUIUtility.TrTextContent("Exit Light Probe Editing", "Exit Light Probe Positions Editing.") };
+            public static readonly EditMode.SceneViewEditMode[] toolbarModes = { EditMode.SceneViewEditMode.LightProbeGroup };
         }
         private LightProbeGroupEditor m_Editor;
+        private LightProbeGroup m_LightProbeGroup;
 
         private bool m_EditingProbes;
         private bool m_ShouldFocus;
 
         public void OnEnable()
         {
-            m_Editor = new LightProbeGroupEditor(target as LightProbeGroup);
+            m_LightProbeGroup = target as LightProbeGroup;
+            m_Editor = new LightProbeGroupEditor(m_LightProbeGroup);
             m_Editor.PullProbePositions();
             m_Editor.DeselectProbes();
             m_Editor.PushProbePositions();
@@ -604,6 +605,7 @@ namespace UnityEditor
                 m_Editor.PushProbePositions();
                 m_Editor = null;
             }
+            m_LightProbeGroup = null;
         }
 
         private void UndoRedoPerformed(in UndoRedoInfo info)
@@ -628,74 +630,73 @@ namespace UnityEditor
 
                 m_Editor.PullProbePositions();
 
-                EditorGUILayout.BeginHorizontal();
-                {
-                    GUILayout.FlexibleSpace();
-                    EditMode.DoInspectorToolbar(Styles.toolbarModes, Styles.toolbarButtons, this);
-                    GUILayout.FlexibleSpace();
-                }
-                EditorGUILayout.EndHorizontal();
-
                 GUILayout.Space(3);
                 m_Editor.drawTetrahedra.value = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra.value);
                 m_Editor.deringProbes = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.deringProbes);
 
-                EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
-                EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
-
-                EditorGUI.BeginChangeCheck();
-                Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
-                Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
-
-                if (EditorGUI.EndChangeCheck())
+                var isCurrentLightProbeInEditMode = EditMode.editMode == EditMode.SceneViewEditMode.LightProbeGroup && EditMode.IsOwner(this);
+                EditorGUILayout.BeginHorizontal();
                 {
-                    Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
-                    Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
-                    for (int i = 0; i < selectedPositions.Length; i++)
-                        m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
+                    EditMode.DoInspectorToolbar(Styles.toolbarModes, isCurrentLightProbeInEditMode ? Styles.exitToolbarButtons : Styles.enterToolbarButtons, this);
                 }
-                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.EndHorizontal();
 
-                GUILayout.Space(3);
-
-                GUILayout.BeginHorizontal();
-                GUILayout.BeginVertical();
-
-                if (GUILayout.Button(Styles.addProbe))
+                EditorGUI.BeginDisabledGroup(!isCurrentLightProbeInEditMode);
                 {
-                    var position = Vector3.zero;
-                    if (SceneView.lastActiveSceneView)
+                    GUILayout.BeginHorizontal();
                     {
-                        var probeGroup = target as LightProbeGroup;
-                        if (probeGroup) position = probeGroup.transform.InverseTransformPoint(position);
+                        GUILayout.BeginVertical();
+                        if (GUILayout.Button(Styles.addProbe))
+                        {
+                            var position = Vector3.zero;
+                            if (SceneView.lastActiveSceneView)
+                                position = m_LightProbeGroup.transform.InverseTransformPoint(position);
+                            StartEditProbes();
+                            m_Editor.DeselectProbes();
+                            m_Editor.AddProbe(position);
+                        }
+
+                        if (GUILayout.Button(Styles.deleteSelected))
+                        {
+                            StartEditProbes();
+                            m_Editor.RemoveSelectedProbes();
+                        }
+                        GUILayout.EndVertical();
                     }
-                    StartEditProbes();
-                    m_Editor.DeselectProbes();
-                    m_Editor.AddProbe(position);
-                }
+                    GUILayout.BeginVertical();
+                    {
+                        if (GUILayout.Button(Styles.selectAll))
+                        {
+                            StartEditProbes();
+                            m_Editor.SelectAllProbes();
+                        }
 
-                if (GUILayout.Button(Styles.deleteSelected))
-                {
-                    StartEditProbes();
-                    m_Editor.RemoveSelectedProbes();
-                }
-                GUILayout.EndVertical();
-                GUILayout.BeginVertical();
+                        if (GUILayout.Button(Styles.duplicateSelected))
+                        {
+                            StartEditProbes();
+                            m_Editor.DuplicateSelectedProbes();
+                        }
 
-                if (GUILayout.Button(Styles.selectAll))
-                {
-                    StartEditProbes();
-                    m_Editor.SelectAllProbes();
-                }
+                        GUILayout.EndVertical();
+                    }
+                    GUILayout.EndHorizontal();
 
-                if (GUILayout.Button(Styles.duplicateSelected))
-                {
-                    StartEditProbes();
-                    m_Editor.DuplicateSelectedProbes();
-                }
+                    EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
+                        Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
 
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
+                            Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
+                            for (int i = 0; i < selectedPositions.Length; i++)
+                                m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
+                        }
+                    }
+                    EditorGUI.EndDisabledGroup();
+                }
                 EditorGUI.EndDisabledGroup();
 
                 m_Editor.HandleEditMenuHotKeyCommands();

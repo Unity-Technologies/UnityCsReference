@@ -682,8 +682,14 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Native\ImmediateStylePainter.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIPainter2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRMeshBuilder.bindings.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRMeshBuilder.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Native\Renderer\UIRenderer.bindings.cs</Link>
@@ -786,9 +792,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTessellation.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTessellation.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs</Link>
@@ -2730,6 +2733,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\GI\LightingSettings.bindings.cs">
       <Link>Runtime\Export\GI\LightingSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\GI\LightingSettings.deprecated.cs">
+      <Link>Runtime\Export\GI\LightingSettings.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs">
       <Link>Runtime\Export\GI\Lightmapping.cs</Link>

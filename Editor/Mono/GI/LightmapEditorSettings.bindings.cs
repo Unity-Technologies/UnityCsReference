@@ -70,7 +70,7 @@ namespace UnityEditor
         }
 
 #pragma warning disable 0618
-        [Obsolete("LightmapEditorSettings.lightmapper is obsolete, use Lightmapping.lightingSettings.lightmapper instead. ", false)]
+        [Obsolete("LightmapEditorSettings.lightmapper is obsolete, use LightingSettings.lightmapper instead. ", false)]
         public static Lightmapper lightmapper
         {
             get { return ConvertToOldLightmapperEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper); }
@@ -121,14 +121,14 @@ namespace UnityEditor
 
 #pragma warning restore 0618
 
-        [Obsolete("LightmapEditorSettings.lightmapsMode is obsolete, use Lightmapping.lightingSettings.directionalityMode instead. ", false)]
+        [Obsolete("LightmapEditorSettings.lightmapsMode is obsolete, use LightingSettings.directionalityMode instead. ", false)]
         public static LightmapsMode lightmapsMode
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().directionalityMode; }
             set { Lightmapping.GetOrCreateLightingsSettings().directionalityMode = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.mixedBakeMode is obsolete, use Lightmapping.lightingSettings.mixedBakeMode instead. ", false)]
+        [Obsolete("LightmapEditorSettings.mixedBakeMode is obsolete, use LightingSettings.mixedBakeMode instead. ", false)]
         public static MixedLightingMode mixedBakeMode
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().mixedBakeMode; }
@@ -136,7 +136,7 @@ namespace UnityEditor
         }
 
 #pragma warning disable 0618
-        [Obsolete("LightmapEditorSettings.sampling is obsolete, use Lightmapping.lightingSettings.sampling instead. ", false)]
+        [Obsolete("LightmapEditorSettings.sampling is obsolete, use LightingSettings.sampling instead. ", false)]
         public static Sampling sampling
         {
             get { return ConvertToOldSamplingEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().sampling); }
@@ -181,28 +181,28 @@ namespace UnityEditor
 
 #pragma warning restore 0618
 
-        [Obsolete("LightmapEditorSettings.directSampleCount is obsolete, use Lightmapping.lightingSettings.directSampleCount instead. ", false)]
+        [Obsolete("LightmapEditorSettings.directSampleCount is obsolete, use LightingSettings.directSampleCount instead. ", false)]
         public static int directSampleCount
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().directSampleCount; }
             set { Lightmapping.GetOrCreateLightingsSettings().directSampleCount = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.indirectSampleCount is obsolete, use Lightmapping.lightingSettings.indirectSampleCount instead. ", false)]
+        [Obsolete("LightmapEditorSettings.indirectSampleCount is obsolete, use LightingSettings.indirectSampleCount instead. ", false)]
         public static int indirectSampleCount
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().indirectSampleCount; }
             set { Lightmapping.GetOrCreateLightingsSettings().indirectSampleCount = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.bounces is obsolete, use Lightmapping.lightingSettings.maxBounces instead. ", false)]
+        [Obsolete("LightmapEditorSettings.bounces is obsolete, use LightingSettings.maxBounces instead. ", false)]
         public static int bounces
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().maxBounces; }
             set { Lightmapping.GetOrCreateLightingsSettings().maxBounces = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.prioritizeView is obsolete, use Lightmapping.lightingSettings.prioritizeView instead. ", false)]
+        [Obsolete("LightmapEditorSettings.prioritizeView is obsolete, use LightingSettings.prioritizeView instead. ", false)]
         public static bool prioritizeView
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().prioritizeView; }
@@ -210,7 +210,7 @@ namespace UnityEditor
         }
 
 #pragma warning disable 0618
-        [Obsolete("LightmapEditorSettings.filteringMode is obsolete, use Lightmapping.lightingSettings.filteringMode instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringMode is obsolete, use LightingSettings.filteringMode instead. ", false)]
         public static FilterMode filteringMode
         {
             get { return ConvertToOldFilteringModeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringMode); }
@@ -259,21 +259,21 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("LightmapEditorSettings.denoiserTypeDirect is obsolete, use Lightmapping.lightingSettings.denoiserTypeDirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.denoiserTypeDirect is obsolete, use LightingSettings.denoiserTypeDirect instead. ", false)]
         public static DenoiserType denoiserTypeDirect
         {
             get { return ConvertToOldDenoiserTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().denoiserTypeDirect); }
             set { Lightmapping.GetOrCreateLightingsSettings().denoiserTypeDirect = ConvertToNewDenoiserTypeEnum(value); }
         }
 
-        [Obsolete("LightmapEditorSettings.denoiserTypeIndirect is obsolete, use Lightmapping.lightingSettings.denoiserTypeIndirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.denoiserTypeIndirect is obsolete, use LightingSettings.denoiserTypeIndirect instead. ", false)]
         public static DenoiserType denoiserTypeIndirect
         {
             get { return ConvertToOldDenoiserTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().denoiserTypeIndirect); }
             set { Lightmapping.GetOrCreateLightingsSettings().denoiserTypeIndirect = ConvertToNewDenoiserTypeEnum(value); }
         }
 
-        [Obsolete("LightmapEditorSettings.denoiserTypeAO is obsolete, use Lightmapping.lightingSettings.denoiserTypeAO instead. ", false)]
+        [Obsolete("LightmapEditorSettings.denoiserTypeAO is obsolete, use LightingSettings.denoiserTypeAO instead. ", false)]
         public static DenoiserType denoiserTypeAO
         {
             get { return ConvertToOldDenoiserTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().denoiserTypeAO); }
@@ -328,21 +328,21 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("LightmapEditorSettings.filterTypeDirect is obsolete, use Lightmapping.lightingSettings.filterTypeDirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filterTypeDirect is obsolete, use LightingSettings.filterTypeDirect instead. ", false)]
         public static FilterType filterTypeDirect
         {
             get {  return ConvertToOldFilterTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filterTypeDirect); }
             set { Lightmapping.GetOrCreateLightingsSettings().filterTypeDirect = ConvertToNewFilterTypeEnum(value); }
         }
 
-        [Obsolete("LightmapEditorSettings.filterTypeIndirect is obsolete, use Lightmapping.lightingSettings.filterTypeIndirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filterTypeIndirect is obsolete, use LightingSettings.filterTypeIndirect instead. ", false)]
         public static FilterType filterTypeIndirect
         {
             get { return ConvertToOldFilterTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filterTypeIndirect); }
             set { Lightmapping.GetOrCreateLightingsSettings().filterTypeIndirect = ConvertToNewFilterTypeEnum(value); }
         }
 
-        [Obsolete("LightmapEditorSettings.filterTypeAO is obsolete, use Lightmapping.lightingSettings.filterTypeAO instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filterTypeAO is obsolete, use LightingSettings.filterTypeAO instead. ", false)]
         public static FilterType filterTypeAO
         {
             get { return ConvertToOldFilterTypeEnum(Lightmapping.GetLightingSettingsOrDefaultsFallback().filterTypeAO); }
@@ -393,98 +393,98 @@ namespace UnityEditor
 
 #pragma warning restore 0618
 
-        [Obsolete("LightmapEditorSettings.filteringGaussRadiusDirect is obsolete, use Lightmapping.lightingSettings.filteringGaussRadiusDirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringGaussRadiusDirect is obsolete, use LightingSettings.filteringGaussianRadiusDirect instead. ", false)]
         public static int filteringGaussRadiusDirect
         {
-            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussRadiusDirect; }
-            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussRadiusDirect = value; }
+            get { return (int)Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussianRadiusDirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussianRadiusDirect = (float)value; }
         }
 
-        [Obsolete("LightmapEditorSettings.filteringGaussRadiusIndirect is obsolete, use Lightmapping.lightingSettings.filteringGaussRadiusIndirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringGaussRadiusIndirect is obsolete, use LightingSettings.filteringGaussianRadiusIndirect instead. ", false)]
         public static int filteringGaussRadiusIndirect
         {
-            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussRadiusIndirect; }
-            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussRadiusIndirect = value; }
+            get { return (int)Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussianRadiusIndirect; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussianRadiusIndirect = (float)value; }
         }
 
-        [Obsolete("LightmapEditorSettings.filteringGaussRadiusAO is obsolete, use Lightmapping.lightingSettings.filteringGaussRadiusAO instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringGaussRadiusAO is obsolete, use LightingSettings.filteringGaussianRadiusAO instead. ", false)]
         public static int filteringGaussRadiusAO
         {
-            get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussRadiusAO; }
-            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussRadiusAO = value; }
+            get { return (int)Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringGaussianRadiusAO; }
+            set { Lightmapping.GetOrCreateLightingsSettings().filteringGaussianRadiusAO = (float)value; }
         }
 
-        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaDirect is obsolete, use Lightmapping.lightingSettings.filteringAtrousPositionSigmaDirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaDirect is obsolete, use LightingSettings.filteringAtrousPositionSigmaDirect instead. ", false)]
         public static float filteringAtrousPositionSigmaDirect
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringAtrousPositionSigmaDirect; }
             set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaDirect = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaIndirect is obsolete, use Lightmapping.lightingSettings.filteringAtrousPositionSigmaIndirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaIndirect is obsolete, use LightingSettings.filteringAtrousPositionSigmaIndirect instead. ", false)]
         public static float filteringAtrousPositionSigmaIndirect
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringAtrousPositionSigmaIndirect; }
             set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaIndirect = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaIndirect is obsolete, use Lightmapping.lightingSettings.filteringAtrousPositionSigmaIndirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.filteringAtrousPositionSigmaIndirect is obsolete, use LightingSettings.filteringAtrousPositionSigmaIndirect instead. ", false)]
         public static float filteringAtrousPositionSigmaAO
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().filteringAtrousPositionSigmaIndirect; }
             set { Lightmapping.GetOrCreateLightingsSettings().filteringAtrousPositionSigmaIndirect = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.environmentMIS is obsolete, use Lightmapping.lightingSettings.environmentImportanceSampling instead. ", false)]
+        [Obsolete("LightmapEditorSettings.environmentMIS is obsolete, use LightingSettings.environmentImportanceSampling instead. ", false)]
         internal static int environmentMIS
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentImportanceSampling ? 1 : 0; }
             set { Lightmapping.GetOrCreateLightingsSettings().environmentImportanceSampling = value != 0; }
         }
 
-        [Obsolete("LightmapEditorSettings.environmentSampleCount is obsolete, use Lightmapping.lightingSettings.environmentSampleCount instead. ", false)]
+        [Obsolete("LightmapEditorSettings.environmentSampleCount is obsolete, use LightingSettings.environmentSampleCount instead. ", false)]
         public static int environmentSampleCount
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentSampleCount; }
             set { Lightmapping.GetOrCreateLightingsSettings().environmentSampleCount = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.environmentReferencePointCount is obsolete, use Lightmapping.lightingSettings.environmentReferencePointCount instead. ", false)]
+        [Obsolete("LightmapEditorSettings.environmentReferencePointCount is obsolete, use LightingSettings.environmentReferencePointCount instead. ", false)]
         internal static int environmentReferencePointCount
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().environmentReferencePointCount; }
             set { Lightmapping.GetOrCreateLightingsSettings().environmentReferencePointCount = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.lightProbeSampleCountMultiplier is obsolete, use Lightmapping.lightingSettings.lightProbeSampleCountMultiplier instead. ", false)]
+        [Obsolete("LightmapEditorSettings.lightProbeSampleCountMultiplier is obsolete, use LightingSettings.lightProbeSampleCountMultiplier instead. ", false)]
         internal static float lightProbeSampleCountMultiplier
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightProbeSampleCountMultiplier; }
             set { Lightmapping.GetOrCreateLightingsSettings().lightProbeSampleCountMultiplier = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.maxAtlasSize is obsolete, use Lightmapping.lightingSettings.lightmapMaxSize instead. ", false)]
+        [Obsolete("LightmapEditorSettings.maxAtlasSize is obsolete, use LightingSettings.lightmapMaxSize instead. ", false)]
         public static int maxAtlasSize
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapMaxSize; }
             set { Lightmapping.GetOrCreateLightingsSettings().lightmapMaxSize = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.realtimeResolution is obsolete, use Lightmapping.lightingSettings.indirectResolution instead. ", false)]
+        [Obsolete("LightmapEditorSettings.realtimeResolution is obsolete, use LightingSettings.indirectResolution instead. ", false)]
         public static float realtimeResolution
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().indirectResolution; }
             set { Lightmapping.GetOrCreateLightingsSettings().indirectResolution = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.bakeResolution is obsolete, use Lightmapping.lightingSettings.lightmapResolution instead. ", false)]
+        [Obsolete("LightmapEditorSettings.bakeResolution is obsolete, use LightingSettings.lightmapResolution instead. ", false)]
         public static float bakeResolution
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapResolution; }
             set { Lightmapping.GetOrCreateLightingsSettings().lightmapResolution = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.textureCompression is obsolete, use Lightmapping.lightingSettings.compressLightmaps instead. ", false)]
+        [Obsolete("LightmapEditorSettings.textureCompression is obsolete, use LightingSettings.compressLightmaps instead. ", false)]
         public static bool textureCompression
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().compressLightmaps; }
@@ -495,49 +495,49 @@ namespace UnityEditor
         [NativeName("ReflectionCompression")]
         public extern static ReflectionCubemapCompression reflectionCubemapCompression { get; set; }
 
-        [Obsolete("LightmapEditorSettings.enableAmbientOcclusion is obsolete, use Lightmapping.lightingSettings.ao instead. ", false)]
+        [Obsolete("LightmapEditorSettings.enableAmbientOcclusion is obsolete, use LightingSettings.ao instead. ", false)]
         public static bool enableAmbientOcclusion
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().ao; }
             set { Lightmapping.GetOrCreateLightingsSettings().ao = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.aoMaxDistance is obsolete, use Lightmapping.lightingSettings.aoMaxDistance instead. ", false)]
+        [Obsolete("LightmapEditorSettings.aoMaxDistance is obsolete, use LightingSettings.aoMaxDistance instead. ", false)]
         public static float aoMaxDistance
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().aoMaxDistance; }
             set { Lightmapping.GetOrCreateLightingsSettings().aoMaxDistance = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.aoExponentIndirect is obsolete, use Lightmapping.lightingSettings.aoExponentIndirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.aoExponentIndirect is obsolete, use LightingSettings.aoExponentIndirect instead. ", false)]
         public static float aoExponentIndirect
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().aoExponentIndirect; }
             set { Lightmapping.GetOrCreateLightingsSettings().aoExponentIndirect = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.aoExponentDirect is obsolete, use Lightmapping.lightingSettings.aoExponentDirect instead. ", false)]
+        [Obsolete("LightmapEditorSettings.aoExponentDirect is obsolete, use LightingSettings.aoExponentDirect instead. ", false)]
         public static float aoExponentDirect
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().aoExponentDirect; }
             set { Lightmapping.GetOrCreateLightingsSettings().aoExponentDirect = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.padding is obsolete, use Lightmapping.lightingSettings.lightmapPadding instead. ", false)]
+        [Obsolete("LightmapEditorSettings.padding is obsolete, use LightingSettings.lightmapPadding instead. ", false)]
         public static int padding
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapPadding; }
             set { Lightmapping.GetOrCreateLightingsSettings().lightmapPadding = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.exportTrainingData is obsolete, use Lightmapping.lightingSettings.exportTrainingData instead. ", false)]
+        [Obsolete("LightmapEditorSettings.exportTrainingData is obsolete, use LightingSettings.exportTrainingData instead. ", false)]
         public static bool exportTrainingData
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().exportTrainingData; }
             set { Lightmapping.GetOrCreateLightingsSettings().exportTrainingData = value; }
         }
 
-        [Obsolete("LightmapEditorSettings.trainingDataDestination is obsolete, use Lightmapping.lightingSettings.trainingDataDestination instead. ", false)]
+        [Obsolete("LightmapEditorSettings.trainingDataDestination is obsolete, use LightingSettings.trainingDataDestination instead. ", false)]
         public static string trainingDataDestination
         {
             get { return Lightmapping.GetLightingSettingsOrDefaultsFallback().trainingDataDestination; }

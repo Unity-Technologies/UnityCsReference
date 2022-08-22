@@ -60,6 +60,7 @@ namespace UnityEngine.UIElements
             m_Toggle = new Toggle { name = BaseTreeView.itemToggleUssClassName };
             m_Toggle.userData = this;
             m_Toggle.AddToClassList(Foldout.toggleUssClassName);
+            m_Toggle.AddToClassList(BaseTreeView.itemToggleUssClassName);
             m_Toggle.visualInput.AddToClassList(Foldout.inputUssClassName);
             m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(Foldout.checkmarkUssClassName);
             m_Container.hierarchy.Add(m_Toggle);
@@ -108,6 +109,8 @@ namespace UnityEngine.UIElements
                 var indentElement = s_IndentPool.Get();
                 m_IndentContainer.Add(indentElement);
             }
+
+            m_IndentContainer.EnableInClassList(BaseTreeView.itemIndentsContainerUssClassName, depth > 0);
         }
 
         public void SetExpandedWithoutNotify(bool expanded)

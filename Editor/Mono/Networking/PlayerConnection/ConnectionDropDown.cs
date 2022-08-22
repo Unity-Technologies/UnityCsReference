@@ -39,7 +39,7 @@ namespace UnityEditor.Networking.PlayerConnection
                 return s;
 
             maxwidth -= style.CalcSize(GUIContent.Temp("...")).x;
-            while (style.CalcSize(GUIContent.Temp(s)).x > maxwidth)
+            while (s.Length > 0 && style.CalcSize(GUIContent.Temp(s)).x > maxwidth)
             {
                 s = s.Remove(s.Length - 1, 1);
             }

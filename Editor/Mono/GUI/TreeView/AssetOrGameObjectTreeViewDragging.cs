@@ -64,7 +64,6 @@ namespace UnityEditor
     {
         public delegate DragAndDropVisualMode CustomDraggingDelegate(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, DropPosition dropPos, bool perform);
         CustomDraggingDelegate m_CustomDragHandling;
-
         const string kSceneHeaderDragString = "SceneHeaderList";
 
         public Transform parentForDraggedObjectsOutsideItems { get; set; }
@@ -213,6 +212,16 @@ namespace UnityEditor
 
             if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
+
+            GameObject go = EditorUtility.InstanceIDToObject(gameObjectOrSceneInstanceID) as GameObject;
+            if (go != null)
+            {
+                DragAndDropVisualMode visualMode;
+                if (PrefabReplaceUtility.GetDragVisualModeAndShowMenuWithReplaceMenuItemsWhenNeeded(go, draggingUpon, perform, true, true, out visualMode))
+                {
+                    return visualMode;
+                }
+            }
 
             return DragAndDrop.DropOnHierarchyWindow(gameObjectOrSceneInstanceID, option, null, perform);
         }

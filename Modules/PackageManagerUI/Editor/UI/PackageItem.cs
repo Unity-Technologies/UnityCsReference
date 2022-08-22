@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_SelectedClassName = "selected";
 
         private string m_CurrentStateClass;
+        private string m_CurrentFeatureState;
 
         public IPackage package { get; private set; }
         public VisualState visualState { get; private set; }
@@ -232,8 +233,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (featureState == FeatureState.Customized)
             {
-                m_InfoStateIcon.AddToClassList(featureState.ToString().ToLower());
+                m_CurrentFeatureState = featureState.ToString().ToLower();
+                m_InfoStateIcon.AddToClassList(m_CurrentFeatureState);
                 m_InfoStateIcon.tooltip = L10n.Tr("This feature has been manually customized");
+            }
+            else
+            {
+                m_InfoStateIcon.RemoveFromClassList(m_CurrentFeatureState);
+                m_CurrentFeatureState = null;
             }
         }
 

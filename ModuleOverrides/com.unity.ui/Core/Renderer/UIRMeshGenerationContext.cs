@@ -242,6 +242,14 @@ namespace UnityEngine.UIElements
                 pageAndID = isValid ? renderChain.shaderInfoAllocator.ColorAllocToVertexData(alloc) : new Color32()
             };
         }
+
+        public MeshBuilderNative.NativeColorPage ToNativeColorPage()
+        {
+            return new MeshBuilderNative.NativeColorPage() {
+                isValid = isValid ? 1 : 0,
+                pageAndID = pageAndID
+            };
+        }
     }
 
     internal static class MeshGenerationContextUtils
@@ -273,6 +281,29 @@ namespace UnityEngine.UIElements
             internal ColorPage topColorPage;
             internal ColorPage rightColorPage;
             internal ColorPage bottomColorPage;
+
+            internal MeshBuilderNative.NativeBorderParams ToNativeParams()
+            {
+                return new MeshBuilderNative.NativeBorderParams() {
+                    rect = rect,
+                    leftColor = leftColor,
+                    topColor = topColor,
+                    rightColor = rightColor,
+                    bottomColor = bottomColor,
+                    leftWidth = leftWidth,
+                    topWidth = topWidth,
+                    rightWidth = rightWidth,
+                    bottomWidth = bottomWidth,
+                    topLeftRadius = topLeftRadius,
+                    topRightRadius = topRightRadius,
+                    bottomRightRadius = bottomRightRadius,
+                    bottomLeftRadius = bottomLeftRadius,
+                    leftColorPage = leftColorPage.ToNativeColorPage(),
+                    topColorPage = topColorPage.ToNativeColorPage(),
+                    rightColorPage = rightColorPage.ToNativeColorPage(),
+                    bottomColorPage = bottomColorPage.ToNativeColorPage()
+                };
+            }
         }
 
         public struct RectangleParams
@@ -643,6 +674,30 @@ namespace UnityEngine.UIElements
                     ((topRightRadius.x > epsilon) && (topRightRadius.y > epsilon)) ||
                     ((bottomRightRadius.x > epsilon) && (bottomRightRadius.y > epsilon)) ||
                     ((bottomLeftRadius.x > epsilon) && (bottomLeftRadius.y > epsilon));
+            }
+
+            internal MeshBuilderNative.NativeRectParams ToNativeParams(Rect uvRegion)
+            {
+
+                return new MeshBuilderNative.NativeRectParams() {
+                    rect = rect,
+                    uv = uv,
+                    uvRegion = uvRegion,
+                    color = color,
+                    scaleMode = scaleMode,
+                    topLeftRadius = topLeftRadius,
+                    topRightRadius = topRightRadius,
+                    bottomRightRadius = bottomRightRadius,
+                    bottomLeftRadius = bottomLeftRadius,
+                    textureSize = texture != null ? new Vector2(texture.width, texture.height) : Vector2.zero,
+                    texturePixelsPerPoint = texture is Texture2D ? (texture as Texture2D).pixelsPerPoint : 1.0f,
+                    leftSlice = leftSlice,
+                    topSlice = topSlice,
+                    rightSlice = rightSlice,
+                    bottomSlice = bottomSlice,
+                    sliceScale = sliceScale,
+                    colorPage = colorPage.ToNativeColorPage()
+                };
             }
         }
 

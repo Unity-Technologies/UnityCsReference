@@ -78,6 +78,7 @@ namespace UnityEditor
         ObjectTreeForSelector m_ObjectTreeWithSearch = new ObjectTreeForSelector();
         UnityObject m_ObjectBeingEdited;
         SerializedProperty m_EditedProperty;
+        bool m_ShowNoneItem;
 
         bool m_SelectionCancelled;
         int m_LastSelectedInstanceId = 0;
@@ -114,6 +115,11 @@ namespace UnityEditor
         public List<int> allowedInstanceIDs
         {
             get { return m_AllowedIDs; }
+        }
+
+        public UnityObject objectBeingEdited
+        {
+            get { return m_ObjectBeingEdited; }
         }
 
         // get an existing ObjectSelector or create one
@@ -423,12 +429,12 @@ namespace UnityEditor
             Show(obj, requiredTypes, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
-        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
-            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem);
         }
 
-        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
@@ -438,6 +444,7 @@ namespace UnityEditor
             m_ObjectBeingEdited = objectBeingEdited;
             m_LastSelectedInstanceId = obj?.GetInstanceID() ?? 0;
             m_SelectionCancelled = false;
+            m_ShowNoneItem = showNoneItem;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
             m_OnObjectSelectorUpdated = onObjectSelectedUpdated;
@@ -621,7 +628,7 @@ namespace UnityEditor
 
             if (m_ListArea == null)
             {
-                m_ListArea = new ObjectListArea(m_ListAreaState, this, true);
+                m_ListArea = new ObjectListArea(m_ListAreaState, this, m_ShowNoneItem);
                 m_ListArea.allowDeselection = false;
                 m_ListArea.allowDragging = false;
                 m_ListArea.allowFocusRendering = false;

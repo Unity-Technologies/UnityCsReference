@@ -700,6 +700,9 @@ namespace UnityEditor.UIElements
                     return ConfigureField<IntegerField, int>(field, property, () => new IntegerField());
                 }
 
+                case SerializedPropertyType.FixedBufferSize:
+                    return ConfigureField<IntegerField, int>(originalField as IntegerField, property, () => new IntegerField());
+
                 case SerializedPropertyType.Character:
                 {
                     TextField field = originalField as TextField;
@@ -720,8 +723,6 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.Quaternion:
                     return null;
                 case SerializedPropertyType.ExposedReference:
-                    return null;
-                case SerializedPropertyType.FixedBufferSize:
                     return null;
 
                 case SerializedPropertyType.Vector2Int:
