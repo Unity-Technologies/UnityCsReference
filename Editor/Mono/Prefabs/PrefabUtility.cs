@@ -285,6 +285,11 @@ namespace UnityEditor
 
         public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
+            ApplyPrefabInstance(instanceRoot, action, undoFlushTrackedObjects:true);
+        }
+
+        static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action, bool undoFlushTrackedObjects)
+        {
             DateTime startTime = DateTime.UtcNow;
 
             ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
@@ -302,9 +307,9 @@ namespace UnityEditor
                     Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
                 }
 
-                PrefabUtility.ApplyPrefabInstance(prefabInstanceRoot);
+                ApplyPrefabInstance(prefabInstanceRoot);
 
-                if (action == InteractionMode.UserAction)
+                if (undoFlushTrackedObjects && action == InteractionMode.UserAction)
                     Undo.FlushTrackedObjects();
             }
 
@@ -316,6 +321,34 @@ namespace UnityEditor
                 startTime,
                 false
             );
+        }
+
+        public static void ApplyPrefabInstances(GameObject[] instanceRoots, InteractionMode action)
+        {
+            if (instanceRoots == null)
+                throw new ArgumentNullException(nameof(instanceRoots));
+
+            foreach (var instanceRoot in instanceRoots)
+            {
+                ThrowExceptionIfNotValidPrefabInstanceObject(instanceRoot, true);
+            }
+
+            // Apply sequentially but import after all input have been saved to disk
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                foreach (var instanceRoot in instanceRoots)
+                {
+                    ApplyPrefabInstance(instanceRoot, action, undoFlushTrackedObjects:false);
+                }
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
+
+            if (action == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects(); // Needs to be called after StopAssetEditing() to fix UUM-6917
         }
 
         private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, Object prefabSourceObject)

@@ -86,21 +86,19 @@ namespace UnityEngine.UIElements
 
         private static readonly string inspectorFieldUssClassName = ussClassName + "__inspector-field";
 
-        /// <summary>
-        /// Same as EditorGUI.kIndentPerLevel but in runtime world.
-        /// </summary>
-        private const int kIndentPerLevel = 15;
-
         protected internal static readonly string mixedValueString = "\u2014";
+
         protected internal static readonly PropertyName serializedPropertyCopyName = "SerializedPropertyCopyName";
 
         static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
         static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
         static CustomStyleProperty<float> s_LabelBaseMinWidthProperty = new CustomStyleProperty<float>("--unity-property-field-label-base-min-width");
+        static CustomStyleProperty<float> s_LabelExtraContextWidthProperty = new CustomStyleProperty<float>("--unity-base-field-extra-context-width");
 
         private float m_LabelWidthRatio;
         private float m_LabelExtraPadding;
         private float m_LabelBaseMinWidth;
+        private float m_LabelExtraContextWidth;
 
         private VisualElement m_VisualInput;
 
@@ -256,8 +254,8 @@ namespace UnityEngine.UIElements
         }
 
         bool m_SkipValidation;
+        private VisualElement m_CachedContextWidthElement;
         private VisualElement m_CachedInspectorElement;
-        private int m_CachedListAndFoldoutDepth;
 
         internal BaseField(string label)
         {
@@ -294,26 +292,52 @@ namespace UnityEngine.UIElements
 
         private void OnAttachToPanel(AttachToPanelEvent e)
         {
+            if (e.destinationPanel == null)
+            {
+                return;
+            }
+
+            if (e.destinationPanel.contextType == ContextType.Player)
+            {
+                return;
+            }
+
             var currentElement = parent;
             while (currentElement != null)
             {
                 if (currentElement.ClassListContains("unity-inspector-element"))
                 {
-                    // These default values are based of IMGUI
-                    m_LabelWidthRatio = 0.45f;
-                    m_LabelExtraPadding = 2.0f;
-                    m_LabelBaseMinWidth = 120.0f;
-
-                    RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
-                    AddToClassList(inspectorFieldUssClassName);
                     m_CachedInspectorElement = currentElement;
-                    m_CachedListAndFoldoutDepth = this.GetListAndFoldoutDepth();
-                    RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
+                }
+
+                if (currentElement.ClassListContains("unity-inspector-main-container"))
+                {
+                    m_CachedContextWidthElement = currentElement;
                     break;
                 }
 
                 currentElement = currentElement.parent;
             }
+
+            if (m_CachedInspectorElement == null)
+            {
+                return;
+            }
+
+            // These default values are based of IMGUI
+            m_LabelWidthRatio = 0.45f;
+
+            // Those values are 40 and 120 in IMGUI, but they already take in account the fields margin. We readjust them
+            // because the uitk margin is being taken in account later.
+            m_LabelExtraPadding = 37.0f;
+            m_LabelBaseMinWidth = 123.0f;
+
+            // The inspector panel has a 1px border we need to consider as part of the context width.
+            m_LabelExtraContextWidth = 1.0f;
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            AddToClassList(inspectorFieldUssClassName);
+            RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent e)
@@ -337,6 +361,13 @@ namespace UnityEngine.UIElements
             {
                 m_LabelBaseMinWidth = labelBaseMinWidth;
             }
+
+            if (evt.customStyle.TryGetValue(s_LabelExtraContextWidthProperty, out var labelExtraContextWidth))
+            {
+                m_LabelExtraContextWidth = labelExtraContextWidth;
+            }
+
+            AlignLabel();
         }
 
         private void OnInspectorFieldGeometryChanged(GeometryChangedEvent e)
@@ -351,36 +382,22 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var listAndFoldoutMargin = kIndentPerLevel * m_CachedListAndFoldoutDepth;
-
-            // Calculate all extra padding from the containing element's contents
-            var totalPadding = resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
-                resolvedStyle.marginLeft + resolvedStyle.marginRight;
-
-            // Get inspector element padding next
-            totalPadding += m_CachedInspectorElement.resolvedStyle.paddingLeft +
-                m_CachedInspectorElement.resolvedStyle.paddingRight +
-                m_CachedInspectorElement.resolvedStyle.marginLeft +
-                m_CachedInspectorElement.resolvedStyle.marginRight;
-
-            // Then get label padding
-            totalPadding += labelElement.resolvedStyle.paddingLeft + labelElement.resolvedStyle.paddingRight +
-                labelElement.resolvedStyle.marginLeft + labelElement.resolvedStyle.marginRight;
-
-            // Then get base field padding
-            totalPadding += resolvedStyle.paddingLeft + resolvedStyle.paddingRight +
-                resolvedStyle.marginLeft + resolvedStyle.marginRight;
-
             // Not all visual input controls have the same padding so we can't base our total padding on
             // that information.  Instead we add a flat value to totalPadding to best match the hard coded
             // calculation in IMGUI
-            totalPadding += m_LabelExtraPadding;
-            totalPadding += listAndFoldoutMargin;
+            var totalPadding = m_LabelExtraPadding;
+            var spacing = worldBound.x - m_CachedInspectorElement.worldBound.x - m_CachedInspectorElement.resolvedStyle.paddingLeft;
 
-            labelElement.style.minWidth = Mathf.Max(m_LabelBaseMinWidth - listAndFoldoutMargin, 0);
+            totalPadding += spacing;
+            totalPadding += resolvedStyle.paddingLeft;
+
+            var minWidth = m_LabelBaseMinWidth - spacing - resolvedStyle.paddingLeft;
+            var contextWidthElement = m_CachedContextWidthElement ?? m_CachedInspectorElement;
+
+            labelElement.style.minWidth = Mathf.Max(minWidth, 0);
 
             // Formula to follow IMGUI label width settings
-            var newWidth = m_CachedInspectorElement.resolvedStyle.width * m_LabelWidthRatio - totalPadding;
+            var newWidth = (contextWidthElement.resolvedStyle.width + m_LabelExtraContextWidth) * m_LabelWidthRatio - totalPadding;
             if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
             {
                 labelElement.style.width = Mathf.Max(0f, newWidth);

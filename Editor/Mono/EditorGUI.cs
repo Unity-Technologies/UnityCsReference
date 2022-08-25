@@ -110,6 +110,10 @@ namespace UnityEditor
         internal const float kObjectFieldThumbnailHeight = 64;
         internal const float kObjectFieldMiniThumbnailHeight = 18f;
         internal const float kObjectFieldMiniThumbnailWidth = 32f;
+        internal const float kLabelWidthRatio = 0.45f;
+        internal const float kLabelWidthPadding = 3f;
+        internal const float kLabelWidthMargin = 40f;
+        internal const float kMinLabelWidth = 120f;
         internal static string kFloatFieldFormatString = UINumericFieldsUtils.k_FloatFieldFormatString;
         internal static string kDoubleFieldFormatString = UINumericFieldsUtils.k_DoubleFieldFormatString;
         internal static string kIntFieldFormatString = UINumericFieldsUtils.k_IntFieldFormatString;

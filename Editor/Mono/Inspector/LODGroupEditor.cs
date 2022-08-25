@@ -555,6 +555,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
             m_LODs = serializedObject.FindProperty("m_LODs");
+            m_MaxLODCountForMultiselection = GetMaxLODCountForMultiSelection();
 
             CalculatePrimitiveCountForRenderers();
             ResetFoldoutLists();

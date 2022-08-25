@@ -178,6 +178,11 @@ namespace UnityEngine.Audio
             SetStartDelayInternal(ref m_Handle, startDelay);
             if (duration > 0)
             {
+                //setting done to true if seeking has equaled or exceeded the clip duration
+                var seekTime =  startDelay + duration;
+                if(seekTime >= m_Handle.GetDuration())
+                    m_Handle.SetDone(true);
+
                 // playable duration is the local time (without speed modifier applied)
                 //  that it stops, since it will not advance time until the delay is complete
                 m_Handle.SetDuration(duration + startTime);
@@ -186,6 +191,7 @@ namespace UnityEngine.Audio
             }
             else
             {
+                m_Handle.SetDone(true);
                 m_Handle.SetDuration(double.MaxValue);
                 SetPauseDelayInternal(ref m_Handle, 0);
             }

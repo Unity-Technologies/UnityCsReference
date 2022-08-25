@@ -34,6 +34,7 @@ namespace UnityEditor
             if (property.propertyType == SerializedPropertyType.Float)
             {
                 var slider = new Slider(property.displayName, range.min, range.max);
+                slider.AddToClassList(Slider.alignedFieldUssClassName);
                 slider.bindingPath = property.propertyPath;
                 slider.showInputField = true;
                 return slider;
@@ -41,6 +42,7 @@ namespace UnityEditor
             else if (property.propertyType == SerializedPropertyType.Integer)
             {
                 var intSlider = new SliderInt(property.displayName, (int)range.min, (int)range.max);
+                intSlider.AddToClassList(SliderInt.alignedFieldUssClassName);
                 intSlider.bindingPath = property.propertyPath;
                 intSlider.showInputField = true;
                 return intSlider;
@@ -172,6 +174,8 @@ namespace UnityEditor
 
             if (newField != null)
             {
+                var alignmentClass = TextField.alignedFieldUssClassName;
+                newField.AddToClassList(alignmentClass);
                 newField.bindingPath = property.propertyPath;
                 return newField;
             }
@@ -262,6 +266,7 @@ namespace UnityEditor
                 field.multiline = true;
                 field.bindingPath = property.propertyPath;
                 field.style.height = EditorGUI.kSingleLineHeight + (lines - 1) * kLineHeight;
+                field.AddToClassList(TextField.alignedFieldUssClassName);
                 return field;
             }
 
@@ -383,6 +388,7 @@ namespace UnityEditor
                 field.showAlpha = colorUsage.showAlpha;
                 field.hdr = colorUsage.hdr;
                 field.bindingPath = property.propertyPath;
+                field.AddToClassList(ColorField.alignedFieldUssClassName);
                 return field;
             }
 
@@ -416,6 +422,7 @@ namespace UnityEditor
                 field.hdr = gradientUsage.hdr;
                 field.colorSpace = gradientUsage.colorSpace;
                 field.bindingPath = property.propertyPath;
+                field.AddToClassList(GradientField.alignedFieldUssClassName);
                 return field;
             }
 
@@ -478,6 +485,7 @@ namespace UnityEditor
             if (newField != null)
             {
                 newField.bindingPath = property.propertyPath;
+                newField.AddToClassList(TextField.alignedFieldUssClassName);
                 return newField;
             }
 
