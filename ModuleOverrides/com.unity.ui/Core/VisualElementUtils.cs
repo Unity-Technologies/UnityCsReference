@@ -55,30 +55,5 @@ namespace UnityEngine.UIElements
             var inspector = element.GetFirstAncestorWhere((i) => i.ClassListContains(s_InspectorElementUssClassName));
             element.EnableInClassList(classNameToEnable, inspector != null);
         }
-
-        /// <summary>
-        /// Computes the depth of the visual element including list views, i.e. the number of parenting foldouts and list views.
-        /// </summary>
-        /// <param name="element">The visual element to check.</param>
-        /// <returns>The list and foldout depth.</returns>
-        internal static int GetListAndFoldoutDepth(this VisualElement element)
-        {
-            var depth = 0;
-            if (element.hierarchy.parent != null)
-            {
-                var currentParent = element.hierarchy.parent;
-                while (currentParent != null)
-                {
-                    var currentParentType = currentParent.GetType();
-                    if (currentParent is Foldout || currentParent is ListView)
-                    {
-                        depth++;
-                    }
-
-                    currentParent = currentParent.hierarchy.parent;
-                }
-            }
-            return depth;
-        }
     }
 }

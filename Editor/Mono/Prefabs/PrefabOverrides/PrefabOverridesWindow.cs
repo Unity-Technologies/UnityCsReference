@@ -544,17 +544,7 @@ namespace UnityEditor
             if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(prefabAssetPaths.ToArray(), PrefabUtility.SaveVerb.Apply))
                 return false;
 
-            // Apply sequentially.
-            AssetDatabase.StartAssetEditing();
-            try
-            {
-                foreach (var t in m_SelectedGameObjects)
-                    PrefabUtility.ApplyPrefabInstance(t, InteractionMode.UserAction);
-            }
-            finally
-            {
-                AssetDatabase.StopAssetEditing();
-            }
+            PrefabUtility.ApplyPrefabInstances(m_SelectedGameObjects, InteractionMode.UserAction);
 
             EditorUtility.ForceRebuildInspectors();
             return true;
