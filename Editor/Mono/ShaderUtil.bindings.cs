@@ -175,6 +175,7 @@ namespace UnityEditor
         extern internal static Rect rawScissorRect  { get; set; }
         extern public   static bool hardwareSupportsRectRenderTexture { get; }
         extern internal static bool hardwareSupportsFullNPOT { get; }
+        public static extern bool disableShaderOptimization { get; set; }
 
         extern internal static void RequestLoadRenderDoc();
         extern internal static void RecreateGfxDevice();

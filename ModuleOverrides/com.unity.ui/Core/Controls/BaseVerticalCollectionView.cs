@@ -1252,7 +1252,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void DoRangeSelection(int rangeSelectionFinalIndex)
+        internal void DoRangeSelection(int rangeSelectionFinalIndex)
         {
             var selectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Max() : m_SelectedIndices.Min();
 
@@ -1491,7 +1491,7 @@ namespace UnityEngine.UIElements
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 BlurEvent e = evt as BlurEvent;
-                m_VirtualizationController.OnBlur(e?.relatedTarget as VisualElement);
+                m_VirtualizationController?.OnBlur(e?.relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {

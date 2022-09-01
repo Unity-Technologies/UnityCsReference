@@ -369,18 +369,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageItem.SelectMainItem();
         }
 
-        private bool HandleShiftSelection(KeyDownEvent evt)
+        private bool HandleShiftSelection(NavigationMoveEvent evt)
         {
             if (!evt.shiftKey)
                 return false;
 
-            if (evt.keyCode == KeyCode.UpArrow || evt.keyCode == KeyCode.DownArrow)
+            if (evt.direction == NavigationMoveEvent.Direction.Up || evt.direction == NavigationMoveEvent.Direction.Down)
             {
                 var selection = m_PageManager.GetSelection();
                 var firstItem = selection.firstSelection?.packageUniqueId;
                 var lastItem = selection.lastSelection?.packageUniqueId;
 
-                var nextItem = FindNextVisiblePackageItem(GetPackageItem(lastItem), evt.keyCode == KeyCode.UpArrow);
+                var nextItem = FindNextVisiblePackageItem(GetPackageItem(lastItem), evt.direction == NavigationMoveEvent.Direction.Up);
                 SelectAllBetween(firstItem, nextItem?.package.uniqueId ?? lastItem);
                 return true;
             }
@@ -392,30 +392,38 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!UIUtils.IsElementVisible(this))
                 return;
 
+            if (evt.keyCode == KeyCode.A && evt.actionKey)
+            {
+                SelectAllVisible();
+            }
+
+            evt.StopPropagation();
+        }
+
+        public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
+        {
+            if (!UIUtils.IsElementVisible(this))
+                return;
+
             if (HandleShiftSelection(evt))
             {
                 evt.StopPropagation();
                 return;
             }
 
-            if (evt.keyCode == KeyCode.A && evt.actionKey)
-            {
-                SelectAllVisible();
-                evt.StopPropagation();
-            }
-            else if (evt.keyCode == KeyCode.UpArrow)
+            if (evt.direction == NavigationMoveEvent.Direction.Up)
             {
                 if (SelectNext(true))
                     evt.StopPropagation();
             }
-            else if (evt.keyCode == KeyCode.DownArrow)
+            else if (evt.direction == NavigationMoveEvent.Direction.Down)
             {
                 if (SelectNext(false))
                     evt.StopPropagation();
             }
         }
 
-        public bool SelectNext(bool reverseOrder)
+        internal bool SelectNext(bool reverseOrder)
         {
             var nextElement = FindNextVisibleSelectableItem(reverseOrder);
             if (nextElement != null)

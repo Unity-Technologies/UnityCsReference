@@ -160,18 +160,20 @@ namespace UnityEditor
 
             if (!realPS.model.isDefault)
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = realPS.model.overriddenIsDifferent;
-
                 BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
                 string title = string.Format(Styles.overrideFor.text, validPlatforms[selected].title.text);
-                bool newOverride = EditorGUILayout.ToggleLeft(title, realPS.model.platformTextureSettings.overridden);
-                EditorGUI.showMixedValue = false;
+                Rect controlRect = EditorGUILayout.GetControlRect(true);
+                GUIContent label = EditorGUI.BeginProperty(controlRect, GUIContent.Temp(title), realPS.model.overriddenProperty);
+
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = realPS.model.overriddenIsDifferent;
+                bool newOverride = EditorGUI.ToggleLeft(controlRect, label, realPS.model.platformTextureSettings.overridden);
                 if (EditorGUI.EndChangeCheck())
                 {
                     realPS.model.SetOverriddenForAll(newOverride);
                     SyncPlatformSettings(platformSettings);
                 }
+                EditorGUI.EndProperty();
             }
 
             // Disable size and format GUI if not overwritten for all objects
@@ -221,11 +223,27 @@ namespace UnityEditor
             set { m_PlatformSettings = value; }
         }
 
+        [SerializeField]
+        private SerializedProperty m_SerializedPlatformSettings = null;
+
+        public SerializedProperty platformTextureSettingsProp
+        {
+            get { return m_SerializedPlatformSettings; }
+            set { m_SerializedPlatformSettings = value; }
+        }
+
         [SerializeField] private bool m_OverriddenIsDifferent = false;
         public bool overriddenIsDifferent
         {
             get { return m_OverriddenIsDifferent; }
             set { m_OverriddenIsDifferent = value; }
+        }
+
+        [SerializeField] private SerializedProperty m_OverriddenProperty = null;
+        public SerializedProperty overriddenProperty
+        {
+            get { return m_OverriddenProperty; }
+            set { m_OverriddenProperty = value; }
         }
 
         public bool allAreOverridden
@@ -245,12 +263,26 @@ namespace UnityEditor
             set { m_MaxTextureSizeIsDifferent = value; }
         }
 
+        [SerializeField] private SerializedProperty m_MaxTextureSizeProperty = null;
+        public SerializedProperty maxTextureSizeProperty
+        {
+            get { return m_MaxTextureSizeProperty; }
+            set { m_MaxTextureSizeProperty = value; }
+        }
+
         // Resize Algorithm
         [SerializeField] private bool m_ResizeAlgorithmIsDifferent = false;
         public bool resizeAlgorithmIsDifferent
         {
             get { return m_ResizeAlgorithmIsDifferent; }
             set { m_ResizeAlgorithmIsDifferent = value; }
+        }
+
+        [SerializeField] private SerializedProperty m_ResizeAlgorithmProperty = null;
+        public SerializedProperty resizeAlgorithmProperty
+        {
+            get { return m_ResizeAlgorithmProperty; }
+            set { m_ResizeAlgorithmProperty = value; }
         }
 
         // Texture compression
@@ -261,6 +293,12 @@ namespace UnityEditor
             set { m_TextureCompressionIsDifferent = value; }
         }
 
+        [SerializeField] private SerializedProperty m_TextureCompressionProperty = null;
+        public SerializedProperty textureCompressionProperty
+        {
+            get { return m_TextureCompressionProperty; }
+            set { m_TextureCompressionProperty = value; }
+        }
 
         // Compression rate
         [SerializeField] private bool m_CompressionQualityIsDifferent = false;
@@ -268,6 +306,13 @@ namespace UnityEditor
         {
             get { return m_CompressionQualityIsDifferent; }
             set { m_CompressionQualityIsDifferent = value; }
+        }
+
+        [SerializeField] private SerializedProperty m_CompressionQualityProperty = null;
+        public SerializedProperty compressionQualityProperty
+        {
+            get { return m_CompressionQualityProperty; }
+            set { m_CompressionQualityProperty = value; }
         }
 
         // Crunched compression
@@ -278,6 +323,13 @@ namespace UnityEditor
             set { m_CrunchedCompressionIsDifferent = value; }
         }
 
+        [SerializeField] private SerializedProperty m_CrunchedCompressionProperty = null;
+        public SerializedProperty crunchedCompressionProperty
+        {
+            get { return m_CrunchedCompressionProperty; }
+            set { m_CrunchedCompressionProperty = value; }
+        }
+
         // Texture format
         [SerializeField] private bool m_TextureFormatIsDifferent = false;
         public bool textureFormatIsDifferent
@@ -286,6 +338,12 @@ namespace UnityEditor
             set { m_TextureFormatIsDifferent = value; }
         }
 
+        [SerializeField] private SerializedProperty m_TextureFormatProperty = null;
+        public SerializedProperty textureFormatProperty
+        {
+            get { return m_TextureFormatProperty; }
+            set { m_TextureFormatProperty = value; }
+        }
 
         // Alpha splitting
         [SerializeField] private bool m_AlphaSplitIsDifferent = false;
@@ -295,6 +353,13 @@ namespace UnityEditor
             set { m_AlphaSplitIsDifferent = value; }
         }
 
+        [SerializeField] private SerializedProperty m_AlphaSplitProperty = null;
+        public SerializedProperty alphaSplitProperty
+        {
+            get { return m_AlphaSplitProperty; }
+            set { m_AlphaSplitProperty = value; }
+        }
+
         // Android fallback format in case ETC2 is not supported
         [SerializeField] private bool m_AndroidETC2FallbackOverrideIsDifferent = false;
 
@@ -302,6 +367,13 @@ namespace UnityEditor
         {
             get { return m_AndroidETC2FallbackOverrideIsDifferent; }
             set { m_AndroidETC2FallbackOverrideIsDifferent = value; }
+        }
+
+        [SerializeField] private SerializedProperty m_AndroidETC2FallbackOverrideProperty = null;
+        public SerializedProperty androidETC2FallbackOverrideProperty
+        {
+            get { return m_AndroidETC2FallbackOverrideProperty; }
+            set { m_AndroidETC2FallbackOverrideProperty = value; }
         }
 
         public void SetAndroidETC2FallbackOverrideForAll(AndroidETC2FallbackOverride value)
@@ -470,6 +542,55 @@ namespace UnityEditor
             m_Inspector = inspector;
             m_Importers = inspector.targets.Select(x => x as TextureImporter).ToArray();
             Init();
+        }
+
+        public void CacheSerializedProperties(SerializedProperty platformSettingsArray)
+        {
+            if (model.platformTextureSettingsProp != null && model.platformTextureSettingsProp.isValid &&
+                model.platformTextureSettingsProp.FindPropertyRelative("m_BuildTarget").stringValue == model.platformTextureSettings.name)
+            {
+                return; // We've already cached the appropriate PlatformTextureSettings property, don't update.
+            }
+
+            // Below: retrieve the appropriate properties for the chosen BuildTarget.
+            if (platformSettingsArray.arraySize <= 0)
+            {
+                // This should not happen, all known valid platforms should have
+                // been created in advance, including the Default Platform.
+                model.platformTextureSettingsProp = null;
+                throw new UnityException("Cannot find any Platform Settings, including the Default Platform. This is incorrect, did initialization fail?");
+            }
+            else
+            {
+                // Fetch the matching platform settings property.
+                // Do not skip element 0, the Default Platform is a valid choice.
+                for (int i = 0; i < platformSettingsArray.arraySize; ++i)
+                {
+                    SerializedProperty serializedProperty = platformSettingsArray.GetArrayElementAtIndex(i);
+                    if (serializedProperty.FindPropertyRelative("m_BuildTarget").stringValue == model.platformTextureSettings.name)
+                    {
+                        model.platformTextureSettingsProp = serializedProperty;
+                        break;
+                    }
+                }
+
+                // Since we ensure that all known valid platforms are created in advance,
+                // we should be able to find the currently selected platform. If not, fail.
+                if (model.platformTextureSettingsProp is null)
+                {
+                    throw new UnityException("Could not find the requested Platform Texture Settings. This is incorrect, did initialization fail?");
+                }
+            }
+
+            model.alphaSplitProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_AllowsAlphaSplitting");
+            model.androidETC2FallbackOverrideProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_AndroidETC2FallbackOverride");
+            model.compressionQualityProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_CompressionQuality");
+            model.crunchedCompressionProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_CrunchedCompression");
+            model.maxTextureSizeProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_MaxTextureSize");
+            model.overriddenProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_Overridden");
+            model.resizeAlgorithmProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_ResizeAlgorithm");
+            model.textureCompressionProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_TextureCompression");
+            model.textureFormatProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_TextureFormat");
         }
 
         public override int GetTargetCount()

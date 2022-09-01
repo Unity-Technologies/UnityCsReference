@@ -60,47 +60,59 @@ namespace UnityEditor
         {
             if (s_Initialized)
                 return;
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new Context2D());
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new Context3D());
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport());
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport2D());
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport3D());
             s_Initialized = true;
         }
 
-        class Context2D : IShortcutToolContext
+        class SceneViewViewport : IShortcutToolContext
         {
-            public bool active => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
+            public bool active => IsActive;
+
+            public static bool IsActive
+            {
+                get => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
+                    && SceneView.lastActiveSceneView.rootVisualElement.worldBound.Contains(Event.current.mousePosition);
+            }
+        }
+
+        class SceneViewViewport2D : IShortcutToolContext
+        {
+            public bool active => SceneViewViewport.IsActive
                 && ((SceneView.lastActiveSceneView?.in2DMode ?? false) || (SceneView.lastActiveSceneView?.isRotationLocked ?? false));
         }
 
-        class Context3D : IShortcutToolContext
+        class SceneViewViewport3D : IShortcutToolContext
         {
-            public bool active => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
+            public bool active => SceneViewViewport.IsActive
                 && ((!SceneView.lastActiveSceneView?.in2DMode ?? false) && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
         }
 
-        [ClutchShortcut("Scene View/Temporary Pan Tool for 2D Mode", typeof(Context2D), KeyCode.Mouse1)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 1", typeof(SceneView), KeyCode.Mouse2)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneView), KeyCode.Mouse2, ShortcutModifiers.Alt)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool for 2D Mode", typeof(SceneViewViewport2D), KeyCode.Mouse1)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 1", typeof(SceneViewViewport), KeyCode.Mouse2)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
         static void TemporaryPan(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Pan);
             else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary Zoom Tool", typeof(SceneView), KeyCode.Mouse1, ShortcutModifiers.Alt)]
+        [ClutchShortcut("Scene View/Temporary Zoom Tool", typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Alt)]
         static void TemporaryZoom(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Zoom);
             else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary Orbit Tool", typeof(SceneView), KeyCode.Mouse0, ShortcutModifiers.Alt)]
+        [ClutchShortcut("Scene View/Temporary Orbit Tool", typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Orbit);
             else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary FPS Tool", typeof(Context3D), KeyCode.Mouse1)]
+        [ClutchShortcut("Scene View/Temporary FPS Tool", typeof(SceneViewViewport3D), KeyCode.Mouse1)]
         static void TemporaryFPS(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.FPS);

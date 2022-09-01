@@ -81,7 +81,6 @@ namespace UnityEditorInternal.Profiling
                 public Label DetailedMenuLabel;
                 public UnityEngine.UIElements.Button InstallPackageButton;
                 public VisualElement EditorWarningLabel;
-                public VisualElement DetailedToolbarSection;
                 public MemoryUsageBreakdown TopLevelBreakdown;
                 public MemoryUsageBreakdown Breakdown;
                 // if no memory counter data is available (i.e. the recording is from a pre 2020.2 Unity version) this whole section can't be populated with info
@@ -140,38 +139,31 @@ namespace UnityEditorInternal.Profiling
 
             void ViewChanged(ProfilerMemoryView view)
             {
-                m_UIState.ViewArea.Clear();
+                var frameIndex = ProfilerWindow.selectedFrameIndex;
+                bool isDataAvailable = CheckMemoryStatsAvailablity(frameIndex);
                 m_MemoryModule.m_ShowDetailedMemoryPane = view;
                 if (view == ProfilerMemoryView.Simple)
                 {
-                    var frameIndex = ProfilerWindow.selectedFrameIndex;
-                    var dataAvailable = CheckMemoryStatsAvailablity(frameIndex);
-                    m_UIState.DetailedMenuLabel.text = "Simple";
-
-                    UIElementsHelper.SetVisibility(m_UIState.DetailedToolbarSection, false);
-                    if (dataAvailable)
+                    if (isDataAvailable)
                     {
-                        m_UIState.ViewArea.Add(m_UIState.SimpleView);
                         m_AddedSimpleDataView = true;
                         UpdateContent(frameIndex);
                     }
                     else
                     {
-                        m_UIState.ViewArea.Add(m_UIState.NoDataView);
                         m_AddedSimpleDataView = false;
                     }
                 }
                 else
                 {
-                    m_UIState.DetailedMenuLabel.text = "Detailed";
-                    UIElementsHelper.SetVisibility(m_UIState.DetailedToolbarSection, true);
-                    // Detailed View doesn't differentiate between there being frame data or not because
-                    // 1. Clear doesn't clear out old snapshots so there totally could be data here
-                    // 2. Take Snapshot also doesn't require there to be any frame data
-                    // this special case will disappear together with the detailed view eventually
-                    m_UIState.ViewArea.Add(m_UIState.DetailedView);
                     m_AddedSimpleDataView = false;
                 }
+
+                UIElementsHelper.SetVisibility(m_UIState.NoDataView, !isDataAvailable);
+                UIElementsHelper.SetVisibility(m_UIState.SimpleView, isDataAvailable && (view == ProfilerMemoryView.Simple));
+                UIElementsHelper.SetVisibility(m_UIState.DetailedView, isDataAvailable && (view == ProfilerMemoryView.Detailed));
+
+                m_UIState.DetailedMenuLabel.text = view == ProfilerMemoryView.Simple ? "Simple" : "Detailed";
             }
 
             static ProfilerMarker s_UpdateMaxSystemUsedMemoryProfilerMarker = new ProfilerMarker("MemoryProfilerModule.UpdateMaxSystemUsedMemory");
@@ -376,7 +368,6 @@ namespace UnityEditorInternal.Profiling
                 m_UIState = new UIState();
 
                 var toolbar = root.Q("memory-module__toolbar");
-                m_UIState.DetailedToolbarSection = toolbar.Q("memory-module__toolbar__detailed-controls");
 
                 m_UIState.DetailedMenu = toolbar.Q<UnityEngine.UIElements.Button>("memory-module__toolbar__detail-view-menu");
                 m_UIState.DetailedMenuLabel = m_UIState.DetailedMenu.Q<Label>("memory-module__toolbar__detail-view-menu__label");
@@ -387,13 +378,6 @@ namespace UnityEditorInternal.Profiling
                 {
                     menu.DropDown(UIElementsHelper.GetRect(m_UIState.DetailedMenu));
                 };
-
-                var takeCapture = toolbar.Q<UnityEngine.UIElements.Button>("memory-module__toolbar__take-sample-button");
-                takeCapture.clicked += () => m_MemoryModule.RefreshMemoryData();
-
-                var gatherObjectReferencesToggle = toolbar.Q<Toggle>("memory-module__toolbar__gather-references-toggle");
-                gatherObjectReferencesToggle.RegisterValueChangedCallback((evt) => m_MemoryModule.m_GatherObjectReferences = evt.newValue);
-                gatherObjectReferencesToggle.SetValueWithoutNotify(m_MemoryModule.m_GatherObjectReferences);
 
                 m_UIState.InstallPackageButton = toolbar.Q<UnityEngine.UIElements.Button>("memory-module__toolbar__install-package-button");
 
@@ -441,8 +425,7 @@ namespace UnityEditorInternal.Profiling
 
                 m_UIState.Text = m_UIState.SimpleView.Q<TextField>("memory-module__simple-area__label");
 
-                var detailedView = m_UIState.ViewArea.Q<IMGUIContainer>("memory-module__detaile-snapshot-area");// new IMGUIContainer();
-                detailedView.onGUIHandler = () => m_MemoryModule.DrawDetailedMemoryPane();
+                var detailedView = m_UIState.ViewArea.Q<VisualElement>("memory-profiler-module__detailed");
                 m_UIState.DetailedView = detailedView;
 
                 m_UIState.NoDataView = m_UIState.ViewArea.Q("memory-module__no-frame-data__area");
@@ -509,7 +492,6 @@ namespace UnityEditorInternal.Profiling
 
         static WeakReference instance;
 
-        const string k_ViewTypeSettingsKey = "Profiler.MemoryProfilerModule.ViewType";
         const string k_GatherObjectReferencesSettingsKey = "Profiler.MemoryProfilerModule.GatherObjectReferences";
         const string k_SplitterRelative0SettingsKey = "Profiler.MemoryProfilerModule.Splitter.Relative[0]";
         const string k_SplitterRelative1SettingsKey = "Profiler.MemoryProfilerModule.Splitter.Relative[1]";
@@ -591,14 +573,13 @@ namespace UnityEditorInternal.Profiling
             if (m_ViewSplit == null || !m_ViewSplit.IsValid())
                 m_ViewSplit = SplitterState.FromRelative(new[] { EditorPrefs.GetFloat(k_SplitterRelative0SettingsKey, 70f), EditorPrefs.GetFloat(k_SplitterRelative1SettingsKey, 30f) }, k_SplitterMinSizes, null);
 
-            m_ShowDetailedMemoryPane = (ProfilerMemoryView)EditorPrefs.GetInt(k_ViewTypeSettingsKey, (int)ProfilerMemoryView.Simple);
+            m_ShowDetailedMemoryPane = ProfilerMemoryView.Simple;
             m_GatherObjectReferences = EditorPrefs.GetBool(k_GatherObjectReferencesSettingsKey, true);
         }
 
         internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
-            EditorPrefs.SetInt(k_ViewTypeSettingsKey, (int)m_ShowDetailedMemoryPane);
             EditorPrefs.SetBool(k_GatherObjectReferencesSettingsKey, m_GatherObjectReferences);
             if (m_ViewSplit != null && m_ViewSplit.relativeSizes != null && m_ViewSplit.relativeSizes.Length >= 2)
             {

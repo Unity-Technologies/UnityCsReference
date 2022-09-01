@@ -24,6 +24,7 @@ namespace UnityEngine
     {
         extern public int  shaderCount  { get; }
         extern public int  variantCount { get; }
+        extern public int  warmedUpVariantCount { get; }
         extern public bool isWarmedUp   {[NativeName("IsWarmedUp")] get; }
 
         extern private bool AddVariant(Shader shader, UnityEngine.Rendering.PassType passType, string[] keywords);
@@ -32,6 +33,7 @@ namespace UnityEngine
 
         [NativeName("ClearVariants")] extern public void Clear();
         [NativeName("WarmupShaders")] extern public void WarmUp();
+        [NativeName("WarmupShadersProgressively")] extern public bool WarmUpProgressively(int variantCount);
 
         [NativeName("CreateFromScript")] extern private static void Internal_Create([Writable] ShaderVariantCollection svc);
     }
