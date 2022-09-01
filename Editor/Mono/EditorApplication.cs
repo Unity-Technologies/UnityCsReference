@@ -30,7 +30,7 @@ namespace UnityEditor
     internal enum ScriptChangesDuringPlayOptions
     {
         RecompileAndContinuePlaying = 0,
-        RecompileAfterFinishedPlaying = 1,
+        // RecompileAfterFinishedPlaying = 1, Deprecated feature
         StopPlayingAndRecompile = 2
     }
 

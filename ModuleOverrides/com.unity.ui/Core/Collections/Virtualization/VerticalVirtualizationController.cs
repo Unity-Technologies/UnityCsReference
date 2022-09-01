@@ -93,8 +93,7 @@ namespace UnityEngine.UIElements
                 }
                 else if (isVisible)
                 {
-                    m_Pool.Release(recycledItem);
-                    m_ActiveItems.RemoveAt(i--);
+                    ReleaseItem(i--);
                 }
             }
 
@@ -106,14 +105,14 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected void Setup(T recycledItem, int newIndex, bool forceHide = false)
+        protected void Setup(T recycledItem, int newIndex)
         {
             // We want to skip the item that is being reordered with the animated dragger.
             if (m_ListView.dragger is ListViewDraggerAnimated dragger)
                 if (dragger.isDragging && (dragger.draggedItem.index == newIndex || dragger.draggedItem == recycledItem))
                     return;
 
-            if (newIndex >= m_ListView.itemsSource.Count || forceHide)
+            if (newIndex >= m_ListView.itemsSource.Count)
             {
                 recycledItem.rootElement.style.display = DisplayStyle.None;
                 if (recycledItem.index >= 0 && recycledItem.index < m_ListView.itemsSource.Count)
@@ -290,6 +289,20 @@ namespace UnityEngine.UIElements
             item.PreAttachElement();
 
             return item;
+        }
+
+        internal virtual void ReleaseItem(int activeItemsIndex)
+        {
+            var item = m_ActiveItems[activeItemsIndex];
+            var index = item.index;
+
+            if (index >= 0 && index < m_ListView.itemsSource.Count)
+            {
+                m_ListView.viewController.InvokeUnbindItem(item, index);
+            }
+
+            m_Pool.Release(item);
+            m_ActiveItems.RemoveAt(activeItemsIndex);
         }
     }
 }

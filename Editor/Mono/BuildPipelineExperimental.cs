@@ -8,7 +8,7 @@ namespace UnityEditor.Experimental
     {
         public static string GetSessionIdForBuildTarget(BuildTarget target)
         {
-            return BuildPipeline.GetSessionIdForBuildTarget(target);
+            return BuildPipeline.GetSessionIdForBuildTarget(target, 0);
         }
     }
 }

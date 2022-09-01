@@ -10,7 +10,7 @@ using System.Collections;
 
 namespace UnityEditor.UIElements.Bindings
 {
-    class ListViewSerializedObjectBinding : SerializedObjectBindingBase
+    class ListViewSerializedObjectBinding : SerializedObjectBindingBase, IInternalListViewBinding
     {
         ListView listView
         {
@@ -54,9 +54,9 @@ namespace UnityEditor.UIElements.Bindings
             if (listView != null)
             {
                 if (m_BindItemSet)
-                    listView.bindItem = null;
+                    listView.SetBindItemWithoutNotify(null);
                 if (m_MakeItemSet)
-                    listView.makeItem = null;
+                    listView.SetMakeItemWithoutNotify(null);
                 if (m_UnbindItemSet)
                     listView.unbindItem = null;
 
@@ -72,25 +72,28 @@ namespace UnityEditor.UIElements.Bindings
             {
                 if (listView.makeItem == null)
                 {
-                    listView.makeItem = () => MakeListViewItem();
+                    listView.SetMakeItemWithoutNotify(MakeListViewItem);
                     m_MakeItemSet = true;
                 }
 
                 if (listView.bindItem == null)
                 {
-                    listView.bindItem = (v, i) => BindListViewItem(v, i);
+                    listView.SetBindItemWithoutNotify(BindListViewItem);
                     m_BindItemSet = true;
                 }
 
                 if (listView.unbindItem == null)
                 {
-                    listView.unbindItem = (v, i) => UnbindListViewItem(v, i);
+                    listView.unbindItem = UnbindListViewItem;
                     m_UnbindItemSet = true;
                 }
 
                 listView.SetViewController(new EditorListViewController());
                 listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
                 listView.itemsSource = m_DataList;
+
+                if (m_ListViewArraySize == -1)
+                    UpdateArraySize();
             }
         }
 
@@ -120,8 +123,13 @@ namespace UnityEditor.UIElements.Bindings
                 throw new InvalidOperationException("Can't find BindableElement: please provide BindableVisualElements or provide your own Listview.bindItem callback");
             }
 
-            object item = listView.itemsSource[index];
+            var item = listView.itemsSource[index];
             var itemProp = item as SerializedProperty;
+
+            // No need to rebind to the same path. We should use a Rebuild if we need to force it.
+            if (field.bindingPath == itemProp.propertyPath)
+                return;
+
             field.bindingPath = itemProp.propertyPath;
             bindingContext.ContinueBinding(ve, itemProp);
         }
@@ -142,15 +150,11 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             ve.Unbind();
+            field.bindingPath = null;
         }
 
         void UpdateArraySize()
         {
-            foreach (var item in listView.activeItems)
-            {
-                item.rootElement.Unbind();
-            }
-
             m_DataList.RefreshProperties(boundProperty, listView.sourceIncludesArraySize);
             m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_ArraySize.intValue;

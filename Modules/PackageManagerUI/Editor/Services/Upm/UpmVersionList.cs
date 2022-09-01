@@ -258,7 +258,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public UpmVersionList(PackageInfo info, bool isInstalled, bool isUnityPackage)
         {
-            m_LifecycleVersionString = info.unityLifecycle?.version;
+            // Note: Using `versions.verified` as it is computed by UPM from the
+            // "version" and "recommendedVersion" values in the editor manifest.
+            // We cannot use `unityLifecycle.recommendedVersion` in this branch
+            // because it was introduced in 2022.2 and will not be backported
+            m_LifecycleVersionString = info.versions?.verified;
             m_LifecycleNextVersionString = info.unityLifecycle?.nextVersion;
 
             if (m_LifecycleVersionString != null)

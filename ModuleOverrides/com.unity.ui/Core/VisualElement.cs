@@ -1184,11 +1184,31 @@ namespace UnityEngine.UIElements
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
             }
+            else if (evt.eventTypeId == TooltipEvent.TypeId())
+            {
+                // Allow child elements to set their own tooltip
+                SetTooltip((TooltipEvent)evt);
+            }
             else
             {
                 HandlePanelAttachmentEvents(evt);
             }
 
+        }
+
+        internal virtual Rect GetTooltipRect()
+        {
+            return this.worldBound;
+        }
+
+        void SetTooltip(TooltipEvent e)
+        {
+            if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
+            {
+                e.rect = element.GetTooltipRect();
+                e.tooltip = element.tooltip;
+                e.StopImmediatePropagation();
+            }
         }
 
         public sealed override void Focus()

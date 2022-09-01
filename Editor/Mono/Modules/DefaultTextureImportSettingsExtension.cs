@@ -57,14 +57,16 @@ namespace UnityEditor.Modules
         public virtual void ShowImportSettings(BaseTextureImportPlatformSettings editor)
         {
             // Max texture size
+            Rect controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+            GUIContent label = EditorGUI.BeginProperty(controlRect, maxSize, editor.model.maxTextureSizeProperty);
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = editor.model.maxTextureSizeIsDifferent;
-            int maxTextureSize = EditorGUILayout.IntPopup(maxSize.text, editor.model.platformTextureSettings.maxTextureSize, kMaxTextureSizeStrings, kMaxTextureSizeValues);
-            EditorGUI.showMixedValue = false;
+            int maxTextureSize = EditorGUI.IntPopup(controlRect, label, editor.model.platformTextureSettings.maxTextureSize, GUIContent.Temp(kMaxTextureSizeStrings), kMaxTextureSizeValues);
             if (EditorGUI.EndChangeCheck())
             {
                 editor.model.SetMaxTextureSizeForAll(maxTextureSize);
             }
+            EditorGUI.EndProperty();
 
             // Show a note if max size is overriden globally by the user
             var userMaxSizeOverride = EditorUserBuildSettings.overrideMaxTextureSize;
@@ -72,14 +74,16 @@ namespace UnityEditor.Modules
                 EditorGUILayout.HelpBox(string.Format(kMaxSizeOverrideString, userMaxSizeOverride), MessageType.Info);
 
             // Resize Algorithm
+            controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+            label = EditorGUI.BeginProperty(controlRect, kResizeAlgorithm, editor.model.resizeAlgorithmProperty);
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = editor.model.resizeAlgorithmIsDifferent;
-            int resizeAlgorithmVal = EditorGUILayout.IntPopup(kResizeAlgorithm.text, (int)editor.model.platformTextureSettings.resizeAlgorithm, kResizeAlgorithmStrings, kResizeAlgorithmValues);
-            EditorGUI.showMixedValue = false;
+            int resizeAlgorithmVal = EditorGUI.IntPopup(controlRect, label, (int)editor.model.platformTextureSettings.resizeAlgorithm, GUIContent.Temp(kResizeAlgorithmStrings), kResizeAlgorithmValues);
             if (EditorGUI.EndChangeCheck())
             {
                 editor.model.SetResizeAlgorithmForAll((TextureResizeAlgorithm)resizeAlgorithmVal);
             }
+            EditorGUI.EndProperty();
 
             // Texture format
             int[] formatValuesForAll = {};
@@ -143,16 +147,18 @@ namespace UnityEditor.Modules
 
             using (new EditorGUI.DisabledScope(formatOptionsAreDifferent || formatStringsForAll.Length == 1))
             {
+                controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                label = EditorGUI.BeginProperty(controlRect, kTextureFormat, editor.model.textureFormatProperty);
                 EditorGUI.BeginChangeCheck();
                 bool mixedValues = formatOptionsAreDifferent || editor.model.textureFormatIsDifferent;
                 EditorGUI.showMixedValue = mixedValues;
-                var selectionResult = EditorGUILayout.IntPopup(kTextureFormat, formatForAll, EditorGUIUtility.TempContent(formatStringsForAll), formatValuesForAll);
-                EditorGUI.showMixedValue = false;
+                var selectionResult = EditorGUI.IntPopup(controlRect, label, formatForAll, GUIContent.Temp(formatStringsForAll), formatValuesForAll);
                 if (EditorGUI.EndChangeCheck())
                 {
                     editor.model.SetTextureFormatForAll((TextureImporterFormat)selectionResult);
                     formatForAll = selectionResult;
                 }
+                EditorGUI.EndProperty();
 
                 if (!mixedValues && !Array.Exists(formatValuesForAll, i => i == formatForAll))
                 {
@@ -163,18 +169,20 @@ namespace UnityEditor.Modules
             // Texture Compression
             if (editor.model.isDefault && editor.model.platformTextureSettings.format == TextureImporterFormat.Automatic)
             {
+                controlRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                label = EditorGUI.BeginProperty(controlRect, kTextureCompression, editor.model.textureCompressionProperty);
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
                     editor.model.textureCompressionIsDifferent;
                 TextureImporterCompression textureCompression =
-                    (TextureImporterCompression)EditorGUILayout.IntPopup(kTextureCompression,
-                        (int)editor.model.platformTextureSettings.textureCompression, kTextureCompressionOptions,
+                    (TextureImporterCompression)EditorGUI.IntPopup(controlRect,
+                        label, (int)editor.model.platformTextureSettings.textureCompression, kTextureCompressionOptions,
                         kTextureCompressionValues);
-                EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
                     editor.model.SetTextureCompressionForAll(textureCompression);
                 }
+                EditorGUI.EndProperty();
             }
 
             // Use Crunch Compression
@@ -183,16 +191,18 @@ namespace UnityEditor.Modules
                 editor.model.platformTextureSettings.textureCompression != TextureImporterCompression.Uncompressed &&
                 (textureShape == TextureImporterShape.Texture2D || textureShape == TextureImporterShape.TextureCube)) // 2DArray & 3D don't support Crunch
             {
+                controlRect = EditorGUILayout.GetToggleRect(true);
+                label = EditorGUI.BeginProperty(controlRect, kCrunchedCompression, editor.model.crunchedCompressionProperty);
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
                     editor.model.crunchedCompressionIsDifferent;
-                bool crunchedCompression = EditorGUILayout.Toggle(
-                    kCrunchedCompression, editor.model.platformTextureSettings.crunchedCompression);
-                EditorGUI.showMixedValue = false;
+                bool crunchedCompression = EditorGUI.Toggle(
+                    controlRect, label, editor.model.platformTextureSettings.crunchedCompression);
                 if (EditorGUI.EndChangeCheck())
                 {
                     editor.model.SetCrunchedCompressionForAll(crunchedCompression);
                 }
+                EditorGUI.EndProperty();
             }
 
             // compression quality
@@ -211,24 +221,7 @@ namespace UnityEditor.Modules
                     TextureImporterInspector.kFormatsWithCompressionSettings,
                     (TextureImporterFormat)formatForAll)))
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
-                    editor.model.compressionQualityIsDifferent;
-
-                // Prior to exposing compression quality for BC6H/BC7 formats they were always compressed at maximum quality even though the setting was
-                // defaulted to 'Normal'.  Now BC6H/BC7 quality is exposed to the user as Fast/Normal/Best 'Normal' maps to one setting down from maximum in the
-                // ISPC compressor but to maintain the behaviour of existing projects we need to force their quality up to 'Best'.  The 'forceMaximumCompressionQuality_BC6H_BC7'
-                // flag is set when loading existing texture platform settings to do this and cleared when the compression quality level is manually set (by UI or API)
-                bool forceBestQuality = editor.model.forceMaximumCompressionQuality_BC6H_BC7 && (((TextureImporterFormat)formatForAll == TextureImporterFormat.BC6H) || ((TextureImporterFormat)formatForAll == TextureImporterFormat.BC7));
-                int compressionQuality = forceBestQuality ? (int)TextureCompressionQuality.Best : editor.model.platformTextureSettings.compressionQuality;
-
-                compressionQuality = EditCompressionQuality(editor.model.buildTarget, compressionQuality, isCrunchedFormat, (TextureImporterFormat)formatForAll);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    editor.model.SetCompressionQualityForAll(compressionQuality);
-                    //SyncPlatformSettings ();
-                }
+                EditCompressionQuality(editor, isCrunchedFormat, (TextureImporterFormat)formatForAll);
             }
 
             // show the ETC1 split option only for sprites on platforms supporting ETC and only when there is an alpha channel
@@ -238,19 +231,36 @@ namespace UnityEditor.Modules
 
             if (isETCPlatform && isDealingWithSprite && isETCFormatSelected)
             {
+                controlRect = EditorGUILayout.GetToggleRect(true);
+                label = EditorGUI.BeginProperty(controlRect, kUseAlphaSplitLabel, editor.model.alphaSplitProperty);
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = editor.model.overriddenIsDifferent || editor.model.allowsAlphaSplitIsDifferent;
-                bool allowsAlphaSplit = EditorGUILayout.Toggle(kUseAlphaSplitLabel, editor.model.platformTextureSettings.allowsAlphaSplitting);
+                bool allowsAlphaSplit = EditorGUI.Toggle(controlRect, label, editor.model.platformTextureSettings.allowsAlphaSplitting);
                 if (EditorGUI.EndChangeCheck())
                 {
                     editor.model.SetAllowsAlphaSplitForAll(allowsAlphaSplit);
                 }
+                EditorGUI.EndProperty();
             }
         }
 
-        private int EditCompressionQuality(BuildTarget target, int compression, bool isCrunchedFormat, TextureImporterFormat textureFormat)
+        private void EditCompressionQuality(BaseTextureImportPlatformSettings editor, bool isCrunchedFormat, TextureImporterFormat textureFormat)
         {
-            bool showAsEnum = !isCrunchedFormat && (BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.HasIntegratedGPU) || (textureFormat == TextureImporterFormat.BC6H) || (textureFormat == TextureImporterFormat.BC7));
+            bool showAsEnum = !isCrunchedFormat && (BuildTargetDiscovery.PlatformHasFlag(editor.model.buildTarget, TargetAttributes.HasIntegratedGPU) || (textureFormat == TextureImporterFormat.BC6H) || (textureFormat == TextureImporterFormat.BC7));
+
+            Rect controlRect = showAsEnum ? EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup) : EditorGUILayout.GetSliderRect(true);
+            GUIContent label = EditorGUI.BeginProperty(controlRect, showAsEnum ? kCompressionQuality : kCompressionQualitySlider, editor.model.compressionQualityProperty);
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = editor.model.overriddenIsDifferent ||
+                editor.model.compressionQualityIsDifferent;
+
+            // Prior to exposing compression quality for BC6H/BC7 formats they were always compressed at maximum quality even though the setting was
+            // defaulted to 'Normal'.  Now BC6H/BC7 quality is exposed to the user as Fast/Normal/Best 'Normal' maps to one setting down from maximum in the
+            // ISPC compressor but to maintain the behaviour of existing projects we need to force their quality up to 'Best'.  The 'forceMaximumCompressionQuality_BC6H_BC7'
+            // flag is set when loading existing texture platform settings to do this and cleared when the compression quality level is manually set (by UI or API)
+            bool forceBestQuality = editor.model.forceMaximumCompressionQuality_BC6H_BC7 && ((textureFormat == TextureImporterFormat.BC6H) || (textureFormat == TextureImporterFormat.BC7));
+            int compression = forceBestQuality ? (int)TextureCompressionQuality.Best : editor.model.platformTextureSettings.compressionQuality;
 
             if (showAsEnum)
             {
@@ -260,21 +270,34 @@ namespace UnityEditor.Modules
                 else if (compression == (int)TextureCompressionQuality.Best)
                     compressionMode = 2;
 
-                int ret = EditorGUILayout.Popup(kCompressionQuality, compressionMode, kMobileCompressionQualityOptions);
+                int ret = EditorGUI.Popup(controlRect, label, compressionMode, kMobileCompressionQualityOptions);
 
                 switch (ret)
                 {
-                    case 0: return (int)TextureCompressionQuality.Fast;
-                    case 1: return (int)TextureCompressionQuality.Normal;
-                    case 2: return (int)TextureCompressionQuality.Best;
+                    case 0:
+                        compression = (int)TextureCompressionQuality.Fast;
+                        break;
+                    case 1:
+                        compression = (int)TextureCompressionQuality.Normal;
+                        break;
+                    case 2:
+                        compression = (int)TextureCompressionQuality.Best;
+                        break;
 
-                    default: return (int)TextureCompressionQuality.Normal;
+                    default:
+                        compression = (int)TextureCompressionQuality.Normal;
+                        break;
                 }
             }
             else
-                compression = EditorGUILayout.IntSlider(kCompressionQualitySlider, compression, 0, 100);
+                compression = EditorGUI.IntSlider(controlRect, label, compression, 0, 100);
 
-            return compression;
+            if (EditorGUI.EndChangeCheck())
+            {
+                editor.model.SetCompressionQualityForAll(compression);
+                //SyncPlatformSettings ();
+            }
+            EditorGUI.EndProperty();
         }
     }
 }

@@ -26,6 +26,16 @@ namespace UnityEditor
             kAppendBuildTarget = 1 << 1
         }
 
+        internal static bool SendEventRefreshAccess(object parameters)
+        {
+            return EditorAnalytics.SendEvent("refreshAccess", parameters);
+        }
+
+        internal static bool SendEventNewLink(object parameters)
+        {
+            return EditorAnalytics.SendEvent("newLink", parameters);
+        }
+
         internal static bool SendEventScriptableBuildPipelineInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("scriptableBuildPipeline", parameters);

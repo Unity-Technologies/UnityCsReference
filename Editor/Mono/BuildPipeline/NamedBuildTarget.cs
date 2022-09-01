@@ -24,6 +24,7 @@ namespace UnityEditor.Build
             "Nintendo Switch",
             "Stadia",
             "CloudRendering",
+            "LinuxHeadlessSimulation",
             "Lumin",
             "GameCoreScarlett",
             "GameCoreXboxOne",
@@ -43,7 +44,9 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
-        public static readonly NamedBuildTarget CloudRendering  = new NamedBuildTarget("CloudRendering");
+        public static readonly NamedBuildTarget LinuxHeadlessSimulation = new NamedBuildTarget("LinuxHeadlessSimulation");
+        [System.Obsolete("CloudRendering is deprecated, please use LinuxHeadlessSimulation (UnityUpgradable) -> LinuxHeadlessSimulation", false)]
+        public static readonly NamedBuildTarget CloudRendering = LinuxHeadlessSimulation;
         public static readonly NamedBuildTarget EmbeddedLinux  = new NamedBuildTarget("EmbeddedLinux");
 
         public string TargetName { get; }
@@ -95,8 +98,8 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.NintendoSwitch;
                 case BuildTargetGroup.Stadia:
                     return NamedBuildTarget.Stadia;
-                case BuildTargetGroup.CloudRendering:
-                    return NamedBuildTarget.CloudRendering;
+                case BuildTargetGroup.LinuxHeadlessSimulation:
+                    return NamedBuildTarget.LinuxHeadlessSimulation;
                 case BuildTargetGroup.EmbeddedLinux:
                     return NamedBuildTarget.EmbeddedLinux;
 

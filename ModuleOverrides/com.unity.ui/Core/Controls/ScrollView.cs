@@ -1347,7 +1347,7 @@ namespace UnityEngine.UIElements
             verticalScroller.Adjust(verticalFactor);
         }
 
-        void UpdateScrollers(bool displayHorizontal, bool displayVertical)
+        internal void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
             AdjustScrollers();
 

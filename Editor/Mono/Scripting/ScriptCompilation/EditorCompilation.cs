@@ -209,16 +209,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
         //Used by the TestRunner package.
         public PrecompiledAssembly[] GetAllPrecompiledAssemblies()
         {
-            return PrecompiledAssemblyProvider.GetPrecompiledAssemblies(true, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+            return PrecompiledAssemblyProvider.GetPrecompiledAssemblies(
+                EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts,
+                EditorUserBuildSettings.activeBuildTargetGroup,
+                EditorUserBuildSettings.activeBuildTarget);
         }
 
-        Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(EditorScriptCompilationOptions options, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {
             Dictionary<string, PrecompiledAssembly> precompiledAssemblies;
             CompilationSetupErrorsTracker.ClearCompilationSetupErrors(CompilationSetupErrors.PrecompiledAssemblyError); // this will also remove the console errors associated with the setup error flags set in the past
             try
             {
-                precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(isEditor, buildTargetGroup, buildTarget);
+                precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, buildTargetGroup, buildTarget);
             }
             catch (PrecompiledAssemblyException exception)
             {
@@ -229,9 +232,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return precompiledAssemblies;
         }
 
-        public PrecompiledAssembly[] GetPrecompiledAssembliesWithSetupErrorsTracking(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        public PrecompiledAssembly[] GetPrecompiledAssembliesWithSetupErrorsTracking(EditorScriptCompilationOptions options, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {
-            return GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(isEditor, buildTargetGroup, buildTarget)?.Values.ToArray();
+            return GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(options, buildTargetGroup, buildTarget)?.Values.ToArray();
         }
 
         public void GetAssemblyDefinitionReferencesWithMissingAssemblies(out List<CustomScriptAssemblyReference> referencesWithMissingAssemblies)
@@ -1267,9 +1270,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
         {
-            var isForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             var precompiledAssemblies = GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(
-                isForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+                options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
         }
 
@@ -1456,7 +1458,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             using (new ProfilerMarker(nameof(GetAllScriptAssembliesOfType)).Auto())
             {
                 var precompiledAssemblies =
-                    GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(settings.BuildingForEditor,
+                    GetPrecompiledAssembliesDictionaryWithSetupErrorsTracking(settings.CompilationOptions,
                         settings.BuildTargetGroup, settings.BuildTarget);
 
                 UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
@@ -1622,7 +1624,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
 
             var precompiledAssemblies = GetPrecompiledAssembliesWithSetupErrorsTracking(
-                buildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+                options, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
             // todo split implicit/explicit precompiled references
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, TargetAssemblyType.Custom, options, EditorCompatibility.CompatibleWithEditor, precompiledAssemblies, null, null);
             var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);

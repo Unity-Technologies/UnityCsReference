@@ -68,23 +68,17 @@ namespace UnityEditor
             }
         }
 
-        [SerializeField]
-        Rect m_Position = new Rect(0, 0, 100, 100);
-
-        [SerializeField]
-        internal Vector2 m_MinSize;
-        [SerializeField]
-        internal Vector2 m_MaxSize;
+        [SerializeField] Rect m_Position = new Rect(0, 0, 100, 100);
+        [SerializeField] internal Vector2 m_MinSize;
+        [SerializeField] internal Vector2 m_MaxSize;
 
         public virtual Vector2 minSize { get { return m_MinSize; } }
         public virtual Vector2 maxSize { get { return m_MaxSize; } }
 
         internal void SetMinMaxSizes(Vector2 min, Vector2 max)
         {
-            if (minSize == min && maxSize == max)
-            {
+            if (m_MinSize == min && m_MaxSize == max)
                 return;
-            }
             m_MinSize = min;
             m_MaxSize = max;
             if (m_Parent)

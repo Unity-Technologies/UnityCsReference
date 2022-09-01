@@ -158,6 +158,8 @@ namespace Unity.UI.Builder
             }
 
             m_SelectionMadeExternally = false;
+
+            m_ElementHierarchyView.ApplyRegisteredSelectionInternallyIfNeeded();
         }
 
         public virtual void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)

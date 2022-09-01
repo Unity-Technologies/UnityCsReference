@@ -121,6 +121,9 @@ namespace UnityEditor
         [SerializeField]
         int m_IgnorePngGamma;
 
+        [SerializeField]
+        int m_CookieMode;
+
         // memory layout of these is in TextureSettings.h
         [SerializeField]
         [NativeName("m_TextureSettings.m_FilterMode")]

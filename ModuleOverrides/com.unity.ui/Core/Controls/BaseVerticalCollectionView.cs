@@ -174,6 +174,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void SetMakeItemWithoutNotify(Func<VisualElement> func)
+        {
+            m_MakeItem = func;
+
+        }
+
+        internal void SetBindItemWithoutNotify(Action<VisualElement, int> callback)
+        {
+            m_BindItem = callback;
+
+        }
+
         /// <summary>
         /// Callback for unbinding a data item from the VisualElement.
         /// </summary>
@@ -720,7 +732,7 @@ namespace UnityEngine.UIElements
         void OnItemIndexChanged(int srcIndex, int dstIndex)
         {
             itemIndexChanged?.Invoke(srcIndex, dstIndex);
-            if (binding == null)
+            if (!(binding is IInternalListViewBinding))
                 RefreshItems();
             else
                 schedule.Execute(RefreshItems).ExecuteLater(100);
@@ -729,6 +741,9 @@ namespace UnityEngine.UIElements
         void OnItemsSourceChanged()
         {
             itemsSourceChanged?.Invoke();
+            // When bound, the ListViewBinding class takes care of refreshing when the array size is updated.
+            if (!(binding is IInternalListViewBinding))
+                RefreshItems();
         }
 
         /// <summary>

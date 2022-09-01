@@ -208,6 +208,8 @@ namespace UnityEditor
                     break;
 
                 case EventType.DragPerform:
+                    // Linux does not make a DragExited call after a drag, and needs to have its visual mode move to None. All platforms reset their visualmode back to None after a drag.
+                    DragAndDrop.visualMode = DragAndDropVisualMode.None;
                     if (m_TargetIndex != -1)
                     {
                         HandleDragPerformEvent(editors, evt, ref m_TargetIndex);

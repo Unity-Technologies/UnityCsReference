@@ -95,11 +95,10 @@ namespace UnityEngine
             [FreeFunction("Gradient_Bindings::GetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
             [FreeFunction("Gradient_Bindings::SetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
         }
+		
+        [NativeProperty(IsThreadSafe = true)] extern public GradientMode mode { get; set; }
 
-
-        extern public GradientMode mode { get; set; }
-
-        extern internal Color constantColor { get; set; }
+        [NativeProperty(IsThreadSafe = true)] extern internal Color constantColor { get; set; }
 
         // Setup Gradient with an array of color keys and alpha keys
         [FreeFunction(Name = "Gradient_Bindings::SetKeys", IsThreadSafe = true, HasExplicitThis = true)]

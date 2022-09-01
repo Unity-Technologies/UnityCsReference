@@ -122,7 +122,10 @@ namespace UnityEditor
 
         Stadia = 40,
 
+        [System.Obsolete("CloudRendering is deprecated, please use LinuxHeadlessSimulation (UnityUpgradable) -> LinuxHeadlessSimulation", false)]
         CloudRendering = 41,
+
+        LinuxHeadlessSimulation = 41, // LinuxHeadlessSimulation intenionally set to the same as CloudRendering
 
         [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
         GameCoreScarlett = 42,

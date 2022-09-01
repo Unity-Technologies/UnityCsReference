@@ -25,8 +25,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
     abstract class PrecompiledAssemblyProviderBase
     {
-        public abstract PrecompiledAssembly[] GetPrecompiledAssemblies(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
-        public abstract Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
+        public abstract PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
+        public abstract Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget);
         public abstract PrecompiledAssembly[] GetUnityAssemblies(bool isEditor, BuildTarget buildTarget);
         public abstract PrecompiledAssembly[] CachedEditorPrecompiledAssemblies { get; }
         public abstract PrecompiledAssembly[] CachedUnityAssemblies { get; }
@@ -38,13 +38,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetUnityAssembliesNative(isEditor, buildTarget);
         }
 
-        protected virtual PrecompiledAssembly[] GetPrecompiledAssembliesInternal(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target)
+        protected virtual PrecompiledAssembly[] GetPrecompiledAssembliesInternal(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget target)
         {
-            return GetPrecompiledAssembliesNative(buildingForEditor, buildTargetGroup, target);
+            return GetPrecompiledAssembliesNative(compilationOptions, buildTargetGroup, target);
         }
 
         [FreeFunction("GetPrecompiledAssembliesManaged")]
-        protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
+        protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget target);
 
         [FreeFunction("GetUnityAssembliesManaged")]
         protected static extern PrecompiledAssembly[] GetUnityAssembliesNative(bool buildingForEditor, BuildTarget target);
@@ -111,9 +111,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return unityAssembliesInternal;
         }
 
-        public override PrecompiledAssembly[] GetPrecompiledAssemblies(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        public override PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {
-            return GetPrecompiledAssembliesDictionary(isEditor, buildTargetGroup, buildTarget).Values.ToArray();
+            return GetPrecompiledAssembliesDictionary(compilationOptions, buildTargetGroup, buildTarget).Values.ToArray();
         }
 
         public override string[] GetRoslynAnalyzerPaths()
@@ -123,14 +123,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         [FreeFunction] internal static extern string[] GetAllRoslynAnalyzerPaths();
 
-        public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(bool isEditor, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        static bool IsEditor(EditorScriptCompilationOptions options)
         {
+            return (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
+        }
+        public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        {
+            bool isEditor = IsEditor(compilationOptions);
             if (isEditor && m_EditorPrecompiledAssemblies != null)
             {
                 return m_EditorPrecompiledAssemblies;
             }
 
-            var precompiledAssembliesInternal = GetPrecompiledAssembliesInternal(isEditor, buildTargetGroup, buildTarget);
+            var precompiledAssembliesInternal = GetPrecompiledAssembliesInternal(compilationOptions, buildTargetGroup, buildTarget);
             var fileNameToPrecompiledAssembly = ValidateAndGetNameToPrecompiledAssembly(precompiledAssembliesInternal);
 
             if (isEditor)

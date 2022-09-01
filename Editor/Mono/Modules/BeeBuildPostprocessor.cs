@@ -11,6 +11,8 @@ using Bee.BeeDriver;
 using NiceIO;
 using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
+using UnityEditor.Build.Player;
+using UnityEditor.Build.Reporting;
 using UnityEditor.CrashReporting;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -232,6 +234,19 @@ namespace UnityEditor.Modules
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
             var allowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
 
+            NPath extraTypesFile = null;
+            if (PlayerBuildInterface.ExtraTypesProvider != null)
+            {
+                var extraTypes = new HashSet<string>();
+                foreach (var extraType in PlayerBuildInterface.ExtraTypesProvider())
+                {
+                    extraTypes.Add(extraType);
+                }
+
+                extraTypesFile = "Temp/extra-types.txt";
+                extraTypesFile.WriteAllLines(extraTypes.ToArray());
+            }
+
             return new Il2CppConfig
             {
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
@@ -254,6 +269,7 @@ namespace UnityEditor.Modules
                     .ToArray(),
                 AdditionalArgs = additionalArgs.ToArray(),
                 AllowDebugging = allowDebugging,
+                ExtraTypes = extraTypesFile?.ToString(),
             };
         }
 
@@ -295,7 +311,7 @@ namespace UnityEditor.Modules
 
         protected string GetDataFolderFor(BuildPostProcessArgs args)
         {
-            return $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data";
+            return $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
         }
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();

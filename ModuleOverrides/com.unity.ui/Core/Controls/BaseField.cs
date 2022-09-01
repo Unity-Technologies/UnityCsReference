@@ -422,19 +422,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected override void ExecuteDefaultAction(EventBase evt)
+        internal override Rect GetTooltipRect()
         {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt.eventTypeId == TooltipEvent.TypeId())
-            {
-                TooltipEvent e = (TooltipEvent)evt;
-
-                e.rect = !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
-
-                e.tooltip = tooltip;
-                e.StopImmediatePropagation();
-            }
+            return !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
         }
     }
 

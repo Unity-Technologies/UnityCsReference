@@ -9,6 +9,13 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
+    struct PreSaveState
+    {
+        public List<int> expandedIndices;
+        public List<int> selectedIndices;
+        public Vector2 scrollOffset;
+    }
+
     internal class ElementHierarchyView : VisualElement
     {
         public const string k_PillName = "unity-builder-tree-class-pill";
@@ -39,6 +46,7 @@ namespace Unity.UI.Builder
         IList<ITreeViewItem> m_TreeRootItems;
 
         InternalTreeView m_TreeView;
+        PreSaveState m_RegisteredState;
         HighlightOverlayPainter m_TreeViewHoverOverlay;
 
         VisualElement m_Container;
@@ -513,6 +521,7 @@ namespace Unity.UI.Builder
             {
                 m_TreeView.ClearSelection();
                 m_TreeView.rootItems = m_TreeRootItems;
+                ApplyRegisteredExpandedIndices();
 
                 // Restore focus state.
                 if (wasTreeFocused)
@@ -520,6 +529,47 @@ namespace Unity.UI.Builder
             }
 
             hierarchyHasChanged = false;
+        }
+
+        public void RegisterTreeState()
+        {
+            if (m_TreeView != null)
+            {
+                m_RegisteredState.expandedIndices = m_TreeView.items.Where(id => m_TreeView.IsExpanded(id.id)).Select(id => m_TreeView.GetItemIndex(id.id)).Where(index => index != -1).ToList();
+                m_RegisteredState.expandedIndices.Sort();
+                m_RegisteredState.selectedIndices = m_TreeView.selectedItems.Select(id => m_TreeView.GetItemIndex(id.id)).ToList();
+                m_RegisteredState.scrollOffset = m_TreeView.m_ScrollView.scrollOffset;
+            }
+        }
+
+        void ApplyRegisteredExpandedIndices()
+        {
+            if (m_RegisteredState.expandedIndices == null)
+                return;
+
+            m_TreeView.CollapseAll();
+            foreach (var index in m_RegisteredState.expandedIndices)
+            {
+                var id = m_TreeView.GetItemId(index);
+                if (id != TreeItem.invalidId)
+                    m_TreeView.ExpandItem(id);
+            }
+
+            m_RegisteredState.expandedIndices.Clear();
+            m_RegisteredState.expandedIndices = null;
+        }
+
+        public void ApplyRegisteredSelectionInternallyIfNeeded()
+        {
+            if (m_RegisteredState.selectedIndices == null)
+                return;
+
+            m_TreeView.SetSelectionByIndices(m_RegisteredState.selectedIndices, true);
+            m_TreeView.m_ScrollView.scrollOffset = m_RegisteredState.scrollOffset;
+            m_TreeView.RefreshItems();
+
+            m_RegisteredState.selectedIndices.Clear();
+            m_RegisteredState.selectedIndices = null;
         }
 
         public void ExpandRootItems()

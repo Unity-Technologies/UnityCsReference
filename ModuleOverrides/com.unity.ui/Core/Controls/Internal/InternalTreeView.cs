@@ -167,7 +167,7 @@ namespace UnityEngine.UIElements
         private List<TreeViewItemWrapper> m_ItemWrappers;
 
         private readonly ListView m_ListView;
-        private readonly ScrollView m_ScrollView;
+        internal readonly ScrollView m_ScrollView;
 
         public InternalTreeView()
         {
@@ -318,6 +318,15 @@ namespace UnityEngine.UIElements
             m_ListView.SetSelectionInternal(selectedIndexes, sendNotification);
         }
 
+        internal void SetSelectionByIndices(IEnumerable<int> indexes, bool sendNotification)
+        {
+            if (indexes == null)
+                return;
+
+            ListViewRefresh();
+            m_ListView.SetSelectionInternal(indexes, sendNotification);
+        }
+
         public void AddToSelection(int id)
         {
             var index = GetItemIndex(id, true);
@@ -331,7 +340,7 @@ namespace UnityEngine.UIElements
             m_ListView.RemoveFromSelection(index);
         }
 
-        private int GetItemIndex(int id, bool expand = false)
+        internal int GetItemIndex(int id, bool expand = false)
         {
             var item = FindItem(id);
             if (item == null)
@@ -630,7 +639,7 @@ namespace UnityEngine.UIElements
             m_BindItem(userContentContainer, item);
         }
 
-        private int GetItemId(int index)
+        internal int GetItemId(int index)
         {
             return m_ItemWrappers[index].id;
         }
@@ -712,6 +721,19 @@ namespace UnityEngine.UIElements
                 if (m_ExpandedItemIds.Contains(item.id) && item.hasChildren)
                     CreateWrappers(item.children, depth + 1, ref wrappers);
             }
+        }
+
+        /// <summary>
+        /// Collapses all items in the tree and refreshes the view.
+        /// </summary>
+        public void CollapseAll()
+        {
+            if (m_ExpandedItemIds.Count == 0)
+                return;
+
+            m_ExpandedItemIds.Clear();
+            RegenerateWrappers();
+            RefreshItems();
         }
 
         private void RegenerateWrappers()
