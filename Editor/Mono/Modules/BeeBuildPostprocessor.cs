@@ -10,9 +10,9 @@ using System.Threading;
 using Bee.BeeDriver;
 using Bee.BinLog;
 using NiceIO;
-using Bee.Core;
 using PlayerBuildProgramLibrary.Data;
 using UnityEditor.Build;
+using UnityEditor.Build.Player;
 using UnityEditor.Build.Reporting;
 using UnityEditor.CrashReporting;
 using UnityEditor.Scripting;
@@ -254,6 +254,19 @@ namespace UnityEditor.Modules
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
             var allowDebugging = GetAllowDebugging(args);
 
+            NPath extraTypesFile = null;
+            if (PlayerBuildInterface.ExtraTypesProvider != null)
+            {
+                var extraTypes = new HashSet<string>();
+                foreach (var extraType in PlayerBuildInterface.ExtraTypesProvider())
+                {
+                    extraTypes.Add(extraType);
+                }
+
+                extraTypesFile = "Temp/extra-types.txt";
+                extraTypesFile.WriteAllLines(extraTypes.ToArray());
+            }
+
             return new Il2CppConfig
             {
                 EnableDeepProfilingSupport = GetDevelopment(args) &&
@@ -280,6 +293,7 @@ namespace UnityEditor.Modules
                 LinkerFlags = linkerFlags,
                 SysRootPath = sysrootPath,
                 ToolChainPath = toolchainPath,
+                ExtraTypes = extraTypesFile?.ToString(),
             };
         }
 
@@ -360,7 +374,7 @@ namespace UnityEditor.Modules
 
         protected string GetDataFolderFor(BuildPostProcessArgs args)
         {
-            return $"Library/PlayerDataCache/{BuildPipeline.GetBuildTargetName(args.target)}/Data";
+            return $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
         }
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();

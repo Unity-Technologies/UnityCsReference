@@ -625,7 +625,7 @@ namespace UnityEditor
         private static extern AssetBundleManifest BuildAssetBundlesWithInfoInternal(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget);
 
         [FreeFunction("GetPlayerDataSessionId")]
-        internal static extern string GetSessionIdForBuildTarget(BuildTarget target);
+        internal static extern string GetSessionIdForBuildTarget(BuildTarget target, int subtarget);
 
         [FreeFunction("ExtractCRCFromAssetBundleManifestFile")]
         public static extern bool GetCRCForAssetBundle(string targetPath, out uint crc);

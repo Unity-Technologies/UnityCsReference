@@ -709,7 +709,7 @@ namespace UnityEditor.Networking.PlayerConnection
             if (EditorGUI.Button(rect, Content.TroubleShoot, ConnectionDropDownStyles.sConnectionTrouble))
             {
                 var help = Help.FindHelpNamed("profiler-profiling-applications");
-                Application.OpenURL(help);
+                Help.BrowseURL(help);
             }
 
             if(Event.current.type == EventType.MouseMove)

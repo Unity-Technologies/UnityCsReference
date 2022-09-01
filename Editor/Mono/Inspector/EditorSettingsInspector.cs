@@ -704,7 +704,7 @@ namespace UnityEditor
                     {
                         // Known issue with Docs redirect - versioned pages might not open offline docs
                         var help = Help.FindHelpNamed("ParallelImport");
-                        Application.OpenURL(help);
+                        Help.BrowseURL(help);
                     }
                 GUILayout.EndHorizontal();
             }
@@ -780,7 +780,7 @@ namespace UnityEditor
             {
                 // Known issue with Docs redirect - versioned pages might not open offline docs
                 var help = Help.FindHelpNamed("UnityAccelerator");
-                Application.OpenURL(help);
+                Help.BrowseURL(help);
             }
             GUILayout.EndHorizontal();
 

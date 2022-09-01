@@ -82,6 +82,7 @@ namespace UnityEngine.UIElements.Internal
         public static readonly string titleUssClassName = ussClassName + "__title";
         public static readonly string iconElementName = "unity-multi-column-header-column-icon";
         public static readonly string titleElementName = "unity-multi-column-header-column-title";
+        static readonly string s_BoundVEPropertyName = "__bound";
         static readonly string s_BindingCallbackVEPropertyName = "__binding-callback";
         static readonly string s_UnbindingCallbackVEPropertyName = "__unbinding-callback";
         static readonly string s_DestroyCallbackVEPropertyName = "__destroy-callback";
@@ -129,10 +130,11 @@ namespace UnityEngine.UIElements.Internal
             {
                 if (m_Content != null)
                 {
-                    if (m_Content.parent == this)
+                    if (m_Content.parent == m_ContentContainer)
                     {
                         m_Content.RemoveFromHierarchy();
                     }
+                    DestroyHeaderContent();
 
                     m_Content = null;
                 }
@@ -145,6 +147,12 @@ namespace UnityEngine.UIElements.Internal
                     m_ContentContainer.Add(m_Content);
                 }
             }
+        }
+
+        bool isContentBound
+        {
+            get => m_Content != null && (bool) m_Content.GetProperty(s_BoundVEPropertyName);
+            set => m_Content?.SetProperty(s_BoundVEPropertyName, value);
         }
 
         /// <summary>
@@ -169,7 +177,7 @@ namespace UnityEngine.UIElements.Internal
                 }
                 else
                 {
-                    UpdateBindingFromColumn();
+                    UpdateDataFromColumn();
                 }
             };
             column.resized += (c) => UpdateGeometryFromColumn();
@@ -218,13 +226,42 @@ namespace UnityEngine.UIElements.Internal
             clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = multiSortingModifier });
         }
 
-        void UpdateBindingFromColumn()
+        void UpdateDataFromColumn()
         {
             name = column.name;
+            UnbindHeaderContent();
+            BindHeaderContent();
+        }
 
-            var bindCallback = content.GetProperty(s_BindingCallbackVEPropertyName) as Action<VisualElement>;
+        void BindHeaderContent()
+        {
+            if (!isContentBound)
+            {
+                var bindCallback = content.GetProperty(s_BindingCallbackVEPropertyName) as Action<VisualElement>;
 
-            bindCallback?.Invoke(content);
+                bindCallback?.Invoke(content);
+                isContentBound = true;
+            }
+        }
+
+        void UnbindHeaderContent()
+        {
+            if (isContentBound)
+            {
+                var unbindCallback = content.GetProperty(s_UnbindingCallbackVEPropertyName) as Action<VisualElement>;
+
+                unbindCallback?.Invoke(content);
+                isContentBound = false;
+            }
+        }
+
+        void DestroyHeaderContent()
+        {
+            // Unbind if bound before destroying
+            UnbindHeaderContent();
+            var destroyCallback = content.GetProperty(s_DestroyCallbackVEPropertyName) as Action<VisualElement>;
+
+            destroyCallback?.Invoke(content);
         }
 
         VisualElement CreateDefaultHeaderContent()
@@ -294,22 +331,13 @@ namespace UnityEngine.UIElements.Internal
                 destroyCallback = null;
             }
 
-            // Unbind and destroy the previous content
-            if (content != null)
-            {
-                var oldUnbindCallback = content.GetProperty(s_UnbindingCallbackVEPropertyName) as Action<VisualElement>;
-                var oldDestroyCallback = content.GetProperty(s_DestroyCallbackVEPropertyName) as Action<VisualElement>;
-
-                oldUnbindCallback?.Invoke(content);
-                oldDestroyCallback?.Invoke(content);
-            }
-
             content = makeContentCallback();
             content.SetProperty(s_BindingCallbackVEPropertyName, bindContentCallback);
             content.SetProperty(s_UnbindingCallbackVEPropertyName, unbindContentCallback);
             content.SetProperty(s_DestroyCallbackVEPropertyName, destroyCallback);
+            isContentBound = false;
             m_ScheduledHeaderTemplateUpdate = null;
-            UpdateBindingFromColumn();
+            UpdateDataFromColumn();
         }
 
         void UpdateGeometryFromColumn()
