@@ -815,8 +815,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ScriptAssembly[] scriptAssemblies;
             try
             {
-                CompilationSetupWarningTracker.ClearAssetWarnings();
-                scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, TargetAssemblyType.Undefined, CompilationSetupWarningTracker);
+                if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile))
+                    scriptAssemblies = Array.Empty<ScriptAssembly>();
+                else
+                {
+                    CompilationSetupWarningTracker.ClearAssetWarnings();
+                    scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings,
+                        TargetAssemblyType.Undefined, CompilationSetupWarningTracker);
+                }
             }
             catch (PrecompiledAssemblyException)
             {
@@ -830,7 +836,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return CompileStatus.Idle;
             }
 
-            WarnIfThereAreAssembliesWithoutAnyScripts(scriptAssemblySettings, scriptAssemblies);
+            if ((scriptAssemblySettings.CompilationOptions & EditorScriptCompilationOptions.BuildingSkipCompile) == 0)
+                WarnIfThereAreAssembliesWithoutAnyScripts(scriptAssemblySettings, scriptAssemblies);
 
             var debug = scriptAssemblySettings.CodeOptimization == CodeOptimization.Debug;
 
@@ -844,7 +851,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 $"{(scriptAssemblySettings.BuildingForEditor ? "E" : "P")}" +
                 $"{(scriptAssemblySettings.BuildingDevelopmentBuild ? "Dev" : "")}" +
                 $"{(debug ? "Dbg" : "")}" +
-                "";
+                $"{(scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile) ? "SkipCompile" : "")}";
 
             BuildTarget buildTarget = scriptAssemblySettings.BuildTarget;
             activeBeeBuild = new BeeScriptCompilationState()

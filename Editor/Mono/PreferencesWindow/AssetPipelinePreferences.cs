@@ -10,6 +10,13 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
+    internal enum AssetPipelineAutoRefreshMode
+    {
+        Disabled = 0,
+        Enabled = 1,
+        EnabledOutsidePlaymode = 2
+    }
+
     internal class AssetPipelinePreferences : PreferencesProvider
     {
         class Properties
@@ -29,7 +36,7 @@ namespace UnityEditor
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Open Unity Accelerator documentation.");
         }
 
-        bool m_AutoRefresh;
+        AssetPipelineAutoRefreshMode m_AutoRefresh;
         bool m_DirectoryMonitoring;
         bool m_CompressAssetsOnImport;
         bool m_VerifySavingAssets;
@@ -84,9 +91,22 @@ namespace UnityEditor
             return EditorPrefs.GetFloat(kDesiredImportWorkerCountPctOfLogicalCPUsKey, kDefaultDesiredImportWorkerCountPctOfLogicalCPUs);
         }
 
+        public AssetPipelineAutoRefreshMode AutoRefreshModeEditorPref
+        {
+            get
+            {
+                var legacyAutoRefreshMode = EditorPrefs.GetBool("kAutoRefresh") ? AssetPipelineAutoRefreshMode.Enabled : AssetPipelineAutoRefreshMode.Disabled;
+                return (AssetPipelineAutoRefreshMode)EditorPrefs.GetInt("kAutoRefreshMode", (int)legacyAutoRefreshMode);
+            }
+            set
+            {
+                EditorPrefs.SetInt("kAutoRefreshMode", (int)value);
+            }
+        }
+
         void ReadAssetImportPreferences()
         {
-            m_AutoRefresh = EditorPrefs.GetBool("kAutoRefresh");
+            m_AutoRefresh = AutoRefreshModeEditorPref;
             m_DirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
@@ -96,7 +116,7 @@ namespace UnityEditor
 
         void WriteAssetImportPreferences()
         {
-            EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
+            AutoRefreshModeEditorPref = m_AutoRefresh;
             bool doRefreshSettings = false;
 
             bool oldDirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
@@ -256,17 +276,8 @@ namespace UnityEditor
         void AssetImportGUI()
         {
             EditorGUI.BeginChangeCheck();
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
-            using (new EditorGUI.DisabledScope(collabEnabled))
-            {
-                if (collabEnabled)
-                {
-                    EditorGUILayout.Toggle(Properties.autoRefresh, true);               // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
-                    EditorGUILayout.HelpBox(Properties.autoRefreshHelpBox);
-                }
-                else
-                    m_AutoRefresh = EditorGUILayout.Toggle(Properties.autoRefresh, m_AutoRefresh);
-            }
+
+            DoAutoRefreshMode();
             DoImportWorkerCount();
             DoDirectoryMonitoring();
 
@@ -281,6 +292,26 @@ namespace UnityEditor
                     Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
                 WriteAssetImportPreferences();
                 ReadAssetImportPreferences();
+            }
+        }
+
+        void DoAutoRefreshMode()
+        {
+            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
+            using (new EditorGUI.DisabledScope(collabEnabled))
+            {
+                if (collabEnabled)
+                {
+                    // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
+                    EditorGUILayout.EnumPopup(Properties.autoRefresh, AssetPipelineAutoRefreshMode.Enabled);
+
+                    EditorGUILayout.Toggle(Properties.autoRefresh, true);
+                    EditorGUILayout.HelpBox(Properties.autoRefreshHelpBox);
+                }
+                else
+                {
+                    m_AutoRefresh = (AssetPipelineAutoRefreshMode)EditorGUILayout.EnumPopup(Properties.autoRefresh, m_AutoRefresh);
+                }
             }
         }
 

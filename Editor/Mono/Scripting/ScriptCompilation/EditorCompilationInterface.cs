@@ -202,6 +202,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        // Unlike IsCompiling, this will only return true if compilation has actually started (and not if compilation
+        // is requested but has not started yet). We are using this for the BuildPlayer check (to not allow starting
+        // a player build if script compilation is in progress). We do allow starting a player build if compilation is
+        // requested (with a warning), as a common flow used in user build scripts is "Change defines -> Build Player".
+        public static bool IsCompilationInProgress()
+        {
+            return Instance.IsCompilationTaskCompiling() || Instance.IsAnyAssemblyBuilderCompiling();
+        }
+
+        [RequiredByNativeCode]
         public static bool IsCompiling()
         {
             return Instance.IsCompiling();

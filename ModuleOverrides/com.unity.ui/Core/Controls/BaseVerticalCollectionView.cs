@@ -146,6 +146,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Called when an item is moved in the itemsSource.
         /// </summary>
+        /// <remarks>
+        /// This callback receives two ids, the first being the id being moved, the second being the destination id.
+        /// In the case of a tree, the destination is the parent id.
+        /// </remarks>
         public event Action<int, int> itemIndexChanged;
 
         /// <summary>
