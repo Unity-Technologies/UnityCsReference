@@ -17,9 +17,12 @@ namespace UnityEditor.UIElements
         readonly IPropertyView inspectorWindow;
         Editor[] m_EditorCache;
 
-        private Editor[] PopulateCache()
+        // getting activeEditors is costly, so pass in the previously retrieved editor array where possible
+        private Editor[] PopulateCache(Editor[] editors = null)
         {
-            m_EditorCache = inspectorWindow.tracker.activeEditors;
+            if (editors == null)
+                editors = inspectorWindow.tracker.activeEditors;
+            m_EditorCache = editors;
             return m_EditorCache;
         }
 
@@ -84,7 +87,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal EditorElement(int editorIndex, IPropertyView iw, bool isCulled = false)
+        internal EditorElement(int editorIndex, IPropertyView iw, Editor[] editors, bool isCulled = false)
         {
             m_EditorIndex = editorIndex;
             inspectorWindow = iw;
@@ -93,16 +96,16 @@ namespace UnityEditor.UIElements
 
             if (isCulled)
             {
-                InitCulled();
+                InitCulled(editors);
                 return;
             }
 
-            Init();
+            Init(editors);
         }
 
-        void InitCulled()
+        void InitCulled(Editor[] editors)
         {
-            PopulateCache();
+            PopulateCache(editors);
 
             var container = inspectorWindow.CreateIMGUIContainer(() =>
             {
@@ -119,9 +122,9 @@ namespace UnityEditor.UIElements
             Add(container);
         }
 
-        void Init()
+        void Init(Editor[] editors)
         {
-            PopulateCache();
+            PopulateCache(editors);
             m_EditorTarget = editor.targets[0];
             var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
@@ -174,31 +177,31 @@ namespace UnityEditor.UIElements
             return inspectorElement;
         }
 
-        public void ReinitCulled(int editorIndex)
+        public void ReinitCulled(int editorIndex, Editor[] editors)
         {
             if (m_Header != null)
             {
                 m_EditorIndex = editorIndex;
                 m_Header = m_Footer = null;
                 Clear();
-                InitCulled();
+                InitCulled(editors);
                 return;
             }
 
-            PopulateCache();
+            PopulateCache(editors);
         }
 
-        public void Reinit(int editorIndex)
+        public void Reinit(int editorIndex, Editor[] editors)
         {
             if (m_Header == null)
             {
                 m_EditorIndex = editorIndex;
                 Clear();
-                Init();
+                Init(editors);
                 return;
             }
 
-            PopulateCache();
+            PopulateCache(editors);
             Object editorTarget = editor.targets[0];
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 

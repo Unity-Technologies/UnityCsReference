@@ -1856,7 +1856,7 @@ namespace UnityEditor
                                 ? "Nothing Selected"
                                 : ObjectNames.GetInspectorTitle(editorTarget);
                             culledEditorContainer =
-                                new UIElements.EditorElement(editorIndex, this, true) { name = editorTitle };
+                                new UIElements.EditorElement(editorIndex, this, editors, true) { name = editorTitle };
                             editorsElement.Add(culledEditorContainer as VisualElement);
 
                             if (!InspectorElement.disabledThrottling)
@@ -1871,7 +1871,7 @@ namespace UnityEditor
                         string editorTitle = editorTarget == null ?
                             "Nothing Selected" :
                             $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                        editorContainer = new UIElements.EditorElement(editorIndex, this) { name = editorTitle };
+                        editorContainer = new UIElements.EditorElement(editorIndex, this, editors) { name = editorTitle };
                         editorsElement.Add(editorContainer as VisualElement);
                         if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(editorContainer);
@@ -2260,7 +2260,7 @@ namespace UnityEditor
                     // from working correctly when setting the Material for its renderer (case 1308966).
                     if (!(ed.target is ParticleSystemRenderer))
                     {
-                        currentElement.ReinitCulled(newEditorsIndex);
+                        currentElement.ReinitCulled(newEditorsIndex, editors);
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2275,7 +2275,7 @@ namespace UnityEditor
                     return null;
                 }
 
-                currentElement.Reinit(newEditorsIndex);
+                currentElement.Reinit(newEditorsIndex, editors);
                 editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;

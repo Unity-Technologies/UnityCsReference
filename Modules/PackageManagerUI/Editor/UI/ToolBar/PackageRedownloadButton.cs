@@ -10,17 +10,17 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
-        private PackageDatabase m_PackageDatabase;
-        public PackageRedownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageDatabase packageDatabase)
+        private PackageOperationDispatcher m_OperationDispatcher;
+        public PackageRedownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageOperationDispatcher operationDispatcher)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_AssetStoreCache = assetStoreCache;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            var canDownload = m_PackageDatabase.Download(version.package);
+            var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
                 PackageManagerWindowAnalytics.SendEvent("startReDownload", version.packageUniqueId);
             return canDownload;

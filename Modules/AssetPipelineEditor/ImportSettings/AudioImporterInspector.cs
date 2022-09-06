@@ -451,7 +451,7 @@ namespace UnityEditor
 
             if (shownSettingsPage == -1)
             {
-                OnSampleSettingGUI(new BuildPlatform("", "", NamedBuildTarget.Unknown, BuildTarget.NoTarget, true), m_DefaultSampleSettings, selectionContainsTrackerFile);
+                OnSampleSettingGUI(new BuildPlatform("", "", NamedBuildTarget.Unknown, BuildTarget.NoTarget, true, false), m_DefaultSampleSettings, selectionContainsTrackerFile);
             }
             else
             {

@@ -17,16 +17,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         public PackageAddButton(ApplicationProxy applicationProxy,
-                                PackageDatabase packageDatabase)
+                                PackageDatabase packageDatabase,
+                                PackageOperationDispatcher operationDispatcher)
         {
             m_Application = applicationProxy;
             m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
         }
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.Install(versions);
+            m_OperationDispatcher.Install(versions);
             // The current multi-select UI does not allow users to install non-recommended versions
             // Should this change in the future, we'll need to update the analytics event accordingly.
             PackageManagerWindowAnalytics.SendEvent("installNewRecommended", packageIds: versions.Select(v => v.uniqueId));
@@ -63,12 +66,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (packageToUninstall?.Any() == true)
             {
-                m_PackageDatabase.InstallAndResetDependencies(version, packageToUninstall);
+                m_OperationDispatcher.InstallAndResetDependencies(version, packageToUninstall);
                 PackageManagerWindowAnalytics.SendEvent("installAndReset", version.uniqueId);
             }
             else
             {
-                m_PackageDatabase.Install(version);
+                m_OperationDispatcher.Install(version);
 
                 var installRecommended = version.package.versions.recommended == version ? "Recommended" : "NonRecommended";
                 var eventName = $"installNew{installRecommended}";
@@ -104,7 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return isInProgress ? k_InstallingButtonText : k_InstallButtonText;
         }
 
-        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsInstallInProgress(version);
+        protected override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsInstallInProgress(version);
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {

@@ -296,6 +296,10 @@ namespace UnityEngine
         // How many samples to use for light probes relative to lightmap texels
         [NativeName("LightProbeSampleCountMultiplier")]
         public extern float lightProbeSampleCountMultiplier { get; set; }
+
+        // During baking processes should the scene visibility toggle be respected for contributions
+        [NativeName("RespectSceneVisibilityWhenBakingGI")]
+        public extern bool respectSceneVisibilityWhenBakingGI { get; set; }
         #endregion
     }
 }

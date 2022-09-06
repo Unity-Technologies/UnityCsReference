@@ -9,6 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Analytics;
 using UnityEditor.PackageManager;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -24,6 +25,12 @@ namespace UnityEditor
             kAppendNone = 0,
             kAppendBuildGuid = 1 << 0,
             kAppendBuildTarget = 1 << 1
+        }
+
+        [RequiredByNativeCode]
+        internal static void SendAnalyticsToEditor(string analytics)
+        {
+            DebuggerEventListHandler.AddAnalytic(analytics);
         }
 
         internal static bool SendEventRefreshAccess(object parameters)
@@ -162,6 +169,18 @@ namespace UnityEditor
         internal extern static bool SendAssetDownloadEvent(object parameters);
 
         public extern static bool enabled
+        {
+            get;
+            set;
+        }
+
+        public extern static bool recordEventsEnabled
+        {
+            get;
+            set;
+        }
+
+        public extern static bool SendAnalyticsEventsImmediately
         {
             get;
             set;

@@ -141,8 +141,19 @@ namespace UnityEditor
                 AssetDatabaseExperimental.GetArtifactPaths(artifactID, out var paths);
                 if (paths.Length != 1)
                 {
-                    Debug.LogError("Prefabs should just have one artifact");
-                    return false;
+                    Array.Sort(paths);
+                    int validatedPathCount = 1;
+                    for (int i = 1; i < paths.Length; i++)
+                    {
+                        if (paths[i].EndsWith(".materialinfo") || paths[i].EndsWith(".importpathinfo"))
+                            validatedPathCount++;
+                    }
+
+                    if (validatedPathCount != paths.Length)
+                    {
+                        Debug.LogError("Prefabs should just have one artifact");
+                        return false;
+                    }
                 }
 
                 string importedPrefabPath = Path.GetFullPath(paths[0]);

@@ -74,5 +74,17 @@ namespace UnityEditor
             get;
             set;
         }
+
+        public extern bool ignoreMipmapLimit
+        {
+            get;
+            set;
+        }
+
+        public extern string mipmapLimitGroupName
+        {
+            get;
+            set;
+        }
     }
 }

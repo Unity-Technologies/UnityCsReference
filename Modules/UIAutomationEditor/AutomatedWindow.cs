@@ -36,7 +36,7 @@ namespace UnityEditor.UIAutomation
             set; get;
         }
 
-        public AutomatedWindow(T windowToDrive)
+        public AutomatedWindow(T windowToDrive, bool enableStackTraces = true)
         {
             m_EditorWindow = windowToDrive;
             //TODO: find a way to properly pass this data from the runner here.
@@ -44,6 +44,8 @@ namespace UnityEditor.UIAutomation
 
             //TODO: at the moment you can only debug one GUIView at a time, and nothing prevents from someone else to change who's being debugged.
             //figure out a way to handle this.
+            m_Model.enableStackTraces = enableStackTraces;
+
             GUIViewDebuggerHelper.DebugWindow(m_EditorWindow.m_Parent);
             GUIViewDebuggerHelper.onViewInstructionsChanged += m_Model.ViewContentsChanged;
             m_EditorWindow.RepaintImmediately(); //will create all the instructions, and will trigger onViewInstructionsChanged
@@ -65,6 +67,7 @@ namespace UnityEditor.UIAutomation
                 return;
             GUIViewDebuggerHelper.onViewInstructionsChanged -= m_Model.ViewContentsChanged;
             GUIViewDebuggerHelper.StopDebugging();
+
             m_Disposed = true;
         }
 
@@ -230,16 +233,18 @@ namespace UnityEditor.UIAutomation
         private readonly List<IMGUINamedControlInstruction> m_NamedControlList = new List<IMGUINamedControlInstruction>();
         private readonly List<IMGUIDrawInstruction>         m_DrawInstructions = new List<IMGUIDrawInstruction>();
 
+
         private AutomatedIMElement[] m_Elements;
         private AutomatedIMElement m_Root;
 
+        public bool enableStackTraces { get; set; }
+
         public void Update()
         {
-            //TODO: right now we simbolicate the stacktrace of all elements, but for this scenario we are not super interested in it.
-            GUIViewDebuggerHelper.GetUnifiedInstructions(m_Instructions);
-            GUIViewDebuggerHelper.GetLayoutInstructions(m_LayoutList);
-            GUIViewDebuggerHelper.GetClipInstructions(m_ClipList);
-            GUIViewDebuggerHelper.GetDrawInstructions(m_DrawInstructions);
+            GUIViewDebuggerHelper.GetUnifiedInstructions(m_Instructions, enableStackTraces);
+            GUIViewDebuggerHelper.GetLayoutInstructions(m_LayoutList, enableStackTraces);
+            GUIViewDebuggerHelper.GetClipInstructions(m_ClipList, enableStackTraces);
+            GUIViewDebuggerHelper.GetDrawInstructions(m_DrawInstructions, enableStackTraces);
             GUIViewDebuggerHelper.GetNamedControlInstructions(m_NamedControlList);
 
             GenerateDom();

@@ -78,7 +78,7 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("OpenScene")]
         public extern static Scene OpenScene(string scenePath, [uei.DefaultValue("OpenSceneMode.Single")] OpenSceneMode mode);
 
-        internal static Scene OpenPreviewScene(string scenePath)
+        public static Scene OpenPreviewScene(string scenePath)
         {
             return OpenPreviewScene(scenePath, true);
         }

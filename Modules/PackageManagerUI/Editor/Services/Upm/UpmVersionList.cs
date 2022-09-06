@@ -226,7 +226,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
                 // note that the difference between this and the previous function is that
                 // two upm package versions could have the the same version but different package id
-                if (sortedVersions[i].uniqueId == versionToAdd.uniqueId)
+                if (sortedVersions[i].packageId == versionToAdd.packageId)
                 {
                     sortedVersions[i] = versionToAdd;
                     return i;

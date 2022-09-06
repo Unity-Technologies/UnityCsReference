@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private AssetStoreClient m_AssetStoreClient;
@@ -28,6 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
             m_PageManager = container.Resolve<PageManager>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_AssetStoreClient = container.Resolve<AssetStoreClient>();
@@ -83,7 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var disableIfCompiling = new ButtonDisableCondition(() => m_Application.isCompiling,
                 L10n.Tr("You need to wait until the compilation is finished to perform this action."));
-            var disableIfInstallOrUninstallInProgress = new ButtonDisableCondition(() => m_PackageDatabase.isInstallOrUninstallInProgress,
+            var disableIfInstallOrUninstallInProgress = new ButtonDisableCondition(() => m_OperationDispatcher.isInstallOrUninstallInProgress,
                 L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
             var disableIfNoNetwork = new ButtonDisableCondition(() => !m_Application.isInternetReachable,
                 L10n.Tr("You need to restore your network connection to perform this action."));
@@ -99,20 +101,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_StandaloneFoldouts = new MultiSelectFoldout[] { m_UnlockFoldout, m_NoActionFoldout, m_CheckUpdateFoldout };
 
             // Foldout groups
-            m_InstallFoldoutGroup = new InstallFoldoutGroup(m_Application, m_PackageDatabase);
+            m_InstallFoldoutGroup = new InstallFoldoutGroup(m_Application, m_PackageDatabase, m_OperationDispatcher);
             m_InstallFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
 
-            m_RemoveFoldoutGroup = new RemoveFoldoutGroup(m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
+            m_RemoveFoldoutGroup = new RemoveFoldoutGroup(m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager);
             m_RemoveFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
 
-            m_UpdateFoldoutGroup = new UpdateFoldoutGroup(m_Application, m_PackageDatabase, m_PageManager);
+            m_UpdateFoldoutGroup = new UpdateFoldoutGroup(m_Application, m_PackageDatabase, m_OperationDispatcher, m_PageManager);
             m_UpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
 
-            m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
             m_DownloadFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
             m_DownloadFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
 
-            m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_PackageDatabase);
+            m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
             m_DownloadUpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
             m_DownloadUpdateFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
 

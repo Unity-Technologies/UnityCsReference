@@ -1132,8 +1132,10 @@ namespace UnityEditor
             Handles.DrawLine(point4, point1);
         }
 
-        internal static void DrawAAPolyLine(Color[] colors, Vector3[] points)                { DoDrawAAPolyLine(colors, points, -1, null, 2, 0.75f); }
-        internal static void DrawAAPolyLine(float width, Color[] colors, Vector3[] points)   { DoDrawAAPolyLine(colors, points, -1, null, width, 0.75f); }
+        /// *listonly*
+        public static void DrawAAPolyLine(Color[] colors, Vector3[] points)                { DoDrawAAPolyLine(colors, points, -1, null, 2, 0.75f); }
+        /// *listonly*
+        public static void DrawAAPolyLine(float width, Color[] colors, Vector3[] points)   { DoDrawAAPolyLine(colors, points, -1, null, width, 0.75f); }
         /// *listonly*
         public static void DrawAAPolyLine(params Vector3[] points)                       { DoDrawAAPolyLine(null, points, -1, null, 2, 0.75f); }
         /// *listonly*

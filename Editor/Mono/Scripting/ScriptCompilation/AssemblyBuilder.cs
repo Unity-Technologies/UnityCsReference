@@ -33,6 +33,7 @@ namespace UnityEditor.Compilation
         UseEngineModules = 1
     }
 
+    [Obsolete("This feature is being deprecated and will be removed in the future. Similar functionality can be achieved using the Roslyn compiler")]
     public class AssemblyBuilder
     {
         public event Action<string> buildStarted;
@@ -49,6 +50,7 @@ namespace UnityEditor.Compilation
         public AssemblyBuilderFlags flags { get; set; }
         public BuildTargetGroup buildTargetGroup { get; set; }
         public BuildTarget buildTarget { get; set; }
+        public int subtarget { get; set; }
 
         public string[] defaultReferences => GetDefaultReferences(EditorCompilationInterface.Instance);
         public string[] defaultDefines => GetDefaultDefines(EditorCompilationInterface.Instance);

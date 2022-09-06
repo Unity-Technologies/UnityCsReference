@@ -126,7 +126,7 @@ namespace UnityEditor.Modules
 
             // IL2CPP does not support a managed stripping level of disabled. If the player settings
             // do try this (which should not be possible from the editor), use Low instead.
-            if (GetUseIl2Cpp(args) && strippingLevel == ManagedStrippingLevel.Disabled)
+            if (GetScriptingBackend(args) == ScriptingBackend.IL2CPP && strippingLevel == ManagedStrippingLevel.Disabled)
                 strippingLevel = ManagedStrippingLevel.Minimal;
 
             if (strippingLevel > ManagedStrippingLevel.Disabled)
@@ -151,7 +151,7 @@ namespace UnityEditor.Modules
                     AssembliesToProcess = rcr.GetUserAssemblies()
                         .Where(s => rcr.IsDLLUsed(s))
                         .ToArray(),
-                    Runtime = GetUseIl2Cpp(args) ? "il2cpp" : "mono",
+                    Runtime = GetScriptingBackend(args).ToString().ToLower(),
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
                         PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
                     Ruleset = strippingLevel switch
@@ -225,10 +225,14 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        protected virtual string Il2CppDataRelativePath(BuildPostProcessArgs args)
+        {
+            return "Data";
+        }
 
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
-            if (!GetUseIl2Cpp(args))
+            if (GetScriptingBackend(args) != ScriptingBackend.IL2CPP)
                 return null;
 
             var additionalArgs = new List<string>(AdditionalIl2CppArgsFor(args));
@@ -244,6 +248,7 @@ namespace UnityEditor.Modules
             var toolchainPath = Il2CppToolchainPathFor(args);
             var compilerFlags = Il2CppCompilerFlagsFor(args);
             var linkerFlags = Il2CppLinkerFlagsFor(args);
+            var relativeDataPath = Il2CppDataRelativePath(args);
 
             if (CrashReportingSettings.enabled)
                 additionalArgs.Add("--emit-source-mapping");
@@ -293,6 +298,7 @@ namespace UnityEditor.Modules
                 LinkerFlags = linkerFlags,
                 SysRootPath = sysrootPath,
                 ToolChainPath = toolchainPath,
+                RelativeDataPath = relativeDataPath,
                 ExtraTypes = extraTypesFile?.ToString(),
             };
         }
@@ -338,8 +344,7 @@ namespace UnityEditor.Modules
             InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
             GenerateIdeProject = GetCreateSolution(args),
             Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
-            UseIl2Cpp = GetUseIl2Cpp(args),
-            UseCoreCLR = GetUseCoreCLR(args),
+            ScriptingBackend = GetScriptingBackend(args),
             Architecture = GetArchitecture(args),
             DataFolder = GetDataFolderFor(args),
             GenerateNativePluginsForAssembliesSettings = GetGenerateNativePluginsForAssembliesSettings(args),
@@ -375,6 +380,27 @@ namespace UnityEditor.Modules
         protected string GetDataFolderFor(BuildPostProcessArgs args)
         {
             return $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
+        }
+
+        protected ScriptingBackend GetScriptingBackend(BuildPostProcessArgs args)
+        {
+            var scriptingBackend = PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args));
+            switch (scriptingBackend)
+            {
+                case ScriptingImplementation.Mono2x:
+                    return ScriptingBackend.Mono;
+
+                case ScriptingImplementation.IL2CPP:
+                    return ScriptingBackend.IL2CPP;
+
+#pragma warning disable 618
+                case ScriptingImplementation.CoreCLR:
+                    return ScriptingBackend.CoreCLR;
+#pragma warning restore 618
+
+                default:
+                    throw new NotSupportedException("Unknown scripting backend:" + scriptingBackend);
+            }
         }
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();
@@ -718,14 +744,7 @@ namespace UnityEditor.Modules
         protected bool ShouldAppendBuild(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.AcceptExternalModificationsToPlayer);
 
-        protected virtual bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
-            PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.IL2CPP;
-
         protected virtual bool GetAllowDebugging(BuildPostProcessArgs args) => (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
-
-        #pragma warning disable 618
-        protected virtual bool GetUseCoreCLR(BuildPostProcessArgs args) =>
-            PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.CoreCLR;
 
     }
 }

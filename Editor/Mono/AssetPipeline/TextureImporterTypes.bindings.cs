@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Serialization;
 
 namespace UnityEditor
 {
@@ -70,8 +71,8 @@ namespace UnityEditor
 
         [SerializeField]
         int m_VTOnly;
-        [SerializeField]
-        int m_IgnoreMasterTextureLimit;
+        [SerializeField, FormerlySerializedAs("m_IgnoreMasterTextureLimit")]
+        int m_IgnoreMipmapLimit;
 
         [SerializeField]
         int    m_NPOTScale;
@@ -347,10 +348,10 @@ namespace UnityEditor
             get { return m_VTOnly != 0; }
             set { m_VTOnly = value ? 1 : 0; }
         }
-        internal bool ignoreMasterTextureLimit
+        public bool ignoreMipmapLimit
         {
-            get { return m_IgnoreMasterTextureLimit != 0; }
-            set { m_IgnoreMasterTextureLimit = value ? 1 : 0; }
+            get { return m_IgnoreMipmapLimit != 0; }
+            set { m_IgnoreMipmapLimit = value ? 1 : 0; }
         }
 
         public TextureImporterNPOTScale npotScale

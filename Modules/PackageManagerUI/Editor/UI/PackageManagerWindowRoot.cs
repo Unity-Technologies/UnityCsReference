@@ -254,7 +254,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageVersion version = null;
             IPackage package = null;
             if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
-                m_PackageDatabase.GetPackageAndVersionByIdOrName(m_PackageToSelectOnLoaded, out package, out version);
+                m_PackageDatabase.GetPackageAndVersionByIdOrName(m_PackageToSelectOnLoaded, out package, out version, true);
 
             if (m_FilterToSelectAfterLoad == PackageFilterTab.AssetStore)
             {
@@ -363,7 +363,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (filterTab == null)
                 {
-                    m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version);
+                    m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
                     if (package != null)
                         filterTab = m_PageManager.FindTab(package, version);
                     else

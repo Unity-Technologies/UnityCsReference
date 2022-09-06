@@ -16,6 +16,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         public BuildTarget BuildTarget { get; set; }
         public BuildTargetGroup BuildTargetGroup { get; set; }
+        public int Subtarget { get; set; }
         public string OutputDirectory { get; set; }
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
@@ -31,6 +32,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             BuildTarget = BuildTarget.NoTarget;
             BuildTargetGroup = BuildTargetGroup.Unknown;
+            Subtarget = 0;
             PredefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
             ExtraGeneralDefines = new string[0];
             AdditionalCompilerArguments = new string[0];

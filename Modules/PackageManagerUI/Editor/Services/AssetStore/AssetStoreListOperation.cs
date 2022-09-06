@@ -18,8 +18,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string packageUniqueId => string.Empty;
 
-        public string versionUniqueId => string.Empty;
-
         [SerializeField]
         protected long m_Timestamp;
         public long timestamp => m_Timestamp;

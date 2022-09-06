@@ -11,13 +11,16 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         public PackageResetButton(ApplicationProxy applicationProxy,
                                   PackageDatabase packageDatabase,
+                                  PackageOperationDispatcher operationDispatcher,
                                   PageManager pageManager)
         {
             m_Application = applicationProxy;
             m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
         }
 
@@ -43,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             m_PageManager.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
-            m_PackageDatabase.ResetDependencies(version, packagesToUninstall);
+            m_OperationDispatcher.ResetDependencies(version, packagesToUninstall);
 
             PackageManagerWindowAnalytics.SendEvent("reset", version?.uniqueId);
             return true;

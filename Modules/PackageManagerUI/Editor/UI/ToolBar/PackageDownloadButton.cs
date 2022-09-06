@@ -11,17 +11,17 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
-        private PackageDatabase m_PackageDatabase;
-        public PackageDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageDatabase packageDatabase)
+        private PackageOperationDispatcher m_OperationDispatcher;
+        public PackageDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageOperationDispatcher operationDispatcher)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_AssetStoreCache = assetStoreCache;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
         }
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            var canDownload = m_PackageDatabase.Download(versions.Select(v => v.package));
+            var canDownload = m_OperationDispatcher.Download(versions.Select(v => v.package));
             if (canDownload)
                 PackageManagerWindowAnalytics.SendEvent("startDownloadNew", packageIds: versions.Select(v => v.packageUniqueId));
             return canDownload;
@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            var canDownload = m_PackageDatabase.Download(version.package);
+            var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
                 PackageManagerWindowAnalytics.SendEvent("startDownloadNew", version.packageUniqueId);
             return canDownload;

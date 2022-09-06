@@ -87,8 +87,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected PackageProgress m_Progress;
         public PackageProgress progress
         {
-            get { return m_Progress; }
-            set { m_Progress = value; }
+            get => m_Progress;
+            private set => m_Progress = value;
         }
 
         // errors on the package level (not just about a particular version)
@@ -111,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(version => version.hasEntitlementsError);
 
-        public void AddError(UIError error)
+        private void AddError(UIError error)
         {
             if (error.errorCode == UIErrorCode.UpmError_Forbidden)
             {
@@ -122,12 +122,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Errors.Add(error);
         }
 
-        public void ClearErrors(Predicate<UIError> match = null)
+        private int ClearErrors(Predicate<UIError> match = null)
         {
-            if (match == null)
-                m_Errors.Clear();
-            else
-                m_Errors.RemoveAll(match);
+            if (match != null)
+                return m_Errors.RemoveAll(match);
+            var numErrors = m_Errors.Count;
+            m_Errors.Clear();
+            return numErrors;
         }
 
         [SerializeField]
@@ -191,6 +192,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Type &= ~PackageType.ScopedRegistry;
                 else
                     m_Type |= PackageType.MainNotUnity;
+            }
+        }
+
+        // We are making package factories inherit from a sub class of Package to make sure that we can keep all the package modifying code
+        // private and that only Packages themselves and factories can actually modify packages. This way there won't be any accidental
+        // package modifications that's not caught by the package change events.
+        internal class Factory
+        {
+            public int ClearErrors(BasePackage package, Predicate<UIError> match = null)
+            {
+                return package.ClearErrors(match);
+            }
+
+            public void AddError(BasePackage package, UIError error)
+            {
+                package.AddError(error);
+            }
+
+            public void SetProgress(BasePackage package, PackageProgress progress)
+            {
+                package.progress = progress;
             }
         }
     }

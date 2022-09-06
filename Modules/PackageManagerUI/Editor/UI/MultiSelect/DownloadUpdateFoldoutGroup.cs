@@ -8,9 +8,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public DownloadUpdateFoldoutGroup(AssetStoreDownloadManager assetStoreDownloadManager,
                                           AssetStoreCache assetStoreCache,
-                                          PackageDatabase packageDatabase)
-            : base(new PackageDownloadUpdateButton(assetStoreDownloadManager, assetStoreCache, packageDatabase),
-                   new PackageCancelDownloadButton(assetStoreDownloadManager, packageDatabase))
+                                          PackageOperationDispatcher operationDispatcher)
+            : base(new PackageDownloadUpdateButton(assetStoreDownloadManager, assetStoreCache, operationDispatcher),
+                   new PackageCancelDownloadButton(assetStoreDownloadManager, operationDispatcher))
         {
             mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");
             inProgressFoldout.headerTextTemplate = L10n.Tr("Downloading updates for {0}...");

@@ -11,19 +11,19 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
-        private PackageDatabase m_PackageDatabase;
-        public PackageDowngradeButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageDatabase packageDatabase)
+        private PackageOperationDispatcher m_OperationDispatcher;
+        public PackageDowngradeButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageOperationDispatcher operationDispatcher)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_AssetStoreCache = assetStoreCache;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
 
             m_Element.SetIcon("warning");
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            var canDownload = m_PackageDatabase.Download(version.package);
+            var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
                 PackageManagerWindowAnalytics.SendEvent("startDownloadDowngrade", version.packageUniqueId);
             return canDownload;

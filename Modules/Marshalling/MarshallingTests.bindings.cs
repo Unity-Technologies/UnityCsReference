@@ -412,6 +412,9 @@ namespace UnityEngine
         [NativeThrows] public static extern StructManagedObjectVector ParameterStructManagedObjectVector(StructManagedObjectVector param);
     }
 
+    // --------------------------------------------------------------------
+    // System.Type tests
+
     [ExcludeFromDocs]
     internal struct StructSystemType
     {
@@ -448,6 +451,82 @@ namespace UnityEngine
         public static extern System.Type[] CanUnmarshallArrayOfScriptingSystemTypeObjectPtrToSystemTypeArray();
         public static extern System.Type[] CanUnmarshallArrayOfUnityTypeToSystemTypeArray();
         public static extern System.Type[] CanUnmarshallArrayOfScriptingClassPtrToSystemTypeArray();
+    }
+
+    // --------------------------------------------------------------------
+    // System.Reflection.FieldInfo tests
+
+    [ExcludeFromDocs]
+    internal struct StructSystemReflectionFieldInfo
+    {
+        public System.Reflection.FieldInfo field;
+    }
+
+    [ExcludeFromDocs]
+    internal struct StructSystemReflectionFieldInfoArray
+    {
+        public System.Reflection.FieldInfo[] field;
+    }
+
+    [NativeHeader("Runtime/Scripting/Marshalling/Test/SystemReflectionFieldInfoMarshallingTests.h")]
+    [ExcludeFromDocs]
+    internal static class SystemReflectionFieldInfoMarshallingTests
+    {
+        public static extern string CanMarshallFieldInfoArgumentToScriptingFieldPtr(System.Reflection.FieldInfo param);
+
+        public static extern string CanMarshallSystemReflectionFieldInfoStructField(StructSystemReflectionFieldInfo param);
+        public static extern string[] CanMarshallSystemReflectionFieldInfoArrayStructField(StructSystemReflectionFieldInfoArray param);
+
+        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToDynamicArrayOfScriptingFieldInfoObjectPtr(System.Reflection.FieldInfo[] param);
+        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToDynamicArrayOfScriptingFieldPtr(System.Reflection.FieldInfo[] param);
+
+        public static extern StructSystemReflectionFieldInfo CanUnmarshallSystemReflectionFieldInfoStructField();
+        public static extern StructSystemReflectionFieldInfoArray CanUnmarshallSystemReflectionFieldInfoArrayStructField();
+
+        public static extern System.Reflection.FieldInfo CanUnmarshallScriptingFieldInfoObjectPtrToFieldInfo();
+        public static extern System.Reflection.FieldInfo CanUnmarshallScriptingFieldPtrToFieldInfo();
+
+        public static extern System.Reflection.FieldInfo[] CanUnmarshallScriptingArrayPtrToFieldInfoArray();
+        public static extern System.Reflection.FieldInfo[] CanUnmarshallArrayOfScriptingFieldInfoObjectPtrToFieldInfoArray();
+        public static extern System.Reflection.FieldInfo[] CanUnmarshallArrayOfScriptingFieldPtrToFieldInfoArray();
+    }
+
+    // --------------------------------------------------------------------
+    // System.Reflection.MethodInfo tests
+
+    [ExcludeFromDocs]
+    internal struct StructSystemReflectionMethodInfo
+    {
+        public System.Reflection.MethodInfo field;
+    }
+
+    [ExcludeFromDocs]
+    internal struct StructSystemReflectionMethodInfoArray
+    {
+        public System.Reflection.MethodInfo[] field;
+    }
+
+    [NativeHeader("Runtime/Scripting/Marshalling/Test/SystemReflectionMethodInfoMarshallingTests.h")]
+    [ExcludeFromDocs]
+    internal static class SystemReflectionMethodInfoMarshallingTests
+    {
+        public static extern string CanMarshallMethodInfoArgumentToScriptingMethodPtr(System.Reflection.MethodInfo param);
+
+        public static extern string CanMarshallSystemReflectionMethodInfoStructField(StructSystemReflectionMethodInfo param);
+        public static extern string[] CanMarshallSystemReflectionMethodInfoArrayStructField(StructSystemReflectionMethodInfoArray param);
+
+        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToDynamicArrayOfScriptingMethodInfoObjectPtr(System.Reflection.MethodInfo[] param);
+        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToDynamicArrayOfScriptingMethodPtr(System.Reflection.MethodInfo[] param);
+
+        public static extern StructSystemReflectionMethodInfo CanUnmarshallSystemReflectionMethodInfoStructField();
+        public static extern StructSystemReflectionMethodInfoArray CanUnmarshallSystemReflectionMethodInfoArrayStructField();
+
+        public static extern System.Reflection.MethodInfo CanUnmarshallScriptingMethodInfoObjectPtrToMethodInfo();
+        public static extern System.Reflection.MethodInfo CanUnmarshallScriptingMethodPtrToMethodInfo();
+
+        public static extern System.Reflection.MethodInfo[] CanUnmarshallScriptingArrayPtrToMethodInfoArray();
+        public static extern System.Reflection.MethodInfo[] CanUnmarshallArrayOfScriptingMethodInfoObjectPtrToMethodInfoArray();
+        public static extern System.Reflection.MethodInfo[] CanUnmarshallArrayOfScriptingMethodPtrToMethodInfoArray();
     }
 
     // --------------------------------------------------------------------

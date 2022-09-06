@@ -10,14 +10,14 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageRemoveCustomButton : PackageToolBarRegularButton
     {
         private ApplicationProxy m_Application;
-        private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         public PackageRemoveCustomButton(ApplicationProxy applicationProxy,
-                                   PackageDatabase packageDatabase,
+                                   PackageOperationDispatcher operationDispatcher,
                                    PageManager pageManager)
         {
             m_Application = applicationProxy;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
         }
 
@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_Application.DisplayDialog("removeEmbeddedPackage", L10n.Tr("Removing package in development"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
                     return false;
 
-                m_PackageDatabase.RemoveEmbedded(version.package);
+                m_OperationDispatcher.RemoveEmbedded(version.package);
                 PackageManagerWindowAnalytics.SendEvent("removeEmbedded", version.uniqueId);
                 return true;
             }
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return isInProgress ? L10n.Tr("Removing") : L10n.Tr("Remove");
         }
 
-        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsUninstallInProgress(version.package);
+        protected override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsUninstallInProgress(version.package);
 
         private void DeselectVersions(IList<IPackageVersion> versions)
         {

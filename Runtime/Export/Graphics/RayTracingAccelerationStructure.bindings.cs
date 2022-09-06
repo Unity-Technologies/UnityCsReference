@@ -283,7 +283,27 @@ namespace UnityEngine.Experimental.Rendering
         }
         public void UpdateInstanceTransform(int handle, Matrix4x4 matrix)
         {
-            UpdateInstanceTransform_InstanceID(handle, matrix);
+            UpdateInstanceTransform_Handle(handle, matrix);
+        }
+
+        public void UpdateInstanceID(Renderer renderer, uint instanceID)
+        {
+            UpdateInstanceID_Renderer(renderer, instanceID);
+        }
+
+        public void UpdateInstanceID(int handle, uint instanceID)
+        {
+            UpdateInstanceID_Handle(handle, instanceID);
+        }
+
+        public void UpdateInstanceMask(Renderer renderer, uint mask)
+        {
+            UpdateInstanceMask_Renderer(renderer, mask);
+        }
+
+        public void UpdateInstanceMask(int handle, uint mask)
+        {
+            UpdateInstanceMask_Handle(handle, mask);
         }
 
         [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build()", true)]
@@ -331,13 +351,19 @@ namespace UnityEngine.Experimental.Rendering
         extern private void UpdateInstanceTransform_Renderer([NotNull] Renderer renderer);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceTransform", HasExplicitThis = true)]
-        extern private void UpdateInstanceTransform_InstanceID(int instanceID, Matrix4x4 matrix);
+        extern private void UpdateInstanceTransform_Handle(int handle, Matrix4x4 matrix);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
-        extern public void UpdateInstanceMask([NotNull] Renderer renderer, uint mask);
+        extern private void UpdateInstanceMask_Renderer([NotNull] Renderer renderer, uint mask);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
+        extern private void UpdateInstanceMask_Handle(int handle, uint mask);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceID", HasExplicitThis = true)]
-        extern public void UpdateInstanceID([NotNull] Renderer renderer, uint instanceID);
+        extern private void UpdateInstanceID_Renderer([NotNull] Renderer renderer, uint id);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceID", HasExplicitThis = true)]
+        extern private void UpdateInstanceID_Handle(int handle, uint id);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstancePropertyBlock", HasExplicitThis = true)]
         extern public void UpdateInstancePropertyBlock(int handle, MaterialPropertyBlock properties);

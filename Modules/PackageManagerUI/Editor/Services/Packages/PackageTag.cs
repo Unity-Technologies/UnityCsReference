@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         BuiltIn             = 1 << 4,
         Feature             = 1 << 5,
         Placeholder         = 1 << 6,
+        SpecialInstall      = 1 << 7,
 
         // attributes
         VersionLocked       = 1 << 8,

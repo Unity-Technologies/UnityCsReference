@@ -42,9 +42,7 @@ namespace UnityEngine.UIElements
         /// <returns>The float parsed from the string.</returns>
         protected override float StringToValue(string str)
         {
-            double v;
-            UINumericFieldsUtils.StringToDouble(str, out v);
-            return Mathf.ClampToFloat(v);
+            return UINumericFieldsUtils.StringToDouble(str, out var v) ? Mathf.ClampToFloat(v) : rawValue;
         }
 
         /// <summary>

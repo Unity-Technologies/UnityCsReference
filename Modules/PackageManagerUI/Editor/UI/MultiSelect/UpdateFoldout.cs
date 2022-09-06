@@ -10,8 +10,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public UpdateFoldout(ApplicationProxy applicationProxy,
                              PackageDatabase packageDatabase,
+                             PackageOperationDispatcher operationDispatcher,
                              PageManager pageManager)
-            : base(new PackageUpdateButton(applicationProxy, packageDatabase, pageManager))
+            : base(new PackageUpdateButton(applicationProxy, packageDatabase, operationDispatcher, pageManager))
         {
         }
 

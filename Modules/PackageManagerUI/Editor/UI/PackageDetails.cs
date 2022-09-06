@@ -10,7 +10,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetails : VisualElement
     {
-        private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
         internal new class UxmlFactory : UxmlFactory<PackageDetails> {}
 
         private ResourceLoader m_ResourceLoader;
@@ -61,8 +60,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
-            m_PackageDatabase.onVerifiedGitPackageUpToDate += OnVerifiedGitPackageUpToDate;
-            m_PackageDatabase.onTermOfServiceAgreementStatusChange += OnTermOfServiceAgreementStatusChange;
 
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
@@ -80,8 +77,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
-            m_PackageDatabase.onVerifiedGitPackageUpToDate -= OnVerifiedGitPackageUpToDate;
-            m_PackageDatabase.onTermOfServiceAgreementStatusChange -= OnTermOfServiceAgreementStatusChange;
 
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
 
@@ -100,20 +95,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnDetailScroll(float offset)
         {
             m_PackageManagerPrefs.packageDetailVerticalScrollOffset = offset;
-        }
-
-        private void OnTermOfServiceAgreementStatusChange(TermOfServiceAgreementStatus status)
-        {
-            if (status == TermOfServiceAgreementStatus.Accepted)
-                return;
-
-            var result = m_Application.DisplayDialog("acceptToS",
-                L10n.Tr("Accepting Terms of Service and EULA"),
-                L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
-                L10n.Tr("Read and accept"), L10n.Tr("Close"));
-
-            if (result)
-                m_UnityConnectProxy.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);
         }
 
         private void OnInternetReachabilityChange(bool value)
@@ -155,9 +136,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void Refresh(IPackage package, IPackageVersion version)
         {
             version = version ?? package?.versions.primary;
-            if (version?.isFullyFetched == false)
-                m_PackageDatabase.FetchExtraInfo(version);
-
             var shouldDisplayProgress = inProgressView.ShouldDisplayProgress(package);
             inProgressView.Refresh(shouldDisplayProgress ? package : null);
 
@@ -198,11 +176,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
 
             m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
-        }
-
-        internal void OnVerifiedGitPackageUpToDate(IPackage package)
-        {
-            Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), package.displayName));
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)

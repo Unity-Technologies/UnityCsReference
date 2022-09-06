@@ -30,10 +30,10 @@ namespace UnityEngine
             get => m_RevealCursor;
             set
             {
-                if (value != m_RevealCursor)
+                if (m_RevealCursor != value)
                 {
                     m_RevealCursor = value;
-                    OnCursorIndexChange?.Invoke();
+                    OnRevealCursorChange?.Invoke();
                 }
             }
         }
@@ -51,11 +51,15 @@ namespace UnityEngine
             {
                 if (m_CursorIndex != value)
                 {
-                    m_CursorIndex = value;
-                    revealCursor = true;
+                    SetCursorIndexWithoutNotify(value);
                     OnCursorIndexChange?.Invoke();
                 }
             }
+        }
+
+        internal void SetCursorIndexWithoutNotify(int index)
+        {
+            m_CursorIndex = index;
         }
 
         internal int m_SelectIndex = 0;
@@ -67,10 +71,14 @@ namespace UnityEngine
 
                 if (m_SelectIndex != value)
                 {
-                    m_SelectIndex = value;
+                    SetSelectIndexWithoutNotify(value);
                     OnSelectIndexChange?.Invoke();
                 }
             }
+        }
+        internal void SetSelectIndexWithoutNotify(int index)
+        {
+            m_SelectIndex = index;
         }
 
         /// Returns the selected text
@@ -291,9 +299,7 @@ namespace UnityEngine
             int textLen = characterCount;
 
             if (cursorIndex < textLen)
-            {
-                cursorIndex = IndexOfEndOfLine(cursorIndex) + 1;
-            }
+                cursorIndex = IndexOfEndOfLine(cursorIndex);
             if (selectIndex != 0)
                 selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, selectIndex - 1) + 1;
         }
@@ -701,6 +707,7 @@ namespace UnityEngine
 
         internal Action OnCursorIndexChange;
         internal Action OnSelectIndexChange;
+        internal Action OnRevealCursorChange;
 
         int ClampTextIndex(int index)
         {

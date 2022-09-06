@@ -551,14 +551,19 @@ namespace UnityEngine
         protected void _Call(IntPtr methodID, params object[] args)
         {
             Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
-            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
+            if (jniArgs.Length > 0)
+            {
+                AndroidJNISafe.PushLocalFrame(jniArgs.Length);
+                AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
+            }
             try
             {
                 AndroidJNISafe.CallVoidMethod(m_jobject, methodID, jniArgs);
             }
             finally
             {
-                AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
+                if (jniArgs.Length > 0)
+                    AndroidJNI.PopLocalFrame(IntPtr.Zero);
             }
         }
 
@@ -571,6 +576,7 @@ namespace UnityEngine
         protected ReturnType _Call<ReturnType>(IntPtr methodID, params object[] args)
         {
             Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNI.PushLocalFrame(jniArgs.Length + 1);
             AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
@@ -603,17 +609,17 @@ namespace UnityEngine
                 else if (typeof(ReturnType) == typeof(AndroidJavaClass))
                 {
                     IntPtr jclass = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return (jclass == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaClassDeleteLocalRef(jclass);
+                    return (jclass == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)new AndroidJavaClass(jclass);
                 }
                 else if (typeof(ReturnType) == typeof(AndroidJavaObject))
                 {
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
+                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)new AndroidJavaObject(jobject);
                 }
                 else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return FromJavaArrayDeleteLocalRef<ReturnType>(jobject);
+                    return FromJavaArray<ReturnType>(jobject);
                 }
                 else
                 {
@@ -623,7 +629,7 @@ namespace UnityEngine
             }
             finally
             {
-                AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
+                AndroidJNI.PopLocalFrame(IntPtr.Zero);
             }
         }
 
@@ -749,14 +755,19 @@ namespace UnityEngine
         protected void _CallStatic(IntPtr methodID, params object[] args)
         {
             Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
-            AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
+            if (jniArgs.Length > 0)
+            {
+                AndroidJNISafe.PushLocalFrame(jniArgs.Length);
+                AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
+            }
             try
             {
                 AndroidJNISafe.CallStaticVoidMethod(m_jclass, methodID, jniArgs);
             }
             finally
             {
-                AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
+                if (jniArgs.Length > 0)
+                    AndroidJNI.PopLocalFrame(IntPtr.Zero);
             }
         }
 
@@ -769,6 +780,7 @@ namespace UnityEngine
         protected ReturnType _CallStatic<ReturnType>(IntPtr methodID, params object[] args)
         {
             Span<jvalue> jniArgs = (args == null || args.Length == 0) ? new Span<jvalue>() : stackalloc jvalue[args.Length];
+            AndroidJNI.PushLocalFrame(jniArgs.Length + 1);
             AndroidJNIHelper.CreateJNIArgArray(args, jniArgs);
             try
             {
@@ -801,17 +813,17 @@ namespace UnityEngine
                 else if (typeof(ReturnType) == typeof(AndroidJavaClass))
                 {
                     IntPtr jclass = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return (jclass == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaClassDeleteLocalRef(jclass);
+                    return (jclass == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)new AndroidJavaClass(jclass);
                 }
                 else if (typeof(ReturnType) == typeof(AndroidJavaObject))
                 {
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
+                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)new AndroidJavaObject(jobject);
                 }
                 else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return FromJavaArrayDeleteLocalRef<ReturnType>(jobject);
+                    return FromJavaArray<ReturnType>(jobject);
                 }
                 else
                 {
@@ -822,7 +834,7 @@ namespace UnityEngine
             }
             finally
             {
-                AndroidJNIHelper.DeleteJNIArgArray(args, jniArgs);
+                AndroidJNI.PopLocalFrame(IntPtr.Zero);
             }
         }
 
@@ -959,6 +971,13 @@ namespace UnityEngine
             {
                 AndroidJNISafe.DeleteLocalRef(jobject);
             }
+        }
+
+        internal static ReturnType FromJavaArray<ReturnType>(IntPtr jobject)
+        {
+            if (jobject == IntPtr.Zero)
+                return default(ReturnType);
+            return (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
         }
 
         //===================================================================
@@ -1370,6 +1389,8 @@ namespace UnityEngine
             }
         }
 
+        private static int FRAME_SIZE_FOR_ARRAYS = 100;
+
         public static IntPtr ConvertToJNIArray(System.Array array)
         {
             Type type = array.GetType().GetElementType();
@@ -1401,17 +1422,45 @@ namespace UnityEngine
             }
             else if (type == typeof(String))
             {
-                String[] strArray = (string[])array;
-                int arrayLen = array.GetLength(0);
-                IntPtr arrayType = AndroidJNISafe.FindClass("java/lang/String");
-                IntPtr res = AndroidJNI.NewObjectArray(arrayLen, arrayType, IntPtr.Zero);
-                for (int i = 0; i < arrayLen; ++i)
+                IntPtr res = IntPtr.Zero;
+                bool framePushed = false;
+                try
                 {
-                    IntPtr jstring = AndroidJNISafe.NewString(strArray[i]);
-                    AndroidJNI.SetObjectArrayElement(res, i, jstring);
-                    AndroidJNISafe.DeleteLocalRef(jstring);
+                    String[] strArray = (string[])array;
+                    int arrayLen = array.GetLength(0);
+                    int frameSize = arrayLen;
+                    if (frameSize > FRAME_SIZE_FOR_ARRAYS)
+                        frameSize = FRAME_SIZE_FOR_ARRAYS;
+
+                    IntPtr arrayType = AndroidJNISafe.FindClass("java/lang/String");
+                    IntPtr result = AndroidJNI.NewObjectArray(arrayLen, arrayType, IntPtr.Zero);
+                    AndroidJNISafe.DeleteLocalRef(arrayType);
+                    if (frameSize > 0)
+                    {
+                        AndroidJNISafe.PushLocalFrame(frameSize);
+                        framePushed = true;
+                    }
+                    for (int i = 0; i < arrayLen; ++i)
+                    {
+                        if (i % FRAME_SIZE_FOR_ARRAYS == 0)
+                        {
+                            AndroidJNI.PopLocalFrame(IntPtr.Zero);
+                            framePushed = false;
+                            AndroidJNISafe.PushLocalFrame(frameSize);
+                            framePushed = true;
+                        }
+
+                        IntPtr jstring = AndroidJNISafe.NewString(strArray[i]);
+                        AndroidJNI.SetObjectArrayElement(result, i, jstring);
+                    }
+                    // assign res at the end, so it remains Zero in case of exception
+                    res = result;
                 }
-                AndroidJNISafe.DeleteLocalRef(arrayType);
+                finally
+                {
+                    if (framePushed)
+                        AndroidJNI.PopLocalFrame(IntPtr.Zero);
+                }
                 return res;
             }
             else if (type == typeof(AndroidJavaObject))
@@ -1490,11 +1539,29 @@ namespace UnityEngine
             {
                 int arrayLen = AndroidJNISafe.GetArrayLength(array);
                 string[] strArray = new string[arrayLen];
-                for (int i = 0; i < arrayLen; ++i)
+                if (arrayLen == 0)
+                    return (ArrayType)(object)strArray;
+                int frameSize = arrayLen > FRAME_SIZE_FOR_ARRAYS ? FRAME_SIZE_FOR_ARRAYS : arrayLen;
+                AndroidJNISafe.PushLocalFrame(frameSize);
+                bool framePushed = true;
+                try {
+                    for (int i = 0; i < arrayLen; ++i)
+                    {
+                        if (i % FRAME_SIZE_FOR_ARRAYS == 0)
+                        {
+                            AndroidJNI.PopLocalFrame(IntPtr.Zero);
+                            framePushed = false;
+                            AndroidJNISafe.PushLocalFrame(frameSize);
+                            framePushed = true;
+                        }
+                        IntPtr jstring = AndroidJNI.GetObjectArrayElement(array, i);
+                        strArray[i] = AndroidJNISafe.GetStringChars(jstring);
+                    }
+                }
+                finally
                 {
-                    IntPtr jstring = AndroidJNI.GetObjectArrayElement(array, i);
-                    strArray[i] = AndroidJNISafe.GetStringChars(jstring);
-                    AndroidJNISafe.DeleteLocalRef(jstring);
+                    if (framePushed)
+                        AndroidJNI.PopLocalFrame(IntPtr.Zero);
                 }
                 return (ArrayType)(object)strArray;
             }
@@ -1502,11 +1569,30 @@ namespace UnityEngine
             {
                 int arrayLen = AndroidJNISafe.GetArrayLength(array);
                 AndroidJavaObject[] objArray = new AndroidJavaObject[arrayLen];
-                for (int i = 0; i < arrayLen; ++i)
+                if (arrayLen == 0)
+                    return (ArrayType)(object)objArray;
+                int frameSize = arrayLen > FRAME_SIZE_FOR_ARRAYS ? FRAME_SIZE_FOR_ARRAYS : arrayLen;
+                AndroidJNISafe.PushLocalFrame(frameSize);
+                bool framePushed = true;
+                try
                 {
-                    IntPtr jobject = AndroidJNI.GetObjectArrayElement(array, i);
-                    objArray[i] = new AndroidJavaObject(jobject);
-                    AndroidJNISafe.DeleteLocalRef(jobject);
+                    for (int i = 0; i < arrayLen; ++i)
+                    {
+                        if (i % FRAME_SIZE_FOR_ARRAYS == 0)
+                        {
+                            AndroidJNI.PopLocalFrame(IntPtr.Zero);
+                            framePushed = false;
+                            AndroidJNISafe.PushLocalFrame(frameSize);
+                            framePushed = true;
+                        }
+                        IntPtr jobject = AndroidJNI.GetObjectArrayElement(array, i);
+                        objArray[i] = new AndroidJavaObject(jobject);
+                    }
+                }
+                finally
+                {
+                    if (framePushed)
+                        AndroidJNI.PopLocalFrame(IntPtr.Zero);
                 }
                 return (ArrayType)(object)objArray;
             }

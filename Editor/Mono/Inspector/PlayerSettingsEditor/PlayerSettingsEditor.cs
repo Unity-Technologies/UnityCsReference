@@ -639,7 +639,7 @@ namespace UnityEditor
             m_VirtualTexturingSupportEnabled = FindPropertyAssert("virtualTexturingSupportEnabled");
             m_ShaderPrecisionModel = FindPropertyAssert("shaderPrecisionModel");
 
-            m_ForceSRGBBlit                 = FindPropertyAssert("forceSRGBBlit");
+            m_ForceSRGBBlit                 = FindPropertyAssert("hmiForceSRGBBlit");
 
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)

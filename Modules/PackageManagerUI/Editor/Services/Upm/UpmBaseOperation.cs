@@ -16,28 +16,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract event Action<IOperation> onOperationFinalized;
         public abstract event Action<IOperation> onOperationProgress;
 
-        [SerializeField]
-        protected string m_PackageName = string.Empty;
-        public string packageName
+        public virtual string packageName
         {
             get
             {
-                if (!string.IsNullOrEmpty(m_PackageName))
-                    return m_PackageName;
-                if (!string.IsNullOrEmpty(m_PackageId))
-                    return m_PackageId.Split(new[] { '@' }, 2)[0];
+                if (!string.IsNullOrEmpty(m_PackageIdOrName))
+                    return m_PackageIdOrName.Split(new[] { '@' }, 2)[0];
                 return string.Empty;
             }
         }
 
         [SerializeField]
-        protected string m_PackageId = string.Empty;
-        public string packageId { get { return m_PackageId; } }
+        protected string m_PackageIdOrName = string.Empty;
+        public virtual string packageIdOrName => m_PackageIdOrName;
 
-        [SerializeField]
-        protected string m_PackageUniqueId = string.Empty;
-        public string packageUniqueId { get { return m_PackageUniqueId; } }
-        public string versionUniqueId { get { return packageId; } }
+        public string packageUniqueId => packageName;
 
         [SerializeField]
         protected long m_Timestamp = 0;

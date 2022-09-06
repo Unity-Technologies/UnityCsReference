@@ -13,6 +13,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static T Get<T>(this IDictionary<string, object> dict, string key) where T : class
         {
+            if (key == null)
+                return null;
             var result = dict.TryGetValue(key, out var value);
             try
             {
@@ -26,6 +28,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static T Get<T>(this IDictionary<string, object> dict, string key, T fallbackValue = default(T)) where T : struct
         {
+            if (key == null)
+                return fallbackValue;
             var result = dict.TryGetValue(key, out var value);
             try
             {
@@ -39,12 +43,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static T Get<T>(this IDictionary<string, T> dict, string key) where T : class
         {
-            return dict.TryGetValue(key, out var result) ? result : null;
+            return key != null && dict.TryGetValue(key, out var result) ? result : null;
         }
 
         public static T Get<T>(this IDictionary<string, T> dict, string key, T fallbackValue = default(T)) where T : struct
         {
-            return dict.TryGetValue(key, out var result) ? result : fallbackValue;
+            return key != null && dict.TryGetValue(key, out var result) ? result : fallbackValue;
         }
 
         public static IDictionary<string, object> GetDictionary(this IDictionary<string, object> dict, string key)

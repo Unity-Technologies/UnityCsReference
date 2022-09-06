@@ -46,8 +46,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string PlayerPackage;
         public string ApplicationIdentifier;
         public string Architecture;
-        public bool UseIl2Cpp;
-        public bool UseCoreCLR;
+        public ScriptingBackend ScriptingBackend;
         public bool InstallIntoBuildsFolder;
         public bool GenerateIdeProject;
         public bool Development;
@@ -97,6 +96,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool AllowDebugging;
         public string SysRootPath;
         public string ToolChainPath;
+        public string RelativeDataPath;
     }
 
     public class Services
@@ -111,5 +111,12 @@ namespace PlayerBuildProgramLibrary.Data
     {
         public string File;
         public string RelativePath;
+    }
+
+    public enum ScriptingBackend
+    {
+        Mono,
+        IL2CPP,
+        CoreCLR,
     }
 }

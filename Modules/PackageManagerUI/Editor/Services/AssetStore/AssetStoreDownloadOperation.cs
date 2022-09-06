@@ -22,7 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_ProductId;
         public string packageUniqueId => m_ProductId;
-        public string versionUniqueId => string.Empty;
 
         [SerializeField]
         private string m_ProductOldPath;
@@ -56,7 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<IOperation> onOperationSuccess = delegate {};
         public event Action<IOperation> onOperationFinalized = delegate {};
         public event Action<IOperation> onOperationProgress = delegate {};
-        public event Action<IOperation> onOperationPaused = delegate {};
+        public event Action<AssetStoreDownloadOperation> onDownloadStateChanged = delegate {};
 
         [SerializeField]
         private ulong m_DownloadedBytes;
@@ -65,7 +64,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private DownloadState m_State;
-        public virtual DownloadState state => m_State;
+        public virtual DownloadState state
+        {
+            get => m_State;
+            private set
+            {
+                if (m_State == value)
+                    return;
+                m_State = value;
+                onDownloadStateChanged?.Invoke(this);
+            }
+        }
 
         [SerializeField]
         private string m_ErrorMessage;
@@ -107,35 +116,34 @@ namespace UnityEditor.PackageManager.UI.Internal
             switch (message)
             {
                 case "ok":
-                    m_State = DownloadState.Completed;
+                    state = DownloadState.Completed;
                     onOperationSuccess?.Invoke(this);
                     onOperationFinalized?.Invoke(this);
                     break;
                 case "connecting":
-                    m_State = DownloadState.Connecting;
+                    state = DownloadState.Connecting;
                     break;
                 case "downloading":
                     if (!isInPause)
-                        m_State = DownloadState.Downloading;
+                        state = DownloadState.Downloading;
                     m_DownloadedBytes = Math.Max(m_DownloadedBytes, bytes);
                     m_TotalBytes = Math.Max(m_TotalBytes, total);
                     break;
                 case "decrypt":
-                    m_State = DownloadState.Decrypting;
+                    state = DownloadState.Decrypting;
                     break;
                 case "aborted":
                     if (!isInPause)
                     {
                         m_DownloadedBytes = 0;
-                        m_State = DownloadState.Aborted;
+                        state = DownloadState.Aborted;
                         m_ErrorMessage = L10n.Tr("Download aborted.");
                         onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsClearable | UIError.Attribute.IsWarning));
                         onOperationFinalized?.Invoke(this);
                     }
                     else
                     {
-                        m_State = DownloadState.Paused;
-                        onOperationPaused?.Invoke(this);
+                        state = DownloadState.Paused;
                     }
                     break;
                 default:
@@ -148,7 +156,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnErrorMessage(string errorMessage, int operationErrorCode = -1, UIError.Attribute attr = UIError.Attribute.None)
         {
-            m_State = DownloadState.Error;
+            state = DownloadState.Error;
 
             if ((attr & UIError.Attribute.IsWarning) != 0)
                 Debug.LogWarning($"{k_ConsoleLogPrefix} {errorMessage}");
@@ -181,7 +189,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (state == DownloadState.Aborted || state == DownloadState.Completed || state == DownloadState.Error || state == DownloadState.Paused)
                 return;
 
-            m_State = DownloadState.Pausing;
+            state = DownloadState.Pausing;
 
             // Pause here is the same as aborting the download, but we don't delete the file so we can resume from where we paused it from
             if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
@@ -195,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreUtils.AbortDownload(downloadInfo.destination);
             m_DownloadedBytes = 0;
-            m_State = DownloadState.None;
+            state = DownloadState.None;
             onOperationFinalized?.Invoke(this);
         }
 
@@ -208,12 +216,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (state == DownloadState.Paused)
             {
                 m_DownloadedBytes = 0;
-                m_State = DownloadState.Aborted;
+                state = DownloadState.Aborted;
                 onOperationFinalized?.Invoke(this);
                 return;
             }
 
-            m_State = DownloadState.AbortRequsted;
+            state = DownloadState.AbortRequsted;
 
             if (downloadInfo?.isValid != true)
                 return;
@@ -237,12 +245,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            m_State = resume ? DownloadState.ResumeRequested : DownloadState.DownloadRequested;
+            state = resume ? DownloadState.ResumeRequested : DownloadState.DownloadRequested;
             var productId = long.Parse(m_ProductId);
             m_AssetStoreRestAPI.GetDownloadDetail(productId, downloadInfo =>
             {
                 // if the user requested to abort before receiving the download details, we can simply discard the download info and do nothing
-                if (m_State == DownloadState.AbortRequsted)
+                if (state == DownloadState.AbortRequsted)
                     return;
 
                 m_DownloadInfo = downloadInfo;
@@ -284,7 +292,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (inProgress)
                     {
                         if (!isInPause)
-                            m_State = DownloadState.Downloading;
+                            state = DownloadState.Downloading;
                         return;
                     }
 
@@ -311,7 +319,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     json,
                     resumeOK && resume);
 
-                m_State = DownloadState.Connecting;
+                state = DownloadState.Connecting;
             });
         }
     }

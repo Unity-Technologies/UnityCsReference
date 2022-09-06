@@ -69,7 +69,6 @@ namespace UnityEditor.UIElements
                 while (it.MoveNext())
                 {
                     string fileName = it.Current;
-
                     if (it.MoveNext())
                     {
                         string data = it.Current;
@@ -81,7 +80,6 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
-
 
             AssetDatabase.Refresh();
 
@@ -309,7 +307,16 @@ namespace UnityEditor.UIElements
                 }
 
                 schemaSet.Add(masterSchema);
-                schemaSet.Compile();
+
+                try
+                {
+                    schemaSet.Compile();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    yield break;
+                }
 
                 // Now generate the schema textual data.
                 foreach (XmlSchema compiledSchema in schemaSet.Schemas())
@@ -550,8 +557,7 @@ namespace UnityEditor.UIElements
             XmlSchemaSimpleType simpleType = new XmlSchemaSimpleType();
             simpleType.Name = attrTypeNameForSchema;
 
-            UxmlEnumeration enumRestriction = description.restriction as UxmlEnumeration;
-            if (enumRestriction != null)
+            if (description.restriction is UxmlEnumeration enumRestriction)
             {
                 XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
                 simpleType.Content = restriction;
@@ -566,9 +572,14 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                UxmlValueMatches regexRestriction = description.restriction as UxmlValueMatches;
-                if (regexRestriction != null)
+                if (description.restriction is UxmlValueMatches regexRestriction)
                 {
+                    if (regexRestriction.regex == null)
+                    {
+                        Debug.LogWarning($"{nameof(UxmlValueMatches)} restriction '{description.name}' has null regex value.");
+                        return null;
+                    }
+
                     XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
                     simpleType.Content = restriction;
                     restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
@@ -579,35 +590,42 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    UxmlValueBounds bounds = description.restriction as UxmlValueBounds;
-                    if (bounds != null)
+                    if (description.restriction is UxmlValueBounds bounds)
                     {
                         XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
                         simpleType.Content = restriction;
                         restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
 
-                        XmlSchemaFacet facet;
-                        if (bounds.excludeMin)
+                        if (!string.IsNullOrEmpty(bounds.min))
                         {
-                            facet = new XmlSchemaMinExclusiveFacet();
+                            XmlSchemaFacet facet;
+                            if (bounds.excludeMin)
+                            {
+                                facet = new XmlSchemaMinExclusiveFacet();
+                            }
+                            else
+                            {
+                                facet = new XmlSchemaMinInclusiveFacet();
+                            }
+                            facet.Value = bounds.min;
+                            restriction.Facets.Add(facet);
                         }
-                        else
-                        {
-                            facet = new XmlSchemaMinInclusiveFacet();
-                        }
-                        facet.Value = bounds.min;
-                        restriction.Facets.Add(facet);
 
-                        if (bounds.excludeMax)
+                        if (!string.IsNullOrEmpty(bounds.max))
                         {
-                            facet = new XmlSchemaMaxExclusiveFacet();
+                            XmlSchemaFacet facet;
+                            if (bounds.excludeMax)
+                            {
+                                facet = new XmlSchemaMaxExclusiveFacet();
+                            }
+                            else
+                            {
+                                facet = new XmlSchemaMaxInclusiveFacet();
+                            }
+
+                            facet.Value = bounds.max;
+                            restriction.Facets.Add(facet);
                         }
-                        else
-                        {
-                            facet = new XmlSchemaMaxInclusiveFacet();
-                        }
-                        facet.Value = bounds.max;
-                        restriction.Facets.Add(facet);
                     }
                     else
                     {

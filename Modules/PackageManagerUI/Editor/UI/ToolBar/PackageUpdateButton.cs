@@ -18,21 +18,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         public PackageUpdateButton(ApplicationProxy applicationProxy,
                                 PackageDatabase packageDatabase,
+                                PackageOperationDispatcher operationDispatcher,
                                 PageManager pageManager,
                                 bool showVersion = true)
         {
             m_Application = applicationProxy;
             m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
             m_ShowVersion = showVersion;
         }
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.Install(versions.Select(v => v?.package?.versions.GetUpdateTarget(v)));
+            m_OperationDispatcher.Install(versions.Select(v => v?.package?.versions.GetUpdateTarget(v)));
             // The current multi-select UI does not allow users to install non-recommended versions
             // Should this change in the future, we'll need to update the analytics event accordingly.
             PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", packageIds: versions.Select(v => v.uniqueId));
@@ -92,12 +95,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (packageToUninstall?.Any() == true)
             {
-                m_PackageDatabase.InstallAndResetDependencies(targetVersion, packageToUninstall);
+                m_OperationDispatcher.InstallAndResetDependencies(targetVersion, packageToUninstall);
                 PackageManagerWindowAnalytics.SendEvent("installAndReset", targetVersion?.uniqueId);
             }
             else
             {
-                m_PackageDatabase.Install(targetVersion);
+                m_OperationDispatcher.Install(targetVersion);
 
                 var installRecommended = version.package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
                 var eventName = $"installUpdate{installRecommended}";
@@ -137,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 version?.package?.versions.GetUpdateTarget(version).version);
         }
 
-        protected override bool IsInProgress(IPackageVersion v) => m_PackageDatabase.IsInstallInProgress(v.package.versions.GetUpdateTarget(v));
+        protected override bool IsInProgress(IPackageVersion v) => m_OperationDispatcher.IsInstallInProgress(v.package.versions.GetUpdateTarget(v));
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {

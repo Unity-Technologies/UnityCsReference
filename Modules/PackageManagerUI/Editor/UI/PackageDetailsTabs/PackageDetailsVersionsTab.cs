@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly ApplicationProxy m_ApplicationProxy;
         private readonly PackageManagerPrefs m_PackageManagerPrefs;
         private readonly PackageDatabase m_PackageDatabase;
+        private readonly PackageOperationDispatcher m_OperationDispatcher;
         private readonly PageManager m_PageManager;
         private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
         private readonly UpmCache m_UpmCache;
@@ -34,6 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ApplicationProxy applicationProxyProxy,
             PackageManagerPrefs packageManagerPrefs,
             PackageDatabase packageDatabase,
+            PackageOperationDispatcher operationDispatcher,
             PageManager pageManager,
             PackageManagerProjectSettingsProxy settingsProxy,
             UpmCache upmCache,
@@ -45,6 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = applicationProxyProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
             m_UpmCache = upmCache;
@@ -52,7 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_DisableIfCompiling = new ButtonDisableCondition(() => m_ApplicationProxy.isCompiling,
                 L10n.Tr("You need to wait until the compilation is finished to perform this action."));
-            m_DisableIfInstallOrUninstallInProgress = new ButtonDisableCondition(() => m_PackageDatabase.isInstallOrUninstallInProgress,
+            m_DisableIfInstallOrUninstallInProgress = new ButtonDisableCondition(() => m_OperationDispatcher.isInstallOrUninstallInProgress,
                 L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
 
             m_Container = new VisualElement { name = "versionsTab" };
@@ -127,18 +130,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (v == primaryVersion)
                     {
-                        button = new PackageRemoveButton(m_ApplicationProxy, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
+                        button = new PackageRemoveButton(m_ApplicationProxy, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager);
                         button.SetGlobalDisableConditions(m_DisableIfCompiling, m_DisableIfInstallOrUninstallInProgress);
                     }
                     else
                     {
-                        button = new PackageUpdateButton(m_ApplicationProxy, m_PackageDatabase, m_PageManager, false);
+                        button = new PackageUpdateButton(m_ApplicationProxy, m_PackageDatabase, m_OperationDispatcher, m_PageManager, false);
                         button.SetGlobalDisableConditions(m_DisableIfCompiling, m_DisableIfInstallOrUninstallInProgress);
                     }
                 }
                 else
                 {
-                    button = new PackageAddButton(m_ApplicationProxy, m_PackageDatabase);
+                    button = new PackageAddButton(m_ApplicationProxy, m_PackageDatabase, m_OperationDispatcher);
                     button.SetGlobalDisableConditions(m_DisableIfCompiling, m_DisableIfInstallOrUninstallInProgress);
                 }
 
@@ -146,6 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var isLatest = v == latestVersion;
                 var versionHistoryItem = new PackageDetailsVersionHistoryItem(m_ResourceLoader,
                     m_PackageDatabase,
+                    m_OperationDispatcher,
                     m_UpmCache,
                     m_ApplicationProxy,
                     m_IOProxy,

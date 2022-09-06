@@ -7,12 +7,12 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackagePauseDownloadButton : PackageToolBarRegularButton
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private bool m_IsIconButton;
-        public PackagePauseDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase, bool isIconButton = false)
+        public PackagePauseDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageOperationDispatcher operationDispatcher, bool isIconButton = false)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_IsIconButton = isIconButton;
             if (isIconButton)
             {
@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PackageDatabase.PauseDownload(version.package);
+            m_OperationDispatcher.PauseDownload(version.package);
             PackageManagerWindowAnalytics.SendEvent("pauseDownload", version.packageUniqueId);
             return true;
         }

@@ -117,6 +117,8 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            s_Window = this;
+
             titleContent = GetLocalizedTitleContent();
 
             foreach (var pair in m_Tabs)
@@ -624,12 +626,22 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
+        internal static LightingWindow s_Window;
+        internal static bool isShown => s_Window && !s_Window.docked;
+
         [MenuItem("Window/Rendering/Lighting", false, 1)]
         internal static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();
             window.minSize = new Vector2(390, 390);
             window.Show();
+            s_Window = window;
+        }
+
+        internal static void DestroyLightingWindow()
+        {
+            s_Window.Close();
+            s_Window = null;
         }
     }
 } // namespace

@@ -8,8 +8,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public UpdateFoldoutGroup(ApplicationProxy applicationProxy,
                                   PackageDatabase packageDatabase,
+                                  PackageOperationDispatcher operationDispatcher,
                                   PageManager pageManager)
-            : base(new UpdateFoldout(applicationProxy, packageDatabase, pageManager), new MultiSelectFoldout())
+            : base(new UpdateFoldout(applicationProxy, packageDatabase, operationDispatcher, pageManager), new MultiSelectFoldout())
         {
             mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");
             inProgressFoldout.headerTextTemplate = L10n.Tr("Updating {0}...");

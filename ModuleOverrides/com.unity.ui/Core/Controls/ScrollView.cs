@@ -242,7 +242,8 @@ namespace UnityEngine.UIElements
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
 
-        IVisualElementScheduledItem m_UpdateScrollersScheduledItem;
+        private IVisualElementScheduledItem m_UpdateScrollersScheduledItem;
+        internal Action<bool> OnUpdateScrollers;
 
         internal bool needsHorizontal
         {
@@ -323,12 +324,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private float scrollableWidth
+        float scrollableWidth
         {
             get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
         }
 
-        private float scrollableHeight
+        float scrollableHeight
         {
             get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
         }
@@ -1404,6 +1405,7 @@ namespace UnityEngine.UIElements
             UpdateContentViewTransform();
             // Cancel the scheduled update if this method is not called from the scheduler
             m_UpdateScrollersScheduledItem?.Pause();
+            OnUpdateScrollers?.Invoke(false);
         }
 
         void UpdateViewportContentMargins(bool displayHorizontal, bool displayVertical)

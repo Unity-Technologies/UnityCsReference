@@ -219,7 +219,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 });
         }
 
-        public virtual void CheckTermsAndConditions(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
+        public virtual void CheckTermsAndConditions(Action<bool> doneCallbackAction, Action<UIError> errorCallbackAction)
         {
             // Abort any previous request
             m_HttpClientFactory.AbortByTag("CheckTermsAndConditions");
@@ -232,7 +232,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             },
                 result =>
                 {
-                    doneCallbackAction?.Invoke(result);
+                    doneCallbackAction?.Invoke(result.Get<bool>("result"));
                 },
                 error =>
                 {

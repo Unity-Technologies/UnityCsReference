@@ -15,29 +15,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error searching for packages offline.") : L10n.Tr("Error searching for packages.");
 
-        [SerializeField]
-        private string m_PackageNameOrId;
-
-        private void SetPackageNameOrId(string packageNameOrId)
-        {
-            m_PackageNameOrId = packageNameOrId;
-            if (string.IsNullOrEmpty(packageNameOrId))
-            {
-                m_PackageId = string.Empty;
-                m_PackageName = string.Empty;
-            }
-            else
-            {
-                var tokens = packageNameOrId.Split(new[] { '@' }, 2);
-                m_PackageName = tokens[0];
-                m_PackageId = tokens.Length > 1 ? packageNameOrId : string.Empty;
-            }
-        }
-
         public void SearchAll()
         {
             m_OfflineMode = false;
-            SetPackageNameOrId(string.Empty);
+            m_PackageIdOrName = string.Empty;
             Start();
         }
 
@@ -45,33 +26,31 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_OfflineMode = true;
             m_Timestamp = timestamp;
-            SetPackageNameOrId(string.Empty);
+            m_PackageIdOrName = string.Empty;
             Start();
         }
 
-        public void Search(string packageNameOrId, string productId = null)
+        public void Search(string packageIdOrName)
         {
             m_OfflineMode = false;
-            SetPackageNameOrId(packageNameOrId);
-            m_PackageUniqueId = productId ?? packageName;
+            m_PackageIdOrName = packageIdOrName;
             Start();
         }
 
-        public void SearchOffline(string packageNameOrId, long timestamp, string productId = null)
+        public void SearchOffline(string packageIdOrName, long timestamp)
         {
             m_OfflineMode = true;
             m_Timestamp = timestamp;
-            SetPackageNameOrId(packageNameOrId);
-            m_PackageUniqueId = productId ?? packageName;
+            m_PackageIdOrName = packageIdOrName;
             Start();
         }
 
         protected override SearchRequest CreateRequest()
         {
-            if (string.IsNullOrEmpty(m_PackageNameOrId))
+            if (string.IsNullOrEmpty(m_PackageIdOrName))
                 return m_ClientProxy.SearchAll(isOfflineMode);
             else
-                return m_ClientProxy.Search(m_PackageNameOrId, isOfflineMode);
+                return m_ClientProxy.Search(m_PackageIdOrName, isOfflineMode);
         }
     }
 }

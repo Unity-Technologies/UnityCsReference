@@ -27,6 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UnityConnectProxy m_UnityConnect;
         private PackageFiltering m_PackageFiltering;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         private UpmClient m_UpmClient;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
@@ -41,6 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
             m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
             m_PageManager = container.Resolve<PageManager>();
             m_UpmClient = container.Resolve<UpmClient>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
@@ -305,8 +307,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
-                    m_PageManager.Reload();
-                    ServicesContainer.instance.Resolve<AssetStoreCallQueue>().ClearFetchDetails();
+                    ServicesContainer.instance.Reload();
                 };
 
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
@@ -339,9 +340,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
 
 
-                    if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+                    if (!m_OperationDispatcher.isInstallOrUninstallInProgress)
                     {
-                        m_PackageDatabase.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
+                        m_OperationDispatcher.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
                         PackageManagerWindowAnalytics.SendEvent("addFromDisk");
 
                         var package = m_PackageDatabase.GetPackage(tempPackageId);
@@ -364,9 +365,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
-                if (!string.IsNullOrEmpty(path) && !m_PackageDatabase.isInstallOrUninstallInProgress)
+                if (!string.IsNullOrEmpty(path) && !m_OperationDispatcher.isInstallOrUninstallInProgress)
                 {
-                    m_PackageDatabase.InstallFromPath(path, out var tempPackageId);
+                    m_OperationDispatcher.InstallFromPath(path, out var tempPackageId);
                     PackageManagerWindowAnalytics.SendEvent("addFromTarball");
 
                     var package = m_PackageDatabase.GetPackage(tempPackageId);
@@ -391,9 +392,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     submitButtonText = L10n.Tr("Add"),
                     onInputSubmitted = url =>
                     {
-                        if (!m_PackageDatabase.isInstallOrUninstallInProgress)
+                        if (!m_OperationDispatcher.isInstallOrUninstallInProgress)
                         {
-                            m_PackageDatabase.InstallFromUrl(url);
+                            m_OperationDispatcher.InstallFromUrl(url);
                             PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
 
                             var package = m_PackageDatabase.GetPackage(url);

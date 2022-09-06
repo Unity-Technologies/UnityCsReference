@@ -95,6 +95,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         string outputDirectory;
         bool skipCustomScriptAssemblyGraphValidation = false;
+        [Obsolete]
         List<AssemblyBuilder> assemblyBuilders = new List<AssemblyBuilder>();
         bool _logCompilationMessages = true;
 
@@ -714,7 +715,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             IsRunningRoslynAnalysisSynchronously =
                 (editorScriptCompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0 && PlayerSettings.EnableRoslynAnalyzers;
 
-            var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, editorScriptCompilationOptions, extraScriptingDefines);
+            var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, subtarget, editorScriptCompilationOptions, extraScriptingDefines);
 
             CompileStatus compilationResult;
             using (new ProfilerMarker("Initiating Script Compilation").Auto())
@@ -922,10 +923,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
-            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, options, new string[] { });
+            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, new string[] { });
+        }
+
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options)
+        {
+            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, subtarget, options, new string[] { });
         }
 
         public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
+        {
+            return CreateScriptAssemblySettings(buildTargetGroup, buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget), options, extraScriptingDefines);
+        }
+
+        public ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, int subtarget, EditorScriptCompilationOptions options, string[] extraScriptingDefines)
         {
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
             var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
@@ -966,6 +977,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 BuildTarget = buildTarget,
                 BuildTargetGroup = buildTargetGroup,
+                Subtarget = subtarget,
                 OutputDirectory = GetCompileScriptsOutputDirectory(),
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
@@ -992,6 +1004,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return m_ScriptCompilationRequest != null;
         }
 
+        [Obsolete]
         public bool IsAnyAssemblyBuilderCompiling()
         {
             if (assemblyBuilders.Count <= 0)
@@ -1034,7 +1047,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             // Native code expects IsCompiling to be true after requesting a script reload,
             // therefore return true if the compilation is pending
+#pragma warning disable CS0612 // Type or member is obsolete
             return IsCompilationTaskCompiling() || IsScriptCompilationRequested() || IsAnyAssemblyBuilderCompiling();
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
         public bool IsCompilationTaskCompiling()
@@ -1048,10 +1063,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // This ensures that the compile tasks finish compiling before any
             // scripts in the Assets folder are compiled and a domain reload
             // is triggered.
+#pragma warning disable CS0612 // Type or member is obsolete
             if (IsAnyAssemblyBuilderCompiling())
             {
                 return CompileStatus.Compiling;
             }
+#pragma warning restore CS0612 // Type or member is obsolete
 
             // If we are not currently compiling and there are new dirty assemblies, start compilation.
             if (!IsCompilationTaskCompiling() && IsScriptCompilationRequested())
@@ -1450,8 +1467,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, ScriptAssemblySettings settings)
         {
             var versionMetaDatas = GetVersionMetaDatas();
-            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_Unity_4_8, settings.ExtraGeneralDefines);
-            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
+            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, ApiCompatibilityLevel.NET_Unity_4_8, settings.ExtraGeneralDefines);
+            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
             return GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
         }
@@ -1463,9 +1480,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var allTargetAssemblies = customScriptAssemblies.Values.ToArray()
                 .Concat(predefinedTargetAssemblies ?? new TargetAssembly[0]);
 
-            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, ApiCompatibilityLevel.NET_Unity_4_8, settings.ExtraGeneralDefines);
+            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, ApiCompatibilityLevel.NET_Unity_4_8, settings.ExtraGeneralDefines);
 
-            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
+            var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
             foreach (var targetAssembly in allTargetAssemblies)
             {
@@ -1686,6 +1703,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return result;
         }
 
+        [Obsolete]
         ScriptAssembly InitializeScriptAssemblyWithoutReferencesAndDefines(AssemblyBuilder assemblyBuilder)
         {
             var scriptFiles = assemblyBuilder.scriptPaths.Select(p => AssetPath.Combine(projectDirectory, p)).ToArray();
@@ -1707,6 +1725,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssembly;
         }
 
+        [Obsolete]
         public ScriptAssembly CreateScriptAssembly(AssemblyBuilder assemblyBuilder)
         {
             var scriptAssembly = InitializeScriptAssemblyWithoutReferencesAndDefines(assemblyBuilder);
@@ -1790,9 +1809,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return references.ToArray();
         }
 
+
+#pragma warning disable CS0618 // Type or member is obsolete
         public string[] GetAssemblyBuilderDefaultReferences(AssemblyBuilder assemblyBuilder)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
+#pragma warning disable CS0612 // Type or member is obsolete
             var scriptAssembly = InitializeScriptAssemblyWithoutReferencesAndDefines(assemblyBuilder);
+#pragma warning restore CS0612 // Type or member is obsolete
             var options = ToEditorScriptCompilationOptions(assemblyBuilder.flags);
             var referencesOptions = ToUnityReferencesOptions(assemblyBuilder.referencesOptions);
             var references = GetAssemblyBuilderDefaultReferences(scriptAssembly, options, referencesOptions);
@@ -1800,13 +1824,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return references;
         }
 
+        [Obsolete]
         public string[] GetAssemblyBuilderDefaultDefines(AssemblyBuilder assemblyBuilder)
         {
             var options = ToEditorScriptCompilationOptions(assemblyBuilder.flags);
-            var defines = InternalEditorUtility.GetCompilationDefines(options, assemblyBuilder.buildTargetGroup, assemblyBuilder.buildTarget);
+            var defines = InternalEditorUtility.GetCompilationDefines(options, assemblyBuilder.buildTargetGroup, assemblyBuilder.buildTarget, assemblyBuilder.subtarget);
             return defines;
         }
 
+        [Obsolete]
         public void AddAssemblyBuilder(AssemblyBuilder assemblyBuilder)
         {
             assemblyBuilders.Add(assemblyBuilder);

@@ -9,16 +9,16 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageImportButton : PackageToolBarRegularButton
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private PackageDatabase m_PackageDatabase;
-        public PackageImportButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase)
+        private PackageOperationDispatcher m_OperationDispatcher;
+        public PackageImportButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageOperationDispatcher operationDispatcher)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PackageDatabase.Import(version.package);
+            m_OperationDispatcher.Import(version.package);
             PackageManagerWindowAnalytics.SendEvent("import", version.packageUniqueId);
             return true;
         }

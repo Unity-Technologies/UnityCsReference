@@ -216,13 +216,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (packageVersion == null)
                     continue;
 
-                var package = m_PackageDatabase.GetPackage(packageVersion);
-                var installedVersion = package?.versions.installed;
-
+                var installedVersion = packageVersion.package?.versions.installed;
                 if (installedVersion == null)
-                {
                     continue;
-                }
                 // User manually decide to install a different version
                 else if ((installedVersion.isDirectDependency && package.versions.isNonLifecycleVersionInstalled) || installedVersion.HasTag(PackageTag.InDevelopment))
                 {

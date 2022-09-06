@@ -270,7 +270,7 @@ namespace UnityEditor
 
             if (m_CompatibleWithEditor > Compatibility.NotCompatible)
             {
-                BuildPlatform editorPlatform = new BuildPlatform("Editor settings", "Editor Settings", "BuildSettings.Editor", NamedBuildTarget.Unknown, BuildTarget.NoTarget, false);
+                BuildPlatform editorPlatform = new BuildPlatform("Editor settings", "Editor Settings", "BuildSettings.Editor", NamedBuildTarget.Unknown, BuildTarget.NoTarget, false, true);
                 editorPlatform.name = BuildPipeline.GetEditorTargetName();
                 filtered.Add(editorPlatform);
             }
@@ -567,7 +567,7 @@ namespace UnityEditor
             var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
             EditorGUI.showMixedValue = false;
 
-            var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+            var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
 
             if (defines != null)
             {
@@ -765,7 +765,7 @@ namespace UnityEditor
 
                     if (m_DefineConstraints.list.Count > 0)
                     {
-                        var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget);
+                        var defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));
 
                         var defineConstraintsCompatible = true;
 

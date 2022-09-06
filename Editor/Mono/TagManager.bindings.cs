@@ -40,7 +40,19 @@ namespace UnityEditor
         internal extern void SetSortingLayerName(int index, string name);
 
         [NativeMethod("StringToTagAddIfUnavailable")]
-        internal extern int AddTag(string tag);
+        extern int StringToTagAddIfUnavailable(string tag);
+
+        /*
+        * After adding a tag, set the TagManager as dirty. We may not call "SetDirty" in "StringToTagAddIfUnavailable" itself because
+        * it may be called off of the main thread.
+        */
+        internal int AddTag(string tag)
+        {
+            int result = StringToTagAddIfUnavailable(tag);
+            EditorUtility.SetDirty(this);
+
+            return result;
+        }
 
         [NativeMethod]
         internal extern void RemoveTag(string tag);

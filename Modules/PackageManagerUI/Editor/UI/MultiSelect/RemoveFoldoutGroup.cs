@@ -11,8 +11,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public RemoveFoldoutGroup(ApplicationProxy applicationProxy,
                                   PackageManagerPrefs packageManagerPrefs,
                                   PackageDatabase packageDatabase,
+                                  PackageOperationDispatcher operationDispatcher,
                                   PageManager pageManager)
-            : base(new PackageRemoveButton(applicationProxy, packageManagerPrefs, packageDatabase, pageManager), null)
+            : base(new PackageRemoveButton(applicationProxy, packageManagerPrefs, packageDatabase, operationDispatcher, pageManager), null)
         {
         }
 

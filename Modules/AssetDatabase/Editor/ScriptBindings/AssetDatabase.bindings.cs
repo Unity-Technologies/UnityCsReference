@@ -178,6 +178,49 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Error)]
         extern public static void StopAssetEditing();
 
+        // A class used for Starting/Stopping asset editing. Let's a user start/stop using RAII
+        public class AssetEditingScope : IDisposable
+        {
+            private bool disposed = false;
+
+            public AssetEditingScope()
+            {
+                AssetDatabase.StartAssetEditing();
+            }
+
+            ~AssetEditingScope()
+            {
+                Dispose(false);
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                // We've already been disposed.
+                if (this.disposed)
+                    return;
+
+                // disposing is only false when the user forgot to Dispose() it properly
+                // so we should warn them about not properly disposing it as it will freeze the editor.
+                if (!disposing) {
+                    // It would be cool to inform the user about where new AssetEditingScope was called,
+                    // but I'm unsure how to do that correctly/efficiently, so we'll just warn the user.
+                    Debug.LogWarning(
+                        "AssetEditingScope.Dispose() was never called on an instance of AssetEditingScope. " +
+                        "This could freeze the editor for a short while. Check out the documentation for more info."
+                    );
+                } else {
+                    // StopAssetEditing isn't threadsafe, so we don't call it from the finalizer (as that is in a different thread)
+                    AssetDatabase.StopAssetEditing();
+                }
+            }
+        }
+
         [FreeFunction("AssetDatabase::UnloadAllFileStreams")]
         extern public static void ReleaseCachedFileHandles();
 

@@ -913,7 +913,7 @@ namespace UnityEditorInternal
         extern internal static bool SaveCursorToInMemoryResource(Texture2D image, Vector2 hotSpot, ushort cursorDataResourceId, IntPtr cursorDirectoryBuffer, uint cursorDirectoryBufferSize, IntPtr cursorDataBuffer, uint cursorDataBufferSize);
 
         [FreeFunction("GetScriptCompilationDefines")]
-        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel, string[] extraDefines = null);
+        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, int subtarget, ApiCompatibilityLevel apiCompatibilityLevel, string[] extraDefines = null);
 
         //Launches an application that is kept alive, even during a domain reload
         [FreeFunction("LaunchApplication")]

@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageIdsToReset = new string[0];
             m_PackageIdsToAdd = (versionIds ?? Enumerable.Empty<string>()).ToArray();
             m_PackagesNamesToRemove = new string[0];
-            SetPrimaryPackageNameOrId();
+            m_PackageIdOrName = string.Empty;
             Start();
         }
 
@@ -50,7 +50,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageIdsToReset = new string[0];
             m_PackageIdsToAdd = new string[0];
             m_PackagesNamesToRemove = (packagesNames ?? Enumerable.Empty<string>()).ToArray();
-            SetPrimaryPackageNameOrId();
+            m_PackageIdOrName = string.Empty;
             Start();
         }
 
@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageIdsToReset = new string[0];
             m_PackageIdsToAdd = new string[1] { packageId };
             m_PackagesNamesToRemove = (dependencyPackagesNames ?? Enumerable.Empty<string>()).ToArray();
-            SetPrimaryPackageNameOrId(packageId: packageId);
+            m_PackageIdOrName = packageId;
             Start();
         }
 
@@ -68,15 +68,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageIdsToReset = new string[1] { packageId };
             m_PackageIdsToAdd = new string[0];
             m_PackagesNamesToRemove = (dependencyPackagesNames ?? Enumerable.Empty<string>()).ToArray();
-            SetPrimaryPackageNameOrId(packageId: packageId);
+            m_PackageIdOrName = packageId;
             Start();
-        }
-
-        private void SetPrimaryPackageNameOrId(string packageId = null, string packageName = null, string packageUniqueId = null)
-        {
-            m_PackageId = packageId ?? string.Empty;
-            m_PackageName = packageName ?? string.Empty;
-            m_PackageUniqueId = packageUniqueId ?? this.packageName;
         }
 
         protected override AddAndRemoveRequest CreateRequest()

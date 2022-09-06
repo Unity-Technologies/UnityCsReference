@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPackageVersion m_Version;
         private readonly PackageToolBarRegularButton m_Button;
         private readonly PackageDatabase m_PackageDatabase;
+        private readonly PackageOperationDispatcher m_OperationDispatcher;
         private readonly UpmCache m_UpmCache;
         private readonly ApplicationProxy m_ApplicationProxy;
         private readonly IOProxy m_IOProxy;
@@ -28,6 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageDetailsVersionHistoryItem(ResourceLoader resourceLoader,
             PackageDatabase packageDatabase,
+            PackageOperationDispatcher operationDispatcher,
             UpmCache upmCache,
             ApplicationProxy applicationProxy,
             IOProxy ioProxy,
@@ -39,6 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_Version = version;
             m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_UpmCache = upmCache;
             m_ApplicationProxy = applicationProxy;
             m_IOProxy = ioProxy;
@@ -137,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // and PackageDetailsVersionTabs will be refresh because PackageDetails is refreshed.
                 SetEnabled(false);
                 versionHistoryItemToggleSpinner.Start();
-                m_PackageDatabase.FetchExtraInfo(m_Version);
+                m_OperationDispatcher.FetchExtraInfo(m_Version);
                 return;
             }
 

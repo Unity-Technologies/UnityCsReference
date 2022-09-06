@@ -7,12 +7,12 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageResumeDownloadButton : PackageToolBarRegularButton
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private bool m_IsIconButton;
-        public PackageResumeDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase, bool isIconButton = false)
+        public PackageResumeDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageOperationDispatcher operationDispatcher, bool isIconButton = false)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_IsIconButton = isIconButton;
             if (isIconButton)
             {
@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PackageDatabase.ResumeDownload(version.package);
+            m_OperationDispatcher.ResumeDownload(version.package);
             PackageManagerWindowAnalytics.SendEvent("resumeDownload", version.packageUniqueId);
             return true;
         }

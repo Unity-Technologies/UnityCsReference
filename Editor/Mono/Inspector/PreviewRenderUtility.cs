@@ -250,9 +250,6 @@ namespace UnityEditor
 
             if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
             {
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = ambientColor;
-
                 RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
                 RenderSettings.customReflectionTexture = defaultEnvTexture;
             }
@@ -282,13 +279,23 @@ namespace UnityEditor
 
             if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
             {
-                // User can set an ambientColor if they want to override the default black color
-                // Cannot grab the main scene light probe/color instead as this is sometimes run on a worker without access to the original probe/color.
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = ambientColor;
-                // Reflection mode should be set to the default (skybox) to stay consistent with the worker thread settings when the preview is created while saving
-                RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Skybox;
+                RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+                RenderSettings.customReflectionTexture = GetDefaultReflection();
             }
+        }
+
+        private static Cubemap s_DefaultReflection;
+        private static Cubemap GetDefaultReflection()
+        {
+            // Reflection texture set to default prefab mode cubemap so that there are at least some reflections
+            // (cannot use ReflectionProbe.defaultTexture as static previews are generated before it is set, case UUM-1820)
+            const string path = "PrefabMode/DefaultReflectionForPrefabMode.exr";
+            if (s_DefaultReflection == null)
+                s_DefaultReflection = EditorGUIUtility.Load(path) as Cubemap;
+            if (s_DefaultReflection == null)
+                Debug.LogError("Could not find: " + path);
+
+            return s_DefaultReflection;
         }
 
         private void InitPreview(Rect r)
@@ -510,6 +517,14 @@ namespace UnityEditor
 
         public void Render(bool allowScriptableRenderPipeline = false, bool updatefov = true)
         {
+            if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
+            {
+                // User can set an ambientColor if they want to override the default black color
+                // Cannot grab the main scene light probe/color instead as this is sometimes run on a worker without access to the original probe/color.
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = ambientColor;
+            }
+
             foreach (var light in lights)
                 light.enabled = true;
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;

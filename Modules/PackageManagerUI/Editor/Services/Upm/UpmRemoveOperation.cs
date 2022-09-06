@@ -14,10 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string operationErrorMessage => string.Format(L10n.Tr("Error removing package: {0}."), packageName);
 
-        public void Remove(string packageName, string packageUniqueId = null)
+        public void Remove(string packageIdOrName)
         {
-            m_PackageName = packageName;
-            m_PackageUniqueId = packageUniqueId ?? packageName;
+            m_PackageIdOrName = packageIdOrName;
             Start();
         }
 

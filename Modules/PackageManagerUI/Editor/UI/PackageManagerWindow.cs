@@ -234,10 +234,8 @@ namespace UnityEditor.PackageManager.UI
                 string packageId = null;
                 if (!string.IsNullOrEmpty(packageToSelect))
                 {
-                    var packageDatabase = ServicesContainer.instance.Resolve<Internal.PackageDatabase>();
-                    Internal.IPackageVersion version;
-                    Internal.IPackage package;
-                    packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out package, out version);
+                    var packageDatabase = ServicesContainer.instance.Resolve<PackageDatabase>();
+                    packageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
 
                     packageId = version?.uniqueId ?? package?.versions.primary.uniqueId ?? string.Format("{0}@primary", packageToSelect);
                 }

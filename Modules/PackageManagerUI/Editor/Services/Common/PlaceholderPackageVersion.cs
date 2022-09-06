@@ -16,6 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_UniqueId;
         public override string uniqueId => m_UniqueId;
 
+        public override string packageId => string.Empty;
+
         [SerializeField]
         private UIError[] m_Errors;
         public override IEnumerable<UIError> errors => m_Errors;

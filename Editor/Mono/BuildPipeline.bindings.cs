@@ -125,8 +125,8 @@ namespace UnityEditor
         // The BuildReport object returned by BuildPipeline.BuildPlayer will contain more details (about build times and contents), at the cost of a slightly (typically, a few percents) longer build time
         DetailedBuildReport = 1 << 29,
 
-        // Turn shader stripping on and enable shader live link connection
-        ShaderLivelinkSupport = 1 << 30,
+        [Obsolete("Shader LiveLink is no longer supported.")]
+        ShaderLivelinkSupport = 0,
 
     }
 

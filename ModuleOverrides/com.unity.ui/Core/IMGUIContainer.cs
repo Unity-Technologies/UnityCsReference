@@ -304,7 +304,9 @@ namespace UnityEngine.UIElements
                     {
                         if (focusChangeDirection != FocusChangeDirection.unspecified && focusChangeDirection != FocusChangeDirection.none)
                         {
-                            // We got here by tabbing.
+                            // Consume the Tab Event as UITK already used it.
+                            if (Event.current.type == EventType.KeyDown && Event.current.character is '\t' or (char)25)
+                                Event.current.Use();
 
                             // We assume we are using the VisualElementFocusRing.
                             if (focusChangeDirection == VisualElementFocusChangeDirection.left)

@@ -90,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 buttonText = L10n.Tr("Read more");
                 buttonAction = () =>
                 {
-                    PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode.ToString()}", packageVersion?.uniqueId);
+                    PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode}", packageVersion?.uniqueId);
                     Application.OpenURL(error.readMoreURL);
                 };
             }

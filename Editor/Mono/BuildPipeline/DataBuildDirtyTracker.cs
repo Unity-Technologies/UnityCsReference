@@ -49,7 +49,6 @@ namespace UnityEditor.Mono.BuildPipeline
                 BuildOptions.ConnectToHost |
                 BuildOptions.ConnectWithProfiler |
                 BuildOptions.UncompressedAssetBundle |
-                BuildOptions.ShaderLivelinkSupport |
                 BuildOptions.CompressWithLz4HC;
         }
 

@@ -208,7 +208,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         // requested (with a warning), as a common flow used in user build scripts is "Change defines -> Build Player".
         public static bool IsCompilationInProgress()
         {
+#pragma warning disable CS0612 // Type or member is obsolete
             return Instance.IsCompilationTaskCompiling() || Instance.IsAnyAssemblyBuilderCompiling();
+#pragma warning restore CS0612 // Type or member is obsolete
         }
 
         [RequiredByNativeCode]
@@ -240,7 +242,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetCompatibleTargetAssemblyInfos(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform, string[] extraScriptingDefines = null)
         {
-            var scriptAssemblySettings = Instance.CreateScriptAssemblySettings(platformGroup, platform, definesOptions, extraScriptingDefines);
+            var scriptAssemblySettings = Instance.CreateScriptAssemblySettings(platformGroup, platform, EditorUserBuildSettings.GetActiveSubtargetFor(platform), definesOptions, extraScriptingDefines);
             return Instance.GetTargetAssemblyInfos(scriptAssemblySettings);
         }
 

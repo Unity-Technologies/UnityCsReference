@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null)
                 return FeatureState.None;
 
-            var package = m_PackageDatabase.GetPackage(version);
+            var package = version.package;
             var installedVersion = package?.versions.installed;
             if (installedVersion == null)
                 return FeatureState.None;
@@ -179,7 +179,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 version = m_PackageDatabase.GetPackageInFeatureVersion(selectedDependencyPackageId);
             }
 
-            // If the package is not installed and undiscoverable, we have to display the package's ID name (ex: com.unity.adaptiveperformance.samsung.android)
+            // If the package is not installed and not discoverable, we have to display the package's ID name (ex: com.unity.adaptiveperformance.samsung.android)
             // and hide other elements in the package view
             var showElementsInDetailsView = version != null;
 
@@ -196,7 +196,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!showElementsInDetailsView)
                 return;
 
-            var installedPackageVersion = m_PackageDatabase.GetPackage(version)?.versions.installed;
+            var installedPackageVersion = version.package?.versions.installed;
             dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionId != version?.versionId ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
             var featureState = GetFeatureState(version);

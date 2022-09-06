@@ -25,7 +25,6 @@ namespace UnityEditor.Build.Content
         internal bool m_ShadowMasksUsed;
         internal bool m_SubtractiveUsed;
         internal bool m_HybridRendererPackageUsed;
-        internal bool m_BuildForLivelink;
         internal bool m_BuildForServer;
 
         public static BuildUsageTagGlobal operator|(BuildUsageTagGlobal x, BuildUsageTagGlobal y)
@@ -41,7 +40,6 @@ namespace UnityEditor.Build.Content
             results.m_SubtractiveUsed = x.m_SubtractiveUsed | y.m_SubtractiveUsed;
             results.m_HybridRendererPackageUsed = x.m_HybridRendererPackageUsed | y.m_HybridRendererPackageUsed;
             results.m_BrgShaderStripModeMask = x.m_BrgShaderStripModeMask | y.m_BrgShaderStripModeMask;
-            results.m_BuildForLivelink = x.m_BuildForLivelink | y.m_BuildForLivelink;
             results.m_BuildForServer = x.m_BuildForServer | y.m_BuildForServer;
             return results;
         }

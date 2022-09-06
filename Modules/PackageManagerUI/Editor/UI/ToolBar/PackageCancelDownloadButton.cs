@@ -10,12 +10,12 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageCancelDownloadButton : PackageToolBarRegularButton
     {
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
-        private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private bool m_IsIconButton;
-        public PackageCancelDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageDatabase packageDatabase, bool isIconButton = false)
+        public PackageCancelDownloadButton(AssetStoreDownloadManager assetStoreDownloadManager, PackageOperationDispatcher operationDispatcher, bool isIconButton = false)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_IsIconButton = isIconButton;
             if (isIconButton)
             {
@@ -26,14 +26,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PackageDatabase.AbortDownload(versions.Select(v => v.package));
+            m_OperationDispatcher.AbortDownload(versions.Select(v => v.package));
             PackageManagerWindowAnalytics.SendEvent("abortDownload", packageIds: versions.Select(v => v.packageUniqueId));
             return true;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PackageDatabase.AbortDownload(version.package);
+            m_OperationDispatcher.AbortDownload(version.package);
             PackageManagerWindowAnalytics.SendEvent("abortDownload", version.packageUniqueId);
             return true;
         }

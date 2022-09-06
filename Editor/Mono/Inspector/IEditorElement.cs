@@ -13,8 +13,8 @@ namespace UnityEditor
         Editor editor { get; }
         IEnumerable<Editor> Editors { get; }
 
-        void Reinit(int editorIndex);
-        void ReinitCulled(int editorIndex);
+        void Reinit(int editorIndex, Editor[] editors);
+        void ReinitCulled(int editorIndex, Editor[] editors);
         void CreateInspectorElement();
 
         void AddPrefabComponent(VisualElement comp);

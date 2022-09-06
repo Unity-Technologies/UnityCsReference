@@ -570,17 +570,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Refresh(RefreshOptions options)
         {
-            if ((options & RefreshOptions.UpmAny) != 0)
-            {
-                var entitlements = m_PackageDatabase.allPackages.Where(package => package.hasEntitlementsError);
-                if (entitlements.Any())
-                {
-                    foreach (var package in entitlements)
-                        package.ClearErrors(error => error.errorCode == UIErrorCode.UpmError_Forbidden);
-                    TriggerOnSelectionChanged();
-                }
-            }
-
             if ((options & RefreshOptions.UpmSearch) != 0)
             {
                 m_UpmClient.SearchAll();
@@ -732,21 +721,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Selection.onSelectionChanged -= OnEditorSelectionChanged;
-        }
-
-        public virtual void Reload()
-        {
-            m_RefreshTimestamps.Clear();
-            InitializeRefreshTimestamps();
-
-            ClearPages();
-
-            InitializeSubPages();
-
-            m_RefreshErrors.Clear();
-            m_RefreshOperationsInProgress.Clear();
-
-            m_PackageDatabase.Reload();
         }
 
         private void InitializeRefreshTimestamps()

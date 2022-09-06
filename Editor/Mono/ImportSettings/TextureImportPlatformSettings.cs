@@ -163,7 +163,7 @@ namespace UnityEditor
                 BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
                 string title = string.Format(Styles.overrideFor.text, validPlatforms[selected].title.text);
                 Rect controlRect = EditorGUILayout.GetControlRect(true);
-                GUIContent label = EditorGUI.BeginProperty(controlRect, GUIContent.Temp(title), realPS.model.overridenProperty);
+                GUIContent label = EditorGUI.BeginProperty(controlRect, GUIContent.Temp(title), realPS.model.overriddenProperty);
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = realPS.model.overriddenIsDifferent;
@@ -239,11 +239,11 @@ namespace UnityEditor
             set { m_OverriddenIsDifferent = value; }
         }
 
-        [SerializeField] private SerializedProperty m_OverridenProperty = null;
-        public SerializedProperty overridenProperty
+        [SerializeField] private SerializedProperty m_OverriddenProperty = null;
+        public SerializedProperty overriddenProperty
         {
-            get { return m_OverridenProperty; }
-            set { m_OverridenProperty = value; }
+            get { return m_OverriddenProperty; }
+            set { m_OverriddenProperty = value; }
         }
 
         public bool allAreOverridden
@@ -552,35 +552,34 @@ namespace UnityEditor
                 return; // We've already cached the appropriate PlatformTextureSettings property, don't update.
             }
 
-            // Retrieve the appropriate properties for the chosen BuildTarget.
-            switch (platformSettingsArray.arraySize)
+            // Below: retrieve the appropriate properties for the chosen BuildTarget.
+            if (platformSettingsArray.arraySize <= 0)
             {
                 // This should not happen, all known valid platforms should have
                 // been created in advance, including the Default Platform.
-                case 0:
-                    model.platformTextureSettingsProp = null;
-                    throw new UnityException("Cannot find any Platform Settings, including the Default Platform. This is incorrect, did initialization fail?");
-
+                model.platformTextureSettingsProp = null;
+                throw new UnityException("Cannot find any Platform Settings, including the Default Platform. This is incorrect, did initialization fail?");
+            }
+            else
+            {
                 // Fetch the matching platform settings property.
                 // Do not skip element 0, the Default Platform is a valid choice.
-                default:
-                    for (int i = 0; i < platformSettingsArray.arraySize; ++i)
+                for (int i = 0; i < platformSettingsArray.arraySize; ++i)
+                {
+                    SerializedProperty serializedProperty = platformSettingsArray.GetArrayElementAtIndex(i);
+                    if (serializedProperty.FindPropertyRelative("m_BuildTarget").stringValue == model.platformTextureSettings.name)
                     {
-                        SerializedProperty serializedProperty = platformSettingsArray.GetArrayElementAtIndex(i);
-                        if (serializedProperty.FindPropertyRelative("m_BuildTarget").stringValue == model.platformTextureSettings.name)
-                        {
-                            model.platformTextureSettingsProp = serializedProperty;
-                            break;
-                        }
+                        model.platformTextureSettingsProp = serializedProperty;
+                        break;
                     }
+                }
 
-                    // Since we ensure that all known valid platforms are created in advance,
-                    // we should be able to find the currently selected platform. If not, fail.
-                    if (model.platformTextureSettingsProp is null)
-                    {
-                        throw new UnityException("Could not find the requested Platform Texture Settings. This is incorrect, did initialization fail?");
-                    }
-                    break;
+                // Since we ensure that all known valid platforms are created in advance,
+                // we should be able to find the currently selected platform. If not, fail.
+                if (model.platformTextureSettingsProp is null)
+                {
+                    throw new UnityException("Could not find the requested Platform Texture Settings. This is incorrect, did initialization fail?");
+                }
             }
 
             model.alphaSplitProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_AllowsAlphaSplitting");
@@ -588,7 +587,7 @@ namespace UnityEditor
             model.compressionQualityProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_CompressionQuality");
             model.crunchedCompressionProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_CrunchedCompression");
             model.maxTextureSizeProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_MaxTextureSize");
-            model.overridenProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_Overridden");
+            model.overriddenProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_Overridden");
             model.resizeAlgorithmProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_ResizeAlgorithm");
             model.textureCompressionProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_TextureCompression");
             model.textureFormatProperty = model.platformTextureSettingsProp.FindPropertyRelative("m_TextureFormat");

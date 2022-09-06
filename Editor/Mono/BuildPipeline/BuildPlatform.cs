@@ -15,6 +15,7 @@ namespace UnityEditor.Build
         // short name used for texture settings, etc.
         public string name;
         public NamedBuildTarget namedBuildTarget;
+        public bool installed;
         public bool hideInUi;
         public string tooltip;
         public BuildTarget defaultTarget;
@@ -28,12 +29,12 @@ namespace UnityEditor.Build
         public GUIContent title => m_Title;
         public Texture2D smallIcon => ((GUIContent)m_SmallTitle).image as Texture2D;
 
-        public BuildPlatform(string locTitle, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi)
-            : this(locTitle, "", iconId, namedBuildTarget, defaultTarget, hideInUi)
+        public BuildPlatform(string locTitle, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi, bool installed)
+            : this(locTitle, "", iconId, namedBuildTarget, defaultTarget, hideInUi, installed)
         {
         }
 
-        public BuildPlatform(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi)
+        public BuildPlatform(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi, bool installed)
         {
             this.namedBuildTarget = namedBuildTarget;
             name = namedBuildTarget.TargetName;
@@ -42,6 +43,7 @@ namespace UnityEditor.Build
             this.tooltip = tooltip;
             this.hideInUi = hideInUi;
             this.defaultTarget = defaultTarget;
+            this.installed = installed;
         }
     }
 
@@ -49,8 +51,8 @@ namespace UnityEditor.Build
     {
         public int subtarget;
 
-        public BuildPlatformWithSubtarget(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, int subtarget, bool forceShowTarget)
-            : base(locTitle, tooltip, iconId, namedBuildTarget, defaultTarget, forceShowTarget)
+        public BuildPlatformWithSubtarget(string locTitle, string tooltip, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, int subtarget, bool hideInUi, bool installed)
+            : base(locTitle, tooltip, iconId, namedBuildTarget, defaultTarget, hideInUi, installed)
         {
             this.subtarget = subtarget;
             name = namedBuildTarget.TargetName;
@@ -80,10 +82,13 @@ namespace UnityEditor.Build
                 standaloneTarget = BuildTarget.StandaloneLinux64;
 
             buildPlatformsList.Add(new BuildPlatformWithSubtarget(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "", "BuildSettings.Standalone",
-                NamedBuildTarget.Standalone, standaloneTarget, (int)StandaloneBuildSubtarget.Player, true));
+                NamedBuildTarget.Standalone, standaloneTarget, (int)StandaloneBuildSubtarget.Player, false, true));
 
+            // TODO: We should consider extend BuildTargetDiscovery to support named targets and subtargets,
+            // specially if at some point other platforms use them.
+            // The installed value is set by the linux, mac or win ExtensionModule.cs when they are loaded.
             buildPlatformsList.Add(new BuildPlatformWithSubtarget("Dedicated Server", "", "BuildSettings.DedicatedServer",
-                NamedBuildTarget.Server, standaloneTarget, (int)StandaloneBuildSubtarget.Server, true));
+                NamedBuildTarget.Server, standaloneTarget, (int)StandaloneBuildSubtarget.Server, false, false));
 
             foreach (var target in buildTargets)
             {
@@ -95,7 +100,8 @@ namespace UnityEditor.Build
                         target.iconName,
                         namedBuildTarget,
                         target.buildTargetPlatformVal,
-                        target.HasFlag(TargetAttributes.HideInUI)));
+                        hideInUi: target.HasFlag(TargetAttributes.HideInUI),
+                        installed: BuildPipeline.GetPlaybackEngineDirectory(target.buildTargetPlatformVal, BuildOptions.None, false) != string.Empty));
                 }
             }
 
@@ -174,7 +180,8 @@ namespace UnityEditor.Build
         {
             List<BuildPlatform> platforms = new List<BuildPlatform>();
             foreach (BuildPlatform bp in buildPlatforms)
-                if (bp.namedBuildTarget == NamedBuildTarget.Standalone || BuildPipeline.IsBuildTargetSupported(bp.namedBuildTarget.ToBuildTargetGroup(), bp.defaultTarget))
+                if (bp.namedBuildTarget == NamedBuildTarget.Standalone ||
+                    (bp.installed && BuildPipeline.IsBuildTargetSupported(bp.namedBuildTarget.ToBuildTargetGroup(), bp.defaultTarget)))
                     platforms.Add(bp);
 
             return platforms;

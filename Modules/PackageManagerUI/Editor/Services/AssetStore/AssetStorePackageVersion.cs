@@ -76,6 +76,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public override string packageId => string.Empty;
+
         public override string uniqueId => $"{packageUniqueId}@{versionId}";
 
         public override bool isInstalled => false;

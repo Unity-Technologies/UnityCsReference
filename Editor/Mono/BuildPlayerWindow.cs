@@ -358,21 +358,19 @@ namespace UnityEditor
                 bool showRequired = requireEnabled == 0;
                 foreach (BuildPlatform gt in BuildPlatforms.instance.buildPlatforms)
                 {
-                    var installed = IsBuildTargetGroupInstalled(gt.namedBuildTarget.ToBuildTargetGroup(), gt.defaultTarget);
-
                     // All installed build targets will be shown on the first pass (showRequired = true)
-                    if (installed != showRequired)
+                    if (gt.installed != showRequired)
                         continue;
 
                     // Some build targets are not publicly available, show them only when they are installed
-                    if (!installed && gt.hideInUi)
+                    if (!gt.installed && gt.hideInUi)
                         continue;
 
                     // Some build targets are only compatible with specific OS
                     if (!IsBuildTargetCompatibleWithOS(gt.defaultTarget))
                         continue;
 
-                    GUI.contentColor = installed ? Color.white : new Color(1, 1, 1, 0.5f);
+                    GUI.contentColor = gt.installed ? Color.white : new Color(1, 1, 1, 0.5f);
                     ShowOption(gt, gt.title, even ? styles.evenRow : styles.oddRow);
                     even = !even;
                 }
@@ -537,22 +535,6 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        internal static bool IsBuildTargetGroupSupported(BuildTargetGroup targetGroup, BuildTarget target)
-        {
-            if (targetGroup == BuildTargetGroup.Standalone)
-                return true;
-            else
-                return BuildPipeline.IsBuildTargetSupported(targetGroup, target);
-        }
-
-        internal static bool IsBuildTargetGroupInstalled(BuildTargetGroup targetGroup, BuildTarget target)
-        {
-            if (targetGroup == BuildTargetGroup.Standalone)
-                return true;
-            else
-                return BuildPipeline.GetPlaybackEngineDirectory(target, BuildOptions.None, false) != string.Empty;
-        }
-
         static bool IsAnyStandaloneModuleLoaded()
         {
             return ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64) ||
@@ -656,8 +638,11 @@ namespace UnityEditor
         {
             { "tvOS", "AppleTV" },
             { "OSXStandalone", "Mac" },
+            { "OSXDedicatedServer", "Mac-Server" },
             { "WindowsStandalone", "Windows" },
+            { "WindowsDedicatedServer", "Windows-Server" },
             { "LinuxStandalone", "Linux" },
+            { "LinuxDedicatedServer", "Linux-Server" },
             { "UWP", "Universal-Windows-Platform"}
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
@@ -742,14 +727,15 @@ namespace UnityEditor
         bool IsModuleNotInstalled(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
+            bool installed = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).installed;
 
             string moduleName = ModuleManager.GetTargetStringFrom(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
 
-            return licensed &&
-                !string.IsNullOrEmpty(moduleName) &&
+            return !installed ||
+                (licensed && !string.IsNullOrEmpty(moduleName) &&
                 ModuleManager.GetBuildPostProcessor(moduleName) == null &&
                 (BuildTargetGroup.Standalone != EditorUserBuildSettings.selectedBuildTargetGroup ||
-                    !IsAnyStandaloneModuleLoaded());
+                    !IsAnyStandaloneModuleLoaded()));
         }
 
         static bool IsEditorInstalledWithHub()
@@ -788,6 +774,8 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             string moduleName = ModuleManager.GetTargetStringFrom(namedBuildTarget.ToBuildTargetGroup(), buildTarget);
+            if (namedBuildTarget == NamedBuildTarget.Server)
+                moduleName = moduleName.Replace("Standalone", "DedicatedServer");
 
             if (IsModuleNotInstalled(namedBuildTarget, buildTarget))
             {

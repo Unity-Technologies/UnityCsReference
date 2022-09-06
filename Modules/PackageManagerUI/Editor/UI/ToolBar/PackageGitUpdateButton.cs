@@ -6,16 +6,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageGitUpdateButton : PackageToolBarRegularButton
     {
-        private PackageDatabase m_PackageDatabase;
-        public PackageGitUpdateButton(PackageDatabase packageDatabase)
+        private PackageOperationDispatcher m_OperationDispatcher;
+        public PackageGitUpdateButton(PackageOperationDispatcher operationDispatcher)
         {
-            m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
             var installedVersion = version.package.versions.installed;
-            m_PackageDatabase.Install(installedVersion.packageInfo.packageId);
+            m_OperationDispatcher.Install(installedVersion.packageId);
             PackageManagerWindowAnalytics.SendEvent("updateGit", installedVersion.uniqueId);
             return true;
         }
@@ -34,6 +34,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return L10n.Tr("Update");
         }
 
-        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsInstallInProgress(version);
+        protected override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsInstallInProgress(version);
     }
 }

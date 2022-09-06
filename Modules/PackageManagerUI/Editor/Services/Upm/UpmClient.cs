@@ -15,15 +15,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private static readonly string[] k_UnityRegistryUrlsHosts = { ".unity.com", ".unity3d.com" };
 
+        public virtual event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
+        public virtual event Action<string, UIError> onPackageOperationError = delegate { };
+
         public virtual event Action<IOperation> onListOperation = delegate {};
         public virtual event Action<IOperation> onSearchAllOperation = delegate {};
         public virtual event Action<IOperation> onExtraFetchOperation = delegate {};
-        public virtual event Action<IOperation> onRemoveOperation = delegate {};
         public virtual event Action<IOperation> onAddOperation = delegate {};
-        public virtual event Action<IOperation> onEmbedOperation = delegate {};
-        public virtual event Action<UpmAddAndRemoveOperation> onAddAndRemoveOperation = delegate {};
-
-        public virtual event Action<IEnumerable<IPackage>> onPackagesChanged = delegate {};
 
         [SerializeField]
         private UpmSearchOperation m_SearchOperation;
@@ -47,9 +45,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UpmRemoveOperation m_RemoveOperation;
         private UpmRemoveOperation removeOperation => CreateOperation(ref m_RemoveOperation);
-        [SerializeField]
-        private UpmEmbedOperation m_EmbedOperation;
-        private UpmEmbedOperation embedOperation => CreateOperation(ref m_EmbedOperation);
 
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
 
@@ -60,13 +55,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool[] m_SerializedRegistryUrlsValues;
 
         internal Dictionary<string, bool> m_RegistryUrls = new Dictionary<string, bool>();
-
-        // a list of unique ids (could be specialUniqueId or packageId)
-        [SerializeField]
-        private List<string> m_SpecialInstallations = new List<string>();
-        public List<string> specialInstallations => m_SpecialInstallations;
-
-        private UpmPackageFactory m_PackageFactory = new UpmPackageFactory();
 
         [NonSerialized]
         private UpmCache m_UpmCache;
@@ -97,10 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             m_AddOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             m_RemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            m_EmbedOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-
-            m_PackageFactory.ResolveDependencies(upmCache, this, settingsProxy);
         }
 
         public virtual bool IsAnyExperimentalPackagesInUse()
@@ -120,64 +105,63 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_RegistryUrls[m_SerializedRegistryUrlsKeys[i]] = m_SerializedRegistryUrlsValues[i];
         }
 
-        public virtual bool isAddRemoveOrEmbedInProgress => (m_AddOperation?.isInProgress  ?? false) ||
-        (m_RemoveOperation?.isInProgress  ?? false) ||
-        (m_AddAndRemoveOperation?.isInProgress  ?? false) ||
-        (m_EmbedOperation?.isInProgress  ?? false);
+        public virtual bool isAddOrRemoveInProgress => m_AddOperation?.isInProgress == true ||
+            m_RemoveOperation?.isInProgress == true || m_AddAndRemoveOperation?.isInProgress == true;
 
         public virtual IEnumerable<string> packageIdsOrNamesInstalling
         {
             get
             {
                 if (m_AddOperation?.isInProgress == true)
-                    yield return m_AddOperation.packageId;
-                if (m_EmbedOperation?.isInProgress == true)
-                    yield return m_EmbedOperation.packageName;
+                    yield return m_AddOperation.packageIdOrName;
                 if (m_AddAndRemoveOperation?.isInProgress == true)
                     foreach (var id in m_AddAndRemoveOperation.packageIdsToAdd)
                         yield return id;
             }
         }
 
-        public virtual bool IsEmbedInProgress(string packageName)
-        {
-            return (m_EmbedOperation?.isInProgress  ?? false) && m_EmbedOperation.packageName == packageName;
-        }
-
         public virtual bool IsRemoveInProgress(string packageName)
         {
-            return ((m_RemoveOperation?.isInProgress  ?? false) && m_RemoveOperation.packageName == packageName) ||
-                ((m_AddAndRemoveOperation?.isInProgress  ?? false) && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
+            return (m_RemoveOperation?.isInProgress == true && m_RemoveOperation.packageName == packageName) ||
+                (m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
         }
 
         public virtual bool IsAddInProgress(string packageId)
         {
-            return ((m_AddOperation?.isInProgress  ?? false) && m_AddOperation.packageId == packageId) ||
-                ((m_AddAndRemoveOperation?.isInProgress  ?? false) && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId));
+            return (m_AddOperation?.isInProgress == true && m_AddOperation.packageIdOrName == packageId) ||
+                (m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId));
         }
 
         public virtual void AddById(string packageId)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
-            var packageName = packageId.Split(new[] { '@' }, 2)[0];
-            addOperation.Add(packageId, m_UpmCache.GetProductIdByName(packageName));
+            addOperation.Add(packageId);
             SetupAddOperation();
         }
 
         private void SetupAddOperation()
         {
-            addOperation.onProcessResult += (request) => OnProcessAddResult(addOperation, request);
+            onPackagesProgressChange?.Invoke(new[] { (addOperation.packageName, PackageProgress.Installing) });
+
+            addOperation.onProcessResult += OnProcessAddResult;
+            addOperation.onOperationError += (_, error) => onPackageOperationError?.Invoke(addOperation.packageName, error);
+            addOperation.onOperationFinalized += (_) =>
+                onPackagesProgressChange?.Invoke(new[] { (addOperation.packageName, PackageProgress.None) });
+
             addOperation.logErrorInConsole = true;
             onAddOperation?.Invoke(addOperation);
         }
 
-        private void OnProcessAddResult(IOperation operation, Request<PackageInfo> request)
+        private void OnProcessAddResult(Request<PackageInfo> request)
         {
             var packageInfo = request.Result;
-            var specialUniqueId = (operation as UpmAddOperation)?.specialUniqueId;
-
-            m_UpmCache.SetInstalledPackageInfo(packageInfo, !string.IsNullOrEmpty(specialUniqueId));
+            var installedInfoUpdated = m_UpmCache.SetInstalledPackageInfo(packageInfo, addOperation.packageName);
+            if (!installedInfoUpdated && packageInfo.source == PackageSource.Git)
+            {
+                Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), packageInfo.displayName));
+                return;
+            }
 
             PackageManagerExtensions.ExtensionCallback(() =>
             {
@@ -192,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual bool AddByPath(string path, out string tempPackageId)
         {
             tempPackageId = string.Empty;
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return false;
 
             try
@@ -223,7 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void AddByUrl(string url)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
 
             addOperation.AddByUrlOrPath(url, PackageTag.Git);
@@ -232,7 +216,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void AddByIds(IEnumerable<string> versionIds)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
             addAndRemoveOperation.AddByIds(versionIds);
             SetupAddAndRemoveOperation();
@@ -240,7 +224,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void RemoveByNames(IEnumerable<string> packagesNames)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
             addAndRemoveOperation.RemoveByNames(packagesNames);
             SetupAddAndRemoveOperation();
@@ -248,7 +232,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void AddAndResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
             addAndRemoveOperation.AddAndResetDependencies(packageId, dependencyPackagesNames);
             SetupAddAndRemoveOperation();
@@ -256,7 +240,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void ResetDependencies(string packageId, IEnumerable<string> dependencyPackagesNames)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
             addAndRemoveOperation.ResetDependencies(packageId, dependencyPackagesNames);
             SetupAddAndRemoveOperation();
@@ -264,9 +248,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetupAddAndRemoveOperation()
         {
+            var progressUpdates = addAndRemoveOperation.packageIdsToReset.Select(idOrName => (idOrName, PackageProgress.Resetting))
+                .Concat(addAndRemoveOperation.packageIdsToAdd.Select(idOrName => (idOrName, PackageProgress.Installing)))
+                .Concat(addAndRemoveOperation.packagesNamesToRemove.Select(name => (name, PackageProgress.Removing)));
+            onPackagesProgressChange?.Invoke(progressUpdates);
+
             addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
+            addAndRemoveOperation.onOperationError += (_, error) =>
+            {
+                // For now we only handle addAndRemove operation error when there's a primary `packageName` for the operation
+                // This indicates that this operation is likely related to resetting a specific package.
+                // For all other cases, since PAK team only provide one error message for all packages, we don't know which package
+                // to attach the operation error to, so we don't do any extra handling other than logging the error in the console.
+                // And we'll need to discuss with the PAK team if we want to properly handle error messaging in the UI.
+                var packageName = addAndRemoveOperation.packageName;
+                if (!string.IsNullOrEmpty(packageName))
+                    onPackageOperationError?.Invoke(packageName, error);
+            };
+            addAndRemoveOperation.onOperationFinalized += (_) =>
+            {
+                var allIdOrNames = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packageIdsToReset).Concat(addAndRemoveOperation.packagesNamesToRemove);
+                onPackagesProgressChange?.Invoke(allIdOrNames.Select(idOrName => (idOrName, PackageProgress.None)));
+            };
             addAndRemoveOperation.logErrorInConsole = true;
-            onAddAndRemoveOperation?.Invoke(addAndRemoveOperation);
         }
 
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
@@ -311,32 +315,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.SetInstalledPackageInfos(request.Result, listOperation.lastSuccessTimestamp);
         }
 
-        public virtual void EmbedByName(string packageName)
-        {
-            if (isAddRemoveOrEmbedInProgress)
-                return;
-            embedOperation.Embed(packageName, m_UpmCache.GetProductIdByName(packageName));
-            SetupEmbedOperation();
-        }
-
-        private void SetupEmbedOperation()
-        {
-            embedOperation.onProcessResult += (request) => OnProcessAddResult(embedOperation, request);
-            embedOperation.logErrorInConsole = true;
-            onEmbedOperation?.Invoke(embedOperation);
-        }
-
         public virtual void RemoveByName(string packageName)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
-            removeOperation.Remove(packageName, m_UpmCache.GetProductIdByName(packageName));
+            removeOperation.Remove(packageName);
             SetupRemoveOperation();
         }
 
         public virtual void RemoveEmbeddedByName(string packageName)
         {
-            if (isAddRemoveOrEmbedInProgress)
+            if (isAddOrRemoveInProgress)
                 return;
 
             var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
@@ -359,9 +348,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetupRemoveOperation()
         {
+            onPackagesProgressChange?.Invoke(new[] { (removeOperation.packageName, progress: PackageProgress.Removing) });
+
             removeOperation.onProcessResult += OnProcessRemoveResult;
+            removeOperation.onOperationError += (_, error) => onPackageOperationError?.Invoke(removeOperation.packageName, error);
+            removeOperation.onOperationFinalized += (_) =>
+                onPackagesProgressChange?.Invoke(new[] { (removeOperation.packageName, progress: PackageProgress.None) });
+
             removeOperation.logErrorInConsole = true;
-            onRemoveOperation?.Invoke(removeOperation);
         }
 
         private void OnProcessRemoveResult(RemoveRequest request)
@@ -415,7 +409,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
             var operation = new UpmSearchOperation();
             operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            operation.Search(packageIdOrName, productId);
+            operation.Search(packageIdOrName);
             operation.onProcessResult += (requst) => OnProcessExtraFetchResult(requst, productId);
             operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
             m_ExtraFetchOperations[packageIdOrName] = operation;
@@ -471,12 +465,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_RemoveOperation.RestoreProgress();
             }
 
-            if (m_EmbedOperation?.isInProgress ?? false)
-            {
-                SetupEmbedOperation();
-                m_EmbedOperation.RestoreProgress();
-            }
-
             if (m_AddAndRemoveOperation?.isInProgress ?? false)
             {
                 SetupAddAndRemoveOperation();
@@ -495,13 +483,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            m_PackageFactory.OnEnable();
             RestoreInProgressOperations();
         }
 
         public void OnDisable()
         {
-            m_PackageFactory.OnDisable();
         }
 
         public virtual void ClearCache()
@@ -564,88 +550,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             operation = new T();
             operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             return operation;
-        }
-
-        internal class UpmPackageFactory
-        {
-            [NonSerialized]
-            private UpmCache m_UpmCache;
-            [NonSerialized]
-            private UpmClient m_UpmClient;
-            [NonSerialized]
-            private PackageManagerProjectSettingsProxy m_SettingsProxy;
-            public void ResolveDependencies(UpmCache upmCache, UpmClient upmClient, PackageManagerProjectSettingsProxy settingsProxy)
-            {
-                m_UpmCache = upmCache;
-                m_UpmClient = upmClient;
-                m_SettingsProxy = settingsProxy;
-            }
-
-            public void OnEnable()
-            {
-                m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
-                m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
-                m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
-                m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
-            }
-
-            public void OnDisable()
-            {
-                m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
-                m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
-                m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
-                m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
-            }
-
-            private void OnExtraPackageInfoFetched(PackageInfo packageInfo)
-            {
-                // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
-                var productId = packageInfo.assetStore?.productId;
-                if (string.IsNullOrEmpty(productId) && m_UpmCache.GetInstalledPackageInfo(packageInfo.name)?.packageId != packageInfo.packageId)
-                    GeneratePackagesAndTriggerChangeEvent(new[] { packageInfo.name });
-            }
-
-            public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames)
-            {
-                if (packageNames?.Any() != true)
-                    return;
-
-                var updatedPackages = new List<UpmPackage>();
-                var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
-                var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
-                foreach (var packageName in packageNames)
-                {
-                    // Upm packages with product ids are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
-                    if (!string.IsNullOrEmpty(m_UpmCache.GetProductIdByName(packageName)))
-                        continue;
-                    var installedInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
-                    var searchInfo = m_UpmCache.GetSearchPackageInfo(packageName);
-                    if (installedInfo == null && searchInfo == null)
-                        updatedPackages.Add(new UpmPackage(packageName, false, new UpmVersionList()));
-                    else
-                    {
-                        var isUnityPackage = m_UpmClient.IsUnityPackage(searchInfo ?? installedInfo);
-                        var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                        var versionList = new UpmVersionList(searchInfo, installedInfo, isUnityPackage, extraVersions);
-                        var filteredVersionList = LifecycleVersonsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
-                        updatedPackages.Add(new UpmPackage(packageName, searchInfo != null, filteredVersionList));
-                    }
-                }
-
-                if (updatedPackages.Any())
-                    m_UpmClient.onPackagesChanged?.Invoke(updatedPackages.Cast<IPackage>());
-            }
-
-            private void OnPackageInfosUpdated(IEnumerable<PackageInfo> packageInfos)
-            {
-                GeneratePackagesAndTriggerChangeEvent(packageInfos.Select(p => p.name));
-            }
-
-            private void OnShowPreReleasePackagesesOrSeeAllVersionsChanged(bool _)
-            {
-                var allPackageNames = m_UpmCache.installedPackageInfos.Concat(m_UpmCache.searchPackageInfos).Select(p => p.name).ToHashSet();
-                GeneratePackagesAndTriggerChangeEvent(allPackageNames);
-            }
         }
     }
 }

@@ -57,7 +57,14 @@ namespace UnityEditor
             if (m_PreviewWindow != null)
                 m_PreviewWindow.Close();
             if (m_Tracker != null && !m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
-                m_Tracker.Destroy();
+            {
+                // Ensure that m_Tracker is null before calling Destroy(), as a callback could be made to redraw the
+                // InspectorWindow, and the native representation of the tracker will already be gone
+                var trackerToDestroy = m_Tracker;
+                m_Tracker = null;
+                trackerToDestroy.Destroy();
+            }
+
             if (m_TrackerResetter != null)
             {
                 m_TrackerResetter.Dispose();

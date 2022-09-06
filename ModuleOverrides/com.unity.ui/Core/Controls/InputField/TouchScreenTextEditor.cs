@@ -116,7 +116,7 @@ namespace UnityEngine.UIElements
                 }
 
                 // Scroll offset might need to be updated
-                edition.UpdateScrollOffset?.Invoke();
+                edition.UpdateScrollOffset?.Invoke(false);
                 evt.StopPropagation();
             }
         }

@@ -95,6 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual SemVersion? supportedVersion => null;
 
         public abstract string uniqueId { get; }
+        public abstract string packageId { get; }
         public abstract string category { get; }
         public abstract string author { get; }
         public abstract bool isInstalled { get; }

@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ResourceLoader m_ResourceLoader;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private SelectionProxy m_Selection;
@@ -32,6 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
+            m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_Selection = container.Resolve<SelectionProxy>();
             m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
@@ -65,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_TabView.AddTab(new PackageDetailsDescriptionTab(m_ResourceLoader, m_PackageManagerPrefs));
             m_TabView.AddTab(new PackageDetailsOverviewTab(m_ResourceLoader));
             m_TabView.AddTab(new PackageDetailsReleasesTab());
-            m_TabView.AddTab(new PackageDetailsVersionsTab(m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager, m_SettingsProxy, m_UpmCache, m_IOProxy));
+            m_TabView.AddTab(new PackageDetailsVersionsTab(m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_SettingsProxy, m_UpmCache, m_IOProxy));
             m_TabView.AddTab(new PackageDetailsDependenciesTab(m_ResourceLoader, m_PackageDatabase));
             m_TabView.AddTab(new FeatureDependenciesTab(m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_SettingsProxy, m_Application));
             m_TabView.AddTab(new PackageDetailsSamplesTab(m_ResourceLoader, m_PackageDatabase, m_Selection, m_AssetDatabase, m_Application, m_IOProxy));

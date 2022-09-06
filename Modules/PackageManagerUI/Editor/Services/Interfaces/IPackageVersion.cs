@@ -22,6 +22,8 @@ namespace UnityEditor.PackageManager.UI
 
         string uniqueId { get; }
 
+        string packageId { get; }
+
         string packageUniqueId { get; }
 
         IPackage package { get; }

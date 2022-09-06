@@ -21,6 +21,8 @@ namespace UnityEditor
         SerializedProperty  m_WrapW;
         SerializedProperty  m_StreamingMipmaps;
         SerializedProperty  m_StreamingMipmapsPriority;
+        SerializedProperty m_IgnoreMipmapLimit;
+        SerializedProperty m_MipmapLimitGroupName;
 
         internal class Styles
         {
@@ -51,6 +53,8 @@ namespace UnityEditor
             m_WrapW         = serializedObject.FindProperty("m_TextureSettings.m_WrapW");
             m_StreamingMipmaps         = serializedObject.FindProperty("m_StreamingMipmaps");
             m_StreamingMipmapsPriority = serializedObject.FindProperty("m_StreamingMipmapsPriority");
+            m_IgnoreMipmapLimit        = serializedObject.FindProperty("m_IgnoreMipmapLimit");
+            m_MipmapLimitGroupName     = serializedObject.FindProperty("m_MipmapLimitGroupName");
         }
 
         // alas it looks impossible to share code so we copy paste from TextureImporterInspector.TextureSettingsGUI()
@@ -107,6 +111,9 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_StreamingMipmapsPriority, Styles.streamingMipmapsPriority);
                 EditorGUI.indentLevel--;
             }
+
+            TextureImporterInspector.DoMipmapLimitsGUI(m_IgnoreMipmapLimit, m_MipmapLimitGroupName);
+
             serializedObject.ApplyModifiedProperties();
             ApplyRevertGUI();
         }

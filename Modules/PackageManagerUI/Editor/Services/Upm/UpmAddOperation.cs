@@ -14,49 +14,36 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_SpecialUniqueId = string.Empty;
 
-        // the special unique id is used when neither package unique id or version unique id applies
-        // e.g. git url, tar ball path that does not contain any package name or version
-        public virtual string specialUniqueId => m_SpecialUniqueId;
-
         [SerializeField]
         private PackageTag m_PackageTag = PackageTag.None;
         public virtual PackageTag packageTag => m_PackageTag;
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
-        protected override string operationErrorMessage
-        {
-            get
-            {
-                var packageId = string.IsNullOrEmpty(this.packageId) ? specialUniqueId : this.packageId;
-                return string.Format(L10n.Tr("Error adding package: {0}."), packageId);
-            }
-        }
+        protected override string operationErrorMessage => string.Format(L10n.Tr("Error adding package: {0}."), packageIdOrName);
 
-        public void Add(string packageId, string packageUniqueId = null)
+        public override string packageIdOrName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageIdOrName : m_SpecialUniqueId;
+        public override string packageName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageName : m_SpecialUniqueId;
+
+        public void Add(string packageIdOrName)
         {
-            m_PackageId = packageId;
-            m_PackageName = string.Empty;
+            m_PackageIdOrName = packageIdOrName;
             m_SpecialUniqueId = string.Empty;
-            m_PackageUniqueId = packageUniqueId ?? packageName;
             m_PackageTag = PackageTag.None;
             Start();
         }
 
         public void AddByUrlOrPath(string urlOrPath, PackageTag tag)
         {
+            m_PackageIdOrName = urlOrPath;
             m_SpecialUniqueId = urlOrPath;
-            m_PackageId = string.Empty;
-            m_PackageName = string.Empty;
-            m_PackageUniqueId = string.Empty;
             m_PackageTag = tag;
             Start();
         }
 
         protected override AddRequest CreateRequest()
         {
-            var uniqueId = string.IsNullOrEmpty(specialUniqueId) ? packageId : specialUniqueId;
-            return m_ClientProxy.Add(uniqueId);
+            return m_ClientProxy.Add(packageIdOrName);
         }
     }
 }

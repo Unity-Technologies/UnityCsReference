@@ -22,7 +22,10 @@ namespace UnityEngine
     {
         protected Texture() {}
 
-        [NativeProperty("GlobalMasterTextureLimit")] extern public static int masterTextureLimit { get; set; }
+        [Obsolete("masterTextureLimit has been deprecated. Use globalMipmapLimit instead (UnityUpgradable) -> globalMipmapLimit", false)]
+        [NativeProperty("ActiveGlobalMipmapLimit")] extern public static int masterTextureLimit { get; set; }
+        [Obsolete("globalMipmapLimit is not supported. Use QualitySettings.globalTextureMipmapLimit or Mipmap Limit Groups instead.", false)]
+        [NativeProperty("ActiveGlobalMipmapLimit")] extern public static int globalMipmapLimit { get; set; }
 
         extern public int mipmapCount { [NativeName("GetMipmapCount")] get; }
 
@@ -184,6 +187,16 @@ namespace UnityEngine
     {
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
+        extern public bool ignoreMipmapLimit {
+            [NativeName("IgnoreMipmapLimit")] get;
+            [NativeName("SetIgnoreMipmapLimitAndReload")] set;
+        }
+
+        extern public string mipmapLimitGroup
+        {
+            [NativeName("GetMipmapLimitGroupName")] get;
+        }
+
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D redTexture { get; }
@@ -194,10 +207,10 @@ namespace UnityEngine
         extern public void Compress(bool highQuality);
 
         [FreeFunction("Texture2DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName);
+        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName)
         {
-            if (!Internal_CreateImpl(mono, w, h, mipCount, format, flags, nativeTex))
+            if (!Internal_CreateImpl(mono, w, h, mipCount, format, flags, nativeTex, mipmapLimitGroupName))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 

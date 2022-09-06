@@ -3343,7 +3343,8 @@ namespace UnityEditor
                     if (DragAndDrop.HasHandler(DragAndDropWindowTarget.sceneView))
                     {
                         PickObject(ref pickedObject, ref parentTransform);
-                        DragAndDrop.visualMode = DragAndDrop.DropOnSceneWindow(pickedObject, pivot, Event.current.mousePosition, parentTransform, isPerform);
+                        Vector3 worldPosition = HandleUtility.PlaceObject(Event.current.mousePosition, out Vector3 placedPosition, out _) ? placedPosition : pivot;
+                        DragAndDrop.visualMode = DragAndDrop.DropOnSceneWindow(pickedObject, worldPosition, Event.current.mousePosition, parentTransform, isPerform);
                         dropHandled = DragAndDrop.visualMode != DragAndDropVisualMode.None;
                     }
 
@@ -3362,7 +3363,9 @@ namespace UnityEditor
                     {
                         if (pickedObject == null || parentTransform == null)
                             PickObject(ref pickedObject, ref parentTransform);
-                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(pickedObject, pivot, Event.current.mousePosition, parentTransform, isPerform);
+
+                        Vector3 worldPosition = HandleUtility.PlaceObject(Event.current.mousePosition, out Vector3 placedPosition, out _) ? placedPosition : pivot;
+                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(pickedObject, worldPosition, Event.current.mousePosition, parentTransform, isPerform);
                     }
 
                     evt.Use();

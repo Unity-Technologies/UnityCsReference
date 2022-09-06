@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         PackageState state { get; }
 
-        PackageProgress progress { get; set; }
+        PackageProgress progress { get; }
 
         IEnumerable<string> labels { get; }
 
@@ -57,12 +57,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool hasEntitlements { get; }
 
         bool hasEntitlementsError { get; }
-
-        // Use `PackageDatabase.AddPackageError` instead if you want to trigger `onPackagesChanged` events
-        void AddError(UIError error);
-
-        // Use `PackageDatabase.ClearPackageErrors` instead if you want to trigger `onPackagesChanged` events
-        void ClearErrors(Predicate<UIError> match = null);
 
         DateTime? firstPublishedDate { get; }
 

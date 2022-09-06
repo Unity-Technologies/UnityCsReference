@@ -3605,16 +3605,35 @@ namespace UnityEditor
             return true;
         }
 
-        internal static event Func<UnityEngine.Object, bool> allowRecordingPrefabPropertyOverridesFor;
+        private static event Func<UnityEngine.Object, bool> m_AllowRecordingPrefabPropertyOverridesFor;
+
+        internal static event Func<UnityEngine.Object, bool> allowRecordingPrefabPropertyOverridesFor
+        {
+            add
+            {
+                m_AllowRecordingPrefabPropertyOverridesFor += value;
+                SetHasSubscribersToAllowRecordingPrefabPropertyOverrides(true);
+            }
+            remove
+            {
+                m_AllowRecordingPrefabPropertyOverridesFor -= value;
+                if (m_AllowRecordingPrefabPropertyOverridesFor == null)
+                    SetHasSubscribersToAllowRecordingPrefabPropertyOverrides(false);
+            }
+        }
 
 
         [RequiredByNativeCode]
         static bool AllowRecordingPrefabPropertyOverridesFor(UnityEngine.Object componentOrGameObject)
         {
-            if (allowRecordingPrefabPropertyOverridesFor == null)
+            if (m_AllowRecordingPrefabPropertyOverridesFor == null)
+            {
+                Debug.LogError("We should not be calling into managed from native if we have no subscribers.");
                 return true;
+            }
 
-            foreach (Func<UnityEngine.Object, bool> deleg in allowRecordingPrefabPropertyOverridesFor.GetInvocationList())
+
+            foreach (Func<UnityEngine.Object, bool> deleg in m_AllowRecordingPrefabPropertyOverridesFor.GetInvocationList())
             {
                 if (deleg(componentOrGameObject) == false)
                     return false;

@@ -175,7 +175,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove)
         {
-            var numOldSelections = m_Selection.Count;
             if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove))
                 return false;
 

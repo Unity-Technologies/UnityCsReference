@@ -131,17 +131,17 @@ namespace UnityEditor
             return new GUIContent(text, image, tooltip);
         }
 
-        internal static extern void GetDrawInstructions(List<IMGUIDrawInstruction> drawInstructions);
+        internal static extern void GetDrawInstructions(List<IMGUIDrawInstruction> drawInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetClipInstructions(List<IMGUIClipInstruction> clipInstructions);
+        internal static extern void GetClipInstructions(List<IMGUIClipInstruction> clipInstructions, bool includeStackTraces = true);
 
         internal static extern void GetNamedControlInstructions(List<IMGUINamedControlInstruction> namedControlInstructions);
 
-        internal static extern void GetPropertyInstructions(List<IMGUIPropertyInstruction> namedControlInstructions);
+        internal static extern void GetPropertyInstructions(List<IMGUIPropertyInstruction> namedControlInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetLayoutInstructions(List<IMGUILayoutInstruction> layoutInstructions);
+        internal static extern void GetLayoutInstructions(List<IMGUILayoutInstruction> layoutInstructions, bool includeStackTraces = true);
 
-        internal static extern void GetUnifiedInstructions(List<IMGUIInstruction> layoutInstructions);
+        internal static extern void GetUnifiedInstructions(List<IMGUIInstruction> layoutInstructions, bool includeStackTraces = true);
 
         [FreeFunction("GetGUIDebuggerManager().ClearInstructions")]
         internal static extern void ClearInstructions();

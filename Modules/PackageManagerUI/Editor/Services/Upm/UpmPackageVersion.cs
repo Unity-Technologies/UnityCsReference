@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private string m_PackageId;
+        public override string packageId => m_PackageId;
         public override string uniqueId => m_PackageId;
 
         [SerializeField]

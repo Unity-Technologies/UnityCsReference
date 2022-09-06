@@ -14,15 +14,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_Application;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
+        private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         public PackageRemoveButton(ApplicationProxy applicationProxy,
                                    PackageManagerPrefs packageManagerPrefs,
                                    PackageDatabase packageDatabase,
+                                   PackageOperationDispatcher operationDispatcher,
                                    PageManager pageManager)
         {
             m_Application = applicationProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
+            m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
         }
 
@@ -46,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (result == 2)
                 m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation = true;
 
-            m_PackageDatabase.Uninstall(versions.Select(v => v.package));
+            m_OperationDispatcher.Uninstall(versions.Select(v => v.package));
             PackageManagerWindowAnalytics.SendEvent("uninstall", packageIds: versions.Select(v => v.uniqueId));
             // After a bulk removal, we want to deselect them to avoid installing them back by accident.
             DeselectVersions(versions);
@@ -106,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PageManager.SetPackagesUserUnlockedState(new List<string> { version.packageUniqueId }, false);
 
             // Remove
-            m_PackageDatabase.Uninstall(version.package);
+            m_OperationDispatcher.Uninstall(version.package);
             PackageManagerWindowAnalytics.SendEvent("uninstall", version?.uniqueId);
             return true;
         }
@@ -149,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 string.Format(L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details."), version.package.GetDescriptor()));
         }
 
-        protected override bool IsInProgress(IPackageVersion version) => m_PackageDatabase.IsUninstallInProgress(version.package);
+        protected override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsUninstallInProgress(version.package);
 
         private void DeselectVersions(IList<IPackageVersion> versions)
         {

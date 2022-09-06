@@ -572,7 +572,7 @@ namespace UnityEngine
             // All usage of TextureCreationFlags should remain undocumented for the time being.
             // This will hopefully be documented as part of the push to move GraphicsFormat out of Experimental.
 
-            // keep this in sync with the TextureCreationFlags enum in Texture.h
+            // keep this in sync with the TextureCreationFlags enum in Format.h
             [Flags]
             public enum TextureCreationFlags
             {
@@ -587,6 +587,7 @@ namespace UnityEngine
                 //IsNativeTexture = 1 << 8, // this is only used internally.
                 //DontCheckGraphicsCaps = 1 << 9, // this is only used internally.
                 DontUploadUponCreate = 1 << 10,
+                IgnoreMipmapLimit = 1 << 11,
             }
 
             // Keep in sync with FormatUsage in Runtime/Graphics/Format.h
@@ -927,6 +928,13 @@ namespace UnityEngine
         [System.Obsolete("Enum member Local has been deprecated. Use TransformZ instead (UnityUpgradable) -> TransformZ", false)]
         Local = 1,
         TransformZ = 1,
+    }
+
+    // Keep in sync with MipmapLimitBiasMode in Runtime/Graphics/Texture.h
+    public enum TextureMipmapLimitBiasMode
+    {
+        OffsetGlobalLimit = 0,
+        OverrideGlobalLimit = 1,
     }
 } // namespace UnityEngine
 
@@ -1876,7 +1884,9 @@ namespace UnityEngine.Rendering
         UNITY_PRETRANSFORM_TO_DISPLAY_ORIENTATION,
         UNITY_ASTC_NORMALMAP_ENCODING,
         SHADER_API_GLES30,
-        UNITY_UNIFIED_SHADER_PRECISION_MODEL
+        UNITY_UNIFIED_SHADER_PRECISION_MODEL,
+        UNITY_PLATFORM_SUPPORTS_WAVE_32,
+        UNITY_PLATFORM_SUPPORTS_WAVE_64,
     }
 
     // Match VideoShadersMode on C++ side
@@ -2021,6 +2031,16 @@ namespace UnityEngine.Rendering
         OpenGLES31,
         OpenGLES31AEP,
         OpenGLES32
+    }
+
+    // Needs to be kept in sync with Runtime\GfxDevice\GfxDeviceTypes.h
+    [Flags]
+    public enum CustomMarkerCallbackFlags
+    {
+        CustomMarkerCallbackDefault = 0,
+
+        // control invalidation of state tracking done by the backend
+        CustomMarkerCallbackForceInvalidateStateTracking = 1 << 2
     }
 } // namespace UnityEngine.Rendering
 

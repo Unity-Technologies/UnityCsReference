@@ -12,6 +12,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [NativeHeader("Editor/Mono/GameObjectUtility.bindings.h")]
+    [NativeHeader("Editor/Src/CommandImplementation.h")]
     public sealed partial class GameObjectUtility
     {
         public static extern StaticEditorFlags GetStaticEditorFlags(GameObject go);
@@ -178,5 +179,44 @@ namespace UnityEditor
         {
             AnimatorUtility.DeoptimizeTransformHierarchy(go);
         }
+
+        public static GameObject[] DuplicateGameObjects(GameObject[] gameObjects)
+        {
+            if (gameObjects == null)
+                throw new System.ArgumentNullException("gameObjects array is null");
+
+            if (gameObjects.Length == 0)
+                return new GameObject[0];
+
+            foreach (GameObject go in gameObjects)
+            {
+                if (go == null)
+                    throw new System.ArgumentNullException("GameObject in gameObjects array is null");
+
+                if (EditorUtility.IsPersistent(go))
+                    throw new System.ArgumentException("Duplicating Assets is unsupported by this function. Use AssetDatabase.CopyAsset to duplicate Assets.");
+            }
+
+            return DuplicateGameObjects_Internal(gameObjects);
+        }
+
+        public static GameObject DuplicateGameObject(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new System.ArgumentNullException("gameObject is null");
+
+            if (EditorUtility.IsPersistent(gameObject))
+                throw new System.ArgumentException("Duplicating Assets is unsupported by this function. Use AssetDatabase.CopyAsset to duplicate Assets.");
+
+            var gameObjects = DuplicateGameObjects_Internal(new[] { gameObject });
+
+            if (gameObjects.Length != 0)
+                return gameObjects[0];
+            else
+                return null;
+        }
+
+        [NativeMethod("DuplicateGameObjects", IsFreeFunction = true)]
+        extern private static GameObject[] DuplicateGameObjects_Internal(GameObject[] gameObjects);
     }
 }

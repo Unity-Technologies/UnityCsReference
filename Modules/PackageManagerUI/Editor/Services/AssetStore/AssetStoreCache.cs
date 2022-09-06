@@ -63,11 +63,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private HttpClientFactory m_HttpClientFactory;
         [NonSerialized]
         private IOProxy m_IOProxy;
-        public void ResolveDependencies(ApplicationProxy application, AssetStoreUtils assetStoreUtils, HttpClientFactory httpClientFactory, IOProxy systemIOProxy)
+        [NonSerialized]
+        private UniqueIdMapper m_UniqueIdMapper;
+        public void ResolveDependencies(ApplicationProxy application,
+            AssetStoreUtils assetStoreUtils,
+            HttpClientFactory httpClientFactory,
+            IOProxy iOProxy,
+            UniqueIdMapper uniqueIdMapper)
         {
             m_Application = application;
             m_HttpClientFactory = httpClientFactory;
-            m_IOProxy = systemIOProxy;
+            m_IOProxy = iOProxy;
+            m_UniqueIdMapper = uniqueIdMapper;
 
             foreach (var productInfo in m_ProductInfos.Values)
                 productInfo.ResolveDependencies(assetStoreUtils);
@@ -235,6 +242,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var oldProductInfo = GetProductInfo(productInfo.id);
             m_ProductInfos[productInfo.id] = productInfo;
+            m_UniqueIdMapper.MapProductIdAndName(productInfo);
             if (!productInfo.Equals(oldProductInfo))
                 onProductInfoChanged?.Invoke(productInfo);
         }

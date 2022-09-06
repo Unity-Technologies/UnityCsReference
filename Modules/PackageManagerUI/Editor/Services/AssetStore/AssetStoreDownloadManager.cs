@@ -16,12 +16,18 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreDownloadManager : ISerializationCallbackReceiver
     {
-        public virtual event Action<IOperation, UIError> onDownloadError = delegate {};
-        public virtual event Action<IOperation> onDownloadFinalized = delegate {};
-        public virtual event Action<IOperation> onDownloadProgress = delegate {};
-        public virtual event Action<IOperation> onDownloadPaused = delegate {};
+        private const string k_TermsOfServicesURL = "https://assetstore.unity.com/account/term";
+
+        public virtual event Action<AssetStoreDownloadOperation, UIError> onDownloadError = delegate {};
+        public virtual event Action<AssetStoreDownloadOperation> onDownloadFinalized = delegate {};
+        public virtual event Action<AssetStoreDownloadOperation> onDownloadProgress = delegate {};
+        public virtual event Action<AssetStoreDownloadOperation> onDownloadStateChanged = delegate {};
+        public virtual event Action<string> onBeforeDownloadStart = delegate {};
 
         private Dictionary<string, AssetStoreDownloadOperation> m_DownloadOperations = new Dictionary<string, AssetStoreDownloadOperation>();
+
+        [SerializeField]
+        private bool m_TermsOfServiceAccepted = false;
 
         [SerializeField]
         private AssetStoreDownloadOperation[] m_SerializedDownloadOperations = new AssetStoreDownloadOperation[0];
@@ -134,20 +140,37 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_DownloadOperations.Values.Count(d => d.isInProgress);
         }
 
-        public virtual void Download(IPackage package)
+        private void Download(string productId)
         {
-            var packageId = package?.uniqueId;
-            if (string.IsNullOrEmpty(packageId))
+            if (string.IsNullOrEmpty(productId))
                 return;
 
-            var operation = GetDownloadOperation(packageId);
+            var operation = GetDownloadOperation(productId);
             if (operation?.isInProgress ?? false)
                 return;
 
-            var localInfo = m_AssetStoreCache.GetLocalInfo(packageId);
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy, packageId, localInfo?.packagePath);
+            onBeforeDownloadStart?.Invoke(productId);
+
+            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy, productId, localInfo?.packagePath);
             SetupDownloadOperation(operation);
             operation.Download(false);
+        }
+
+        public virtual bool Download(IEnumerable<string> productIds)
+        {
+            return CheckTermsOfServiceAgreement(
+                () =>
+                {
+                    foreach (var productId in productIds)
+                        Download(productId);
+                },
+                error =>
+                {
+                    // ToS error are not related to any specific package, and we don't really have a good place to
+                    // show the error in the UI. It is to be addressed in https://jira.unity3d.com/browse/PAX-1994.
+                    Debug.Log(error.message);
+                });
         }
 
         public virtual void ClearCache()
@@ -163,24 +186,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupDownloadOperation(AssetStoreDownloadOperation operation)
         {
             m_DownloadOperations[operation.packageUniqueId] = operation;
-            operation.onOperationError += (op, error) => onDownloadError?.Invoke(op, error);
-            operation.onOperationFinalized += OnDownloadFinalized;
-            operation.onOperationProgress += (op) => onDownloadProgress?.Invoke(op);
-            operation.onOperationPaused += (op) => onDownloadPaused?.Invoke(op);
+            operation.onOperationError += (_, error) => onDownloadError?.Invoke(operation, error);
+            operation.onOperationFinalized += (_) => OnDownloadFinalized(operation);
+            operation.onOperationProgress += (_) => onDownloadProgress?.Invoke(operation);
+            operation.onDownloadStateChanged += (_) => onDownloadStateChanged?.Invoke(operation);
         }
 
-        private void OnDownloadFinalized(IOperation operation)
+        private void OnDownloadFinalized(AssetStoreDownloadOperation operation)
         {
             onDownloadFinalized?.Invoke(operation);
 
-            var downloadOperation = operation as AssetStoreDownloadOperation;
-            if (downloadOperation == null)
-                return;
-
-            if (downloadOperation.state == DownloadState.Completed &&
-                !string.IsNullOrEmpty(downloadOperation.packageOldPath) && downloadOperation.packageNewPath != downloadOperation.packageOldPath)
+            if (operation.state == DownloadState.Completed &&
+                !string.IsNullOrEmpty(operation.packageOldPath) && operation.packageNewPath != operation.packageOldPath)
             {
-                m_IOProxy.DeleteFile(downloadOperation.packageOldPath);
+                m_IOProxy.DeleteFile(operation.packageOldPath);
             }
         }
 
@@ -264,6 +283,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
+            m_TermsOfServiceAccepted = false;
             if (loggedIn)
             {
                 RegisterDownloadDelegate();
@@ -287,6 +307,34 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 AbortAllDownloads();
             }
+        }
+
+        // Returns true if Terms of Service agreement has already been accepted
+        private bool CheckTermsOfServiceAgreement(Action onTosAccepted, Action<UIError> onError)
+        {
+            if (!m_TermsOfServiceAccepted)
+            {
+                m_AssetStoreRestAPI.CheckTermsAndConditions(tosAccepted =>
+                {
+                    m_TermsOfServiceAccepted = tosAccepted;
+                    if (m_TermsOfServiceAccepted)
+                        onTosAccepted?.Invoke();
+                    else
+                    {
+                        var result = m_Application.DisplayDialog("acceptToS",
+                            L10n.Tr("Accepting Terms of Service and EULA"),
+                            L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
+                            L10n.Tr("Read and accept"), L10n.Tr("Close"));
+
+                        if (result)
+                            m_UnityConnect.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);
+                    }
+
+                }, error => onError?.Invoke(error));
+                return false;
+            }
+            onTosAccepted?.Invoke();
+            return true;
         }
 
         public void OnBeforeSerialize()
