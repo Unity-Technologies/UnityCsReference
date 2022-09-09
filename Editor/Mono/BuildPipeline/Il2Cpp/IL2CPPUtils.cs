@@ -109,7 +109,7 @@ namespace UnityEditorInternal
             switch (target)
             {
                 case BuildTarget.StandaloneLinux64:
-                case BuildTarget.CloudRendering:
+                case BuildTarget.LinuxHeadlessSimulation:
                     targetPlatform = "linux";
                     targetArch = "x86_64";
                     return true;

@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
         public ListViewDraggerAnimated(BaseVerticalCollectionView listView)
             : base(listView) {}
 
-        protected override StartDragArgs StartDrag(Vector3 pointerPosition)
+        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition)
         {
             targetListView.ClearSelection();
 
@@ -63,7 +63,7 @@ namespace UnityEngine.UIElements
             return dragAndDropController.SetupDragAndDrop(new[] { m_Item.index }, true);
         }
 
-        protected override DragVisualMode UpdateDrag(Vector3 pointerPosition)
+        protected internal override DragVisualMode UpdateDrag(Vector3 pointerPosition)
         {
             if (m_Item == null)
                 return DragVisualMode.Rejected;
@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
             element.animator.KeepAlive();
         }
 
-        protected override void OnDrop(Vector3 pointerPosition)
+        protected internal override void OnDrop(Vector3 pointerPosition)
         {
             if (m_Item != null && targetListView.binding == null)
             {

@@ -18,6 +18,7 @@ using UnityEngineInternal;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
@@ -1466,6 +1467,58 @@ namespace UnityEditor
         internal static Rect DragZoneRect(Rect position, bool hasLabel = true)
         {
             return new Rect(position.x, position.y, hasLabel ? labelWidth : 0, position.height);
+        }
+
+        internal static void MoveArrayExpandedState(SerializedProperty elements, int oldActiveElement, int newActiveElement)
+        {
+            SerializedProperty prop1 = elements.GetArrayElementAtIndex(oldActiveElement);
+            SerializedProperty prop2;
+            int depth;
+            List<bool> tempIsExpanded = ListPool<bool>.Get();
+            var tempProp = prop1;
+            tempIsExpanded.Add(prop1.isExpanded);
+            bool clearGradientCache = false;
+            int next = (oldActiveElement < newActiveElement) ? 1 : -1;
+
+            for (int i = oldActiveElement + next;
+                 (oldActiveElement < newActiveElement) ? i <= newActiveElement : i >= newActiveElement;
+                 i += next)
+            {
+                prop2 = elements.GetArrayElementAtIndex(i);
+
+                var cprop1 = prop1.Copy();
+                var cprop2 = prop2.Copy();
+                depth = Math.Min(cprop1.depth, cprop2.depth);
+                while (cprop1.NextVisible(true) && cprop1.depth > depth && cprop2.NextVisible(true) && cprop2.depth > depth)
+                {
+                    if (cprop1.hasVisibleChildren && cprop2.hasVisibleChildren)
+                    {
+                        tempIsExpanded.Add(cprop1.isExpanded);
+                        cprop1.isExpanded = cprop2.isExpanded;
+                    }
+                }
+
+                prop1.isExpanded = prop2.isExpanded;
+                if (prop1.propertyType == SerializedPropertyType.Gradient)
+                    clearGradientCache = true;
+                prop1 = prop2;
+            }
+
+            prop1.isExpanded = tempIsExpanded[0];
+            depth = Math.Min(prop1.depth, tempProp.depth);
+            int k = 1;
+            while (prop1.NextVisible(true) && prop1.depth > depth && tempProp.NextVisible(true) && tempProp.depth > depth)
+            {
+                if (prop1.hasVisibleChildren && tempProp.hasVisibleChildren && tempIsExpanded.Count > k)
+                {
+                    prop1.isExpanded = tempIsExpanded[k];
+                    k++;
+                }
+            }
+            ListPool<bool>.Release(tempIsExpanded);
+
+            if (clearGradientCache)
+                GradientPreviewCache.ClearCache();
         }
 
         internal static void SetBoldDefaultFont(bool isBold)

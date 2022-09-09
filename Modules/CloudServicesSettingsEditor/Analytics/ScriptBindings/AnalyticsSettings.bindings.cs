@@ -25,6 +25,14 @@ namespace UnityEditor.Analytics
             get { return hasCoreStatsInBuild; }
         }
 
+        public extern static bool packageRequiringCoreStatsPresent
+        {
+            [NativeMethod("GetPackageRequiringCoreStatsPresent")]
+            get;
+            [NativeMethod("SetPackageRequiringCoreStatsPresent")]
+            set;
+        }
+
         [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
         public static extern string eventUrl { get; set; }
 
@@ -54,7 +62,10 @@ namespace UnityEditor.Analytics
             {
                 RequireInBuildDelegate func = (RequireInBuildDelegate)invokeList[i];
                 if (func())
+                {
+                    packageRequiringCoreStatsPresent = true;
                     return true;
+                }
             }
             return false;
         }

@@ -1012,13 +1012,13 @@ namespace UnityEngine.UIElements
         void UpdateHoverPseudoState()
         {
             // An element has the hover pseudoState if and only if it has at least one contained pointer which is
-            // captured by itself or no element.
+            // captured by itself, one if its descendents or no element.
 
             // With multi-finger touch events, there can be multiple unrelated elements hovered at once, or a single
             // element hovered by multiple fingers. In that case, the hover pseudoState for a given element will match
             // a logical OR of the hover state of each finger on that element.
 
-            if (containedPointerIds == 0)
+            if (containedPointerIds == 0 || panel == null)
             {
                 pseudoStates &= ~PseudoStates.Hover;
                 return;
@@ -1029,8 +1029,8 @@ namespace UnityEngine.UIElements
             {
                 if ((containedPointerIds & (1 << pointerId)) != 0)
                 {
-                    var capturingElement = panel?.GetCapturingElement(pointerId);
-                    if (capturingElement == null || capturingElement == this)
+                    var capturingElement = panel.GetCapturingElement(pointerId);
+                    if (IsPartOfCapturedChain(this, capturingElement))
                     {
                         hovered = true;
                         break;
@@ -1042,6 +1042,19 @@ namespace UnityEngine.UIElements
                 pseudoStates |= PseudoStates.Hover;
             else
                 pseudoStates &= ~PseudoStates.Hover;
+        }
+
+        static bool IsPartOfCapturedChain(VisualElement self, in IEventHandler capturingElement)
+        {
+            if (self == null)
+                return false;
+            if (capturingElement == null)
+                return true;
+            if (capturingElement == self)
+                return true;
+
+            // Check if captured element is descendant of self.
+            return self.Contains(capturingElement as VisualElement);
         }
 
         /// <summary>
@@ -1190,7 +1203,9 @@ namespace UnityEngine.UIElements
                      evt.eventTypeId == PointerCaptureOutEvent.TypeId())
             {
                 // Pointer capture changes can influence if an element is hovered or not.
-                UpdateHoverPseudoState();
+                // Update the entire ancestor chain.
+                for (var ve = this; ve != null; ve = ve.parent)
+                    ve.UpdateHoverPseudoState();
 
                 // Make sure to also reevaluate the hover state of the elements under pointer.
                 var elementUnderPointer =

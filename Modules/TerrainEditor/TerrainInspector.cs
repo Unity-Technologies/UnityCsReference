@@ -1626,14 +1626,10 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(styles.importRaw))
-            {
-                TerrainMenus.ImportRaw();
-            }
-            if (GUILayout.Button(styles.exportRaw))
-            {
-                TerrainMenus.ExportHeightmapRaw();
-            }
+            // calling functions in the middle of GUI rendering code can cause errors with GUI clips popping
+            // so set it to a bool and call the function at the end
+            bool importRaw = GUILayout.Button(styles.importRaw);
+            bool exportRaw = GUILayout.Button(styles.exportRaw);
             GUILayout.EndHorizontal();
 
             // alphamap resolution
@@ -1657,6 +1653,10 @@ namespace UnityEditor
             --EditorGUI.indentLevel;
 
             EditorGUILayout.EndFoldoutHeaderGroup();
+
+            // calling the appropriate functions at the end
+            if (importRaw) TerrainMenus.ImportRaw();
+            if (exportRaw) TerrainMenus.ExportHeightmapRaw();
         }
 
         private bool m_ShowResolution = true;

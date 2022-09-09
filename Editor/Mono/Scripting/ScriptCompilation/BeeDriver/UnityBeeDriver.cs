@@ -147,6 +147,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 StdOutMode stdoutMode,
                 RunnableProgram beeBackendProgram = null)
         {
+            // ensure ilpp server is running before staring the backend in defered validation mode.
+            // getting the property value enforces that as it makes sure the server is running and answering a ping request
+            var ilppNamedPipeOrSocket = ilpp.EnsureRunningAndGetSocketOrNamedPipe();
+
             NPath dagDir = dagDirectory ?? "Library/Bee";
             RecreateDagDirectoryIfNeeded(dagDir);
             var performingPlayerBuild = UnityBeeDriverProfilerSession.PerformingPlayerBuild;
@@ -183,7 +187,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 AdvancedLicense = PlayerSettings.advancedLicense,
                 Batchmode = InternalEditorUtility.inBatchMode,
                 EmitDataForBeeWhy = (Debug.GetDiagnosticSwitch("EmitDataForBeeWhy").value as bool?)?? false,
-                        NamedPipeOrUnixSocket = ilpp.NamedPipeOrUnixSocket,
+                        NamedPipeOrUnixSocket = ilppNamedPipeOrSocket,
                     }
                 }
             };

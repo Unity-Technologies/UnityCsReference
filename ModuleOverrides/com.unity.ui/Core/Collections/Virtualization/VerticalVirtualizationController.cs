@@ -22,9 +22,7 @@ namespace UnityEngine.UIElements
         int m_LastFocusedElementIndex = -1;
         List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
 
-        protected int m_FirstVisibleIndex;
-
-        Func<T, bool> m_VisibleItemPredicateDelegate;
+        protected readonly Func<T, bool> m_VisibleItemPredicateDelegate;
 
         internal int itemsCount =>
             m_CollectionView.sourceIncludesArraySize
@@ -44,13 +42,17 @@ namespace UnityEngine.UIElements
         internal T lastVisibleItem => m_ActiveItems.LastOrDefault(m_VisibleItemPredicateDelegate);
 
         public override int visibleItemCount => m_ActiveItems.Count(m_VisibleItemPredicateDelegate);
-        public override int firstVisibleIndex => m_FirstVisibleIndex;
-        public override int lastVisibleIndex => lastVisibleItem?.index ?? -1;
+
+        public override int firstVisibleIndex
+        {
+            get => Mathf.Min(m_CollectionView.serializedVirtualizationData.firstVisibleIndex, m_CollectionView.viewController.GetItemsCount() - 1);
+            protected set => m_CollectionView.serializedVirtualizationData.firstVisibleIndex = value;
+        }
 
         // we keep this list in order to minimize temporary gc allocs
         protected List<T> m_ScrollInsertionList = new List<T>();
 
-        readonly VisualElement k_EmptyRows;
+        VisualElement m_EmptyRows;
 
         protected float lastHeight => m_CollectionView.lastHeight;
 
@@ -61,8 +63,9 @@ namespace UnityEngine.UIElements
             m_ActiveItems = new List<T>();
             m_VisibleItemPredicateDelegate = VisibleItemPredicate;
 
-            k_EmptyRows = new VisualElement();
-            k_EmptyRows.AddToClassList(BaseVerticalCollectionView.backgroundFillUssClassName);
+            // ScrollView sets this to true to support Absolute position. It causes issues with the scrollbars with animated reordering.
+            // In the case of a collection view, we know our ReusableCollectionItems need to be in Relative anyway, so no need for it.
+            m_ScrollView.contentContainer.disableClipping = false;
         }
 
         public override void Refresh(bool rebuild)
@@ -71,18 +74,18 @@ namespace UnityEngine.UIElements
 
             for (var i = 0; i < m_ActiveItems.Count; i++)
             {
-                var index = m_FirstVisibleIndex + i;
+                var index = firstVisibleIndex + i;
                 var recycledItem = m_ActiveItems[i];
                 var isVisible = recycledItem.rootElement.style.display == DisplayStyle.Flex;
 
                 if (rebuild)
                 {
-                    if (hasValidBindings && isVisible)
+                    if (hasValidBindings)
                     {
                         m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
-                        m_CollectionView.viewController.InvokeDestroyItem(recycledItem);
                     }
 
+                    m_CollectionView.viewController.InvokeDestroyItem(recycledItem);
                     m_Pool.Release(recycledItem);
                     continue;
                 }
@@ -143,7 +146,7 @@ namespace UnityEngine.UIElements
             recycledItem.index = newIndex;
             recycledItem.id = newId;
 
-            var indexInParent = newIndex - m_FirstVisibleIndex;
+            var indexInParent = newIndex - firstVisibleIndex;
             if (indexInParent >= m_ScrollView.contentContainer.childCount)
             {
                 recycledItem.rootElement.BringToFront();
@@ -215,41 +218,47 @@ namespace UnityEngine.UIElements
 
         public override void UpdateBackground()
         {
-            var currentFillHeight = float.IsNaN(k_EmptyRows.layout.size.y) ? 0 : k_EmptyRows.layout.size.y;
-            var backgroundFillHeight = m_ScrollView.contentViewport.layout.size.y - m_ScrollView.contentContainer.layout.size.y - currentFillHeight;
-            if (m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.All || backgroundFillHeight <= 0)
+            float backgroundFillHeight;
+            if (m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.All ||
+                (backgroundFillHeight = m_ScrollView.contentViewport.resolvedStyle.height - GetExpectedContentHeight()) <= 0)
             {
-                k_EmptyRows.RemoveFromHierarchy();
+                m_EmptyRows?.RemoveFromHierarchy();
                 return;
             }
 
             if (lastVisibleItem == null)
                 return;
 
-            if (k_EmptyRows.parent == null)
-                m_ScrollView.contentViewport.Add(k_EmptyRows);
-
-            var pixelAlignedItemHeight = GetItemHeight(-1);
-            var itemsCount = Mathf.FloorToInt(backgroundFillHeight / pixelAlignedItemHeight) + 1;
-            if (itemsCount > k_EmptyRows.childCount)
+            if (m_EmptyRows == null)
             {
-                var itemsToAdd = itemsCount - k_EmptyRows.childCount;
+                m_EmptyRows = new VisualElement();
+                m_EmptyRows.AddToClassList(BaseVerticalCollectionView.backgroundFillUssClassName);
+            }
+
+            if (m_EmptyRows.parent == null)
+                m_ScrollView.contentViewport.Add(m_EmptyRows);
+
+            var pixelAlignedItemHeight = GetExpectedItemHeight(-1);
+            var itemCount = Mathf.FloorToInt(backgroundFillHeight / pixelAlignedItemHeight) + 1;
+            if (itemCount > m_EmptyRows.childCount)
+            {
+                var itemsToAdd = itemCount - m_EmptyRows.childCount;
                 for (var i = 0; i < itemsToAdd; i++)
                 {
                     var row = new VisualElement();
 
                     //Inline style is used to prevent a user from changing an item flexShrink property.
                     row.style.flexShrink = 0;
-                    k_EmptyRows.Add(row);
+                    m_EmptyRows.Add(row);
                 }
             }
 
-            var index = lastVisibleIndex;
+            var index = lastVisibleItem?.index ?? -1;
 
-            int emptyRowCount = k_EmptyRows.hierarchy.childCount;
-            for (int i = 0; i < emptyRowCount; ++i)
+            var emptyRowCount = m_EmptyRows.hierarchy.childCount;
+            for (var i = 0; i < emptyRowCount; ++i)
             {
-                var child = k_EmptyRows.hierarchy[i];
+                var child = m_EmptyRows.hierarchy[i];
                 index++;
                 child.style.height = pixelAlignedItemHeight;
                 child.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, index % 2 == 1);
@@ -263,17 +272,15 @@ namespace UnityEngine.UIElements
             {
                 if (item.index == index)
                 {
-                    var recycledItem = GetOrMakeItem();
-
                     // Detach the old one
-                    item.DetachElement();
-                    m_ActiveItems.Remove(item);
+                    var scrollViewIndex = m_ScrollView.IndexOf(item.rootElement);
                     m_CollectionView.viewController.InvokeUnbindItem(item, index);
                     m_CollectionView.viewController.InvokeDestroyItem(item);
+                    item.DetachElement();
+                    m_ActiveItems.Remove(item);
 
                     // Attach and setup new one.
-                    m_ActiveItems.Insert(i, recycledItem);
-                    m_ScrollView.Add(recycledItem.rootElement);
+                    var recycledItem = GetOrMakeItemAtIndex(i, scrollViewIndex);
                     Setup(recycledItem, index);
                     break;
                 }
@@ -282,7 +289,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal virtual T GetOrMakeItem()
+        internal virtual T GetOrMakeItemAtIndex(int activeItemIndex = -1, int scrollViewIndex = -1)
         {
             var item = m_Pool.Get();
 
@@ -293,6 +300,24 @@ namespace UnityEngine.UIElements
 
             item.PreAttachElement();
 
+            if (activeItemIndex == -1)
+            {
+                m_ActiveItems.Add(item);
+            }
+            else
+            {
+                m_ActiveItems.Insert(activeItemIndex, item);
+            }
+
+            if (scrollViewIndex == -1)
+            {
+                m_ScrollView.Add(item.rootElement);
+            }
+            else
+            {
+                m_ScrollView.Insert(scrollViewIndex, item.rootElement);
+            }
+
             return item;
         }
 
@@ -301,7 +326,7 @@ namespace UnityEngine.UIElements
             var item = m_ActiveItems[activeItemsIndex];
             var index = item.index;
 
-            if (index >= 0 && index < itemsCount)
+            if (index != ReusableCollectionItem.UndefinedIndex)
             {
                 m_CollectionView.viewController.InvokeUnbindItem(item, index);
             }

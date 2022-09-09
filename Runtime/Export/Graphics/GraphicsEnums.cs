@@ -2030,6 +2030,16 @@ namespace UnityEngine.Rendering
         OpenGLES31AEP,
         OpenGLES32
     }
+
+    // Needs to be kept in sync with Runtime\GfxDevice\GfxDeviceTypes.h
+    [Flags]
+    public enum CustomMarkerCallbackFlags
+    {
+        CustomMarkerCallbackDefault = 0,
+
+        // control invalidation of state tracking done by the backend
+        CustomMarkerCallbackForceInvalidateStateTracking = 1 << 2
+    }
 } // namespace UnityEngine.Rendering
 
 namespace UnityEngineInternal

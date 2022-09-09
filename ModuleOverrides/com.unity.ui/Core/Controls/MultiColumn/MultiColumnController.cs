@@ -78,7 +78,6 @@ namespace UnityEngine.UIElements
             if (column.bindCell != null)
             {
                 column.bindCell.Invoke(ve, rowIndex);
-                ve.SetProperty(k_BoundColumnVePropertyName, column);
             }
             else
             {
@@ -88,11 +87,7 @@ namespace UnityEngine.UIElements
 
         static void UnbindCellItem(VisualElement ve, int rowIndex, Column column)
         {
-            if (column.unbindCell != null)
-            {
-                column.unbindCell.Invoke(ve, rowIndex);
-                ve.SetProperty(k_BoundColumnVePropertyName, null);
-            }
+            column.unbindCell?.Invoke(ve, rowIndex);
         }
 
         static VisualElement DefaultMakeCellItem()
@@ -153,6 +148,7 @@ namespace UnityEngine.UIElements
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 BindCellItem(cellItem, index, column, item);
                 cellContainer.style.width = columnData.control.resolvedStyle.width;
+                cellContainer.SetProperty(k_BoundColumnVePropertyName, column);
             }
         }
 
@@ -171,6 +167,7 @@ namespace UnityEngine.UIElements
 
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 UnbindCellItem(cellItem, index, column);
+                cellContainer.SetProperty(k_BoundColumnVePropertyName, null);
             }
         }
 

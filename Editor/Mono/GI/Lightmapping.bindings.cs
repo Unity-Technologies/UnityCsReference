@@ -834,17 +834,21 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction]
-        private static extern unsafe void SetAdditionalBakedProbes(int id, [Span("positionsLength", isReadOnly:true)]Vector3 * positions, int positionsLength);
+        private static extern unsafe void SetAdditionalBakedProbes(int id, [Span("positionsLength", isReadOnly:true)]Vector3 * positions, int positionsLength, bool dering);
 
         public static void SetAdditionalBakedProbes(int id, Vector3[] positions)
         {
-            SetAdditionalBakedProbes(id, positions.AsSpan());
+            SetAdditionalBakedProbes(id, positions.AsSpan(), true);
         }
-        public static unsafe void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions)
+        public static void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions)
+        {
+            SetAdditionalBakedProbes(id, positions, true);
+        }
+        public static unsafe void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions, bool dering)
         {
             fixed(Vector3* positionsPtr = positions)
             {
-                SetAdditionalBakedProbes(id, positionsPtr, positions.Length);
+                SetAdditionalBakedProbes(id, positionsPtr, positions.Length, dering);
             }
         }
 
