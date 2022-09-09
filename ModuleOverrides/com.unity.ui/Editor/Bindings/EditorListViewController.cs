@@ -47,6 +47,30 @@ namespace UnityEditor.UIElements.Bindings
             RaiseOnSizeChanged();
         }
 
+        internal override void RemoveItems(int itemCount)
+        {
+            var previousCount = GetItemsCount();
+            serializedObjectList.ArrayProperty.arraySize -= itemCount;
+
+            var indices = ListPool<int>.Get();
+            try
+            {
+                for (var i = previousCount - itemCount; i < previousCount; i++)
+                {
+                    indices.Add(i);
+                }
+
+                RaiseItemsRemoved(indices);
+            }
+            finally
+            {
+                ListPool<int>.Release(indices);
+            }
+
+            serializedObjectList.ApplyChanges();
+            RaiseOnSizeChanged();
+        }
+
         public override void RemoveItems(List<int> indices)
         {
             indices.Sort();
@@ -111,6 +135,9 @@ namespace UnityEditor.UIElements.Bindings
                 srcIndex--;
                 destIndex--;
             }
+
+            if (srcIndex == destIndex)
+                return;
 
             serializedObjectList.Move(srcIndex, destIndex);
             serializedObjectList.ApplyChanges();

@@ -289,11 +289,7 @@ namespace UnityEngine.UIElements
             }
             else if (value < count)
             {
-                var previousCount = count;
-                for (var i = previousCount - 1; i >= value; i--)
-                {
-                    viewController.RemoveItem(i);
-                }
+                viewController.RemoveItems(count - value);
             }
             else if (value == 0)
             {

@@ -242,6 +242,8 @@ namespace UnityEngine.UIElements
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
 
+        IVisualElementScheduledItem m_UpdateScrollersScheduledItem;
+
         internal bool needsHorizontal
         {
             get
@@ -922,21 +924,7 @@ namespace UnityEngine.UIElements
             {
                 return;
             }
-
-            // Get the initial information on the necessity of the scrollbars
-            bool needsVerticalCached = needsVertical;
-            bool needsHorizontalCached = needsHorizontal;
-
-            // Here, we allow the removal of the scrollbar only in the first layout pass.
-            // Addition is always allowed.
-            if (evt.layoutPass > 0)
-            {
-                needsVerticalCached = needsVerticalCached || isVerticalScrollDisplayed;
-                needsHorizontalCached = needsHorizontalCached || isHorizontalScrollDisplayed;
-            }
-
-            UpdateScrollers(needsHorizontalCached, needsVerticalCached);
-            UpdateContentViewTransform();
+            DelayUpdateScrollers();
         }
 
         private int m_ScrollingPointerId = PointerId.invalidPointerId;
@@ -1396,6 +1384,36 @@ namespace UnityEngine.UIElements
             verticalScroller.Adjust(verticalFactor);
         }
 
+        void DelayUpdateScrollers()
+        {
+            if (m_UpdateScrollersScheduledItem == null)
+            {
+                m_UpdateScrollersScheduledItem = schedule.Execute(UpdateScrollers);
+            }
+            else
+            {
+                // Restart the scheduled update of the scrollers
+                m_UpdateScrollersScheduledItem.Pause();
+                m_UpdateScrollersScheduledItem.Resume();
+            }
+        }
+
+        void UpdateScrollers()
+        {
+            UpdateScrollers(needsHorizontal, needsVertical);
+            UpdateContentViewTransform();
+            // Cancel the scheduled update if this method is not called from the scheduler
+            m_UpdateScrollersScheduledItem?.Pause();
+        }
+
+        void UpdateViewportContentMargins(bool displayHorizontal, bool displayVertical)
+        {
+            // Expand content if scrollbars are hidden
+            contentViewport.style.marginRight = displayVertical ? verticalScroller.layout.width : 0;
+            m_ContentAndVerticalScrollContainer.style.marginBottom =
+                displayHorizontal ? horizontalScroller.layout.height : 0;
+        }
+
         internal void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
             AdjustScrollers();
@@ -1403,6 +1421,8 @@ namespace UnityEngine.UIElements
             // Set availability
             horizontalScroller.SetEnabled(contentContainer.boundingBox.width - contentViewport.layout.width > 0);
             verticalScroller.SetEnabled(contentContainer.boundingBox.height - contentViewport.layout.height > 0);
+
+            UpdateViewportContentMargins(displayHorizontal, displayVertical);
 
             var newShowHorizontal = displayHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
             var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
@@ -1442,7 +1462,7 @@ namespace UnityEngine.UIElements
             {
                 return;
             }
-
+            var newShowVertical = needsVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
             var newShowHorizontal = needsHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
 
             // Add some space if both scrollers are visible
@@ -1452,6 +1472,7 @@ namespace UnityEngine.UIElements
             }
 
             AdjustScrollers();
+            UpdateViewportContentMargins(newShowHorizontal, newShowVertical);
         }
 
         // TODO: Same behaviour as IMGUI Scroll view

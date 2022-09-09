@@ -20,10 +20,10 @@ namespace Unity.Burst.LowLevel
         [ThreadSafe]
         public static extern string GetDisassembly(MethodInfo m, string compilerOptions);
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern int CompileAsyncDelegateMethod(object delegateMethod, string compilerOptions);
 
-        [FreeFunction]
+        [FreeFunction(IsThreadSafe = true)]
         public static extern unsafe void* GetAsyncCompiledAsyncDelegateMethod(int userID);
 
         [ThreadSafe]

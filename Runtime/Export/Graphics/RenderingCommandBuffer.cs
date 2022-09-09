@@ -1094,6 +1094,16 @@ namespace UnityEngine.Rendering
             IssuePluginEventAndDataInternal(callback, eventID, data);
         }
 
+        public void IssuePluginEventAndDataWithFlags(IntPtr callback, int eventID, CustomMarkerCallbackFlags flags, IntPtr data)
+        {
+            if (callback == IntPtr.Zero)
+                throw new ArgumentException("Null callback specified.");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            IssuePluginEventAndDataInternalWithFlags(callback, eventID, flags, data);
+        }
+
         public void IssuePluginCustomBlit(IntPtr callback, uint command, UnityEngine.Rendering.RenderTargetIdentifier source, UnityEngine.Rendering.RenderTargetIdentifier dest, uint commandParam, uint commandFlags)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);

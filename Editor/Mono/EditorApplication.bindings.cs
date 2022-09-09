@@ -357,6 +357,8 @@ namespace UnityEditor
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern void UpdateInteractionModeSettings();
 
+        internal static extern void UpdateTooltipsInPlayModeSettings();
+
         [FreeFunction("GetProjectVersion().Write")]
         internal static extern void WriteVersion();
     }

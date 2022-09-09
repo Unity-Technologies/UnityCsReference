@@ -617,10 +617,12 @@ namespace UnityEditor.UIElements
             return field;
         }
 
-        VisualElement ConfigureListView(ListView listView, SerializedProperty property)
+        VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
         {
+            listView ??= factory();
             var propertyCopy = property.Copy();
             listView.reorderMode = ListViewReorderMode.Animated;
+            listView.reorderable = PropertyHandler.IsArrayReorderable(property);
             listView.showBorder = true;
             listView.showAddRemoveFooter = true;
             listView.showBoundCollectionSize = true;
@@ -641,7 +643,7 @@ namespace UnityEditor.UIElements
         {
             var propertyType = property.propertyType;
 
-            if (EditorGUI.HasVisibleChildFields(property, true))
+            if (EditorGUI.HasVisibleChildFields(property, true) && !property.isArray)
                 return CreateFoldout(property, originalField);
 
             TrimChildrenContainerSize(0);
@@ -812,7 +814,7 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Generic:
                     return property.isArray
-                        ? ConfigureListView(new ListView(), property)
+                        ? ConfigureListView(originalField as ListView, property, () => new ListView())
                         : null;
 
                 default:

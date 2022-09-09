@@ -17,21 +17,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     class ILPostProcessingProgram
     {
-        public virtual string NamedPipeOrUnixSocket
+        public virtual string EnsureRunningAndGetSocketOrNamedPipe()
         {
-            get
+            var name = EnsureRunningAndGetSocketOrNamedPipeImpl();
+            if (string.IsNullOrEmpty(name))
             {
-                var name = EnsureRunningAndGetSocketOrNamedPipe();
-                if (string.IsNullOrEmpty(name))
-                {
-                    UnityEngine.Debug.LogWarning("IL Post Processing agent failed to start. Any IL Post Processing task will fail");
-                }
-                return name;
+                UnityEngine.Debug.LogWarning("IL Post Processing agent failed to start. Any IL Post Processing task will fail");
             }
+            return name;
         }
 
         [NativeHeader("Editor/Src/ScriptCompilation/ILPPExternalProcess.h")]
         [FreeFunction("ILPPExternalProcess::EnsureRunningAndGetSocketOrNamedPipe", IsThreadSafe = true)]
-        private static extern string EnsureRunningAndGetSocketOrNamedPipe();
+        private static extern string EnsureRunningAndGetSocketOrNamedPipeImpl();
     }
 }

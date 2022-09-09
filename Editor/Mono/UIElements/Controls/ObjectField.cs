@@ -198,7 +198,7 @@ namespace UnityEditor.UIElements
             private void OnDragLeave()
             {
                 // Make sure we've cleared the accept drop look, whether we we in a drop operation or not.
-                RemoveFromClassList(acceptDropVariantUssClassName);
+                EnableInClassList(acceptDropVariantUssClassName, false);
             }
 
             private void OnMouseDown(MouseDownEvent evt)
@@ -265,7 +265,7 @@ namespace UnityEditor.UIElements
                 if (validatedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                    AddToClassList(acceptDropVariantUssClassName);
+                    EnableInClassList(acceptDropVariantUssClassName, true);
 
                     evt.StopPropagation();
                 }

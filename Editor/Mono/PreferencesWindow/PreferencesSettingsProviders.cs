@@ -84,7 +84,7 @@ namespace UnityEditor
 
             public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
-
+            public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
         }
 
         class ExternalProperties
@@ -575,7 +575,9 @@ namespace UnityEditor
 
             m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
 
+            DrawEnableTooltipsInPlayMode();
             EditorGUILayout.Space();
+
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
 
             EditorGUI.indentLevel++;
@@ -690,6 +692,22 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetBool(bumpMapChecksKeyName, bumpMapChecks);
+            }
+        }
+
+        void DrawEnableTooltipsInPlayMode()
+        {
+            const string tooltipsKeyName = "EnableTooltipsInPlayMode";
+            var enableTooltips = EditorPrefs.GetBool(tooltipsKeyName, false);
+
+            EditorGUI.BeginChangeCheck();
+            enableTooltips = EditorGUILayout.Toggle(GeneralProperties.enablePlayModeTooltips, enableTooltips);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(tooltipsKeyName, enableTooltips);
+
+                // Transfer native
+                EditorApplication.UpdateTooltipsInPlayModeSettings();
             }
         }
 
@@ -1098,6 +1116,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("GraphSnapping", m_GraphSnapping);
 
             EditorPrefs.SetBool("EnableConstrainProportionsTransformScale", m_EnableConstrainProportionsScalingForNewObjects);
+            EditorPrefs.SetBool("UseInspectorExpandedState", AnnotationUtility.useInspectorExpandedState);
             EditorPrefs.SetBool("EnableExtendedLogging", m_EnableExtendedLogging);
         }
 
@@ -1188,6 +1207,7 @@ namespace UnityEditor
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
 
             m_EnableConstrainProportionsScalingForNewObjects = EditorPrefs.GetBool("EnableConstrainProportionsTransformScale", false);
+            AnnotationUtility.useInspectorExpandedState = EditorPrefs.GetBool("UseInspectorExpandedState", false);
 
             if (EditorPrefs.HasKey(kContentScalePrefKey))
             {

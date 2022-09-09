@@ -740,6 +740,8 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableRightClickDown(MouseDownEvent evt)
         {
+            evt.StopPropagation();
+
             var slider = m_ShortcutsTable.Q<Scroller>(className: Scroller.verticalVariantUssClassName);
             var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.ResolveItemHeight());
 
@@ -754,8 +756,11 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableRightClickUp(MouseUpEvent evt)
         {
-            if (evt.button != 1 || m_ViewController.selectedEntry == null)
+            evt.StopPropagation();
+
+            if (evt.button != (int)MouseButton.RightMouse || m_ViewController.selectedEntry == null)
                 return;
+
             GenericMenu menu = GetContextMenuForEntries(new[] { m_ViewController.selectedEntry });
             menu?.ShowAsContext();
         }

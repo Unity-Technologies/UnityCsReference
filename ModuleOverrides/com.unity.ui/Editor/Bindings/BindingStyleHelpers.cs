@@ -11,6 +11,18 @@ namespace UnityEditor.UIElements.Bindings
     internal static class BindingsStyleHelpers
     {
         internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
+
+        static EventCallback<PointerUpEvent> s_RightClickMenuCallback;
+        static Action<VisualElement, SerializedProperty> s_UpdateElementStyleFromProperty;
+        static Action<VisualElement, SerializedProperty> s_UpdatePrefabStateStyleFromProperty;
+
+        static BindingsStyleHelpers()
+        {
+            s_RightClickMenuCallback = RightClickFieldMenuEvent;
+            s_UpdateElementStyleFromProperty = UpdateElementStyleFromProperty;
+            s_UpdatePrefabStateStyleFromProperty = UpdatePrefabStateStyleFromProperty;
+        }
+
         private enum BarType
         {
             PrefabOverride,
@@ -71,7 +83,7 @@ namespace UnityEditor.UIElements.Bindings
             if (element == null)
                 return;
 
-            UpdateElementRecursively(element, prop, UpdateElementStyleFromProperty);
+            UpdateElementRecursively(element, prop, s_UpdateElementStyleFromProperty);
         }
 
         private static void UpdateElementStyleFromProperty(VisualElement element, SerializedProperty prop)
@@ -180,7 +192,7 @@ namespace UnityEditor.UIElements.Bindings
             if (element == null)
                 return;
 
-            UpdateElementRecursively(element, prop, UpdatePrefabStateStyleFromProperty);
+            UpdateElementRecursively(element, prop, s_UpdatePrefabStateStyleFromProperty);
         }
 
         internal static void UpdateLivePropertyStateStyle(VisualElement element, SerializedProperty prop)
@@ -337,7 +349,7 @@ namespace UnityEditor.UIElements.Bindings
             if (fieldLabelElement != null)
             {
                 fieldLabelElement.userData = property.Copy();
-                fieldLabelElement.RegisterCallback<MouseUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled);
+                fieldLabelElement.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
             }
         }
 
@@ -347,29 +359,28 @@ namespace UnityEditor.UIElements.Bindings
             if (toggle != null)
             {
                 toggle.userData = property.Copy();
-                toggle.RegisterCallback<MouseUpEvent>(RightClickFieldMenuEvent, InvokePolicy.IncludeDisabled);
+                toggle.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
             }
         }
 
         internal static void UnregisterRightClickMenu<TValue>(BaseField<TValue> field)
         {
             var fieldLabelElement = field.Q<Label>(className: BaseField<TValue>.labelUssClassName);
-            fieldLabelElement?.UnregisterCallback<MouseUpEvent>(RightClickFieldMenuEvent);
+            fieldLabelElement?.UnregisterCallback(s_RightClickMenuCallback);
         }
 
         internal static void UnregisterRightClickMenu(Foldout field)
         {
             var toggle = field.Q<Toggle>(className: Foldout.toggleUssClassName);
-            toggle?.UnregisterCallback<MouseUpEvent>(RightClickFieldMenuEvent);
+            toggle?.UnregisterCallback(s_RightClickMenuCallback);
         }
 
-        internal static void RightClickFieldMenuEvent(MouseUpEvent evt)
+        internal static void RightClickFieldMenuEvent(PointerUpEvent evt)
         {
             if (evt.button != (int)MouseButton.RightMouse)
                 return;
 
-            var element = evt.target as VisualElement;
-            if (element == null)
+            if (!(evt.target is VisualElement element))
                 return;
 
             var property = element.userData as SerializedProperty;

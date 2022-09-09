@@ -97,6 +97,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool AllowDebugging;
         public string SysRootPath;
         public string ToolChainPath;
+        public string RelativeDataPath;
     }
 
     public class Services

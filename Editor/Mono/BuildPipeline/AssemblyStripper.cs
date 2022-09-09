@@ -620,7 +620,7 @@ namespace UnityEditorInternal
                         platform = "Android";
                         architecture = "";
                         break;
-                    case BuildTarget.CloudRendering:
+                    case BuildTarget.LinuxHeadlessSimulation:
                     case BuildTarget.StandaloneLinux64:
                         platform = "Linux";
                         architecture = "x64";

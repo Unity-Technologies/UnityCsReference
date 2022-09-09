@@ -174,6 +174,7 @@ namespace UnityEngine.UIElements
                 return;
 
             indices.Sort();
+            RaiseItemsRemoved(indices);
 
             if (itemsSource.IsFixedSize)
             {
@@ -187,8 +188,30 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            RaiseItemsRemoved(indices);
             RaiseOnSizeChanged();
+        }
+
+        internal virtual void RemoveItems(int itemCount)
+        {
+            if (itemCount <= 0)
+                return;
+
+            var previousCount = GetItemsCount();
+            var indices = ListPool<int>.Get();
+            try
+            {
+                var newItemCount = previousCount - itemCount;
+                for (var i = newItemCount; i < previousCount; i++)
+                {
+                    indices.Add(i);
+                }
+
+                RemoveItems(indices);
+            }
+            finally
+            {
+                ListPool<int>.Release(indices);
+            }
         }
 
         /// <summary>

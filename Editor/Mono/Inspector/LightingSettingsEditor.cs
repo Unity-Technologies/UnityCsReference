@@ -104,6 +104,7 @@ namespace UnityEditor
         SerializedProperty m_FilterMode;
         SerializedProperty m_TiledBaking;
         SerializedProperty m_NumRaysToShootPerTexel;
+        SerializedProperty m_RespectSceneVisibilityWhenBakingGI;
 
         enum DenoiserTarget
         {
@@ -352,6 +353,7 @@ namespace UnityEditor
                 m_BounceScale = lso.FindProperty("m_BounceScale");
                 m_TiledBaking = lso.FindProperty("m_PVRTiledBaking");
                 m_NumRaysToShootPerTexel = lso.FindProperty("m_NumRaysToShootPerTexel");
+                m_RespectSceneVisibilityWhenBakingGI = lso.FindProperty("m_RespectSceneVisibilityWhenBakingGI");
             }
         }
 

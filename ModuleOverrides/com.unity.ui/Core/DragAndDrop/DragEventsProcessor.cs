@@ -105,10 +105,12 @@ namespace UnityEngine.UIElements
         }
 
         protected abstract bool CanStartDrag(Vector3 pointerPosition);
-        protected abstract StartDragArgs StartDrag(Vector3 pointerPosition);
-        protected abstract DragVisualMode UpdateDrag(Vector3 pointerPosition);
 
-        protected abstract void OnDrop(Vector3 pointerPosition);
+        // Internal for tests.
+        protected internal abstract StartDragArgs StartDrag(Vector3 pointerPosition);
+        protected internal abstract DragVisualMode UpdateDrag(Vector3 pointerPosition);
+        protected internal abstract void OnDrop(Vector3 pointerPosition);
+
         protected abstract void ClearDragAndDropUI();
 
         private void OnPointerDownEvent(PointerDownEvent evt)

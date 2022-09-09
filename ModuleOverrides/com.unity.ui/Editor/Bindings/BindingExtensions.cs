@@ -91,16 +91,6 @@ namespace UnityEditor.UIElements.Bindings
 
         internal void BindTree(VisualElement element, SerializedProperty parentProperty)
         {
-            if (ShouldDelayBind())
-            {
-                // too much time spent on binding, we`ll do the rest on the next frame
-                var request = DefaultSerializedObjectBindingImplementation.BindingRequest.CreateDelayBinding(this, parentProperty);
-                VisualTreeBindingsUpdater.AddBindingRequest(element, request);
-                return;
-            }
-
-            IBindable field = element as IBindable;
-
             if (element.HasEventCallbacksOrDefaultActions(SerializedObjectBindEvent.EventCategory))
             {
                 using (var evt = SerializedObjectBindEvent.GetPooled(serializedObject))
@@ -111,6 +101,16 @@ namespace UnityEditor.UIElements.Bindings
                     }
                 }
             }
+
+            if (ShouldDelayBind())
+            {
+                // too much time spent on binding, we`ll do the rest on the next frame
+                var request = DefaultSerializedObjectBindingImplementation.BindingRequest.CreateDelayBinding(this, parentProperty);
+                VisualTreeBindingsUpdater.AddBindingRequest(element, request);
+                return;
+            }
+
+            var field = element as IBindable;
 
             if (field != null)
             {
@@ -125,7 +125,7 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             var childCount = element.hierarchy.childCount;
-            for (int i = 0; i < childCount; ++i)
+            for (var i = 0; i < childCount; ++i)
             {
                 BindTree(element.hierarchy[i], parentProperty);
             }
@@ -173,7 +173,6 @@ namespace UnityEditor.UIElements.Bindings
 
             if (property == null)
                 property = serializedObject?.FindProperty(field.bindingPath);
-
 
             var fieldElement = field as VisualElement;
             if (property == null || fieldElement == null)
@@ -1244,16 +1243,24 @@ namespace UnityEditor.UIElements.Bindings
         private bool m_TooltipWasSet;
         private bool m_IsFieldAttached;
 
+        EventCallback<AttachToPanelEvent> m_OnFieldAttachedToPanel;
+        EventCallback<DetachFromPanelEvent> m_OnFieldDetachedFromPanel;
+
+        protected SerializedObjectBindingBase()
+        {
+            m_OnFieldAttachedToPanel = OnFieldAttached;
+            m_OnFieldDetachedFromPanel = OnFieldDetached;
+        }
+
         protected IBindable boundElement
         {
             get { return m_Field; }
             set
             {
-                VisualElement ve = m_Field as VisualElement;
-                if (ve != null)
+                if (m_Field is VisualElement ve)
                 {
-                    ve.UnregisterCallback<AttachToPanelEvent>(OnFieldAttached);
-                    ve.UnregisterCallback<DetachFromPanelEvent>(OnFieldDetached);
+                    ve.UnregisterCallback(m_OnFieldAttachedToPanel);
+                    ve.UnregisterCallback(m_OnFieldDetachedFromPanel);
                     if (m_TooltipWasSet)
                         ve.tooltip = null;
                     m_TooltipWasSet = false;
@@ -1269,8 +1276,8 @@ namespace UnityEditor.UIElements.Bindings
                     ve = m_Field as VisualElement;
                     if (ve != null)
                     {
-                        ve.RegisterCallback<AttachToPanelEvent>(OnFieldAttached);
-                        ve.RegisterCallback<DetachFromPanelEvent>(OnFieldDetached);
+                        ve.RegisterCallback(m_OnFieldAttachedToPanel);
+                        ve.RegisterCallback(m_OnFieldDetachedFromPanel);
 
                         if (string.IsNullOrEmpty(ve.tooltip))
                         {
@@ -1291,10 +1298,10 @@ namespace UnityEditor.UIElements.Bindings
             }
             set
             {
-                if (m_Field is IBindable bindable)
+                if (m_Field != null)
                 {
-                    var previousBinding = bindable.binding;
-                    bindable.binding = value;
+                    var previousBinding = m_Field.binding;
+                    m_Field.binding = value;
                     if (previousBinding != this)
                     {
                         previousBinding?.Release();
@@ -1487,19 +1494,25 @@ namespace UnityEditor.UIElements.Bindings
 
     abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedObjectBindingBase where TField : class, INotifyValueChanged<TValue>
     {
+        EventCallback<ChangeEvent<TValue>> m_FieldValueChanged;
+
         protected TField field
         {
             get { return m_Field as TField; }
             set
             {
                 var ve = field as VisualElement;
-                ve?.UnregisterCallback<ChangeEvent<TValue>>(FieldValueChanged, TrickleDown.TrickleDown);
+                ve?.UnregisterCallback(m_FieldValueChanged, TrickleDown.TrickleDown);
                 boundElement = value as IBindable;
                 ve = field as VisualElement;
-                ve?.RegisterCallback<ChangeEvent<TValue>>(FieldValueChanged, TrickleDown.TrickleDown);
+                ve?.RegisterCallback(m_FieldValueChanged, TrickleDown.TrickleDown);
             }
         }
 
+        protected SerializedObjectBindingToBaseField()
+        {
+            m_FieldValueChanged = FieldValueChanged;
+        }
 
         private void FieldValueChanged(ChangeEvent<TValue> evt)
         {

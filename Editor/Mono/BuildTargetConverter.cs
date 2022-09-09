@@ -22,7 +22,7 @@ namespace UnityEditor
                     return RuntimePlatform.PS5;
                 case BuildTarget.StandaloneLinux64:
                     return RuntimePlatform.LinuxPlayer;
-                case BuildTarget.CloudRendering:
+                case BuildTarget.LinuxHeadlessSimulation:
                     return RuntimePlatform.LinuxPlayer;
                 case BuildTarget.StandaloneOSX:
                     return RuntimePlatform.OSXPlayer;

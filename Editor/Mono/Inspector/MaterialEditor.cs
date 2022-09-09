@@ -89,7 +89,6 @@ namespace UnityEditor
         private static int s_ControlHash = "EditorTextField".GetHashCode();
         const float kSpacingUnderTexture = 6f;
         const float kMiniWarningMessageHeight = 27f;
-        private static Color kAmbientLightColor = new Color(0.2f, 0.2f, 0.2f, 0);
 
         private MaterialPropertyBlock m_PropertyBlock;
 
@@ -2570,7 +2569,6 @@ namespace UnityEditor
 
             var previewRenderUtility = GetPreviewRendererUtility();
             EditorUtility.SetCameraAnimateMaterials(previewRenderUtility.camera, true);
-            previewRenderUtility.ambientColor = kAmbientLightColor;
 
             previewRenderUtility.BeginStaticPreview(new Rect(0, 0, width, height));
             StreamRenderResources();
@@ -2681,7 +2679,7 @@ namespace UnityEditor
                 previewRenderUtility.lights[1].intensity = 1.0f;
             }
 
-            previewRenderUtility.ambientColor = kAmbientLightColor;
+            previewRenderUtility.ambientColor = new Color(0.2f, 0.2f, 0.2f, 0);
 
             Quaternion rot = Quaternion.identity;
             if (DoesPreviewAllowRotation(viewType))

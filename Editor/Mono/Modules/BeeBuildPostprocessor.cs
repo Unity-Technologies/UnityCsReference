@@ -225,6 +225,10 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        protected virtual string Il2CppDataRelativePath(BuildPostProcessArgs args)
+        {
+            return "Data";
+        }
 
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
@@ -244,6 +248,7 @@ namespace UnityEditor.Modules
             var toolchainPath = Il2CppToolchainPathFor(args);
             var compilerFlags = Il2CppCompilerFlagsFor(args);
             var linkerFlags = Il2CppLinkerFlagsFor(args);
+            var relativeDataPath = Il2CppDataRelativePath(args);
 
             if (CrashReportingSettings.enabled)
                 additionalArgs.Add("--emit-source-mapping");
@@ -293,6 +298,7 @@ namespace UnityEditor.Modules
                 LinkerFlags = linkerFlags,
                 SysRootPath = sysrootPath,
                 ToolChainPath = toolchainPath,
+                RelativeDataPath = relativeDataPath,
                 ExtraTypes = extraTypesFile?.ToString(),
             };
         }
