@@ -799,38 +799,15 @@ namespace UnityEditor.Experimental.GraphView
             // If popping a contextual menu on a GraphElement, add the cut/copy actions.
             BuildContextualMenu(evt);
         }
-
-        Shader FindShader()
-        {
-            return Shader.Find(UnityEngine.UIElements.UIR.Shaders.k_GraphView);
-        }
-
-        static Shader graphViewShader = null;
         void OnEnterPanel(AttachToPanelEvent e)
         {
             var p = panel as BaseVisualElementPanel;
             if (p != null)
             {
-                if (graphViewShader == null)
-                {
-                    try
-                    {
-                        // Previous versions of the package may not define k_GraphView, so we fallback to the hard-coded version.
-                        // We are wrappring Shader.Find in a method because it is the only way to catch the exception
-                        // caused by the failed access to k_GraphView.
-                        graphViewShader = FindShader();
-                    }
-                    catch (MissingFieldException)
-                    {
-                        graphViewShader = Shader.Find("Hidden/GraphView/GraphViewUIE");
-                    }
-                }
-                p.standardShader = graphViewShader;
                 HostView ownerView = p.ownerObject as HostView;
                 if (ownerView != null && ownerView.actualView != null)
                     ownerView.actualView.antiAliasing = 4;
 
-                p.updateMaterial += OnUpdateMaterial;
                 p.beforeUpdate += OnBeforeUpdate;
             }
 
@@ -850,7 +827,6 @@ namespace UnityEditor.Experimental.GraphView
             if (p != null)
             {
                 p.beforeUpdate -= OnBeforeUpdate;
-                p.updateMaterial -= OnUpdateMaterial;
             }
         }
 
@@ -1519,13 +1495,6 @@ namespace UnityEditor.Experimental.GraphView
         void OnBeforeUpdate(IPanel panel)
         {
             redrawn?.Invoke();
-        }
-
-        void OnUpdateMaterial(Material mat)
-        {
-            // Set global graph view shader properties (used by UIR)
-            mat.SetFloat(s_EditorPixelsPerPointId, EditorGUIUtility.pixelsPerPoint);
-            mat.SetFloat(s_GraphViewScaleId, scale);
         }
 
         public virtual Blackboard GetBlackboard()

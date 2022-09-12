@@ -593,9 +593,6 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\AssemblyTypeInfoGenerator.cs">
       <Link>Editor\Mono\BuildPipeline\AssemblyTypeInfoGenerator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\AssemblyValidation.cs">
-      <Link>Editor\Mono\BuildPipeline\AssemblyValidation.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\BuildFailedException.cs">
       <Link>Editor\Mono\BuildPipeline\BuildFailedException.cs</Link>
     </Compile>
@@ -607,15 +604,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\BuildPlayerContext.cs">
       <Link>Editor\Mono\BuildPipeline\BuildPlayerContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\BuildUtils.cs">
-      <Link>Editor\Mono\BuildPipeline\BuildUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\BuildVerifier.cs">
-      <Link>Editor\Mono\BuildPipeline\BuildVerifier.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\CodeStrippingUtils.cs">
-      <Link>Editor\Mono\BuildPipeline\CodeStrippingUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DataBuildDirtyTracker.cs">
       <Link>Editor\Mono\BuildPipeline\DataBuildDirtyTracker.cs</Link>
@@ -632,47 +620,14 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\EnsureSinglePipelineOnBuild.cs">
       <Link>Editor\Mono\BuildPipeline\EnsureSinglePipelineOnBuild.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\FileMirroring.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\FileMirroring.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\ICompilerSettings.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\ICompilerSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\IL2CPPUtils.cs">
       <Link>Editor\Mono\BuildPipeline\Il2Cpp\IL2CPPUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\INativeCompiler.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\INativeCompiler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\Il2CppBuildPipelineData.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\Il2CppBuildPipelineData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\Il2CppNativeCodeBuilder.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\Il2CppNativeCodeBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\Il2CppNativeCodeBuilderUtils.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\Il2CppNativeCodeBuilderUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\NativeCompiler.cs">
-      <Link>Editor\Mono\BuildPipeline\Il2Cpp\NativeCompiler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\MonoAssemblyStripping.cs">
-      <Link>Editor\Mono\BuildPipeline\MonoAssemblyStripping.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\MonoCrossCompile.cs">
-      <Link>Editor\Mono\BuildPipeline\MonoCrossCompile.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\MonoInternalCallGenerator.cs">
-      <Link>Editor\Mono\BuildPipeline\MonoInternalCallGenerator.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\NamedBuildTarget.cs">
       <Link>Editor\Mono\BuildPipeline\NamedBuildTarget.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\OSArchitecture.cs">
       <Link>Editor\Mono\BuildPipeline\OSArchitecture.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\PostProcessStandalonePlayer.cs">
-      <Link>Editor\Mono\BuildPipeline\PostProcessStandalonePlayer.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs">
       <Link>Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs</Link>
@@ -683,20 +638,8 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\RuntimeClassMetadataUtils.bindings.cs">
       <Link>Editor\Mono\BuildPipeline\RuntimeClassMetadataUtils.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\BaseUnityLinkerPlatformProvider.cs">
-      <Link>Editor\Mono\BuildPipeline\UnityLinker\BaseUnityLinkerPlatformProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerArgumentValueProvider.cs">
-      <Link>Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerArgumentValueProvider.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerBuildPipelineData.cs">
       <Link>Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerBuildPipelineData.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerRunInformation.cs">
-      <Link>Editor\Mono\BuildPipeline\UnityLinker\UnityLinkerRunInformation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs">
-      <Link>Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPlayerDataExtractor.cs">
       <Link>Editor\Mono\BuildPlayerDataExtractor.cs</Link>
@@ -2465,9 +2408,6 @@
     <Compile Include="..\..\Editor\Mono\Modules\BeeBuildPostprocessor.cs">
       <Link>Editor\Mono\Modules\BeeBuildPostprocessor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildPostprocessor.cs">
-      <Link>Editor\Mono\Modules\DefaultBuildPostprocessor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildWindowExtension.cs">
       <Link>Editor\Mono\Modules\DefaultBuildWindowExtension.cs</Link>
     </Compile>
@@ -4010,6 +3950,12 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorMatchingSelectors.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorMatchingSelectors.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorPreview.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorPreviewWindow.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorPreviewWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs</Link>
     </Compile>
@@ -4664,6 +4610,9 @@
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabaseExperimental.bindings.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetDatabaseExperimental.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetOrigin.binding.cs">
+      <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetOrigin.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporter.cs">
       <Link>Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporter.cs</Link>
     </Compile>
@@ -4849,9 +4798,6 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReport.bindings.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildReport.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReportHelper.cs">
-      <Link>Modules\BuildReportingEditor\Managed\BuildReportHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildResult.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildResult.cs</Link>

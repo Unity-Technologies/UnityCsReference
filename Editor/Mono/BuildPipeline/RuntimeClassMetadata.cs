@@ -39,6 +39,7 @@ namespace UnityEditor
             return classScenes[ID];
         }
 
+        [RequiredByNativeCode]
         public void AddNativeClassID(int ID)
         {
             string className = UnityType.FindTypeByPersistentTypeID(ID).name;
@@ -49,6 +50,7 @@ namespace UnityEditor
                 allNativeClasses[ID] = className;
         }
 
+        [RequiredByNativeCode]
         public void SetUsedTypesInUserAssembly(string[] typeNames, string assemblyName)
         {
             if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
@@ -68,12 +70,39 @@ namespace UnityEditor
                 types.Add(typeName);
         }
 
+        private static readonly string[] s_TreatedAsUserAssemblies =
+        {
+            // Treat analytics as we user assembly. If it is not used, it won't be in the directory,
+            // so this should not add to the build size unless it is really used.
+            "Unity.Analytics.dll",
+        };
+
+        static string[] UserAssemblies
+        {
+            get
+            {
+                EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblyInfos();
+
+                string[] targetAssemblyNames = new string[allTargetAssemblies.Length + s_TreatedAsUserAssemblies.Length];
+
+                for (int i = 0; i < allTargetAssemblies.Length; ++i)
+                {
+                    targetAssemblyNames[i] = allTargetAssemblies[i].Name;
+                }
+                for (int i = 0; i < s_TreatedAsUserAssemblies.Length; ++i)
+                {
+                    targetAssemblyNames[allTargetAssemblies.Length + i] = s_TreatedAsUserAssemblies[i];
+                }
+                return targetAssemblyNames;
+            }
+        }
+
         public bool IsDLLUsed(string dll)
         {
             if (m_UsedTypesPerUserAssembly == null)
                 return true;
 
-            if (Array.IndexOf(CodeStrippingUtils.UserAssemblies, dll) != -1)
+            if (Array.IndexOf(UserAssemblies, dll) != -1)
             {
                 // Don't treat code in packages as used automatically (case 1003047).
                 var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(dll);
@@ -98,6 +127,7 @@ namespace UnityEditor
             types.Add(className);
         }
 
+        [RequiredByNativeCode]
         protected void AddSerializedClass(string assemblyName, string className)
         {
             if (string.IsNullOrEmpty(assemblyName))
@@ -181,17 +211,20 @@ namespace UnityEditor
             return serializedClassesPerAssembly[assembly].ToArray();
         }
 
+        [RequiredByNativeCode]
         public static RuntimeClassRegistry Create()
         {
             return new RuntimeClassRegistry();
         }
 
+        [RequiredByNativeCode]
         public void Initialize(int[] nativeClassIDs)
         {
             foreach (int ID in nativeClassIDs)
                 AddNativeClassID(ID);
         }
 
+        [RequiredByNativeCode]
         public void SetSceneClasses(int[] nativeClassIDs, string scene)
         {
             foreach (int ID in nativeClassIDs)
@@ -245,15 +278,13 @@ namespace UnityEditor
         internal List<string> m_UserAssemblies = new List<string>();
 
         //invoked by native code
+        [RequiredByNativeCode]
         internal void AddUserAssembly(string assembly)
         {
             if (!m_UserAssemblies.Contains(assembly))
                 m_UserAssemblies.Add(assembly);
         }
 
-        internal string[] GetUserAssemblies()
-        {
-            return m_UserAssemblies.ToArray();
-        }
+        internal string[] GetUserAssemblies() => m_UserAssemblies.Where(s => IsDLLUsed(s)).ToArray();
     }
 }

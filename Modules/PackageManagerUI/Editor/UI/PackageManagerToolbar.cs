@@ -323,7 +323,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupAddMenu()
         {
             var dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Add package from disk...");
+            dropdownItem.text = L10n.Tr("Install package from disk...");
             dropdownItem.userData = "AddFromDisk";
             dropdownItem.action = () =>
             {
@@ -355,12 +355,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 catch (System.IO.IOException e)
                 {
-                    Debug.Log($"[Package Manager Window] Cannot add package from disk {path}: {e.Message}");
+                    Debug.Log($"[Package Manager Window] Cannot install package from disk {path}: {e.Message}");
                 }
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Add package from tarball...");
+            dropdownItem.text = L10n.Tr("Install package from tarball...");
             dropdownItem.userData = "AddFromTarball";
             dropdownItem.action = () =>
             {
@@ -380,16 +380,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Add package from git URL...");
+            dropdownItem.text = L10n.Tr("Install package from git URL...");
             dropdownItem.userData = "AddFromGit";
             dropdownItem.action = () =>
             {
                 var args = new InputDropdownArgs
                 {
-                    title = L10n.Tr("Add package from git URL"),
+                    title = L10n.Tr("Install package from git URL"),
                     iconUssClass = "git",
                     placeholderText = L10n.Tr("URL"),
-                    submitButtonText = L10n.Tr("Add"),
+                    submitButtonText = L10n.Tr("Install"),
                     onInputSubmitted = url =>
                     {
                         if (!m_OperationDispatcher.isInstallOrUninstallInProgress)
@@ -411,7 +411,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Add package by name...");
+            dropdownItem.text = L10n.Tr("Install package by name...");
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {

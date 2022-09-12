@@ -193,6 +193,14 @@ namespace Unity.UI.Builder
         public static readonly string FieldTooltipWithoutValueFormatString = "{0}: {1}\n\nValue definition: {4}{5}";
         public static readonly string MatchingStyleSheetRuleSourceTooltipFormatString = "    Selector: {0}\n    Sheet: {1}";
         public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";
+        
+        // Selector Preview
+        public const string PreviewConvertToFloatingWindow = "Convert to Floating Window";
+        public const string PreviewDockToInspector = "Dock Preview to Inspector";
+        public const string PreviewWindowTitle = "UI Builder Text Property Preview";
+        public const string PreviewMinimizeInInspector = "Minimize in Inspector";
+        public const string PreviewRestoreInInspector = "Restore in Inspector";
+        public const string PreviewTransparencyToggleTooltip = "Show or hide transparency view.";
 
         //
         // Explorer

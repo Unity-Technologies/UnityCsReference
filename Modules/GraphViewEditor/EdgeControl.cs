@@ -7,8 +7,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
-using Unity.Collections;
-using UnityEngine.UIElements.UIR;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -62,6 +60,28 @@ namespace UnityEditor.Experimental.GraphView
             pickingMode = PickingMode.Ignore;
 
             generateVisualContent += OnGenerateVisualContent;
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+
+        void MarkDirtyOnTransformChanged(GraphView gv)
+        {
+            MarkDirtyRepaint();
+        }
+
+        void OnAttachToPanel(AttachToPanelEvent e)
+        {
+            if (m_GraphView == null)
+                m_GraphView = GetFirstAncestorOfType<GraphView>();
+
+            m_GraphView.viewTransformChanged += MarkDirtyOnTransformChanged;
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent e)
+        {
+            m_GraphView.viewTransformChanged -= MarkDirtyOnTransformChanged;
         }
 
         private bool m_ControlPointsDirty = true;
@@ -74,6 +94,8 @@ namespace UnityEditor.Experimental.GraphView
         private const float k_EdgeTurnDiameter = 16.0f;
         private const float k_EdgeSweepResampleRatio = 4.0f;
         private const int k_EdgeStraightLineSegmentDivisor = 5;
+
+        static readonly Gradient k_Gradient = new Gradient();
 
         private Orientation m_InputOrientation;
         public Orientation inputOrientation
@@ -835,86 +857,29 @@ namespace UnityEditor.Experimental.GraphView
             outColor *= UIElementsUtility.editorPlayModeTintColor;
 
             uint cpt = (uint)m_RenderPoints.Count;
-            uint wantedLength = (cpt) * 2;
-            uint indexCount = (wantedLength - 2) * 3;
+            var painter2D = mgc.painter2D;
 
-            var md = mgc.Allocate((int)wantedLength, (int)indexCount, null, null, MeshGenerationContext.MeshFlags.UVisDisplacement);
-            if (md.vertexCount == 0)
-                return;
+            float width = edgeWidth;
+            float alpha = 1.0f;
+            float zoom = m_GraphView?.scale ?? 1.0f;
 
-            float polyLineLength = 0;
-            for (int i = 1; i < cpt; ++i)
-                polyLineLength += (m_RenderPoints[i - 1] - m_RenderPoints[i]).sqrMagnitude;
-
-            float halfWidth = edgeWidth * 0.5f;
-            float currentLength = 0;
-            Color32 ids = new Color32(0, 0, 0, 0);
-            Color32 flags = new Color32((byte)VertexFlags.IsGraphViewEdge, 0, 0, 0);
-
-
-            Vector2 unitPreviousSegment = Vector2.zero;
-            for (int i = 0; i < cpt; ++i)
+            if (edgeWidth * zoom < k_MinEdgeWidth)
             {
-                Vector2 dir;
-                Vector2 unitNextSegment = Vector2.zero;
-                Vector2 nextSegment = Vector2.zero;
-
-                if (i < cpt - 1)
-                {
-                    nextSegment = (m_RenderPoints[i + 1] - m_RenderPoints[i]);
-                    unitNextSegment = nextSegment.normalized;
-                }
-
-
-                if (i > 0 && i < cpt - 1)
-                {
-                    dir = unitPreviousSegment + unitNextSegment;
-                    dir.Normalize();
-                }
-                else if (i > 0)
-                {
-                    dir = unitPreviousSegment;
-                }
-                else
-                {
-                    dir = unitNextSegment;
-                }
-
-                Vector2 pos = m_RenderPoints[i];
-                Vector2 uv = new Vector2(dir.y * halfWidth, -dir.x * halfWidth); // Normal scaled by half width
-                Color32 tint = Color.LerpUnclamped(outColor, inColor, currentLength / polyLineLength);
-
-                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, 1), uv = uv, tint = tint, ids = ids, flags = flags });
-                md.SetNextVertex(new Vertex() { position = new Vector3(pos.x, pos.y, -1), uv = uv, tint = tint, ids = ids, flags = flags });
-
-                if (i < cpt - 2)
-                {
-                    currentLength += nextSegment.sqrMagnitude;
-                }
-                else
-                {
-                    currentLength = polyLineLength;
-                }
-
-                unitPreviousSegment = unitNextSegment;
+                alpha = edgeWidth * zoom / k_MinEdgeWidth;
+                width = k_MinEdgeWidth / zoom;
             }
 
-            // Fill triangle indices as it is a triangle strip
-            for (uint i = 0; i < wantedLength - 2; ++i)
-            {
-                if ((i & 0x01) == 0)
-                {
-                    md.SetNextIndex((UInt16)i);
-                    md.SetNextIndex((UInt16)(i + 2));
-                    md.SetNextIndex((UInt16)(i + 1));
-                }
-                else
-                {
-                    md.SetNextIndex((UInt16)i);
-                    md.SetNextIndex((UInt16)(i + 1));
-                    md.SetNextIndex((UInt16)(i + 2));
-                }
-            }
+            k_Gradient.SetKeys(new[]{ new GradientColorKey(outColor, 0),new GradientColorKey(inColor, 1)},new []{new GradientAlphaKey(alpha, 0)});
+            painter2D.BeginPath();
+            painter2D.strokeGradient = k_Gradient;
+
+            painter2D.lineWidth = width;
+            painter2D.MoveTo(m_RenderPoints[0]);
+
+            for(int i = 1 ; i < cpt ; ++i)
+                painter2D.LineTo(m_RenderPoints[i]);
+
+            painter2D.Stroke();
         }
 
         void OnLeavePanel(DetachFromPanelEvent e)

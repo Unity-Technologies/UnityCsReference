@@ -152,6 +152,8 @@ namespace UnityEngine
         public extern void StopAllCoroutines();
 
         public extern bool useGUILayout { get; set; }
+        public extern bool didStart { get; }
+        public extern bool didAwake { get; }
 
         // Allow a specific instance of a MonoBehaviour to run in edit mode (only available in the editor)
         public extern bool runInEditMode { get; set; }

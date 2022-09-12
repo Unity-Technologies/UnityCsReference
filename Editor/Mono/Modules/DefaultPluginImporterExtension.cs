@@ -8,9 +8,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Modules

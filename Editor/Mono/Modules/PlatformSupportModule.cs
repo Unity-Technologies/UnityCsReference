@@ -4,12 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using Bee.BeeDriver;
 using UnityEditor.DeploymentTargets;
 using UnityEditor.Build;
 using UnityEngine;
-using Mono.Cecil;
-using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Modules
 {
@@ -74,11 +71,6 @@ namespace UnityEditor.Modules
 
         IPluginImporterExtension CreatePluginImporterExtension();
 
-        IBuildAnalyzer CreateBuildAnalyzer();
-
-        // Return an instance of IUserAssembliesValidator or null if not used
-        IUserAssembliesValidator CreateUserAssembliesValidatorExtension();
-
         // Register platform specific Unity extensions
         // For ex., Metro specifc UnityEngine.Networking.dll which is different from the generic UnityEngine.Networking.dll
         void RegisterAdditionalUnityExtensions();
@@ -141,10 +133,6 @@ namespace UnityEditor.Modules
         bool SupportsLz4Compression();
 
         Compression GetDefaultCompression();
-
-        bool SupportsScriptsOnlyBuild();
-
-        bool UsesBeeBuild();
 
         // This is the place to make sure platform has everything it needs for the build.
         // Use EditorUtility.Display(Cancelable)ProgressBar when running long tasks (e.g. downloading SDK from internet).
@@ -323,15 +311,6 @@ namespace UnityEditor.Modules
 
         // Grays out managed debugger options
         bool ShouldDisableManagedDebuggerCheckboxes();
-
-        // UI rendering functions for general options
-        // Todo: move all of them from BuildPlayerWindow
-        void DoScriptsOnlyGUI();
-    }
-
-    internal interface IBuildAnalyzer
-    {
-        void OnAddedExecutable(Build.Reporting.BuildReport report, int fileIndex);
     }
 
     // Extension point to add platform-specific texture import settings.
@@ -415,33 +394,6 @@ namespace UnityEditor.Modules
         internal RuntimeClassRegistry usedClassRegistry;
     }
 
-    // An 'IUserAssembliesValidator' is responsible of validating the assemblies
-    // generated after a successful recompilation of the scripts.
-    // For performance reason, and to keep the Editor responsive, the validation is
-    // allowed to run in background.
-    internal interface IUserAssembliesValidator
-    {
-        // If true, it allow the Editor to run the validation in a background Thread
-        bool canRunInBackground { get; }
-
-        // Invoked by the Editor after the user assemblies have been rebuilt, to allow the
-        // validator to validate the generated assemblies.
-        //
-        // This method is invoked only in case rebuilding the scripts was successful.
-        // The method might be run in a separate thread in case canRunInBackground was true.
-        void Validate(string[] userAssemblies);
-
-        // Invoked by the Editor in case the validation has just been killed, usually due to
-        // script rebuilds being triggered when the Validate method has not been terminated yet.
-        void Cleanup();
-    }
-
-    internal enum CSharpCompiler
-    {
-        Mono,
-        Microsoft,
-    }
-
     internal interface ICompilationExtension
     {
         string[] GetCompilerExtraAssemblyPaths(bool isEditor, string assemblyPathName);
@@ -459,12 +411,5 @@ namespace UnityEditor.Modules
 
         // Returns an array of C# source files that should be included into the assembly when compiling scripts
         IEnumerable<string> GetAdditionalSourceFiles();
-    }
-
-
-    internal class CSharpProject
-    {
-        public string Path { get; set; }
-        public Guid Guid { get; set; }
     }
 }

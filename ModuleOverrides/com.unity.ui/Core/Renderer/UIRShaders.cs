@@ -10,7 +10,6 @@ namespace UnityEngine.UIElements.UIR
         public static readonly string k_Editor;
         public static readonly string k_Runtime;
         public static readonly string k_RuntimeWorld;
-        public static readonly string k_GraphView;
         public static readonly string k_ColorConversionBlit;
 
         static Shaders()
@@ -21,7 +20,6 @@ namespace UnityEngine.UIElements.UIR
                 k_Editor = "Hidden/UIE-Editor";
                 k_Runtime = "Hidden/UIE-Runtime";
                 k_RuntimeWorld = "Hidden/UIE-RuntimeWorld";
-                k_GraphView = "Hidden/UIE-GraphView";
                 k_ColorConversionBlit = "Hidden/UIE-ColorConversionBlit";
             }
             else
@@ -30,7 +28,6 @@ namespace UnityEngine.UIElements.UIR
                 k_Editor = "Hidden/UIElements/EditorUIE";
                 k_Runtime = "Hidden/Internal-UIRDefault";
                 k_RuntimeWorld = "Hidden/Internal-UIRDefaultWorld";
-                k_GraphView = "Hidden/GraphView/GraphViewUIE";
                 k_ColorConversionBlit = "Hidden/Internal-UIE-ColorConversionBlit";
             }
         }

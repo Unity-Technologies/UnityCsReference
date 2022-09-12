@@ -85,6 +85,7 @@ namespace UnityEditor
             public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableHelperBar = EditorGUIUtility.TrTextContent("Enable Helper Bar", "Enables Helper Bar in the status bar at the bottom of the main Unity Editor window.");
+            public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
         }
 
         class ExternalProperties
@@ -576,6 +577,7 @@ namespace UnityEditor
             m_EnableExtendedLogging = EditorGUILayout.Toggle(GeneralProperties.enableExtendedLogging, m_EnableExtendedLogging);
 
             DrawEnableHelperBar();
+            DrawEnableTooltipsInPlayMode();
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
 
             EditorGUI.indentLevel++;
@@ -703,6 +705,22 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetBool(helperBarKeyName, enableHelperBar);
+            }
+        }
+
+        void DrawEnableTooltipsInPlayMode()
+        {
+            const string tooltipsKeyName = "EnableTooltipsInPlayMode";
+            var enableTooltips = EditorPrefs.GetBool(tooltipsKeyName, false);
+
+            EditorGUI.BeginChangeCheck();
+            enableTooltips = EditorGUILayout.Toggle(GeneralProperties.enablePlayModeTooltips, enableTooltips);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(tooltipsKeyName, enableTooltips);
+
+                // Transfer native
+                EditorApplication.UpdateTooltipsInPlayModeSettings();
             }
         }
 
@@ -1180,6 +1198,7 @@ namespace UnityEditor
 
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalyticsV2", EditorPrefs.GetBool("EnableEditorAnalytics", true));
 
+            m_AutoSaveScenesBeforeBuilding = EditorPrefs.GetBool("SaveScenesBeforeBuilding");
             m_ScriptCompilationDuringPlay = ScriptCompilationDuringPlayEditorPref;
 
             m_DeveloperMode = Unsupported.IsDeveloperMode();

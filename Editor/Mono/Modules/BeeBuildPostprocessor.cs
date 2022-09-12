@@ -24,40 +24,89 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Modules
 {
-    internal abstract class BeeBuildPostprocessor : DefaultBuildPostprocessor
+    internal abstract class BeeBuildPostprocessor : IBuildPostprocessor
     {
         protected BeeDriverResult BeeDriverResult { get; set; }
         protected static bool isBuildingPlayer { get; set; }
 
-        [RequiredByNativeCode]
-        static bool IsBuildingPlayer()
+        static readonly string kXrBootSettingsKey = "xr-boot-settings";
+        public virtual void LaunchPlayer(BuildLaunchPlayerArgs args) => throw new NotSupportedException();
+
+        public virtual void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties)
         {
-            return isBuildingPlayer;
+            PostProcess(args);
+
+            // NOTE: For some reason, calling PostProcess seems like it can trigger this object to be GC'd
+            //  so create is just before returning
+            outProperties = ScriptableObject.CreateInstance<DefaultBuildProperties>();
         }
 
-        [RequiredByNativeCode]
-        static void BeginProfile()
+        public virtual bool SupportsInstallInBuildFolder() => false;
+
+        public virtual bool SupportsLz4Compression() => false;
+
+        public virtual Compression GetDefaultCompression() => Compression.None;
+
+        public virtual void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
         {
-            UnityBeeDriverProfilerSession.Start($"{DagDirectory}/buildreport.json");
+            config.Set("wait-for-native-debugger", "0");
+            if (config.Get("player-connection-debug") == "1")
+            {
+                config.Set("wait-for-managed-debugger", EditorUserBuildSettings.waitForManagedDebugger ? "1" : "0");
+                config.Set("managed-debugger-fixed-port", EditorUserBuildSettings.managedDebuggerFixedPort.ToString());
+            }
+
+            config.Set("hdr-display-enabled", PlayerSettings.useHDRDisplay ? "1" : "0");
+            if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))
+            {
+                if (PlayerSettings.gcWBarrierValidation)
+                    config.AddKey("validate-write-barriers");
+                if (PlayerSettings.gcIncremental)
+                    config.Set("gc-max-time-slice", "3");
+            }
+
+            string xrBootSettings = UnityEditor.EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(target), kXrBootSettingsKey);
+            if (!String.IsNullOrEmpty(xrBootSettings))
+            {
+                var bootSettings = xrBootSettings.Split(';');
+                foreach (var bootSetting in bootSettings)
+                {
+                    var setting = bootSetting.Split(':');
+                    if (setting.Length == 2 && !String.IsNullOrEmpty(setting[0]) && !String.IsNullOrEmpty(setting[1]))
+                    {
+                        config.Set(setting[0], setting[1]);
+                    }
+                }
+            }
+
+
+            if ((options & BuildOptions.Development) != 0)
+            {
+                if ((options & BuildOptions.EnableDeepProfilingSupport) != 0)
+                {
+                    config.Set("profiler-enable-deep-profiling-support", "1");
+                }
+            }
         }
 
-        [RequiredByNativeCode]
-        static void EndProfile()
-        {
-            UnityBeeDriverProfilerSession.Finish();
-        }
+        protected virtual string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args) => $"{args.installPath.ToNPath().FileNameWithoutExtension}_BackUpThisFolder_ButDontShipItWithYourGame";
+
+        public virtual string GetExtension(BuildTarget target, int subtarget, BuildOptions options) => string.Empty;
 
         [RequiredByNativeCode]
-        static void BeginBuildSection(string name)
-        {
-            UnityBeeDriverProfilerSession.BeginSection(name);
-        }
+        static bool IsBuildingPlayer() => isBuildingPlayer;
 
         [RequiredByNativeCode]
-        static void EndBuildSection()
-        {
-            UnityBeeDriverProfilerSession.EndSection();
-        }
+        static void BeginProfile() => UnityBeeDriverProfilerSession.Start($"{DagDirectory}/buildreport.json");
+
+        [RequiredByNativeCode]
+        static void EndProfile() => UnityBeeDriverProfilerSession.Finish();
+
+        [RequiredByNativeCode]
+        static void BeginBuildSection(string name) => UnityBeeDriverProfilerSession.BeginSection(name);
+
+        [RequiredByNativeCode]
+        static void EndBuildSection() => UnityBeeDriverProfilerSession.EndSection();
 
         protected virtual IPluginImporterExtension GetPluginImpExtension() => new EditorPluginImporterExtension();
 
@@ -89,7 +138,7 @@ namespace UnityEditor.Modules
             };
         }
 
-        private IEnumerable<Plugin> GetPluginsFor(BuildTarget target)
+        IEnumerable<Plugin> GetPluginsFor(BuildTarget target)
         {
             var buildTargetName = BuildPipeline.GetBuildTargetName(target);
             var pluginImpExtension = GetPluginImpExtension();
@@ -131,26 +180,18 @@ namespace UnityEditor.Modules
 
             if (strippingLevel > ManagedStrippingLevel.Disabled)
             {
-                var rcr = args.usedClassRegistry;
-
                 var additionalArgs = new List<string>();
 
                 var diagArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs").value as string;
                 if (!string.IsNullOrEmpty(diagArgs))
                     additionalArgs.Add(diagArgs.Trim('\''));
 
-                NPath managedAssemblyFolderPath = $"{args.stagingAreaData}/Managed";
-                var linkerRunInformation = new UnityLinkerRunInformation(managedAssemblyFolderPath.MakeAbsolute().ToString(), null, args.target,
-                    rcr, strippingLevel, null, args.report);
-                AssemblyStripper.WriteEditorData(linkerRunInformation);
-
+                var linkerInputDirectory = DagDirectory.Combine($"artifacts/UnityLinkerInputs").CreateDirectory();
                 return new LinkerConfig
                 {
-                    LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(linkerRunInformation).ToArray(),
-                    EditorToLinkerData = linkerRunInformation.EditorToLinkerDataPath.ToNPath().MakeAbsolute().ToString(),
-                    AssembliesToProcess = rcr.GetUserAssemblies()
-                        .Where(s => rcr.IsDLLUsed(s))
-                        .ToArray(),
+                    LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
+                    EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
+                    AssembliesToProcess = args.usedClassRegistry.GetUserAssemblies(),
                     Runtime = GetScriptingBackend(args).ToString().ToLower(),
                     Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
                         PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
@@ -172,11 +213,17 @@ namespace UnityEditor.Modules
             return null;
         }
 
-        private static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;
+        static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;
+
+        static string GetConfigurationName(Il2CppCompilerConfiguration compilerConfiguration)
+        {
+            // In IL2CPP, Master config is called "ReleasePlus"
+            return compilerConfiguration != Il2CppCompilerConfiguration.Master ? compilerConfiguration.ToString() : "ReleasePlus";
+        }
 
         protected virtual string Il2CppBuildConfigurationNameFor(BuildPostProcessArgs args)
         {
-            return Il2CppNativeCodeBuilderUtils.GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(GetNamedBuildTarget(args)));
+            return GetConfigurationName(PlayerSettings.GetIl2CppCompilerConfiguration(GetNamedBuildTarget(args)));
         }
 
         protected virtual IEnumerable<string> AdditionalIl2CppArgsFor(BuildPostProcessArgs args)
@@ -205,30 +252,15 @@ namespace UnityEditor.Modules
         }
 
 
-        protected virtual string Il2CppSysrootPathFor(BuildPostProcessArgs args)
-        {
-            return null;
-        }
+        protected virtual string Il2CppSysrootPathFor(BuildPostProcessArgs args) => null;
 
-        protected virtual string Il2CppToolchainPathFor(BuildPostProcessArgs args)
-        {
-            return null;
-        }
+        protected virtual string Il2CppToolchainPathFor(BuildPostProcessArgs args) => null;
 
-        protected virtual string Il2CppCompilerFlagsFor(BuildPostProcessArgs args)
-        {
-            return null;
-        }
+        protected virtual string Il2CppCompilerFlagsFor(BuildPostProcessArgs args) => null;
 
-        protected virtual string Il2CppLinkerFlagsFor(BuildPostProcessArgs args)
-        {
-            return null;
-        }
+        protected virtual string Il2CppLinkerFlagsFor(BuildPostProcessArgs args) => null;
 
-        protected virtual string Il2CppDataRelativePath(BuildPostProcessArgs args)
-        {
-            return "Data";
-        }
+        protected virtual string Il2CppDataRelativePath(BuildPostProcessArgs args) => "Data";
 
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
@@ -367,7 +399,6 @@ namespace UnityEditor.Modules
                 .ToArray()
         };
 
-        public override bool UsesBeeBuild() => true;
         protected virtual string GetInstallPathFor(BuildPostProcessArgs args)
         {
             // Try to minimize path lengths for windows
@@ -377,10 +408,7 @@ namespace UnityEditor.Modules
                 : absoluteInstallationPath.ToString();
         }
 
-        protected string GetDataFolderFor(BuildPostProcessArgs args)
-        {
-            return $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
-        }
+        protected string GetDataFolderFor(BuildPostProcessArgs args) => $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
 
         protected ScriptingBackend GetScriptingBackend(BuildPostProcessArgs args)
         {
@@ -405,10 +433,9 @@ namespace UnityEditor.Modules
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();
         protected virtual string GetArchitecture(BuildPostProcessArgs args) => EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(args.target), "Architecture");
+        protected Dictionary<string, Action<NodeFinishedMessage>> ResultProcessors { get; } = new ();
 
-        protected Dictionary<string, Action<NodeFinishedMessage>> ResultProcessors { get; } = new Dictionary<string, Action<NodeFinishedMessage>>();
-
-        private RunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
+        RunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
             var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
             NPath buildPipelineFolder = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline";
@@ -429,12 +456,9 @@ namespace UnityEditor.Modules
                 new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }});
         }
 
-        private static NPath DagDirectory => "Library/Bee";
+        static NPath DagDirectory => "Library/Bee";
 
-        private string DagName(BuildPostProcessArgs args)
-        {
-            return $"Player{GetInstallPathFor(args).GetHashCode():x8}";
-        }
+        string DagName(BuildPostProcessArgs args) => $"Player{GetInstallPathFor(args).GetHashCode():x8}";
 
         protected virtual IEnumerable<object> GetDataForBuildProgramFor(BuildPostProcessArgs args)
         {
@@ -443,10 +467,7 @@ namespace UnityEditor.Modules
             yield return LinkerConfigFor(args);
             yield return Il2CppConfigFor(args);
         }
-        protected virtual RunnableProgram BeeBackendProgram(BuildPostProcessArgs args)
-        {
-            return null;
-        }
+        protected virtual RunnableProgram BeeBackendProgram(BuildPostProcessArgs args) => null;
 
         BuildRequest SetupBuildRequest(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
         {
@@ -490,9 +511,9 @@ namespace UnityEditor.Modules
 
         protected void DefaultResultProcessor(NodeFinishedMessage node, bool printErrors = true, bool printWarnings = true)
         {
-            var output = node.Node.OutputFile;
+            var output = node.Node.OutputDirectory;
             if (string.IsNullOrEmpty(output))
-                output = node.Node.OutputDirectory;
+                output = node.Node.OutputFile;
 
             var lines = (node.Output ?? string.Empty).Split(new[] {'\r', '\n'},
                 StringSplitOptions.RemoveEmptyEntries);
@@ -550,7 +571,7 @@ namespace UnityEditor.Modules
                 args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
         }
 
-        public override string PrepareForBuild(BuildOptions options, BuildTarget target)
+        public virtual string PrepareForBuild(BuildOptions options, BuildTarget target)
         {
             // Clean the Bee folder in PrepareForBuild, so that it is also clean for script compilation.
             if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
@@ -569,7 +590,7 @@ namespace UnityEditor.Modules
                 }
             }
 
-            return base.PrepareForBuild(options, target);
+            return null;
         }
 
         protected virtual void CleanBuildOutput(BuildPostProcessArgs args)
@@ -621,7 +642,7 @@ namespace UnityEditor.Modules
             }
         }
 
-        public override void PostProcess(BuildPostProcessArgs args)
+        public virtual void PostProcess(BuildPostProcessArgs args)
         {
             try
             {
@@ -694,10 +715,8 @@ namespace UnityEditor.Modules
             }
         }
 
-        public override void PostProcessCompletedBuild(BuildPostProcessArgs args)
+        public virtual void PostProcessCompletedBuild(BuildPostProcessArgs args)
         {
-            base.PostProcessCompletedBuild(args);
-
             if (PlayerSettings.GetManagedStrippingLevel(GetNamedBuildTarget(args)) == ManagedStrippingLevel.Disabled)
                 return;
 
@@ -746,5 +765,10 @@ namespace UnityEditor.Modules
 
         protected virtual bool GetAllowDebugging(BuildPostProcessArgs args) => (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
 
+    }
+
+    internal class DefaultBuildProperties : BuildProperties
+    {
+        public override DeploymentTargetRequirements GetTargetRequirements() { return null; }
     }
 }

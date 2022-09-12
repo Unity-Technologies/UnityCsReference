@@ -52,6 +52,10 @@ namespace Unity.UI.Builder
         [SerializeField] CachedScrollPosition[] m_CachedScrollPositions = new CachedScrollPosition[s_MaxCachedScrollPositions];
         float contentHeight => m_ScrollView.contentContainer.layout.height;
 
+        const float m_PreviewDefaultHeight = 200;
+        const float m_PreviewMinHeight = 20;
+        float m_CachedPreviewHeight = m_PreviewDefaultHeight;
+        
         // Utilities
         BuilderInspectorMatchingSelectors m_MatchingSelectors;
         BuilderInspectorStyleFields m_StyleFields;
@@ -68,6 +72,12 @@ namespace Unity.UI.Builder
         BuilderInspectorInheritedStyles m_InheritedStyleSection;
         BuilderInspectorLocalStyles m_LocalStylesSection;
         BuilderInspectorStyleSheet m_StyleSheetSection;
+        
+        // Selector Preview
+        TwoPaneSplitView m_SplitView;
+        BuilderInspectorPreview m_SelectorPreview;
+        BuilderInspectorPreviewWindow m_PreviewWindow;
+        
         public BuilderInspectorCanvas canvasInspector => m_CanvasSection;
         public BuilderInspectorAttributes attributesSection => m_AttributesSection;
 
@@ -96,7 +106,10 @@ namespace Unity.UI.Builder
         public BuilderDocument document => m_PaneWindow.document;
         public BuilderPaneWindow paneWindow => m_PaneWindow;
         public BuilderInspectorAttributes attributeSection => m_AttributesSection;
-
+        public BuilderInspectorPreview preview => m_SelectorPreview;
+        public BuilderInspectorPreviewWindow previewWindow => m_PreviewWindow;
+        public bool showingPreview => m_SplitView?.fixedPane?.resolvedStyle.height > m_PreviewMinHeight;
+        
         public StyleSheet styleSheet
         {
             get
@@ -254,12 +267,28 @@ namespace Unity.UI.Builder
             // Local Styles Section
             m_LocalStylesSection = new BuilderInspectorLocalStyles(this, m_StyleFields);
             m_Sections.Add(m_LocalStylesSection.root);
+            
+            m_SplitView = this.Q<TwoPaneSplitView>("inspector-content");
+            m_SplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
+            var previewPane = this.Q<BuilderPane>("inspector-selector-preview");
+
+            // Preview Section
+            m_SelectorPreview = new BuilderInspectorPreview(this);
+            previewPane.Add(m_SelectorPreview);
+            // Adding transparency toggle to toolbar
+            previewPane.toolbar.Add(m_SelectorPreview.backgroundToggle);
+
+            previewPane.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
+            
+            RegisterDraglineInteraction();
 
             // This will take into account the current selection and then call RefreshUI().
             SelectionChanged();
 
             // Forward focus to the panel header.
             this.Query().Where(e => e.focusable).ForEach((e) => AddFocusable(e));
+            
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         public new void AddFocusable(VisualElement focusable)
@@ -559,6 +588,7 @@ namespace Unity.UI.Builder
 
             // Determine what to show based on selection.
             ResetSections();
+            UpdateSelectorPreviewsVisibility();
             if (m_Selection.selectionCount > 1)
             {
                 EnableSections(Section.MultiSelection);
@@ -761,6 +791,139 @@ namespace Unity.UI.Builder
             else
             {
                 RefreshUI();
+            }
+        }
+        
+        void OnFirstDisplay(GeometryChangedEvent evt)
+        {
+            if (m_PreviewWindow != null)
+                OpenPreviewWindow();
+            else
+            {
+                UpdatePreviewHeight(m_PreviewDefaultHeight);
+                // Needed to stop the TwoPaneSplitView from calling its own GeometryChangedEvent callback (OnSizeChange)
+                // which would change the pane's layout to have the cached height when reopening the builder.
+                evt.StopImmediatePropagation();
+            }
+
+            UpdateSelectorPreviewsVisibility();
+            m_SplitView.UnregisterCallback<GeometryChangedEvent>(OnFirstDisplay);
+        }
+        
+        private void OnSizeChange(GeometryChangedEvent evt)
+        {
+            var hideToggle = !showingPreview && m_PreviewWindow == null;
+            m_SelectorPreview.backgroundToggle.style.display = hideToggle ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+        
+        private void OnDragLineChange(PointerUpEvent evt)
+        {
+            var previewHeight = m_SplitView.fixedPane.resolvedStyle.height;
+            var isSingleClick = (previewHeight == m_CachedPreviewHeight || previewHeight == m_PreviewMinHeight)
+                                && Math.Abs(m_SplitView.m_Resizer.delta) <= 5;
+            
+            if (isSingleClick && evt.button == (int) MouseButton.LeftMouse)
+            {
+                TogglePreviewInInspector();
+                return;
+            }
+            
+            if (!showingPreview) return;
+            m_CachedPreviewHeight = previewHeight;
+        }
+        
+        internal void ReattachPreview()
+        {
+            var previewPane = this.Q<BuilderPane>("inspector-selector-preview");
+            m_SplitView.fixedPaneDimension = m_PreviewDefaultHeight;
+            previewPane.Add(m_SelectorPreview);
+            previewPane.toolbar.Add(m_SelectorPreview.backgroundToggle);
+            m_PreviewWindow = null;
+            UpdateSelectorPreviewsVisibility();
+        }
+
+        void UpdateSelectorPreviewsVisibility()
+        {
+            var currElementIsSelector = m_CurrentVisualElement != null &&
+                                        BuilderSharedStyles.IsSelectorElement(m_CurrentVisualElement);
+            if (m_PreviewWindow == null)
+            {
+                if (currElementIsSelector)
+                {
+                    m_SplitView.UnCollapse();
+                    m_SelectorPreview.style.display = DisplayStyle.Flex;
+                }
+                else 
+                    m_SplitView.CollapseChild(1);
+            }
+            else if (currElementIsSelector)
+            {
+                m_SelectorPreview.style.display = DisplayStyle.Flex;
+                // hiding empty state message
+                m_PreviewWindow.idleMessage.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                m_SelectorPreview.style.display = DisplayStyle.None;
+                // showing empty state message
+                m_PreviewWindow.idleMessage.style.display = DisplayStyle.Flex;
+            }
+        }
+
+        internal void TogglePreviewInInspector()
+        {
+            if (showingPreview)
+            {
+                m_CachedPreviewHeight = m_SplitView.fixedPane.resolvedStyle.height;
+                UpdatePreviewHeight(m_PreviewMinHeight);
+            }
+            else
+            {
+                UpdatePreviewHeight(m_CachedPreviewHeight);
+            }
+        }
+
+        void UpdatePreviewHeight(float newHeight)
+        {
+            var draglineAnchor = m_SplitView.Q("unity-dragline-anchor");
+            
+            m_SplitView.fixedPane.style.height = newHeight;
+            m_SplitView.fixedPaneDimension = newHeight;
+            draglineAnchor.style.top = m_SplitView.resolvedStyle.height - newHeight;
+        }
+
+        internal void OpenPreviewWindow()
+        {
+            m_PreviewWindow = BuilderInspectorPreviewWindow.ShowWindow();
+            m_SplitView.CollapseChild(1);
+        }
+
+        public void ReloadPreviewWindow(BuilderInspectorPreviewWindow window)
+        {
+            m_PreviewWindow = window;
+            m_SplitView.CollapseChild(1);
+        }
+
+        private void RegisterDraglineInteraction()
+        {
+            m_SplitView.Q("unity-dragline-anchor").RegisterCallback<PointerUpEvent>(OnDragLineChange);
+
+            m_SplitView.Q("unity-dragline").RegisterCallback<MouseUpEvent>(e =>
+            {
+                if (e.button == (int) MouseButton.RightMouse)
+                {
+                    OpenPreviewWindow();
+                    // stops the context menu from opening
+                    e.StopImmediatePropagation();
+                }
+            });
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (m_PreviewWindow != null)
+            {
+                previewWindow.Close();
             }
         }
     }

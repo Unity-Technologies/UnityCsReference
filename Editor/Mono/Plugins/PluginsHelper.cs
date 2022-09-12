@@ -4,13 +4,14 @@
 
 using System;
 using UnityEditor.Modules;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine.Scripting;
 
 namespace UnityEditorInternal
 {
     internal class PluginsHelper
     {
+        [RequiredByNativeCode]
         public static bool CheckFileCollisions(BuildTarget buildTarget, string[] defineConstraints)
         {
             // Checks that plugins don't collide with each other

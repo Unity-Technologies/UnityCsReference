@@ -12,7 +12,6 @@ using UnityEngine;
 internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
 {
     public override bool SupportsLz4Compression() => true;
-    public override bool SupportsScriptsOnlyBuild() => true;
     public override bool SupportsInstallInBuildFolder() => true;
     protected abstract string GetPlatformString(BuildPostProcessArgs args);
     protected override IPluginImporterExtension GetPluginImpExtension() => new DesktopPluginImporterExtension();
@@ -39,8 +38,6 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.AddKey("single-instance");
         if (!PlayerSettings.useFlipModelSwapchain)
             config.AddKey("force-d3d11-bitblt-model");
-        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(NamedBuildTarget.FromActiveSettings(target)))
-            config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableCodeCoverage) != 0)
             config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)

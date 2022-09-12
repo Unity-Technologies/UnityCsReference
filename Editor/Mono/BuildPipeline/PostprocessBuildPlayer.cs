@@ -2,24 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Diagnostics;
 using System.Linq;
-using UnityEditor.Utils;
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml.XPath;
-using UnityEditorInternal;
 using System;
-using System.Text.RegularExpressions;
-using Mono.Cecil;
-using NiceIO;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditor.DeploymentTargets;
 using UnityEngine.Scripting;
-using Debug = UnityEngine.Debug;
 
 namespace UnityEditor
 {
@@ -76,75 +68,6 @@ namespace UnityEditor
 
         private static Dictionary<string, string> projectBootConfigEntries = new Dictionary<string, string>();
 
-        // Seems to be used only by PlatformDependent\AndroidPlayer\Editor\Managed\PostProcessAndroidPlayer.cs
-        internal static bool InstallPluginsByExtension(string pluginSourceFolder, string extension, string debugExtension, string destPluginFolder, bool copyDirectories)
-        {
-            bool installedPlugins = false;
-
-            if (!Directory.Exists(pluginSourceFolder))
-                return installedPlugins;
-
-            string[] contents = Directory.GetFileSystemEntries(pluginSourceFolder);
-            foreach (string path in contents)
-            {
-                string fileName = Path.GetFileName(path);
-                string fileExtension = Path.GetExtension(path);
-
-                bool filenameMatch =    fileExtension.Equals(extension, StringComparison.OrdinalIgnoreCase) ||
-                    fileName.Equals(extension, StringComparison.OrdinalIgnoreCase);
-                bool debugMatch =       !string.IsNullOrEmpty(debugExtension) &&
-                    (fileExtension.Equals(debugExtension, StringComparison.OrdinalIgnoreCase) ||
-                        fileName.Equals(debugExtension, StringComparison.OrdinalIgnoreCase));
-
-                // Do we really need to check the file name here?
-                if (filenameMatch || debugMatch)
-                {
-                    if (!Directory.Exists(destPluginFolder))
-                        Directory.CreateDirectory(destPluginFolder);
-
-                    string targetPath = Path.Combine(destPluginFolder, fileName);
-                    if (copyDirectories)
-                        FileUtil.CopyDirectoryRecursive(path, targetPath);
-                    else if (!Directory.Exists(path))
-                        FileUtil.UnityFileCopy(path, targetPath);
-
-                    installedPlugins = true;
-                }
-            }
-            return installedPlugins;
-        }
-
-        internal static void InstallStreamingAssets(string stagingAreaDataPath) =>
-            InstallStreamingAssets(stagingAreaDataPath, null);
-
-        internal static void InstallStreamingAssets(string stagingAreaDataPath, BuildReport report) =>
-            InstallStreamingAssets(stagingAreaDataPath, "StreamingAssets", report);
-
-        internal static void InstallStreamingAssets(string stagingAreaDataPath, string streamingAssetsFolderName, BuildReport report)
-        {
-            if (Directory.Exists(StreamingAssets))
-            {
-                var outputPath = Path.Combine(stagingAreaDataPath, streamingAssetsFolderName);
-                FileUtil.CopyDirectoryRecursiveForPostprocess(StreamingAssets, outputPath, true);
-                report?.RecordFilesAddedRecursive(outputPath, CommonRoles.streamingAsset);
-            }
-
-            foreach (var(dst, src) in BuildPlayerContext.ActiveInstance.StreamingAssets)
-            {
-                NPath targetPlayerPath = $"{stagingAreaDataPath}/{streamingAssetsFolderName}/{dst}";
-                if (targetPlayerPath.Exists())
-                {
-                    var errorMessage =
-                        "error: Callback provided streaming assets file conflicts with file already present in project." +
-                        $" Project file 'StreamingAssets/{dst}'. Callback provided file '{src}'.";
-                    Debug.LogError(errorMessage);
-                    throw new BuildFailedException(errorMessage);
-                }
-                FileUtil.UnityFileCopy(src.ToString(), targetPlayerPath.EnsureParentDirectoryExists().ToString());
-                report?.RecordFileAdded(targetPlayerPath.ToString(SlashMode.Native), CommonRoles.streamingAsset);
-            }
-        }
-
         internal static string GetStreamingAssetsBundleManifestPath()
         {
             string manifestPath = "";
@@ -158,36 +81,13 @@ namespace UnityEditor
             return manifestPath;
         }
 
+        [RequiredByNativeCode]
         static public string PrepareForBuild(BuildOptions options, BuildTargetGroup targetGroup, BuildTarget target)
         {
             var postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
             if (postprocessor == null)
                 return null;
             return postprocessor.PrepareForBuild(options, target);
-        }
-
-        [RequiredByNativeCode]
-        static public bool SupportsScriptsOnlyBuild(BuildTargetGroup targetGroup, BuildTarget target)
-        {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
-            if (postprocessor != null)
-            {
-                return postprocessor.SupportsScriptsOnlyBuild();
-            }
-
-            return false;
-        }
-
-        [RequiredByNativeCode]
-        static public bool UsesBeeBuild(BuildTargetGroup targetGroup, BuildTarget target)
-        {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
-            if (postprocessor != null)
-            {
-                return postprocessor.UsesBeeBuild();
-            }
-
-            return false;
         }
 
         static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, BuildOptions options)
@@ -234,6 +134,7 @@ namespace UnityEditor
             public NoTargetsFoundException(string message) : base(message) {}
         }
 
+        [RequiredByNativeCode]
         static public void Launch(BuildTargetGroup targetGroup, BuildTarget buildTarget, string path, string productName, BuildOptions options, BuildReport buildReport)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, buildTarget);
@@ -336,8 +237,9 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, string installPath, string companyName, string productName,
-            int width, int height, BuildOptions options,
+            BuildOptions options,
             RuntimeClassRegistry usedClassRegistry, BuildReport report)
         {
             string stagingArea = "Temp/StagingArea";
@@ -395,41 +297,6 @@ namespace UnityEditor
         {
             var postprocessor = ModuleManager.GetBuildPostProcessor(BuildPipeline.GetBuildTargetGroup(args.target), args.target);
             postprocessor.PostProcessCompletedBuild(args);
-        }
-
-        internal static string ExecuteSystemProcess(string command, string args, string workingdir)
-        {
-            var psi = new ProcessStartInfo()
-            {
-                FileName = command,
-                Arguments = args,
-                WorkingDirectory = workingdir,
-                CreateNoWindow = true
-            };
-            var p = new Program(psi);
-            p.Start();
-            while (!p.WaitForExit(100))
-                ;
-
-            string output = p.GetStandardOutputAsString();
-            p.Dispose();
-            return output;
-        }
-
-        public static string subDir32Bit
-        {
-            get
-            {
-                return "x86";
-            }
-        }
-
-        public static string subDir64Bit
-        {
-            get
-            {
-                return "x86_64";
-            }
         }
     }
 }

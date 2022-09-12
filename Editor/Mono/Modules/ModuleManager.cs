@@ -4,16 +4,11 @@
 
 using System;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
-using Unity.Profiling;
-using UnityEditor.Utils;
 using UnityEditor.DeploymentTargets;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.Build;
@@ -31,35 +26,12 @@ namespace UnityEditor.Modules
         [NonSerialized]
         static IPlatformSupportModule s_ActivePlatformModule;
 
-        internal static bool EnableLogging
-        {
-            get
-            {
-                return (bool)(Debug.GetDiagnosticSwitch("ModuleManagerLogging").value ?? false);
-            }
-        }
-
         internal static Dictionary<string, IPlatformSupportModule> platformSupportModules
         {
             get
             {
                 if (s_PlatformModules == null)
                     RegisterPlatformSupportModules();
-                return s_PlatformModules;
-            }
-        }
-
-
-        // Accesses the list of currently known platformSupportModules without forcing platform
-        // support module registration. Use this API from all code which may run during the initial
-        // domain reloading phase instead of accessing platformSupportModules. Platform support
-        // modules will be registered automatically when it is safe to do so.
-        internal static Dictionary<string, IPlatformSupportModule> platformSupportModulesDontRegister
-        {
-            get
-            {
-                if (s_PlatformModules == null)
-                    return new Dictionary<string, IPlatformSupportModule>();
                 return s_PlatformModules;
             }
         }
@@ -177,29 +149,6 @@ namespace UnityEditor.Modules
             s_PlatformModules = null;
         }
 
-        class IvyPackageFileData
-        {
-            public string filename;
-            public string type;
-            public string guid;
-
-            public bool IsDll => type.Equals("dll", StringComparison.InvariantCultureIgnoreCase);
-
-            public static IvyPackageFileData CreateFromRegexMatch(Match match)
-            {
-                var filename = match.Groups["name"].Value;
-                if (match.Groups["ext"].Success)
-                    filename += "." + match.Groups["ext"].Value;
-
-                return new IvyPackageFileData()
-                {
-                    filename = filename,
-                    type = match.Groups["type"].Value,
-                    guid = match.Groups["guid"].Value
-                };
-            }
-        }
-
         private static void RegisterPlatformSupportModules()
         {
             var allTypesWithInterface = TypeCache.GetTypesDerivedFrom<IPlatformSupportModule>();
@@ -253,19 +202,6 @@ namespace UnityEditor.Modules
             throw new ApplicationException("Couldn't create device API for device: " + deviceId);
         }
 
-        internal static IUserAssembliesValidator GetUserAssembliesValidator(string target)
-        {
-            if (target == null)
-                return null;
-
-            IPlatformSupportModule module;
-            if (platformSupportModules.TryGetValue(target, out module))
-            {
-                return platformSupportModules[target].CreateUserAssembliesValidatorExtension();
-            }
-            return null;
-        }
-
         internal static IBuildPostprocessor GetBuildPostProcessor(string target)
         {
             if (target == null)
@@ -302,24 +238,6 @@ namespace UnityEditor.Modules
         internal static IDeploymentTargetsExtension GetDeploymentTargetsExtension(BuildTargetGroup targetGroup, BuildTarget target)
         {
             return GetDeploymentTargetsExtension(GetTargetStringFrom(targetGroup, target));
-        }
-
-        internal static IBuildAnalyzer GetBuildAnalyzer(string target)
-        {
-            if (target == null) return null;
-
-            IPlatformSupportModule module;
-            if (platformSupportModules.TryGetValue(target, out module))
-            {
-                return platformSupportModules[target].CreateBuildAnalyzer();
-            }
-
-            return null;
-        }
-
-        internal static IBuildAnalyzer GetBuildAnalyzer(BuildTarget target)
-        {
-            return GetBuildAnalyzer(GetTargetStringFromBuildTarget(target));
         }
 
         internal static ISettingEditorExtension GetEditorSettingsExtension(string target)

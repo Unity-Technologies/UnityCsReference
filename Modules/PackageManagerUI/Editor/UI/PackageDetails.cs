@@ -40,12 +40,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             root.StretchToParentSize();
             cache = new VisualElementCache(root);
 
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    customContainer.Add(extension.CreateExtensionUI());
-            });
-
             scrollView.verticalScroller.valueChanged += OnDetailScroll;
             scrollView.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
             detail.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
@@ -64,6 +58,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
+        }
+
+        public void OnCreateGUI()
+        {
+            customContainer.Clear();
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    customContainer.Add(extension.CreateExtensionUI());
+            });
 
             Refresh(m_PageManager.GetSelection());
         }

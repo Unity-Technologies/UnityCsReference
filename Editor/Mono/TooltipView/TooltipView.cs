@@ -269,7 +269,7 @@ namespace UnityEditor
         bool ProcessEvent(int a, System.IntPtr b)
         {
             Update();
-            return true;
+            return false;
         }
 
         void Update()

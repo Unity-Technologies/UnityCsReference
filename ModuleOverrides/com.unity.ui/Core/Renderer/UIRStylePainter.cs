@@ -285,12 +285,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
             outIsAtlas = false;
             outTextureId = new TextureId();
             outAddFlags = VertexFlags.IsSolid;
+
             if (texture == null)
                 return;
-            if ((flags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) == MeshGenerationContext.MeshFlags.SkipDynamicAtlas)
-                return;
+
+            bool skipDynamicAtlas = (flags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) == MeshGenerationContext.MeshFlags.SkipDynamicAtlas;
+
             // Attempt to override with an atlas.
-            if (m_Atlas != null && m_Atlas.TryGetAtlas(currentElement, texture as Texture2D, out TextureId atlas, out RectInt atlasRect))
+            if (!skipDynamicAtlas && m_Atlas != null && m_Atlas.TryGetAtlas(currentElement, texture as Texture2D, out TextureId atlas, out RectInt atlasRect))
             {
                 outAddFlags = VertexFlags.IsDynamic;
                 outUVRegion = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
@@ -646,6 +648,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         background.texture,
                         ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
+
+                    rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
                 }
                 else if (background.sprite != null)
                 {
@@ -658,6 +662,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         ref slices,
                         true);
 
+                    rectParams.rect = new Rect(0, 0, background.sprite.rect.width, background.sprite.rect.height);
+
                     sliceScale *= UIElementsUtility.PixelsPerUnitScaleForElement(visualElement, background.sprite);
                 }
                 else if (background.renderTexture != null)
@@ -668,6 +674,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         background.renderTexture,
                         ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
+
+                    rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
+
                 }
                 else if (background.vectorImage != null)
                 {
@@ -677,6 +686,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         background.vectorImage,
                         ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
+
+                    rectParams.rect = new Rect(0, 0, rectParams.vectorImage.size.x, rectParams.vectorImage.size.y);
                 }
 
                 rectParams.topLeftRadius = radiusParams.topLeftRadius;
@@ -705,12 +716,10 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                 if (rectParams.texture != null)
                 {
-                    rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
                     DrawRectangleRepeat(rectParams, currentElement.rect);
                 }
                 else if (rectParams.vectorImage != null)
                 {
-                    rectParams.rect = new Rect(0, 0, rectParams.vectorImage.size.x, rectParams.vectorImage.size.y);
                     DrawRectangleRepeat(rectParams, currentElement.rect);
                 }
                 else
@@ -722,8 +731,8 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         private void DrawRectangleRepeat(MeshGenerationContextUtils.RectangleParams rectParams, Rect totalRect)
         {
-            rectParams.rect.width *= rectParams.uv.width;
-            rectParams.rect.height *= rectParams.uv.height;
+            var uv = new Rect(0, 0, 1, 1);
+            var targetRect = rectParams.rect;
 
             if (m_RepeatRectUVList == null)
             {
@@ -741,41 +750,41 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 if (rectParams.backgroundSize.sizeType == BackgroundSizeType.Contain)
                 {
-                    float ratioX = totalRect.width / rectParams.rect.width;
-                    float ratioY = totalRect.height / rectParams.rect.height;
+                    float ratioX = totalRect.width / targetRect.width;
+                    float ratioY = totalRect.height / targetRect.height;
 
-                    Rect rect = rectParams.rect;
+                    Rect rect = targetRect;
                     if (ratioX < ratioY)
                     {
                         rect.width = totalRect.width;
-                        rect.height = rectParams.rect.height * totalRect.width / rectParams.rect.width;
+                        rect.height = targetRect.height * totalRect.width / targetRect.width;
                     }
                     else
                     {
-                        rect.width = rectParams.rect.width * totalRect.height / rectParams.rect.height;
+                        rect.width = targetRect.width * totalRect.height / targetRect.height;
                         rect.height = totalRect.height;
                     }
 
-                    rectParams.rect = rect;
+                    targetRect = rect;
                 }
                 else if (rectParams.backgroundSize.sizeType == BackgroundSizeType.Cover)
                 {
-                    float ratioX = totalRect.width / rectParams.rect.width;
-                    float ratioY = totalRect.height / rectParams.rect.height;
+                    float ratioX = totalRect.width / targetRect.width;
+                    float ratioY = totalRect.height / targetRect.height;
 
-                    Rect rect = rectParams.rect;
+                    Rect rect = targetRect;
                     if (ratioX > ratioY)
                     {
                         rect.width = totalRect.width;
-                        rect.height = rectParams.rect.height * totalRect.width / rectParams.rect.width;
+                        rect.height = targetRect.height * totalRect.width / targetRect.width;
                     }
                     else
                     {
-                        rect.width = rectParams.rect.width * totalRect.height / rectParams.rect.height;
+                        rect.width = targetRect.width * totalRect.height / targetRect.height;
                         rect.height = totalRect.height;
                     }
 
-                    rectParams.rect = rect;
+                    targetRect = rect;
                 }
             }
             else
@@ -784,22 +793,22 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     if ((!rectParams.backgroundSize.x.IsNone()) && (rectParams.backgroundSize.y.IsAuto()))
                     {
-                        Rect rect = rectParams.rect;
+                        Rect rect = targetRect;
                         if (rectParams.backgroundSize.x.unit == LengthUnit.Percent)
                         {
                             rect.width = totalRect.width * rectParams.backgroundSize.x.value / 100.0f;
-                            rect.height = rect.width * rectParams.rect.height / rectParams.rect.width;
+                            rect.height = rect.width * targetRect.height / targetRect.width;
                         }
                         else if (rectParams.backgroundSize.x.unit == LengthUnit.Pixel)
                         {
                             rect.width = rectParams.backgroundSize.x.value;
-                            rect.height = rect.width * rectParams.rect.height / rectParams.rect.width;
+                            rect.height = rect.width * targetRect.height / targetRect.width;
                         }
-                        rectParams.rect = rect;
+                        targetRect = rect;
                     }
                     else if ((!rectParams.backgroundSize.x.IsNone()) && (!rectParams.backgroundSize.y.IsNone()))
                     {
-                        Rect rect = rectParams.rect;
+                        Rect rect = targetRect;
                         if (!rectParams.backgroundSize.x.IsAuto())
                         {
                             if (rectParams.backgroundSize.x.unit == LengthUnit.Percent)
@@ -825,16 +834,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                             if (rectParams.backgroundSize.x.IsAuto())
                             {
-                                rect.width = rect.height * rectParams.rect.width / rectParams.rect.height;
+                                rect.width = rect.height * targetRect.width / targetRect.height;
                             }
                         }
-                        rectParams.rect = rect;
+                        targetRect = rect;
                     }
                 }
             }
 
             // Skip invalid size
-            if ((rectParams.rect.size.x <= UIRUtility.k_Epsilon) || (rectParams.rect.size.y <= UIRUtility.k_Epsilon))
+            if ((targetRect.size.x <= UIRUtility.k_Epsilon) || (targetRect.size.y <= UIRUtility.k_Epsilon))
             {
                 return;
             }
@@ -848,25 +857,25 @@ namespace UnityEngine.UIElements.UIR.Implementation
             // Adjust size when background-repeat is round and other axis background-size is auto
             if ((rectParams.backgroundSize.x.IsAuto()) && (rectParams.backgroundRepeat.y == Repeat.Round))
             {
-                int count = (int)((totalRect.size[1] + rectParams.rect.size[1] * 0.5f) / rectParams.rect.size[1]);
+                int count = (int)((totalRect.size[1] + targetRect.size[1] * 0.5f) / targetRect.size[1]);
                 count = Math.Max(count, 1);
 
                 float new_size = (totalRect.size[1] / count);
                 Rect rect = new Rect();
                 rect.height = new_size;
-                rect.width = rect.height * rectParams.rect.width / rectParams.rect.height;
-                rectParams.rect = rect;
+                rect.width = rect.height * targetRect.width / targetRect.height;
+                targetRect = rect;
             }
             else if ((rectParams.backgroundSize.y.IsAuto()) && (rectParams.backgroundRepeat.x == Repeat.Round))
             {
-                int count = (int)((totalRect.size[0] + rectParams.rect.size[0] * 0.5f) / rectParams.rect.size[0]);
+                int count = (int)((totalRect.size[0] + targetRect.size[0] * 0.5f) / targetRect.size[0]);
                 count = Math.Max(count, 1);
 
                 float new_size = (totalRect.size[0] / count);
                 Rect rect = new Rect();
                 rect.width = new_size;
-                rect.height = rect.width * rectParams.rect.height / rectParams.rect.width;
-                rectParams.rect = rect;
+                rect.height = rect.width * targetRect.height / targetRect.width;
+                targetRect = rect;
             }
 
             for (int axis = 0; axis < 2; ++axis)
@@ -879,8 +888,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 if (repeat == Repeat.NoRepeat)
                 {
                     RepeatRectUV repeatRectUV;
-                    Rect uv = rectParams.uv;
-                    Rect rect = rectParams.rect;
+                    Rect rect = targetRect;
 
                     repeatRectUV.uv = uv;
                     repeatRectUV.rect = rect;
@@ -889,10 +897,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 else if (repeat == Repeat.Repeat)
                 {
-                    Rect rect = rectParams.rect;
-                    Rect uv = rectParams.uv;
+                    Rect rect = targetRect;
 
-                    int count = (int)(totalRect.size[axis] / rectParams.rect.size[axis]);
+                    int count = (int)(totalRect.size[axis] / targetRect.size[axis]);
 
                     if (backgroundPosition.keyword == BackgroundPositionKeyword.Center)
                     {
@@ -907,13 +914,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     }
                     else
                     {
-                        count++;
+                        count += 2;
                     }
 
                     for (int i = 0; i < count; ++i)
                     {
                         Vector2 r = rect.position;
-                        r[axis] = (i * rectParams.rect.size[axis]);
+                        r[axis] = (i * targetRect.size[axis]);
                         rect.position = r;
 
                         RepeatRectUV s;
@@ -927,10 +934,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 else if (repeat == Repeat.Space)
                 {
-                    Rect rect = rectParams.rect;
-                    Rect uv = rectParams.uv;
+                    Rect rect = targetRect;
 
-                    int count = (int)(totalRect.size[axis] / rectParams.rect.size[axis]);
+                    int count = (int)(totalRect.size[axis] / targetRect.size[axis]);
 
                     if (count >= 0)
                     {
@@ -938,7 +944,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         s.rect = rect;
                         s.uv = uv;
                         m_RepeatRectUVList[axis].Add(s);
-                        linear_size = rectParams.rect.size[axis];
+                        linear_size = targetRect.size[axis];
                     }
 
                     if (count >= 2)
@@ -946,7 +952,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         RepeatRectUV s;
 
                         Vector2 r = rect.position;
-                        r[axis] = totalRect.size[axis] - rectParams.rect.size[axis];
+                        r[axis] = totalRect.size[axis] - targetRect.size[axis];
                         rect.position = r;
 
                         s.rect = rect;
@@ -958,13 +964,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     if (count > 2)
                     {
-                        float spaceOffset = (totalRect.size[axis] - rectParams.rect.size[axis] * count) / (count - 1);
+                        float spaceOffset = (totalRect.size[axis] - targetRect.size[axis] * count) / (count - 1);
 
                         for (int i = 0; i < (count - 2); ++i)
                         {
                             RepeatRectUV s;
                             Vector2 r = rect.position;
-                            r[axis] = (rectParams.rect.size[axis] + spaceOffset) * (1 + i);
+                            r[axis] = (targetRect.size[axis] + spaceOffset) * (1 + i);
                             rect.position = r;
 
                             s.rect = rect;
@@ -976,7 +982,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 else if (repeat == Repeat.Round)
                 {
-                    int count = (int)((totalRect.size[axis] + rectParams.rect.size[axis] * 0.5f) / rectParams.rect.size[axis]);
+                    int count = (int)((totalRect.size[axis] + targetRect.size[axis] * 0.5f) / targetRect.size[axis]);
                     count = Math.Max(count, 1);
 
                     float new_size = (totalRect.size[axis] / count);
@@ -997,13 +1003,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         count++;
                     }
 
-                    Rect rect = rectParams.rect;
+                    Rect rect = targetRect;
                     Vector2 d = rect.size;
 
                     d[axis] = new_size;
                     rect.size = d;
-
-                    Rect uv = rectParams.uv;
 
                     for (int i = 0; i < count; ++i)
                     {
@@ -1030,7 +1034,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     if (backgroundPosition.offset.unit == LengthUnit.Percent)
                     {
-                        offset = (totalRect.size[axis] - rectParams.rect.size[axis]) * backgroundPosition.offset.value / 100.0f;
+                        offset = (totalRect.size[axis] - targetRect.size[axis]) * backgroundPosition.offset.value / 100.0f;
                     }
                     else if (backgroundPosition.offset.unit == LengthUnit.Pixel)
                     {
@@ -1047,14 +1051,20 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 // adjust offset position for repeat and round
                 if (repeat == Repeat.Repeat || repeat == Repeat.Round)
                 {
-                    while (offset < -rectParams.rect.size[axis])
+                    float size = targetRect.size[axis];
+                    if (size > UIRUtility.k_Epsilon)
                     {
-                        offset += rectParams.rect.size[axis];
-                    }
+                        if (offset < -size)
+                        {
+                            int mod = (int)(-offset/size);
+                            offset += mod * size;
+                        }
 
-                    while (offset > 0)
-                    {
-                        offset -= rectParams.rect.size[axis];
+                        if (offset > 0.0f)
+                        {
+                            int mod = (int)(offset/size);
+                            offset -= (1 + mod) * size;
+                        }
                     }
                 }
 
@@ -1069,88 +1079,141 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
             }
 
-            Rect originalUV = new Rect(rectParams.uv);
+            Rect originalUV = new Rect(uv);
 
             foreach (var y in m_RepeatRectUVList[1])
             {
-                rectParams.rect.y = y.rect.y;
-                rectParams.rect.height = y.rect.height;
-                rectParams.uv.y = y.uv.y;
-                rectParams.uv.height = y.uv.height;
+                targetRect.y = y.rect.y;
+                targetRect.height = y.rect.height;
+                uv.y = y.uv.y;
+                uv.height = y.uv.height;
 
-                if (rectParams.rect.y < totalRect.y)
+                if (targetRect.y < totalRect.y)
                 {
-                    float left = totalRect.y - rectParams.rect.y;
-                    float right = rectParams.rect.height - left;
+                    float left = totalRect.y - targetRect.y;
+                    float right = targetRect.height - left;
 
                     float total = left + right;
                     float new_height = originalUV.height * right / total;
                     float new_y = originalUV.height * left / total;
 
-                    rectParams.uv.y = new_y + originalUV.y;
-                    rectParams.uv.height = new_height;
+                    uv.y = new_y + originalUV.y;
+                    uv.height = new_height;
 
-                    rectParams.rect.y = totalRect.y;
-                    rectParams.rect.height = right;
+                    targetRect.y = totalRect.y;
+                    targetRect.height = right;
                 }
 
-                if (rectParams.rect.yMax > totalRect.yMax)
+                if (targetRect.yMax > totalRect.yMax)
                 {
-                    float right = rectParams.rect.yMax - totalRect.yMax;
-                    float left = rectParams.rect.height - right;
+                    float right = targetRect.yMax - totalRect.yMax;
+                    float left = targetRect.height - right;
                     float total = left + right;
 
-                    float new_height = rectParams.uv.height * left / total;
-                    rectParams.uv.height = new_height;
-                    rectParams.uv.y = rectParams.uv.yMax - new_height;
-                    rectParams.rect.height = left;
+                    float new_height = uv.height * left / total;
+                    uv.height = new_height;
+                    uv.y = uv.yMax - new_height;
+                    targetRect.height = left;
                 }
 
                 if (rectParams.vectorImage == null)
                 {
                     // offset y
-                    float before = rectParams.uv.y - originalUV.y;
-                    float after = originalUV.yMax - rectParams.uv.yMax;
-                    rectParams.uv.y += (after - before);
+                    float before = uv.y - originalUV.y;
+                    float after = originalUV.yMax - uv.yMax;
+                    uv.y += (after - before);
                 }
 
                 foreach (var x in m_RepeatRectUVList[0])
                 {
-                    rectParams.rect.x = x.rect.x;
-                    rectParams.rect.width = x.rect.width;
-                    rectParams.uv.x = x.uv.x;
-                    rectParams.uv.width = x.uv.width;
+                    targetRect.x = x.rect.x;
+                    targetRect.width = x.rect.width;
+                    uv.x = x.uv.x;
+                    uv.width = x.uv.width;
 
-                    if (rectParams.rect.x < totalRect.x)
+                    if (targetRect.x < totalRect.x)
                     {
-                        float left = totalRect.x - rectParams.rect.x;
-                        float right = rectParams.rect.width - left;
+                        float left = totalRect.x - targetRect.x;
+                        float right = targetRect.width - left;
 
                         float total = left + right;
-                        float new_width = rectParams.uv.width * right / total;
+                        float new_width = uv.width * right / total;
                         float new_x = originalUV.x + originalUV.width * left / total;
 
-                        rectParams.uv.x = new_x;
-                        rectParams.uv.width = new_width;
+                        uv.x = new_x;
+                        uv.width = new_width;
 
-                        rectParams.rect.x = totalRect.x;
-                        rectParams.rect.width = right;
+                        targetRect.x = totalRect.x;
+                        targetRect.width = right;
                     }
 
-                    if (rectParams.rect.xMax > totalRect.xMax)
+                    if (targetRect.xMax > totalRect.xMax)
                     {
-                        float right = rectParams.rect.xMax - totalRect.xMax;
-                        float left = rectParams.rect.width - right;
+                        float right = targetRect.xMax - totalRect.xMax;
+                        float left = targetRect.width - right;
                         float total = left + right;
 
-                        float new_width = rectParams.uv.width * left / total;
-                        rectParams.uv.width = new_width;
-                        rectParams.rect.width = left;
+                        float new_width = uv.width * left / total;
+                        uv.width = new_width;
+                        targetRect.width = left;
                     }
 
-                    DrawRectangle(rectParams);
+                    StampRectangleWithSubRect(rectParams, targetRect, uv);
                 }
             }
+        }
+
+        void StampRectangleWithSubRect(MeshGenerationContextUtils.RectangleParams rectParams, Rect targetRect, Rect targetUV)
+        {
+            if (targetRect.width < UIRUtility.k_Epsilon || targetRect.height < UIRUtility.k_Epsilon)
+                return;
+
+            // Remap the subRect inside the targetRect
+            var fullRect = targetRect;
+            fullRect.size /= targetUV.size;
+            fullRect.position -= new Vector2(targetUV.position.x, 1.0f - targetUV.position.y - targetUV.size.y) * fullRect.size;
+
+            var subRect = rectParams.subRect;
+            subRect.position *= fullRect.size;
+            subRect.position += fullRect.position;
+            subRect.size *= fullRect.size;
+
+            if (rectParams.HasSlices(UIRUtility.k_Epsilon))
+            {
+                // Use the full target rect when working with slices. The content will stretch to the full target.
+                rectParams.rect = targetRect;
+            }
+            else
+            {
+                // Find where the subRect intersects with the targetRect.
+                var rect = MeshGenerationContextUtils.RectangleParams.RectIntersection(subRect, targetRect);
+                if (rect.size.x < UIRUtility.k_Epsilon || rect.size.y < UIRUtility.k_Epsilon)
+                    return;
+
+                if (rect.size != subRect.size)
+                {
+                    // There was an intersection, we need to adjust the UVs
+                    var sizeRatio = rect.size / subRect.size;
+                    var newUVSize = rectParams.uv.size * sizeRatio;
+                    var uvDiff = rectParams.uv.size - newUVSize;
+                    if (rect.x > subRect.x)
+                    {
+                        float overflow = ((subRect.xMax - rect.xMax) / subRect.width) * rectParams.uv.size.x;
+                        rectParams.uv.x += uvDiff.x - overflow;
+                    }
+                    if (rect.yMax < subRect.yMax)
+                    {
+                        float overflow = ((rect.y - subRect.y) / subRect.height) * rectParams.uv.size.y;
+                        rectParams.uv.y += uvDiff.y - overflow;
+                    }
+
+                    rectParams.uv.size = newUVSize;
+                }
+
+                rectParams.rect = rect;
+            }
+
+            DrawRectangle(rectParams);
         }
 
         public void DrawVisualElementBorder()

@@ -49,12 +49,13 @@ namespace UnityEditor
 
         // Invoked from menu
         [UsedByNativeCode]
-        public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath)
+        public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath, int productId, string packageName, string packageVersion, int uploadId)
         {
             if (!ValidateInput(items))
                 return;
 
-            PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath);
+            var origin = new AssetOrigin(productId, packageName, packageVersion, uploadId);
+            PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath, origin);
         }
 
         public PackageImport()
@@ -419,13 +420,16 @@ namespace UnityEditor
         private bool m_IsProjectSettingStep;
         public bool IsProjectSettingStep => m_IsProjectSettingStep;
 
-        public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath)
+        private AssetOrigin m_AssetOrigin;
+
+        public void StartImport(string packagePath, ImportPackageItem[] items, string packageIconPath, AssetOrigin origin)
         {
             ClearImportData();
 
             m_PackagePath = packagePath;
             m_PackageIconPath = packageIconPath;
             m_PackageName = System.IO.Path.GetFileNameWithoutExtension(packagePath);
+            m_AssetOrigin = origin;
 
             m_InitialImportItems = items;
             foreach (var item in items)
@@ -492,7 +496,7 @@ namespace UnityEditor
         private void FinishImport()
         {
             var completeItemList = IsMultiStepWizard ? m_AssetContentItems.Concat(m_ProjectSettingItems) : m_AssetContentItems;
-            PackageUtility.ImportPackageAssets(m_PackageName, completeItemList.ToArray());
+            PackageUtility.ImportPackageAssetsWithOrigin(m_AssetOrigin, completeItemList.ToArray());
             CloseImportWindow();
         }
 

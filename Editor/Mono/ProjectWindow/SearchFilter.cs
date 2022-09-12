@@ -62,6 +62,13 @@ namespace UnityEditor
         private string[] m_Folders = new string[0];
         [SerializeField]
         private string[] m_Globs = new string[0];
+
+        [SerializeField]
+        private int[] m_ProductIds = new int[0];
+
+        [SerializeField]
+        private bool m_AnyWithAssetOrigin = false;
+
         [SerializeField]
         private string m_OriginalText = "";
         [SerializeField]
@@ -81,6 +88,10 @@ namespace UnityEditor
         public string[] folders { get { return m_Folders; } set { m_Folders = value; }}
         public SearchArea searchArea {  get { return m_SearchArea; } set { m_SearchArea = value; }}
         public string[] globs { get { return m_Globs; } set { m_Globs = value; }}
+        public int[] productIds { get { return m_ProductIds; } set { m_ProductIds = value; }}
+
+        // When set to true, the search filter will keep those assets that contain AssetOrigin information
+        public bool anyWithAssetOrigin { get { return m_AnyWithAssetOrigin; } set { m_AnyWithAssetOrigin = value; }}
         public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
         public ImportLogFlags importLogFlags { get => m_ImportLogFlags; set => m_ImportLogFlags = value; }
 
@@ -94,6 +105,8 @@ namespace UnityEditor
             m_ReferencingInstanceIDs = new int[0];
             m_SceneHandles = new int[0];
             m_Globs = new string[0];
+            m_ProductIds = new int[0];
+            m_AnyWithAssetOrigin = false;
             m_VersionControlStates = new string[0];
             m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
@@ -113,6 +126,7 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_ClassNames) ||
                 !IsNullOrEmpty(m_AssetBundleNames) ||
                 !IsNullOrEmpty(m_Globs) ||
+                !IsNullOrEmpty(m_ProductIds) ||
                 !IsNullOrEmpty(m_ReferencingInstanceIDs) ||
                 m_ImportLogFlags != ImportLogFlags.None;
 
@@ -239,6 +253,18 @@ namespace UnityEditor
                 changed = true;
             }
 
+            if (newFilter.m_ProductIds != m_ProductIds)
+            {
+                m_ProductIds = newFilter.m_ProductIds;
+                changed = true;
+            }
+
+            if (newFilter.m_AnyWithAssetOrigin != m_AnyWithAssetOrigin)
+            {
+                m_AnyWithAssetOrigin = newFilter.m_AnyWithAssetOrigin;
+                changed = true;
+            }
+
             return changed;
         }
 
@@ -276,6 +302,10 @@ namespace UnityEditor
             if (m_Globs != null && m_Globs.Length > 0)
                 result += "[Glob: " + m_Globs[0] + "]";
 
+            if (m_ProductIds != null && m_ProductIds.Length > 0)
+                result += "[AssetOrigin.ProductIds: " + m_ProductIds[0] + "]";
+
+            result += "[AnyWithAssetOrigin: " + anyWithAssetOrigin + "]";
             result += "[ShowAllHits: " + showAllHits + "]";
             result += "[SkipHidden: " + skipHidden + "]";
 
@@ -315,6 +345,7 @@ namespace UnityEditor
             AddToString("s:", m_SoftLockControlStates, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);
             AddToString("glob:", m_Globs.Select(a => $"\"{a}\"").ToArray(), ref result);
+            AddToString("assetorigin.productid:", m_ProductIds.Select(o => $"\"{o}\"").ToArray(), ref result);
 
             if (m_ImportLogFlags == (ImportLogFlags.Error | ImportLogFlags.Warning))
             {

@@ -158,7 +158,15 @@ namespace UnityEngine
         {
             result = false;
             if (processEvent != null)
-                result = processEvent(instanceID, nativeEventPtr);
+            {
+                object[] parameters = { instanceID, nativeEventPtr};
+                // call manually so that the result is true if any of the invocation return true.
+                // Otherwise only the return from the last invocation is used.
+                foreach( var invocation in processEvent.GetInvocationList())
+                {
+                    result = invocation.DynamicInvoke(parameters) is bool b && b || result;
+                }
+            }
         }
 
         internal static void EndContainer()

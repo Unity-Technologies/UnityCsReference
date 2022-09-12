@@ -400,6 +400,16 @@ namespace UnityEngine.UIElements
                 case TextureFormat.RG32:                // HDR
                 case TextureFormat.RGB48:               // HDR
                 case TextureFormat.RGBA64:              // HDR
+
+                case TextureFormat.R8_SIGNED:           // Signed
+                case TextureFormat.RG16_SIGNED:         // Signed
+                case TextureFormat.RGB24_SIGNED:        // Signed
+                case TextureFormat.RGBA32_SIGNED:       // Signed
+
+                case TextureFormat.R16_SIGNED:          // Signed
+                case TextureFormat.RG32_SIGNED:         // Signed
+                case TextureFormat.RGB48_SIGNED:        // Signed
+                case TextureFormat.RGBA64_SIGNED:       // Signed
                     return false;
                 default:
                     // This exception is required if we want to be able to detect new enum values in test

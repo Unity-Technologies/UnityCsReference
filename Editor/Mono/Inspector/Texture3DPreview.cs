@@ -75,6 +75,7 @@ namespace UnityEditor
             public static readonly int ObjToW = Shader.PropertyToID("_ObjToW");
             public static readonly int WToObj = Shader.PropertyToID("_WToObj");
             public static readonly int isNormalMap = Shader.PropertyToID("_IsNormalMap");
+            public static readonly int isSignedFormat = Shader.PropertyToID("_IsSignedFormat");
         }
 
         static class Styles
@@ -324,6 +325,7 @@ namespace UnityEditor
             material.SetVector(MaterialProps.voxelSize, voxelSize);
             material.SetVector(MaterialProps.invScale, inverseScale);
             material.SetFloat(MaterialProps.isNormalMap, TextureInspector.IsNormalMap(texture) ? 1.0f : 0.0f);
+            material.SetFloat(MaterialProps.isSignedFormat, GraphicsFormatUtility.IsSignedFormat(texture.graphicsFormat) ? 1.0f : 0.0f);
 
             if (customColorRamp != null)
             {

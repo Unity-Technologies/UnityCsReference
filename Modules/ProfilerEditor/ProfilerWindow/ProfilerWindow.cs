@@ -779,6 +779,7 @@ namespace UnityEditor
 
         // Used by Native method DoBuildPlayer_PostBuild() in BuildPlayer.cpp
         [MenuItem("Window/Analysis/Profiler %7", false, 0)]
+        [RequiredByNativeCode]
         internal static ProfilerWindow ShowProfilerWindow()
         {
             return EditorWindow.GetWindow<ProfilerWindow>(false);

@@ -156,7 +156,7 @@ namespace Unity.UI.Builder
             // Nothing to do by default.
         }
 
-        protected void OnDisable()
+        protected virtual void OnDisable()
         {
             // Unregister window.
             document.UnregisterWindow(this);

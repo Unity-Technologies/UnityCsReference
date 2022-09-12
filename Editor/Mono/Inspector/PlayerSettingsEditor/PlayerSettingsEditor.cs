@@ -2092,6 +2092,7 @@ namespace UnityEditor
                     {
                         EditorGUI.indentLevel++;
                         streamingPriority = EditorGUILayout.DelayedIntField(SettingsContent.lightmapStreamingPriority, streamingPriority);
+                        streamingPriority = Math.Clamp(streamingPriority, Texture2D.streamingMipmapsPriorityMin, Texture2D.streamingMipmapsPriorityMax);
                         EditorGUI.indentLevel--;
                     }
                     if (EditorGUI.EndChangeCheck())

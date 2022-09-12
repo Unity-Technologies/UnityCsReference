@@ -384,6 +384,17 @@ namespace UnityEditor
             return allOpened;
         }
 
+        [FreeFunction("AssetDatabase::GetAssetOrigin")]
+        extern private static AssetOrigin GetAssetOrigin_Internal(GUID guid);
+        internal static AssetOrigin GetAssetOrigin(GUID guid)
+        {
+            return GetAssetOrigin_Internal(guid);
+        }
+        internal static AssetOrigin GetAssetOrigin(string guid)
+        {
+            return GetAssetOrigin_Internal(new GUID(guid));
+        }
+
         extern internal static string GUIDToAssetPath_Internal(GUID guid);
         extern internal static GUID AssetPathToGUID_Internal(string path);
 
@@ -782,10 +793,19 @@ namespace UnityEditor
 
         [FreeFunction("::ImportPackage")]
         extern private static bool ImportPackage(string packagePath, ImportPackageOptions options);
+
+        [FreeFunction("::ImportPackageWithOrigin")]
+        extern private static bool ImportPackageWithOrigin(string packagePath, AssetOrigin origin, ImportPackageOptions options);
+
         //TODO: This API should be Obsoleted when there is time available to update all the uses of it in Package Manager packages
         public static void ImportPackage(string packagePath, bool interactive)
         {
             ImportPackage(packagePath, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
+        }
+
+        internal static void ImportPackage(string packagePath, AssetOrigin origin, bool interactive)
+        {
+            ImportPackageWithOrigin(packagePath, origin, ImportPackageOptions.ImportDelayed | (interactive ? ImportPackageOptions.Default : ImportPackageOptions.NoGUI));
         }
 
         internal static bool ImportPackageImmediately(string packagePath)

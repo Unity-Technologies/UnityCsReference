@@ -138,13 +138,6 @@ namespace UnityEditor
             get { return ScriptingRuntimeVersion.Latest; }
         }
 
-        [StaticAccessor("ScriptingManager", StaticAccessorType.DoubleColon)]
-        internal static extern bool useLibmonoBackendForIl2cpp
-        {
-            [NativeName("UseLibmonoBackendForIl2cpp")]
-            get;
-        }
-
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern string GetLicenseType();
 
@@ -356,6 +349,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         internal static extern void UpdateInteractionModeSettings();
+
+        internal static extern void UpdateTooltipsInPlayModeSettings();
 
         [FreeFunction("GetProjectVersion().Write")]
         internal static extern void WriteVersion();

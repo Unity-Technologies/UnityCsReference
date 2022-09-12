@@ -58,20 +58,6 @@ namespace UnityEngine.Android
         public const string ExternalStorageWrite = "android.permission.WRITE_EXTERNAL_STORAGE";
 
         private static AndroidJavaObject m_UnityPermissions;
-        private static AndroidJavaObject m_Activity;
-
-        private static AndroidJavaObject GetActivity()
-        {
-            if (m_Activity != null)
-                return m_Activity;
-
-            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-            {
-                m_Activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-            }
-
-            return m_Activity;
-        }
 
         private static AndroidJavaObject GetUnityPermissions()
         {

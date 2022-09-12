@@ -7080,6 +7080,7 @@ namespace UnityEditor
                 mat.SetColor("_ColorMask", colorMask);
                 mat.SetFloat("_Mip", mipLevel);
                 mat.SetFloat("_Exposure", exposure);
+                mat.SetInt("_SNormFormat", UnityEngine.Experimental.Rendering.GraphicsFormatUtility.IsSNormFormat(image.graphicsFormat) ? 1 : 0);
 
                 RenderTexture rt = image as RenderTexture;
                 bool manualResolve = (rt != null) && rt.bindTextureMS;
@@ -7193,6 +7194,12 @@ namespace UnityEditor
                 var alphaOnlyMat = useVT ? alphaVTMaterial : alphaMaterial;
                 alphaOnlyMat.SetFloat("_ManualTex2Linear", manualTex2Linear ? 1.0f : 0.0f);
                 return alphaOnlyMat;
+            }
+
+
+            if (defaultMat != null)
+            {
+                defaultMat.SetInt("_SNormFormat", UnityEngine.Experimental.Rendering.GraphicsFormatUtility.IsSNormFormat(t.graphicsFormat) ? 1 : 0);
             }
 
             return defaultMat;

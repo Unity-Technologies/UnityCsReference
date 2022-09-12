@@ -28,8 +28,6 @@ namespace UnityEditor.Modules
 
         public virtual string[] AssemblyReferencesForEditorCsharpProject { get { return new string[0]; } }
 
-        public virtual IBuildAnalyzer CreateBuildAnalyzer() { return null; }
-
         public abstract IBuildPostprocessor CreateBuildPostprocessor();
 
         public virtual IScriptingImplementations CreateScriptingImplementations() { return null; }
@@ -45,8 +43,6 @@ namespace UnityEditor.Modules
         public virtual ICompilationExtension CreateCompilationExtension() { return compilationExtension != null ? compilationExtension : compilationExtension = new DefaultCompilationExtension(); }
 
         public virtual IPluginImporterExtension CreatePluginImporterExtension() { return null; }
-
-        public virtual IUserAssembliesValidator CreateUserAssembliesValidatorExtension() { return null; }
 
         public virtual IDeploymentTargetsExtension CreateDeploymentTargetsExtension() { return null; }
 

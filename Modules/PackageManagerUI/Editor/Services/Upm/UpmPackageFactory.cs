@@ -88,7 +88,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // when a user adds a git or local package through the special add package UI.
                 if (package == null && item.progress == PackageProgress.Installing)
                 {
-                    var placeholerPackage = new PlaceholderPackage(item.packageIdOrName, L10n.Tr("Adding a new package"), PackageType.Upm, PackageTag.SpecialInstall, progress: PackageProgress.Installing);
+                    var placeholerPackage = new PlaceholderPackage(item.packageIdOrName, L10n.Tr("Installing a new package"), PackageType.Upm, PackageTag.SpecialInstall, progress: PackageProgress.Installing);
                     m_PackageDatabase.UpdatePackages(new[] { placeholerPackage });
                     continue;
                 }

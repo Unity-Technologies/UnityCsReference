@@ -126,6 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 DelayRefresh(PackageFilterTab.UnityRegistry);
 
             m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbar.extensions);
+            packageDetails.OnCreateGUI();
         }
 
         private void DelayRefresh(PackageFilterTab tab, string subPage = "")

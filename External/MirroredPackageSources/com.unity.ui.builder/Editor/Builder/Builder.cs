@@ -27,6 +27,7 @@ namespace Unity.UI.Builder
         public BuilderToolbar toolbar => m_Toolbar;
         public VisualElement documentRootElement => m_Viewport.documentRootElement;
         public BuilderCanvas canvas => m_Viewport.canvas;
+        public BuilderInspector inspector => m_Inspector;
         public BuilderHierarchy hierarchy => m_Hierarchy;
 
         internal override bool liveReloadPreferenceDefault => true;
@@ -164,7 +165,8 @@ namespace Unity.UI.Builder
                 m_Viewport.resizer,
                 m_Viewport.mover,
                 m_Viewport.anchorer,
-                m_Viewport.selectionIndicator
+                m_Viewport.selectionIndicator,
+                m_Inspector.preview
             });
 
             // Command Handler

@@ -10,6 +10,7 @@ using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using UnityEditor.Utils;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -35,6 +36,25 @@ namespace UnityEditor
             HasMouseEvent = false;
             _updateProgressAction = DisplayProgress;
             _netStandardPathProvider = netStandardPathProvider;
+        }
+
+        static HashSet<string> BuildReferencedTypeList(AssemblyDefinition[] assemblies)
+        {
+            HashSet<string> res = new HashSet<string>();
+
+            foreach (AssemblyDefinition ass in assemblies)
+            {
+                //string assname = ass.Name.Name;
+                if (!ass.Name.Name.StartsWith("System") && !ass.Name.Name.Equals("UnityEngine"))
+                {
+                    foreach (TypeReference typ in ass.MainModule.GetTypeReferences())
+                    {
+                        res.Add(typ.FullName);
+                    }
+                }
+            }
+
+            return res;
         }
 
         internal interface INetStandardPathProvider
@@ -108,7 +128,7 @@ namespace UnityEditor
             CollectReferencesFromRootsRecursive(dir, roots, ignoreSystemDlls);
 
             var assemblyDefinitionsAsArray = _assemblyDefinitions.ToArray();
-            _referencedTypes = MonoAOTRegistration.BuildReferencedTypeList(assemblyDefinitionsAsArray);
+            _referencedTypes = BuildReferencedTypeList(assemblyDefinitionsAsArray);
 
             if (collectMethods)
                 CollectReferencedAndDefinedMethods(assemblyDefinitionsAsArray);
@@ -140,7 +160,7 @@ namespace UnityEditor
             }
 
             var assemblyDefinitionsAsArray = _assemblyDefinitions.ToArray();
-            _referencedTypes = MonoAOTRegistration.BuildReferencedTypeList(assemblyDefinitionsAsArray);
+            _referencedTypes = BuildReferencedTypeList(assemblyDefinitionsAsArray);
 
             if (collectMethods)
                 CollectReferencedAndDefinedMethods(assemblyDefinitionsAsArray);
@@ -301,7 +321,7 @@ namespace UnityEditor
                     continue;
 
                 var assemblyDefinitionsAsArray = new[] {assembly};
-                var types = MonoAOTRegistration.BuildReferencedTypeList(assemblyDefinitionsAsArray);
+                var types = BuildReferencedTypeList(assemblyDefinitionsAsArray);
 
                 if (types.Any(item => item.StartsWith(klass)))
                     return assembly.Name.Name;
@@ -323,6 +343,7 @@ namespace UnityEditor
                 || name.StartsWith("Unity.VisualScripting");
         }
 
+        [RequiredByNativeCode]
         public static bool GetScriptsHaveMouseEvents(string path)
         {
             var checker = new AssemblyReferenceChecker();

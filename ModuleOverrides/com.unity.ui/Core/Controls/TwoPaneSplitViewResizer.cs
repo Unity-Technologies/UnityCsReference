@@ -11,10 +11,13 @@ namespace UnityEngine.UIElements
         TwoPaneSplitView m_SplitView;
 
         int m_Direction;
+        float m_Delta;
+
         TwoPaneSplitViewOrientation orientation => m_SplitView.orientation;
 
         VisualElement fixedPane => m_SplitView.fixedPane;
         VisualElement flexedPane => m_SplitView.flexedPane;
+        public float delta => m_Delta;
 
         float fixedPaneMinDimension
         {
@@ -146,9 +149,9 @@ namespace UnityEngine.UIElements
             if (orientation == TwoPaneSplitViewOrientation.Vertical)
                 mouseDiff = diff.y;
 
-            var delta = m_Direction * mouseDiff;
+            m_Delta = m_Direction * mouseDiff;
 
-            ApplyDelta(delta);
+            ApplyDelta(m_Delta);
 
             e.StopPropagation();
         }

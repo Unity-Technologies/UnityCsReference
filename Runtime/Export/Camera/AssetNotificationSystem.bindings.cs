@@ -62,20 +62,6 @@ namespace UnityEngine.Internal
             }
         }
 
-        /// <summary>
-        /// Subscribe the given asset for generating change/deletion notifications.
-        /// Only Mesh and Material are supported.
-        /// </summary>
-        [NativeThrows]
-        public static extern void SubscribeAsset([NotNull] UnityEngine.Object asset);
-
-        /// <summary>
-        /// Unsubscribe the given asset from generating change/deletion notifications.
-        /// Only Mesh and Material are supported.
-        /// </summary>
-        [NativeThrows]
-        public static extern void UnsubscribeAsset([NotNull] UnityEngine.Object asset);
-
         private static extern unsafe bool GetChangesForScripting(int subscriberID, AssetType type,
             int* changed, int changedLength, int* deleted, int deletedLength);
 

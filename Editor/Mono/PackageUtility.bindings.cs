@@ -69,6 +69,10 @@ namespace UnityEditor
 
         [FreeFunction("DelayedImportPackageAssets")]
         public static extern void ImportPackageAssets(string packageName, ImportPackageItem[] items);
+
+        [FreeFunction("DelayedImportPackageAssetsWithOrigin")]
+        public static extern void ImportPackageAssetsWithOrigin(AssetOrigin origin, ImportPackageItem[] items);
+
         [FreeFunction("ImportPackageAssets")]
         public static extern void ImportPackageAssetsImmediately(string packageName, ImportPackageItem[] items);
 

@@ -53,13 +53,15 @@ namespace UnityEditor
         public sealed partial class PostProcessSceneAttribute : CallbackOrderAttribute
         {
             private int m_version;
-            internal int version { get {return m_version; } }
 
             public PostProcessSceneAttribute() { m_CallbackOrder = 1; m_version = 0; }
 
             public PostProcessSceneAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; m_version = 0; }
 
             public PostProcessSceneAttribute(int callbackOrder, int version) { m_CallbackOrder = callbackOrder; m_version = version; }
+
+            [RequiredByNativeCode]
+            internal int GetVersion() => m_version;
 
             [RequiredSignature]
             static void Signature() { throw new InvalidOperationException(); }

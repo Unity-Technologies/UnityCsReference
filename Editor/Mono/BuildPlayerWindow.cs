@@ -886,7 +886,6 @@ namespace UnityEditor
             bool shouldDrawArrayBoundsChecksToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawExplicitArrayBoundsCheckbox() : false;
             bool shouldDrawDevelopmentPlayerToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawDevelopmentPlayerCheckbox() : true;
 
-            bool enableBuildScriptsOnly = postprocessor != null ? postprocessor.SupportsScriptsOnlyBuild() && !postprocessor.UsesBeeBuild() : false;
             bool canInstallInBuildFolder = false;
 
             if (BuildPipeline.IsBuildTargetSupported(namedBuildTarget.ToBuildTargetGroup(), buildTarget))
@@ -984,9 +983,6 @@ namespace UnityEditor
                     // Undo force from above
                     GUI.enabled = developmentBuild;
                 }
-
-                if (buildWindowExtension != null && enableBuildScriptsOnly)
-                    buildWindowExtension.DoScriptsOnlyGUI();
 
                 GUI.enabled = true;
 
@@ -1147,9 +1143,7 @@ namespace UnityEditor
             {
                 // Build Button
                 GUI.enabled = enableBuildButton;
-                bool enableCleanBuild = (postprocessor != null ? postprocessor.UsesBeeBuild() : false);
 
-                if (enableCleanBuild)
                 {
                     Rect buildRect = GUILayoutUtility.GetRect(buildButton, EditorStyles.dropDownToggleButton,
                         GUILayout.Width(Styles.kButtonWidth));
@@ -1180,12 +1174,6 @@ namespace UnityEditor
                         CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
                         GUIUtility.ExitGUI();
                     }
-                }
-                else if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
-                {
-                    ApplyAssetImportOverridesToSettingsAsset();
-                    CallBuildMethods(askForBuildLocation, BuildOptions.ShowBuiltPlayer);
-                    GUIUtility.ExitGUI();
                 }
             }
             else

@@ -192,7 +192,7 @@ namespace UnityEditor.PlatformSupport
             int val = prop.intValue;
             if (val == (int)iOSAutomaticallySignValue.AutomaticallySignValueNotSet)
             {
-                val = (int)(EditorPrefs.GetBool(editorPropKey, true) ? iOSAutomaticallySignValue.AutomaticallySignValueTrue : iOSAutomaticallySignValue.AutomaticallySignValueFalse);
+                val = (int)(EditorPrefs.GetBool(editorPropKey) ? iOSAutomaticallySignValue.AutomaticallySignValueTrue : iOSAutomaticallySignValue.AutomaticallySignValueFalse);
             }
             return val;
         }
