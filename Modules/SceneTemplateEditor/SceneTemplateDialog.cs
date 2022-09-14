@@ -79,6 +79,7 @@ namespace UnityEditor.SceneTemplate
         private const string k_SceneTemplateCreateAdditiveButtonName = "scene-template-create-additive-button";
 
         private const string k_LoadAdditivelyError = "Cannot load an in-memory scene additively while another in-memory scene is loaded. Save the current scene or load a project scene.";
+        private const string k_LoadAdditivelyToolTip = "Load the Scene alongside the current one.";
 
         internal static SceneTemplateInfo emptySceneTemplateInfo = new SceneTemplateInfo
         {
@@ -264,8 +265,8 @@ namespace UnityEditor.SceneTemplate
                     offsetContainer.Add(buttonRow);
                     buttonRow.style.flexDirection = FlexDirection.Row;
 
-                    var loadAdditiveButton = new Toggle() { name = k_SceneTemplateCreateAdditiveButtonName, text = "Load additively" };
-                    buttonRow.Add(loadAdditiveButton);
+                    var loadAdditiveToggle = new Toggle() { name = k_SceneTemplateCreateAdditiveButtonName, text = "Load additively", tooltip = k_LoadAdditivelyToolTip };
+                    buttonRow.Add(loadAdditiveToggle);
                     {
                         // The buttons need to be right-aligned
                         var buttonSection = new VisualElement();

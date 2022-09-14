@@ -49,7 +49,7 @@ namespace UnityEngine
         public static float Sqrt(float f) { return (float)Math.Sqrt(f); }
 
         // Returns the absolute value of /f/.
-        public static float Abs(float f) { return (float)Math.Abs(f); }
+        public static float Abs(float f) { return Math.Abs(f); }
 
         // Returns the absolute value of /value/.
         public static int Abs(int value) { return Math.Abs(value); }

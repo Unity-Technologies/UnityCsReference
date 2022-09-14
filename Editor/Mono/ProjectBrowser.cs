@@ -1969,8 +1969,9 @@ namespace UnityEditor
                     {
                         GUIUtility.hotControl = 0;
 
-                        // Only show menu if there are instances selected
-                        if (Selection.instanceIDs.Length > 0)
+                        // In safe mode non-scripts assets aren't selectable and therefore if you context click a non-script
+                        // asset, then a context menu shouldn't be displayed.
+                        if (!EditorUtility.isInSafeMode || Selection.instanceIDs.Length > 0)
                         {
                             // Context click in list area
                             EditorUtility.DisplayPopupMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), "Assets/", null);
