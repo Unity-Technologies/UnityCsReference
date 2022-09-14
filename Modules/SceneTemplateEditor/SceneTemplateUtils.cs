@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using UnityEditor.PackageManager;
 using System.Reflection;
 using JetBrains.Annotations;
 using UnityEngine;
@@ -108,6 +109,20 @@ namespace UnityEditor.SceneTemplate
             const string documentationUrl = "https://docs.unity3d.com/Packages/com.unity.scene-template@latest/";
             var uri = new Uri(documentationUrl);
             Process.Start(uri.AbsoluteUri);
+        }
+
+		// Based on UpmPackageInfo::IsPackageReadOnly() in PackageManagerCommon.cpp
+        internal static bool IsPackageReadOnly(PackageManager.PackageInfo pi)
+        {
+            if (pi.source == PackageSource.Embedded || pi.source == PackageSource.Local)
+                return false;
+            return true;
+        }
+
+        internal static bool IsAssetReadOnly(string assetPath)
+        {
+            var pi = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+            return pi != null && IsPackageReadOnly(pi);
         }
     }
 }
