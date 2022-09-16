@@ -67,13 +67,14 @@ namespace UnityEditor.Connect
         const string k_JsonOrgsNodeName = "orgs";
         const string k_JsonRoleNodeName = "role";
         const string k_JsonOrgNameNodeName = "org_name";
+        internal const string k_FakeSlashUnicode = "\uff0f";
 
         Dictionary<string, ProjectInfoData> m_ProjectInfoByName;
         VisualElement m_CreateProjectIdBlock;
         VisualElement m_ReuseProjectIdBlock;
         string m_LastCreateBlockOrganization;
         string m_LastReuseBlockOrganization;
-        string m_LastReuseBlockProject;
+        internal ProjectNameSlashReplacer m_LastReuseBlockProject = new ProjectNameSlashReplacer();
         UnityWebRequest m_CurrentRequest;
         int m_CreateIteration;
 
@@ -84,6 +85,66 @@ namespace UnityEditor.Connect
         public ExceptionCallback exceptionCallback { private get; set; }
 
         public VisualElement projectBindContainer { get; private set; }
+
+        /// <summary>
+        /// This class provides a method that replaces slashes in project names, keeps track of modified
+        /// project names, and encapsulates the last project name used.
+        /// </summary>
+        /// <remarks>
+        /// This is a hack to prevent UI display issues for UGS projects that contain a slash (to prevent the creation
+        /// of UI sub-menus). This hack could be removed in the future, if UGS dashboard prevents users from inputting
+        /// slashes in project names, or when UI team develops a feature to deactivate sub-menu creation on slashes.
+        /// </remarks>
+        internal class ProjectNameSlashReplacer
+        {
+            string m_LastProjectName;
+            internal List<string> m_ModifiedProjectNames = new List<string>();
+
+            internal string LastProjectName
+            {
+                get
+                {
+                    // Replaces a fake slash character by a real slash if the project name was modified. Slashes in
+                    // project names get replaced with fake slashes for the UI. Here, we revert that. This is because
+                    // in the code we want the true project names.
+                    if(m_ModifiedProjectNames.Contains(m_LastProjectName))
+                    {
+                        return m_LastProjectName.Replace(k_FakeSlashUnicode, "/");
+                    }
+                    else
+                    {
+                        return m_LastProjectName;
+                    }
+                }
+                set => m_LastProjectName = value;
+            }
+
+            /// <summary>
+            /// Replaces the regular slash character with a stylized slash for all strings in a list
+            /// </summary>
+            /// <param name="input">Strings to be modified</param>
+            /// <returns>List of modified strings if they contained a slash, original strings otherwise</returns>
+            internal List<string> ReplaceSlashForFakeSlash(List<string> input)
+            {
+                m_ModifiedProjectNames.Clear();
+
+                if (input == null)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < input.Count; i++)
+                {
+                    if (input[i].Contains("/"))
+                    {
+                        input[i] = input[i].Replace("/", k_FakeSlashUnicode);
+                        m_ModifiedProjectNames.Add(input[i]);
+                    }
+                }
+
+                return input;
+            }
+        }
 
         internal struct ProjectBindState
         {
@@ -131,7 +192,7 @@ namespace UnityEditor.Connect
         {
             m_LastCreateBlockOrganization = L10n.Tr(k_SelectOrganizationText);
             m_LastReuseBlockOrganization = L10n.Tr(k_SelectOrganizationText);
-            m_LastReuseBlockProject = L10n.Tr(k_SelectProjectText);
+            m_LastReuseBlockProject.LastProjectName = L10n.Tr(k_SelectProjectText);
             rootVisualElement.AddStyleSheetPath(k_ProjectBindCommonStyleSheetPath);
             rootVisualElement.viewDataKey = k_RootDataKey;
             rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? k_ProjectBindDarkStyleSheetPath : k_ProjectBindLightStyleSheetPath);
@@ -220,12 +281,13 @@ namespace UnityEditor.Connect
             {
                 if (evt.newValue != m_LastReuseBlockOrganization)
                 {
-                    m_LastReuseBlockProject = evt.newValue;
+                    m_LastReuseBlockProject.LastProjectName = evt.newValue;
                     if (m_LastReuseBlockOrganization == L10n.Tr(k_SelectOrganizationText))
                     {
                         return;
                     }
-                    m_ReuseProjectIdBlock.Q<Button>(k_LinkBtnName).SetEnabled(m_LastReuseBlockProject != L10n.Tr(k_SelectProjectText));
+                    m_ReuseProjectIdBlock.Q<Button>(k_LinkBtnName)
+                        .SetEnabled(m_LastReuseBlockProject.LastProjectName != L10n.Tr(k_SelectProjectText));
                 }
             });
             projectIdPopupField.choices.Add(L10n.Tr(k_SelectProjectText));
@@ -246,10 +308,10 @@ namespace UnityEditor.Connect
             linkBtn.SetEnabled(false);
             linkBtn.clicked += () =>
             {
-                if (L10n.Tr(k_SelectProjectText) != m_LastReuseBlockProject)
+                if (L10n.Tr(k_SelectProjectText) != m_LastReuseBlockProject.LastProjectName)
                 {
                     var abort = false;
-                    var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject];
+                    var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject.LastProjectName];
                     if (EditorUtility.DisplayDialog(L10n.Tr(k_LinkProjectWindowTitle),
                         string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.name, projectInfo.organizationName),
                         L10n.Tr(k_Yes), L10n.Tr(k_No)))
@@ -462,6 +524,14 @@ namespace UnityEditor.Connect
 
                                 var projectNames = new List<string> { L10n.Tr(k_SelectProjectText) };
                                 var sortedProjectNames = new List<string>(m_ProjectInfoByName.Keys);
+
+                                // To work around the UI feature that creates sub-menus on slash characters, we
+                                // replaces slashes in project names by a fake stylized slash. This hack could be
+                                // removed in the future when we get a UI feature for it, or when dashboard will prevent
+                                // users from inputting slashes in their project names.
+                                sortedProjectNames =
+                                    m_LastReuseBlockProject.ReplaceSlashForFakeSlash(sortedProjectNames);
+
                                 sortedProjectNames.Sort();
                                 projectNames.AddRange(sortedProjectNames);
                                 projectIdField.choices = projectNames;

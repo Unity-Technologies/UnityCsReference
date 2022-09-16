@@ -18,6 +18,7 @@ using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -868,6 +869,12 @@ namespace UnityEditorInternal
         {
             var path = Path.Combine(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), "bin");
             return Path.Combine(path, "mono");
+        }
+
+        [RequiredByNativeCode]
+        public static string GetBuildAnalyticsSummaryCollectorExe()
+        {
+            return IL2CPPUtils.GetExePath("Analytics");
         }
     }
 

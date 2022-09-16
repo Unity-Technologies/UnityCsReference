@@ -290,6 +290,9 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern CacheServerValidationMode cacheServerValidationMode { get; set; }
 
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern Int32 cacheServerDownloadBatchSize { get; set; }
+
         public enum NamingScheme
         {
             SpaceParenthesis = 0,

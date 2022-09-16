@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using NiceIO;
@@ -15,7 +16,8 @@ namespace Unity.TinyProfiling
 
 		static bool m_Started;
 		private static Thread s_StartingThread;
-	    public static int MinDuration = (int)(TimedSection.TicksPerSecond/ 3000);
+	
+		public static readonly long MinDurationUS = /* one millisecond: */ 1000;
 
 		static NPath s_Filename;
 		private static string s_ProcessName;
@@ -35,59 +37,31 @@ namespace Unity.TinyProfiling
 		{
 			public string Label;
 			public string Details;
-		    public Int64 StartInTicks;
-			public Int64 DurationInTicks;
-			
-			// 400ms   
-			//  60 ticks per second.
-			// microsecond per tick = 1000 * 1000 / frequency
+			public double DurationInMicroSeconds;
+			public double StartInMicroSeconds;
 
-			static TimedSection()
-			{
-				if (Environment.OSVersion.Platform == PlatformID.Unix)
-					TicksPerSecond = 1000;
-				else
-				{
-					QueryPerformanceFrequency(out var frequency);
-					TicksPerSecond = frequency;
-				}
-			}
+			internal static long StartTimeInUnixMicroseconds { get; } = DateTimeOffset.Now.ToUnixTimeMicroseconds();
+
+			internal static Stopwatch Stopwatch { get; } = Stopwatch.StartNew();
 
 			public TimedSection(string label, string details)
 			{
 				Label = label;
 				Details = details;
-				StartInTicks = GetProfileTimeUS();
-				DurationInTicks = 0;
+				DurationInMicroSeconds = 0;
+				StartInMicroSeconds = GetProfileTimeUS();
 			}
 
 			public void Close()
 			{
 				var timestamp = GetProfileTimeUS();
-				var duration = timestamp - StartInTicks;
-				DurationInTicks = duration;
+				DurationInMicroSeconds = timestamp - StartInMicroSeconds;
 			}
 
 			static long GetProfileTimeUS()
 			{
-				if (Environment.OSVersion.Platform == PlatformID.Unix)
-					return DateTimeOffset.Now.ToUnixTimeMilliseconds();
-				else
-				{
-					QueryPerformanceCounter(out var timestamp);
-					return timestamp;
-				}
+				return StartTimeInUnixMicroseconds + Stopwatch.Elapsed.Ticks / 10;
 			}
-			public static long TicksPerSecond { get; }
-			static double TicksPerMicroSecond => TicksPerSecond / (1000.0*1000.0);
-			
-			public double DurationInSeconds => DurationInTicks / TicksPerSecond;
-			public double DurationInMicroSeconds => DurationInTicks / TicksPerMicroSecond;
-            public double StartInMicroSeconds => StartInTicks / TicksPerMicroSecond;
-            public string Summary { get { return Label + " " + Details + " (" + DurationInMicroSeconds/1000 + "ms)"; }}
-
-            [DllImport("Kernel32.dll")] private static extern bool QueryPerformanceFrequency(out long frequency);
-            [DllImport("Kernel32.dll")] private static extern bool QueryPerformanceCounter(out long ticks);
 		}
 
 		struct TimedSectionHandle : IDisposable
@@ -169,7 +143,7 @@ namespace Unity.TinyProfiling
 
             // if we are the last section in the list, and we're too short, we just discard this section, so that the
             // resulting output will not have a lot of tiny noise sections
-            if (ts_Sections.Count == index + 1 && section.DurationInTicks < MinDuration)
+            if (ts_Sections.Count == index + 1 && section.DurationInMicroSeconds < MinDurationUS)
             {
                 ts_Sections.RemoveAt(ts_Sections.Count - 1);
             }
@@ -201,5 +175,10 @@ namespace Unity.TinyProfiling
             s_ProcessName = processName;
             s_ProcessSortIndex = processSortIndex;
         }
+    }
+
+    internal static class DateTimeOffsetExtension
+    {
+        public static long ToUnixTimeMicroseconds(this DateTimeOffset @this) => @this.ToUnixTimeMilliseconds() * 1000;
     }
 }
