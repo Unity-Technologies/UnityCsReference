@@ -58,6 +58,18 @@ namespace UnityEditor
 
         protected override Type extraDataType => typeof(PlatformSettings);
 
+        class BuildPlatformGroupComparer : IEqualityComparer<BuildPlatform>
+        {
+            public bool Equals(BuildPlatform a, BuildPlatform z) => a.targetGroup == z.targetGroup;
+            public int GetHashCode(BuildPlatform platform) => (int)platform.targetGroup;
+
+        }
+        static readonly BuildPlatformGroupComparer s_BuildPlatformGroupComparer = new BuildPlatformGroupComparer();
+        // Don't add duplicate platform groups even if there are multiple platforms in the group
+        // Case UUM-399
+        static IEnumerable<BuildPlatform> ValidPlatforms =>
+            BuildPlatforms.instance.GetValidPlatforms().Distinct(s_BuildPlatformGroupComparer);
+
         protected override void InitializeExtraDataInstance(Object extraData, int targetIndex)
         {
             var settings = extraData as PlatformSettings;
@@ -65,7 +77,7 @@ namespace UnityEditor
             if (settings != null && audioImporter != null)
             {
                 // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
-                var validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.namedBuildTarget.TargetName);
+                var validPlatforms = ValidPlatforms.OrderBy(platform => platform.namedBuildTarget.TargetName);
                 settings.sampleSettingOverrides = new List<AudioImporterPlatformSettings>(validPlatforms.Count());
                 foreach (BuildPlatform platform in validPlatforms)
                 {
@@ -435,7 +447,7 @@ namespace UnityEditor
             }
 
             // We need to sort them so every extraDataTarget have them ordered correctly and we can use serializedProperties.
-            BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().OrderBy(platform => platform.namedBuildTarget.TargetName).ToArray();
+            BuildPlatform[] validPlatforms = ValidPlatforms.OrderBy(platform => platform.namedBuildTarget.TargetName).ToArray();
             GUILayout.Space(10);
             int shownSettingsPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, Style.DefaultPlatform);
 

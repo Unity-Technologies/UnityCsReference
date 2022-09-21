@@ -250,9 +250,6 @@ namespace UnityEditor
 
             if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
             {
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = ambientColor;
-
                 RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
                 RenderSettings.customReflectionTexture = defaultEnvTexture;
             }
@@ -280,18 +277,25 @@ namespace UnityEditor
             Graphics.DrawTexture(new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height), darkGreyBackground);
             Object.DestroyImmediate(darkGreyBackground);
 
-            if (!EditorApplication.isUpdating)
+            if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
             {
-                var oldProbe = RenderSettings.ambientProbe;
-                Texture defaultEnvTexture = ReflectionProbe.defaultTexture;
-                if (Unsupported.SetOverrideLightingSettings(previewScene.scene))
-                {
-                    // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
-                    RenderSettings.ambientProbe = oldProbe;
-                    RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
-                    RenderSettings.customReflectionTexture = defaultEnvTexture;
-                }
+                RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+                RenderSettings.customReflectionTexture = GetDefaultReflection();
             }
+        }
+
+        private static Cubemap s_DefaultReflection;
+        private static Cubemap GetDefaultReflection()
+        {
+            // Reflection texture set to default prefab mode cubemap so that there are at least some reflections
+            // (cannot use ReflectionProbe.defaultTexture as static previews are generated before it is set, case UUM-1820)
+            const string path = "PrefabMode/DefaultReflectionForPrefabMode.exr";
+            if (s_DefaultReflection == null)
+                s_DefaultReflection = EditorGUIUtility.Load(path) as Cubemap;
+            if (s_DefaultReflection == null)
+                Debug.LogError("Could not find: " + path);
+
+            return s_DefaultReflection;
         }
 
         private void InitPreview(Rect r)
@@ -513,6 +517,14 @@ namespace UnityEditor
 
         public void Render(bool allowScriptableRenderPipeline = false, bool updatefov = true)
         {
+            if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
+            {
+                // User can set an ambientColor if they want to override the default black color
+                // Cannot grab the main scene light probe/color instead as this is sometimes run on a worker without access to the original probe/color.
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = ambientColor;
+            }
+
             foreach (var light in lights)
                 light.enabled = true;
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;

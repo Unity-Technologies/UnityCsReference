@@ -43,6 +43,7 @@ namespace UnityEditor
             public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
             public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
             public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
+            public static GUIContent cacheServerDownloadBatchSizeLabel = EditorGUIUtility.TrTextContent("Download Batch Size");
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
 
             public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
@@ -275,6 +276,8 @@ namespace UnityEditor
         const string kStandbyWorkerCountKeyArgs = "-standbyWorkerCount";
         const string kIdleWorkerShutdownDelayKeyArgs = "-idleWorkerShutdownDelay";
         const string kDesiredImportWorkerCountKeyArgs = "-desiredWorkerCount";
+
+        private const string kCacheServerDownloadBatchSizeCmdArg = "-cacheServerDownloadBatchSize";
 
         enum CacheServerConnectionState { Unknown, Success, Failure }
         private CacheServerConnectionState m_CacheServerConnectionState;
@@ -658,7 +661,11 @@ namespace UnityEditor
                     if (parallelImportEnabledOld != parallelImportEnabledNew)
                         EditorSettings.refreshImportMode = parallelImportEnabledNew ? AssetDatabase.RefreshImportMode.OutOfProcessPerQueue : AssetDatabase.RefreshImportMode.InProcess;
                     if (GUILayout.Button(Content.parallelImportLearnMore, EditorStyles.linkLabel))
-                        Application.OpenURL("https://docs.unity3d.com/Manual/ParallelImport.html");
+                    {
+                        // Known issue with Docs redirect - versioned pages might not open offline docs
+                        var help = Help.FindHelpNamed("ParallelImport");
+                        Help.BrowseURL(help);
+                    }
                 GUILayout.EndHorizontal();
             }
 
@@ -705,7 +712,7 @@ namespace UnityEditor
             var overridekIdleWorkerShutdownDelay = GetCommandLineOverride(kIdleWorkerShutdownDelayKeyArgs);
             if (overridekIdleWorkerShutdownDelay != null)
             {
-                EditorGUILayout.HelpBox($"Idle import worker shutdown delay forced to {overrideStandbyCount} ms. via command line argument. To use the settings specified here please restart Unity without the -idleWorkerShutdownDelay command line argument.", MessageType.Info, true);
+                EditorGUILayout.HelpBox($"Idle import worker shutdown delay forced to {overridekIdleWorkerShutdownDelay} ms. via command line argument. To use the settings specified here please restart Unity without the -idleWorkerShutdownDelay command line argument.", MessageType.Info, true);
             }
 
             using (new EditorGUI.DisabledScope(overridekIdleWorkerShutdownDelay != null))
@@ -731,7 +738,9 @@ namespace UnityEditor
 
             if (GUILayout.Button(Content.cacheServerLearnMore, EditorStyles.linkLabel))
             {
-                Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+                // Known issue with Docs redirect - versioned pages might not open offline docs
+                var help = Help.FindHelpNamed("UnityAccelerator");
+                Help.BrowseURL(help);
             }
             GUILayout.EndHorizontal();
 
@@ -807,11 +816,11 @@ namespace UnityEditor
 
                     EditorGUILayout.EndHorizontal();
 
-                    var old = EditorSettings.cacheServerNamespacePrefix;
-                    var newvalue = EditorGUILayout.TextField(Content.cacheServerNamespacePrefixLabel, old);
-                    if (newvalue != old)
+                    var oldPrefix = EditorSettings.cacheServerNamespacePrefix;
+                    var newPrefix = EditorGUILayout.TextField(Content.cacheServerNamespacePrefixLabel, oldPrefix);
+                    if (newPrefix != oldPrefix)
                     {
-                        EditorSettings.cacheServerNamespacePrefix = newvalue;
+                        EditorSettings.cacheServerNamespacePrefix = newPrefix;
                     }
 
                     EditorGUI.BeginChangeCheck();
@@ -848,8 +857,20 @@ namespace UnityEditor
                     }
 
                     int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
-
                     EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
+
+                    var cacheServerDownloadBatchSizeOverride = GetCommandLineOverride(kCacheServerDownloadBatchSizeCmdArg);
+                    if (cacheServerDownloadBatchSizeOverride != null)
+                        EditorGUILayout.HelpBox($"Forced via command line argument. To use the setting, please restart Unity without the {kCacheServerDownloadBatchSizeCmdArg} command line argument.", MessageType.Info, true);
+
+                    using (new EditorGUI.DisabledScope(cacheServerDownloadBatchSizeOverride != null))
+                    {
+                        var oldDownloadBatchSize = cacheServerDownloadBatchSizeOverride != null ? Int32.Parse(cacheServerDownloadBatchSizeOverride) : EditorSettings.cacheServerDownloadBatchSize;
+                        var newDownloadBatchSize = EditorGUILayout.IntField(Content.cacheServerDownloadBatchSizeLabel, oldDownloadBatchSize);
+                        newDownloadBatchSize = Mathf.Max(0, newDownloadBatchSize);
+                        if (newDownloadBatchSize != oldDownloadBatchSize)
+                            EditorSettings.cacheServerDownloadBatchSize = newDownloadBatchSize;
+                    }
                 }
             }
         }

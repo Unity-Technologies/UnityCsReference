@@ -49,6 +49,7 @@ namespace UnityEditor
         /// SA: EditorUserBuildSettings.ps4BuildSubtarget.
         Package = 1,
         Iso = 2,
+        GP4Project = 3,
     }
 
 

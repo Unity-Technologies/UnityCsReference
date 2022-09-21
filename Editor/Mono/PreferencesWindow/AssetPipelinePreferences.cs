@@ -247,7 +247,9 @@ namespace UnityEditor
                 GUILayout.Label(Properties.cacheServer, EditorStyles.boldLabel);
                 if (GUILayout.Button(Properties.cacheServerLearnMore, EditorStyles.linkLabel))
                 {
-                    Application.OpenURL("https://docs.unity3d.com/Manual/UnityAccelerator.html#UsingWithAssetPipeline");
+                    // Known issue with Docs redirect - versioned pages might not open offline docs
+                    var help = Help.FindHelpNamed("UnityAccelerator");
+                    Help.BrowseURL(help);
                 }
                 GUILayout.EndHorizontal();
                 EditorGUI.BeginChangeCheck();
@@ -324,7 +326,9 @@ namespace UnityEditor
 
             if (GUILayout.Button(Properties.desiredImportWorkerCountPctOfLogicalCPUsLearnMore, EditorStyles.linkLabel))
             {
-                Application.OpenURL("https://docs.unity3d.com/Manual/ParallelImport.html");
+                // Known issue with Docs redirect - versioned pages might not open offline docs
+                var help = Help.FindHelpNamed("ParallelImport");
+                Help.BrowseURL(help);
             }
 
             GUILayout.EndHorizontal();
