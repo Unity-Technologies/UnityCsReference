@@ -120,37 +120,62 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public static GUIContent GetIcon(string name)
         {
-            var content = name switch
+            var content = GetBuildTargetIcon(name);
+            if (content == null)
             {
-                "Editor" => EditorGUIUtility.IconContent("d_SceneAsset Icon"),
-                "WindowsEditor" => EditorGUIUtility.IconContent("d_SceneAsset Icon"),
-                "WindowsPlayer" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
-                "Android" => EditorGUIUtility.IconContent("BuildSettings.Android.Small"),
-                "OSXPlayer" => EditorGUIUtility.IconContent("BuildSettings.Standalone.Small"),
-                "IPhonePlayer" => EditorGUIUtility.IconContent("BuildSettings.iPhone.Small"),
-                "WebGLPlayer" => EditorGUIUtility.IconContent("BuildSettings.WebGL.Small"),
-                "tvOS" => EditorGUIUtility.IconContent("BuildSettings.tvOS.Small"),
-                "Lumin" => EditorGUIUtility.IconContent("BuildSettings.Lumin.small"),
-                "LinuxPlayer" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
-                "WSAPlayerX86" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
-                "WSAPlayerX64" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
-                "WSAPlayerARM" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
-                "Switch" => EditorGUIUtility.IconContent("BuildSettings.Switch.Small"),
-                "Stadia" => EditorGUIUtility.IconContent("BuildSettings.Stadia.small"),
-                "GameCoreScarlett" => EditorGUIUtility.IconContent("BuildSettings.GameCoreScarlett.Small"),
-                "GameCoreXboxOne" => EditorGUIUtility.IconContent("BuildSettings.GameCoreXboxOne.Small"),
-                "XboxOne" => EditorGUIUtility.IconContent("BuildSettings.GameCoreXboxOne.Small"),
-                "EmbeddedLinuxArm64" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
-                "EmbeddedLinuxArm32" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
-                "EmbeddedLinuxX64" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
-                "EmbeddedLinuxX86" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
-                "PS4" => EditorGUIUtility.IconContent("BuildSettings.PS4.Small"),
-                "PS5" => EditorGUIUtility.IconContent("BuildSettings.PS5.Small"),
-                "Devices" => EditorGUIUtility.IconContent("BuildSettings.Standalone.Small"),
-                "<unknown>" => EditorGUIUtility.IconContent("BuildSettings.Broadcom"),
-                _ => EditorGUIUtility.IconContent("BuildSettings.Broadcom")
-            };
+                content = name switch
+                {
+                    "Editor" => EditorGUIUtility.IconContent("d_SceneAsset Icon"),
+                    "WindowsEditor" => EditorGUIUtility.IconContent("d_SceneAsset Icon"),
+                    "WindowsPlayer" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
+                    "Android" => EditorGUIUtility.IconContent("BuildSettings.Android.Small"),
+                    "OSXPlayer" => EditorGUIUtility.IconContent("BuildSettings.Standalone.Small"),
+                    "IPhonePlayer" => EditorGUIUtility.IconContent("BuildSettings.iPhone.Small"),
+                    "WebGLPlayer" => EditorGUIUtility.IconContent("BuildSettings.WebGL.Small"),
+                    "tvOS" => EditorGUIUtility.IconContent("BuildSettings.tvOS.Small"),
+                    "Lumin" => EditorGUIUtility.IconContent("BuildSettings.Lumin.small"),
+                    "LinuxPlayer" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
+                    "WSAPlayerX86" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
+                    "WSAPlayerX64" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
+                    "WSAPlayerARM" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
+                    "Switch" => EditorGUIUtility.IconContent("BuildSettings.Switch.Small"),
+                    "Stadia" => EditorGUIUtility.IconContent("BuildSettings.Stadia.small"),
+                    "EmbeddedLinuxArm64" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
+                    "EmbeddedLinuxArm32" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
+                    "EmbeddedLinuxX64" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
+                    "EmbeddedLinuxX86" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
+                    "PS4" => EditorGUIUtility.IconContent("BuildSettings.PS4.Small"),
+                    "PS5" => EditorGUIUtility.IconContent("BuildSettings.PS5.Small"),
+                    "Devices" => EditorGUIUtility.IconContent("BuildSettings.Standalone.Small"),
+                    "<unknown>" => EditorGUIUtility.IconContent("BuildSettings.Broadcom"),
+                    _ => EditorGUIUtility.IconContent("BuildSettings.Broadcom")
+                };
+            }
+
             return content;
+        }
+
+        private static GUIContent GetBuildTargetIcon(string name)
+        {
+            var target = BuildPipeline.GetBuildTargetByName(name);
+            if (target == BuildTarget.NoTarget)
+            {
+                return null;
+            }
+
+            var namedBuildTarget = Build.NamedBuildTarget.FromActiveSettings(target);
+            if (namedBuildTarget == null)
+            {
+                return null;
+            }
+
+            var buildPlatform = Build.BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
+            if (buildPlatform == null || buildPlatform.smallIcon == null)
+            {
+                return null;
+            }
+
+            return new GUIContent(buildPlatform.smallIcon);
         }
     }
 
@@ -705,7 +730,7 @@ namespace UnityEditor.Networking.PlayerConnection
             if (EditorGUI.Button(rect, Content.TroubleShoot, ConnectionDropDownStyles.sConnectionTrouble))
             {
                 var help = Help.FindHelpNamed("profiler-profiling-applications");
-                Application.OpenURL(help);
+                Help.BrowseURL(help);
             }
 
             if(Event.current.type == EventType.MouseMove)

@@ -228,8 +228,11 @@ namespace UnityEditor.Search
             {
                 if (block.drawRect.Contains(evt.mousePosition))
                 {
-                    SetSourceData(block, k_SourceDataIdentifier);
-                    DragAndDrop.StartDrag(k_DragAndDropTitle);
+                    if (block.draggable)
+                    {
+                        SetSourceData(block, k_SourceDataIdentifier);
+                        DragAndDrop.StartDrag(k_DragAndDropTitle);
+                    }
                     break;
                 }
             }
