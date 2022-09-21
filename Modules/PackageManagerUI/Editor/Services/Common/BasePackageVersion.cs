@@ -14,22 +14,20 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver
     {
-        public string name => packageInfo?.name ?? string.Empty;
+        public virtual string name => packageInfo?.name ?? string.Empty;
 
         [SerializeField]
         protected string m_DisplayName;
-        public string displayName => m_DisplayName;
+        public virtual string displayName => m_DisplayName;
 
         [SerializeField]
         protected string m_Description;
         public string description => !string.IsNullOrEmpty(m_Description) ? m_Description : (packageInfo?.description ?? string.Empty);
 
-        public string packageUniqueId => m_Package?.uniqueId ?? string.Empty;
-
         [SerializeField]
         protected string m_VersionString;
         protected SemVersion? m_Version;
-        public SemVersion? version => m_Version;
+        public virtual SemVersion? version => m_Version;
 
         [SerializeField]
         protected long m_PublishedDateTicks;
@@ -60,7 +58,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected PackageTag m_Tag;
-        public bool HasTag(PackageTag tag)
+        public virtual bool HasTag(PackageTag tag)
         {
             return (m_Tag & tag) != 0;
         }
@@ -88,7 +86,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public virtual PackageInfo packageInfo => null;
-        public virtual IDictionary<string, string> categoryLinks => null;
         public virtual IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
         public virtual IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
         public virtual IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
@@ -104,7 +101,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract bool isDirectDependency { get; }
         public abstract string localPath { get; }
         public abstract string versionString { get; }
-        public abstract string versionId { get; }
+        public abstract long versionId { get; }
         public virtual bool isUnityPackage => false;
 
         public bool IsDifferentVersionThanRequested
@@ -115,6 +112,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             => !string.IsNullOrEmpty(versionString) && !isInstalled &&
                 versionString == m_Package?.versions.primary.packageInfo?.projectDependenciesEntry;
 
+        public virtual string GetDescriptor(bool isFirstLetterCapitalized = false)
+        {
+            return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");
+        }
+
         public virtual void OnBeforeSerialize()
         {
             // Do nothing
@@ -123,6 +125,48 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void OnAfterDeserialize()
         {
             SemVersionParser.TryParse(m_VersionString, out m_Version);
+        }
+
+        public virtual bool MatchesSearchText(string searchText)
+        {
+            if (string.IsNullOrEmpty(searchText))
+                return true;
+
+            if (name.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (!string.IsNullOrEmpty(displayName) && displayName.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            var prerelease = searchText.StartsWith("-") ? searchText.Substring(1) : searchText;
+            if (version != null && ((SemVersion)version).Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            // searching for pre-release if search text matches with search term 'pre', case insensitive
+            const string prereleaseSearchText = "Pre";
+            if (HasTag(PackageTag.PreRelease) && prereleaseSearchText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            // searching for experimental if search text matches with search term 'experimental', case insensitive
+            const string experimentalSearchText = "Experimental";
+            if (HasTag(PackageTag.Experimental) && experimentalSearchText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (HasTag(PackageTag.Release) && PackageTag.Release.ToString().IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                return true;
+
+            if (version?.StripTag().StartsWith(searchText, StringComparison.CurrentCultureIgnoreCase) == true)
+                return true;
+
+            if (!string.IsNullOrEmpty(category))
+            {
+                var words = searchText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                var categories =  category.Split('/');
+                if (words.All(word => word.Length >= 2 && categories.Any(category => category.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

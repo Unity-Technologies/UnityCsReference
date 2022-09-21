@@ -41,6 +41,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public static T Get<T>(this IDictionary<long, T> dict, long key) where T : class
+        {
+            return dict.TryGetValue(key, out var result) ? result : null;
+        }
+
         public static T Get<T>(this IDictionary<string, T> dict, string key) where T : class
         {
             return key != null && dict.TryGetValue(key, out var result) ? result : null;
@@ -64,6 +69,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static string GetString(this IDictionary<string, object> dict, string key)
         {
             return Get<string>(dict, key);
+        }
+
+        public static long GetStringAsLong(this IDictionary<string, object> dict, string key, long fallbackValue = default(long))
+        {
+            var stringValue = Get<string>(dict, key);
+            return long.TryParse(stringValue, out var result) ? result : fallbackValue;
         }
     }
 }

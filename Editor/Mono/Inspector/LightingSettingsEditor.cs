@@ -68,9 +68,6 @@ namespace UnityEditor
         SerializedProperty m_CompAOExponent;
         SerializedProperty m_CompAOExponentDirect;
         SerializedProperty m_LightmapCompression;
-        SerializedProperty m_FinalGather;
-        SerializedProperty m_FinalGatherRayCount;
-        SerializedProperty m_FinalGatherFiltering;
         SerializedProperty m_LightmapMaxSize;
         SerializedProperty m_BakeBackend;
         // pvr
@@ -115,12 +112,9 @@ namespace UnityEditor
 
         static class Styles
         {
-            #pragma warning disable 618
-            public static readonly int[] bakeBackendValues = { (int)LightingSettings.Lightmapper.Enlighten, (int)LightingSettings.Lightmapper.ProgressiveCPU, (int)LightingSettings.Lightmapper.ProgressiveGPU };
-            #pragma warning restore 618
+            public static readonly int[] bakeBackendValues = { (int)LightingSettings.Lightmapper.ProgressiveCPU, (int)LightingSettings.Lightmapper.ProgressiveGPU };
             public static readonly GUIContent[] bakeBackendStrings =
             {
-                EditorGUIUtility.TrTextContent("Enlighten"),
                 EditorGUIUtility.TrTextContent("Progressive CPU"),
                 EditorGUIUtility.TrTextContent("Progressive GPU (Preview)"),
             };
@@ -183,8 +177,6 @@ namespace UnityEditor
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
             public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not avaliable on Apple silicon. Use Progressive GPU Lightmapper instead.");
-            public static readonly GUIContent enlightenLightmapperWarning = EditorGUIUtility.TrTextContent("Enlighten Baked Global Illumination is deprecated and no longer available in 2023.1 and later. Use the Progressive CPU or GPU Lightmapper instead.");
-            public static readonly GUIContent enlightenLightmapperAppleWarning = EditorGUIUtility.TrTextContent("Enlighten Baked Global Illumination is deprecated and no longer available in 2023.1 and later. Use the Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -219,9 +211,6 @@ namespace UnityEditor
             public static readonly GUIContent ambientOcclusionContribution = EditorGUIUtility.TrTextContent("Indirect Contribution", "Adjusts the contrast of ambient occlusion applied to indirect lighting. The larger the value, the more contrast is applied to the ambient occlusion for indirect lighting.");
             public static readonly GUIContent ambientOcclusionContributionDirect = EditorGUIUtility.TrTextContent("Direct Contribution", "Adjusts the contrast of ambient occlusion applied to the direct lighting. The larger the value is, the more contrast is applied to the ambient occlusion for direct lighting. This effect is not physically accurate.");
             public static readonly GUIContent AOMaxDistance = EditorGUIUtility.TrTextContent("Max Distance", "Controls how far rays are cast in order to determine if an object is occluded or not. A larger value produces longer rays and contributes more shadows to the lightmap, while a smaller value produces shorter rays that contribute shadows only when objects are very close to one another. A value of 0 casts an infinitely long ray that has no maximum distance.");
-            public static readonly GUIContent finalGather = EditorGUIUtility.TrTextContent("Final Gather", "Specifies whether the final light bounce of the global illumination calculation is calculated at the same resolution as the baked lightmap. When enabled, visual quality is improved at the cost of additional time required to bake the lighting.");
-            public static readonly GUIContent finalGatherRayCount = EditorGUIUtility.TrTextContent("Ray Count", "Controls the number of rays emitted for every final gather point.");
-            public static readonly GUIContent finalGatherFiltering = EditorGUIUtility.TrTextContent("Denoising", "Controls whether a denoising filter is applied to the final gather output.");
             public static readonly GUIContent mixedLightMode = EditorGUIUtility.TrTextContent("Lighting Mode", "Specifies the lighting mode of all Mixed lights in the Scene.");
             public static readonly GUIContent useRealtimeGI = EditorGUIUtility.TrTextContent("Realtime Global Illumination", "Precomputed Realtime Global Illumination using Enlighten. Provides diffuse Realtime Global Illumination for static geometry via low resolution lightmaps and via Light Probes for dynamic geometry.");
             public static readonly GUIContent bakedGIDisabledInfo = EditorGUIUtility.TrTextContent("All Baked and Mixed lights in the Scene are currently being overridden to Realtime light modes. Enable Baked Global Illumination to allow the use of Baked and Mixed light modes.");
@@ -318,9 +307,6 @@ namespace UnityEditor
                 m_CompAOExponent = lso.FindProperty("m_CompAOExponent");
                 m_CompAOExponentDirect = lso.FindProperty("m_CompAOExponentDirect");
                 m_LightmapCompression = lso.FindProperty("m_LightmapCompression");
-                m_FinalGather = lso.FindProperty("m_FinalGather");
-                m_FinalGatherRayCount = lso.FindProperty("m_FinalGatherRayCount");
-                m_FinalGatherFiltering = lso.FindProperty("m_FinalGatherFiltering");
 
                 // pvr
                 m_PVRSampleCount = lso.FindProperty("m_PVRSampleCount");
@@ -412,9 +398,7 @@ namespace UnityEditor
                     }
                 }
 
-                #pragma warning disable 618
-                using (new EditorGUI.DisabledScope((m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten) && !enableRealtimeGI))
-                #pragma warning restore 618
+                using (new EditorGUI.DisabledScope(!enableRealtimeGI))
                 {
                     DrawPropertyFieldWithPostfixLabel(m_RealtimeResolution, Styles.indirectResolution, Styles.texelsPerUnit);
                 }
@@ -525,144 +509,113 @@ namespace UnityEditor
 
                             if (lightmapperSupported && !m_BakeBackend.hasMultipleDifferentValues)
                             {
-                                #pragma warning disable 618
-                                if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
-                                #pragma warning restore 618
-                                {
-                                    EditorGUI.indentLevel++;
+                                EditorGUI.indentLevel++;
 
-                                    EditorGUILayout.PropertyField(m_FinalGather, Styles.finalGather);
-                                    if (m_FinalGather.boolValue)
+                                EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
+                                EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
+
+                                int sampleCount = EditorGUILayout.DelayedIntField(Styles.directSampleCount, m_PVRDirectSampleCount.intValue);
+                                m_PVRDirectSampleCount.intValue = sampleCount;
+                                sampleCount = EditorGUILayout.DelayedIntField(Styles.indirectSampleCount, m_PVRSampleCount.intValue);
+                                m_PVRSampleCount.intValue = sampleCount;
+                                sampleCount = EditorGUILayout.DelayedIntField(Styles.environmentSampleCount, m_PVREnvironmentSampleCount.intValue);
+                                m_PVREnvironmentSampleCount.intValue = sampleCount;
+
+                                using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
+                                {
+                                    EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
+                                }
+
+                                EditorGUILayout.PropertyField(m_PVRBounces, Styles.bounces);
+
+                                // Filtering
+                                EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);
+
+                                if (m_PVRFilteringMode.intValue == (int)LightingSettings.FilterMode.Advanced && !m_PVRFilteringMode.hasMultipleDifferentValues)
+                                {
+                                    // Check if the platform doesn't support denoising.
+                                    bool anyDenoisingSupported = (Lightmapping.IsOptixDenoiserSupported() || Lightmapping.IsOpenImageDenoiserSupported() || Lightmapping.IsRadeonDenoiserSupported());
+
+                                    EditorGUI.indentLevel++;
+                                    using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
+                                    {
+                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, anyDenoisingSupported ? Styles.denoiserTypeDirect : Styles.denoisingWarningDirect, DenoiserTarget.Direct);
+
+                                        if (anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue))
+                                        {
+                                            EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
+                                        }
+                                    }
+
+                                    EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.filterTypeDirect);
+
+                                    if (!m_PVRFilterTypeDirect.hasMultipleDifferentValues)
                                     {
                                         EditorGUI.indentLevel++;
-                                        EditorGUILayout.PropertyField(m_FinalGatherRayCount, Styles.finalGatherRayCount);
-                                        EditorGUILayout.PropertyField(m_FinalGatherFiltering, Styles.finalGatherFiltering);
+                                        DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
+                                            m_PVRFilteringAtrousPositionSigmaDirect,
+                                            Styles.filteringGaussRadiusDirect,
+                                            Styles.filteringAtrousPositionSigmaDirect,
+                                            (LightingSettings.FilterType)m_PVRFilterTypeDirect.intValue);
                                         EditorGUI.indentLevel--;
                                     }
 
-                                    EditorGUI.indentLevel--;
-                                }
+                                    EditorGUILayout.Space();
 
-                                #pragma warning disable 618
-                                if (m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten)
-                                #pragma warning restore 618
-                                {
-                                    EditorGUI.indentLevel++;
-
-                                    EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
-                                    EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
-
-                                    int sampleCount = EditorGUILayout.DelayedIntField(Styles.directSampleCount, m_PVRDirectSampleCount.intValue);
-                                    m_PVRDirectSampleCount.intValue = sampleCount;
-                                    sampleCount = EditorGUILayout.DelayedIntField(Styles.indirectSampleCount, m_PVRSampleCount.intValue);
-                                    m_PVRSampleCount.intValue = sampleCount;
-                                    sampleCount = EditorGUILayout.DelayedIntField(Styles.environmentSampleCount, m_PVREnvironmentSampleCount.intValue);
-                                    m_PVREnvironmentSampleCount.intValue = sampleCount;
-
-                                    using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
+                                    using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                     {
-                                        EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
+                                        DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, anyDenoisingSupported ? Styles.denoiserTypeIndirect : Styles.denoisingWarningIndirect, DenoiserTarget.Indirect);
+
+                                        if (anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue))
+                                        {
+                                            EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
+                                        }
+                                    }
+                                    EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.filterTypeIndirect);
+
+                                    if (!m_PVRFilterTypeIndirect.hasMultipleDifferentValues)
+                                    {
+                                        EditorGUI.indentLevel++;
+                                        DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
+                                            m_PVRFilteringAtrousPositionSigmaIndirect,
+                                            Styles.filteringGaussRadiusIndirect,
+                                            Styles.filteringAtrousPositionSigmaIndirect,
+                                            (LightingSettings.FilterType)m_PVRFilterTypeIndirect.intValue);
+                                        EditorGUI.indentLevel--;
                                     }
 
-                                    EditorGUILayout.PropertyField(m_PVRBounces, Styles.bounces);
-
-                                    // Filtering
-                                    EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.filteringMode);
-
-                                    if (m_PVRFilteringMode.intValue == (int)LightingSettings.FilterMode.Advanced && !m_PVRFilteringMode.hasMultipleDifferentValues)
+                                    using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
                                     {
-                                        // Check if the platform doesn't support denoising.
-                                        bool anyDenoisingSupported = (Lightmapping.IsOptixDenoiserSupported() || Lightmapping.IsOpenImageDenoiserSupported() || Lightmapping.IsRadeonDenoiserSupported());
-
-                                        EditorGUI.indentLevel++;
-                                        using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
-                                        {
-                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeDirect, anyDenoisingSupported ? Styles.denoiserTypeDirect : Styles.denoisingWarningDirect, DenoiserTarget.Direct);
-
-                                            if (anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeDirect.intValue))
-                                            {
-                                                EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
-                                            }
-                                        }
-
-                                        EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.filterTypeDirect);
-
-                                        if (!m_PVRFilterTypeDirect.hasMultipleDifferentValues)
-                                        {
-                                            EditorGUI.indentLevel++;
-                                            DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
-                                                m_PVRFilteringAtrousPositionSigmaDirect,
-                                                Styles.filteringGaussRadiusDirect,
-                                                Styles.filteringAtrousPositionSigmaDirect,
-                                                (LightingSettings.FilterType)m_PVRFilterTypeDirect.intValue);
-                                            EditorGUI.indentLevel--;
-                                        }
-
                                         EditorGUILayout.Space();
 
                                         using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
                                         {
-                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeIndirect, anyDenoisingSupported ? Styles.denoiserTypeIndirect : Styles.denoisingWarningIndirect, DenoiserTarget.Indirect);
+                                            DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, anyDenoisingSupported ? Styles.denoiserTypeAO : Styles.denoisingWarningAO, DenoiserTarget.AO);
 
-                                            if (anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeIndirect.intValue))
+                                            if (m_AmbientOcclusion.boolValue && anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue))
                                             {
                                                 EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
                                             }
                                         }
-                                        EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.filterTypeIndirect);
+                                        EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.filterTypeAO);
 
-                                        if (!m_PVRFilterTypeIndirect.hasMultipleDifferentValues)
+                                        if (!m_PVRFilterTypeAO.hasMultipleDifferentValues)
                                         {
                                             EditorGUI.indentLevel++;
-                                            DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
-                                                m_PVRFilteringAtrousPositionSigmaIndirect,
-                                                Styles.filteringGaussRadiusIndirect,
-                                                Styles.filteringAtrousPositionSigmaIndirect,
-                                                (LightingSettings.FilterType)m_PVRFilterTypeIndirect.intValue);
+                                            DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
+                                                m_PVRFilteringAtrousPositionSigmaAO,
+                                                Styles.filteringGaussRadiusAO, Styles.filteringAtrousPositionSigmaAO,
+                                                (LightingSettings.FilterType)m_PVRFilterTypeAO.intValue);
                                             EditorGUI.indentLevel--;
                                         }
-
-                                        using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
-                                        {
-                                            EditorGUILayout.Space();
-
-                                            using (new EditorGUI.DisabledScope(!anyDenoisingSupported))
-                                            {
-                                                DrawDenoiserTypeDropdown(m_PVRDenoiserTypeAO, anyDenoisingSupported ? Styles.denoiserTypeAO : Styles.denoisingWarningAO, DenoiserTarget.AO);
-
-                                                if (m_AmbientOcclusion.boolValue && anyDenoisingSupported && !DenoiserSupported((LightingSettings.DenoiserType)m_PVRDenoiserTypeAO.intValue))
-                                                {
-                                                    EditorGUILayout.HelpBox(Styles.denoiserNotSupportedWarning.text, MessageType.Info);
-                                                }
-                                            }
-                                            EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.filterTypeAO);
-
-                                            if (!m_PVRFilterTypeAO.hasMultipleDifferentValues)
-                                            {
-                                                EditorGUI.indentLevel++;
-                                                DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
-                                                    m_PVRFilteringAtrousPositionSigmaAO,
-                                                    Styles.filteringGaussRadiusAO, Styles.filteringAtrousPositionSigmaAO,
-                                                    (LightingSettings.FilterType)m_PVRFilterTypeAO.intValue);
-                                                EditorGUI.indentLevel--;
-                                            }
-                                        }
-
-                                        EditorGUI.indentLevel--;
                                     }
 
                                     EditorGUI.indentLevel--;
                                 }
+
+                                EditorGUI.indentLevel--;
                             }
                         }
-                    }
-
-                    // Show the Indirect Resolution field if the user is using Enlighten baked and the backend is supported.
-                    #pragma warning disable 618
-                    if (bakedGISupported && (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten) && lightmapperSupported)
-                    #pragma warning restore 618
-                    {
-                        DrawPropertyFieldWithPostfixLabel(m_RealtimeResolution, Styles.indirectResolution, Styles.texelsPerUnit);
                     }
 
                     if (bakedGISupported)
@@ -741,18 +694,13 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_ForceWhiteAlbedo, Styles.forceWhiteAlbedo);
                 EditorGUILayout.PropertyField(m_ForceUpdates, Styles.forceUpdates);
 
-                #pragma warning disable 618
-                if (m_BakeBackend.intValue != (int)LightingSettings.Lightmapper.Enlighten)
-                #pragma warning restore 618
-                {
-                    EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
+                EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 
-                    if (m_ExportTrainingData.boolValue && !m_ExportTrainingData.hasMultipleDifferentValues)
-                    {
-                        EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(m_TrainingDataDestination, Styles.trainingDataDestination);
-                        EditorGUI.indentLevel--;
-                    }
+                if (m_ExportTrainingData.boolValue && !m_ExportTrainingData.hasMultipleDifferentValues)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_TrainingDataDestination, Styles.trainingDataDestination);
+                    EditorGUI.indentLevel--;
                 }
 
                 EditorGUILayout.PropertyField(m_FilterMode, Styles.filterMode);
@@ -937,14 +885,9 @@ namespace UnityEditor
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
 
-                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value)
-                        || (isAppleSiliconEditor && value == (int)LightingSettings.Lightmapper.ProgressiveCPU)
-                        || (value == 0 && !EditorSettings.enableEnlightenBakedGI))
+                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (isAppleSiliconEditor && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
                     {
-                        if (value != 0) // enlighten should not be shown if unavailable
-                        {
-                            menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
-                        }
+                        menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
                     }
                     else
                     {
@@ -967,16 +910,6 @@ namespace UnityEditor
             {
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
                 EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);
-            }
-            #pragma warning disable 618
-            else if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
-            #pragma warning restore 618
-            {
-                string warningStr = isAppleSiliconEditor ?
-                    Styles.enlightenLightmapperAppleWarning.text :
-                    Styles.enlightenLightmapperWarning.text;
-
-                EditorGUILayout.HelpBox(warningStr, MessageType.Warning);
             }
         }
 

@@ -22,22 +22,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         private TextFieldPlaceholder m_PackageVersionPlaceholder;
 
         private ResourceLoader m_ResourceLoader;
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private UpmClient m_UpmClient;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
-        private void ResolveDependencies(ResourceLoader resourceLoader, PackageFiltering packageFiltering, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager)
+        private void ResolveDependencies(ResourceLoader resourceLoader, PackageManagerPrefs packageManagerPrefs, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager)
         {
             m_ResourceLoader = resourceLoader;
-            m_PackageFiltering = packageFiltering;
+            m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmClient = upmClient;
             m_PackageDatabase = packageDatabase;
             m_PageManager = packageManager;
         }
 
-        public AddPackageByNameDropdown(ResourceLoader resourceLoader, PackageFiltering packageFiltering, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown(ResourceLoader resourceLoader, PackageManagerPrefs packageManagerPrefs, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager, EditorWindow anchorWindow)
         {
-            ResolveDependencies(resourceLoader, packageFiltering, upmClient, packageDatabase, packageManager);
+            ResolveDependencies(resourceLoader, packageManagerPrefs, upmClient, packageDatabase, packageManager);
 
             styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
 
@@ -164,8 +164,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var package = m_PackageDatabase.GetPackage(packageName);
             if (package != null)
             {
-                m_PackageFiltering.currentFilterTab = m_PageManager.FindTab(package);
-                m_PageManager.SetSelected(package, package.versions?.FirstOrDefault(v => v.versionString == packageVersion));
+                var page = m_PageManager.FindPage(package);
+                m_PackageManagerPrefs.currentFilterTab = page.tab;
+                page.SetNewSelection(package, package.versions?.FirstOrDefault(v => v.versionString == packageVersion));
             }
         }
 

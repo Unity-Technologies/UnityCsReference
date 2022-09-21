@@ -11,31 +11,31 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageSubPageFilterBar> {}
 
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
 
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_PackageFiltering = container.Resolve<PackageFiltering>();
+            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
         }
 
         public PackageSubPageFilterBar()
         {
             ResolveDependencies();
-            OnFilterTabChanged(m_PackageFiltering.currentFilterTab);
+            OnFilterTabChanged(m_PackageManagerPrefs.currentFilterTab);
         }
 
         public void OnEnable()
         {
-            m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
+            m_PackageManagerPrefs.onFilterTabChanged += OnFilterTabChanged;
             m_PageManager.onSubPageChanged += OnSubPageChanged;
         }
 
         public void OnDisable()
         {
-            m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
+            m_PackageManagerPrefs.onFilterTabChanged -= OnFilterTabChanged;
             m_PageManager.onSubPageChanged -= OnSubPageChanged;
         }
 
@@ -44,17 +44,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             var page = m_PageManager.GetPage(filterTab);
             Refresh(page);
         }
+
         private void OnSubPageChanged(IPage page)
         {
-            if (page.tab != m_PackageFiltering.currentFilterTab)
-                return;
-            Refresh(page);
+            if (page.isActivePage)
+                Refresh(page);
         }
 
         private void Refresh(IPage page = null)
         {
             if (page == null)
-                page = m_PageManager.GetCurrentPage();
+                page = m_PageManager.GetPage();
             var showOnFilterTab = page.subPages.Skip(1).Any();
             UIUtils.SetElementDisplay(this, showOnFilterTab);
 

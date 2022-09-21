@@ -18,17 +18,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private PageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
-            m_PackageFiltering = container.Resolve<PackageFiltering>();
+            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
+            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
         }
 
         public PackageStatusBar()
@@ -50,11 +52,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UpdateStatusMessage();
 
-            m_PageManager.onRefreshOperationStart += UpdateStatusMessage;
-            m_PageManager.onRefreshOperationFinish += UpdateStatusMessage;
-            m_PageManager.onRefreshOperationError += OnRefreshOperationError;
+            m_PageRefreshHandler.onRefreshOperationStart += UpdateStatusMessage;
+            m_PageRefreshHandler.onRefreshOperationFinish += UpdateStatusMessage;
+            m_PageRefreshHandler.onRefreshOperationError += OnRefreshOperationError;
 
-            m_PackageFiltering.onFilterTabChanged += OnFilterTabChanged;
+            m_PackageManagerPrefs.onFilterTabChanged += OnFilterTabChanged;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
             m_AssetStoreCallQueue.onCheckUpdateProgress += OnCheckUpdateProgress;
@@ -65,21 +67,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!EditorApplication.isPlaying)
                 {
-                    m_PageManager.Refresh(m_PackageFiltering.currentFilterTab);
+                    m_PageRefreshHandler.Refresh(m_PackageManagerPrefs.currentFilterTab);
                 }
             };
             refreshButton.SetEnabled(true);
 
-            RefreshCheckUpdateMenuOption(m_PackageFiltering.currentFilterTab);
+            RefreshCheckUpdateMenuOption(m_PackageManagerPrefs.currentFilterTab);
         }
 
         public void OnDisable()
         {
-            m_PageManager.onRefreshOperationStart -= UpdateStatusMessage;
-            m_PageManager.onRefreshOperationFinish -= UpdateStatusMessage;
-            m_PageManager.onRefreshOperationError -= OnRefreshOperationError;
+            m_PageRefreshHandler.onRefreshOperationStart -= UpdateStatusMessage;
+            m_PageRefreshHandler.onRefreshOperationFinish -= UpdateStatusMessage;
+            m_PageRefreshHandler.onRefreshOperationError -= OnRefreshOperationError;
 
-            m_PackageFiltering.onFilterTabChanged -= OnFilterTabChanged;
+            m_PackageManagerPrefs.onFilterTabChanged -= OnFilterTabChanged;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
             m_AssetStoreCallQueue.onCheckUpdateProgress -= OnCheckUpdateProgress;
@@ -109,11 +111,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void UpdateStatusMessage()
         {
-            var tab = m_PackageFiltering.currentFilterTab;
+            var tab = m_PackageManagerPrefs.currentFilterTab;
 
-            var contentType = m_PageManager.GetCurrentPage().contentType ?? L10n.Tr("packages");
+            var contentType = m_PageManager.GetPage().contentType ?? L10n.Tr("packages");
 
-            if (m_PageManager.IsRefreshInProgress(tab))
+            if (m_PageRefreshHandler.IsRefreshInProgress(tab))
             {
                 SetStatusMessage(StatusType.Loading, string.Format(L10n.Tr("Refreshing {0}..."), contentType));
                 return;
@@ -126,7 +128,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var errorMessage = string.Empty;
-            var refreshError = m_PageManager.GetRefreshError(tab);
+            var refreshError = m_PageRefreshHandler.GetRefreshError(tab);
 
             if (!m_Application.isInternetReachable)
                 errorMessage = k_OfflineErrorMessage;
@@ -166,17 +168,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetLastUpdateStatusMessage()
         {
-            var tab = m_PackageFiltering.currentFilterTab;
-            var timestamp = m_PageManager.GetRefreshTimestamp(tab);
+            var tab = m_PackageManagerPrefs.currentFilterTab;
+            var timestamp = m_PageRefreshHandler.GetRefreshTimestamp(tab);
             var dt = new DateTime(timestamp);
             var dateAndTime = dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"));
-            var label = timestamp == 0L ? string.Empty : string.Format(L10n.Tr("Last update {0}"), dateAndTime);
+            var label = timestamp == 0 ? string.Empty : string.Format(L10n.Tr("Last update {0}"), dateAndTime);
             SetStatusMessage(StatusType.Normal, label);
         }
 
         internal void OnCheckUpdateProgress()
         {
-            if (m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore)
+            if (m_PackageManagerPrefs.currentFilterTab != PackageFilterTab.AssetStore)
                 return;
 
             UpdateStatusMessage();

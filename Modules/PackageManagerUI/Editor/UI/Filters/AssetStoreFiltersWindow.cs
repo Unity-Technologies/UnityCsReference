@@ -27,13 +27,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private List<string> m_Labels;
 
-        private AssetStoreClient m_AssetStoreClient;
+        private AssetStoreRestAPI m_AssetStoreRestAPI;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
         protected override void ResolveDependencies()
         {
             base.ResolveDependencies();
             var container = ServicesContainer.instance;
-            m_AssetStoreClient = container.Resolve<AssetStoreClient>();
+            m_AssetStoreRestAPI = container.Resolve<AssetStoreRestAPI>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
         }
 
@@ -63,35 +63,34 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override void Init(Rect rect, IPage page)
         {
-            m_AssetStoreClient.ListCategories(categories =>
+            // We want to show categories right way since the information is always available
+            m_Categories = m_AssetStoreRestAPI.GetCategories().ToList();
+            base.Init(rect, page);
+
+            // Defer display of labels
+            m_AssetStoreRestAPI.ListLabels(labels =>
             {
-                m_Categories = categories ?? new List<string>();
-                base.Init(rect, page);
+                // If window was closed during fetch of labels, ignore display
+                if (instance == null)
+                    return;
 
-                // Defer display of labels
-                m_AssetStoreClient.ListLabels(labels =>
+                m_Labels = labels ?? new List<string>();
+                if (m_Labels.Any())
                 {
-                    // If window was closed during fetch of labels, ignore display
-                    if (instance == null)
-                        return;
+                    DoLabelsDisplay();
+                    ApplyFilters();
 
-                    m_Labels = labels ?? new List<string>();
-                    if (m_Labels.Any())
+                    // Update window height if necessary
+                    var labelsHeight = GetLabelsHeight();
+                    var newHeight = Math.Min(position.height + labelsHeight, k_MaxHeight);
+                    if (newHeight != position.height)
                     {
-                        DoLabelsDisplay();
-                        ApplyFilters();
-
-                        // Update window height if necessary
-                        var labelsHeight = GetLabelsHeight();
-                        var newHeight = Math.Min(position.height + labelsHeight, k_MaxHeight);
-                        if (newHeight != position.height)
-                        {
-                            position = new Rect(position) { height = newHeight };
-                            RepaintImmediately();
-                        }
+                        position = new Rect(position) { height = newHeight };
+                        RepaintImmediately();
                     }
-                });
-            });
+                }
+            },
+            error => Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching labels: {0}"), error.message)));
         }
 
         protected override void ApplyFilters()

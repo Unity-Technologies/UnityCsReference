@@ -195,7 +195,8 @@ namespace UnityEngine.UIElements
         internal void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             UpdateVisibleText();
-            mgc.Text(this);
+
+            DrawText(mgc);
 
             if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
                 isElided = uitkTextHandle.IsElided();
@@ -206,6 +207,15 @@ namespace UnityEngine.UIElements
                 DrawHighlighting(mgc);
             else if(!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);
+        }
+
+        internal void DrawText(MeshGenerationContext mgc)
+        {
+            if (TextUtilities.IsFontAssigned(this))
+            {
+                TextCore.Text.TextInfo textInfo = uitkTextHandle.Update();
+                mgc.Text(textInfo, contentRect.min);
+            }
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)

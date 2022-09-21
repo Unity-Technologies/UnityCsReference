@@ -18,11 +18,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
         private PackageManagerPrefs m_PackageManagerPrefs;
-        private AssetStoreClient m_AssetStoreClient;
+        private AssetStoreClientV2 m_AssetStoreClient;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
-        private PackageFiltering m_PackageFiltering;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -32,11 +31,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
             m_PageManager = container.Resolve<PageManager>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_AssetStoreClient = container.Resolve<AssetStoreClient>();
+            m_AssetStoreClient = container.Resolve<AssetStoreClientV2>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
-            m_PackageFiltering = container.Resolve<PackageFiltering>();
         }
 
         private UnlockFoldout m_UnlockFoldout;
@@ -142,10 +140,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             foldoutsContainer.Add(m_NoActionFoldout);
         }
 
-        private void OnUpdateChecked(IEnumerable<string> productIds)
+        private void OnUpdateChecked(IEnumerable<long> productIds)
         {
-            var selection = m_PageManager.GetSelection();
-            if (productIds.Any(id => selection.Contains(id)))
+            var selection = m_PageManager.GetPage().GetSelection();
+            if (productIds.Any(id => selection.Contains(id.ToString())))
                 Refresh(selection);
         }
 
@@ -157,7 +155,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
 
             // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
-            var versions = m_PageManager.GetCurrentPage().visualStates.Select(visualState =>
+            var versions = m_PageManager.GetPage().visualStates.Select(visualState =>
             {
                 if (selections.TryGetValue(visualState.packageUniqueId, out var pair))
                 {
@@ -171,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foldoutElement.ClearVersions();
 
             // We want to populate only a subset of all foldouts based on the current tab.
-            var foldoutGroups = m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore ? m_AssetStoreFoldoutGroups : m_UpmFoldoutGroups;
+            var foldoutGroups = m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore ? m_AssetStoreFoldoutGroups : m_UpmFoldoutGroups;
 
             foreach (var version in versions)
             {
@@ -198,13 +196,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void Refresh()
         {
-            Refresh(m_PageManager.GetSelection());
+            Refresh(m_PageManager.GetPage().GetSelection());
         }
 
         private void OnDeselectLockedSelectionsClicked()
         {
-            m_PageManager.RemoveSelection(m_UnlockFoldout.versions.Select(s => new PackageAndVersionIdPair(s.packageUniqueId, s.uniqueId)));
-            PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: m_UnlockFoldout.versions.Select(v => v.packageUniqueId));
+            m_PageManager.GetPage().RemoveSelection(m_UnlockFoldout.versions.Select(s => new PackageAndVersionIdPair(s.package.uniqueId, s.uniqueId)));
+            PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: m_UnlockFoldout.versions.Select(v => v.package.uniqueId));
         }
 
         private VisualElementCache cache { get; set; }

@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(versions.Select(v => v.package));
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startDownloadNew", packageIds: versions.Select(v => v.packageUniqueId));
+                PackageManagerWindowAnalytics.SendEvent("startDownloadNew", packageIds: versions.Select(v => v.package.uniqueId));
             return canDownload;
         }
 
@@ -31,20 +31,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startDownloadNew", version.packageUniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startDownloadNew", version.package.uniqueId);
             return canDownload;
         }
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            if (version?.HasTag(PackageTag.Downloadable) != true)
+            if (version?.HasTag(PackageTag.LegacyFormat) != true)
                 return false;
 
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
+            var productId = version.package.product?.id;
+            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
             if (localInfo != null)
                 return false;
 
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
             return operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible;
         }
 
@@ -52,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isInProgress)
                 return L10n.Tr("The download request has been sent. Please wait for the download to start.");
-            return string.Format(L10n.Tr("Click to download this {0} for later use."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to download this {0} for later use."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
@@ -62,8 +63,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool IsInProgress(IPackageVersion version)
         {
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
+            var productId = version?.package.product?.id;
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
+            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
             return localInfo == null && operation?.isInProgress == true;
         }
 

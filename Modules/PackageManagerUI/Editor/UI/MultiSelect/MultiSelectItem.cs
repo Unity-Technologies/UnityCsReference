@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NameLabel = new Label { name = "nameLabel" };
             m_LeftContainer.Add(m_NameLabel);
 
-            if (m_Version?.package.Is(PackageType.Feature | PackageType.AssetStore | PackageType.BuiltIn) == false)
+            if (m_Version?.HasTag(PackageTag.Feature | PackageTag.LegacyFormat | PackageTag.BuiltIn) == false)
             {
                 m_VersionLabel = new Label { name = "versionLabel" };
                 m_LeftContainer.Add(m_VersionLabel);
@@ -47,14 +47,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh()
         {
-            m_TypeIcon.EnableClassToggle("featureIcon", "packageIcon", m_Version?.package.Is(PackageType.Feature) == true);
+            m_TypeIcon.EnableClassToggle("featureIcon", "packageIcon", m_Version?.HasTag(PackageTag.Feature) == true);
             m_NameLabel.text = m_Version.displayName;
             if (m_VersionLabel != null)
                 m_VersionLabel.text = m_Version.versionString;
 
             m_RightInfoLabel.text = m_RightInfoText;
 
-            if (m_Version.package.Is(PackageType.AssetStore))
+            if (m_Version.HasTag(PackageTag.LegacyFormat))
                 return;
 
             if (m_Version.package.progress != PackageProgress.None)

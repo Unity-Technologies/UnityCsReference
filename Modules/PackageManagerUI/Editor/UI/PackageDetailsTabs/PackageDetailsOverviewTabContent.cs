@@ -32,10 +32,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshLabels(IPackageVersion version)
         {
-            var package = version?.package;
-            var hasLabels = package?.labels?.Any() == true;
+            var labels = version?.package.product?.labels;
+            var hasLabels = labels?.Any() == true;
             if (hasLabels)
-                assignedLabelList.Refresh(package.labels.Count() > 1 ? L10n.Tr("Assigned Labels") : L10n.Tr("Assigned Label"), package.labels);
+                assignedLabelList.Refresh(labels.Count() > 1 ? L10n.Tr("Assigned Labels") : L10n.Tr("Assigned Label"), labels);
             UIUtils.SetElementDisplay(assignedLabelList, hasLabels);
         }
 
@@ -72,13 +72,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshPurchasedDate(IPackageVersion version)
         {
-            detailPurchasedDate.SetValueWithoutNotify(version.package?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
+            detailPurchasedDate.SetValueWithoutNotify(version.package.product.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
             UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
         }
 
         private void RefreshDescription(IPackageVersion version)
         {
-            var productDescription = version.package.productDescription;
+            var productDescription = version.package.product?.description;
             var hasProductDescription = !string.IsNullOrEmpty(productDescription);
             var desc = hasProductDescription ? productDescription : L10n.Tr("There is no description for this package.");
             if (desc.Length > k_maxDescriptionCharacters)

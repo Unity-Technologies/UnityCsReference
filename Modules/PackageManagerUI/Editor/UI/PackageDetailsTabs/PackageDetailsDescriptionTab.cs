@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version?.package?.Is(PackageType.Upm) == true;
+            return version?.HasTag(PackageTag.UpmFormat) == true;
         }
 
         public PackageDetailsDescriptionTab(ResourceLoader resourceLoader, PackageManagerPrefs packageManagerPrefs)
@@ -67,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshOverviewFoldout(IPackageVersion version)
         {
-            var showFoldout = version.package.Is(PackageType.AssetStore);
+            var showFoldout = version.package.product != null;
             if (showFoldout && m_OverviewContent == null)
             {
                 m_FoldoutContainer = new VisualElement();

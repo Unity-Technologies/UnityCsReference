@@ -20,8 +20,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_ConsoleLogPrefix = L10n.Tr("[Package Manager Window]");
 
         [SerializeField]
-        private string m_ProductId;
-        public string packageUniqueId => m_ProductId;
+        private long m_ProductId;
+        public long productId => m_ProductId;
+        public string packageUniqueId => m_ProductId.ToString();
 
         [SerializeField]
         private string m_ProductOldPath;
@@ -99,11 +100,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
         }
 
-        public AssetStoreDownloadOperation()
-        {
-        }
-
-        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCachePathProxy assetStoreCachePathProxy, string productId, string oldPath)
+        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCachePathProxy assetStoreCachePathProxy, long productId, string oldPath)
         {
             ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCachePathProxy);
 
@@ -183,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Pause()
         {
-            if (downloadInfo?.isValid != true)
+            if (m_DownloadInfo == null || m_DownloadInfo.productId <= 0)
                 return;
 
             if (state == DownloadState.Aborted || state == DownloadState.Completed || state == DownloadState.Error || state == DownloadState.Paused)
@@ -198,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Cancel()
         {
-            if (downloadInfo?.isValid != true)
+            if (m_DownloadInfo == null || m_DownloadInfo.productId <= 0)
                 return;
 
             m_AssetStoreUtils.AbortDownload(downloadInfo.destination);
@@ -221,13 +218,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            state = DownloadState.AbortRequsted;
-
-            if (downloadInfo?.isValid != true)
-                return;
-
+            state = DownloadState.AbortRequested;
             // the actual download state change from `downloading` to `aborted` happens in `OnDownloadProgress` callback
-            if (!m_AssetStoreUtils.AbortDownload(downloadInfo.destination))
+            if (m_DownloadInfo?.productId > 0 && !m_AssetStoreUtils.AbortDownload(m_DownloadInfo.destination))
                 Debug.LogError($"{k_ConsoleLogPrefix} {k_AbortErrorMessage}");
         }
 
@@ -246,20 +239,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             state = resume ? DownloadState.ResumeRequested : DownloadState.DownloadRequested;
-            var productId = long.Parse(m_ProductId);
-            m_AssetStoreRestAPI.GetDownloadDetail(productId, downloadInfo =>
+            m_AssetStoreRestAPI.GetDownloadDetail(m_ProductId, downloadInfo =>
             {
                 // if the user requested to abort before receiving the download details, we can simply discard the download info and do nothing
-                if (state == DownloadState.AbortRequsted)
+                if (state == DownloadState.AbortRequested)
                     return;
 
                 m_DownloadInfo = downloadInfo;
-                if (!downloadInfo.isValid)
-                {
-                    OnErrorMessage(downloadInfo.errorMessage, downloadInfo.errorCode);
-                    return;
-                }
-
                 var dest = downloadInfo.destination;
 
                 var publisher = string.Empty;
@@ -288,7 +274,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (current == null)
                         throw new ArgumentException("Invalid JSON");
 
-                    var inProgress = current.ContainsKey("in_progress") && (current["in_progress"] is bool? (bool)current["in_progress"] : false);
+                    var inProgress = current.Get("in_progress", false);
                     if (inProgress)
                     {
                         if (!isInPause)
@@ -296,13 +282,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return;
                     }
 
-                    if (current.ContainsKey("download") && current["download"] is IDictionary<string, object>)
-                    {
-                        var download = (IDictionary<string, object>)current["download"];
-                        var existingUrl = download.ContainsKey("url") ? download["url"] as string : string.Empty;
-                        var existingKey = download.ContainsKey("key") ? download["key"] as string : string.Empty;
-                        resumeOK = (existingUrl == downloadInfo.url && existingKey == downloadInfo.key);
-                    }
+                    var download = current.GetDictionary("download");
+                    resumeOK = download != null && download.GetString("url") == downloadInfo.url && download.GetString("key") == downloadInfo.key;
                 }
                 catch (Exception e)
                 {
@@ -320,6 +301,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     resumeOK && resume);
 
                 state = DownloadState.Connecting;
+            },
+            error =>
+            {
+                m_DownloadInfo = null;
+                OnErrorMessage(error.message, error.operationErrorCode, error.attribute);
             });
         }
     }

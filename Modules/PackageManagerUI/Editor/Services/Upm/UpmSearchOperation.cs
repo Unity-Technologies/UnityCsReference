@@ -4,7 +4,6 @@
 
 using System;
 using UnityEditor.PackageManager.Requests;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {

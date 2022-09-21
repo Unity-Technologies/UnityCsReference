@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (package != null && m_PageManager.GetSelection().TryGetValue(package.uniqueId, out var selection))
+                if (package != null && m_PageManager.GetPage().GetSelection().TryGetValue(package.uniqueId, out var selection))
                 {
                     if (string.IsNullOrEmpty(selection.versionUniqueId))
                         return package.versions.primary;
@@ -45,22 +45,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal bool isLocked => m_LockedIcon?.visible ?? false;
         internal bool isDependency => !package?.versions.installed?.isDirectDependency ?? false;
 
-        private readonly ResourceLoader m_ResourceLoader;
         private readonly PageManager m_PageManager;
-        private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
         private readonly PackageDatabase m_PackageDatabase;
 
-        public PackageItem(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
+        public PackageItem(PageManager pageManager, PackageDatabase packageDatabase)
         {
-            m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
-            m_SettingsProxy = settingsProxy;
             m_PackageDatabase = packageDatabase;
         }
 
         public void SetPackageAndVisualState(IPackage package, VisualState state)
         {
-            var isFeature = package?.Is(PackageType.Feature) == true;
+            var isFeature = package?.versions.primary.HasTag(PackageTag.Feature) == true;
             if (m_IsFeatureLayout != isFeature)
             {
                 Clear();
@@ -157,7 +153,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             UIUtils.SetElementDisplay(m_ExpanderHidden, !visualState.isLocked);
 
-            var showVersionLabel = !package.Is(PackageType.BuiltIn | PackageType.Feature);
+            var showVersionLabel = !package.versions.primary.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
             UIUtils.SetElementDisplay(m_VersionLabel, showVersionLabel);
 
             UIUtils.SetElementDisplay(m_LockedIcon, false);
@@ -198,7 +194,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_StateIcon.tooltip = GetTooltipByState(state);
                 StopSpinner();
 
-                if (package.Is(PackageType.Feature) && state == PackageState.Installed)
+                if (package.versions.primary.HasTag(PackageTag.Feature) && state == PackageState.Installed)
                     GetState();
             }
             else
@@ -250,7 +246,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshTags()
         {
             m_TagContainer.Clear();
-            var showTags = !package.Is(PackageType.AssetStore) && !package.Is(PackageType.BuiltIn);
+            var version = package.versions.primary;
+            var showTags = package.product == null && !version.HasTag(PackageTag.BuiltIn);
             if (showTags)
             {
                 var tagLabel = PackageTagLabel.CreateTagLabel(targetVersion);
@@ -269,12 +266,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SelectMainItem()
         {
-            m_PageManager.SetSelected(package, null, true);
+            m_PageManager.GetPage().SetNewSelection(package, null, true);
         }
 
         public void ToggleSelectMainItem()
         {
-            m_PageManager.ToggleSelected(package?.uniqueId, true);
+            m_PageManager.GetPage().ToggleSelection(package?.uniqueId, true);
         }
 
         internal void UpdateLockedUI(bool showLock)
@@ -299,7 +296,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SeeAllVersionsClick()
         {
-            m_PageManager.SetSeeAllVersions(package, true);
+            m_PageManager.GetPage().SetSeeAllVersions(package, true);
             PackageManagerWindowAnalytics.SendEvent("seeAllVersions", targetVersion?.uniqueId);
         }
 
@@ -355,7 +352,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string GetTooltipByState(PackageState state)
         {
-            return string.Format(k_TooltipsByState[(int)state], package.GetDescriptor());
+            return string.Format(k_TooltipsByState[(int)state], package.versions.primary.GetDescriptor());
         }
 
         private static readonly string[] k_TooltipsByProgress =
@@ -372,7 +369,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string GetTooltipByProgress(PackageProgress progress)
         {
-            return string.Format(k_TooltipsByProgress[(int)progress], package.GetDescriptor(true));
+            return string.Format(k_TooltipsByProgress[(int)progress], package.versions.primary.GetDescriptor(true));
         }
     }
 }

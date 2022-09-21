@@ -197,7 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public virtual PackageInfo GetProductSearchPackageInfo(string packageName) => m_ProductSearchPackageInfos.Get(packageName);
-        public virtual void SetProductSearchPackageInfo(string productId, PackageInfo info)
+        public virtual void SetProductSearchPackageInfo(PackageInfo info)
         {
             var oldInfo = m_ProductSearchPackageInfos.Get(info.name);
             m_ProductSearchPackageInfos[info.name] = info;

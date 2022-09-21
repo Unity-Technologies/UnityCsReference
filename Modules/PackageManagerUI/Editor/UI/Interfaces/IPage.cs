@@ -22,9 +22,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IEnumerable<VisualState> visualStates;
     }
 
+    internal struct PageSelectionChangeArgs
+    {
+        public IPage page;
+        public PageSelection selection;
+        public bool isExplicitUserSelection;
+    }
+
     internal interface IPage
     {
-        event Action<PageSelection> onSelectionChanged;
+        event Action<PageSelectionChangeArgs> onSelectionChanged;
         // triggered when the state of the UI item is updated (expanded, hidden, see all versions toggled)
         event Action<VisualStateChangeArgs> onVisualStateChange;
         // triggered when packages are added/updated or removed
@@ -36,48 +43,52 @@ namespace UnityEditor.PackageManager.UI.Internal
         PackageFilterTab tab { get; }
         PageCapability capability { get; }
 
-        long numTotalItems { get; }
-        long numCurrentItems { get; }
-
         IEnumerable<SubPage> subPages { get; }
         SubPage currentSubPage { get; set; }
         void AddSubPage(SubPage subPage);
 
+        bool isActivePage { get; }
+        // Called when a page got activated (when it became the current visible page)
+        void OnActivated();
+        // Called when a page got deactivated (when it went from the current page to the previous page)
+        void OnDeactivated();
+
         // an ordered list of `packageUniqueIds`
-        IEnumerable<VisualState> visualStates { get; }
-        bool isFullyLoaded { get; }
+        IVisualStateList visualStates { get; }
 
         string contentType { get; }
 
-        VisualState GetVisualState(string packageUniqueId);
         void LoadMore(long numberOfPackages);
 
         // return true if filters are changed
         bool ClearFilters();
         // return true if filters are changed
         bool UpdateFilters(PageFilters filters);
-
+        void UpdateSearchText(string searchText);
         PageSelection GetSelection();
         IEnumerable<VisualState> GetSelectedVisualStates();
 
         void OnPackagesChanged(PackagesChangeArgs args);
 
-        void Rebuild();
-        void Load(IPackage package, IPackageVersion version = null);
+        void OnEnable();
+        void OnDisable();
+
+        void Load(string packageUniqueId);
         void LoadExtraItems(IEnumerable<IPackage> packages);
 
-        bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIdPairs);
-        bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove);
-        bool ToggleSelection(string packageUniqueId);
-        void TriggerOnSelectionChanged();
+        bool SetNewSelection(IPackage package, IPackageVersion version = null, bool isExplicitUserSelection = false);
+        bool SetNewSelection(PackageAndVersionIdPair packageAndVersionIdPair, bool isExplicitUserSelection = false);
+        bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIdPairs, bool isExplicitUserSelection = false);
+        void RemoveSelection(IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false);
+        bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false);
+        bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false);
+        bool UpdateSelectionIfCurrentSelectionIsInvalid();
+        void TriggerOnSelectionChanged(bool isExplicitUserSelection = false);
         void SetSeeAllVersions(string packageUniqueId, bool value);
         void SetSeeAllVersions(IPackage package, bool value);
         bool IsGroupExpanded(string groupName);
         void SetGroupExpanded(string groupName, bool value);
         string GetGroupName(IPackage package);
-
-        bool Contains(IPackage package);
-        bool Contains(string packageUniqueId);
         void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked);
         void ResetUserUnlockedState();
         bool GetDefaultLockState(IPackage package);

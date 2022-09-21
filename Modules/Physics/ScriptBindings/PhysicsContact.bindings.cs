@@ -78,6 +78,9 @@ namespace UnityEngine
                     var component = actor != null ? actor : pair.Collider;
                     var otherComponent = otherActor != null ? otherActor : pair.OtherCollider;
 
+                    if(!component || !otherComponent)
+                        continue;
+
                     if (pair.IsCollisionEnter)
                     {
                         Physics.SendOnCollisionEnter(component, GetCollisionToReport(in header, in pair, false));

@@ -743,10 +743,9 @@ namespace UnityEngine.UIElements
             mgc.painter.DrawBorder(borderParams);
         }
 
-        public static void Text(this MeshGenerationContext mgc, TextElement te)
+        public static void Text(this MeshGenerationContext mgc, TextInfo textInfo, Vector2 offset)
         {
-            if (TextUtilities.IsFontAssigned(te))
-                mgc.painter.DrawText(te);
+            mgc.painter.DrawText(textInfo, offset);
         }
 
         static Vector2 ConvertBorderRadiusPercentToPoints(Vector2 borderRectSize, Length length)

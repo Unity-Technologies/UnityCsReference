@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements.UIR
             this.shaderInfoAllocator.Construct();
             this.opacityIdAccelerator = new OpacityIdAccelerator();
 
-            painter = new Implementation.UIRStylePainter(this);
+            painter = new UIRStylePainter(this);
 
             var rp = panel as BaseRuntimePanel;
             if (rp != null && rp.drawToCameras)
@@ -330,7 +330,7 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnClippingChanged(this, ve, m_DirtyTracker.dirtyID,
+                            RenderEvents.ProcessOnClippingChanged(this, ve, m_DirtyTracker.dirtyID,
                                 ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
@@ -354,7 +354,7 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnOpacityChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
+                            RenderEvents.ProcessOnOpacityChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
@@ -377,7 +377,7 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnColorChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
+                            RenderEvents.ProcessOnColorChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
@@ -400,7 +400,7 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnTransformOrSizeChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
+                            RenderEvents.ProcessOnTransformOrSizeChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
@@ -426,7 +426,7 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            Implementation.RenderEvents.ProcessOnVisualsChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
+                            RenderEvents.ProcessOnVisualsChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
@@ -508,7 +508,7 @@ namespace UnityEngine.UIElements.UIR
             if (parent != null && !parent.renderChainData.isInChain)
                 return; // Ignore it until its parent gets ultimately added
 
-            uint addedCount = Implementation.RenderEvents.DepthFirstOnChildAdded(this, parent, ve, index, true);
+            uint addedCount = RenderEvents.DepthFirstOnChildAdded(this, parent, ve, index, true);
             Debug.Assert(ve.renderChainData.isInChain);
             Debug.Assert(ve.panel == this.panel);
             UIEOnClippingChanged(ve, true);
@@ -526,9 +526,9 @@ namespace UnityEngine.UIElements.UIR
 
             int childrenCount = ve.hierarchy.childCount;
             for (int i = 0; i < childrenCount; i++)
-                Implementation.RenderEvents.DepthFirstOnChildRemoving(this, ve.hierarchy[i]);
+                RenderEvents.DepthFirstOnChildRemoving(this, ve.hierarchy[i]);
             for (int i = 0; i < childrenCount; i++)
-                Implementation.RenderEvents.DepthFirstOnChildAdded(this, ve, ve.hierarchy[i], i, false);
+                RenderEvents.DepthFirstOnChildAdded(this, ve, ve.hierarchy[i], i, false);
 
             UIEOnClippingChanged(ve, true);
             UIEOnOpacityChanged(ve, true);
@@ -542,7 +542,7 @@ namespace UnityEngine.UIElements.UIR
                 throw new InvalidOperationException("VisualElements cannot be removed from an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
 
-            m_StatsElementsRemoved += Implementation.RenderEvents.DepthFirstOnChildRemoving(this, ve);
+            m_StatsElementsRemoved += RenderEvents.DepthFirstOnChildRemoving(this, ve);
             Debug.Assert(!ve.renderChainData.isInChain);
         }
 
@@ -637,7 +637,7 @@ namespace UnityEngine.UIElements.UIR
         internal TempAllocator<UInt16> indicesPool { get; private set; }
         internal JobManager jobManager { get; private set; }
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
-        internal Implementation.UIRStylePainter painter { get; private set; }
+        internal UIRStylePainter painter { get; private set; }
         internal bool drawStats { get; set; }
         internal bool drawInCameras { get; private set; }
 
@@ -979,7 +979,7 @@ namespace UnityEngine.UIElements.UIR
         internal bool localFlipsWinding;
         internal bool worldFlipsWinding;
 
-        internal Implementation.ClipMethod clipMethod; // Self
+        internal ClipMethod clipMethod; // Self
         internal int childrenStencilRef;
         internal int childrenMaskDepth;
 

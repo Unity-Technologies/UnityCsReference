@@ -12,12 +12,12 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePage : IPage
     {
-        public event Action<PageSelection> onSelectionChanged = delegate { };
-        public event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
-        public event Action<ListUpdateArgs> onListUpdate = delegate {};
-        public event Action<IPage> onListRebuild = delegate {};
-        public event Action<IPage> onSubPageChanged = delegate {};
-        public event Action<PageFilters> onFiltersChange = delegate {};
+        public event Action<PageSelectionChangeArgs> onSelectionChanged = delegate { };
+        public event Action<VisualStateChangeArgs> onVisualStateChange = delegate { };
+        public event Action<ListUpdateArgs> onListUpdate = delegate { };
+        public event Action<IPage> onListRebuild = delegate { };
+        public event Action<IPage> onSubPageChanged = delegate { };
+        public event Action<PageFilters> onFiltersChange = delegate { };
 
         [SerializeField]
         private PageSelection m_Selection = new PageSelection();
@@ -37,13 +37,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected PageCapability m_Capability;
         public PageCapability capability => m_Capability;
 
-        public bool isFullyLoaded => numTotalItems <= numCurrentItems;
+        public bool isActivePage => m_PackageManagerPrefs.currentFilterTab == tab;
 
-        public abstract long numTotalItems { get; }
-
-        public abstract long numCurrentItems { get; }
-
-        public abstract IEnumerable<VisualState> visualStates { get; }
+        public abstract IVisualStateList visualStates { get; }
         public abstract IEnumerable<SubPage> subPages { get; }
         public abstract SubPage currentSubPage { get; set; }
 
@@ -51,14 +47,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [NonSerialized]
         protected PackageDatabase m_PackageDatabase;
-        protected void ResolveDependencies(PackageDatabase packageDatabase)
+        [NonSerialized]
+        protected PackageManagerPrefs m_PackageManagerPrefs;
+        public void ResolveDependencies(PackageDatabase packageDatabase, PackageManagerPrefs packageManagerPrefs)
         {
             m_PackageDatabase = packageDatabase;
+            m_PackageManagerPrefs = packageManagerPrefs;
         }
 
-        protected BasePage(PackageDatabase packageDatabase, PackageFilterTab tab, PageCapability capability)
+        protected BasePage(PackageDatabase packageDatabase, PackageManagerPrefs packageManagerPrefs, PackageFilterTab tab, PageCapability capability)
         {
-            ResolveDependencies(packageDatabase);
+            ResolveDependencies(packageDatabase, packageManagerPrefs);
 
             m_Tab = tab;
             m_Capability = capability;
@@ -71,6 +70,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                     isReverseOrder = false
                 };
             }
+        }
+
+        public virtual void OnEnable()
+        {
+            m_PackageDatabase.onPackageUniqueIdFinalize += OnPackageUniqueIdFinalize;
+        }
+
+        public virtual void OnDisable()
+        {
+            m_PackageDatabase.onPackageUniqueIdFinalize += OnPackageUniqueIdFinalize;
         }
 
         public bool ClearFilters()
@@ -93,9 +102,65 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        public abstract void OnPackagesChanged(PackagesChangeArgs args);
+        public virtual void OnPackagesChanged(PackagesChangeArgs args)
+        {
+            var addList = new List<IPackage>();
+            var updateList = new List<IPackage>();
+            var removeList = args.removed.Where(p => visualStates.Contains(p.uniqueId)).ToList();
+            foreach (var package in args.added.Concat(args.updated))
+            {
+                if (package.IsInTab(tab))
+                {
+                    if (visualStates.Contains(package.uniqueId))
+                        updateList.Add(package);
+                    else
+                        addList.Add(package);
+                }
+                else if (visualStates.Contains(package.uniqueId))
+                    removeList.Add(package);
+            }
 
-        public abstract void Rebuild();
+            if (addList.Any() || updateList.Any() || removeList.Any())
+            {
+                RebuildAndReorderVisualStates();
+
+                TriggerOnListUpdate(addList, updateList, removeList);
+
+                UpdateVisualStateVisbilityWithSearchText();
+            }
+        }
+
+        private void OnPackageUniqueIdFinalize(string tempPackageUniqueId, string finalPackageUniqueId)
+        {
+            if (!GetSelection().Contains(tempPackageUniqueId))
+                return;
+            AmendSelection(new[] { new PackageAndVersionIdPair(finalPackageUniqueId) }, new[] { new PackageAndVersionIdPair(tempPackageUniqueId) });
+        }
+
+        public void UpdateVisualStateVisbilityWithSearchText()
+        {
+            var changedVisualStates = new List<VisualState>();
+            foreach (var state in visualStates)
+            {
+                var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
+                var visible = package?.versions.primary.MatchesSearchText(m_PackageManagerPrefs.trimmedSearchText) == true;
+                if (state.visible != visible)
+                {
+                    state.visible = visible;
+                    changedVisualStates.Add(state);
+                }
+            }
+
+            if (changedVisualStates.Any())
+                TriggerOnVisualStateChange(changedVisualStates);
+        }
+
+        public abstract void OnActivated();
+        public abstract void OnDeactivated();
+
+        public abstract void UpdateSearchText(string searchText);
+
+        public abstract void RebuildAndReorderVisualStates();
 
         protected void TriggerOnListUpdate(IEnumerable<IPackage> added = null, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> removed = null)
         {
@@ -110,24 +175,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             onListUpdate?.Invoke(new ListUpdateArgs { page = this, added = added, updated = updated, removed = removed, reorder = reorder });
         }
 
-        protected void TriggerOnListRebuild()
+        protected void TriggerListRebuild()
         {
             onListRebuild?.Invoke(this);
-        }
-
-        public virtual void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
-        {
-            // do nothing, only simple page needs implementation right now
-        }
-
-        public virtual void ResetUserUnlockedState()
-        {
-            // do nothing, only simple page needs implementation right now
-        }
-
-        public virtual bool GetDefaultLockState(IPackage package)
-        {
-            return false;
         }
 
         protected void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
@@ -139,9 +189,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
         }
 
-        public virtual void TriggerOnSelectionChanged()
+        public virtual void TriggerOnSelectionChanged(bool isExplicitUserSelection = false)
         {
-            onSelectionChanged?.Invoke(GetSelection());
+            onSelectionChanged?.Invoke(new PageSelectionChangeArgs
+            {
+                page = this,
+                selection = GetSelection(),
+                isExplicitUserSelection = isExplicitUserSelection
+            });
         }
 
         public void TriggerOnSubPageChanged()
@@ -149,47 +204,83 @@ namespace UnityEditor.PackageManager.UI.Internal
             onSubPageChanged?.Invoke(this);
         }
 
-        public abstract VisualState GetVisualState(string packageUniqueId);
-
-        private VisualState GetVisualState(PackageAndVersionIdPair packageAndVersionId)
-        {
-            return GetVisualState(packageAndVersionId?.packageUniqueId);
-        }
-
         public PageSelection GetSelection() => m_Selection;
 
         public IEnumerable<VisualState> GetSelectedVisualStates()
         {
-            return m_Selection.Select(s => GetVisualState(s)).Where(v => v != null);
+            return m_Selection.Select(s => visualStates.Get(s?.packageUniqueId)).Where(v => v != null);
         }
 
-        public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds)
+        public virtual bool SetNewSelection(IPackage package, IPackageVersion version = null, bool isExplicitUserSelection = false)
         {
-            var numOldSelections = m_Selection.Count;
+            return SetNewSelection(new[] { new PackageAndVersionIdPair(package?.uniqueId, version?.uniqueId) }, isExplicitUserSelection);
+        }
+
+        public virtual bool SetNewSelection(PackageAndVersionIdPair packageAndVersionId, bool isExplicitUserSelection = false)
+        {
+            return SetNewSelection(new[] { packageAndVersionId }, isExplicitUserSelection);
+        }
+
+        public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds, bool isExplicitUserSelection = false)
+        {
             if (!m_Selection.SetNewSelection(packageAndVersionIds))
                 return false;
 
-            TriggerOnSelectionChanged();
+            TriggerOnSelectionChanged(isExplicitUserSelection);
             return true;
         }
 
-        public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove)
+        public virtual void RemoveSelection(IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false)
+        {
+            var previousFirstSelection = GetSelection().firstSelection;
+            AmendSelection(Enumerable.Empty<PackageAndVersionIdPair>(), toRemove, isExplicitUserSelection);
+            if (!GetSelection().Any())
+                SetNewSelection(new[] { previousFirstSelection }, isExplicitUserSelection);
+        }
+
+        public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false)
         {
             if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove))
                 return false;
 
-            TriggerOnSelectionChanged();
+            TriggerOnSelectionChanged(isExplicitUserSelection);
             return true;
         }
 
-        public virtual bool ToggleSelection(string packageUniqueId)
+        public virtual bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false)
         {
-            var numOldSelections = m_Selection.Count;
             if (!m_Selection.ToggleSelection(packageUniqueId))
                 return false;
 
-            TriggerOnSelectionChanged();
+            TriggerOnSelectionChanged(isExplicitUserSelection);
             return true;
+        }
+
+        public virtual bool UpdateSelectionIfCurrentSelectionIsInvalid()
+        {
+            var selection = GetSelection();
+
+            var toAddOrUpdate = new List<PackageAndVersionIdPair>();
+            var toRemove = new List<PackageAndVersionIdPair>();
+            foreach (var item in selection)
+            {
+                m_PackageDatabase.GetPackageAndVersion(item, out var package, out var version);
+                var visualState = visualStates.Get(item.packageUniqueId);
+                if (package == null || visualState?.visible != true)
+                    toRemove.Add(item);
+            }
+
+            if (selection.Count > 0 && toAddOrUpdate.Count + toRemove.Count == 0)
+                return false;
+
+            if (toRemove.Count == selection.Count)
+            {
+                var firstVisible = visualStates.FirstOrDefault(v => v.visible && !selection.Contains(v.packageUniqueId));
+                if (firstVisible != null)
+                    toAddOrUpdate.Add(new PackageAndVersionIdPair(firstVisible.packageUniqueId));
+            }
+
+            return AmendSelection(toAddOrUpdate, toRemove);
         }
 
         public void SetSeeAllVersions(IPackage package, bool value)
@@ -197,7 +288,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetSeeAllVersions(package?.uniqueId, value);
         }
 
-        public abstract void SetSeeAllVersions(string packageUniqueId, bool value);
+        public void SetSeeAllVersions(string packageUniqueId, bool value)
+        {
+            if (visualStates.SetSeeAllVersions(packageUniqueId, value))
+                TriggerOnVisualStateChange(new[] { visualStates.Get(packageUniqueId) });
+        }
 
         public bool IsGroupExpanded(string groupName)
         {
@@ -215,11 +310,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_CollapsedGroups.Add(groupName);
         }
 
-        public bool Contains(IPackage package)
-        {
-            return Contains(package?.uniqueId);
-        }
-
         public virtual string GetGroupName(IPackage package)
         {
             return GetDefaultGroupName(tab, package);
@@ -227,28 +317,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string GetDefaultGroupName(PackageFilterTab tab, IPackage package)
         {
-            if (package.Is(PackageType.BuiltIn))
-                return string.Empty;
-
-            if (package.Is(PackageType.AssetStore))
+            if (package.product != null)
                 return PageManager.k_AssetStorePackageGroupName;
 
-            if (package.Is(PackageType.Unity))
+            var version = package.versions.primary;
+            if (version.HasTag(PackageTag.BuiltIn))
+                return string.Empty;
+
+            if (version.HasTag(PackageTag.Unity))
                 return tab == PackageFilterTab.UnityRegistry ? string.Empty : PageManager.k_UnityPackageGroupName;
 
-            return string.IsNullOrEmpty(package.versions.primary?.author) ?
-                PageManager.k_OtherPackageGroupName :
-                package.versions.primary.author;
+            return string.IsNullOrEmpty(version?.author) ? PageManager.k_OtherPackageGroupName : version.author;
         }
 
-        public abstract bool Contains(string packageUniqueId);
-
         public abstract void LoadMore(long numberOfPackages);
-
-        public abstract void Load(IPackage package, IPackageVersion version = null);
-
+        public abstract void Load(string packageUniqueId);
         public abstract void LoadExtraItems(IEnumerable<IPackage> packages);
 
+        public abstract void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked);
+        public abstract void ResetUserUnlockedState();
+        public abstract bool GetDefaultLockState(IPackage package);
         public abstract void AddSubPage(SubPage subPage);
     }
 }

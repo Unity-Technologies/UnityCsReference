@@ -54,7 +54,6 @@ namespace UnityEditor
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
             public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
-            public static GUIContent enableEnlightenLightmapping = EditorGUIUtility.TrTextContent("Enable Enlighten for Baked GI (Legacy)", "Enable the Enlighten backend for Baked GI lightmaps. This is a deprecated feature that is no longer available in 2023.1 and later.");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max SpriteAtlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart.");
@@ -260,7 +259,6 @@ namespace UnityEditor
         SerializedProperty m_PrefabModeAllowAutoSave;
         SerializedProperty m_UseLegacyProbeSampleCount;
         SerializedProperty m_DisableCookiesInLightmapper;
-        SerializedProperty m_EnableEnlightenBakedGI;
         SerializedProperty m_SpritePackerMode;
         SerializedProperty m_SpritePackerCacheSize;
         SerializedProperty m_Bc7TextureCompressor;
@@ -328,9 +326,6 @@ namespace UnityEditor
 
             m_DisableCookiesInLightmapper = serializedObject.FindProperty("m_DisableCookiesInLightmapper");
             Assert.IsNotNull(m_DisableCookiesInLightmapper);
-
-            m_EnableEnlightenBakedGI = serializedObject.FindProperty("m_EnableEnlightenBakedGI");
-            Assert.IsNotNull(m_EnableEnlightenBakedGI);
 
             m_SpritePackerMode = serializedObject.FindProperty("m_SpritePackerMode");
             Assert.IsNotNull(m_SpritePackerMode);
@@ -566,33 +561,6 @@ namespace UnityEditor
                 EditorApplication.RequestRepaintAllViews();
             }
             EditorGUI.EndProperty();
-
-#pragma warning disable 618
-            if (UnityEngine.Rendering.SupportedRenderingFeatures.active.enlightenLightmapper)
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_EnableEnlightenBakedGI, Content.enableEnlightenLightmapping);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (!m_EnableEnlightenBakedGI.boolValue
-                        && Lightmapping.lightingSettings.lightmapper == LightingSettings.Lightmapper.Enlighten)
-                    {
-                        bool isAppleSiliconEditor = SystemInfo.processorType.Contains("Apple") && !EditorUtility.IsRunningUnderCPUEmulation();
-
-                        Lightmapping.lightingSettings.lightmapper = isAppleSiliconEditor ?
-                            LightingSettings.Lightmapper.ProgressiveGPU :
-                            LightingSettings.Lightmapper.ProgressiveCPU;
-                    }
-
-                    if (m_IsGlobalSettings)
-                    {
-                        EditorSettings.enableEnlightenBakedGI = m_EnableEnlightenBakedGI.boolValue;
-                    }
-
-                    EditorApplication.RequestRepaintAllViews();
-                }
-            }
-#pragma warning restore 618
 
             GUILayout.Space(10);
 

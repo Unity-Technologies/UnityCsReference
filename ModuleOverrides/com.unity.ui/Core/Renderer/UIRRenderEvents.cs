@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEngine.UIElements.UIR.Implementation
+namespace UnityEngine.UIElements.UIR
 {
     internal enum ClipMethod
     {

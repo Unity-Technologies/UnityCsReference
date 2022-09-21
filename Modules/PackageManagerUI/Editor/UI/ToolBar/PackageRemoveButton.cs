@@ -4,7 +4,6 @@
 
 using System.Linq;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -74,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var isPartOfFeature = m_PackageDatabase.GetFeaturesThatUseThisPackage(version).Any(featureSet => featureSet.isInstalled);
                 if (isPartOfFeature || !m_PackageManagerPrefs.skipRemoveConfirmation)
                 {
-                    var descriptor = version.package.GetDescriptor();
+                    var descriptor = version.GetDescriptor();
                     var title = string.Format(L10n.Tr("Removing {0}"), descriptor);
                     if (isPartOfFeature)
                     {
@@ -106,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // If the user is removing a package that is part of a feature set, lock it after removing from manifest
             // Having this check condition should be more optimal once we implement caching of Feature Set Dependents for each package
             if (m_PackageDatabase.GetFeaturesThatUseThisPackage(version.package.versions.installed)?.Any() == true)
-                m_PageManager.SetPackagesUserUnlockedState(new List<string> { version.packageUniqueId }, false);
+                m_PageManager.GetPage().SetPackagesUserUnlockedState(new List<string> { version.package.uniqueId }, false);
 
             // Remove
             m_OperationDispatcher.Uninstall(version.package);
@@ -118,7 +117,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var installed = version?.package.versions.installed;
             return installed != null
-                && version.HasTag(PackageTag.Removable)
+                && version.HasTag(PackageTag.UpmFormat)
                 && !version.HasTag(PackageTag.Placeholder | PackageTag.Custom)
                 && (installed == version || version.IsRequestedButOverriddenVersion);
         }
@@ -128,8 +127,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isInProgress)
                 return k_InProgressGenericTooltip;
             if (version?.HasTag(PackageTag.BuiltIn) == true)
-                return string.Format(L10n.Tr("Disable the use of this {0} in your project."), version.package.GetDescriptor());
-            return string.Format(L10n.Tr("Click to remove this {0} from your project."), version.package.GetDescriptor());
+                return string.Format(L10n.Tr("Disable the use of this {0} in your project."), version.GetDescriptor());
+            return string.Format(L10n.Tr("Click to remove this {0} from your project."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
@@ -149,14 +148,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             var isInstalledAsDependency = version.package.versions.installed == version
                 && (!version.isDirectDependency || version.IsDifferentVersionThanRequested);
             yield return new ButtonDisableCondition(!isInvalidVersion && isInstalledAsDependency,
-                string.Format(L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details."), version.package.GetDescriptor()));
+                string.Format(L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details."), version.GetDescriptor()));
         }
 
         protected override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsUninstallInProgress(version.package);
 
         private void DeselectVersions(IList<IPackageVersion> versions)
         {
-            m_PageManager.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.packageUniqueId, v.uniqueId)));
+            m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
         }
     }
 }

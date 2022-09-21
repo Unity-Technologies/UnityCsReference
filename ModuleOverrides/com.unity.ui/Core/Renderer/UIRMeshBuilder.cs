@@ -16,11 +16,6 @@ namespace UnityEngine.UIElements.UIR
     /// </summary>
     internal static class MeshBuilder
     {
-        static ProfilerMarker s_VectorGraphics9Slice = new ProfilerMarker("UIR.MakeVector9Slice");
-        static ProfilerMarker s_VectorGraphicsSplitTriangle = new ProfilerMarker("UIR.SplitTriangle");
-        static ProfilerMarker s_VectorGraphicsScaleTriangle = new ProfilerMarker("UIR.ScaleTriangle");
-        static ProfilerMarker s_VectorGraphicsStretch = new ProfilerMarker("UIR.MakeVectorStretch");
-
         internal static readonly int s_MaxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
 
         internal struct AllocMeshData
@@ -49,17 +44,6 @@ namespace UnityEngine.UIElements.UIR
                 uv = new Vector2(info.uvs0[index].x, info.uvs0[index].y),
                 tint = info.colors32[index],
                 flags = new Color32((byte)flags, (byte)(dilate * 255), 0, isDynamicColor ? (byte)1 : (byte)0)
-            };
-        }
-
-        private static Vertex ConvertTextVertexToUIRVertex(TextVertex textVertex, Vector2 offset)
-        {
-            return new Vertex
-            {
-                position = new Vector3(textVertex.position.x + offset.x, textVertex.position.y + offset.y, UIRUtility.k_MeshPosZ),
-                uv = textVertex.uv0,
-                tint = textVertex.color,
-                flags = new Color32((byte)VertexFlags.IsText, 0, 0, 0) // same flag for both text engines
             };
         }
 
@@ -93,53 +77,6 @@ namespace UnityEngine.UIElements.UIR
                 mesh.SetNextIndex((UInt16)(v + 2));
                 mesh.SetNextIndex((UInt16)(v + 3));
                 mesh.SetNextIndex((UInt16)(v + 0));
-            }
-        }
-
-        internal static void MakeText(NativeArray<TextVertex> uiVertices, Vector2 offset, AllocMeshData meshAlloc)
-        {
-            int vertexCount = LimitTextVertices(uiVertices.Length);
-            int quadCount = vertexCount / 4;
-            var mesh = meshAlloc.Allocate((uint)(quadCount * 4), (uint)(quadCount * 6));
-
-            for (int q = 0, v = 0; q < quadCount; ++q, v += 4)
-            {
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(uiVertices[v + 0], offset));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(uiVertices[v + 1], offset));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(uiVertices[v + 2], offset));
-                mesh.SetNextVertex(ConvertTextVertexToUIRVertex(uiVertices[v + 3], offset));
-
-                mesh.SetNextIndex((UInt16)(v + 0));
-                mesh.SetNextIndex((UInt16)(v + 1));
-                mesh.SetNextIndex((UInt16)(v + 2));
-                mesh.SetNextIndex((UInt16)(v + 2));
-                mesh.SetNextIndex((UInt16)(v + 3));
-                mesh.SetNextIndex((UInt16)(v + 0));
-            }
-        }
-
-        internal static void UpdateText(NativeArray<TextVertex> uiVertices,
-            Vector2 offset, Matrix4x4 transform,
-            Color32 xformClipPages, Color32 ids, Color32 flags, Color32 opacityPageSettingIndex,
-            NativeSlice<Vertex> vertices, TextureId textureId)
-        {
-            int vertexCount = LimitTextVertices(uiVertices.Length, false);
-            Debug.Assert(vertexCount == vertices.Length);
-            flags.r = (byte)VertexFlags.IsText;
-            for (int v = 0; v < vertexCount; v++)
-            {
-                var textVertex = uiVertices[v];
-                vertices[v] = new Vertex
-                {
-                    position = transform.MultiplyPoint3x4(new Vector3(textVertex.position.x + offset.x, textVertex.position.y + offset.y, UIRUtility.k_MeshPosZ)),
-                    uv = textVertex.uv0,
-                    tint = textVertex.color,
-                    xformClipPages = xformClipPages,
-                    ids = ids,
-                    flags = flags,
-                    opacityColorPages = opacityPageSettingIndex,
-                    textureId = textureId.ConvertToGpu()
-                };
             }
         }
     }

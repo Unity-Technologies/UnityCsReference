@@ -47,14 +47,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var packageNameAndVersions = string.Join("\n\u2022 ",
                         customizedDependencies.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
 
-                    var title = string.Format(L10n.Tr("Installing {0}"), version.package.GetDescriptor());
+                    var title = string.Format(L10n.Tr("Installing {0}"), version.GetDescriptor());
                     var message = customizedDependencies.Length == 1 ?
                         string.Format(
                         L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
-                        version.package.GetDescriptor(), packageNameAndVersions) :
+                        version.GetDescriptor(), packageNameAndVersions) :
                         string.Format(
                         L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
-                        version.package.GetDescriptor(), packageNameAndVersions);
+                        version.GetDescriptor(), packageNameAndVersions);
 
                     var result = m_Application.DisplayDialogComplex("installPackageWithCustomizedDependencies", title, message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
                     if (result == 1) // Cancel
@@ -85,7 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version != null
                 && version.package.versions.installed == null
                 && !version.HasTag(PackageTag.Placeholder)
-                && version.HasTag(PackageTag.Installable);
+                && version.HasTag(PackageTag.UpmFormat);
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -94,9 +94,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return k_InProgressGenericTooltip;
 
             if (version?.HasTag(PackageTag.BuiltIn) == true)
-                return string.Format(L10n.Tr("Click to enable this {0} in your project."), version.package.GetDescriptor());
+                return string.Format(L10n.Tr("Click to enable this {0} in your project."), version.GetDescriptor());
 
-            return string.Format(L10n.Tr("Click to install this {0} into your project."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to install this {0} into your project."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)

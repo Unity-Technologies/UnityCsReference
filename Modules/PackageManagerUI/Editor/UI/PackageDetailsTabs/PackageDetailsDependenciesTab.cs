@@ -19,8 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            var package = version?.package;
-            return package != null && package.Is(PackageType.Upm) && !package.Is(PackageType.Feature) && !version.HasTag(PackageTag.Placeholder);
+            return version != null && version.HasTag(PackageTag.UpmFormat) && !version.HasTag(PackageTag.Feature) && !version.HasTag(PackageTag.Placeholder);
         }
 
         public PackageDetailsDependenciesTab(ResourceLoader resourceLoader, PackageDatabase packageDatabase)
@@ -85,13 +84,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version?.displayName ?? package?.displayName ?? dependency.name;
         }
 
-        public static string GetVersionText(DependencyInfo dependency, IPackage package)
+        public static string GetVersionText(DependencyInfo dependency, IPackageVersion version)
         {
-            if (package == null)
+            if (version == null)
                 return dependency.version;
-            if (package.Is(PackageType.Feature))
+            if (version.HasTag(PackageTag.Feature))
                 return string.Empty;
-            if (package.Is(PackageType.BuiltIn))
+            if (version.HasTag(PackageTag.BuiltIn))
                 return "-";
             return dependency.version;
         }
@@ -141,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageDatabase.GetPackageAndVersion(dependency, out var package, out var version);
 
                 var nameText = GetNameText(dependency, package, version);
-                var versionText = GetVersionText(dependency, package);
+                var versionText = GetVersionText(dependency, version);
                 var statusText = GetStatusText(dependency, package?.versions.installed);
 
                 dependenciesNames.Add(BuildSelectableLabel(nameText, "text"));

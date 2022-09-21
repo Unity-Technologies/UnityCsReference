@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool AddPackageVersion(IPackageVersion version)
         {
-            if (!version.package.Is(PackageType.Upm))
+            if (!version.HasTag(PackageTag.UpmFormat))
                 return false;
             return base.AddPackageVersion(version);
         }

@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         Completed               = 1 << 6,
         Decrypting              = 1 << 7,
         Aborted                 = 1 << 8,
-        AbortRequsted           = 1 << 9,
+        AbortRequested          = 1 << 9,
         Error                   = 1 << 10,
 
 

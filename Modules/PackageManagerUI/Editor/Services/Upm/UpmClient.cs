@@ -403,7 +403,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ExtraFetchInternal(packageId);
         }
 
-        private UpmSearchOperation ExtraFetchInternal(string packageIdOrName, string productId = null)
+        private UpmSearchOperation ExtraFetchInternal(string packageIdOrName, long productId = 0)
         {
             if (m_ExtraFetchOperations.ContainsKey(packageIdOrName))
                 return null;
@@ -414,7 +414,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
             m_ExtraFetchOperations[packageIdOrName] = operation;
 
-            if (!string.IsNullOrEmpty(productId))
+            if (productId > 0)
             {
                 operation.onOperationError += (op, error) => m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
                 m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductSearchInfo);
@@ -423,29 +423,29 @@ namespace UnityEditor.PackageManager.UI.Internal
             return operation;
         }
 
-        private void OnProcessExtraFetchResult(SearchRequest request, string productId = null)
+        private void OnProcessExtraFetchResult(SearchRequest request, long productId = 0)
         {
             var packageInfo = request.Result.FirstOrDefault();
 
-            if (!string.IsNullOrEmpty(productId))
+            if (productId > 0)
             {
                 // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
                 // Right now there isn't any recommended actions we can suggest the users to take, so we'll just add a message here
                 // to expose it if it ever happens (rather than letting it pass silently)
-                if (packageInfo?.assetStore?.productId != productId)
+                if (packageInfo?.assetStore?.productId != productId.ToString())
                 {
                     var error = new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Product Id mismatch between product details and package details."));
                     m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
                     return;
                 }
-                m_UpmCache.SetProductSearchPackageInfo(productId, packageInfo);
+                m_UpmCache.SetProductSearchPackageInfo(packageInfo);
                 m_FetchStatusTracker.SetFetchSuccess(productId, FetchType.ProductSearchInfo);
             }
             else
                 m_UpmCache.AddExtraPackageInfo(packageInfo);
         }
 
-        public virtual void SearchPackageInfoForProduct(string productId, string packageName)
+        public virtual void SearchPackageInfoForProduct(long productId, string packageName)
         {
             ExtraFetchInternal(packageName, productId);
         }

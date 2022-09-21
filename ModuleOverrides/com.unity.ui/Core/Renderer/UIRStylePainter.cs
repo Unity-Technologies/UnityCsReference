@@ -9,7 +9,7 @@ using Unity.Collections;
 using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 
-namespace UnityEngine.UIElements.UIR.Implementation
+namespace UnityEngine.UIElements.UIR
 {
     internal class UIRStylePainter : IStylePainter
     {
@@ -399,13 +399,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             m_CurrentEntry.indices.CopyFrom(indices);
         }
 
-        public void DrawText(TextElement te)
+        public void DrawText(TextInfo textInfo, Vector2 offset)
         {
-            if (!TextUtilities.IsFontAssigned(te))
-                return;
-
-            TextInfo textInfo = te.uitkTextHandle.Update();
-            DrawTextInfo(textInfo, te.contentRect.min, true);
+            DrawTextInfo(textInfo, offset, true);
         }
 
         private TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo();

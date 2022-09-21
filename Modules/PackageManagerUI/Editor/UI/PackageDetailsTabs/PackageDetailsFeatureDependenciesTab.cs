@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public FeatureDependencyItem(IPackageVersion featureVersion, IPackageVersion featureDependencyVersion, FeatureState state = FeatureState.None)
         {
             packageVersion = featureDependencyVersion;
-            packageName = featureDependencyVersion.packageUniqueId;
+            packageName = featureDependencyVersion.package.uniqueId;
 
             m_Name = new Label { name = "name" };
             m_Name.text = featureDependencyVersion?.displayName ?? string.Empty;
@@ -197,7 +197,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var installedPackageVersion = version.package?.versions.installed;
-            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionId != version?.versionId ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
+            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
             var featureState = GetFeatureState(version);
             versionState.ClearClassList();

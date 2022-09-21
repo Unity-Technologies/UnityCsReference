@@ -24,7 +24,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ExtensionManager m_ExtensionManager;
         private SelectionProxy m_Selection;
-        private PackageFiltering m_PackageFiltering;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
@@ -33,10 +32,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_ApplicationProxy;
         private UpmClient m_UpmClient;
         private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private PageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies(ResourceLoader resourceLoader,
             ExtensionManager extensionManager,
             SelectionProxy selection,
-            PackageFiltering packageFiltering,
             PackageManagerPrefs packageManagerPrefs,
             PackageDatabase packageDatabase,
             PageManager pageManager,
@@ -44,12 +43,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             UnityConnectProxy unityConnectProxy,
             ApplicationProxy applicationProxy,
             UpmClient upmClient,
-            AssetStoreCachePathProxy assetStoreCachePathProxy)
+            AssetStoreCachePathProxy assetStoreCachePathProxy,
+            PageRefreshHandler pageRefreshHandler)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
             m_Selection = selection;
-            m_PackageFiltering = packageFiltering;
             m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
             m_PageManager = pageManager;
@@ -58,12 +57,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = applicationProxy;
             m_UpmClient = upmClient;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
+            m_PageRefreshHandler = pageRefreshHandler;
         }
 
         public PackageManagerWindowRoot(ResourceLoader resourceLoader,
                                         ExtensionManager extensionManager,
                                         SelectionProxy selection,
-                                        PackageFiltering packageFiltering,
                                         PackageManagerPrefs packageManagerPrefs,
                                         PackageDatabase packageDatabase,
                                         PageManager pageManager,
@@ -71,9 +70,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                                         UnityConnectProxy unityConnectProxy,
                                         ApplicationProxy applicationProxy,
                                         UpmClient upmClient,
-                                        AssetStoreCachePathProxy assetStoreCachePathProxy)
+                                        AssetStoreCachePathProxy assetStoreCachePathProxy,
+                                        PageRefreshHandler pageRefreshHandler)
         {
-            ResolveDependencies(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy);
+            ResolveDependencies(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
         }
 
         public void OnEnable()
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var root = m_ResourceLoader.GetTemplate("PackageManagerWindow.uxml");
             Add(root);
             cache = new VisualElementCache(root);
-            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
+            var newTab = m_PackageManagerPrefs.filterTabFromLastUnitySession;
 
             // Reset the lock icons when users open a new Package Manager window
             m_PageManager.GetPage(newTab).ResetUserUnlockedState();
@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             leftColumnContainer.style.flexGrow = m_PackageManagerPrefs.splitterFlexGrow;
             rightColumnContainer.style.flexGrow = 1 - m_PackageManagerPrefs.splitterFlexGrow;
 
-            m_PageManager.onRefreshOperationFinish += OnRefreshOperationFinish;
+            m_PageRefreshHandler.onRefreshOperationFinish += OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
             m_AssetStoreCachePathProxy.onConfigChanged += OnAssetStoreCacheConfigChange;
@@ -114,15 +114,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnCreateGUI()
         {
-            var newTab = m_PackageManagerPrefs.lastUsedPackageFilter ?? PackageFiltering.k_DefaultFilterTab;
+            var newTab = m_PackageManagerPrefs.filterTabFromLastUnitySession;
 
             // set the current filter tab value after all the callback system has been setup so that we don't miss any callbacks
-            m_PackageFiltering.currentFilterTab = newTab;
+            m_PackageManagerPrefs.currentFilterTab = newTab;
 
-            if (m_PageManager.GetRefreshTimestamp(newTab) == 0)
+            if (m_PageRefreshHandler.GetRefreshTimestamp(newTab) == 0)
                 DelayRefresh(newTab);
 
-            if (newTab != PackageFilterTab.UnityRegistry && m_PageManager.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0 && m_ApplicationProxy.isUpmRunning)
+            if (newTab != PackageFilterTab.UnityRegistry && m_PageRefreshHandler.GetRefreshTimestamp(PackageFilterTab.UnityRegistry) == 0 && m_ApplicationProxy.isUpmRunning)
                 DelayRefresh(PackageFilterTab.UnityRegistry);
 
             m_ExtensionManager.OnWindowCreated(this, packageDetails.extensionContainer, packageDetails.toolbar.extensions);
@@ -148,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            m_PageManager.Refresh(tab);
+            m_PageRefreshHandler.Refresh(tab);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -182,15 +182,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnFocusChanged(bool focus)
         {
             var canRefresh = !EditorApplication.isPlaying && !EditorApplication.isCompiling;
-            if (focus && canRefresh && m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
-                m_PageManager.Refresh(RefreshOptions.PurchasedOffline);
+            if (focus && canRefresh && m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore)
+                m_PageRefreshHandler.Refresh(RefreshOptions.PurchasedOffline);
         }
 
         public void OnDisable()
         {
-            m_PackageManagerPrefs.lastUsedPackageFilter = m_PackageFiltering.currentFilterTab;
+            m_PackageManagerPrefs.filterTabFromLastUnitySession = m_PackageManagerPrefs.currentFilterTab;
 
-            m_PageManager.onRefreshOperationFinish -= OnRefreshOperationFinish;
+            m_PageRefreshHandler.onRefreshOperationFinish -= OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
             m_AssetStoreCachePathProxy.onConfigChanged -= OnAssetStoreCacheConfigChange;
 
@@ -208,13 +208,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnAssetStoreCacheConfigChange(AssetStoreCachePathConfig config)
         {
-            if ((config.status == AssetStoreConfigStatus.Success || config.status == AssetStoreConfigStatus.ReadOnly) && m_PageManager.GetRefreshTimestamp(PackageFilterTab.AssetStore) > 0)
-                m_PageManager.Refresh(RefreshOptions.PurchasedOffline);
+            if ((config.status == AssetStoreConfigStatus.Success || config.status == AssetStoreConfigStatus.ReadOnly) && m_PageRefreshHandler.GetRefreshTimestamp(PackageFilterTab.AssetStore) > 0)
+                m_PageRefreshHandler.Refresh(RefreshOptions.PurchasedOffline);
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            if (!userInfoReady || m_PackageDatabase.isEmpty || !m_PageManager.IsInitialFetchingDone())
+            if (!userInfoReady || m_PackageDatabase.isEmpty || !m_PageRefreshHandler.IsInitialFetchingDone())
                 return;
 
             var entitlements = m_PackageDatabase.allPackages.Where(package =>  package.hasEntitlements);
@@ -224,16 +224,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_UpmClient.Resolve();
                 else
                 {
-                    m_PageManager.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
-                    m_PageManager.TriggerOnSelectionChanged();
+                    m_PageRefreshHandler.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
+                    m_PageManager.GetPage().TriggerOnSelectionChanged();
                 }
             }
             else
             {
                 if (entitlements.Any())
                 {
-                    m_PageManager.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
-                    m_PageManager.TriggerOnSelectionChanged();
+                    m_PageRefreshHandler.Refresh(RefreshOptions.UpmList | RefreshOptions.UpmSearch);
+                    m_PageManager.GetPage().TriggerOnSelectionChanged();
                 }
             }
         }
@@ -246,29 +246,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRefreshOperationFinish()
         {
-            if (m_FilterToSelectAfterLoad != null && m_PageManager.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
+            if (m_FilterToSelectAfterLoad != null && m_PageRefreshHandler.GetRefreshTimestamp(m_FilterToSelectAfterLoad) > 0)
                 SelectPackageAndFilter();
         }
 
         private void SelectPackageAndFilter()
         {
-            IPackageVersion version = null;
-            IPackage package = null;
-            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
-                m_PackageDatabase.GetPackageAndVersionByIdOrName(m_PackageToSelectOnLoaded, out package, out version, true);
-
             if (m_FilterToSelectAfterLoad == PackageFilterTab.AssetStore)
             {
-                m_PackageFiltering.currentFilterTab = PackageFilterTab.AssetStore;
-
-                if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
-                {
-                    if (package == null || package is PlaceholderPackage)
-                        m_PageManager.Fetch(m_PackageToSelectOnLoaded);
-                    else
-                        m_PageManager.GetPage(PackageFilterTab.AssetStore).Load(package, version);
-                }
-
+                m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.AssetStore;
+                m_PageManager.GetPage(PackageFilterTab.AssetStore).Load(m_PackageToSelectOnLoaded);
                 m_FilterToSelectAfterLoad = null;
                 m_PackageToSelectOnLoaded = null;
                 m_SubPageToSelectAfterLoad = null;
@@ -278,46 +265,44 @@ namespace UnityEditor.PackageManager.UI.Internal
             // The !IsInitialFetchingDone check was added to the start of this function in the past for the Entitlement Error checker,
             // But it caused `Open In Unity` to not work sometimes for the `My Assets` tab. Hence we moved the check from the beginning
             // of this function to after the `My Assets` logic is done so that we don't break `My Assets` and the Entitlement Error checker.
-            if (!m_PageManager.IsInitialFetchingDone())
+            if (!m_PageRefreshHandler.IsInitialFetchingDone())
                 return;
 
-            if (package != null || m_FilterToSelectAfterLoad != null)
+            if (m_FilterToSelectAfterLoad != null)
             {
-                var tab = m_FilterToSelectAfterLoad ?? PackageFiltering.k_DefaultFilterTab;
-
+                var tab = m_FilterToSelectAfterLoad ?? PackageManagerPrefs.k_DefaultFilterTab;
                 if (m_SubPageToSelectAfterLoad != null)
                 {
-                    void SelectSubPage(IPage page, string subPageName)
-                    {
-                        var subPage = page.subPages.FirstOrDefault(page => string.Compare(page.name, subPageName, StringComparison.InvariantCultureIgnoreCase) == 0) ?? page.subPages.First();
-                        page.currentSubPage = subPage;
-                    }
-
+                    var subPageToLoad = m_SubPageToSelectAfterLoad;
                     void OnFilterTabChangedSelectSubPage(PackageFilterTab filterTab)
                     {
-                        m_PackageFiltering.onFilterTabChanged -= OnFilterTabChangedSelectSubPage;
-                        SelectSubPage(m_PageManager.GetCurrentPage(), m_SubPageToSelectAfterLoad);
+                        m_PackageManagerPrefs.onFilterTabChanged -= OnFilterTabChangedSelectSubPage;
+                        var page = m_PageManager.GetPage();
+                        var subPage = page.subPages.FirstOrDefault(p => string.Compare(p.name, subPageToLoad, StringComparison.InvariantCultureIgnoreCase) == 0);
+                        if (subPage != null)
+                            page.currentSubPage = subPage;
                     }
 
-                    if (m_PackageFiltering.currentFilterTab == tab)
-                        SelectSubPage(m_PageManager.GetCurrentPage(), m_SubPageToSelectAfterLoad);
+                    if (m_PackageManagerPrefs.currentFilterTab == tab)
+                        OnFilterTabChangedSelectSubPage(tab);
                     else
-                        m_PackageFiltering.onFilterTabChanged += OnFilterTabChangedSelectSubPage;
+                        m_PackageManagerPrefs.onFilterTabChanged += OnFilterTabChangedSelectSubPage;
 
                     m_PackageToSelectOnLoaded = null;
                 }
-
-                m_PackageFiltering.currentFilterTab = tab;
-                if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
-                {
-                    m_PageManager.SetSelected(package, version, true);
-                    packageList.OnFocus();
-                }
-
-                m_FilterToSelectAfterLoad = null;
-                m_PackageToSelectOnLoaded = null;
-                m_SubPageToSelectAfterLoad = null;
+                m_PackageManagerPrefs.currentFilterTab = tab;
             }
+
+            if (!string.IsNullOrEmpty(m_PackageToSelectOnLoaded))
+            {
+                m_PackageDatabase.GetPackageAndVersionByIdOrName(m_PackageToSelectOnLoaded, out var package, out var version, true);
+                m_PageManager.GetPage().SetNewSelection(package, version, true);
+                packageList.OnFocus();
+            }
+
+            m_FilterToSelectAfterLoad = null;
+            m_PackageToSelectOnLoaded = null;
+            m_SubPageToSelectAfterLoad = null;
         }
 
         public void OnFocus()
@@ -366,7 +351,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
                     if (package != null)
-                        filterTab = m_PageManager.FindTab(package, version);
+                        filterTab = m_PageManager.FindPage(package, version).tab;
                     else
                     {
                         var packageToSelectSplit = packageToSelect.Split('@');
@@ -377,7 +362,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         if (!m_SettingsProxy.enablePreReleasePackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
                         {
                             Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
-                            filterTab = m_PackageFiltering.currentFilterTab;
+                            filterTab = m_PackageManagerPrefs.currentFilterTab;
                             packageToSelect = null;
                         }
                         else
@@ -390,7 +375,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageManagerToolbar.SetCurrentSearch(searchText);
 
                 if (refresh || m_PackageDatabase.isEmpty)
-                    DelayRefresh((PackageFilterTab)filterTab);
+                    DelayRefresh(filterTab.Value);
                 else
                     SelectPackageAndFilter();
             }
@@ -398,7 +383,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url)
         {
-            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance);
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageManagerPrefs, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance);
 
             var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
             var packageName = string.Empty;
@@ -449,7 +434,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                var selections = m_PageManager.GetSelection();
+                var selections = m_PageManager.GetPage().GetSelection();
 
                 // When there are multiple versions selected, we want to make the legacy single select arguments to be null
                 // that way extension UI implemented for single package selection will not show for multi-select cases.

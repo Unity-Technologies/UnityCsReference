@@ -9,7 +9,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
 
-namespace UnityEngine.UIElements.UIR.Implementation
+namespace UnityEngine.UIElements.UIR
 {
     static class CommandGenerator
     {
@@ -459,27 +459,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 data = device.Allocate((uint)vertexCount, (uint)indexCount, out verts, out indices, out indexOffset);
                 stats.newMeshAllocations++;
             }
-        }
-
-        static void CopyTriangleIndicesFlipWindingOrder(NativeSlice<UInt16> source, NativeSlice<UInt16> target, int indexOffset)
-        {
-            Debug.Assert(source != target); // Not a very robust assert, but readers get the point
-            int indexCount = source.Length;
-            for (int i = 0; i < indexCount; i += 3)
-            {
-                // Using a temp variable to make reads from source sequential
-                UInt16 t = (UInt16)(source[i] + indexOffset);
-                target[i] = (UInt16)(source[i + 1] + indexOffset);
-                target[i + 1] = t;
-                target[i + 2] = (UInt16)(source[i + 2] + indexOffset);
-            }
-        }
-
-        static void CopyTriangleIndices(NativeSlice<UInt16> source, NativeSlice<UInt16> target, int indexOffset)
-        {
-            int indexCount = source.Length;
-            for (int i = 0; i < indexCount; i++)
-                target[i] = (UInt16)(source[i] + indexOffset);
         }
 
         public static void UpdateOpacityId(VisualElement ve, RenderChain renderChain)

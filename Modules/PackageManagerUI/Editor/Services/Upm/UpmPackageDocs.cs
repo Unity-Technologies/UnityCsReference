@@ -55,7 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // With the current `UpmPackageDocs.GetDocumentationUrl` implementation,
                 // We'll get invalid url links for non-unity packages on unity3d.com
                 // We want to avoiding opening these kinds of links to avoid confusion.
-                if (!UpmClient.IsUnityUrl(onlineUrl) || package.Is(PackageType.Unity) || version.packageUniqueId.StartsWith("com.unity."))
+                if (!UpmClient.IsUnityUrl(onlineUrl) || version.HasTag(PackageTag.Unity) || version.package.uniqueId.StartsWith("com.unity."))
                 {
                     applicationProxy.OpenURL(onlineUrl);
 
@@ -66,7 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}NotFound", version?.uniqueId);
 
-            Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}."), docType, package.GetDescriptor()));
+            Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}."), docType, version.GetDescriptor()));
         }
 
         public static void OpenWebUrl(string onlineUrl, IPackageVersion version, ApplicationProxy applicationProxy, string analyticsEvent, Action errorCallback)

@@ -37,7 +37,7 @@ namespace UnityEngine
         public enum Lightmapper
         {
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEngine.LightingSettings/Lightmapper.ProgressiveCPU", false)]
+            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEngine.LightingSettings/Lightmapper.ProgressiveCPU", true)]
             Enlighten = 0,
 
             // Lightmaps are baked by the CPU Progressive lightmapper (Wintermute + OpenRL based).
@@ -184,13 +184,13 @@ namespace UnityEngine
         [NativeName("ForceUpdates")]
         internal extern bool realtimeForceUpdates { get; set; }
 
-        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is deprecated.", false)]
+        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
         public extern bool finalGather { get; set; }
 
-        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is deprecated.", false)]
+        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
         public extern float finalGatherRayCount { get; set; }
 
-        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is deprecated.", false)]
+        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
         public extern bool finalGatherFiltering { get; set; }
 
         [NativeName("PVRSampling")]

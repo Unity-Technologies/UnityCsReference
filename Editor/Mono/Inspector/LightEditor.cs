@@ -683,7 +683,6 @@ namespace UnityEditor
             public static readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
             public static readonly GUIContent DisabledLightWarning = EditorGUIUtility.TrTextContent("Lighting has been disabled in at least one Scene view. Any changes applied to lights in the Scene will not be updated in these views until Lighting has been enabled again.");
             public static readonly GUIStyle invisibleButton = "InvisibleButton";
-            public static readonly GUIContent noDiscLightInEnlighten = EditorGUIUtility.TrTextContent("Only the Progressive lightmapper supports Disc lights. The Enlighten lightmapper doesn't so please consider using a different light shape instead or switch to Progressive in the Lighting window.");
         }
 
         private Settings m_Settings;
@@ -838,11 +837,6 @@ namespace UnityEditor
 
             // Light type (shape and usage)
             settings.DrawLightType();
-
-            #pragma warning disable 618
-            if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten && settings.light.type == LightType.Disc)
-                EditorGUILayout.HelpBox(StylesEx.noDiscLightInEnlighten.text, MessageType.Warning);
-            #pragma warning restore 618
 
             // When we are switching between two light types that don't show the range (directional lights don't)
             // we want the fade group to stay hidden.

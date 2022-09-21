@@ -5324,8 +5324,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCallQueue.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCallQueue.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClient.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClientV2.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreClientV2.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadInfo.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadInfo.cs</Link>
@@ -5344,9 +5344,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackage.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackage.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs</Link>
@@ -5375,8 +5372,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreVersionList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackage.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackage.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\JsonParser.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\JsonParser.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\BasePackageVersion.cs</Link>
@@ -5390,8 +5387,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Package.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\Package.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackageVersion.cs</Link>
@@ -5401,6 +5398,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Product.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\Product.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs</Link>
@@ -5432,8 +5432,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IPackageVersion.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IProduct.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IProduct.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVersionList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IVisualStateList.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IVisualStateList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageAndVersionIdPair.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageAndVersionIdPair.cs</Link>
@@ -5443,9 +5449,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFilterTab.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFilterTab.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageFiltering.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageFiltering.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs</Link>
@@ -5470,9 +5473,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageType.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
@@ -5561,9 +5561,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackage.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackage.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageDocs.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageDocs.cs</Link>
     </Compile>
@@ -5618,6 +5615,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\IncorrectFieldTypeException.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\IncorrectFieldTypeException.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\InspectorSelectionHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\InspectorSelectionHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs</Link>
     </Compile>
@@ -5629,6 +5629,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PageManager.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\PageManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PageRefreshHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\PageRefreshHandler.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\PageSelection.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\PageSelection.cs</Link>
@@ -7445,6 +7448,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPointInstance.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPointInstance.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DefaultContainer.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DefaultContainer.cs</Link>
     </Compile>
@@ -8297,7 +8303,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_d2c3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_95ad/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />

@@ -33,18 +33,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private PageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageFiltering = container.Resolve<PackageFiltering>();
+            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
+            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
         }
 
         public PackageLoadBar()
@@ -67,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Enabled = true;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
-            m_PageManager.onRefreshOperationFinish += Refresh;
+            m_PageRefreshHandler.onRefreshOperationFinish += Refresh;
 
             Refresh();
         }
@@ -77,7 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Enabled = false;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
-            m_PageManager.onRefreshOperationFinish -= Refresh;
+            m_PageRefreshHandler.onRefreshOperationFinish -= Refresh;
         }
 
         public void UpdateMenu()
@@ -138,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void UpdateVisibility(PackageFilterTab? filterTab = null)
         {
-            UIUtils.SetElementDisplay(this, (filterTab ?? m_PackageFiltering.currentFilterTab) == PackageFilterTab.AssetStore);
+            UIUtils.SetElementDisplay(this, (filterTab ?? m_PackageManagerPrefs.currentFilterTab) == PackageFilterTab.AssetStore);
             Refresh();
         }
 
@@ -146,8 +148,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!UIUtils.IsElementVisible(this))
                 return;
-            var page = m_PageManager.GetCurrentPage();
-            Set(page?.numTotalItems ?? 0, page?.numCurrentItems ?? 0);
+            var visualStates = m_PageManager.GetPage()?.visualStates;
+            Set(visualStates?.countTotal ?? 0, visualStates?.countLoaded?? 0);
             UpdateMenu();
             OnInternetReachabilityChange(m_Application.isInternetReachable);
         }
@@ -172,7 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             loadMoreLabel.SetEnabled(false);
             m_LoadMoreInProgress = true;
-            m_PageManager.LoadMore(m_LoadMore);
+            m_PageManager.GetPage().LoadMore(m_LoadMore);
             UpdateMenu();
         }
 

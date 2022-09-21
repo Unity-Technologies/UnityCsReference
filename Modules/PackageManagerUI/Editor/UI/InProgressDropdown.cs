@@ -41,20 +41,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         private InProgressContainer enablingContainer => m_EnablingContainer ??= new InProgressContainer(ViewEnabling);
 
         private ResourceLoader m_ResourceLoader;
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private UpmClient m_UpmClient;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private void ResolveDependencies(ResourceLoader resourceLoader,
-                                         PackageFiltering packageFiltering,
+                                         PackageManagerPrefs packageManagerPrefs,
                                          UpmClient upmClient,
                                          AssetStoreDownloadManager assetStoreDownloadManager,
                                          PackageDatabase packageDatabase,
                                          PageManager packageManager)
         {
             m_ResourceLoader = resourceLoader;
-            m_PackageFiltering = packageFiltering;
+            m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmClient = upmClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
@@ -62,13 +62,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public InProgressDropdown(ResourceLoader resourceLoader,
-                                  PackageFiltering packageFiltering,
+                                  PackageManagerPrefs packageManagerPrefs,
                                   UpmClient upmClient,
                                   AssetStoreDownloadManager assetStoreDownloadManager,
                                   PackageDatabase packageDatabase,
                                   PageManager packageManager)
         {
-            ResolveDependencies(resourceLoader, packageFiltering, upmClient, assetStoreDownloadManager, packageDatabase, packageManager);
+            ResolveDependencies(resourceLoader, packageManagerPrefs, upmClient, assetStoreDownloadManager, packageDatabase, packageManager);
             styleSheets.Add(m_ResourceLoader.inProgressDropdownStyleSheet);
 
             m_Height = 0;
@@ -84,10 +84,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var numRegularPackagesInstalling = 0;
             foreach (var idOrName in m_UpmClient.packageIdsOrNamesInstalling)
             {
-                var package = m_PackageDatabase.GetPackageByIdOrName(idOrName);
-                if (package == null)
+                var version = m_PackageDatabase.GetPackageByIdOrName(idOrName)?.versions.primary;
+                if (version == null)
                     continue;
-                if (package.Is(PackageType.BuiltIn))
+                if (version.HasTag(PackageTag.BuiltIn))
                     ++numBuiltInPackagesInstalling;
                 else
                     ++numRegularPackagesInstalling;
@@ -122,22 +122,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewInstalling()
         {
-            ViewPackagesOnTab(PackageFilterTab.InProject, PackageProgress.Installing, ~PackageType.BuiltIn);
+            ViewPackagesOnTab(PackageFilterTab.InProject, PackageProgress.Installing, ~PackageTag.BuiltIn);
         }
 
         private void ViewEnabling()
         {
-            ViewPackagesOnTab(PackageFilterTab.BuiltIn, PackageProgress.Installing, PackageType.BuiltIn);
+            ViewPackagesOnTab(PackageFilterTab.BuiltIn, PackageProgress.Installing, PackageTag.BuiltIn);
         }
 
-        private void ViewPackagesOnTab(PackageFilterTab tab, PackageProgress progress, PackageType type = PackageType.None)
+        private void ViewPackagesOnTab(PackageFilterTab tab, PackageProgress progress, PackageTag tag = PackageTag.None)
         {
-            var packagesInProgress = m_PackageDatabase.allPackages.Where(p => p.progress == progress && (type == PackageType.None || p.Is(type))).ToArray();
+            var packagesInProgress = m_PackageDatabase.allPackages.Where(p =>
+                p.progress == progress && (tag == PackageTag.None || p.versions.primary.HasTag(tag))).ToArray();
             if (packagesInProgress.Any())
             {
-                m_PackageFiltering.currentFilterTab = tab;
-                m_PageManager.GetCurrentPage().LoadExtraItems(packagesInProgress);
-                m_PageManager.SetSelected(packagesInProgress.Select(p => new PackageAndVersionIdPair(p.uniqueId)));
+                m_PackageManagerPrefs.currentFilterTab = tab;
+                m_PageManager.GetPage().LoadExtraItems(packagesInProgress);
+                m_PageManager.GetPage().SetNewSelection(packagesInProgress.Select(p => new PackageAndVersionIdPair(p.uniqueId)));
             }
             Close();
         }

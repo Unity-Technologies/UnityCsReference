@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -16,6 +17,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_SkipDisableConfirmationPrefs = "PackageManager.SkipDisableConfirmation";
         private const string k_SplitterFlexGrowPrefs = "PackageManager.SplitterFlexGrowPrefs";
         private const string k_LastUsedFilterPrefsPrefix = "PackageManager.Filter_";
+
+        public virtual event Action<PackageFilterTab> onFilterTabChanged = delegate { };
+        public virtual event Action<string> onTrimmedSearchTextChanged = delegate { };
+
+        public const PackageFilterTab k_DefaultFilterTab = PackageFilterTab.InProject;
+        public const int k_DefaultPageSize = 25;
 
         private static string projectIdentifier
         {
@@ -57,22 +64,70 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public virtual PackageFilterTab? lastUsedPackageFilter
+        public virtual PackageFilterTab filterTabFromLastUnitySession
         {
             get
             {
                 try
                 {
-                    return (PackageFilterTab)Enum.Parse(typeof(PackageFilterTab), EditorPrefs.GetString(lastUsedFilterForProjectPerfs, PackageFiltering.k_DefaultFilterTab.ToString()));
+                    return (PackageFilterTab)Enum.Parse(typeof(PackageFilterTab), EditorPrefs.GetString(lastUsedFilterForProjectPerfs, k_DefaultFilterTab.ToString()));
                 }
                 catch (Exception)
                 {
-                    return null;
+                    return k_DefaultFilterTab;
                 }
             }
             set
             {
-                EditorPrefs.SetString(lastUsedFilterForProjectPerfs, value?.ToString());
+                EditorPrefs.SetString(lastUsedFilterForProjectPerfs, value.ToString());
+            }
+        }
+
+        public virtual PackageFilterTab? previousFilterTab { get; private set; } = null;
+
+        [SerializeField]
+        private PackageFilterTab m_currentFilterTab;
+        [SerializeField]
+        private bool m_currentFilterTabInitialized;
+        public virtual PackageFilterTab currentFilterTab
+        {
+            get { return m_currentFilterTabInitialized ? m_currentFilterTab : k_DefaultFilterTab; }
+
+            set
+            {
+                if (value != currentFilterTab)
+                {
+                    previousFilterTab = currentFilterTab;
+                    m_currentFilterTab = value;
+                    m_currentFilterTabInitialized = true;
+                    onFilterTabChanged?.Invoke(m_currentFilterTab);
+                }
+            }
+        }
+
+        [SerializeField]
+        private string m_TrimmedSearchText;
+        public virtual string trimmedSearchText => m_TrimmedSearchText;
+
+        [SerializeField]
+        private string m_SearchText;
+        public virtual string searchText
+        {
+            get => m_SearchText;
+
+            set
+            {
+                value = value ?? string.Empty;
+                if (value != m_SearchText)
+                {
+                    m_SearchText = value;
+                    var newTrimmedSearchText = Regex.Replace(m_SearchText.Trim(' ', '\t'), @"[ ]{2,}", " ");
+                    if (newTrimmedSearchText != m_TrimmedSearchText)
+                    {
+                        m_TrimmedSearchText = newTrimmedSearchText;
+                        onTrimmedSearchTextChanged?.Invoke(m_TrimmedSearchText);
+                    }
+                }
             }
         }
 
@@ -128,7 +183,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private string m_SelectedPackageDetailsTabIdentifier;
-        public string selectedPackageDetailsTabIdentifier {
+        public string selectedPackageDetailsTabIdentifier
+        {
             get =>  m_SelectedPackageDetailsTabIdentifier;
             set => m_SelectedPackageDetailsTabIdentifier = value;
         }

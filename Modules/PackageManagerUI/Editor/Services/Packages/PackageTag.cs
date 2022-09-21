@@ -11,7 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         None                = 0,
 
-        // package type
         InDevelopment       = Custom, // Used by UPM develop package
         Custom              = 1 << 0,
         Local               = 1 << 1,
@@ -21,22 +20,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         Feature             = 1 << 5,
         Placeholder         = 1 << 6,
         SpecialInstall      = 1 << 7,
-
-        // attributes
         VersionLocked       = 1 << 8,
-        Installable         = 1 << 9,
-        Removable           = 1 << 10,
-        Downloadable        = 1 << 11,
-        Importable          = 1 << 12,
-        Embeddable          = 1 << 13,
 
-        // status
-        Disabled            = 1 << 15,
-        Published           = 1 << 16,
-        Deprecated          = 1 << 17,
-        Release             = 1 << 18,
-        Experimental        = 1 << 19,
-        PreRelease          = 1 << 20,
-        ReleaseCandidate    = 1 << 21
+        LegacyFormat        = 1 << 10,   // legacy .unitypackage format
+        UpmFormat           = 1 << 11,
+
+        Unity               = 1 << 15,
+        ScopedRegistry      = 1 << 16,
+        MainNotUnity        = 1 << 17,
+
+        Disabled            = 1 << 20,
+        Published           = 1 << 21,
+        Deprecated          = 1 << 22,
+        Release             = 1 << 23,
+        Experimental        = 1 << 24,
+        PreRelease          = 1 << 25,
+        ReleaseCandidate    = 1 << 26
     }
 }

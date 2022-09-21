@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -128,13 +127,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // We need to keep a local version of the current timestamp to make sure the callback timestamp is still the original one.
             var localTimestamp = m_Timestamp;
-            m_AssetStoreRestAPI.GetPurchases(QueryToString(m_AdjustedQueryArgs), (result) => GetPurchasesCallback(result, localTimestamp), OnOperationError);
+            m_AssetStoreRestAPI.GetPurchases(m_AdjustedQueryArgs, purchases => GetPurchasesCallback(purchases, localTimestamp), OnOperationError);
         }
 
         public void Stop()
         {
             m_Timestamp = DateTime.Now.Ticks;
-            m_AssetStoreRestAPI.AbortGetPurchases(QueryToString(m_AdjustedQueryArgs));
+            m_AssetStoreRestAPI.AbortGetPurchases(m_AdjustedQueryArgs);
             FinalizedOperation();
         }
 
@@ -153,16 +152,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_DownloadedAssetsOnly)
             {
                 m_AdjustedQueryArgs.status = string.Empty;
-                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.id).ToList();
+                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.productId).ToList();
             }
             else if (m_UpdateAvailableOnly)
             {
                 m_AdjustedQueryArgs.status = string.Empty;
-                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.uploadId)?.canUpdate == true).Select(info => info.id).ToList();
+                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId)?.canUpdate == true).Select(info => info.productId).ToList();
             }
         }
 
-        private void GetPurchasesCallback(IDictionary<string, object> result, long operationTimestamp)
+        private void GetPurchasesCallback(AssetStorePurchases purchases, long operationTimestamp)
         {
             if (operationTimestamp != m_Timestamp)
                 return;
@@ -173,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            m_Result.AppendPurchases(result);
+            m_Result.AppendPurchases(purchases);
 
             if (m_OriginalQueryArgs.limit > k_QueryLimit && m_IsInProgress)
             {
@@ -184,7 +183,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     m_AdjustedQueryArgs.startIndex = m_OriginalQueryArgs.startIndex + m_Result.list.Count;
                     m_AdjustedQueryArgs.limit = newLimit;
-                    m_AssetStoreRestAPI.GetPurchases(QueryToString(m_AdjustedQueryArgs), (result) => GetPurchasesCallback(result, operationTimestamp), OnOperationError);
+                    m_AssetStoreRestAPI.GetPurchases(m_AdjustedQueryArgs, purchases => GetPurchasesCallback(purchases, operationTimestamp), OnOperationError);
                     return;
                 }
             }

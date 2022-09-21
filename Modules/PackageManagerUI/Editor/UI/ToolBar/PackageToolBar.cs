@@ -226,8 +226,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Returns true if the progress bar is visible and there's no need to further check other containers
         private bool RefreshProgressContainer(IOperation operation = null)
         {
-            operation ??= m_AssetStoreDownloadManager.GetDownloadOperation(m_Version?.packageUniqueId);
-            var progressVisible = operation != null && m_Version?.packageUniqueId == operation.packageUniqueId && m_DownloadProgress.UpdateProgress(operation);
+            operation ??= m_AssetStoreDownloadManager.GetDownloadOperation(m_Version?.package?.product?.id);
+            var progressVisible = operation != null && m_Version?.package.uniqueId == operation.packageUniqueId && m_DownloadProgress.UpdateProgress(operation);
             UIUtils.SetElementDisplay(m_ProgressContainer, progressVisible);
             if (progressVisible)
             {
@@ -283,7 +283,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDownloadProgress(IOperation operation)
         {
-            if (m_Version?.packageUniqueId != operation.packageUniqueId)
+            if (m_Version?.package.uniqueId != operation.packageUniqueId)
                 return;
 
             // We call `RefreshProgressContainer` here instead of calling `Refresh` here directly when the download is progressing to save some time

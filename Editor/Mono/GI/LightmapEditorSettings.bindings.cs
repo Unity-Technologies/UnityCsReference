@@ -22,7 +22,7 @@ namespace UnityEditor
             [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
             Radiosity = 0,
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", false)]
+            [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
             Enlighten = 0,
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
@@ -81,9 +81,6 @@ namespace UnityEditor
         {
             switch (lightmapper)
             {
-                case LightingSettings.Lightmapper.Enlighten:
-                    return Lightmapper.Enlighten;
-
                 case LightingSettings.Lightmapper.ProgressiveCPU:
                     return Lightmapper.ProgressiveCPU;
 
@@ -102,9 +99,6 @@ namespace UnityEditor
         {
             switch (lightmapper)
             {
-                case Lightmapper.Enlighten:
-                    return LightingSettings.Lightmapper.Enlighten;
-
                 case Lightmapper.ProgressiveCPU:
                     return LightingSettings.Lightmapper.ProgressiveCPU;
 

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Connect;
 using UnityEngine;
 using UnityAssetStoreUtils = UnityEditor.AssetStoreUtils;
 using UnityAssetStorePackageInfo = UnityEditor.PackageInfo;
@@ -15,13 +14,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static readonly string k_InvalidJSONErrorMessage = L10n.Tr("Server response is not a valid JSON");
         public static readonly string k_ServerErrorMessage = L10n.Tr("Server response is");
-
-        [NonSerialized]
-        private UnityConnectProxy m_UnityConnect;
-        public void ResolveDependencies(UnityConnectProxy unityConnect)
-        {
-            m_UnityConnect = unityConnect;
-        }
 
         public static Dictionary<string, object> ParseResponseAsDictionary(IAsyncHTTPClient request)
         {
@@ -97,6 +89,5 @@ namespace UnityEditor.PackageManager.UI.Internal
             return UnityAssetStorePackageInfo.GetPackageList();
         }
 
-        public virtual string assetStoreUrl => m_UnityConnect.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
     }
 }

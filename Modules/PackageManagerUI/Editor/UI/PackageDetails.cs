@@ -70,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     customContainer.Add(extension.CreateExtensionUI());
             });
 
-            Refresh(m_PageManager.GetSelection());
+            Refresh(m_PageManager.GetPage().GetSelection());
         }
 
         public void OnDisable()
@@ -112,15 +112,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             Refresh();
         }
 
-        internal void OnSelectionChanged(PageSelection selections)
+        internal void OnSelectionChanged(PageSelectionChangeArgs args)
         {
+            if (!args.page.isActivePage)
+                return;
+
             m_PackageManagerPrefs.packageDetailVerticalScrollOffset = 0;
-            Refresh(selections);
+            Refresh(args.selection);
         }
 
         internal void Refresh(PageSelection selections = null)
         {
-            selections = selections ?? m_PageManager.GetSelection();
+            selections = selections ?? m_PageManager.GetPage().GetSelection();
             scrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
 
             if (selections.Count == 1)
@@ -185,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            var selection = m_PageManager.GetSelection();
+            var selection = m_PageManager.GetPage().GetSelection();
             if (args.added.Concat(args.removed).Concat(args.updated).Any(p => selection.Contains(p.uniqueId)))
                 Refresh(selection);
         }

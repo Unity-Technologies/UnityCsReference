@@ -10,10 +10,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreLocalInfo
     {
-        public string id;
+        public long productId;
+        public long uploadId;
+        public long versionId;
         public string versionString;
-        public string versionId;
-        public string uploadId;
         public string publishedDate;
         public string supportedVersion;
         public string packagePath;
@@ -28,17 +28,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 var jsonInfo = Json.Deserialize(localInfo.jsonInfo) as Dictionary<string, object>;
-                var id = jsonInfo?.GetString("id");
-                if (string.IsNullOrEmpty(id))
+                var productId = jsonInfo?.GetStringAsLong("id") ?? 0;
+                if(productId <= 0)
                     return null;
 
                 return new AssetStoreLocalInfo
                 {
-                    id = id,
+                    productId = productId,
                     packagePath = localInfo.packagePath ?? string.Empty,
                     versionString = jsonInfo.GetString("version") ?? string.Empty,
-                    versionId = jsonInfo.GetString("version_id") ?? string.Empty,
-                    uploadId = jsonInfo.GetString("upload_id") ?? string.Empty,
+                    versionId = jsonInfo.GetStringAsLong("version_id"),
+                    uploadId = jsonInfo.GetStringAsLong("upload_id"),
                     publishedDate = jsonInfo.GetString("pubdate") ?? string.Empty,
                     supportedVersion = jsonInfo.GetString("unity_version") ?? string.Empty,
                     publishNotes = jsonInfo.GetString("publishnotes") ?? string.Empty
@@ -55,10 +55,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return new Dictionary<string, string>
             {
                 ["local_path"] = packagePath ?? string.Empty,
-                ["id"] = id ?? string.Empty,
+                ["id"] = productId.ToString(),
                 ["version"] = versionString ?? string.Empty,
-                ["version_id"] = versionId ?? string.Empty,
-                ["upload_id"] = uploadId ?? string.Empty
+                ["version_id"] = versionId.ToString(),
+                ["upload_id"] = uploadId.ToString()
             };
         }
     }

@@ -24,8 +24,6 @@ namespace UnityEditor.PackageManager.UI
 
         string packageId { get; }
 
-        string packageUniqueId { get; }
-
         IPackage package { get; }
 
         PackageInfo packageInfo { get; }
@@ -54,8 +52,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string category { get; }
 
-        IDictionary<string, string> categoryLinks { get; }
-
         IEnumerable<UIError> errors { get; }
 
         bool hasEntitlements { get; }
@@ -64,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         SemVersion? version { get; }
 
-        string versionId { get; }
+        long versionId { get; }
 
         DateTime? publishedDate { get; }
 
@@ -102,5 +98,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isRegistryPackage { get; }
 
         bool isFromScopedRegistry { get; }
+
+        string GetDescriptor(bool isFirstLetterCapitalized = false);
+
+        bool MatchesSearchText(string searchText);
     }
 }

@@ -21,33 +21,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IPackage : UI.IPackage
     {
-        string productId { get; }
+        IProduct product { get; }
 
         string displayName { get; }
-
-        string productDescription { get; }
-
-        string publisherName { get; }
-
-        string publisherLink { get; }
-
-        string latestReleaseNotes { get; }
-
-        DateTime? purchasedTime { get; }
 
         new IVersionList versions { get; }
 
         PackageState state { get; }
 
         PackageProgress progress { get; }
-
-        IEnumerable<string> labels { get; }
-
-        IEnumerable<PackageImage> images { get; }
-
-        IEnumerable<PackageLink> links { get; }
-
-        bool Is(PackageType type);
 
         bool isDiscoverable { get; }
 
@@ -58,8 +40,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool hasEntitlementsError { get; }
 
-        DateTime? firstPublishedDate { get; }
-
-        string GetDescriptor(bool isFirstLetterCapitalized = false);
+        bool IsInTab(PackageFilterTab tab);
     }
 }

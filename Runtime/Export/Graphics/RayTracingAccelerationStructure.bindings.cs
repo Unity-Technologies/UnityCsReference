@@ -42,6 +42,7 @@ namespace UnityEngine.Experimental.Rendering
         public bool allowOpaqueMaterials;
         public bool allowTransparentMaterials;
         public bool allowAlphaTestedMaterials;
+        public bool allowVisualEffects;
     }
 
     public struct RayTracingInstanceCullingShaderTagConfig
@@ -355,6 +356,12 @@ namespace UnityEngine.Experimental.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
         extern private void UpdateInstanceMask_Renderer([NotNull] Renderer renderer, uint mask);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddVFXInstances", HasExplicitThis = true)]
+        extern public void AddVFXInstances([NotNull] Renderer targetRenderer, uint[] vfxSystemMasks);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveVFXInstances", HasExplicitThis = true)]
+        extern public void  RemoveVFXInstances([NotNull]Renderer targetRenderer);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
         extern private void UpdateInstanceMask_Handle(int handle, uint mask);

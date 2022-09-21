@@ -33,19 +33,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packageNameAndVersions = string.Join("\n\u2022 ",
                 packagesToUninstall.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
 
-            var title = string.Format(L10n.Tr("Resetting {0}"), version.package.GetDescriptor());
+            var title = string.Format(L10n.Tr("Resetting {0}"), version.GetDescriptor());
             var message = packagesToUninstall.Length == 1 ?
                 string.Format(
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included package will reset to the required version:\n\u2022 {1}"),
-                version.package.GetDescriptor(), packageNameAndVersions) :
+                version.GetDescriptor(), packageNameAndVersions) :
                 string.Format(
                 L10n.Tr("Are you sure you want to reset this {0}?\nThe following included packages will reset to their required versions:\n\u2022 {1}"),
-                version.package.GetDescriptor(), packageNameAndVersions);
+                version.GetDescriptor(), packageNameAndVersions);
 
             if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 return false;
 
-            m_PageManager.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
+            m_PageManager.GetPage().SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
             m_OperationDispatcher.ResetDependencies(version, packagesToUninstall);
 
             PackageManagerWindowAnalytics.SendEvent("reset", version?.uniqueId);
@@ -57,15 +57,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installed = version?.package.versions.installed;
             return installed != null
                 && installed == version
-                && version.package.Is(PackageType.Feature)
+                && version.HasTag(PackageTag.Feature)
                 && !version.HasTag(PackageTag.Custom)
-                && version.HasTag(PackageTag.Removable)
+                && version.HasTag(PackageTag.UpmFormat)
                 && m_PackageDatabase.GetCustomizedDependencies(version).Any();
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
-            return string.Format(L10n.Tr("Click to reset this {0} dependencies to their default versions."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to reset this {0} dependencies to their default versions."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
@@ -80,12 +80,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version);
             var oneDependencyIsInDevelopment = customizedDependencies.Any(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
             yield return new ButtonDisableCondition(oneDependencyIsInDevelopment,
-                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), version.package.GetDescriptor()));
+                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), version.GetDescriptor()));
 
             var oneDependencyIsDirectAndMatchManifestVersion = customizedDependencies.Any(p => (p.versions.installed?.isDirectDependency ?? false) &&
-                p.versions.installed?.versionString == p.versions.installed?.packageInfo.projectDependenciesEntry);
+                p.versions.installed?.versionString == p.versions.installed?.packageInfo?.projectDependenciesEntry);
             yield return new ButtonDisableCondition(!oneDependencyIsDirectAndMatchManifestVersion,
-                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), version.package.GetDescriptor()));
+                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), version.GetDescriptor()));
         }
     }
 }

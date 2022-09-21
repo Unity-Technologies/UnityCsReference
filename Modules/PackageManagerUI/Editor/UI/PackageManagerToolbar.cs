@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         internal ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
@@ -33,6 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private IOProxy m_IOProxy;
+        private PageRefreshHandler m_PageRefreshHandler;
 
         private void ResolveDependencies()
         {
@@ -40,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageFiltering = container.Resolve<PackageFiltering>();
+            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
             m_PageManager = container.Resolve<PageManager>();
@@ -48,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
+            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
         }
 
         public PackageManagerToolbar()
@@ -71,12 +73,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            SetFilter(m_PackageFiltering.currentFilterTab);
-            searchToolbar.SetValueWithoutNotify(m_PackageFiltering.currentSearchText);
+            SetFilter(m_PackageManagerPrefs.currentFilterTab);
+            searchToolbar.SetValueWithoutNotify(m_PackageManagerPrefs.searchText);
             searchToolbar.RegisterValueChangedCallback(OnSearchTextChanged);
 
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
-            m_PackageFiltering.onFilterTabChanged += SetFilter;
+            m_PackageManagerPrefs.onFilterTabChanged += SetFilter;
             m_PageManager.onFiltersChange += UpdateFiltersMenuText;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
@@ -88,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             searchToolbar.UnregisterValueChangedCallback(OnSearchTextChanged);
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
-            m_PackageFiltering.onFilterTabChanged -= SetFilter;
+            m_PackageManagerPrefs.onFilterTabChanged -= SetFilter;
             m_PageManager.onFiltersChange -= UpdateFiltersMenuText;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
@@ -114,16 +116,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            UpdateOrdering(m_PageManager.GetCurrentPage());
+            UpdateOrdering(m_PageManager.GetPage());
 
-            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
+            if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.MyRegistries)
             {
                 // We can skip the whole database scan to save some time if non of the packages changed are related to scoped registry
                 // Note that we also check `preUpdate` to catch the cases where packages are move from ScopedRegistry to UnityRegistry
-                if (!args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (!args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Any(p => p.versions.primary.HasTag(PackageTag.ScopedRegistry)))
                     return;
 
-                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (!m_PackageDatabase.allPackages.Any(p => p.versions.primary.HasTag(PackageTag.ScopedRegistry)))
                     SetFilter(PackageFilterTab.UnityRegistry);
             }
 
@@ -133,14 +135,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            var page = m_PageManager.GetCurrentPage();
+            var page = m_PageManager.GetPage();
             EnableMenuForCapability(page.capability);
             UpdateOrdering(page);
         }
 
         private void OnInternetReachabilityChange(bool value)
         {
-            var page = m_PageManager.GetCurrentPage();
+            var page = m_PageManager.GetPage();
             EnableMenuForCapability(page.capability);
         }
 
@@ -148,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var value = text?.Trim() ?? string.Empty;
             searchToolbar.SetValueWithoutNotify(value);
-            m_PackageFiltering.currentSearchText = value;
+            m_PackageManagerPrefs.searchText = value;
         }
 
         private void OnSearchTextChanged(ChangeEvent<string> evt)
@@ -165,7 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 EditorApplication.update -= DelayedSearchEvent;
                 var value = searchToolbar.value.Trim();
-                m_PackageFiltering.currentSearchText = value;
+                m_PackageManagerPrefs.searchText = value;
                 if (!string.IsNullOrEmpty(value))
                     PackageManagerWindowAnalytics.SendEvent("search");
             }
@@ -191,16 +193,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal void SetFilter(PackageFilterTab filter)
         {
-            m_PackageFiltering.currentFilterTab = filter;
+            m_PackageManagerPrefs.currentFilterTab = filter;
             filterTabsMenu.text = string.Format(L10n.Tr("Packages: {0}"), GetFilterDisplayName(filter));
 
-            var page = m_PageManager.GetCurrentPage();
+            var page = m_PageManager.GetPage();
             UpdateOrdering(page);
 
             var supportFilters = page.capability.supportFilters;
             UIUtils.SetElementDisplay(filtersMenu, supportFilters);
             UIUtils.SetElementDisplay(clearFiltersButton, supportFilters);
-            UpdateFiltersMenuText(page.filters);
+            UpdateFiltersMenuText(page, page.filters);
             EnableMenuForCapability(page.capability);
         }
 
@@ -214,8 +216,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             searchToolbar.SetEnabled(enable);
         }
 
-        private void UpdateFiltersMenuText(PageFilters filters)
+        private void UpdateFiltersMenuText(IPage page, PageFilters filters)
         {
+            if (!page.isActivePage)
+                return;
+
             var filtersSet = new List<string>();
             if (filters?.isFilterSet ?? false)
             {
@@ -231,7 +236,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetFilterFromMenu(PackageFilterTab filter)
         {
-            if (filter == m_PackageFiltering.currentFilterTab)
+            if (filter == m_PackageManagerPrefs.currentFilterTab)
                 return;
 
             SetCurrentSearch(string.Empty);
@@ -248,7 +253,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
 
                 var rect = GUIUtility.GUIToScreenRect(spinnerButtonContainer.worldBound);
-                var dropdown = new InProgressDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = rect };
+                var dropdown = new InProgressDropdown(m_ResourceLoader, m_PackageManagerPrefs, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
             });
         }
@@ -295,7 +300,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 EditorApplication.ExecuteMenuItem(k_ResetPackagesMenuPath);
-                m_PageManager.Refresh(RefreshOptions.UpmListOffline);
+                m_PageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
                 PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
             };
 
@@ -303,10 +308,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
                 dropdownItem.insertSeparatorBefore = true;
-                dropdownItem.text = L10n.Tr("Internal/Reset Package Database");
+                dropdownItem.text = L10n.Tr("Internal/Reset Package Manager UI");
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
+                    ServicesContainer.instance.OnDisable();
                     ServicesContainer.instance.Reload();
                 };
 
@@ -348,8 +354,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var package = m_PackageDatabase.GetPackage(tempPackageId);
                         if (package != null)
                         {
-                            m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
-                            m_PageManager.SetSelected(package);
+                            m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.InProject;
+                            m_PageManager.GetPage().SetNewSelection(package);
                         }
                     }
                 }
@@ -373,8 +379,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var package = m_PackageDatabase.GetPackage(tempPackageId);
                     if (package != null)
                     {
-                        m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
-                        m_PageManager.SetSelected(package);
+                        m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.InProject;
+                        m_PageManager.GetPage().SetNewSelection(package);
                     }
                 }
             };
@@ -400,8 +406,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                             var package = m_PackageDatabase.GetPackage(url);
                             if (package != null)
                             {
-                                m_PackageFiltering.currentFilterTab = PackageFilterTab.InProject;
-                                m_PageManager.SetSelected(package);
+                                m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.InProject;
+                                m_PageManager.GetPage().SetNewSelection(package);
                             }
                         }
                     },
@@ -417,7 +423,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 // Same as above, the worldBound of the toolbar is used rather than the addMenu
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageFiltering, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageManagerPrefs, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }
@@ -425,7 +431,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void AddFilterTabToDropdownMenu(PackageFilterTab tab, Action<DropdownMenuAction> action = null, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback = null)
         {
             action = action ?? (a => SetFilterFromMenu(tab));
-            actionStatusCallback = actionStatusCallback ?? (a => m_PackageFiltering.currentFilterTab == tab ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            actionStatusCallback = actionStatusCallback ?? (a => m_PackageManagerPrefs.currentFilterTab == tab ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             filterTabsMenu.menu.AppendAction(GetFilterDisplayName(tab), action, actionStatusCallback, tab);
         }
 
@@ -437,9 +443,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddFilterTabToDropdownMenu(PackageFilterTab.UnityRegistry);
             AddFilterTabToDropdownMenu(PackageFilterTab.MyRegistries, null, a =>
             {
-                if (!m_PackageDatabase.allPackages.Any(p => PackageFiltering.FilterByTab(p, PackageFilterTab.MyRegistries, true)))
+                if (!m_PackageDatabase.allPackages.Any(p => p.IsInTab(PackageFilterTab.MyRegistries)))
                     return DropdownMenuAction.Status.Hidden;
-                else if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
+                else if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.MyRegistries)
                     return DropdownMenuAction.Status.Checked;
                 return DropdownMenuAction.Status.Normal;
             });
@@ -534,7 +540,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (PackageManagerFiltersWindow.instance != null)
                     PackageManagerFiltersWindow.instance.Close();
 
-                var page = m_PageManager.GetCurrentPage();
+                var page = m_PageManager.GetPage();
                 if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page))
                 {
                     filtersMenu.pseudoStates |= PseudoStates.Active;
@@ -552,7 +558,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             clearFiltersButton.clicked += () =>
             {
-                var page = m_PageManager.GetCurrentPage();
+                var page = m_PageManager.GetPage();
                 page.ClearFilters();
             };
         }

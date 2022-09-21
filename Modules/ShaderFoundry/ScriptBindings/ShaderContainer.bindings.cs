@@ -35,35 +35,57 @@ namespace UnityEditor.ShaderFoundry
         internal extern FoundryHandle AddString(string s);
         internal extern string GetString(FoundryHandle stringHandle);
 
+        [NativeMethod("Add<ShaderFoundry::ShaderAttributeParam>")]
         internal extern FoundryHandle AddShaderAttributeParamInternal(ShaderAttributeParamInternal shaderAttributeParamInternal);
+        [NativeMethod("Get<ShaderFoundry::ShaderAttributeParam>")]
         internal extern ShaderAttributeParamInternal GetShaderAttributeParam(FoundryHandle shaderAttributeParamHandle);
 
+        [NativeMethod("Add<ShaderFoundry::ShaderAttribute>")]
         internal extern FoundryHandle AddShaderAttributeInternal(ShaderAttributeInternal shaderAttributeInternal);
+        [NativeMethod("Get<ShaderFoundry::ShaderAttribute>")]
         internal extern ShaderAttributeInternal GetShaderAttribute(FoundryHandle shaderAttributeHandle);
 
+        [NativeMethod("Add<ShaderFoundry::CommandDescriptor>")]
         internal extern FoundryHandle AddCommandDescriptorInternal(CommandDescriptorInternal commandDescriptorInternal);
+        [NativeMethod("Get<ShaderFoundry::CommandDescriptor>")]
         internal extern CommandDescriptorInternal GetCommandDescriptor(FoundryHandle commandDescriptorHandle);
 
+        [NativeMethod("Add<ShaderFoundry::DefineDescriptor>")]
         internal extern FoundryHandle AddDefineDescriptorInternal(DefineDescriptorInternal defineDescriptorInternal);
+        [NativeMethod("Get<ShaderFoundry::DefineDescriptor>")]
         internal extern DefineDescriptorInternal GetDefineDescriptor(FoundryHandle defineDescriptorHandle);
 
+        [NativeMethod("Add<ShaderFoundry::IncludeDescriptor>")]
         internal extern FoundryHandle AddIncludeDescriptorInternal(IncludeDescriptorInternal includeDescriptorInternal);
+        [NativeMethod("Get<ShaderFoundry::IncludeDescriptor>")]
         internal extern IncludeDescriptorInternal GetIncludeDescriptor(FoundryHandle includeDescriptorHandle);
 
+        [NativeMethod("Add<ShaderFoundry::KeywordDescriptor>")]
         internal extern FoundryHandle AddKeywordDescriptorInternal(KeywordDescriptorInternal keywordDescriptorInternal);
+        [NativeMethod("Get<ShaderFoundry::KeywordDescriptor>")]
         internal extern KeywordDescriptorInternal GetKeywordDescriptor(FoundryHandle keywordDescriptorHandle);
 
+        [NativeMethod("Add<ShaderFoundry::PragmaDescriptor>")]
         internal extern FoundryHandle AddPragmaDescriptorInternal(PragmaDescriptorInternal pragmaDescriptorInternal);
+        [NativeMethod("Get<ShaderFoundry::PragmaDescriptor>")]
         internal extern PragmaDescriptorInternal GetPragmaDescriptor(FoundryHandle pragmaDescriptorHandle);
 
+        [NativeMethod("Add<ShaderFoundry::TagDescriptor>")]
         internal extern FoundryHandle AddTagDescriptorInternal(TagDescriptorInternal tagDescriptorInternal);
+        [NativeMethod("Get<ShaderFoundry::TagDescriptor>")]
         internal extern TagDescriptorInternal GetTagDescriptor(FoundryHandle tagDescriptorHandle);
 
+        [NativeMethod("Create<ShaderFoundry::ShaderFunction>")]
         internal extern FoundryHandle CreateFunctionInternal();
         internal extern bool SetFunction(FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, FoundryHandle parameterListHandle, FoundryHandle parentBlockHandle, FoundryHandle includeListHandle, FoundryHandle attributeListHandle);
+        [NativeMethod("Get<ShaderFoundry::ShaderFunction>")]
         internal extern ShaderFunctionInternal GetFunction(FoundryHandle functionHandle);
 
+        // TODO @ SHADERS: Replace with generic call that uses the Internal type.
         internal extern FoundryHandle AddFunctionParameter(string name, FoundryHandle typeHandle, UInt32 flags);
+        //[NativeMethod("Add<ShaderFoundry::FunctionParameter>")]
+        //internal extern FoundryHandle AddFunctionParameter(FunctionParameterInternal functionParameterInternal);
+        [NativeMethod("Get<ShaderFoundry::FunctionParameter>")]
         internal extern FunctionParameterInternal GetFunctionParameter(FoundryHandle functionParameterHandle);
 
         // most types should be added via the ShaderType.* functions.
@@ -100,8 +122,11 @@ namespace UnityEditor.ShaderFoundry
         internal extern FoundryHandle GetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex);
         internal extern void SetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex, FoundryHandle handle);
 
+        [NativeMethod("Create<ShaderFoundry::ShaderType>")]
         internal extern FoundryHandle CreateTypeInternal();
+        [NativeMethod("Set<ShaderFoundry::ShaderType>")]
         internal extern bool SetTypeInternal(FoundryHandle typeHandle, ShaderTypeInternal type);
+        [NativeMethod("Get<ShaderFoundry::ShaderType>")]
         internal extern ShaderTypeInternal GetType(FoundryHandle typeHandle);
         internal extern FoundryHandle GetTypeByName(string typeName, FoundryHandle blockHandle);
 
@@ -120,47 +145,75 @@ namespace UnityEditor.ShaderFoundry
             return new ShaderType(this, GetTypeByName(name, builder.blockHandle));
         }
 
+        [NativeMethod("Add<ShaderFoundry::StructField>")]
         internal extern FoundryHandle AddStructFieldInternal(StructFieldInternal structField);
+        [NativeMethod("Get<ShaderFoundry::StructField>")]
         internal extern StructFieldInternal GetStructField(FoundryHandle structFieldHandle);
 
+        [NativeMethod("Add<ShaderFoundry::BlockVariable>")]
         internal extern FoundryHandle AddBlockVariableInternal(BlockVariableInternal block);
+        [NativeMethod("Get<ShaderFoundry::BlockVariable>")]
         internal extern BlockVariableInternal GetBlockVariable(FoundryHandle blockVariableHandle);
 
+        [NativeMethod("Create<ShaderFoundry::Block>")]
         internal extern FoundryHandle CreateBlockInternal();
+        [NativeMethod("Set<ShaderFoundry::Block>")]
         internal extern bool SetBlockInternal(FoundryHandle blockHandle, BlockInternal block);
+        [NativeMethod("Get<ShaderFoundry::Block>")]
         internal extern BlockInternal GetBlock(FoundryHandle blockHandle);
 
+        [NativeMethod("Add<ShaderFoundry::BlockInstance>")]
         internal extern FoundryHandle AddBlockInstanceInternal(BlockInstanceInternal blockInstance);
+        [NativeMethod("Get<ShaderFoundry::BlockInstance>")]
         internal extern BlockInstanceInternal GetBlockInstance(FoundryHandle blockInstanceHandle);
 
         internal extern FoundryHandle AddPassIdentifier(uint subShaderIndex, uint passIndex);
+        [NativeMethod("Get<PassIdentifier>")]
         internal extern PassIdentifier GetPassIdentifier(FoundryHandle passIdentifierHandle);
 
+        [NativeMethod("Add<ShaderFoundry::CustomizationPoint>")]
         internal extern FoundryHandle AddCustomizationPointInternal(CustomizationPointInternal customizationPoint);
+        [NativeMethod("Get<ShaderFoundry::CustomizationPoint>")]
         internal extern CustomizationPointInternal GetCustomizationPoint(FoundryHandle customizationPointHandle);
 
+        [NativeMethod("Add<ShaderFoundry::CustomizationPointInstance>")]
         internal extern FoundryHandle AddCustomizationPointInstanceInternal(CustomizationPointInstanceInternal customizationPointInstance);
+        [NativeMethod("Get<ShaderFoundry::CustomizationPointInstance>")]
         internal extern CustomizationPointInstanceInternal GetCustomizationPointInstance(FoundryHandle customizationPointInstanceHandle);
 
+        [NativeMethod("Add<ShaderFoundry::PackageRequirement>")]
         internal extern FoundryHandle AddPackageRequirementInternal(PackageRequirementInternal packageRequirement);
+        [NativeMethod("Get<ShaderFoundry::PackageRequirement>")]
         internal extern PackageRequirementInternal GetPackageRequirement(FoundryHandle packageRequirementHandle);
 
+        [NativeMethod("Add<ShaderFoundry::TemplatePassStageElement>")]
         internal extern FoundryHandle AddTemplatePassStageElementInternal(TemplatePassStageElementInternal templatePassStageElement);
+        [NativeMethod("Get<ShaderFoundry::TemplatePassStageElement>")]
         internal extern TemplatePassStageElementInternal GetTemplatePassStageElement(FoundryHandle templatePassStageElementHandle);
 
+        [NativeMethod("Add<ShaderFoundry::TemplatePass>")]
         internal extern FoundryHandle AddTemplatePassInternal(TemplatePassInternal templatePass);
+        [NativeMethod("Get<ShaderFoundry::TemplatePass>")]
         internal extern TemplatePassInternal GetTemplatePass(FoundryHandle templatePassHandle);
 
+        [NativeMethod("Add<ShaderFoundry::TemplateInstance>")]
         internal extern FoundryHandle AddTemplateInstanceInternal(TemplateInstanceInternal templateInstance);
+        [NativeMethod("Get<ShaderFoundry::TemplateInstance>")]
         internal extern TemplateInstanceInternal GetTemplateInstance(FoundryHandle templateInstanceHandle);
 
+        [NativeMethod("Add<ShaderFoundry::Template>")]
         internal extern FoundryHandle AddTemplateInternal(TemplateInternal templateInternal);
+        [NativeMethod("Get<ShaderFoundry::Template>")]
         internal extern TemplateInternal GetTemplate(FoundryHandle templateHandle);
 
+        [NativeMethod("Add<ShaderFoundry::ShaderDependency>")]
         internal extern FoundryHandle AddShaderDependency(ShaderDependencyInternal shaderDependency);
+        [NativeMethod("Get<ShaderFoundry::ShaderDependency>")]
         internal extern ShaderDependencyInternal GetShaderDependency(FoundryHandle shaderDependencyHandle);
 
+        [NativeMethod("Add<ShaderFoundry::ShaderCustomEditor>")]
         internal extern FoundryHandle AddShaderCustomEditor(ShaderCustomEditorInternal shaderCustomEditor);
+        [NativeMethod("Get<ShaderFoundry::ShaderCustomEditor>")]
         internal extern ShaderCustomEditorInternal GetShaderCustomEditor(FoundryHandle shaderCustomEditorHandle);
 
         internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)

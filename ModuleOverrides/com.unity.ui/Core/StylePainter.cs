@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     internal interface IStylePainter
     {
         MeshWriteData DrawMesh(int vertexCount, int indexCount, Texture texture, Material material, MeshGenerationContext.MeshFlags flags);
-        void DrawText(TextElement te);
+        void DrawText(TextInfo textInfo, Vector2 offset);
         void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         void DrawRectangle(MeshGenerationContextUtils.RectangleParams rectParams);
         void DrawBorder(MeshGenerationContextUtils.BorderParams borderParams);

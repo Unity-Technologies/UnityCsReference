@@ -11,14 +11,14 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class VisualStateList : ISerializationCallbackReceiver, IEnumerable<VisualState>
+    internal class VisualStateList : ISerializationCallbackReceiver, IVisualStateList
     {
         [SerializeField]
         protected List<VisualState> m_OrderedVisualStates = new List<VisualState>();
         public virtual IEnumerable<VisualState> orderedList => m_OrderedVisualStates;
 
-        public virtual long numItems => m_OrderedVisualStates.Count;
-        public virtual long numTotalItems => m_OrderedVisualStates.Count;
+        public virtual long countLoaded => m_OrderedVisualStates.Count;
+        public virtual long countTotal => m_OrderedVisualStates.Count;
 
         // a reverse look up table such that we can find an visual state easily through package unique id
         protected Dictionary<string, int> m_UniqueIdToIndexLookup = new Dictionary<string, int>();
@@ -34,25 +34,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Rebuild(IEnumerable<string> packageUniqueIds)
         {
-            var newVisualStates = packageUniqueIds.Select(id => GetVisualState(id) ?? new VisualState(id, string.Empty, false)).ToList();
+            var newVisualStates = packageUniqueIds.Select(id => Get(id) ?? new VisualState(id, string.Empty, false)).ToList();
             m_OrderedVisualStates = newVisualStates;
             SetupLookupTable();
         }
 
-        public void Rebuild(IEnumerable<Tuple<string, string, bool>> orderedPackageIdGroupsAndDefaultLockedStates)
+        public void Rebuild(IEnumerable<(string packageUniqueId, string groupName, bool lockedByDefault)> orderedPackageIdGroupsAndDefaultLockedStates)
         {
             var newVisualStates = orderedPackageIdGroupsAndDefaultLockedStates.Select(t =>
             {
-                var visualState = GetVisualState(t.Item1) ?? new VisualState(t.Item1, t.Item2, t.Item3);
-                visualState.groupName = t.Item2;
-                visualState.lockedByDefault = t.Item3;
+                var visualState = Get(t.packageUniqueId) ?? new VisualState(t.packageUniqueId, t.groupName, t.lockedByDefault);
+                visualState.groupName = t.groupName;
+                visualState.lockedByDefault = t.lockedByDefault;
                 return visualState;
             }).ToList();
             m_OrderedVisualStates = newVisualStates;
             SetupLookupTable();
         }
 
-        public virtual VisualState GetVisualState(string packageUniqueId)
+        public virtual VisualState Get(string packageUniqueId)
         {
             int index;
             if (!string.IsNullOrEmpty(packageUniqueId) && m_UniqueIdToIndexLookup.TryGetValue(packageUniqueId, out index))
@@ -62,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool SetSeeAllVersions(string packageUniqueId, bool value)
         {
-            var state = GetVisualState(packageUniqueId);
+            var state = Get(packageUniqueId);
             if (state != null && state.seeAllVersions != value)
             {
                 state.seeAllVersions = value;

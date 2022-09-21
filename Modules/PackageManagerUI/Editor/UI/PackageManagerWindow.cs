@@ -89,7 +89,6 @@ namespace UnityEditor.PackageManager.UI
             var resourceLoader = container.Resolve<ResourceLoader>();
             var extensionManager = container.Resolve<ExtensionManager>();
             var selection = container.Resolve<SelectionProxy>();
-            var packageFiltering = container.Resolve<PackageFiltering>();
             var packageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             var packageDatabase = container.Resolve<PackageDatabase>();
             var pageManager = container.Resolve<PageManager>();
@@ -98,8 +97,9 @@ namespace UnityEditor.PackageManager.UI
             var applicationProxy = container.Resolve<ApplicationProxy>();
             var upmClient = container.Resolve<UpmClient>();
             var assetStoreCachePathProxy = container.Resolve<AssetStoreCachePathProxy>();
+            var pageRefreshHandler = container.Resolve<PageRefreshHandler>();
 
-            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageFiltering, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler);
             try
             {
                 m_Root.OnEnable();
@@ -114,10 +114,10 @@ namespace UnityEditor.PackageManager.UI
                 CheckInnerException<ResourceLoaderException>(e);
             }
 
-            if (pageManager.IsInitialFetchingDone())
+            if (pageRefreshHandler.IsInitialFetchingDone())
                 OnFirstRefreshOperationFinish();
             else
-                pageManager.onRefreshOperationFinish += OnFirstRefreshOperationFinish;
+                pageRefreshHandler.onRefreshOperationFinish += OnFirstRefreshOperationFinish;
         }
 
         void CreateGUI()
@@ -151,8 +151,8 @@ namespace UnityEditor.PackageManager.UI
         private void OnFirstRefreshOperationFinish()
         {
             var container = ServicesContainer.instance;
-            var pageManager = container.Resolve<PageManager>();
-            pageManager.onRefreshOperationFinish -= OnFirstRefreshOperationFinish;
+            var pageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            pageRefreshHandler.onRefreshOperationFinish -= OnFirstRefreshOperationFinish;
             onPackageManagerReady?.Invoke();
         }
 
@@ -295,8 +295,8 @@ namespace UnityEditor.PackageManager.UI
             if (applicationProxy.isBatchMode)
                 return;
 
-            var pageManager = ServicesContainer.instance.Resolve<PageManager>();
-            pageManager.Refresh(RefreshOptions.UpmListOffline);
+            var pageRefreshHandler = ServicesContainer.instance.Resolve<PageRefreshHandler>();
+            pageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
         }
 
         internal static void SelectFilterSubPageStatic(string filterTabOrSubPage = "")

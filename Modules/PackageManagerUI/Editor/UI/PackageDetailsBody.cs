@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -120,10 +119,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs.selectedPackageDetailsTabIdentifier = newSelection.id;
         }
 
-        private void RefreshVersionsHistory(IEnumerable<VisualState> states)
+        private void RefreshVersionsHistory(VisualStateChangeArgs args)
         {
-            var newVisualState = states.FirstOrDefault(state => state.packageUniqueId == m_Version?.packageUniqueId);
-            if (newVisualState?.userUnlocked == true && m_PageManager.GetSelection()?.Count == 1)
+            if (!args.page.isActivePage)
+                return;
+
+            var newVisualState = args.visualStates.FirstOrDefault(state => state.packageUniqueId == m_Version?.package.uniqueId);
+            if (newVisualState?.userUnlocked == true && m_PageManager.GetPage().GetSelection()?.Count == 1)
                 m_TabView.RefreshTab(PackageDetailsVersionsTab.k_Id, m_Version);
         }
     }

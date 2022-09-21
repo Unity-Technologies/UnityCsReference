@@ -20,11 +20,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool AddPackageVersion(IPackageVersion version)
         {
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
-            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
-            if (localInfo != null && updateInfo == null)
+            var product = version.package.product;
+            if(product == null)
+                return false;
+
+            if (m_AssetStoreCache.GetLocalInfo(product.id) != null && m_AssetStoreCache.GetUpdateInfo(product.id) == null)
             {
-                m_AssetStoreCallQueue.InsertToCheckUpdateQueue(version.packageUniqueId);
+                m_AssetStoreCallQueue.InsertToCheckUpdateQueue(product.id);
                 return base.AddPackageVersion(version);
             }
             return false;

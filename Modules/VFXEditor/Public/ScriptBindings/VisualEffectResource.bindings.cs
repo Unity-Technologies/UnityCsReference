@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.VFX;
 using UnityEditor;
-
+using UnityEngine.Experimental.Rendering;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.VFX
@@ -33,6 +33,7 @@ namespace UnityEditor.VFX
     {
         public MotionVectorGenerationMode motionVectorGenerationMode;
         public ShadowCastingMode shadowCastingMode;
+        public RayTracingAccelerationStructure.RayTracingModeMask rayTracingMode;
         public bool receiveShadows;
         public ReflectionProbeUsage reflectionProbeUsage;
         public LightProbeUsage lightProbeUsage;
@@ -444,6 +445,7 @@ namespace UnityEditor.VFX
         public const uint uncompiledVersion = 0;
         public const uint defaultVersion = 1;
 
+
         public void SetRuntimeData(VFXExpressionSheet sheet,
             VFXEditorSystemDesc[] systemDesc,
             VFXEventDesc[] eventDesc,
@@ -481,6 +483,7 @@ namespace UnityEditor.VFX
 
             SetRuntimeDataDeprecated(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, this.shaderSources, defaultVersion);
         }
+
 
         [NativeThrows]
         extern private void SetRuntimeData(VFXExpressionSheetInternal sheet,

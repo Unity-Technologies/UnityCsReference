@@ -52,10 +52,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var featureSetDependents = m_PackageDatabase.GetFeaturesThatUseThisPackage(installedVersion);
                 // if the installed version is being used by a Feature Set show the more specific
                 //  Feature Set dialog instead of the generic one
-                var title = string.Format(L10n.Tr("Updating {0}"), version.package.GetDescriptor());
+                var title = string.Format(L10n.Tr("Updating {0}"), version.GetDescriptor());
                 if (featureSetDependents.Any())
                 {
-                    var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?"), version.package.GetDescriptor());
+                    var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?"), version.GetDescriptor());
                     if (!m_Application.DisplayDialog("updatePackagePartOfFeature", title, message, L10n.Tr("Yes"), L10n.Tr("No")))
                         return false;
                 }
@@ -76,14 +76,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var packageNameAndVersions = string.Join("\n\u2022 ",
                         customizedDependencies.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
 
-                    var title = string.Format(L10n.Tr("Updating {0}"), version.package.GetDescriptor());
+                    var title = string.Format(L10n.Tr("Updating {0}"), version.GetDescriptor());
                     var message = customizedDependencies.Length == 1 ?
                         string.Format(
                         L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
-                        version.package.GetDescriptor(), packageNameAndVersions) :
+                        version.GetDescriptor(), packageNameAndVersions) :
                         string.Format(
                         L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
-                        version.package.GetDescriptor(), packageNameAndVersions);
+                        version.GetDescriptor(), packageNameAndVersions);
 
                     var result = m_Application.DisplayDialogComplex("installAndReset", title, message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
                     if (result == 1) // Cancel
@@ -115,12 +115,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installed = versionsList?.installed;
             var targetVersion = versionsList?.GetUpdateTarget(version);
             return installed?.HasTag(PackageTag.VersionLocked) == false
-                && targetVersion?.HasTag(PackageTag.Installable) == true
+                && targetVersion?.HasTag(PackageTag.UpmFormat) == true
                 && installed != targetVersion
                 && !version.IsRequestedButOverriddenVersion
                 && (version.isDirectDependency || version != installed)
                 && !version.HasTag(PackageTag.Local)
-                && m_PageManager.GetVisualState(version.package)?.isLocked != true;
+                && m_PageManager.GetPage().visualStates.Get(version.package?.uniqueId)?.isLocked != true;
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -128,12 +128,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isInProgress)
                 return k_InProgressGenericTooltip;
 
-            return string.Format(L10n.Tr("Click to update this {0} to the specified version."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to update this {0} to the specified version."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
         {
-            if (!m_ShowVersion || m_PageManager.GetSelection().Count > 1)
+            if (!m_ShowVersion || m_PageManager.GetPage().GetSelection().Count > 1)
                 return isInProgress ? k_UpdatingToWithoutVersionButtonText : k_UpdateToWithoutVersionButtonText;
 
             return string.Format(isInProgress ? k_UpdatingToButtonTextFormat : k_UpdateToButtonTextFormat,

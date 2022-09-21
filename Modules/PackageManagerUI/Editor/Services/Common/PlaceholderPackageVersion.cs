@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string versionString => m_VersionString;
 
-        public override string versionId => string.Empty;
+        public override long versionId => 0;
 
         public PlaceholderPackageVersion(string uniqueId, string displayName, string versionString = "", PackageTag tag = PackageTag.None, UIError error = null)
         {

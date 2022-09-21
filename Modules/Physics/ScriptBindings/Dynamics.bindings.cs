@@ -132,6 +132,7 @@ namespace UnityEngine
         extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
         extern public Vector3 GetPointVelocity(Vector3 worldPoint);
         extern public int solverVelocityIterations { get; set; }
+        extern public void PublishTransform();
 
         // Get/Set the Exclude Layers,
         extern public LayerMask excludeLayers { get; set; }
@@ -654,11 +655,26 @@ namespace UnityEngine
                     return;
                 }
 
-                Physics.Simulate_Internal(this, step);
+                Physics.Simulate_Internal(this, step, SimulationStage.All, SimulationOption.All);
                 return;
             }
 
             throw new InvalidOperationException("Cannot simulate the physics scene as it is invalid.");
+        }
+
+        public void RunSimulationStages(float step, SimulationStage stages, [DefaultValue("SimulationOption.All")] SimulationOption options = SimulationOption.All)
+        {
+            if (!IsValid())
+                throw new InvalidOperationException("Cannot simulate the physics scene as it is invalid.");
+
+            // Only check auto-simulation if simulating the default physics scene.
+            if (this == Physics.defaultPhysicsScene && Physics.simulationMode != SimulationMode.Script)
+            {
+                Debug.LogWarning("PhysicsScene.Simulate(...) was called but simulation mode is not set to Script. You should set simulation mode to Script first before calling this function therefore the simulation was not run.");
+                return;
+            }
+
+            Physics.Simulate_Internal(this, step, stages, options);
         }
 
         public void InterpolateBodies()
@@ -941,6 +957,23 @@ namespace UnityEngine
         FixedUpdate = 0,
         Update = 1,
         Script = 2
+    }
+
+    public enum SimulationStage : UInt16
+    {
+        None = 0,
+        PrepareSimulation = 1 << 0,
+        RunSimulation = 1 << 1,
+        PublishSimulationResults = 1 << 2,
+        All = PrepareSimulation | RunSimulation | PublishSimulationResults
+    }
+
+    public enum SimulationOption : UInt16
+    {
+        None = 0,
+        SyncTransforms = 1 << 0,
+        IgnoreEmptyScenes = 1 << 1,
+        All = SyncTransforms | IgnoreEmptyScenes
     }
 
     [NativeHeader("Modules/Physics/PhysicsManager.h")]
@@ -1553,7 +1586,7 @@ namespace UnityEngine
         }
 
         [NativeName("Simulate")]
-        extern internal static void Simulate_Internal(PhysicsScene physicsScene, float step);
+        extern internal static void Simulate_Internal(PhysicsScene physicsScene, float step, SimulationStage stages, SimulationOption options);
 
         public static void Simulate(float step)
         {
@@ -1563,7 +1596,7 @@ namespace UnityEngine
                 return;
             }
 
-            Simulate_Internal(defaultPhysicsScene, step);
+            Simulate_Internal(defaultPhysicsScene, step, SimulationStage.All, SimulationOption.All);
         }
 
         [NativeName("InterpolateBodies")]

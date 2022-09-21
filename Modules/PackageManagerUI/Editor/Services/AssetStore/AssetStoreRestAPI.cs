@@ -4,30 +4,24 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.Connect;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AssetStoreRestAPI
     {
-        // This instance reference is kept for compatibility reasons, as it is internal visible to the Quick Search package
-        // To be addressed further in https://jira.unity3d.com/browse/PAX-1306
-        internal static AssetStoreRestAPI instance => ServicesContainer.instance.Resolve<AssetStoreRestAPI>();
-
         private const string k_PurchasesUri = "/-/api/purchases";
         private const string k_TaggingsUri = "/-/api/taggings";
         private const string k_ProductInfoUri = "/-/api/product";
         private const string k_UpdateInfoUri = "/-/api/legacy-package-update-info";
         private const string k_DownloadInfoUri = "/-/api/legacy-package-download-info";
         private const string k_TermsCheckUri = "/-/api/terms/check";
-        private const string k_TermsAcceptUri = "/-/api/terms/accept";
 
         internal const int k_MaxRetries = 3;
         internal const int k_ClientErrorResponseCode = 400;
         internal const int k_ServerErrorResponseCode = 500;
 
-        internal static string k_ErrorMessage = "Something went wrong. Please try again later.";
+        public static readonly string k_ErrorMessage = L10n.Tr("Something went wrong. Please try again later.");
 
         private const int k_GeneralServerError = 599;
         private const int k_GeneralClientError = 499;
@@ -70,183 +64,106 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private string m_AssetStoreUrl;
+        public virtual string assetStoreUrl
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(m_AssetStoreUrl))
+                    m_AssetStoreUrl = m_UnityConnect.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
+                return m_AssetStoreUrl;
+            }
+        }
+
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
         private AssetStoreOAuth m_AssetStoreOAuth;
         [NonSerialized]
-        private AssetStoreCache m_AssetStoreCache;
+        private JsonParser m_JsonParser;
         [NonSerialized]
         private HttpClientFactory m_HttpClientFactory;
         public void ResolveDependencies(UnityConnectProxy unityConnect,
             AssetStoreOAuth assetStoreOAuth,
-            AssetStoreCache assetStoreCache,
+            JsonParser jsonParser,
             HttpClientFactory httpClientFactory)
         {
             m_UnityConnect = unityConnect;
             m_AssetStoreOAuth = assetStoreOAuth;
-            m_AssetStoreCache = assetStoreCache;
+            m_JsonParser = jsonParser;
             m_HttpClientFactory = httpClientFactory;
         }
 
-        public virtual void GetPurchases(string query, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
+        public virtual IList<string> GetCategories()
         {
-            HandleHttpRequest(() =>
-            {
-                var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_PurchasesUri}{query ?? string.Empty}");
-                httpRequest.tag = $"GetPurchases{query}";
-                return httpRequest;
-            }, doneCallbackAction, errorCallbackAction);
+            return k_Categories;
         }
 
-        public virtual void AbortGetPurchases(string query)
+        public virtual void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback)
         {
-            // Abort any previous request
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseLabels, L10n.Tr("Error parsing labels."), successCallback, errorCallback);
+            HandleHttpRequest(k_TaggingsUri, parseDictionary, errorCallback, tag: "GetTaggings", abortPreviousRequest: true);
+        }
+
+        public virtual void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback)
+        {
+            var parseProductInfo = (Dictionary<string, object> result) => m_JsonParser.ParseProductInfo(assetStoreUrl, productId, result);
+            var parseDictionary = CreateParseDictionaryCallback(parseProductInfo, L10n.Tr("Error parsing product details."), successCallback, errorCallback);
+            HandleHttpRequest($"{k_ProductInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetProductDetail{productId}", abortPreviousRequest: true);
+        }
+
+        public virtual void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null)
+        {
+            var parseUpdateInfo = (Dictionary<string, object> result) => m_JsonParser.ParseUpdateInfos(args, result);
+            var parseDictionary = CreateParseDictionaryCallback(parseUpdateInfo, L10n.Tr("Error parsing update details."), successCallback, errorCallback);
+            HandleHttpRequest(k_UpdateInfoUri, parseDictionary, errorCallback, postData: args.ToString());
+        }
+
+        public virtual void CheckTermsAndConditions(Action<bool> successCallback, Action<UIError> errorCallback)
+        {
+            var parseDictionary = (Dictionary<string, object> result) => successCallback?.Invoke(result.Get<bool>("result"));
+            HandleHttpRequest(k_TermsCheckUri, parseDictionary, errorCallback, tag: "CheckTermsAndConditions", abortPreviousRequest: true);
+        }
+
+        public virtual void GetPurchases(PurchasesQueryArgs query, Action<AssetStorePurchases> successCallback, Action<UIError> errorCallback)
+        {
+            var queryString = query.ToString();
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParsePurchases, L10n.Tr("Error parsing purchase list."), successCallback, errorCallback);
+            HandleHttpRequest($"{k_PurchasesUri}{queryString ?? string.Empty}", parseDictionary, errorCallback, tag: $"GetPurchases{queryString}");
+        }
+
+        public virtual void AbortGetPurchases(PurchasesQueryArgs query)
+        {
             m_HttpClientFactory.AbortByTag($"GetPurchases{query}");
         }
 
-        public virtual void GetCategories(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
+        public virtual void GetDownloadDetail(long productId, Action<AssetStoreDownloadInfo> successCallback, Action<UIError> errorCallback)
         {
-            IList<string> categories = k_Categories.ToList();
-            var result = new Dictionary<string, object>
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseDownloadInfo, L10n.Tr("Error parsing download details."), successCallback, errorCallback);
+            HandleHttpRequest($"{k_DownloadInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetDownloadDetail{productId}", abortPreviousRequest: true);
+        }
+
+        private Action<Dictionary<string, object>> CreateParseDictionaryCallback<T>(
+            Func<Dictionary<string, object>, T> parseFunc,
+            string parseErrorMessage,
+            Action<T> successCallback,
+            Action<UIError> errorCallback) where T : class
+        {
+            return (Dictionary<string, object> result) =>
             {
-                ["total"] = categories.Count,
-                ["results"] = categories
+                var parsedResult = parseFunc?.Invoke(result);
+                if (parsedResult == null)
+                    errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parseErrorMessage));
+                else
+                    successCallback?.Invoke(parsedResult);
             };
-
-            doneCallbackAction?.Invoke(result);
         }
 
-        public virtual void GetTaggings(Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
+        private void HandleHttpRequest(string urlWithoutHost, Action<Dictionary<string, object>> doneCallback, Action<UIError> errorCallback, string postData = null, string tag = null, bool abortPreviousRequest = false)
         {
-            // Abort any previous request
-            m_HttpClientFactory.AbortByTag("GetTaggings");
+            if (abortPreviousRequest && !string.IsNullOrEmpty(tag))
+                m_HttpClientFactory.AbortByTag(tag);
 
-            HandleHttpRequest(() =>
-            {
-                var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_TaggingsUri}");
-                httpRequest.tag = "GetTaggings";
-                return httpRequest;
-            },
-                result =>
-                {
-                    doneCallbackAction?.Invoke(result);
-                },
-                errorCallbackAction);
-        }
-
-        public virtual void GetProductDetail(long productID, Action<Dictionary<string, object>> doneCallbackAction)
-        {
-            // Abort any previous request
-            m_HttpClientFactory.AbortByTag($"GetProductDetail_{productID}");
-
-            HandleHttpRequest(() =>
-            {
-                var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_ProductInfoUri}/{productID}");
-                httpRequest.tag = $"GetProductDetail_{productID}";
-                return httpRequest;
-            },
-                result =>
-                {
-                    doneCallbackAction?.Invoke(result);
-                },
-                error =>
-                {
-                    var ret = new Dictionary<string, object> { ["errorMessage"] = error.message };
-                    doneCallbackAction?.Invoke(ret);
-                });
-        }
-
-        public virtual void GetDownloadDetail(long productID, Action<AssetStoreDownloadInfo> doneCallbackAction)
-        {
-            // Abort any previous request
-            m_HttpClientFactory.AbortByTag($"GetDownloadDetail{productID}");
-
-            HandleHttpRequest(() =>
-            {
-                var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_DownloadInfoUri}/{productID}");
-                httpRequest.tag = $"GetDownloadDetail{productID}";
-                return httpRequest;
-            },
-                result =>
-                {
-                    var downloadInfo = AssetStoreDownloadInfo.ParseDownloadInfo(result);
-                    doneCallbackAction?.Invoke(downloadInfo);
-                },
-                error =>
-                {
-                    var downloadInfo = new AssetStoreDownloadInfo
-                    {
-                        isValid = false,
-                        errorMessage = error.message,
-                        errorCode = error.operationErrorCode
-                    };
-                    doneCallbackAction?.Invoke(downloadInfo);
-                });
-        }
-
-        public virtual void GetProductUpdateDetail(IEnumerable<string> productIds, Action<Dictionary<string, object>> doneCallbackAction)
-        {
-            if (productIds?.Any() != true)
-            {
-                doneCallbackAction?.Invoke(new Dictionary<string, object>());
-                return;
-            }
-
-            var localInfos = new List<AssetStoreLocalInfo>();
-            foreach (var productId in productIds)
-            {
-                var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-                if (localInfo != null && m_AssetStoreCache.GetUpdateInfo(localInfo.uploadId) == null)
-                    localInfos.Add(localInfo);
-            }
-            var localInfosJsonData = Json.Serialize(localInfos.Select(info => info?.ToDictionary() ?? new Dictionary<string, string>()).ToList());
-
-            HandleHttpRequest(() => m_HttpClientFactory.PostASyncHTTPClient($"{host}{k_UpdateInfoUri}", localInfosJsonData),
-                result =>
-                {
-                    var ret = result["result"] as Dictionary<string, object>;
-                    doneCallbackAction?.Invoke(ret);
-                },
-                error =>
-                {
-                    var ret = new Dictionary<string, object>
-                    {
-                        ["errorMessage"] = error.message,
-                        ["errorCode"] = error.operationErrorCode
-                    };
-                    doneCallbackAction?.Invoke(ret);
-                });
-        }
-
-        public virtual void CheckTermsAndConditions(Action<bool> doneCallbackAction, Action<UIError> errorCallbackAction)
-        {
-            // Abort any previous request
-            m_HttpClientFactory.AbortByTag("CheckTermsAndConditions");
-
-            HandleHttpRequest(() =>
-            {
-                var httpRequest = m_HttpClientFactory.GetASyncHTTPClient($"{host}{k_TermsCheckUri}");
-                httpRequest.tag = "CheckTermsAndConditions";
-                return httpRequest;
-            },
-                result =>
-                {
-                    doneCallbackAction?.Invoke(result.Get<bool>("result"));
-                },
-                error =>
-                {
-                    errorCallbackAction?.Invoke(error);
-                });
-        }
-
-        public virtual void HandleHttpRequest(IAsyncHTTPClient httpRequest, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
-        {
-            HandleHttpRequest(() => httpRequest, doneCallbackAction, errorCallbackAction);
-        }
-
-        private void HandleHttpRequest(Func<IAsyncHTTPClient> httpRequestCreate, Action<Dictionary<string, object>> doneCallbackAction, Action<UIError> errorCallbackAction)
-        {
             m_AssetStoreOAuth.FetchUserInfo(
                 userInfo =>
                 {
@@ -254,7 +171,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     void DoHttpRequest(Action<int> retryCallbackAction)
                     {
-                        var httpRequest = httpRequestCreate();
+                        var url = $"{host}{urlWithoutHost}";
+                        var httpRequest = string.IsNullOrEmpty(postData) ? m_HttpClientFactory.GetASyncHTTPClient(url) : m_HttpClientFactory.PostASyncHTTPClient(url, postData);
+                        httpRequest.tag = tag ?? httpRequest.tag;
 
                         httpRequest.header["Content-Type"] = "application/json";
                         httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
@@ -267,7 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             var responseCode = request.responseCode;
                             if (responseCode == 0)
                             {
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: responseCode));
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -281,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 var errorMessage = k_KnownErrors[k_GeneralClientError];
                                 k_KnownErrors.TryGetValue(request.responseCode, out errorMessage);
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: responseCode));
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{responseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -293,10 +212,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 if (parsedResult.ContainsKey("errorMessage"))
                                 {
                                     var operationErrorCode = parsedResult.ContainsKey("errorCode") ? int.Parse(parsedResult.GetString("errorCode")) : -1;
-                                    errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage"), operationErrorCode: operationErrorCode));
+                                    errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, parsedResult.GetString("errorMessage"), operationErrorCode: operationErrorCode));
                                 }
                                 else
-                                    doneCallbackAction?.Invoke(parsedResult);
+                                    doneCallback?.Invoke(parsedResult);
                             }
                         };
 
@@ -314,16 +233,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 var errorMessage = k_KnownErrors[k_GeneralServerError];
                                 k_KnownErrors.TryGetValue(lastResponseCode, out errorMessage);
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: lastResponseCode));
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, $"{lastResponseCode} {errorMessage}. {k_ErrorMessage}", operationErrorCode: lastResponseCode));
                             }
                             else
-                                errorCallbackAction?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: lastResponseCode));
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, k_ErrorMessage, operationErrorCode: lastResponseCode));
                         }
                     }
 
                     DoHttpRequest(RetryCallbackAction);
                 },
-                errorCallbackAction);
+                errorCallback);
         }
     }
 }

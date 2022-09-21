@@ -22,18 +22,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startReDownload", version.packageUniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startReDownload", version.package.uniqueId);
             return canDownload;
         }
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            if (version?.HasTag(PackageTag.Downloadable) != true)
+            if (version?.HasTag(PackageTag.LegacyFormat) != true)
                 return false;
 
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
-            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            var productId = version.package.product?.id;
+            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
             return localInfo != null && updateInfo?.canUpdateOrDowngrade != true
                 && (operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible);
         }
@@ -43,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isInProgress)
                 return L10n.Tr("The re-download request has been sent. Please wait for the re-download to start.");
 
-            return string.Format(L10n.Tr("Click to re-download this {0} to get the current editor's version."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to re-download this {0} to get the current editor's version."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
@@ -53,9 +54,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool IsInProgress(IPackageVersion version)
         {
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            var productId = version?.package.product?.id;
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
+            var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
             return localInfo != null && updateInfo?.canUpdateOrDowngrade != true && operation?.isInProgress == true;
         }
 

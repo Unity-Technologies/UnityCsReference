@@ -352,6 +352,8 @@ namespace UnityEngine
 
         extern public CollisionDetectionMode collisionDetectionMode { get; set; }
 
+        extern public void PublishTransform();
+
         public void SnapAnchorToClosestContact()
         {
             if (!transform.parent)

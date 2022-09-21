@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -31,6 +32,9 @@ namespace UnityEditor
 
         private static bool s_RecursionLock = false;
 
+        private static VisualElement activeElement = null;
+        private static ScrollView activeScrollView = null;
+
         private static GUIStyle s_HighlightStyle;
         private static GUIStyle highlightStyle
         {
@@ -49,8 +53,12 @@ namespace UnityEditor
             active = false;
             activeVisible = false;
             activeText = string.Empty;
+            activeElement = null;
+            activeIsImguiContainer = false;
+            activeScrollView = null;
             activeRect = new Rect();
 
+            searchMode = HighlightSearchMode.None;
             s_LastTime = 0;
             s_HighlightElapsedTime = 0;
         }
@@ -140,7 +148,8 @@ namespace UnityEditor
 
             // If view's actualView has changed, we might still find a property with the right name in the other view,
             // but it's not the one we're looking for.
-            if (activeRect.width == 0 || !ViewWindowIsActive())
+            var elementHidden = activeElement != null && (!activeElement.isHierarchyDisplayed || activeElement.panel == null);
+            if (activeRect.width == 0 || !ViewWindowIsActive() || elementHidden)
             {
                 EditorApplication.update -= Update;
                 if (s_View != null && s_View.windowBackend is IEditorWindowBackend ewb)
@@ -155,6 +164,9 @@ namespace UnityEditor
             {
                 Search();
             }
+
+            if (isUIToolkitWindow)
+                HandleScroll();
 
             // Keep elapsed time explicitly rather than measuring time since highlight began.
             // This way all views use the same elapsed time even if some realtime elapsed
@@ -233,9 +245,46 @@ namespace UnityEditor
         private static bool Search()
         {
             searchMode = s_SearchMode;
+
+            if (isUIToolkitWindow && !activeIsImguiContainer)
+            {
+                var found = activeElement != null;
+                if (!found)
+                    found = SearchVisualElement(s_ViewWindow.rootVisualElement);
+
+                if (found)
+                {
+                    var windowPos = s_ViewWindow.position.position;
+                    var pos = activeElement.worldBound.position + windowPos;
+                    activeRect = new Rect(pos.x, pos.y, activeElement.worldBound.width, activeElement.worldBound.height);
+                    searchMode = HighlightSearchMode.None;
+                    return true;
+                }
+
+                activeIsImguiContainer = true;
+            }
+
+            // Try IMGUI
             s_View.RepaintImmediately();
             if (searchMode == HighlightSearchMode.None)
-                return true; // Success - control was found
+            {
+                if (!activeIsImguiContainer)
+                    return true; // Success - control was found in pure Imgui window
+
+                if (activeElement != null)
+                    return true; // Already found the IMGUIContainer
+
+                var windowPos = s_ViewWindow.position.position;
+                var r = activeRect;
+                r.x -= windowPos.x;
+                r.y -= windowPos.y;
+
+                activeElement = SearchIMGUIContainer(s_ViewWindow.rootVisualElement, r.center);
+                if (activeElement != null)
+                    return true;
+
+                activeIsImguiContainer = false;
+            }
 
             s_SearchMode = HighlightSearchMode.None;
             Stop();
@@ -293,6 +342,166 @@ namespace UnityEditor
             GUI.matrix = oldMatrix;
         }
 
+        private static void HandleScroll()
+        {
+            if (activeScrollView == null || s_ViewWindow == null)
+                return;
+
+            // activeRect is in screen space convert back to window space
+            var windowPos = s_ViewWindow.position.position;
+            var r = activeRect;
+            r.x -= windowPos.x;
+            r.y -= windowPos.y;
+
+            if (!activeVisible)
+            {
+                var paddedRect = new Rect(r.x - padding, r.y - padding,
+                    r.width + padding * 2, r.height + padding * 2);
+
+                activeVisible = !ScrollTowardsRect(activeScrollView, paddedRect, scrollSpeed);
+            }
+            else
+            {
+                // If the highlight rect (without padding) was already visible but is no longer, stop the highlight.
+                if (ScrollTowardsRect(activeScrollView, r, 0f))
+                    activeRect = Rect.zero;
+            }
+        }
+
+        private static bool ScrollTowardsRect(ScrollView sv, Rect pos, float maxDelta)
+        {
+            var scrollVector = CalculateScrollVector(sv, pos);
+
+            // If we don't need scrolling, return false
+            if (scrollVector.sqrMagnitude < 0.0001f)
+                return false;
+
+            // If we need scrolling but don't actually allow any, just return true to
+            // indicate scrolling is needed to be able to see pos
+            if (Mathf.Approximately(maxDelta, 0))
+                return true;
+
+            if (scrollVector.magnitude > maxDelta)
+                scrollVector = scrollVector.normalized * maxDelta;
+
+            sv.scrollOffset += scrollVector;
+            return true;
+        }
+
+        private static Vector2 CalculateScrollVector(ScrollView sv, Rect pos)
+        {
+            var scrollVector = Vector2.zero;
+            var viewport = sv.contentViewport.worldBound;
+
+            // If the rect we want to see is larger than the visible rect, then trim it,
+            // otherwise we can get oscillation or other unwanted behavior
+            float excess = pos.width - viewport.width;
+            if (excess > 0)
+            {
+                pos.width -= excess;
+                pos.x += excess * 0.5f;
+            }
+            excess = pos.height - viewport.height;
+            if (excess > 0)
+            {
+                pos.height -= excess;
+                pos.y += excess * 0.5f;
+            }
+
+            // Calculate needed x scrolling
+            if (sv.scrollableWidth > 0)
+            {
+                if (pos.xMax > viewport.xMax)
+                    scrollVector.x += pos.xMax - viewport.xMax;
+                else if (pos.xMin < viewport.xMin)
+                    scrollVector.x -= viewport.xMin - pos.xMin;
+            }
+
+            // Calculate needed y scrolling
+            if (sv.scrollableHeight > 0)
+            {
+                if (pos.yMax > viewport.yMax)
+                    scrollVector.y += pos.yMax - viewport.yMax;
+                else if (pos.yMin < viewport.yMin)
+                    scrollVector.y -= viewport.yMin - pos.yMin;
+            }
+
+            return scrollVector;
+        }
+
+        private static bool SearchVisualElement(VisualElement ve)
+        {
+            ScrollView currentScrollView = null;
+            for (var i = 0; i < ve.childCount; i++)
+            {
+                var child = ve[i];
+                if (child.resolvedStyle.display == DisplayStyle.None)
+                    continue;
+
+                switch (child)
+                {
+                    case Foldout foldout when !foldout.value:
+                        continue; // Do not search inside collapsed foldout
+                    case IPrefixLabel prefixLabel when prefixLabel.label == activeText && (searchMode == HighlightSearchMode.Auto || searchMode == HighlightSearchMode.PrefixLabel):
+                        activeElement = child;
+                        return true;
+                    case BindableElement bindableElement when bindableElement.bindingPath == activeText && IsSearchingForIdentifier():
+                        activeElement = child;
+                        return true;
+                    case TextElement textElement when textElement.text == activeText && (searchMode == HighlightSearchMode.Auto || searchMode == HighlightSearchMode.Content):
+                        activeElement = child;
+                        return true;
+                    case ScrollView sv when activeScrollView == null:
+                        activeScrollView = currentScrollView = sv;
+                        break;
+                    case ScrollView sv:
+                        // Skip searching inside nested ScrollView
+                        continue;
+                }
+
+                if (SearchVisualElement(child))
+                    return true;
+
+                // Element not part of this ScrollView, make sure to reset the activeScrollView or else other
+                // ScrollView will be considered as nested
+                if (currentScrollView != null)
+                    activeScrollView = null;
+            }
+
+            return false;
+        }
+
+        private static IMGUIContainer SearchIMGUIContainer(VisualElement root, Vector2 pos)
+        {
+            ScrollView currentScrollView = null;
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var child = root[i];
+                switch (child)
+                {
+                    case IMGUIContainer imguiContainer when imguiContainer.worldBound.Contains(pos):
+                        return imguiContainer;
+                    case ScrollView sv when activeScrollView == null:
+                        activeScrollView = currentScrollView = sv;
+                        break;
+                    case ScrollView sv:
+                        // Skip searching inside nested ScrollView
+                        continue;
+                }
+
+                var c = SearchIMGUIContainer(child, pos);
+                if (c != null)
+                    return c;
+
+                // Element not part of this ScrollView, make sure to reset the activeScrollView or else other
+                // ScrollView will be considered as nested
+                if (currentScrollView != null)
+                    activeScrollView = null;
+            }
+            return null;
+        }
+
         internal static bool searching => searchMode != HighlightSearchMode.None;
+        internal static bool isUIToolkitWindow => s_ViewWindow != null && s_ViewWindow.isUIToolkitWindow;
     }
 }

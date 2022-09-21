@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using System.Text;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -13,7 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public enum Order
         {
-            None,
             Ascending,
             Descending
         }
@@ -25,14 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             public string orderBy;
             public Order order;
 
-            public Ordering()
-            {
-                displayName = "-";
-                orderBy = string.Empty;
-                order = Order.Ascending;
-            }
-
-            public Ordering(string displayName, string orderBy, Order order = Order.None)
+            public Ordering(string displayName, string orderBy, Order order)
             {
                 this.displayName = displayName;
                 this.orderBy = orderBy;
@@ -45,20 +35,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool supportFilters;
         public bool supportLocalReordering;
         public Ordering[] orderingValues;
-
-        public override string ToString()
-        {
-            var stringBuilder = new StringBuilder();
-            stringBuilder.Append($"requireUserLoggedIn={requireUserLoggedIn},");
-            stringBuilder.Append($"requireNetwork={requireNetwork},");
-            stringBuilder.Append($"supportFilters={supportFilters},");
-            if (orderingValues != null)
-                stringBuilder.Append($"orderingValues=[{string.Join(",", orderingValues.Select(o => $"{o.orderBy} ({o.order})").ToArray())}],");
-
-            var text = stringBuilder.ToString();
-            if (!string.IsNullOrEmpty(text))
-                text = text.Remove(text.Length - 1);
-            return text;
-        }
     }
 }

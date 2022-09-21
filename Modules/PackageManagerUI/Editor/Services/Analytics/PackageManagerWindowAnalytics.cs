@@ -24,10 +24,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool dependencies_visible;
         public bool preview_visible;
 
-        public static string GetFilterNameWithSubPage(PackageFiltering packageFiltering, PageManager pageManager)
+        public static string GetFilterNameWithSubPage(PackageManagerPrefs packageManagerPrefs, PageManager pageManager)
         {
-            var filterName = packageFiltering.currentFilterTab.ToString();
-            var page = pageManager.GetCurrentPage();
+            var filterName = packageManagerPrefs.currentFilterTab.ToString();
+            var page = pageManager.GetPage();
             var subPage = page.subPages.Skip(1).Any() ? page.currentSubPage : null;
             // Add the name of the sub page into the filter name for now
             if (!string.IsNullOrEmpty(subPage?.name))
@@ -46,17 +46,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(packageId))
                 packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
 
-            var packageFiltering = servicesContainer.Resolve<PackageFiltering>();
             var packageManagerPrefs = servicesContainer.Resolve<PackageManagerPrefs>();
             var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
-            var filterName = GetFilterNameWithSubPage(packageFiltering, servicesContainer.Resolve<PageManager>());
+            var filterName = GetFilterNameWithSubPage(packageManagerPrefs, servicesContainer.Resolve<PageManager>());
 
             var parameters = new PackageManagerWindowAnalytics
             {
                 action = action,
                 package_id = packageId ?? string.Empty,
                 package_ids = packageIds?.ToArray() ?? new string[0],
-                search_text = packageFiltering.currentSearchText,
+                search_text = packageManagerPrefs.searchText,
                 filter_name = filterName,
                 details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,

@@ -22,9 +22,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<AssetStoreDownloadOperation> onDownloadFinalized = delegate {};
         public virtual event Action<AssetStoreDownloadOperation> onDownloadProgress = delegate {};
         public virtual event Action<AssetStoreDownloadOperation> onDownloadStateChanged = delegate {};
-        public virtual event Action<string> onBeforeDownloadStart = delegate {};
+        public virtual event Action<long> onBeforeDownloadStart = delegate {};
 
-        private Dictionary<string, AssetStoreDownloadOperation> m_DownloadOperations = new Dictionary<string, AssetStoreDownloadOperation>();
+        private Dictionary<long, AssetStoreDownloadOperation> m_DownloadOperations = new Dictionary<long, AssetStoreDownloadOperation>();
 
         [SerializeField]
         private bool m_TermsOfServiceAccepted = false;
@@ -140,9 +140,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_DownloadOperations.Values.Count(d => d.isInProgress);
         }
 
-        private void Download(string productId)
+        private void Download(long productId)
         {
-            if (string.IsNullOrEmpty(productId))
+            if (productId <= 0)
                 return;
 
             var operation = GetDownloadOperation(productId);
@@ -157,7 +157,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             operation.Download(false);
         }
 
-        public virtual bool Download(IEnumerable<string> productIds)
+        public virtual bool Download(IEnumerable<long> productIds)
         {
             return CheckTermsOfServiceAgreement(
                 () =>
@@ -178,14 +178,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             AbortAllDownloads();
         }
 
-        public virtual AssetStoreDownloadOperation GetDownloadOperation(string productId)
+        public virtual AssetStoreDownloadOperation GetDownloadOperation(long? productId)
         {
-            return string.IsNullOrEmpty(productId) ? null : m_DownloadOperations.Get(productId);
+            return productId > 0 ? m_DownloadOperations.Get(productId.Value) : null;
         }
 
         private void SetupDownloadOperation(AssetStoreDownloadOperation operation)
         {
-            m_DownloadOperations[operation.packageUniqueId] = operation;
+            m_DownloadOperations[operation.productId] = operation;
             operation.onOperationError += (_, error) => onDownloadError?.Invoke(operation, error);
             operation.onOperationFinalized += (_) => OnDownloadFinalized(operation);
             operation.onOperationProgress += (_) => onDownloadProgress?.Invoke(operation);
@@ -203,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void RemoveDownloadOperation(string productId)
+        private void RemoveDownloadOperation(long productId)
         {
             if (m_DownloadOperations.ContainsKey(productId))
                 m_DownloadOperations.Remove(productId);
@@ -216,13 +216,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             // The download unique id we receive from the A$ download callback could be in the format of
             // `123456` or `content__123456` (depending on where the download starts).
             // therefore we have a progress that makes sure everything is in the format of `123456`.
-            var productId = downloadId;
             if (downloadId.StartsWith(AssetStoreDownloadOperation.k_AssetStoreDownloadPrefix))
-                productId = downloadId.Substring(AssetStoreDownloadOperation.k_AssetStoreDownloadPrefix.Length);
+                downloadId = downloadId.Substring(AssetStoreDownloadOperation.k_AssetStoreDownloadPrefix.Length);
 
             // `GetDownloadOperation` could return null when the user starts the download in the legacy `Asset Store` window
             // in those cases, we create a download operation to track it
             // NOTE: Now that the CEF window doesn't exist anymore if we have a null operation we shouldn't manage it.
+            if (!long.TryParse(downloadId, out var productId))
+                return;
+
             var operation = GetDownloadOperation(productId);
             if (operation == null)
                 return;
@@ -240,17 +242,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 operation.Cancel();
         }
 
-        public virtual void AbortDownload(string productId)
+        public virtual void AbortDownload(long? productId)
         {
             GetDownloadOperation(productId)?.Abort();
         }
 
-        public virtual void PauseDownload(string productId)
+        public virtual void PauseDownload(long? productId)
         {
             GetDownloadOperation(productId)?.Pause();
         }
 
-        public virtual void ResumeDownload(string productId)
+        public virtual void ResumeDownload(long? productId)
         {
             var operation = GetDownloadOperation(productId);
             if (!operation?.isInPause ?? true)

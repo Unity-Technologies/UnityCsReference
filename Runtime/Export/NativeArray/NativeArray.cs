@@ -745,6 +745,14 @@ namespace Unity.Collections
                 }
             }
 
+            // This method does not copy T, but returns a readonly T.
+            // It is marked as unsafe because the value returned by this method can become invalid at any time, for example, if the container was disposed.
+            public ref readonly T UnsafeElementAt(int index)
+            {
+                CheckElementReadAccess(index);
+                return ref UnsafeUtility.ArrayElementAsRef<T>(m_Buffer, index);
+            }
+
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             void CheckElementReadAccess(int index)
             {
@@ -807,6 +815,40 @@ namespace Unity.Collections
             {
                 return GetEnumerator();
             }
+
+            public readonly ReadOnlySpan<T> AsReadOnlySpan()
+            {
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+                return new ReadOnlySpan<T>(m_Buffer, m_Length);
+            }
+
+            public static implicit operator ReadOnlySpan<T>(in ReadOnly source)
+            {
+                return source.AsReadOnlySpan();
+            }
+        }
+
+        [WriteAccessRequired]
+        public readonly Span<T> AsSpan()
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            return new Span<T>(m_Buffer, m_Length);
+        }
+
+        public readonly ReadOnlySpan<T> AsReadOnlySpan()
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            return new ReadOnlySpan<T>(m_Buffer, m_Length);
+        }
+
+        public static implicit operator Span<T>(in NativeArray<T> source)
+        {
+            return source.AsSpan();
+        }
+
+        public static implicit operator ReadOnlySpan<T>(in NativeArray<T> source)
+        {
+            return source.AsReadOnlySpan();
         }
     }
 

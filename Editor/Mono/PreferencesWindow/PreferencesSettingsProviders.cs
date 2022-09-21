@@ -578,6 +578,8 @@ namespace UnityEditor
 
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
+            EditorGUILayout.Space();
+
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
 
             EditorGUI.indentLevel++;

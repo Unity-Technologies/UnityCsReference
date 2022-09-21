@@ -17,7 +17,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         public List<string> tags;
         public bool isHidden;
 
-        public static AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo)
+        public bool Equals(AssetStorePurchaseInfo other)
+        {
+            return other != null &&
+                other.productId == productId &&
+                other.purchasedTime == purchasedTime &&
+                other.displayName == displayName &&
+                other.isHidden == isHidden &&
+                other.tags?.Count == tags?.Count &&
+                other.tags?.SequenceEqual(tags) != false;
+        }
+    }
+
+    internal partial class JsonParser
+    {
+        public virtual AssetStorePurchaseInfo ParsePurchaseInfo(IDictionary<string, object> rawInfo)
         {
             if (rawInfo?.Any() != true)
                 return null;
@@ -30,24 +44,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     purchasedTime = rawInfo.GetString("grantTime"),
                     displayName = rawInfo.GetString("displayName"),
                     tags = rawInfo.GetList<string>("tagging")?.ToList(),
-                    isHidden = rawInfo.Get<bool>("isHidden")
+                    isHidden = rawInfo.Get("isHidden", false)
                 };
             }
             catch (Exception)
             {
                 return null;
             }
-        }
-
-        public bool Equals(AssetStorePurchaseInfo other)
-        {
-            return other != null &&
-                other.productId == productId &&
-                other.purchasedTime == purchasedTime &&
-                other.displayName == displayName &&
-                other.isHidden == isHidden &&
-                other.tags?.Count == tags?.Count &&
-                other.tags?.SequenceEqual(tags) != false;
         }
     }
 }

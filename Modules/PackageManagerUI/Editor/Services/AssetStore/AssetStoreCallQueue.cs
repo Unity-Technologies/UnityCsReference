@@ -16,8 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal const int k_CheckUpdateChunkSize = 30;
 
-        internal const int k_FetchDetailsCountPerUpdate = 5;
-        internal const int k_MaxFetchDetailsCount = 20;
+        internal const int k_FetchProductInfoCountPerUpdate = 5;
+        internal const int k_MaxFetchProductInfoCount = 20;
 
         public virtual bool isCheckUpdateInProgress => m_CheckUpdateInProgress || m_CheckUpdateStack.Any();
 
@@ -36,45 +36,49 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
-        private PackageFiltering m_PackageFiltering;
+        private PackageManagerPrefs m_PackageManagerPrefs;
         [NonSerialized]
-        private AssetStoreClient m_AssetStoreClient;
+        private AssetStoreClientV2 m_AssetStoreClient;
         [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
         [NonSerialized]
         private PageManager m_PageManager;
+        [NonSerialized]
+        private PageRefreshHandler m_PageRefreshHandler;
         public void ResolveDependencies(ApplicationProxy application,
             UnityConnectProxy unityConnect,
-            PackageFiltering packageFiltering,
-            AssetStoreClient assetStoreClient,
+            PackageManagerPrefs packageManagerPrefs,
+            AssetStoreClientV2 assetStoreClient,
             AssetStoreCache assetStoreCache,
-            PageManager pageManager)
+            PageManager pageManager,
+            PageRefreshHandler pageRefreshHandler)
         {
             m_Application = application;
             m_UnityConnect = unityConnect;
-            m_PackageFiltering = packageFiltering;
+            m_PackageManagerPrefs = packageManagerPrefs;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreCache = assetStoreCache;
             m_PageManager = pageManager;
+            m_PageRefreshHandler = pageRefreshHandler;
         }
 
         [NonSerialized]
-        private readonly HashSet<string> m_CurrentFetchDetails = new HashSet<string>();
+        private readonly HashSet<long> m_CurrentFetchProductInfo = new HashSet<long>();
 
-        // We keep a queue in addition to the hash-set so that we can fetch details in order (and skip the ones that's not in the hash-set)
+        // We keep a queue in addition to the hash-set so that we can fetch product info in order (and skip the ones that's not in the hash-set)
         [NonSerialized]
-        private Queue<string> m_FetchDetailsQueue = new Queue<string>();
+        private Queue<long> m_FetchProductInfoQueue = new Queue<long>();
         [NonSerialized]
-        private readonly HashSet<string> m_DetailsToFetch = new HashSet<string>();
+        private readonly HashSet<long> m_ProductInfosToFetch = new HashSet<long>();
 
         [SerializeField]
         private bool m_RefreshAfterCheckUpdates = false;
 
         [SerializeField]
-        private string[] m_SerializedCheckUpdateStack = new string[0];
+        private long[] m_SerializedCheckUpdateStack = new long[0];
 
         [SerializeField]
-        private string[] m_SerializedForceCheckUpdateLookupKeys = new string[0];
+        private long[] m_SerializedForceCheckUpdateLookupKeys = new long[0];
 
         [SerializeField]
         private bool[] m_SerializedForceCheckUpdateLookupValues = new bool[0];
@@ -83,18 +87,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_CheckUpdateInProgress = false;
 
         [NonSerialized]
-        private Stack<string> m_CheckUpdateStack = new Stack<string>();
+        private Stack<long> m_CheckUpdateStack = new Stack<long>();
 
         // This dictionary serves two purposes - the keys of this dictionary are unique asset product ids that we need to check updates
         // and the values of this dictionary tell us whether these assets needs a `force check update`. If `forceCheckUpdate` is false,
         // we'll skip the check for updates if there's already cached previous check results.
-        private Dictionary<string, bool> m_ForceCheckUpdateLookup = new Dictionary<string, bool>();
+        private Dictionary<long, bool> m_ForceCheckUpdateLookup = new Dictionary<long, bool>();
 
         public void OnEnable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
-            m_PackageFiltering.onFilterTabChanged += OnFilterChanged;
+            m_PackageManagerPrefs.onFilterTabChanged += OnFilterChanged;
             m_AssetStoreCache.onLocalInfosChanged += OnLocalInfosChanged;
             m_Application.update += ProcessCallQueue;
         }
@@ -103,7 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
-            m_PackageFiltering.onFilterTabChanged -= OnFilterChanged;
+            m_PackageManagerPrefs.onFilterTabChanged -= OnFilterChanged;
             m_AssetStoreCache.onLocalInfosChanged -= OnLocalInfosChanged;
             m_Application.update -= ProcessCallQueue;
         }
@@ -117,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnAfterDeserialize()
         {
-            m_CheckUpdateStack = new Stack<string>(m_SerializedCheckUpdateStack);
+            m_CheckUpdateStack = new Stack<long>(m_SerializedCheckUpdateStack);
 
             for (var i = 0; i < m_SerializedForceCheckUpdateLookupKeys.Length; i++)
                 m_ForceCheckUpdateLookup[m_SerializedForceCheckUpdateLookupKeys[i]] = m_SerializedForceCheckUpdateLookupValues[i];
@@ -125,16 +129,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnFilterChanged(PackageFilterTab filterTab)
         {
-            if (m_PackageFiltering.previousFilterTab == PackageFilterTab.AssetStore)
-                ClearFetchDetails();
+            if (m_PackageManagerPrefs.previousFilterTab == PackageFilterTab.AssetStore)
+                ClearFetchProductInfo();
         }
 
         private void OnLocalInfosChanged(IEnumerable<AssetStoreLocalInfo> addedOrUpdated, IEnumerable<AssetStoreLocalInfo> removed)
         {
-            // Right now we only want to check updates for downloaded assets that's also in the purchase list because users
-            // don't always load all purchases and we don't want to waste time checking updates for items that are not visible.
-            // In the future if we want to check update for all downloaded assets, we can remove the purchase info check here.
-            InsertToCheckUpdateQueue(addedOrUpdated?.Where(info => m_AssetStoreCache.GetPurchaseInfo(info.id) != null && m_AssetStoreCache.GetUpdateInfo(info.uploadId) == null).Select(info => info.id));
+            InsertToCheckUpdateQueue(addedOrUpdated?.Where(info => m_AssetStoreCache.GetPurchaseInfo(info.productId) != null && m_AssetStoreCache.GetUpdateInfo(info.productId) == null).Select(info => info.productId));
         }
 
         private void OnUserLoginStateChange(bool isUserInfoReady, bool isUserLoggedIn)
@@ -142,82 +143,77 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!isUserLoggedIn)
                 return;
 
-            var page = m_PageManager.GetCurrentPage();
+            var page = m_PageManager.GetPage();
             if (page.filters.updateAvailableOnly)
             {
                 m_AssetStoreClient.RefreshLocal();
                 CheckUpdateForUncheckedLocalInfos();
             }
         }
-
-        public virtual void AddToFetchDetailsQueue(string packageUniqueId)
+        public virtual void AddToFetchProductInfoQueue(long productId)
         {
-            m_FetchDetailsQueue.Enqueue(packageUniqueId);
-            m_DetailsToFetch.Add(packageUniqueId);
+            m_FetchProductInfoQueue.Enqueue(productId);
+            m_ProductInfosToFetch.Add(productId);
         }
 
-        public virtual void RemoveFromFetchDetailsQueue(string packageUniqueId)
+        public virtual void RemoveFromFetchProductInfoQueue(long productId)
         {
-            m_DetailsToFetch.Remove(packageUniqueId);
+            m_ProductInfosToFetch.Remove(productId);
         }
 
-        public virtual void ClearFetchDetails()
+        public virtual void ClearFetchProductInfo()
         {
-            m_FetchDetailsQueue.Clear();
-            m_CurrentFetchDetails.Clear();
-            m_DetailsToFetch.Clear();
+            m_FetchProductInfoQueue.Clear();
+            m_CurrentFetchProductInfo.Clear();
+            m_ProductInfosToFetch.Clear();
         }
 
-        private void FetchDetailsFromQueue()
+        private void FetchProductInfoFromQueue()
         {
             if (!m_UnityConnect.isUserLoggedIn)
                 return;
 
             var numItemsAdded = 0;
-            while (m_FetchDetailsQueue.Any() && numItemsAdded < k_FetchDetailsCountPerUpdate && m_CurrentFetchDetails.Count < k_MaxFetchDetailsCount)
+            while (m_FetchProductInfoQueue.Any() && numItemsAdded < k_FetchProductInfoCountPerUpdate && m_CurrentFetchProductInfo.Count < k_MaxFetchProductInfoCount)
             {
-                var packageId = m_FetchDetailsQueue.Dequeue();
-                if (!m_DetailsToFetch.Remove(packageId))
+                var productId = m_FetchProductInfoQueue.Dequeue();
+                if (!m_ProductInfosToFetch.Remove(productId))
                     continue;
-                if (long.TryParse(packageId, out var productId))
-                {
-                    m_CurrentFetchDetails.Add(packageId);
-                    numItemsAdded++;
-                    m_AssetStoreClient.FetchDetail(productId, () => m_CurrentFetchDetails.Remove(packageId));
-                }
+                m_CurrentFetchProductInfo.Add(productId);
+                numItemsAdded++;
+                m_AssetStoreClient.FetchProductInfo(productId, () => m_CurrentFetchProductInfo.Remove(productId));
             }
         }
-
         private void CheckUpdateFromStack()
         {
             if (!m_UnityConnect.isUserLoggedIn || m_CheckUpdateInProgress || !m_CheckUpdateStack.Any())
                 return;
 
-            var checkUpdateList = new List<string>(k_CheckUpdateChunkSize);
+            var checkUpdateList = new List<long>(k_CheckUpdateChunkSize);
             while (m_CheckUpdateStack.Any() && checkUpdateList.Count < k_CheckUpdateChunkSize)
             {
-                var id = m_CheckUpdateStack.Pop();
-                if (m_ForceCheckUpdateLookup.TryGetValue(id, out var forceCheck))
+                var productId = m_CheckUpdateStack.Pop();
+                if (m_ForceCheckUpdateLookup.TryGetValue(productId, out var forceCheck))
                 {
-                    if (forceCheck || m_AssetStoreCache.GetUpdateInfo(m_AssetStoreCache.GetLocalInfo(id)?.uploadId) == null)
-                        checkUpdateList.Add(id);
-                    m_ForceCheckUpdateLookup.Remove(id);
+                    if (forceCheck || m_AssetStoreCache.GetUpdateInfo(productId) == null)
+                        checkUpdateList.Add(productId);
+                    m_ForceCheckUpdateLookup.Remove(productId);
                 }
             }
 
             if (checkUpdateList.Any())
             {
                 m_CheckUpdateInProgress = true;
-                m_AssetStoreClient.CheckUpdate(checkUpdateList, () =>
+                m_AssetStoreClient.FetchUpdateInfos(checkUpdateList, () =>
                 {
                     m_CheckUpdateInProgress = false;
                     onCheckUpdateProgress?.Invoke();
 
                     if (m_RefreshAfterCheckUpdates && !m_CheckUpdateStack.Any())
                     {
-                        var page = m_PageManager.GetCurrentPage();
+                        var page = m_PageManager.GetPage();
                         if (page.filters.updateAvailableOnly)
-                            m_PageManager.Refresh();
+                            m_PageRefreshHandler.Refresh();
                         m_RefreshAfterCheckUpdates = false;
                     }
                 });
@@ -225,25 +221,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             onCheckUpdateProgress?.Invoke();
         }
 
-        public virtual void InsertToCheckUpdateQueue(string productId, bool forceCheckUpdate = false)
+        public virtual void InsertToCheckUpdateQueue(long productId, bool forceCheckUpdate = false)
         {
-            if (!string.IsNullOrEmpty(productId))
-            {
-                if (forceCheckUpdate || !m_ForceCheckUpdateLookup.TryGetValue(productId, out var oldForceCheckValue) || !oldForceCheckValue)
-                    m_ForceCheckUpdateLookup[productId] = forceCheckUpdate;
-                m_CheckUpdateStack.Push(productId);
-            }
+            if (productId <= 0)
+                return;
+            if (forceCheckUpdate || !m_ForceCheckUpdateLookup.TryGetValue(productId, out var oldForceCheckValue) || !oldForceCheckValue)
+                m_ForceCheckUpdateLookup[productId] = forceCheckUpdate;
+            m_CheckUpdateStack.Push(productId);
         }
 
-        public virtual void InsertToCheckUpdateQueue(IEnumerable<string> productIds, bool forceCheckUpdate = false)
+        public virtual void InsertToCheckUpdateQueue(IEnumerable<long> productIds, bool forceCheckUpdate = false)
         {
-            foreach (var productId in productIds?.Reverse() ?? Enumerable.Empty<string>())
+            foreach (var productId in productIds?.Reverse() ?? Enumerable.Empty<long>())
                 InsertToCheckUpdateQueue(productId, forceCheckUpdate);
         }
 
         public virtual void ForceCheckUpdateForAllLocalInfos()
         {
-            InsertToCheckUpdateQueue(m_AssetStoreCache.localInfos.Select(info => info.id), true);
+            InsertToCheckUpdateQueue(m_AssetStoreCache.localInfos.Select(info => info.productId), true);
         }
 
         public virtual void CancelCheckUpdates()
@@ -254,13 +249,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void CheckUpdateForUncheckedLocalInfos()
         {
-            InsertToCheckUpdateQueue(m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.uploadId) == null).Select(info => info.id));
+            InsertToCheckUpdateQueue(m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null).Select(info => info.productId));
             m_RefreshAfterCheckUpdates = true;
         }
 
         private void ProcessCallQueue()
         {
-            FetchDetailsFromQueue();
+            FetchProductInfoFromQueue();
             CheckUpdateFromStack();
         }
     }

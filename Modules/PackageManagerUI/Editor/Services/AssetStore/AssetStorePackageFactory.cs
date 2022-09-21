@@ -5,11 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class AssetStorePackageFactory : BasePackage.Factory
+    internal class AssetStorePackageFactory : Package.Factory
     {
         [NonSerialized]
         private UniqueIdMapper m_UniqueIdMapper;
@@ -18,28 +17,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
         [NonSerialized]
-        private AssetStoreClient m_AssetStoreClient;
+        private AssetStoreClientV2 m_AssetStoreClient;
         [NonSerialized]
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         [NonSerialized]
         private PackageDatabase m_PackageDatabase;
         [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
-        [NonSerialized]
         private FetchStatusTracker m_FetchStatusTracker;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
         [NonSerialized]
         private IOProxy m_IOProxy;
         public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
             UnityConnectProxy unityConnect,
             AssetStoreCache assetStoreCache,
-            AssetStoreClient assetStoreClient,
+            AssetStoreClientV2 assetStoreClient,
             AssetStoreDownloadManager assetStoreDownloadManager,
             PackageDatabase packageDatabase,
-            AssetStoreUtils assetStoreUtils,
             FetchStatusTracker fetchStatusTracker,
-            UpmCache upmCache,
             IOProxy ioProxy)
         {
             m_UniqueIdMapper = uniqueIdMapper;
@@ -48,9 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
-            m_AssetStoreUtils = assetStoreUtils;
             m_FetchStatusTracker = fetchStatusTracker;
-            m_UpmCache = upmCache;
             m_IOProxy = ioProxy;
         }
 
@@ -61,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onLocalInfosChanged += OnLocalInfosChanged;
             m_AssetStoreCache.onPurchaseInfosChanged += OnPurchaseInfosChanged;
             m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
-            m_AssetStoreCache.onUpdatesFound += OnUpdatesFound;
+            m_AssetStoreCache.onUpdateInfosChanged += OnUpdateInfosChanged;
 
             m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized += OnDownloadFinalized;
@@ -79,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onLocalInfosChanged -= OnLocalInfosChanged;
             m_AssetStoreCache.onPurchaseInfosChanged -= OnPurchaseInfosChanged;
             m_AssetStoreCache.onProductInfoChanged -= OnProductInfoChanged;
-            m_AssetStoreCache.onUpdatesFound -= OnUpdatesFound;
+            m_AssetStoreCache.onUpdateInfosChanged -= OnUpdateInfosChanged;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadFinalized;
@@ -98,11 +89,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.ClearCache();
             m_FetchStatusTracker.ClearCache();
 
-            var notInstalledAssetStorePackages = m_PackageDatabase.allPackages.Where(p => p.Is(PackageType.AssetStore) && p.versions.installed == null);
-            m_PackageDatabase.UpdatePackages(toRemove: notInstalledAssetStorePackages.Select(p => p.uniqueId));
+            var notInstalledAssetStorePackages = m_PackageDatabase.allPackages.Where(p => p.product != null && p.versions.installed == null);
+            // We use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't
+            var packageToRemove = notInstalledAssetStorePackages.Select(p => p.uniqueId).ToArray();
+            m_PackageDatabase.UpdatePackages(toRemove: packageToRemove);
         }
 
-        private void AddPackageError(BasePackage package, UIError error)
+        private void AddPackageError(Package package, UIError error)
         {
             AddError(package, error);
             m_PackageDatabase.OnPackagesModified(new[] { package });
@@ -110,7 +103,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetPackagesProgress(IEnumerable<IPackage> packages, PackageProgress progress)
         {
-            var packagesUpdated = packages.OfType<BasePackage>().Where(p => p != null && p.progress != progress).ToList();
+            var packagesUpdated = packages.OfType<Package>().Where(p => p != null && p.progress != progress).ToList();
             foreach (var package in packagesUpdated)
                 SetProgress(package, progress);
             if (packagesUpdated.Any())
@@ -122,9 +115,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetPackagesProgress(new[] { package }, progress);
         }
 
-        private void OnBeforeDownloadStart(string productId)
+        private void OnBeforeDownloadStart(long productId)
         {
-            var package = m_PackageDatabase.GetPackage(productId) as BasePackage;
+            var package = m_PackageDatabase.GetPackage(productId) as Package;
             if (package == null)
                 return;
 
@@ -133,7 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We need to clear errors before calling download because Download can fail right away
             var numErrorsRemoved = ClearErrors(package, e => e.errorCode == UIErrorCode.AssetStoreOperationError);
             if (numErrorsRemoved > 0)
-               m_PackageDatabase.OnPackagesModified(new[] { package });
+                m_PackageDatabase.OnPackagesModified(new[] { package });
         }
 
         private void OnDownloadStateChanged(AssetStoreDownloadOperation operation)
@@ -146,7 +139,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SetPackageProgress(package, PackageProgress.Pausing);
             else if (operation.state == DownloadState.ResumeRequested)
                 SetPackageProgress(package, PackageProgress.Resuming);
-            else if (operation.state == DownloadState.Paused || operation.state == DownloadState.AbortRequsted || operation.state == DownloadState.Aborted)
+            else if (operation.state == DownloadState.Paused || operation.state == DownloadState.AbortRequested || operation.state == DownloadState.Aborted)
                 SetPackageProgress(package, PackageProgress.None);
         }
 
@@ -166,7 +159,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (operation.state == DownloadState.Completed)
                 m_AssetStoreClient.RefreshLocal();
 
-            var package = m_PackageDatabase.GetPackage(operation.packageUniqueId) as BasePackage;
+            var package = m_PackageDatabase.GetPackage(operation.packageUniqueId) as Package;
             if (package == null)
                 return;
 
@@ -180,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnDownloadError(AssetStoreDownloadOperation operation, UIError error)
         {
-            var package = m_PackageDatabase.GetPackage(operation.packageUniqueId) as BasePackage;
+            var package = m_PackageDatabase.GetPackage(operation.packageUniqueId) as Package;
             if (package == null)
                 return;
 
@@ -191,12 +184,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
             // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
-            var productIds = addedOrUpdated?.Select(info => info.id).Concat(removed.Select(info => info.id) ?? new string[0])?.
+            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0])?.
                 Where(id => m_AssetStoreCache.GetProductInfo(id) != null);
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
-        private void OnUpdatesFound(IEnumerable<AssetStoreUpdateInfo> updateInfos)
+        private void OnUpdateInfosChanged(IEnumerable<AssetStoreUpdateInfo> updateInfos)
         {
             // Right now updateInfo goes hands in hands with localInfo, so we handle it the same way as localInfo changes
             // and only check packages we already checked before (the ones with productInfos). This behaviour might change in the future
@@ -205,12 +198,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProductInfoChanged(AssetStoreProductInfo productInfo)
         {
-            GeneratePackagesAndTriggerChangeEvent(new[] { productInfo.id });
+            GeneratePackagesAndTriggerChangeEvent(new[] { productInfo.productId });
         }
 
         private void OnPurchaseInfosChanged(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
-            GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId.ToString()));
+            GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
         }
 
         private void OnFetchStatusChanged(FetchStatus fetchStatus)
@@ -218,7 +211,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(new[] { fetchStatus.productId });
         }
 
-        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> productIds)
+        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
             if (productIds?.Any() != true)
                 return;
@@ -240,17 +233,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
                     var productInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductInfo);
-                    if (productInfoFetchError != null)
-                        packagesChanged.Add(new PlaceholderPackage(productId, purchaseInfo.displayName, PackageType.AssetStore, PackageTag.Downloadable, PackageProgress.None, productInfoFetchError.error, productId: productId));
-                    else
-                        packagesChanged.Add(new PlaceholderPackage(productId, purchaseInfo.displayName, PackageType.AssetStore, PackageTag.Downloadable, PackageProgress.Refreshing, productId: productId));
+                    var version = new PlaceholderPackageVersion(productId.ToString(), purchaseInfo.displayName, tag: PackageTag.LegacyFormat, error: productInfoFetchError?.error);
+                    var placeholderPackage = CreatePackage(string.Empty, new PlaceholderVersionList(version), new Product(productId, null, null));
+                    if (productInfoFetchError == null)
+                        SetProgress(placeholderPackage, PackageProgress.Refreshing);
+                    packagesChanged.Add(placeholderPackage);
                     continue;
                 }
                 var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-                var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
-                var versionList = new AssetStoreVersionList(m_AssetStoreUtils, m_IOProxy, productInfo, localInfo, updateInfo);
-                var package = new AssetStorePackage(purchaseInfo, productInfo, versionList);
-                if (m_AssetStoreDownloadManager.GetDownloadOperation(package.uniqueId)?.isInProgress == true)
+                var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
+                var versionList = new AssetStoreVersionList(m_IOProxy, productInfo, localInfo, updateInfo);
+                var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo));
+                if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
                     SetProgress(package, PackageProgress.Downloading);
                 packagesChanged.Add(package);
             }

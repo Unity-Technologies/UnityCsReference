@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else if (error.errorCode is UIErrorCode.UpmError_NotAcquired)
             {
-                var assetStoreLink = (packageVersion?.package as AssetStorePackage)?.assetStoreLink;
+                var assetStoreLink = packageVersion?.package?.product?.assetStoreLink;
                 if (!string.IsNullOrEmpty(assetStoreLink))
                 {
                     buttonText = L10n.Tr("View in Asset Store");

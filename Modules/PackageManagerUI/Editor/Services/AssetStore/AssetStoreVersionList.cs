@@ -44,11 +44,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Versions = new List<AssetStorePackageVersion>();
         }
 
-        public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreUpdateInfo updateInfo = null)
+        public AssetStoreVersionList(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreUpdateInfo updateInfo = null)
         {
             m_Versions = new List<AssetStorePackageVersion>();
 
-            if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
+            if (productInfo == null || productInfo.productId <= 0 || productInfo.versionId <= 0)
                 return;
 
             // The version we get from the product info the latest on the server
@@ -57,26 +57,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             // result in a case where localInfo and productInfo have different version numbers but no update is available
             // Because of this, we prefer showing version from the server (even when localInfo version is different)
             // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
-            var latestVersion = new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo);
+            var latestVersion = new AssetStorePackageVersion(ioProxy, productInfo);
             if (localInfo != null)
             {
                 if (updateInfo?.canUpdate == true)
-                    m_Versions.Add(new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo, localInfo));
+                    m_Versions.Add(new AssetStorePackageVersion(ioProxy, productInfo, localInfo));
                 else
                 {
-                    latestVersion.SetLocalPath(localInfo.packagePath);
+                    latestVersion.SetLocalPath(ioProxy, localInfo.packagePath);
                     latestVersion.AddDowngradeWarningIfApplicable(localInfo, updateInfo);
                 }
             }
             m_Versions.Add(latestVersion);
-        }
-
-        public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
-        {
-            if (m_Versions == null)
-                return;
-            foreach (var version in m_Versions)
-                version.ResolveDependencies(assetStoreUtils, ioProxy);
         }
 
         public IEnumerator<IPackageVersion> GetEnumerator()

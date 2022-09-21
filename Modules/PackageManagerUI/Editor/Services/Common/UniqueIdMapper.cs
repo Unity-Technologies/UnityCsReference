@@ -16,13 +16,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UniqueIdMapper : ISerializationCallbackReceiver
     {
-        private readonly Dictionary<string, string> m_ProductIdToNameMap = new Dictionary<string, string>();
-        private readonly Dictionary<string, string> m_NameToProductIdMap = new Dictionary<string, string>();
+        private readonly Dictionary<long, string> m_ProductIdToNameMap = new Dictionary<long, string>();
+        private readonly Dictionary<string, long> m_NameToProductIdMap = new Dictionary<string, long>();
 
         private readonly Dictionary<string, string> m_FinalizedIdToTempIdMap = new Dictionary<string, string>();
 
         [SerializeField]
-        private string[] m_SerializedProductIds;
+        private long[] m_SerializedProductIds;
         [SerializeField]
         private string[] m_SerializedNames;
 
@@ -49,8 +49,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 MapTempIdAndFinalizedId(m_SerializedTempIdIds[i], m_SerializedFinalizedIds[i]);
         }
 
-        public virtual string GetProductIdByName(string packageName) => m_NameToProductIdMap.Get(packageName);
-        public virtual string GetNameByProductId(string productId) => m_ProductIdToNameMap.Get(productId);
+        public virtual long GetProductIdByName(string packageName) => m_NameToProductIdMap.Get(packageName);
+        public virtual string GetNameByProductId(long productId) => m_ProductIdToNameMap.Get(productId);
 
         public virtual string GetTempIdByFinalizedId(string finalizedId) => m_FinalizedIdToTempIdMap.Get(finalizedId);
 
@@ -70,17 +70,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void MapProductIdAndName(PackageInfo info)
         {
-            MapProductIdAndName(info.assetStore?.productId, info.name);
+            if (long.TryParse(info.assetStore?.productId, out var productId))
+                MapProductIdAndName(productId, info.name);
         }
 
         public virtual void MapProductIdAndName(AssetStoreProductInfo info)
         {
-            MapProductIdAndName(info.id, info.packageName);
+            MapProductIdAndName(info.productId, info.packageName);
         }
 
-        public virtual void MapProductIdAndName(string productId, string name)
+        public virtual void MapProductIdAndName(long productId, string name)
         {
-            if (string.IsNullOrEmpty(productId) || string.IsNullOrEmpty(name))
+            if (productId <= 0 || string.IsNullOrEmpty(name))
                 return;
             m_ProductIdToNameMap[productId] = name;
             m_NameToProductIdMap[name] = productId;

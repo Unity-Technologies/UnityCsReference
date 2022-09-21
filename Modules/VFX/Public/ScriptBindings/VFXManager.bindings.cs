@@ -119,5 +119,8 @@ namespace UnityEngine.VFX
         extern private static void Internal_ProcessCameraCommand([NotNull("NullExceptionObject")] Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, IntPtr cullResults);
         extern public static VFXCameraBufferTypes IsCameraBufferNeeded([NotNull("NullExceptionObject")] Camera cam);
         extern public static void SetCameraBuffer([NotNull("NullExceptionObject")] Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
+
+        extern public static void SetRayTracingEnabled(bool enabled);
+        extern public static void RequestRtasAabbConstruction();
     }
 }

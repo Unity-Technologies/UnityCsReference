@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
 {
-    [NativeHeader("Modules/ShaderFoundry/Public/ShaderDependency.h")]
+    [NativeHeader("Modules/ShaderFoundry/Public/ShaderCustomEditor.h")]
     internal struct ShaderCustomEditorInternal
     {
         internal FoundryHandle m_CustomEditorClassName;         // string

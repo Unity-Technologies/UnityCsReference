@@ -114,8 +114,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var pageManager = ServicesContainer.instance.Resolve<PageManager>();
 
-            pageManager.AddSubPage(PackageFilterTab.UnityRegistry, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority,  FilterServicesPackage, GetServicesPackageGroupName, CompareGroup);
-            pageManager.AddSubPage(PackageFilterTab.InProject, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority, FilterServicesPackage, GetServicesPackageGroupName, CompareGroup);
+            pageManager.GetPage(PackageFilterTab.UnityRegistry).AddSubPage(new SubPage(PackageFilterTab.UnityRegistry, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority,  FilterServicesPackage, GetServicesPackageGroupName, CompareGroup));
+            pageManager.GetPage(PackageFilterTab.InProject).AddSubPage(new SubPage(PackageFilterTab.InProject, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority, FilterServicesPackage, GetServicesPackageGroupName, CompareGroup));
 
             m_ConfigureButton = args.window.AddPackageActionButton();
             m_ConfigureButton.text = L10n.Tr("Configure");

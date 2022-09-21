@@ -44,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            if (version == null || version.package?.Is(PackageType.BuiltIn) == true)
+            if (version == null || version?.HasTag(PackageTag.BuiltIn) == true)
                 return false;
 
             var samples = version.isInstalled || version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(version) : Enumerable.Empty<Sample>();
@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Refresh(IPackageVersion version)
         {
-            var packageChanged = version.packageUniqueId != m_Version?.packageUniqueId;
+            var packageChanged = version.package.uniqueId != m_Version?.package.uniqueId;
 
             m_Version = version;
             m_Samples = m_Version.isInstalled || m_Version.HasTag(PackageTag.Feature) ? m_PackageDatabase.GetSamples(m_Version) : Enumerable.Empty<Sample>();

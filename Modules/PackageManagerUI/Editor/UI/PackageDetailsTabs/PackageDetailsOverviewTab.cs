@@ -21,8 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            var package = version?.package;
-            return package != null && package.Is(PackageType.AssetStore) && !package.Is(PackageType.Upm);
+            return version != null && version.package.product != null && !version.HasTag(PackageTag.UpmFormat);
         }
 
         public override void Refresh(IPackageVersion version)

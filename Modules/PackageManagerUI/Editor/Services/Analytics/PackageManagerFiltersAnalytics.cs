@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!editorAnalyticsProxy.RegisterEvent(k_EventName))
                 return;
 
-            var filterTab = PackageManagerWindowAnalytics.GetFilterNameWithSubPage(servicesContainer.Resolve<PackageFiltering>(), servicesContainer.Resolve<PageManager>());
+            var filterTab = PackageManagerWindowAnalytics.GetFilterNameWithSubPage(servicesContainer.Resolve<PackageManagerPrefs>(), servicesContainer.Resolve<PageManager>());
             var orderBy = filters.isReverseOrder ? $"{filters.orderBy} (reversed)" : filters.orderBy;
             var parameters = new PackageManagerFiltersAnalytics
             {

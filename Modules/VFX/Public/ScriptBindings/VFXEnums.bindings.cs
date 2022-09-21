@@ -303,7 +303,8 @@ namespace UnityEngine.VFX
         SystemInWorldSpace = 1 << 6,
         SystemHasDirectLink = 1 << 7,
         SystemHasAttributeBuffer = 1 << 8,
-        SystemUsesInstancedRendering = 1 << 9
+        SystemUsesInstancedRendering = 1 << 9,
+        SystemIsRayTraced = 1 << 10,
     }
 
     [Flags]

@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var installed = version?.package.versions.installed;
             return installed != null
-                && version.HasTag(PackageTag.Removable)
+                && version.HasTag(PackageTag.UpmFormat)
                 && version.HasTag(PackageTag.Custom)
                 && (installed == version || version.IsRequestedButOverriddenVersion);
         }
@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isInProgress)
                 return k_InProgressGenericTooltip;
-            return string.Format(L10n.Tr("Click to remove this {0} from your project."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to remove this {0} from your project."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DeselectVersions(IList<IPackageVersion> versions)
         {
-            m_PageManager.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.packageUniqueId, v.uniqueId)));
+            m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
         }
     }
 }

@@ -324,12 +324,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        float scrollableWidth
+        internal float scrollableWidth
         {
             get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
         }
 
-        float scrollableHeight
+        internal float scrollableHeight
         {
             get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
         }

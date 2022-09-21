@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -83,7 +82,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string versionString => m_Version.ToString();
 
-        public override string versionId => m_Version.ToString();
+        public override long versionId => 0;
 
 
         public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion? version, string displayName, bool isUnityPackage)
@@ -147,12 +146,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTags()
         {
+            m_Tag = PackageTag.UpmFormat;
+
             // in the case of git/local packages, we always assume that the non-installed versions are from the registry
             var source = m_PackageInfo.source == PackageSource.BuiltIn || m_IsInstalled ? m_PackageInfo.source : PackageSource.Registry;
             switch (source)
             {
                 case PackageSource.BuiltIn:
-                    m_Tag = PackageTag.Bundled | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Bundled | PackageTag.VersionLocked;
                     if (m_PackageInfo.type == "module")
                         m_Tag |= PackageTag.BuiltIn;
                     else if (m_PackageInfo.type == "feature")
@@ -160,53 +161,68 @@ namespace UnityEditor.PackageManager.UI.Internal
                     break;
 
                 case PackageSource.Embedded:
-                    m_Tag = PackageTag.Custom | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Custom | PackageTag.VersionLocked;
                     break;
 
                 case PackageSource.Local:
                 case PackageSource.LocalTarball:
-                    m_Tag = PackageTag.Local;
+                    m_Tag |= PackageTag.Local;
                     break;
 
                 case PackageSource.Git:
-                    m_Tag = PackageTag.Git | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Git | PackageTag.VersionLocked;
                     break;
 
                 case PackageSource.Unknown:
                 case PackageSource.Registry:
                 default:
-                    m_Tag = PackageTag.None;
                     break;
             }
 
-            m_Tag |= PackageTag.Installable | PackageTag.Removable;
-            if (isInstalled && isDirectDependency && !installedFromPath && !HasTag(PackageTag.BuiltIn))
-                m_Tag |= PackageTag.Embeddable;
+            if (isFromScopedRegistry)
+                m_Tag |= PackageTag.ScopedRegistry;
 
-            // lifecycle tags should not apply to scoped registry packages
-            if (isUnityPackage)
+            // The following logic means that if we see a Unity package on a scoped registry, we will consider it NOT from the scoped registry
+            // We'll also mark any non unity packages from any registry as `main not unity`
+            if (isRegistryPackage)
             {
-                var previewTagString = "Preview";
-                SemVersion? lifecycleVersionParsed;
-                SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out lifecycleVersionParsed);
-
-                if (m_Version?.HasPreReleaseVersionTag() == true)
-                {
-                    // must match exactly to be release candidate
-                    if (m_VersionString == packageInfo.unityLifecycle?.version)
-                        m_Tag |= PackageTag.ReleaseCandidate;
-                    else
-                        m_Tag |= PackageTag.PreRelease;
-                }
-                else if (m_Version?.IsNotPreReleaseOrExperimental() == true)
-                {
-                    m_Tag |= PackageTag.Release;
-                }
-                else if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
-                         m_Version?.IsExperimental() == true ||
-                         previewTagString.Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
-                    m_Tag |= PackageTag.Experimental;
+                if (isUnityPackage)
+                    m_Tag &= ~PackageTag.ScopedRegistry;
+                else
+                    m_Tag |= PackageTag.MainNotUnity;
             }
+
+            if (!isUnityPackage)
+                return;
+
+            m_Tag |= PackageTag.Unity;
+
+            const string previewTagString = "Preview";
+            if (m_Version?.HasPreReleaseVersionTag() == true)
+            {
+                // must match exactly to be release candidate
+                if (m_VersionString == packageInfo.unityLifecycle?.version)
+                    m_Tag |= PackageTag.ReleaseCandidate;
+                else
+                    m_Tag |= PackageTag.PreRelease;
+            }
+            else if (m_Version?.IsNotPreReleaseOrExperimental() == true)
+            {
+                m_Tag |= PackageTag.Release;
+            }
+            else if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
+                        m_Version?.IsExperimental() == true ||
+                        previewTagString.Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
+                m_Tag |= PackageTag.Experimental;
+        }
+
+        public override string GetDescriptor(bool isFirstLetterCapitalized = false)
+        {
+            if (HasTag(PackageTag.Feature))
+                return isFirstLetterCapitalized? L10n.Tr("Feature") : L10n.Tr("feature");
+            if (HasTag(PackageTag.BuiltIn))
+                return isFirstLetterCapitalized ? L10n.Tr("Built-in package") : L10n.Tr("built-in package");
+            return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");
         }
 
         private static string GetDisplayName(PackageInfo info)

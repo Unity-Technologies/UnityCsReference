@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (packageSelectionObject == null)
                     return base.targetTitle;
 
-                return string.Format(L10n.Tr("{0} '{1}' Manifest"), m_Package?.GetDescriptor(true), m_Version != null ?
+                return string.Format(L10n.Tr("{0} '{1}' Manifest"), m_Version?.GetDescriptor(true), m_Version != null ?
                     string.IsNullOrEmpty(m_Version.displayName) ? m_Version.name : m_Version.displayName :
                     packageSelectionObject.displayName);
             }
@@ -158,7 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // Dependencies or Packages included section
             var dependenciesTitleText = EditorGUIUtility.TrTextContent(
-                m_Package.Is(PackageType.Feature) ? "Packages included" : "Dependencies");
+                m_Version.HasTag(PackageTag.Feature) ? "Packages included" : "Dependencies");
             GUILayout.Label(dependenciesTitleText, EditorStyles.boldLabel);
             m_List.DoLayoutList();
 
@@ -192,7 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GUI.enabled = m_Package != null && m_Version != null;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                PackageManagerWindow.SelectPackageAndFilterStatic(m_Package.Is(PackageType.AssetStore) ? m_Version.packageUniqueId : m_Version.uniqueId);
+                PackageManagerWindow.SelectPackageAndFilterStatic(m_Version.HasTag(PackageTag.LegacyFormat) ? m_Version.package.uniqueId : m_Version.uniqueId);
             }
             GUI.enabled = previousEnabled;
         }
@@ -233,17 +233,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             var list = m_List.list as IList<DependencyInfo>;
             var dependency = list[index];
             var packageName = dependency.name;
-            var version = dependency.version;
-            var p = m_PackageDatabase.GetPackage(dependency.name);
-            if (p != null)
+            var versionString = dependency.version;
+            var package = m_PackageDatabase.GetPackage(dependency.name);
+            if (package != null)
             {
-                packageName = string.IsNullOrEmpty(p.displayName) ? p.name : p.displayName;
+                packageName = string.IsNullOrEmpty(package.displayName) ? package.name : package.displayName;
+                var versionToUse = package.versions.lifecycleVersion ?? package.versions.primary;
+                if (versionString == "default")
+                    versionString = versionToUse?.versionString ?? dependency.version;
 
-                if (version == "default")
-                    version = p.versions.lifecycleVersion?.versionString ?? p.versions.primary?.versionString ?? dependency.version;
-
-                if (p.Is(PackageType.BuiltIn))
-                    version = string.Empty;
+                if (versionToUse?.HasTag(PackageTag.BuiltIn) == true)
+                    versionString = string.Empty;
             }
 
             var w = rect.width;
@@ -254,7 +254,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             rect.x += w / 3 * 2;
             rect.width = w / 3 - 4;
-            EditorGUI.SelectableLabel(rect, version);
+            EditorGUI.SelectableLabel(rect, versionString);
         }
 
         private void DoPackageInformationLayout()
@@ -262,18 +262,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 var labels = new List<GUIContent>();
-                if (!m_Package.Is(PackageType.AssetStore))
+                if (!string.IsNullOrEmpty(m_Version.name))
                     labels.Add(Styles.name);
                 labels.Add(Styles.displayName);
-                if (!m_Package.Is(PackageType.Feature))
+                if (!m_Version.HasTag(PackageTag.Feature))
                     labels.Add(Styles.version);
                 labels.Add(Styles.category);
 
                 var contents = new List<string>();
-                if (!m_Package.Is(PackageType.AssetStore))
+                if (!string.IsNullOrEmpty(m_Version.name))
                     contents.Add(m_Version.name);
                 contents.Add(m_Version.displayName);
-                if (!m_Package.Is(PackageType.Feature))
+                if (!m_Version.HasTag(PackageTag.Feature))
                     contents.Add(m_Version.version.ToString());
                 contents.Add(m_Version.category);
 
@@ -284,7 +284,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void DoPackageDescriptionLabel()
         {
             var descriptionStyle = EditorStyles.textArea;
-            var description = !string.IsNullOrEmpty(m_Package.productDescription) ? m_Package.productDescription : m_Version.description;
+            var description = !string.IsNullOrEmpty(m_Package.product?.description) ? m_Package.product.description : m_Version.description;
             var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
             EditorGUI.SelectableLabel(descriptionRect, description, descriptionStyle);
         }
@@ -294,7 +294,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(m_ScrollPosition,
-                    GUILayout.MinHeight(m_Package.Is(PackageType.AssetStore) ? kMinHeightForAssetStore : kMinHeightForOther)))
+                    GUILayout.MinHeight(m_Version.HasTag(PackageTag.LegacyFormat) ? kMinHeightForAssetStore : kMinHeightForOther)))
                 {
                     m_ScrollPosition = scrollView.scrollPosition;
                     DoPackageDescriptionLabel();

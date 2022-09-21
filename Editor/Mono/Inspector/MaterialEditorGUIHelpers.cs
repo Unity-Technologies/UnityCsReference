@@ -153,31 +153,21 @@ namespace UnityEditor
 
         public bool DoubleSidedGIField()
         {
-            #pragma warning disable 618
-            bool isEnlightenLightMapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten;
-            #pragma warning restore 618
-
             Rect r = GetControlRectForSingleLine();
-            if (isPrefabAsset || !isEnlightenLightMapper)
+
+            BeginProperty(r, MaterialSerializedProperty.DoubleSidedGI, targets);
+
+            EditorGUI.BeginChangeCheck();
+            bool doubleSidedGI = EditorGUI.Toggle(r, Styles.doubleSidedGILabel, (targets[0] as Material).doubleSidedGI);
+            if (EditorGUI.EndChangeCheck())
             {
-                BeginProperty(r, MaterialSerializedProperty.DoubleSidedGI, targets);
-
-                EditorGUI.BeginChangeCheck();
-                bool doubleSidedGI = EditorGUI.Toggle(r, Styles.doubleSidedGILabel, (targets[0] as Material).doubleSidedGI);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    foreach (Material material in targets)
-                        material.doubleSidedGI = doubleSidedGI;
-                }
-
-                EndProperty();
-                return true;
+                foreach (Material material in targets)
+                    material.doubleSidedGI = doubleSidedGI;
             }
 
-            using (new EditorGUI.DisabledScope(isEnlightenLightMapper))
-                EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
+            EndProperty();
 
-            return false;
+            return true;
         }
 
         private int CalculateClosestQueueIndexToValue(int requestedValue)

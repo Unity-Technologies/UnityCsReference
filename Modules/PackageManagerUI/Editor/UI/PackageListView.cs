@@ -13,21 +13,17 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageListView> {}
 
-        private ResourceLoader m_ResourceLoader;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private AssetStoreCache m_AssetStoreCache;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
-            m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
         }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
@@ -55,13 +51,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnEnable()
         {
             selectionChanged += SyncListViewSelectionToPageManager;
-            m_PageManager.onSelectionChanged += SyncPageManagerSelectionToListView;
+            m_PageManager.onSelectionChanged += OnSelectionChanged;
         }
 
         public void OnDisable()
         {
             selectionChanged -= SyncListViewSelectionToPageManager;
-            m_PageManager.onSelectionChanged -= SyncPageManagerSelectionToListView;
+            m_PageManager.onSelectionChanged -= OnSelectionChanged;
         }
 
         private void SyncListViewSelectionToPageManager(IEnumerable<object> items)
@@ -77,18 +73,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // SelectionChange happens before BindItems, hence we use m_PageManager.SetSelected instead of packageItem.SelectMainItem
             // as PackageItems are null sometimes when SelectionChange is triggered
-            m_PageManager.SetSelected(selections, true);
+            m_PageManager.GetPage().SetNewSelection(selections);
         }
 
         private void UnbindItem(VisualElement item, int index)
         {
-            var packageItem = item as PackageItem;
-            var packageUniqueId = packageItem?.package?.uniqueId;
-            if (string.IsNullOrEmpty(packageUniqueId))
+            var package = (item as PackageItem)?.package;
+            var product = package?.product;
+            if(product == null)
                 return;
 
-            m_AssetStoreCallQueue.RemoveFromFetchDetailsQueue(packageUniqueId);
-            m_PackageItemsLookup.Remove(packageUniqueId);
+            m_AssetStoreCallQueue.RemoveFromFetchProductInfoQueue(product.id);
+            m_PackageItemsLookup.Remove(package.uniqueId);
         }
 
         private void BindItem(VisualElement item, int index)
@@ -98,26 +94,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var visualState = GetVisualStateByIndex(index);
-            if (!string.IsNullOrEmpty(visualState?.packageUniqueId))
-            {
-                var package = m_PackageDatabase.GetPackage(visualState.packageUniqueId);
-                packageItem.SetPackageAndVisualState(package, visualState);
+            if (string.IsNullOrEmpty(visualState?.packageUniqueId))
+                return;
 
-                m_PackageItemsLookup[visualState.packageUniqueId] = packageItem;
+            var package = m_PackageDatabase.GetPackage(visualState.packageUniqueId);
+            packageItem.SetPackageAndVisualState(package, visualState);
 
-                if (package is PlaceholderPackage)
-                    m_AssetStoreCallQueue.AddToFetchDetailsQueue(visualState.packageUniqueId);
+            m_PackageItemsLookup[visualState.packageUniqueId] = packageItem;
+            var product = package?.product;
+            if(product == null)
+                return;
 
-                var localInfo = m_AssetStoreCache.GetLocalInfo(visualState.packageUniqueId);
-                var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
-                if (updateInfo == null)
-                    m_AssetStoreCallQueue.InsertToCheckUpdateQueue(visualState.packageUniqueId);
-            }
+            if (package.versions.primary.HasTag(PackageTag.Placeholder))
+                m_AssetStoreCallQueue.AddToFetchProductInfoQueue(product.id);
+
+            if (m_AssetStoreCache.GetLocalInfo(product.id) != null && m_AssetStoreCache.GetUpdateInfo(product.id) == null)
+                m_AssetStoreCallQueue.InsertToCheckUpdateQueue(product.id);
         }
 
         private VisualElement MakeItem()
         {
-            return new PackageItem(m_ResourceLoader, m_PageManager, m_SettingsProxy, m_PackageDatabase);
+            return new PackageItem(m_PageManager, m_PackageDatabase);
         }
 
         public PackageItem GetPackageItem(string packageUniqueId)
@@ -143,16 +140,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             return (itemsSource as List<VisualState>)?.ElementAtOrDefault(index);
         }
 
+        private void OnSelectionChanged(PageSelectionChangeArgs args)
+        {
+            SyncPageManagerSelectionToListView(args.page, args.selection);
+        }
+
         // In PageManager we track selection by keeping track of the package unique ids (hence it's not affected by reordering)
         // In ListView, the selection is tracked by indices. As a result, when we update the itemsSource, we want to sync selection index if needed
         // Because there might be some sort of reordering
-        private void SyncPageManagerSelectionToListView(PageSelection selection = null)
+        private void SyncPageManagerSelectionToListView(IPage page = null, PageSelection selection = null)
         {
             var visualStates = itemsSource as List<VisualState>;
             if (visualStates == null)
                 return;
 
-            var page = m_PageManager.GetCurrentPage();
+            page ??= m_PageManager.GetPage();
             if (page.tab != PackageFilterTab.AssetStore)
                 return;
 
@@ -178,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // For now we want to just scroll to any of the selections, this behaviour might change in the future depending on how users react
-            var firstSelectedPackageUniqueId = m_PageManager.GetSelection().firstSelection?.packageUniqueId;
+            var firstSelectedPackageUniqueId = m_PageManager.GetPage().GetSelection().firstSelection?.packageUniqueId;
             if (string.IsNullOrEmpty(firstSelectedPackageUniqueId))
                 return;
 
@@ -198,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var state in visualStates)
                 GetPackageItem(state.packageUniqueId)?.UpdateVisualState(state);
 
-            if (m_PageManager.UpdateSelectionIfCurrentSelectionIsInvalid())
+            if (m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid())
                 ScrollToSelection();
         }
 
@@ -206,7 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UpdateItemsSource(page.visualStates.ToList(), true);
 
-            m_PageManager.UpdateSelectionIfCurrentSelectionIsInvalid();
+            m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid();
             ScrollToSelection();
         }
 
@@ -216,10 +218,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!rebuildCalled)
             {
                 foreach (var package in args.updated)
-                    GetPackageItem(package.uniqueId)?.SetPackageAndVisualState(package, m_PageManager.GetCurrentPage().GetVisualState(package.uniqueId));
+                    GetPackageItem(package.uniqueId)?.SetPackageAndVisualState(package, m_PageManager.GetPage().visualStates.Get(package.uniqueId));
             }
 
-            if (m_PageManager.UpdateSelectionIfCurrentSelectionIsInvalid())
+            if (m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid())
                 ScrollToSelection();
         }
 

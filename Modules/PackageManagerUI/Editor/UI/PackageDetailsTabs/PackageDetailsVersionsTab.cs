@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Version?.package == null)
                 return;
 
-            m_PageManager.SetSeeAllVersions(m_Version.package, true);
+            m_PageManager.GetPage().SetSeeAllVersions(m_Version.package, true);
             PackageManagerWindowAnalytics.SendEvent("seeAllVersions", m_Version.package.uniqueId);
 
             Refresh(m_Version);
@@ -86,8 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            var package = version?.package;
-            return package != null && package.Is(PackageType.Upm) && !package.Is(PackageType.Feature | PackageType.BuiltIn) == true && !version.HasTag(PackageTag.Placeholder);
+            return version != null && version.HasTag(PackageTag.UpmFormat) && !version.HasTag(PackageTag.Feature | PackageTag.BuiltIn | PackageTag.Placeholder);
         }
 
         public override void Refresh(IPackageVersion version)
@@ -109,14 +108,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var seeAllVersions = m_PageManager.GetVisualState(m_Version.package)?.seeAllVersions ?? false;
+
+            var seeAllVersions = m_PageManager.GetPage().visualStates.Get(m_Version.package?.uniqueId)?.seeAllVersions ?? false;
             var keyVersions = m_Version.package.versions.key.ToList();
             var allVersions = m_Version.package.versions.ToList();
 
             var versions = seeAllVersions ? allVersions : keyVersions;
             versions.Reverse();
 
-            var seeVersionsToolbar = !seeAllVersions && allVersions.Count > keyVersions.Count && (m_Version.package.Is(PackageType.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
+            var seeVersionsToolbar = !seeAllVersions && allVersions.Count > keyVersions.Count && (m_Version.HasTag(PackageTag.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
 
             var latestVersion = m_Version.package?.versions.latest;

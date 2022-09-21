@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Connect;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
@@ -70,13 +72,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void AddAssetStoreLinks(IPackage package, IPackageVersion version)
         {
+            if (package.product?.links?.Any() != true)
+                return;
+
             var assetStoreLinks = new VisualElement { classList = { "left" }, name = "packageDetailHeaderAssetStoreLinks" };
 
             // add links from the package
-            foreach (var link in package.links)
+            foreach (var link in package.product.links)
             {
                 if (string.IsNullOrEmpty(link.name) || string.IsNullOrEmpty(link.url))
                     continue;
+
                 AddToParentWithSeparator(assetStoreLinks, new Button(() =>
                 {
                     m_Application.OpenURL(link.url);
@@ -160,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 version.HasTag(PackageTag.BuiltIn))
                 return (LinkState.Enabled, "");
 
-            if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+            if (package.product != null && !version.isInstalled)
                 return (LinkState.Disabled, k_InstallToViewDocumentationTooltip);
 
             return (LinkState.Disabled, k_UnavailableDocumentationTooltip);
@@ -177,7 +183,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineChangelog(m_IOProxy, upmVersion)))
                 return (LinkState.Enabled, "");
 
-            if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+            if (package.product != null && !version.isInstalled)
                 return (LinkState.Disabled, k_InstallToViewChangelogTooltip);
 
             return (LinkState.Disabled, k_UnavailableChangelogTooltip);
@@ -194,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineLicenses(m_IOProxy, upmVersion)))
                 return (LinkState.Enabled, "");
 
-            if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+            if (package.product != null && !version.isInstalled)
                 return (LinkState.Disabled, k_InstallToViewLicenseTooltip);
 
             return (LinkState.Disabled, k_UnavailableLicenseTooltip);

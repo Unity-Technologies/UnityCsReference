@@ -20,15 +20,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PageManager.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.packageUniqueId, v.uniqueId)));
+            m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
             if (!string.IsNullOrEmpty(m_AnalyticsEventName))
-                PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: versions.Select(v => v.packageUniqueId));
+                PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: versions.Select(v => v.package.uniqueId));
             return true;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PageManager.RemoveSelection(new[] { new PackageAndVersionIdPair(version.packageUniqueId, version.uniqueId) });
+            m_PageManager.GetPage().RemoveSelection(new[] { new PackageAndVersionIdPair(version.package.uniqueId, version.uniqueId) });
             return true;
         }
 

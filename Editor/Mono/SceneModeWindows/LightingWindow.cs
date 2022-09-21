@@ -408,10 +408,7 @@ namespace UnityEditor
                     {
                         var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
                         // Only show Force Stop when using the PathTracer backend
-                        #pragma warning disable 618
-                        if (settings.lightmapper != LightingSettings.Lightmapper.Enlighten && settings.bakedGI &&
-                            GUILayout.Button("Force Stop", GUILayout.Width(Styles.ButtonWidth)))
-                        #pragma warning restore 618
+                        if (settings.bakedGI && GUILayout.Button("Force Stop", GUILayout.Width(Styles.ButtonWidth)))
                         {
                             Lightmapping.ForceStop();
                         }
@@ -517,111 +514,106 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            #pragma warning disable 618
-            if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten)
-            #pragma warning restore 618
+            GUILayout.BeginVertical();
+            GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.labelStyle);
+            if (Lightmapping.isRunning)
             {
-                GUILayout.BeginVertical();
-                GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.labelStyle);
-                if (Lightmapping.isRunning)
+                int numLightmapsInView = 0;
+                int numConvergedLightmapsInView = 0;
+                int numNotConvergedLightmapsInView = 0;
+
+                int numLightmapsNotInView = 0;
+                int numConvergedLightmapsNotInView = 0;
+                int numNotConvergedLightmapsNotInView = 0;
+
+                int numInvalidConvergenceLightmaps = 0;
+                int numLightmaps = LightmapSettings.lightmaps.Length;
+                for (int i = 0; i < numLightmaps; ++i)
                 {
-                    int numLightmapsInView = 0;
-                    int numConvergedLightmapsInView = 0;
-                    int numNotConvergedLightmapsInView = 0;
-
-                    int numLightmapsNotInView = 0;
-                    int numConvergedLightmapsNotInView = 0;
-                    int numNotConvergedLightmapsNotInView = 0;
-
-                    int numInvalidConvergenceLightmaps = 0;
-                    int numLightmaps = LightmapSettings.lightmaps.Length;
-                    for (int i = 0; i < numLightmaps; ++i)
+                    LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
+                    if (!lc.IsValid())
                     {
-                        LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
-                        if (!lc.IsValid())
-                        {
-                            numInvalidConvergenceLightmaps++;
-                            continue;
-                        }
+                        numInvalidConvergenceLightmaps++;
+                        continue;
+                    }
 
-                        if (Lightmapping.GetVisibleTexelCount(i) > 0)
-                        {
-                            numLightmapsInView++;
-                            if (lc.IsConverged())
-                                numConvergedLightmapsInView++;
-                            else
-                                numNotConvergedLightmapsInView++;
-                        }
+                    if (Lightmapping.GetVisibleTexelCount(i) > 0)
+                    {
+                        numLightmapsInView++;
+                        if (lc.IsConverged())
+                            numConvergedLightmapsInView++;
                         else
-                        {
-                            numLightmapsNotInView++;
-                            if (lc.IsConverged())
-                                numConvergedLightmapsNotInView++;
-                            else
-                                numNotConvergedLightmapsNotInView++;
-                        }
+                            numNotConvergedLightmapsInView++;
                     }
-                    if (Lightmapping.atlasCount > 0)
+                    else
                     {
-                        int convergedMaps = numConvergedLightmapsInView + numConvergedLightmapsNotInView;
-                        GUILayout.Label("Lightmap convergence: (" + convergedMaps + "/" + Lightmapping.atlasCount + ")", Styles.labelStyle);
+                        numLightmapsNotInView++;
+                        if (lc.IsConverged())
+                            numConvergedLightmapsNotInView++;
+                        else
+                            numNotConvergedLightmapsNotInView++;
                     }
-                    EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.labelStyle);
-                    EditorGUI.indentLevel += 1;
-                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsInView, Styles.labelStyle);
-                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsInView, Styles.labelStyle);
-                    EditorGUI.indentLevel -= 1;
-                    EditorGUILayout.LabelField("Lightmaps not in view: " + numLightmapsNotInView, Styles.labelStyle);
-                    EditorGUI.indentLevel += 1;
-                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.labelStyle);
-                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.labelStyle);
-                    EditorGUI.indentLevel -= 1;
-
-                    LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
-                    if (lpc.IsValid() && lpc.probeSetCount > 0)
-                        GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.labelStyle);
                 }
-                float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
-                float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
-                if (mraysPerSec >= 0.0)
-                    GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", Styles.labelStyle);
-                if (!Lightmapping.isRunning)
+                if (Lightmapping.atlasCount > 0)
                 {
-                    float bakeTimeRaw = Lightmapping.GetLightmapBakeTimeRaw();
-                    if (bakeTime >= 0.0)
-                    {
-                        int time = (int)bakeTime;
-                        int timeH = time / 3600;
-                        time -= 3600 * timeH;
-                        int timeM = time / 60;
-                        time -= 60 * timeM;
-                        int timeS = time;
-
-                        int timeRaw = (int)bakeTimeRaw;
-                        int timeRawH = timeRaw / 3600;
-                        timeRaw -= 3600 * timeRawH;
-                        int timeRawM = timeRaw / 60;
-                        timeRaw -= 60 * timeRawM;
-                        int timeRawS = timeRaw;
-
-                        int oHeadTime = Math.Max(0, (int)(bakeTime - bakeTimeRaw));
-                        int oHeadTimeH = oHeadTime / 3600;
-                        oHeadTime -= 3600 * oHeadTimeH;
-                        int oHeadTimeM = oHeadTime / 60;
-                        oHeadTime -= 60 * oHeadTimeM;
-                        int oHeadTimeS = oHeadTime;
-
-
-                        GUILayout.Label("Total Bake Time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.labelStyle);
-                        if (Unsupported.IsDeveloperBuild())
-                            GUILayout.Label("(Raw Bake Time: " + timeRawH.ToString("0") + ":" + timeRawM.ToString("00") + ":" + timeRawS.ToString("00") + ", Overhead: " + oHeadTimeH.ToString("0") + ":" + oHeadTimeM.ToString("00") + ":" + oHeadTimeS.ToString("00") + ")", Styles.labelStyle);
-                    }
+                    int convergedMaps = numConvergedLightmapsInView + numConvergedLightmapsNotInView;
+                    GUILayout.Label("Lightmap convergence: (" + convergedMaps + "/" + Lightmapping.atlasCount + ")", Styles.labelStyle);
                 }
-                string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
-                if (deviceName.Length > 0)
-                    GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
-                GUILayout.EndVertical();
+                EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.labelStyle);
+                EditorGUI.indentLevel += 1;
+                EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsInView, Styles.labelStyle);
+                EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsInView, Styles.labelStyle);
+                EditorGUI.indentLevel -= 1;
+                EditorGUILayout.LabelField("Lightmaps not in view: " + numLightmapsNotInView, Styles.labelStyle);
+                EditorGUI.indentLevel += 1;
+                EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.labelStyle);
+                EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.labelStyle);
+                EditorGUI.indentLevel -= 1;
+
+                LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
+                if (lpc.IsValid() && lpc.probeSetCount > 0)
+                    GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.labelStyle);
             }
+            float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
+            float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
+            if (mraysPerSec >= 0.0)
+                GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", Styles.labelStyle);
+            if (!Lightmapping.isRunning)
+            {
+                float bakeTimeRaw = Lightmapping.GetLightmapBakeTimeRaw();
+                if (bakeTime >= 0.0)
+                {
+                    int time = (int)bakeTime;
+                    int timeH = time / 3600;
+                    time -= 3600 * timeH;
+                    int timeM = time / 60;
+                    time -= 60 * timeM;
+                    int timeS = time;
+
+                    int timeRaw = (int)bakeTimeRaw;
+                    int timeRawH = timeRaw / 3600;
+                    timeRaw -= 3600 * timeRawH;
+                    int timeRawM = timeRaw / 60;
+                    timeRaw -= 60 * timeRawM;
+                    int timeRawS = timeRaw;
+
+                    int oHeadTime = Math.Max(0, (int)(bakeTime - bakeTimeRaw));
+                    int oHeadTimeH = oHeadTime / 3600;
+                    oHeadTime -= 3600 * oHeadTimeH;
+                    int oHeadTimeM = oHeadTime / 60;
+                    oHeadTime -= 60 * oHeadTimeM;
+                    int oHeadTimeS = oHeadTime;
+
+
+                    GUILayout.Label("Total Bake Time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.labelStyle);
+                    if (Unsupported.IsDeveloperBuild())
+                        GUILayout.Label("(Raw Bake Time: " + timeRawH.ToString("0") + ":" + timeRawM.ToString("00") + ":" + timeRawS.ToString("00") + ", Overhead: " + oHeadTimeH.ToString("0") + ":" + oHeadTimeM.ToString("00") + ":" + oHeadTimeS.ToString("00") + ")", Styles.labelStyle);
+                }
+            }
+            string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
+            if (deviceName.Length > 0)
+                GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
+            GUILayout.EndVertical();
 
             GUILayout.EndVertical();
         }

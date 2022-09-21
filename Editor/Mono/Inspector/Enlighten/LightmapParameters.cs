@@ -22,16 +22,12 @@ namespace UnityEditor
         SerializedProperty  m_SystemTag;
         SerializedProperty  m_IsTransparent;
 
-        SerializedProperty  m_AOQuality;
-        SerializedProperty  m_AOAntiAliasingSamples;
-        SerializedProperty  m_BlurRadius;
         SerializedProperty  m_Pushoff;
         SerializedProperty  m_BakedLightmapTag;
         SerializedProperty  m_LimitLightmapCount;
         SerializedProperty  m_LightmapMaxCount;
 
         SerializedProperty  m_AntiAliasingSamples;
-        SerializedProperty  m_DirectLightQuality;
 
         SavedBool m_RealtimeGISettings;
         SavedBool m_BakedGISettings;
@@ -48,11 +44,7 @@ namespace UnityEditor
             m_EdgeStitching             = serializedObject.FindProperty("edgeStitching");
             m_IsTransparent             = serializedObject.FindProperty("isTransparent");
             m_SystemTag                 = serializedObject.FindProperty("systemTag");
-            m_AOQuality                 = serializedObject.FindProperty("AOQuality");
-            m_AOAntiAliasingSamples     = serializedObject.FindProperty("AOAntiAliasingSamples");
-            m_BlurRadius                = serializedObject.FindProperty("blurRadius");
             m_AntiAliasingSamples       = serializedObject.FindProperty("antiAliasingSamples");
-            m_DirectLightQuality        = serializedObject.FindProperty("directLightQuality");
             m_BakedLightmapTag          = serializedObject.FindProperty("bakedLightmapTag");
             m_Pushoff                   = serializedObject.FindProperty("pushoff");
             m_LimitLightmapCount        = serializedObject.FindProperty("limitLightmapCount");
@@ -99,86 +91,23 @@ namespace UnityEditor
                 }
             }
 
-            // baked settings
-            m_BakedGISettings.value = EditorGUILayout.FoldoutTitlebar(m_BakedGISettings.value, Styles.bakedGIContent, true);
-            if (m_BakedGISettings.value)
+            GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
+            const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
+            EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
+            EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
+            m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
+            if (m_LimitLightmapCount.boolValue)
             {
-#pragma warning disable 618
-                bool usesPathTracerBakeBackend = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.Enlighten;
-                bool usesEnlightenBackend = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.Enlighten;
-                bool bakedEnlightenSupported = SupportedRenderingFeatures.IsLightmapperSupported((int)LightingSettings.Lightmapper.Enlighten) && EditorSettings.enableEnlightenBakedGI;
-#pragma warning restore 618
-
-                ++EditorGUI.indentLevel;
-
-                // General
-                EditorGUILayout.LabelField(Styles.generalLabel, EditorStyles.boldLabel);
-
-                ++EditorGUI.indentLevel;
-
-                EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
-                const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
-                EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
-                EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
-                EditorGUILayout.Space();
-
-                --EditorGUI.indentLevel;
-
-                // Progressive Lightmapper
-                using (new EditorGUI.DisabledScope(usesEnlightenBackend))
-                {
-                    EditorGUILayout.LabelField(Styles.progressiveLabel, EditorStyles.boldLabel);
-
-                    ++EditorGUI.indentLevel;
-
-                    m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
-                    if (m_LimitLightmapCount.boolValue)
-                    {
-                        ++EditorGUI.indentLevel;
-                        EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
-                        --EditorGUI.indentLevel;
-                    }
-                    EditorGUILayout.Space();
-
-                    --EditorGUI.indentLevel;
-                }
-
-                // Enlighten
-                if (bakedEnlightenSupported)
-                {
-                    using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
-                    {
-                        EditorGUILayout.LabelField(Styles.enlightenLabel, EditorStyles.boldLabel);
-
-                        ++EditorGUI.indentLevel;
-
-                        EditorGUILayout.PropertyField(m_BlurRadius, Styles.blurRadiusContent);
-                        EditorGUILayout.PropertyField(m_DirectLightQuality, Styles.directLightQualityContent);
-
-                        EditorGUILayout.LabelField(Styles.bakedAOContent);
-                        ++EditorGUI.indentLevel;
-                        EditorGUILayout.PropertyField(m_AOQuality, Styles.aoQualityContent);
-                        EditorGUILayout.PropertyField(m_AOAntiAliasingSamples, Styles.aoAntiAliasingSamplesContent);
-                        --EditorGUI.indentLevel;
-
-                        EditorGUILayout.Space();
-
-                        --EditorGUI.indentLevel;
-                    }
-                }
-
-                --EditorGUI.indentLevel;
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
+                EditorGUI.indentLevel--;
             }
+            EditorGUILayout.Space();
 
-            m_GeneralParametersSettings.value = EditorGUILayout.FoldoutTitlebar(m_GeneralParametersSettings.value, Styles.generalGIContent, true);
-            if (m_GeneralParametersSettings.value)
-            {
-                ++EditorGUI.indentLevel;
-
-                EditorGUILayout.Slider(m_BackFaceTolerance, 0.0f, 1.0f, Styles.backFaceToleranceContent);
-
-                --EditorGUI.indentLevel;
-            }
+            GUILayout.Label(Styles.generalGIContent, EditorStyles.boldLabel);
+            EditorGUILayout.Slider(m_BackFaceTolerance, 0.0f, 1.0f, Styles.backFaceToleranceContent);
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -202,12 +131,7 @@ namespace UnityEditor
             public static readonly GUIContent edgeStitchingContent = EditorGUIUtility.TrTextContent("Edge Stitching", "If enabled, ensures that UV charts (aka UV islands) in the generated lightmaps blend together where they meet so there is no visible seam between them.");
             public static readonly GUIContent systemTagContent = EditorGUIUtility.TrTextContent("System Tag", "Systems are groups of objects whose lightmaps are in the same atlas. It is also the granularity at which dependencies are calculated. Multiple systems are created automatically if the scene is big enough, but it can be helpful to be able to split them up manually for e.g. streaming in sections of a level. The system tag lets you force an object into a different realtime system even though all the other parameters are the same.");
             public static readonly GUIContent bakedGIContent = EditorGUIUtility.TrTextContent("Baked Global Illumination", "Settings used in Baked Global Illumination where direct and indirect lighting for static objects is precalculated and saved (baked) into lightmaps for use at runtime. This is useful when lights are known to be static, for mobile, for low end devices and other situations where there is not enough processing power to use Precomputed Realtime GI. You can toggle on each light whether it should be included in the bake.");  // Reuse the label from the Lighting window
-            public static readonly GUIContent blurRadiusContent = EditorGUIUtility.TrTextContent("Blur Radius", "The radius (in texels) of the post-processing filter that blurs baked direct lighting. This reduces aliasing artefacts and produces softer shadows.");
             public static readonly GUIContent antiAliasingSamplesContent = EditorGUIUtility.TrTextContent("Anti-aliasing Samples", "The maximum number of times to supersample a texel to reduce aliasing. Progressive lightmapper supersamples the positions and normals buffers (part of the G-buffer) and hence the sample count is a multiplier on the amount of memory used for those buffers. Progressive lightmapper clamps the value to the [1;16] range.");
-            public static readonly GUIContent directLightQualityContent = EditorGUIUtility.TrTextContent("Direct Light Quality", "The number of rays used for lights with an area. Allows for accurate soft shadowing.");
-            public static readonly GUIContent bakedAOContent = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Settings used in Baked Ambient Occlusion, where the information on dark corners and crevices in static geometry is baked. It is multiplied by indirect lighting when compositing the baked lightmap.");
-            public static readonly GUIContent aoQualityContent = EditorGUIUtility.TrTextContent("Quality", "The number of rays to cast for computing ambient occlusion.");
-            public static readonly GUIContent aoAntiAliasingSamplesContent = EditorGUIUtility.TrTextContent("Anti-aliasing Samples", "The maximum number of times to supersample a texel to reduce aliasing in ambient occlusion.");
             public static readonly GUIContent isTransparent = EditorGUIUtility.TrTextContent("Is Transparent", "If enabled, the object appears transparent during GlobalIllumination lighting calculations. Backfaces are not contributing to and light travels through the surface. This is useful for emissive invisible surfaces.");
             public static readonly GUIContent pushoffContent = EditorGUIUtility.TrTextContent("Pushoff", "The amount to push off geometry for ray tracing, in modelling units. It is applied to all baked light maps, so it will affect direct light, indirect light and AO. Useful for getting rid of unwanted AO or shadowing.");
             public static readonly GUIContent bakedLightmapTagContent = EditorGUIUtility.TrTextContent("Baked Tag", "An integer that lets you force an object into a different baked lightmap even though all the other parameters are the same. This can be useful e.g. when streaming in sections of a level.");

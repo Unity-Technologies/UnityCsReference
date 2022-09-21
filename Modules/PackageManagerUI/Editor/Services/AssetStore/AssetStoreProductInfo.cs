@@ -13,13 +13,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class AssetStoreProductInfo
     {
-        public string id;
+        public long productId;
+        public long versionId;
         public string packageName;
         public string description;
         public string publisherName;
         public string category;
         public string versionString;
-        public string versionId;
         public string publishedDate;
         public string displayName;
         public string state;
@@ -34,127 +34,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public List<PackageLink> links;
         public List<PackageSizeInfo> sizeInfos;
 
-        [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
-        public void ResolveDependencies(AssetStoreUtils assetStoreUtils)
+        public bool Equals(AssetStoreProductInfo other)
         {
-            m_AssetStoreUtils = assetStoreUtils;
+            return other != null && other.productId == productId && other.versionId == versionId && other.versionString == versionString;
         }
+    }
 
-        private AssetStoreProductInfo()
-        {
-        }
-
-        private AssetStoreProductInfo(AssetStoreUtils assetStoreUtils, string productId, IDictionary<string, object> productDetail)
-        {
-            ResolveDependencies(assetStoreUtils);
-
-            id = productId;
-            description = CleanUpHtml(productDetail.GetString("description")) ?? string.Empty;
-
-            var publisher = productDetail.GetDictionary("productPublisher");
-            var publisherId = string.Empty;
-            publisherName = string.Empty;
-            if (publisher != null)
-            {
-                if (publisher.GetString("url") == "http://unity3d.com")
-                    publisherName = "Unity Technologies Inc.";
-                else
-                    publisherName = publisher.GetString("name") ?? L10n.Tr("Unknown publisher");
-                publisherId = publisher.GetString("externalRef") ?? string.Empty;
-            }
-
-            if (!string.IsNullOrEmpty(publisherId))
-                publisherLink = $"{m_AssetStoreUtils.assetStoreUrl}/publishers/{publisherId}";
-
-            packageName = productDetail.GetString("packageName") ?? string.Empty;
-            category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
-            publishNotes = CleanUpHtml(productDetail.GetString("publishNotes") ?? string.Empty, false);
-            firstPublishedDate = productDetail.GetDictionary("properties")?.GetString("firstPublishedDate");
-
-            var versionInfo = productDetail.GetDictionary("version");
-            if (versionInfo != null)
-            {
-                versionString = versionInfo.GetString("name");
-                versionId = versionInfo.GetString("id");
-                publishedDate = versionInfo.GetString("publishedDate");
-            }
-
-            displayName = productDetail.GetString("displayName");
-
-            supportedVersions = productDetail.GetList<string>("supportedUnityVersions")?.ToList();
-
-            state = productDetail.GetString("state");
-
-            images = GetImagesFromProductDetails(productDetail);
-            links = GetLinksFromProductDetails(productDetail);
-            sizeInfos = GetSizeInfoFromProductDetails(productDetail);
-
-            assetStoreLink = GetAssetStoreLinkFromProductDetails(productDetail);
-        }
-
-        public static AssetStoreProductInfo ParseProductInfo(AssetStoreUtils assetStoreUtils, string productId, IDictionary<string, object> productDetail)
-        {
-            if (string.IsNullOrEmpty(productId) || productDetail == null || !productDetail.Any())
-                return null;
-            return new AssetStoreProductInfo(assetStoreUtils, productId, productDetail);
-        }
-
-        internal static string CleanUpHtml(string source, bool removeEndOfLine = true)
-        {
-            if (string.IsNullOrEmpty(source))
-                return source;
-
-            var result = source;
-            if (removeEndOfLine)
-            {
-                // first we remove all end of line, html tags will reformat properly
-                result = result.Replace("\n", "");
-                result = result.Replace("\r", "");
-            }
-
-            // then we add all \n from html tgs we want to support
-            result = Regex.Replace(result, "</?br */?>", "\n", RegexOptions.IgnoreCase);
-
-            // seems like browsers support p tags that never end.. so we need to add </p> to support it too
-            result = Regex.Replace(result, "(<p[^>/]*>[^<]*)<p[^>/]*>", "$1</p>", RegexOptions.IgnoreCase);
-
-            // <p> </p> should decorate with a starting \n and ending \n
-            result = Regex.Replace(result, "<p[^>/]*>", "\n", RegexOptions.IgnoreCase);
-            result = Regex.Replace(result, "</p>", "\n", RegexOptions.IgnoreCase);
-
-            // We add dots to <li>
-            result = Regex.Replace(result, "<li[^>/]*>", "• ", RegexOptions.IgnoreCase);
-
-            // We add \n for each <li>
-            result = Regex.Replace(result, "</li *>", "\n", RegexOptions.IgnoreCase);
-
-            // Then we strip all tags except the <a>
-            result = Regex.Replace(result, "<[^a>]*>", "", RegexOptions.IgnoreCase);
-
-            // Transform the <a> in a readable text
-            result = Regex.Replace(result, "<a[^>]*href *= *[\"']{1}([^\"'>]+)[\"'][^>]*>([^<]*)</a>", "$2 ($1)", RegexOptions.IgnoreCase);
-
-            // for href that doesn't have quotes at all
-            result = Regex.Replace(result, "<a[^>]*href *= *([^>]*)>([^<]*)</a>", "$2 ($1)", RegexOptions.IgnoreCase);
-
-            // we strip emojis
-            result = Regex.Replace(result, @"&#x?\d+;?", "");
-
-            // finally we transform special characters that we want to support
-            result = result.Replace("&nbsp;", " ");
-            result = result.Replace("&lt;", "<");
-            result = result.Replace("&gt;", ">");
-            result = result.Replace("&amp;", "&");
-            result = result.Replace("&quot;", "\"");
-            result = result.Replace("&apos;", "'");
-
-            // final trim
-            result = result.Trim(' ', '\r', '\n', '\t');
-
-            return result;
-        }
-
+    internal partial class JsonParser
+    {
         private List<PackageImage> GetImagesFromProductDetails(IDictionary<string, object> productDetail)
         {
             int imageLimit = 4;
@@ -168,7 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 mainImageThumbnailUrl = mainImageThumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
 
-                var imageUrl = "http:" +  mainImageDictionary.GetString("big");
+                var imageUrl = "http:" + mainImageDictionary.GetString("big");
 
                 result.Add(new PackageImage
                 {
@@ -219,32 +106,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        private List<PackageLink> GetLinksFromProductDetails(IDictionary<string, object> productDetail)
+        private List<PackageLink> GetLinksFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
         {
             var result = new List<PackageLink>();
 
-            result.Add(GetAssetStoreLinkFromProductDetails(productDetail));
+            result.Add(GetAssetStoreLinkFromProductDetails(assetStoreUrl, productDetail));
 
             var publisher = productDetail.GetDictionary("productPublisher");
             if (publisher != null)
             {
                 var url = publisher.GetString("url");
                 if (!string.IsNullOrEmpty(url) && Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink(L10n.Tr("Publisher Website"), url, "viewPublisherWebsite"));
+                    result.Add(GetPackageLink(assetStoreUrl, L10n.Tr("Publisher Website"), url, "viewPublisherWebsite"));
 
                 var supportUrl = publisher.GetString("supportUrl");
                 if (!string.IsNullOrEmpty(supportUrl) && Uri.IsWellFormedUriString(supportUrl, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink(L10n.Tr("Publisher Support"), supportUrl, "viewPublisherSupport"));
+                    result.Add(GetPackageLink(assetStoreUrl, L10n.Tr("Publisher Support"), supportUrl, "viewPublisherSupport"));
             }
             return result;
         }
 
-        private PackageLink GetAssetStoreLinkFromProductDetails(IDictionary<string, object> productDetail)
+        private PackageLink GetAssetStoreLinkFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
         {
             var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
             var packagePath = $"/packages/p/{slug}";
-
-            return GetPackageLink(L10n.Tr("View in Asset Store"), packagePath, "viewProductInAssetStore");
+            return GetPackageLink(assetStoreUrl, L10n.Tr("View in Asset Store"), packagePath, "viewProductInAssetStore");
         }
 
         private List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
@@ -278,16 +164,64 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        private PackageLink GetPackageLink(string name, string url, string analyticsEventName)
+        private PackageLink GetPackageLink(string assetStoreUrl, string name, string url, string analyticsEventName)
         {
             if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
-                url = m_AssetStoreUtils.assetStoreUrl + url;
-            return new PackageLink { name = name, url = url, analyticsEventName = analyticsEventName};
+                url = assetStoreUrl + url;
+            return new PackageLink { name = name, url = url, analyticsEventName = analyticsEventName };
         }
 
-        public bool Equals(AssetStoreProductInfo other)
+        public virtual AssetStoreProductInfo ParseProductInfo(string assetStoreUrl, long productId, IDictionary<string, object> productDetail)
         {
-            return other != null && other.id == id && other.versionId == versionId && other.versionString == versionString;
+            if (productId <= 0 || productDetail == null || !productDetail.Any())
+                return null;
+
+            var productInfo = new AssetStoreProductInfo();
+
+            productInfo.productId = productId;
+            productInfo.description = CleanUpHtml(productDetail.GetString("description")) ?? string.Empty;
+
+            var publisher = productDetail.GetDictionary("productPublisher");
+            var publisherId = string.Empty;
+            productInfo.publisherName = string.Empty;
+            if (publisher != null)
+            {
+                if (publisher.GetString("url") == "http://unity3d.com")
+                    productInfo.publisherName = "Unity Technologies Inc.";
+                else
+                    productInfo.publisherName = publisher.GetString("name") ?? L10n.Tr("Unknown publisher");
+                publisherId = publisher.GetString("externalRef") ?? string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(publisherId))
+                productInfo.publisherLink = $"{assetStoreUrl}/publishers/{publisherId}";
+
+            productInfo.packageName = productDetail.GetString("packageName") ?? string.Empty;
+            productInfo.category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
+            productInfo.publishNotes = CleanUpHtml(productDetail.GetString("publishNotes") ?? string.Empty, false);
+            productInfo.firstPublishedDate = productDetail.GetDictionary("properties")?.GetString("firstPublishedDate");
+
+            var versionInfo = productDetail.GetDictionary("version");
+            if (versionInfo != null)
+            {
+                productInfo.versionString = versionInfo.GetString("name");
+                productInfo.versionId = versionInfo.GetStringAsLong("id");
+                productInfo.publishedDate = versionInfo.GetString("publishedDate");
+            }
+
+            productInfo.displayName = productDetail.GetString("displayName");
+
+            productInfo.supportedVersions = productDetail.GetList<string>("supportedUnityVersions")?.ToList();
+
+            productInfo.state = productDetail.GetString("state");
+
+            productInfo.images = GetImagesFromProductDetails(productDetail);
+            productInfo.links = GetLinksFromProductDetails(assetStoreUrl, productDetail);
+            productInfo.sizeInfos = GetSizeInfoFromProductDetails(productDetail);
+
+            productInfo.assetStoreLink = GetAssetStoreLinkFromProductDetails(assetStoreUrl, productDetail);
+
+            return productInfo;
         }
     }
 }

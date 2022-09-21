@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_LocalPath;
         [SerializeField]
-        private string m_VersionId;
+        private long m_VersionId;
         [SerializeField]
         private List<SemVersion> m_SupportedUnityVersions;
 
@@ -38,15 +38,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private List<PackageSizeInfo> m_SizeInfos;
-        [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
-        [NonSerialized]
-        private IOProxy m_IOProxy;
-        public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
-        {
-            m_AssetStoreUtils = assetStoreUtils;
-            m_IOProxy = ioProxy;
-        }
 
         // We want to distinguish version.author to the package.publisherName since publisher name is related to a product
         // but author here refers to the author data in the PackageInfo, which is empty for an asset store package version
@@ -54,31 +45,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string category => m_Category;
 
-        private Dictionary<string, string> m_CategoryLinks;
-        public override IDictionary<string, string> categoryLinks
-        {
-            get
-            {
-                if (m_CategoryLinks == null)
-                {
-                    m_CategoryLinks = new Dictionary<string, string>();
-                    var categories = m_Category.Split('/');
-                    var parentCategory = "/";
-                    foreach (var category in categories)
-                    {
-                        var lower = category.ToLower(CultureInfo.InvariantCulture);
-                        var url = $"{m_AssetStoreUtils.assetStoreUrl}{parentCategory}{lower}";
-                        parentCategory += lower + "/";
-                        m_CategoryLinks[category] = url;
-                    }
-                }
-                return m_CategoryLinks;
-            }
-        }
-
         public override string packageId => string.Empty;
 
-        public override string uniqueId => $"{packageUniqueId}@{versionId}";
+        public override string uniqueId => $"{package.uniqueId}@{versionId}";
 
         public override bool isInstalled => false;
 
@@ -94,7 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string versionString => m_VersionString;
 
-        public override string versionId => m_VersionId;
+        public override long versionId => m_VersionId;
 
         public override SemVersion? supportedVersion => m_SupportedUnityVersion;
 
@@ -102,29 +71,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<PackageSizeInfo> sizes => m_SizeInfos;
 
-        public void SetLocalPath(string path)
+        public void SetLocalPath(IOProxy ioProxy, string path)
         {
             m_LocalPath = path ?? string.Empty;
             try
             {
-                m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && m_IOProxy.FileExists(m_LocalPath);
+                m_IsAvailableOnDisk = !string.IsNullOrEmpty(m_LocalPath) && ioProxy.FileExists(m_LocalPath);
             }
             catch (System.IO.IOException e)
             {
-                Debug.Log($"[Package Manager Window] Cannot determine local path for {packageUniqueId}: {e.Message}");
+                Debug.Log($"[Package Manager Window] Cannot determine local path for {package.uniqueId}: {e.Message}");
                 m_IsAvailableOnDisk = false;
             }
         }
 
-        public AssetStorePackageVersion(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
+        public AssetStorePackageVersion(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
         {
             if (productInfo == null)
                 throw new ArgumentNullException(nameof(productInfo));
 
-            ResolveDependencies(assetStoreUtils, ioProxy);
-
             m_Errors = new List<UIError>();
-            m_Tag = PackageTag.Downloadable | PackageTag.Importable;
+            m_Tag = PackageTag.LegacyFormat;
 
             // m_Description is the version level description from PackageInfo, so we set this field to empty here deliberately
             // For asset store packages, we have the `productDescription` at the package level.
@@ -135,12 +102,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PublishNotes = localInfo?.publishNotes ?? string.Empty;
 
             m_VersionString = localInfo?.versionString ?? productInfo.versionString ?? string.Empty;
-            m_VersionId = localInfo?.versionId ?? productInfo.versionId ?? string.Empty;
+            m_VersionId = localInfo?.versionId ?? productInfo.versionId;
             SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);
 
             var publishDateString = localInfo?.publishedDate ?? productInfo.publishedDate ?? string.Empty;
             m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
-            m_DisplayName = !string.IsNullOrEmpty(productInfo.displayName) ? productInfo.displayName : $"Package {productInfo.id}@{m_VersionId}";
+            m_DisplayName = !string.IsNullOrEmpty(productInfo.displayName) ? productInfo.displayName : $"Package {productInfo.productId}@{m_VersionId}";
 
             m_SupportedUnityVersions = new List<SemVersion>();
             if (localInfo != null)
@@ -176,7 +143,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             else if (state.Equals("disabled", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Disabled;
 
-            SetLocalPath(localInfo?.packagePath);
+            SetLocalPath(ioProxy, localInfo?.packagePath);
         }
 
         public void AddDowngradeWarningIfApplicable(AssetStoreLocalInfo localInfo, AssetStoreUpdateInfo updateInfo)

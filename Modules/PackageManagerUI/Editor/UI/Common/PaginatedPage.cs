@@ -15,13 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PaginatedVisualStateList m_VisualStateList = new PaginatedVisualStateList();
 
-        public override long numTotalItems => m_VisualStateList.numTotalItems;
-
-        public override long numCurrentItems => m_VisualStateList.numItems;
-
-        public bool morePackagesToFetch => numCurrentItems < numTotalItems;
-
-        public override IEnumerable<VisualState> visualStates => m_VisualStateList;
+        public override IVisualStateList visualStates => m_VisualStateList;
 
         public override IEnumerable<SubPage> subPages => Enumerable.Empty<SubPage>();
 
@@ -30,28 +24,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string contentType { get; set; }
 
         [NonSerialized]
-        private AssetStoreClient m_AssetStoreClient;
+        private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
-        private PackageFiltering m_PackageFiltering;
-        [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        public void ResolveDependencies(PackageDatabase packageDatabase, AssetStoreClient assetStoreClient, PackageFiltering packageFiltering, PackageManagerPrefs packageManagerPrefs)
+        private AssetStoreClientV2 m_AssetStoreClient;
+        public void ResolveDependencies(PackageDatabase packageDatabase,
+                                        PackageManagerPrefs packageManagerPrefs,
+                                        UnityConnectProxy unityConnect,
+                                        AssetStoreClientV2 assetStoreClient)
         {
-            ResolveDependencies(packageDatabase);
+            ResolveDependencies(packageDatabase, packageManagerPrefs);
+            m_UnityConnect = unityConnect;
             m_AssetStoreClient = assetStoreClient;
-            m_PackageFiltering = packageFiltering;
-            m_PackageManagerPrefs = packageManagerPrefs;
         }
 
-        public PaginatedPage(string contentType, PackageDatabase packageDatabase, AssetStoreClient assetStoreClient, PackageFiltering packageFiltering, PackageManagerPrefs packageManagerPrefs, PackageFilterTab tab, PageCapability capability) : base(packageDatabase, tab, capability)
+        public PaginatedPage(string contentType,
+                             PackageDatabase packageDatabase,
+                             PackageManagerPrefs packageManagerPrefs,
+                             UnityConnectProxy unityConnect,
+                             AssetStoreClientV2 assetStoreClient,
+                             PackageFilterTab tab,
+                             PageCapability capability)
+            :base(packageDatabase, packageManagerPrefs, tab, capability)
         {
             this.contentType = contentType;
-            ResolveDependencies(packageDatabase, assetStoreClient, packageFiltering, packageManagerPrefs);
-        }
-
-        public override VisualState GetVisualState(string packageUniqueId)
-        {
-            return m_VisualStateList.GetVisualState(packageUniqueId);
+            ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient);
         }
 
         public override bool UpdateFilters(PageFilters filters)
@@ -59,120 +55,79 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!base.UpdateFilters(filters))
                 return false;
 
-            var queryArgs = BuildQueryFromFilter(0, m_PackageManagerPrefs.numItemsPerPage ?? PageManager.k_DefaultPageSize);
-            m_AssetStoreClient.ListPurchases(queryArgs);
-
-            ClearAndRebuild();
+            ListPurchases();
+            ClearListAndTriggerRebuildEvent();
             return true;
         }
 
-        // in the case of paginated pages, we don't need to change the list itself (it's predefined and trumps other custom filtering)
-        // hence we don't need to trigger any list change event.
-        public override void OnPackagesChanged(PackagesChangeArgs args)
+        public override void UpdateSearchText(string searchText)
         {
-            var addList = new List<IPackage>();
-            var updateList = new List<IPackage>();
-            var removeList = args.removed.Where(Contains).ToList();
-            foreach (var package in args.added.Concat(args.updated))
-            {
-                if (m_PackageFiltering.FilterByCurrentTab(package))
-                {
-                    if (Contains(package))
-                        updateList.Add(package);
-                    else
-                        addList.Add(package);
-                }
-                else if (Contains(package))
-                    removeList.Add(package);
-            }
-
-            if (addList.Any() || updateList.Any() || removeList.Any())
-            {
-                TriggerOnListUpdate(addList, updateList, removeList);
-
-                RefreshVisualStates();
-            }
+            ListPurchases();
+            ClearListAndTriggerRebuildEvent();
         }
 
-        public override void Rebuild()
+        private void ListPurchases()
         {
-            TriggerOnListRebuild();
-            RefreshVisualStates();
-        }
-
-        private void RefreshVisualStates()
-        {
-            var changedVisualStates = new List<VisualState>();
-            foreach (var state in m_VisualStateList ?? Enumerable.Empty<VisualState>())
-            {
-                var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
-                if (package != null)
-                {
-                    var visible = tab == PackageFilterTab.AssetStore ? true : m_PackageFiltering.FilterByCurrentSearchText(package);
-                    if (state.visible != visible)
-                    {
-                        state.visible = visible;
-                        changedVisualStates.Add(state);
-                    }
-                }
-            }
-
-            if (changedVisualStates.Any())
-                TriggerOnVisualStateChange(changedVisualStates);
-        }
-
-        private PurchasesQueryArgs BuildQueryFromFilter(int startIndex, int limit)
-        {
-            return new PurchasesQueryArgs
-            {
-                startIndex = startIndex,
-                limit = limit,
-                searchText = filters?.searchText,
-                status = filters?.status,
-                categories = filters?.categories,
-                labels = filters?.labels,
-                orderBy = filters?.orderBy,
-                isReverseOrder = filters?.isReverseOrder ?? false
-            };
-        }
-
-        public void ClearAndRebuild()
-        {
-            m_VisualStateList.ClearList();
-            m_VisualStateList.ClearExtraItems();
-            Rebuild();
-        }
-
-        public override void LoadMore(long numberOfPackages)
-        {
-            if (numCurrentItems >= numTotalItems)
-                return;
-
-            var queryArgs = BuildQueryFromFilter((int)numCurrentItems, (int)numberOfPackages);
+            var numItems = m_PackageManagerPrefs.numItemsPerPage ?? PackageManagerPrefs.k_DefaultPageSize;
+            var queryArgs = new PurchasesQueryArgs(0, numItems, m_PackageManagerPrefs.trimmedSearchText, filters);
             m_AssetStoreClient.ListPurchases(queryArgs);
         }
 
-        public override void Load(IPackage package, IPackageVersion version = null)
+        private void ClearListAndTriggerRebuildEvent()
         {
-            var packageInPage = Contains(package);
-            if (!packageInPage)
+            m_VisualStateList.ClearList();
+            m_VisualStateList.ClearExtraItems();
+            TriggerListRebuild();
+        }
+
+        public override void OnActivated()
+        {
+            TriggerListRebuild();
+            UpdateVisualStateVisbilityWithSearchText();
+            TriggerOnSelectionChanged();
+        }
+
+        public override void OnDeactivated() {}
+
+        public override void LoadMore(long numberOfPackages)
+        {
+            if (visualStates.countLoaded >= visualStates.countTotal)
+                return;
+
+            var startIndex = (int)visualStates.countLoaded;
+            var numItems = (int)numberOfPackages;
+            var queryArgs = new PurchasesQueryArgs(startIndex, numItems, m_PackageManagerPrefs.trimmedSearchText, filters);
+            m_AssetStoreClient.ListPurchases(queryArgs);
+        }
+
+        public override void Load(string packageUniqueId)
+        {
+            if (string.IsNullOrEmpty(packageUniqueId) || !long.TryParse(packageUniqueId, out var productId))
+                return;
+
+            m_PackageDatabase.GetPackageAndVersionByIdOrName(packageUniqueId, out var package, out var version, true);
+            if (package == null || (version ?? package.versions.primary).HasTag(PackageTag.Placeholder))
             {
-                if (package == null || !long.TryParse(package.uniqueId, out _))
-                    return;
-
-                m_VisualStateList.AddExtraItem(package.uniqueId);
+                if (m_UnityConnect.isUserLoggedIn)
+                    m_AssetStoreClient.ExtraFetch(productId);
             }
-            if (!packageInPage)
-                TriggerOnListUpdate(added: new[] { package });
             else
-                TriggerOnListUpdate(updated: new[] { package });
+            {
+                if (!m_VisualStateList.Contains(package.uniqueId))
+                {
+                    m_VisualStateList.AddExtraItem(package.uniqueId);
+                    TriggerOnListUpdate(added: new[] { package });
+                }
+                else
+                    TriggerOnListUpdate(updated: new[] { package });
 
-            SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId, version?.uniqueId)});
+                SetNewSelection(new[] { new PackageAndVersionIdPair(package.uniqueId, version?.uniqueId) });
+            }
         }
 
         public override void LoadExtraItems(IEnumerable<IPackage> packages)
         {
-            var addedPackages = packages.Where(p => !Contains(p)).ToArray();
+            var addedPackages = packages.Where(p => !m_VisualStateList.Contains(p.uniqueId)).ToArray();
             foreach (var package in addedPackages)
                 m_VisualStateList.AddExtraItem(package.uniqueId);
             TriggerOnListUpdate(added: addedPackages);
@@ -181,12 +136,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnProductExtraFetched(long productId)
         {
             var uniqueId = productId.ToString();
-            var isNewItem = !Contains(uniqueId);
+            var isNewItem = !m_VisualStateList.Contains(uniqueId);
 
             if (isNewItem)
                 m_VisualStateList.AddExtraItem(productId.ToString());
 
-            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
+            if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore)
             {
                 var package = m_PackageDatabase.GetPackage(uniqueId);
                 if (isNewItem)
@@ -203,10 +158,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isSet && !filters.Equals(purchases.queryArgs))
                 return;
 
-            if (purchases.startIndex > 0 && numTotalItems != purchases.total)
+            // if a new page has arrived but the total has changed or the searchText has changed, do a re-fetch
+            if (purchases.startIndex > 0 && visualStates.countTotal != purchases.total)
             {
-                // if a new page has arrived but the total has changed or the searchText has changed, do a re-fetch
-                var queryArgs = BuildQueryFromFilter((int)numCurrentItems, purchases.startIndex + purchases.list.Count);
+                var startIndex = (int)visualStates.countLoaded;
+                var numItems = purchases.startIndex + purchases.list.Count;
+                var queryArgs = new PurchasesQueryArgs(startIndex, numItems, m_PackageManagerPrefs.trimmedSearchText, filters);
                 m_AssetStoreClient.ListPurchases(queryArgs);
                 return;
             }
@@ -220,7 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_VisualStateList.ClearExtraItems();
                 m_VisualStateList.SetTotal(purchases.total);
             }
-            else if (purchases.startIndex == numCurrentItems)
+            else if (purchases.startIndex == visualStates.countLoaded)
             {
                 // append the result if it is the next page
                 m_VisualStateList.AddRange(newPackageIds);
@@ -234,7 +191,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // only try to rebuild the list immediately if we are already on the `AssetStore` tab.
             // if not we'll just wait for tab switch which will trigger the rebuild as well
-            if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
+            if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore)
             {
                 HashSet<string> removed = null;
                 List<string> added = null;
@@ -260,23 +217,56 @@ namespace UnityEditor.PackageManager.UI.Internal
                 TriggerOnListUpdate(added: addedPackages, removed: removedPackages);
             }
 
-            RefreshVisualStates();
+            UpdateVisualStateVisbilityWithSearchText();
         }
 
-        public override bool Contains(string packageUniqueId)
+        private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            return m_VisualStateList?.Contains(packageUniqueId) ?? false;
+            if (!loggedIn)
+            {
+                // When users log out, even when we are not on `My Assets` tab we should still clear the Asset Store page properly
+                ClearListAndTriggerRebuildEvent();
+            }
         }
 
-        public override void SetSeeAllVersions(string packageUniqueId, bool value)
+        public override void OnEnable()
         {
-            if (m_VisualStateList.SetSeeAllVersions(packageUniqueId, value))
-                TriggerOnVisualStateChange(new[] { GetVisualState(packageUniqueId) });
+            base.OnEnable();
+
+            m_AssetStoreClient.onProductListFetched += OnProductListFetched;
+            m_AssetStoreClient.onProductExtraFetched += OnProductExtraFetched;
+            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+
+            m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
+            m_AssetStoreClient.onProductExtraFetched -= OnProductExtraFetched;
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
         public override void AddSubPage(SubPage subPage)
         {
-            // do nothing
+            // do nothing because we don't support sub pages on PaginatedPages yet.
         }
+
+        public override void RebuildAndReorderVisualStates()
+        {
+            // do nothing because for paginated pages, the order of visual states is pre-determined
+        }
+
+        public override void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
+        {
+            // do nothing, only simple page needs implementation right now
+        }
+
+        public override void ResetUserUnlockedState()
+        {
+            // do nothing, only simple page needs implementation right now
+        }
+
+        public override bool GetDefaultLockState(IPackage package) => false;
     }
 }

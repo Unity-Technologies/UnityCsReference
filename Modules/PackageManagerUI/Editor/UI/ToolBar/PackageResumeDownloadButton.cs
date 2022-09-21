@@ -24,16 +24,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.ResumeDownload(version.package);
-            PackageManagerWindowAnalytics.SendEvent("resumeDownload", version.packageUniqueId);
+            PackageManagerWindowAnalytics.SendEvent("resumeDownload", version.package.uniqueId);
             return true;
         }
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            if (version?.HasTag(PackageTag.Downloadable) != true)
+            if (version?.HasTag(PackageTag.LegacyFormat) != true)
                 return false;
 
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id);
             return operation?.state == DownloadState.Paused || operation?.state == DownloadState.ResumeRequested;
         }
 
@@ -41,11 +41,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isInProgress)
                 return L10n.Tr("The resume request has been sent. Please wait for the download to resume.");
-            return string.Format(L10n.Tr("Click to resume the download of this {0}."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to resume the download of this {0}."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress) => m_IsIconButton ? string.Empty : L10n.Tr("Resume");
 
-        protected override bool IsInProgress(IPackageVersion version) => m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.state == DownloadState.ResumeRequested;
+        protected override bool IsInProgress(IPackageVersion version) => m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id)?.state == DownloadState.ResumeRequested;
     }
 }

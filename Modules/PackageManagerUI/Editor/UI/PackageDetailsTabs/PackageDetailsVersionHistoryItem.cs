@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -181,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogLink, true);
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, true);
 
-                var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.package.Is(PackageType.AssetStore) == true && string.IsNullOrEmpty((m_Version as UpmPackageVersion)?.changelogUrl);
+                var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.HasTag(PackageTag.LegacyFormat) == true && string.IsNullOrEmpty((m_Version as UpmPackageVersion)?.changelogUrl);
                 versionHistoryItemChangeLogLink.SetEnabled(!disableIfNotInstall);
                 versionHistoryItemChangeLogLink.tooltip = disableIfNotInstall ? PackageDetailsLinks.k_InstallToViewChangelogTooltip : string.Empty;
             }
@@ -215,7 +214,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_PackageDatabase.GetPackageAndVersion(dependency, out var package, out var packageVersion);
 
                     var nameText = PackageDetailsDependenciesTab.GetNameText(dependency, package, packageVersion);
-                    var versionText = PackageDetailsDependenciesTab.GetVersionText(dependency, package);
+                    var versionText = PackageDetailsDependenciesTab.GetVersionText(dependency, packageVersion);
                     if (string.IsNullOrEmpty(versionText))
                         versionText = dependency.version;
                     var statusText = PackageDetailsDependenciesTab.GetStatusText(dependency, package?.versions.installed);

@@ -597,9 +597,8 @@ namespace UnityEngine.VFX
         }
     }
 
-    // Bindings for VFXRenderer is needed but we dont want it to be accessible to users
     [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h")]
-    internal sealed partial class VFXRenderer : Renderer
+    public sealed partial class VFXRenderer : Renderer
     {
     }
 

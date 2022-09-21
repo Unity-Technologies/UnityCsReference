@@ -19,24 +19,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.Import(version.package);
-            PackageManagerWindowAnalytics.SendEvent("import", version.packageUniqueId);
+            PackageManagerWindowAnalytics.SendEvent("import", version.package.uniqueId);
             return true;
         }
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            if (version?.HasTag(PackageTag.Downloadable) != true)
-                return false;
-
-            return version.HasTag(PackageTag.Importable)
+            return version?.HasTag(PackageTag.LegacyFormat) == true
                 && version.isAvailableOnDisk
                 && version.package.progress == PackageProgress.None
-                && m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId)?.isProgressVisible != true;
+                && m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id)?.isProgressVisible != true;
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
-            return string.Format(L10n.Tr("Click to import assets from the {0} into your project."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to import assets from the {0} into your project."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress)

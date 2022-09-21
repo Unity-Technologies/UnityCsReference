@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -25,21 +24,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startDownloadDowngrade", version.packageUniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startDownloadDowngrade", version.package.uniqueId);
             return canDownload;
         }
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            if (version?.HasTag(PackageTag.Downloadable) != true)
+            if (version?.HasTag(PackageTag.LegacyFormat) != true)
                 return false;
 
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
-            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            var productId = version.package.product?.id;
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
             if (updateInfo?.canDowngrade != true)
                 return false;
 
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
             return operation == null || operation.state == DownloadState.DownloadRequested || !operation.isProgressVisible;
         }
 
@@ -48,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isInProgress)
                 return L10n.Tr("The download request has been sent. Please wait for the download to start.");
 
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version.packageUniqueId);
+            var localInfo = m_AssetStoreCache.GetLocalInfo(version.package.product?.id);
             return string.Format(AssetStorePackageVersion.k_IncompatibleWarningMessage, localInfo.supportedVersion);
         }
 
@@ -59,9 +58,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool IsInProgress(IPackageVersion version)
         {
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version?.packageUniqueId);
-            var localInfo = m_AssetStoreCache.GetLocalInfo(version?.packageUniqueId);
-            var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+            var productId = version.package.product?.id;
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(productId);
+            var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
             return updateInfo?.canDowngrade == true && operation?.isInProgress == true;
         }
 

@@ -116,13 +116,12 @@ namespace UnityEditor
 
         // returns total line count
         public static extern int StartGettingEntries();
+        public static extern void EndGettingEntries();
 
         public static extern int consoleFlags { get; set; }
         public static extern void SetConsoleFlag(int bit, bool value);
         public static extern void SetFilteringText(string filteringText);
         public static extern string GetFilteringText();
-
-        public static extern void EndGettingEntries();
 
         public static extern int GetCount();
 

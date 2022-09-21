@@ -39,13 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
 
         [SerializeField]
-        private List<UpmPackage> m_SerializedUpmPackages = new List<UpmPackage>();
-
-        [SerializeField]
-        private List<AssetStorePackage> m_SerializedAssetStorePackages = new List<AssetStorePackage>();
-
-        [SerializeField]
-        private List<PlaceholderPackage> m_SerializedPlaceholderPackages = new List<PlaceholderPackage>();
+        private Package[] m_SerializedPackages = new Package[0];
 
         [NonSerialized]
         private UniqueIdMapper m_UniqueIdMapper;
@@ -55,23 +49,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmCache m_UpmCache;
         [NonSerialized]
         private IOProxy m_IOProxy;
-        [NonSerialized]
-        private AssetStoreUtils m_AssetStoreUtils;
-
         public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
             AssetDatabaseProxy assetDatabase,
-            AssetStoreUtils assetStoreUtils,
             UpmCache upmCache,
             IOProxy ioProxy)
         {
             m_UniqueIdMapper = uniqueIdMapper;
             m_AssetDatabase = assetDatabase;
-            m_AssetStoreUtils = assetStoreUtils;
             m_UpmCache = upmCache;
             m_IOProxy = ioProxy;
-
-            foreach (var package in m_SerializedAssetStorePackages)
-                package.ResolveDependencies(m_AssetStoreUtils, ioProxy);
         }
 
         public virtual bool isEmpty => !m_Packages.Any();
@@ -80,7 +66,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual IEnumerable<IPackage> allPackages => m_Packages.Values;
 
-        public virtual IPackage GetPackage(string uniqueId, bool retryWithIdMapper = false)
+        public virtual IPackage GetPackage(string uniqueId)
+        {
+            return GetPackage(uniqueId, false);
+        }
+
+        public virtual IPackage GetPackage(long productId)
+        {
+            return GetPackage(productId.ToString(), false);
+        }
+
+        private IPackage GetPackage(string uniqueId, bool retryWithIdMapper)
         {
             if (string.IsNullOrEmpty(uniqueId))
                 return null;
@@ -91,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We only retry with productId now because in the case where productId and package Name both exist for a package
             // we use productId as the primary key.
             var productId = m_UniqueIdMapper.GetProductIdByName(uniqueId);
-            return !string.IsNullOrEmpty(productId) ? m_Packages.Get(productId) : null;
+            return productId > 0 ? m_Packages.Get(productId.ToString()) : null;
         }
 
         // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
@@ -212,29 +208,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnAfterDeserialize()
         {
-            var serializedPackages = m_SerializedPlaceholderPackages.Concat<BasePackage>(m_SerializedUpmPackages).Concat(m_SerializedAssetStorePackages);
-            foreach (var p in serializedPackages)
-            {
-                p.LinkPackageAndVersions();
+            foreach (var p in m_SerializedPackages)
                 AddPackage(p.uniqueId, p);
-            }
         }
 
         public void OnBeforeSerialize()
         {
-            m_SerializedUpmPackages.Clear();
-            m_SerializedAssetStorePackages.Clear();
-            m_SerializedPlaceholderPackages.Clear();
-
-            foreach (var package in m_Packages.Values)
-            {
-                if (package is AssetStorePackage)
-                    m_SerializedAssetStorePackages.Add((AssetStorePackage)package);
-                else if (package is UpmPackage)
-                    m_SerializedUpmPackages.Add((UpmPackage)package);
-                else if (package is PlaceholderPackage)
-                    m_SerializedPlaceholderPackages.Add((PlaceholderPackage)package);
-            }
+            m_SerializedPackages = m_Packages.Values.Cast<Package>().ToArray();
         }
 
         private void TriggerOnPackagesChanged(IEnumerable<IPackage> added = null, IEnumerable<IPackage> removed = null, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> preUpdate = null, IEnumerable<IPackage> progressUpdated = null)
@@ -298,7 +278,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // It could happen that before the productId info was available, another package was created with packageName as the uniqueId
                 // Once the productId becomes available it should be the new uniqueId, we want to old package such that there won't be two
                 // entries of the same package with different uniqueIds (one productId, one with packageName)
-                if (!string.IsNullOrEmpty(package.productId) && !string.IsNullOrEmpty(package.name))
+                if (package.product != null && !string.IsNullOrEmpty(package.name))
                 {
                     {
                         var packageWithNameAsUniqueId = GetPackage(package.name);
@@ -306,7 +286,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         {
                             packagesRemoved.Add(packageWithNameAsUniqueId);
                             RemovePackage(package.name);
-                            onPackageUniqueIdFinalize?.Invoke(package.name, package.productId);
+                            onPackageUniqueIdFinalize?.Invoke(package.name, package.uniqueId);
                         }
                     }
                 }
@@ -348,7 +328,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void AddPackage(string packageUniqueId, IPackage package)
         {
             m_Packages[packageUniqueId] = package;
-            if (package.Is(PackageType.Feature))
+            if (package.versions.All(v => v.HasTag(PackageTag.Feature)))
                 m_Features[packageUniqueId] = package;
         }
 

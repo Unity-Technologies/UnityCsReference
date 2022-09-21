@@ -118,7 +118,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool Download(IEnumerable<IPackage> packages)
         {
-            return PlayModeDownload.CanBeginDownload() && m_AssetStoreDownloadManager.Download(packages.Select(p => p.uniqueId));
+            return PlayModeDownload.CanBeginDownload() && m_AssetStoreDownloadManager.Download(packages.Select(p => p.product?.id ?? 0).Where(id => id > 0));
         }
 
         public virtual void AbortDownload(IPackage package)
@@ -131,26 +131,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We need to figure out why the IEnumerable is being altered instead of using ToArray.
             // It will be addressed in https://jira.unity3d.com/browse/PAX-1995.
             foreach (var package in packages.ToArray())
-                m_AssetStoreDownloadManager.AbortDownload(package.uniqueId);
+                m_AssetStoreDownloadManager.AbortDownload(package.product?.id);
         }
 
         public virtual void PauseDownload(IPackage package)
         {
-            if (package?.Is(PackageType.AssetStore) != true)
+            if (package?.versions.primary.HasTag(PackageTag.LegacyFormat) != true)
                 return;
-            m_AssetStoreDownloadManager.PauseDownload(package.uniqueId);
+            m_AssetStoreDownloadManager.PauseDownload(package.product?.id);
         }
 
         public virtual void ResumeDownload(IPackage package)
         {
-            if (package?.Is(PackageType.AssetStore) != true || !PlayModeDownload.CanBeginDownload())
+            if (package?.versions.primary.HasTag(PackageTag.LegacyFormat) != true || !PlayModeDownload.CanBeginDownload())
                 return;
-            m_AssetStoreDownloadManager.ResumeDownload(package.uniqueId);
+            m_AssetStoreDownloadManager.ResumeDownload(package.product?.id);
         }
 
         public virtual void Import(IPackage package)
         {
-            if (package?.Is(PackageType.AssetStore) != true)
+            if (package?.versions.primary.HasTag(PackageTag.LegacyFormat) != true)
                 return;
 
             var path = package.versions.primary.localPath;

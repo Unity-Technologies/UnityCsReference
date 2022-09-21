@@ -52,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool IsValid(IPackageVersion version)
         {
-            return version?.package?.images?.Any() ?? false;
+            return version?.package?.product?.images?.Any() ?? false;
         }
 
         public override void Refresh(IPackageVersion version)
@@ -65,34 +65,35 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (s_LoadingTexture == null)
                 s_LoadingTexture = (Texture2D)EditorGUIUtility.LoadRequired("Icons/UnityLogo.png");
 
-            if (long.TryParse(package.uniqueId, out long id))
+            var product = package.product;
+            if (product == null)
+                return;
+
+            m_MainImage.image = s_LoadingTexture;
+            foreach (var packageImage in package.product.images)
             {
-                m_MainImage.image = s_LoadingTexture;
-                foreach (var packageImage in package.images)
+                var thumbnail = new Image() { classList = { "thumbnail", "image" } };
+                thumbnail.image = s_LoadingTexture;
+                thumbnail.scaleMode = ScaleMode.ScaleAndCrop;
+                m_ThumbnailsContainer.Add(thumbnail);
+                m_AssetStoreCache.DownloadImageAsync(product.id, packageImage.thumbnailUrl, (retId, texture) =>
                 {
-                    var thumbnail = new Image() { classList = { "thumbnail", "image" } };
-                    thumbnail.image = s_LoadingTexture;
-                    thumbnail.scaleMode = ScaleMode.ScaleAndCrop;
-                    m_ThumbnailsContainer.Add(thumbnail);
-                    m_AssetStoreCache.DownloadImageAsync(id, packageImage.thumbnailUrl, (retId, texture) =>
+                    if (texture != null)
                     {
-                        if (texture != null)
-                        {
-                            m_ImageTextures.Add(texture);
-                            texture.hideFlags = HideFlags.HideAndDontSave;
-                        }
+                        m_ImageTextures.Add(texture);
+                        texture.hideFlags = HideFlags.HideAndDontSave;
+                    }
 
-                        if (retId.ToString() == m_Version.package?.uniqueId)
-                        {
-                            thumbnail.image = texture ?? s_LoadingTexture;
-                            thumbnail.OnLeftClick(() => OnImageClicked(thumbnail, packageImage));
-                        }
-                    });
+                    if (retId.ToString() == m_Version.package?.uniqueId)
+                    {
+                        thumbnail.image = texture ?? s_LoadingTexture;
+                        thumbnail.OnLeftClick(() => OnImageClicked(thumbnail, packageImage));
+                    }
+                });
 
-                    // We run `OnImageClicked` at the beginning to make sure the selection is set properly
-                    if (packageImage.type == PackageImage.ImageType.Main)
-                        OnImageClicked(thumbnail, packageImage);
-                }
+                // We run `OnImageClicked` at the beginning to make sure the selection is set properly
+                if (packageImage.type == PackageImage.ImageType.Main)
+                    OnImageClicked(thumbnail, packageImage);
             }
         }
 
@@ -109,31 +110,32 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnImageClicked(Image image, PackageImage changeToImage)
         {
-            if (long.TryParse(m_Version.package.uniqueId, out long id))
-            {
-                var url = changeToImage.type == PackageImage.ImageType.Main ? changeToImage.thumbnailUrl : changeToImage.url;
-                m_AssetStoreCache.DownloadImageAsync(id, url, (retId, texture2d) =>
-                {
-                    if (texture2d != null)
-                    {
-                        m_ImageTextures.Add(texture2d);
-                        texture2d.hideFlags = HideFlags.HideAndDontSave;
-                    }
+            var product = m_Version.package.product;
+            if (product == null)
+                return;
 
-                    // If for whatever reason the main image is not available, we fall back to use thumbnail so that the user don't just see
-                    // the loading texture indefinitely.
-                    var texture = texture2d ?? image.image;
-                    if (retId.ToString() == m_Version.package?.uniqueId)
-                    {
-                        m_MainImage.image = texture;
-                        if (changeToImage.type == PackageImage.ImageType.Main && texture.width > 0)
-                            m_MainImageInnerContainer.style.paddingTop = new Length(100.0f * texture.height / texture.width, LengthUnit.Percent);
-                    }
-                });
-                foreach (var thumbnail in m_ThumbnailsContainer.Children().OfType<Image>())
-                    thumbnail.RemoveFromClassList("selected");
-                image.AddToClassList("selected");
-            }
+            var url = changeToImage.type == PackageImage.ImageType.Main ? changeToImage.thumbnailUrl : changeToImage.url;
+            m_AssetStoreCache.DownloadImageAsync(product.id, url, (retId, texture2d) =>
+            {
+                if (texture2d != null)
+                {
+                    m_ImageTextures.Add(texture2d);
+                    texture2d.hideFlags = HideFlags.HideAndDontSave;
+                }
+
+                // If for whatever reason the main image is not available, we fall back to use thumbnail so that the user don't just see
+                // the loading texture indefinitely.
+                var texture = texture2d ?? image.image;
+                if (retId.ToString() == m_Version.package?.uniqueId)
+                {
+                    m_MainImage.image = texture;
+                    if (changeToImage.type == PackageImage.ImageType.Main && texture.width > 0)
+                        m_MainImageInnerContainer.style.paddingTop = new Length(100.0f * texture.height / texture.width, LengthUnit.Percent);
+                }
+            });
+            foreach (var thumbnail in m_ThumbnailsContainer.Children().OfType<Image>())
+                thumbnail.RemoveFromClassList("selected");
+            image.AddToClassList("selected");
         }
     }
 }

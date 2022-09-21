@@ -17,19 +17,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PageManager.SetPackagesUserUnlockedState(versions.Select(v => v.packageUniqueId), true);
-            PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: versions.Select(v => v.packageUniqueId));
+            m_PageManager.GetPage().SetPackagesUserUnlockedState(versions.Select(v => v.package.uniqueId), true);
+            PackageManagerWindowAnalytics.SendEvent("unlock", packageIds: versions.Select(v => v.package.uniqueId));
             return true;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PageManager.SetPackagesUserUnlockedState(new string[1] { version.packageUniqueId }, true);
-            PackageManagerWindowAnalytics.SendEvent("unlock", version.packageUniqueId);
+            m_PageManager.GetPage().SetPackagesUserUnlockedState(new string[1] { version.package.uniqueId }, true);
+            PackageManagerWindowAnalytics.SendEvent("unlock", version.package.uniqueId);
             return true;
         }
 
-        protected override bool IsVisible(IPackageVersion version) => m_PageManager.GetVisualState(version?.package)?.isLocked == true;
+        protected override bool IsVisible(IPackageVersion version) => m_PageManager.GetPage().visualStates.Get(version?.package?.uniqueId)?.isLocked == true;
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {

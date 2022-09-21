@@ -27,29 +27,29 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_OperationDispatcher.AbortDownload(versions.Select(v => v.package));
-            PackageManagerWindowAnalytics.SendEvent("abortDownload", packageIds: versions.Select(v => v.packageUniqueId));
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", packageIds: versions.Select(v => v.package.uniqueId));
             return true;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.AbortDownload(version.package);
-            PackageManagerWindowAnalytics.SendEvent("abortDownload", version.packageUniqueId);
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", version.package.uniqueId);
             return true;
         }
 
         protected override bool IsVisible(IPackageVersion version)
         {
-            if (version?.HasTag(PackageTag.Downloadable) != true)
+            if (version?.HasTag(PackageTag.LegacyFormat) != true)
                 return false;
 
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id);
             return operation?.isProgressVisible == true;
         }
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
-            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.packageUniqueId);
+            var operation = m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id);
             var resumeRequested = operation?.state == DownloadState.ResumeRequested;
             yield return new ButtonDisableCondition(resumeRequested,
                 L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed."));
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
-            return string.Format(L10n.Tr("Click to cancel the download of this {0}."), version.package.GetDescriptor());
+            return string.Format(L10n.Tr("Click to cancel the download of this {0}."), version.GetDescriptor());
         }
 
         protected override string GetText(IPackageVersion version, bool isInProgress) => m_IsIconButton ? string.Empty : L10n.Tr("Cancel");

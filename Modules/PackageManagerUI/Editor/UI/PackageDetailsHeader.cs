@@ -110,7 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshName()
         {
-            if (!string.IsNullOrEmpty(m_Version.name) && !m_Package.Is(PackageType.AssetStore))
+            if (!string.IsNullOrEmpty(m_Version.name))
             {
                 UIUtils.SetElementDisplay(detailName, true);
                 detailName.SetValueWithoutNotify(m_Version.name);
@@ -123,7 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshHiddenAssetInfo()
         {
-            bool showHiddenInfoBox = m_Package is AssetStorePackage && (m_Package as AssetStorePackage).isHidden;
+            bool showHiddenInfoBox = m_Package?.product?.isHidden == true;
             UIUtils.SetElementDisplay(hiddenAssetInfoBoxContainer, showHiddenInfoBox);
         }
 
@@ -138,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshQuickStart()
         {
-            var showQuickStartButton = m_Package.Is(PackageType.Feature) && !string.IsNullOrEmpty(UpmPackageDocs.GetQuickStartUrl(m_Version, m_UpmCache));
+            var showQuickStartButton = m_Version.HasTag(PackageTag.Feature) && !string.IsNullOrEmpty(UpmPackageDocs.GetQuickStartUrl(m_Version, m_UpmCache));
             if (showQuickStartButton)
             {
                 quickStart.Clear();
@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var showLockedIcon = featureSets?.Any() == true;
             if (showLockedIcon)
             {
-                visualState = visualState ?? m_PageManager.GetVisualState(m_Package);
+                visualState = visualState ?? m_PageManager.GetPage().visualStates.Get(m_Package?.uniqueId);
                 if (visualState?.isLocked == true)
                 {
                     lockedIcon.RemoveFromClassList("unlocked");
@@ -180,9 +180,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(lockedIcon, showLockedIcon);
         }
 
-        private void OnVisualStateChange(IEnumerable<VisualState> visualStates)
+        private void OnVisualStateChange(VisualStateChangeArgs args)
         {
-            var visualState = visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package.uniqueId);
+            if (!args.page.isActivePage)
+                return;
+
+            var visualState = args.visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package.uniqueId);
             if (visualState != null)
                 RefreshFeatureSetElements(visualState);
         }
@@ -210,7 +213,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 element.Add(icon);
 
                 var message = new Label {name = "usedInFeatureSetMessageLabel"};
-                message.text = string.Format(L10n.Tr("is installed as part of the "), m_Package.GetDescriptor());
+                message.text = string.Format(L10n.Tr("is installed as part of the "), m_Version.GetDescriptor());
 
                 element.Add(message);
                 usedInFeatureSetMessageContainer.Add(element);
@@ -268,8 +271,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshAuthor()
         {
-            var publisherName = m_Package?.publisherName;
-            var publisherLink = m_Package?.publisherLink;
+            var publisherName = m_Package?.product?.publisherName;
+            var publisherLink = m_Package?.product?.publisherLink;
 
             var showDetailAuthorLink = !string.IsNullOrEmpty(publisherName) && !string.IsNullOrEmpty(publisherLink);
             if (showDetailAuthorLink)
@@ -300,12 +303,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 UIUtils.SetElementDisplay(scopedRegistryTagLabel, false);
             }
-            UIUtils.SetElementDisplay(GetTagLabel(PackageType.AssetStore.ToString()), m_Package.Is(PackageType.AssetStore));
+
+            var assetStoreTagLabel = GetTagLabel("AssetStore");
+            UIUtils.SetElementDisplay(assetStoreTagLabel, m_Version.package.product != null);
         }
 
         private void AuthorClick()
         {
-            var authorLink = m_Package.publisherLink ?? string.Empty;
+            var authorLink = m_Package?.product?.publisherLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
             {
                 m_Application.OpenURL(authorLink);
@@ -324,7 +329,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshVersionLabel()
         {
             var versionString = m_Version.versionString;
-            var showVersionLabel = !m_Package.Is(PackageType.BuiltIn) && !m_Package.Is(PackageType.Feature) && !string.IsNullOrEmpty(versionString);
+            var showVersionLabel = !m_Version.HasTag(PackageTag.BuiltIn) && !m_Version.HasTag(PackageTag.Feature) && !string.IsNullOrEmpty(versionString);
             UIUtils.SetElementDisplay(detailVersion, showVersionLabel);
             if (!showVersionLabel)
                 return;
@@ -356,7 +361,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
             // then that package is not considered part of the Unity Editor "product" and we need to let users know.
             var unityVersionString = m_Application.unityVersion;
-            if (!m_Package.versions.hasLifecycleVersion && m_Package.Is(PackageType.Unity) && !m_Package.Is(PackageType.BuiltIn))
+            if (!m_Package.versions.hasLifecycleVersion && m_Version.HasTag(PackageTag.Unity) && !m_Version.HasTag(PackageTag.BuiltIn))
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
@@ -371,7 +376,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var recommended = m_Package.versions.recommended;
             if (m_Version.isInstalled
                 && m_Package.state != PackageState.InstalledAsDependency
-                && m_Package.Is(PackageType.Unity)
+                && m_Version.HasTag(PackageTag.Unity)
                 && recommended != null
                 && installed.version?.IsEqualOrPatchOf(recommended.version) != true)
             {
@@ -387,7 +392,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshRegistry()
         {
             var registry = m_Version.registry;
-            var showRegistry = registry != null && !m_Package.Is(PackageType.AssetStore);
+            var showRegistry = registry != null && m_Version.package.product == null;
             UIUtils.SetElementDisplay(detailRegistry, showRegistry);
             UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
             if (showRegistry)
@@ -397,7 +402,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var detailRegistryName = L10n.Tr("Unknown");
                 detailRegistry.tooltip = string.Empty;
-                if (m_Version.packageInfo.versions.all.Any() && !m_Package.Is(PackageType.AssetStore))
+                if (m_Version.packageInfo.versions.all.Any())
                 {
                     detailRegistryName = registry.isDefault ? "Unity Technologies Inc." : registry.name;
                     detailRegistry.tooltip = registry.url;
@@ -434,7 +439,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshEmbeddedFeatureSetWarningBox()
         {
-            UIUtils.SetElementDisplay(embeddedFeatureSetWarningBox, m_Package.Is(PackageType.Feature) && m_Version.HasTag(PackageTag.Custom));
+            UIUtils.SetElementDisplay(embeddedFeatureSetWarningBox, m_Version.HasTag(PackageTag.Feature) && m_Version.HasTag(PackageTag.Custom));
         }
 
         private void OnInfoBoxClickMore()
@@ -445,7 +450,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.Experimental]}");
             else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ReleaseCandidate]}");
-            else if (m_Package.Is(PackageType.ScopedRegistry))
+            else if (m_Version.HasTag(PackageTag.ScopedRegistry))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
         }
 
