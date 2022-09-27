@@ -654,7 +654,7 @@ namespace UnityEditorInternal
 
             PrecompiledAssembly[] unityAssemblies = GetUnityAssemblies(false, group, target);
 
-            var allPrecompiledAssemblies = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(false, group, target);
+            var allPrecompiledAssemblies = EditorCompilationInterface.Instance.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions.BuildingForEditor & EditorScriptCompilationOptions.BuildingWithAsserts, group, target);
             return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, allPrecompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies);
         }
 

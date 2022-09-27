@@ -530,6 +530,9 @@ namespace UnityEngine
     {
         namespace Rendering
         {
+            // All usage of TextureCreationFlags should remain undocumented for the time being.
+            // This will hopefully be documented as part of the push to move GraphicsFormat out of Experimental.
+
             // keep this in sync with the TextureCreationFlags enum in Texture.h
             [Flags]
             public enum TextureCreationFlags
