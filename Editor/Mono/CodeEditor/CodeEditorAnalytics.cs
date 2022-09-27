@@ -34,9 +34,6 @@ namespace Unity.CodeEditor
 
         public static void SendCodeEditorUsage(IExternalCodeEditor codeEditor)
         {
-            if (!UnityEngine.Analytics.Analytics.enabled)
-                return;
-
             if (!EnableAnalytics())
                 return;
 

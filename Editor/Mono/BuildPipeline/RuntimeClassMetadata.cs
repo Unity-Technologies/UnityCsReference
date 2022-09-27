@@ -21,11 +21,11 @@ namespace UnityEditor
         protected BuildTarget buildTarget;
         protected HashSet<string> monoBaseClasses = new HashSet<string>();
         protected Dictionary<string, HashSet<string>> serializedClassesPerAssembly = new Dictionary<string, HashSet<string>>();
-        protected Dictionary<string, string[]> m_UsedTypesPerUserAssembly = new Dictionary<string, string[]>();
+        protected Dictionary<string, HashSet<string>> m_UsedTypesPerUserAssembly = new Dictionary<string, HashSet<string>>();
         protected Dictionary<int, List<string>> classScenes = new Dictionary<int, List<string>>();
         protected UnityType objectUnityType = null;
 
-        public Dictionary<string, string[]> UsedTypePerUserAssembly
+        public Dictionary<string, HashSet<string>> UsedTypePerUserAssembly
         {
             get { return m_UsedTypesPerUserAssembly; }
         }
@@ -53,7 +53,11 @@ namespace UnityEditor
 
         public void SetUsedTypesInUserAssembly(string[] typeNames, string assemblyName)
         {
-            m_UsedTypesPerUserAssembly[assemblyName] = typeNames;
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
+                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+
+            foreach (var typeName in typeNames)
+                types.Add(typeName);
         }
 
         public bool IsDLLUsed(string dll)
@@ -75,6 +79,20 @@ namespace UnityEditor
         protected void AddManagedBaseClass(string className)
         {
             monoBaseClasses.Add(className);
+        }
+
+        protected void AddUsedClass(string assemblyName, string className)
+        {
+            if (string.IsNullOrEmpty(assemblyName))
+                throw new ArgumentException(nameof(assemblyName));
+
+            if (string.IsNullOrEmpty(className))
+                throw new ArgumentException(nameof(className));
+
+            if (!m_UsedTypesPerUserAssembly.TryGetValue(assemblyName, out HashSet<string> types))
+                m_UsedTypesPerUserAssembly[assemblyName] = types = new HashSet<string>();
+
+            types.Add(className);
         }
 
         protected void AddSerializedClass(string assemblyName, string className)
@@ -124,7 +142,7 @@ namespace UnityEditor
             items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
 
             foreach (var userAssembly in m_UsedTypesPerUserAssembly)
-                items.Add(userAssembly.Key, userAssembly.Value);
+                items.Add(userAssembly.Key, userAssembly.Value.ToArray());
 
             return items;
         }

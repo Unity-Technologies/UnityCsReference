@@ -77,7 +77,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var assemblyOutputFullPath = AssetPath.GetFullPath(editorCompilation.GetEditorAssembliesOutputDirectory());
                     var assemblyReferencesPaths = assemblyReferences.Select(a => AssetPath.GetFullPath(a.FullPath(assemblyOutputFullPath)));
 
-                    var precompiledAssembliesDictionary = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(true, BuildTargetGroup.Unknown, BuildTarget.Android);
+                    var precompiledAssembliesDictionary = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts, BuildTargetGroup.Unknown, BuildTarget.Android);
 
                     var precompiledReferencesPaths = precompiledReferences
                         .Where(x => precompiledAssembliesDictionary.ContainsKey(x))
