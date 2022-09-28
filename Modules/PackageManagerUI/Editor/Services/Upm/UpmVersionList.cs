@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     //  and add that
                     if (resolvedLifecycleVersion.HasTag(PackageTag.ReleaseCandidate) && resolvedLifecycleVersion.version?.HasPreReleaseVersionTag() == true)
                     {
-                        var latestReleasePatchOfUnityLifecycleVersion = m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release) &&
+                        var latestReleasePatchOfUnityLifecycleVersion = m_Versions.LastOrDefault(v => !v.HasTag(PackageTag.PreRelease | PackageTag.ReleaseCandidate | PackageTag.Experimental) &&
                             (v.version?.IsPatchOf(resolvedLifecycleVersion.version) == true || v.version?.IsMajorMinorPatchEqualTo(resolvedLifecycleVersion.version) == true));
 
                         if (latestReleasePatchOfUnityLifecycleVersion != null)
@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // otherwise, it's either Release or tagged as Release Candidate because Editor is in Alpha or Beta, and we should
                 //  take the latest patch of it
                 else
-                    return m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release | PackageTag.ReleaseCandidate) &&
+                    return m_Versions.LastOrDefault(v => !v.HasTag(PackageTag.PreRelease | PackageTag.Experimental) &&
                         ((v.version?.IsPatchOf(m_LifecycleVersion) == true) || v.version == m_LifecycleVersion));
             }
         }

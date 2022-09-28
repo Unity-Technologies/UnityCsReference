@@ -77,14 +77,13 @@ namespace UnityEditor.ShaderFoundry
 
         [NativeMethod("Create<ShaderFoundry::ShaderFunction>")]
         internal extern FoundryHandle CreateFunctionInternal();
-        internal extern bool SetFunction(FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, FoundryHandle parameterListHandle, FoundryHandle parentBlockHandle, FoundryHandle includeListHandle, FoundryHandle attributeListHandle);
+        [NativeMethod("Set<ShaderFoundry::ShaderFunction>")]
+        internal extern bool SetFunctionInternal(FoundryHandle functionHandle, ShaderFunctionInternal shaderFunctionInternal);
         [NativeMethod("Get<ShaderFoundry::ShaderFunction>")]
         internal extern ShaderFunctionInternal GetFunction(FoundryHandle functionHandle);
 
-        // TODO @ SHADERS: Replace with generic call that uses the Internal type.
-        internal extern FoundryHandle AddFunctionParameter(string name, FoundryHandle typeHandle, UInt32 flags);
-        //[NativeMethod("Add<ShaderFoundry::FunctionParameter>")]
-        //internal extern FoundryHandle AddFunctionParameter(FunctionParameterInternal functionParameterInternal);
+        [NativeMethod("Add<ShaderFoundry::FunctionParameter>")]
+        internal extern FoundryHandle AddFunctionParameter(FunctionParameterInternal functionParameterInternal);
         [NativeMethod("Get<ShaderFoundry::FunctionParameter>")]
         internal extern FunctionParameterInternal GetFunctionParameter(FoundryHandle functionParameterHandle);
 
@@ -112,14 +111,13 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        internal extern FoundryHandle AddIntBlob(uint size);
-        internal extern uint GetIntBlobSize(FoundryHandle blobHandle);
-        internal extern int GetIntBlobElement(FoundryHandle blobHandle, uint elementIndex);
-        internal extern void SetIntBlobElement(FoundryHandle blobHandle, uint elementIndex, int elementValue);
-
+        [NativeMethod("CreateArray<ShaderFoundry::FoundryHandle>")]
         internal extern FoundryHandle AddHandleBlob(uint size);
+        [NativeMethod("GetArraySize<ShaderFoundry::FoundryHandle>")]
         internal extern uint GetHandleBlobSize(FoundryHandle blobHandle);
+        [NativeMethod("GetArrayElement<ShaderFoundry::FoundryHandle>")]
         internal extern FoundryHandle GetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex);
+        [NativeMethod("SetArrayElement<ShaderFoundry::FoundryHandle>")]
         internal extern void SetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex, FoundryHandle handle);
 
         [NativeMethod("Create<ShaderFoundry::ShaderType>")]

@@ -714,6 +714,25 @@ namespace UnityEngine
             return new MeshDataArray(meshCount);
         }
 
+        public static MeshDataArray AllocateWritableMeshData(Mesh mesh)
+        {
+            return new MeshDataArray(mesh, true, true);
+        }
+
+        public static MeshDataArray AllocateWritableMeshData(Mesh[] meshes)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh array is null");
+            return new MeshDataArray(meshes, meshes.Length, true, true);
+        }
+
+        public static MeshDataArray AllocateWritableMeshData(List<Mesh> meshes)
+        {
+            if (meshes == null)
+                throw new ArgumentNullException(nameof(meshes), "Mesh list is null");
+            return new MeshDataArray(NoAllocHelpers.ExtractArrayFromListT(meshes), meshes.Count, true, true);
+        }
+
         public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh mesh, MeshUpdateFlags flags = MeshUpdateFlags.Default)
         {
             if (mesh == null)

@@ -51,6 +51,10 @@ namespace UnityEngine
         {
             static extern unsafe void AcquireReadOnlyMeshData([NotNull] Mesh mesh, IntPtr* datas);
             static extern unsafe void AcquireReadOnlyMeshDatas([NotNull] Mesh[] meshes, IntPtr* datas, int count);
+
+            static extern unsafe void AcquireMeshDataCopy([NotNull] Mesh mesh, IntPtr* datas);
+            static extern unsafe void AcquireMeshDatasCopy([NotNull] Mesh[] meshes, IntPtr* datas, int count);
+
             static extern unsafe void ReleaseMeshDatas(IntPtr* datas, int count);
 
             static extern unsafe void CreateNewMeshDatas(IntPtr* datas, int count);

@@ -97,7 +97,11 @@ namespace UnityEditor.ShaderFoundry
 
             public FunctionParameter Build()
             {
-                FoundryHandle returnHandle = container.AddFunctionParameter(name, type.handle, flags);
+                var functionParamInternal = new FunctionParameterInternal();
+                functionParamInternal.m_NameHandle = container.AddString(name);
+                functionParamInternal.m_TypeHandle = type.handle;
+                functionParamInternal.m_Flags = flags;
+                FoundryHandle returnHandle = container.AddFunctionParameter(functionParamInternal);
                 return new FunctionParameter(Container, returnHandle);
             }
         }

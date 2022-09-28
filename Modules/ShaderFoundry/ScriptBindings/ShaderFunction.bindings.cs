@@ -77,25 +77,6 @@ namespace UnityEditor.ShaderFoundry
             this.function = container?.GetFunction(handle) ?? ShaderFunctionInternal.Invalid();
         }
 
-        // only for use by the Builder
-        ShaderFunction(ShaderContainer container, FoundryHandle functionHandle, string name, string body, FoundryHandle returnTypeHandle, List<FunctionParameter> parameters, FoundryHandle parentBlockHandle, List<IncludeDescriptor> includes, List<ShaderAttribute> attributes)
-        {
-            this.container = container;
-            if (container != null)
-            {
-                FoundryHandle parametersList = FixedHandleListInternal.Build(container, parameters, (p) => (p.handle));
-                FoundryHandle includesList = FixedHandleListInternal.Build(container, includes, (p) => (p.handle));
-                FoundryHandle attributeList = FixedHandleListInternal.Build(container, attributes, (p) => (p.handle));
-                handle = functionHandle;
-                container.SetFunction(functionHandle, name, body, returnTypeHandle, parametersList, parentBlockHandle, includesList, attributeList);
-                function = container.GetFunction(handle);
-                return;
-            }
-
-            // failure
-            this = Invalid;
-        }
-
         // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
         public override bool Equals(object obj) => obj is ShaderFunction other && this.Equals(other);
         public bool Equals(ShaderFunction other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
@@ -195,8 +176,18 @@ namespace UnityEditor.ShaderFoundry
                 finalized = true;
 
                 FoundryHandle parentBlockHandle = parentBlockBuilder?.blockHandle ?? FoundryHandle.Invalid();
-                var returnTypeHandle = container.AddShaderType(returnType, true);
-                var builtFunction = new ShaderFunction(container, functionHandle, name, ConvertToString(), returnTypeHandle, parameters, parentBlockHandle, includes, attributes);
+                var body = ConvertToString();
+
+                var shaderFunctionInternal = new ShaderFunctionInternal();
+                shaderFunctionInternal.m_NameHandle = container.AddString(name);
+                shaderFunctionInternal.m_BodyHandle = container.AddString(body);
+                shaderFunctionInternal.m_ReturnTypeHandle = container.AddShaderType(returnType, true);
+                shaderFunctionInternal.m_ParameterListHandle = FixedHandleListInternal.Build(container, parameters, (p) => (p.handle));
+                shaderFunctionInternal.m_ParentBlockHandle = parentBlockHandle;
+                shaderFunctionInternal.m_IncludeListHandle = FixedHandleListInternal.Build(container, includes, (i) => (i.handle));
+                shaderFunctionInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
+                container.SetFunctionInternal(functionHandle, shaderFunctionInternal);
+                var builtFunction = new ShaderFunction(container, functionHandle);
 
                 if (parentBlockBuilder != null)
                 {

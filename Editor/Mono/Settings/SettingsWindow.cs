@@ -48,6 +48,21 @@ namespace UnityEditor
             public static StyleBlock window => EditorResources.GetStyle("sb-settings-window");
             public static StyleBlock settingsPanel => EditorResources.GetStyle("sb-settings-panel-client-area");
             public static StyleBlock header => EditorResources.GetStyle("sb-settings-header");
+
+            // FIXME: the highlight mesh is drawn *over* the text, hiding it. We have to reduce the alpha value of the highlight color
+            // in order to make the text readable. Blocked by jira https://jira.unity3d.com/browse/UUM-9296
+            private static float s_HighlightColorAlpha = 0.67f;
+
+            private static string s_SelectionColorTag = null;
+            public static string SelectionColorTag => s_SelectionColorTag ??
+                (s_SelectionColorTag = $"<mark=#{ColorUtility.ToHtmlStringRGBA(new Color(HighlightColor.r, HighlightColor.g, HighlightColor.b, s_HighlightColorAlpha))}>");
+            public static readonly string SelectionColorEndTag = "</mark>";
+            private static string s_TextColorTag = null;
+            public static string TextColorTag => s_TextColorTag ?? (s_TextColorTag = $"<color=#{ColorUtility.ToHtmlStringRGBA(Styles.settingsPanel.GetColor("-unity-search-highlight-color"))}>");
+            public static readonly string TextColorEndTag = "</color>";
+            public static readonly System.Text.RegularExpressions.Regex TagRegex = new System.Text.RegularExpressions.Regex(@"<[^>]*>");
+
+            private static Color HighlightColor => Styles.settingsPanel.GetColor("-unity-search-highlight-selection-color");
         }
 
         public static float s_DefaultLabelWidth => Styles.window.GetFloat("-unity-label-width");
@@ -303,6 +318,27 @@ namespace UnityEditor
             }
         }
 
+        private static void UpdateSearchHighlight(VisualElement container, string searchText)
+        {
+            container.Query(null, "settings-panel").Descendents<Label>().ForEach((label) =>
+            {
+                var text = label.text;
+                var hasHighlight = Styles.TagRegex.IsMatch(text);
+                text = Styles.TagRegex.Replace(text, String.Empty);
+                if (!SearchUtils.MatchSearchGroups(searchText, text, out var startHighlight, out var endHighlight))
+                {
+                    if (hasHighlight)
+                        label.text = text;
+                    return;
+                }
+
+                text = text.Insert(startHighlight, Styles.SelectionColorTag);
+                text = text.Insert(endHighlight + Styles.SelectionColorTag.Length + 1, Styles.SelectionColorEndTag);
+                text = $"{Styles.TextColorTag}{text}{Styles.TextColorEndTag}";
+                label.text = text;
+            });
+        }
+
         private void SetupUI()
         {
             SetupWindowPosition();
@@ -480,6 +516,7 @@ namespace UnityEditor
         private void HandleSearchFiltering()
         {
             m_TreeView.searchString = m_SearchText;
+            UpdateSearchHighlight(m_SettingsPanel, m_SearchText);
         }
 
         [MenuItem("Edit/Project Settings...", false, 259, false)]

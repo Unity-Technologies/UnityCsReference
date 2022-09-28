@@ -120,7 +120,7 @@ namespace UnityEngine
         tvOS = 31,
         // Nintendo Switch
         Switch = 32,
-        // Lumin
+        [System.Obsolete("Lumin is no longer supported in Unity 2022.2")]
         Lumin = 33,
         // BJM
         Stadia = 34,

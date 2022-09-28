@@ -7463,9 +7463,6 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\FixedHandleList.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\FixedHandleList.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\FixedIntList.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\FixedIntList.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\FoundryAPIAttribute.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\FoundryAPIAttribute.cs</Link>
     </Compile>

@@ -256,6 +256,10 @@ namespace UnityEditor
         [uei.ExcludeFromDocs] public static void ImportAsset(string path) { ImportAsset(path, ImportAssetOptions.Default); }
         extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
         extern public static bool CopyAsset(string path, string newPath);
+        [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be copied during AssetImporting as this leads to new asset creation in the middle of an import.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be copied during AssetImporting as this leads to new asset creation in the middle of an import.")]
+        extern public static bool CopyAssets(string[] paths, string[] newPaths);
         extern public static bool WriteImportSettingsIfDirty(string path);
         [NativeThrows]
         extern public static string[] GetSubFolders([NotNull] string path);
@@ -1068,5 +1072,25 @@ namespace UnityEditor
         }
 
         internal extern static WorkerStats GetWorkerStats();
+
+        // Binding only created for testing
+        internal static int TestOnlyDeleteAllNonPrimaryArtifacts(Type[] importers, bool deleteUnusedContentFiles)
+        {
+            return DeleteAllNonPrimaryArtifacts_Importer(importers, deleteUnusedContentFiles);
+        }
+
+        private extern static int DeleteAllNonPrimaryArtifacts_Importer(Type[] importers, bool deleteUnusedContentFiles);
+
+        // Binding only created for testing
+        internal static int TestOnlyDeleteAllNonPrimaryArtifacts(ArtifactKey[] artifactKeys, bool deleteUnusedContentFiles)
+        {
+            return DeleteAllNonPrimaryArtifacts_ArtifactKey(artifactKeys, deleteUnusedContentFiles);
+        }
+
+        private extern static int DeleteAllNonPrimaryArtifacts_ArtifactKey(ArtifactKey[] artifactKeys, bool deleteUnusedContentFiles);
+
+        // Binding only created for testing
+        [FreeFunction("AssetDatabase::DeleteUnusedContentFiles")]
+        internal extern static void TestOnlyDeleteUnusedContentFiles();
     }
 }

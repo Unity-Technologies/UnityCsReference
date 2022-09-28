@@ -198,6 +198,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Tag |= PackageTag.Unity;
 
             const string previewTagString = "Preview";
+            SemVersion? lifecycleVersionParsed;
+            var isLifecycleVersionValid = SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out lifecycleVersionParsed);
             if (m_Version?.HasPreReleaseVersionTag() == true)
             {
                 // must match exactly to be release candidate
@@ -206,7 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     m_Tag |= PackageTag.PreRelease;
             }
-            else if (m_Version?.IsNotPreReleaseOrExperimental() == true)
+            else if (isLifecycleVersionValid && m_Version.Value.IsEqualOrPatchOf(lifecycleVersionParsed))
             {
                 m_Tag |= PackageTag.Release;
             }

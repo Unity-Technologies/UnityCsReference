@@ -78,7 +78,7 @@ namespace UnityEngine
                 Dispose();
             }
 
-            internal MeshDataArray(Mesh mesh, bool checkReadWrite = true)
+            internal MeshDataArray(Mesh mesh, bool checkReadWrite = true, bool createAsCopy = false)
             {
                 // error checking
                 if (mesh == null)
@@ -89,19 +89,27 @@ namespace UnityEngine
                 m_Length = 1;
                 var totalSize = UnsafeUtility.SizeOf<IntPtr>();
                 m_Ptrs = (IntPtr*)UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<IntPtr>(), Allocator.Persistent);
-                AcquireReadOnlyMeshData(mesh, m_Ptrs);
+
+                if(createAsCopy)
+                    AcquireMeshDataCopy(mesh, m_Ptrs);
+                else
+                    AcquireReadOnlyMeshData(mesh, m_Ptrs);
 
                 UnsafeUtility.LeakRecord((IntPtr)m_Ptrs, LeakCategory.MeshDataArray, 0);
                 m_MinIndex = 0;
                 m_MaxIndex = m_Length - 1;
                 AtomicSafetyHandle.CreateHandle(out m_Safety, Allocator.TempJob);
-                // secondary version with write disabled makes the NativeArrays returned
-                // by MeshData actually be read-only
-                AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, false);
-                AtomicSafetyHandle.UseSecondaryVersion(ref m_Safety);
+
+                if(!createAsCopy)
+                {
+                    // secondary version with write disabled makes the NativeArrays returned
+                    // by MeshData actually be read-only
+                    AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, false);
+                    AtomicSafetyHandle.UseSecondaryVersion(ref m_Safety);
+                }
             }
 
-            internal MeshDataArray(Mesh[] meshes, int meshesCount, bool checkReadWrite = true)
+            internal MeshDataArray(Mesh[] meshes, int meshesCount, bool checkReadWrite = true, bool createAsCopy = false)
             {
                 // error checking
                 if (meshes.Length < meshesCount)
@@ -118,15 +126,23 @@ namespace UnityEngine
                 m_Length = meshesCount;
                 var totalSize = UnsafeUtility.SizeOf<IntPtr>() * meshesCount;
                 m_Ptrs = (IntPtr*)UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<IntPtr>(), Allocator.Persistent);
-                AcquireReadOnlyMeshDatas(meshes, m_Ptrs, meshesCount);
+
+                if(createAsCopy)
+                    AcquireMeshDatasCopy(meshes, m_Ptrs, meshesCount);
+                else
+                    AcquireReadOnlyMeshDatas(meshes, m_Ptrs, meshesCount);
 
                 m_MinIndex = 0;
                 m_MaxIndex = m_Length - 1;
                 AtomicSafetyHandle.CreateHandle(out m_Safety, Allocator.TempJob);
-                // secondary version with write disabled makes the NativeArrays returned
-                // by MeshData actually be read-only
-                AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, false);
-                AtomicSafetyHandle.UseSecondaryVersion(ref m_Safety);
+
+                if(!createAsCopy)
+                {
+                    // secondary version with write disabled makes the NativeArrays returned
+                    // by MeshData actually be read-only
+                    AtomicSafetyHandle.SetAllowSecondaryVersionWriting(m_Safety, false);
+                    AtomicSafetyHandle.UseSecondaryVersion(ref m_Safety);
+                }
             }
 
             internal MeshDataArray(int meshesCount)
