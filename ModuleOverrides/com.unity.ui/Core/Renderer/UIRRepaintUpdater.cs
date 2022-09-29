@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements
         {
             renderChain = CreateRenderChain();
 
-            if (attachedPanel.visualTree != null)
+            if (attachedPanel?.visualTree != null)
                 renderChain.UIEOnChildAdded(attachedPanel.visualTree);
 
             OnPanelStandardShaderChanged();

@@ -299,11 +299,12 @@ namespace UnityEditor
                 TakeInfo takeInfo = singleImporter.importedTakeInfos[i];
 
                 string uniqueName = MakeUniqueClipName(takeInfo.defaultClipName, allClipNames);
+                string uniqueIdentifier = MakeUniqueClipName(takeInfo.name, allClipNames);
                 allClipNames.Add(uniqueName);
 
                 arrayElemProp.Next(false);
                 AnimationClipInfoProperties info = new AnimationClipInfoProperties(arrayElemProp);
-                InitAnimationClipInfoProperties(info, takeInfo,uniqueName,0);
+                InitAnimationClipInfoProperties(info, takeInfo,uniqueName, uniqueIdentifier,0);
             }
             UpdateList();
 
@@ -897,20 +898,20 @@ namespace UnityEditor
             m_ClipAnimations.InsertArrayElementAtIndex(m_ClipAnimations.arraySize);
             var property = m_ClipAnimations.GetArrayElementAtIndex(m_ClipAnimations.arraySize - 1);
             AnimationClipInfoProperties info = new AnimationClipInfoProperties(property);
-            InitAnimationClipInfoProperties(info, takeInfo, uniqueName, m_ClipAnimations.arraySize - 1);
+            InitAnimationClipInfoProperties(info, takeInfo, uniqueName,uniqueName, m_ClipAnimations.arraySize - 1);
             UpdateList();
         }
 
-        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo,string uniqueName,int clipOffset)
+        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo,string uniqueName,string uniqueIdentifier,int clipOffset)
         {
             SetupTakeNameAndFrames(info, takeInfo);
 
             var animationClipType = UnityType.FindTypeByName("AnimationClip");
 
-            long id = ImportSettingInternalID.FindInternalID(serializedObject, animationClipType, uniqueName);
+            long id = ImportSettingInternalID.FindInternalID(serializedObject, animationClipType, uniqueIdentifier);
 
             info.internalID = id == 0L
-                ? AssetImporter.MakeLocalFileIDWithHash(animationClipType.persistentTypeID, uniqueName, clipOffset)
+                ? AssetImporter.MakeLocalFileIDWithHash(animationClipType.persistentTypeID, uniqueIdentifier, clipOffset)
                 : id;
 
             info.name = uniqueName;

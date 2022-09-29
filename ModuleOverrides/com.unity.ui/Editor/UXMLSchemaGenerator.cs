@@ -69,6 +69,7 @@ namespace UnityEditor.UIElements
                 while (it.MoveNext())
                 {
                     string fileName = it.Current;
+
                     if (it.MoveNext())
                     {
                         string data = it.Current;
@@ -80,6 +81,7 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
+
 
             AssetDatabase.Refresh();
 
@@ -213,6 +215,13 @@ namespace UnityEditor.UIElements
                 baseDir = Application.temporaryCachePath + "/";
             }
 
+            if (!Application.isBatchMode)
+            {
+                EditorUtility.DisplayProgressBar("Generating UXML Schema Files", "Please wait...", 0.0f);
+            }
+
+            try
+            {
             // Convert the factories into schemas info.
             foreach (var factories in VisualElementFactoryRegistry.factories)
             {
@@ -221,6 +230,7 @@ namespace UnityEditor.UIElements
 
                 // Only process the first factory, as the other factories define the same element.
                 IUxmlFactory factory = factories.Value[0];
+
                 if (!ProcessFactory(factory, schemas, processingData))
                 {
                     // Could not process the factory now, because it depends on a yet unprocessed factory.
@@ -243,8 +253,7 @@ namespace UnityEditor.UIElements
                         deferredFactories.Add(factory);
                     }
                 }
-            }
-            while (deferredFactoriesCopy.Count > deferredFactories.Count);
+                } while (deferredFactoriesCopy.Count > deferredFactories.Count);
 
             if (deferredFactories.Count > 0)
             {
@@ -298,11 +307,12 @@ namespace UnityEditor.UIElements
 
                 schemaSet.Add(schema.Value.schema);
             }
+
             schemaSet.Add(masterSchema);
 
             try
             {
-                schemaSet.Compile();
+            schemaSet.Compile();
             }
             catch (Exception e)
             {
@@ -333,6 +343,14 @@ namespace UnityEditor.UIElements
                 StringWriter strWriter = new UTF8StringWriter();
                 compiledSchema.Write(strWriter, nsmgr);
                 yield return strWriter.ToString();
+            }
+        }
+            finally
+            {
+                if (!Application.isBatchMode)
+                {
+                    EditorUtility.ClearProgressBar();
+                }
             }
         }
 
@@ -582,34 +600,34 @@ namespace UnityEditor.UIElements
 
                         if (!string.IsNullOrEmpty(bounds.min))
                         {
-                            XmlSchemaFacet facet;
-                            if (bounds.excludeMin)
-                            {
-                                facet = new XmlSchemaMinExclusiveFacet();
-                            }
-                            else
-                            {
-                                facet = new XmlSchemaMinInclusiveFacet();
-                            }
-                            facet.Value = bounds.min;
-                            restriction.Facets.Add(facet);
+                        XmlSchemaFacet facet;
+                        if (bounds.excludeMin)
+                        {
+                            facet = new XmlSchemaMinExclusiveFacet();
+                        }
+                        else
+                        {
+                            facet = new XmlSchemaMinInclusiveFacet();
+                        }
+                        facet.Value = bounds.min;
+                        restriction.Facets.Add(facet);
                         }
 
                         if (!string.IsNullOrEmpty(bounds.max))
                         {
                             XmlSchemaFacet facet;
-                            if (bounds.excludeMax)
-                            {
-                                facet = new XmlSchemaMaxExclusiveFacet();
-                            }
-                            else
-                            {
-                                facet = new XmlSchemaMaxInclusiveFacet();
-                            }
-
-                            facet.Value = bounds.max;
-                            restriction.Facets.Add(facet);
+                        if (bounds.excludeMax)
+                        {
+                            facet = new XmlSchemaMaxExclusiveFacet();
                         }
+                        else
+                        {
+                            facet = new XmlSchemaMaxInclusiveFacet();
+                        }
+
+                        facet.Value = bounds.max;
+                        restriction.Facets.Add(facet);
+                    }
                     }
                     else
                     {

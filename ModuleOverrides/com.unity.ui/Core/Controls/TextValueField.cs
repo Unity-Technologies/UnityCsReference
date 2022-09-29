@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -66,17 +67,21 @@ namespace UnityEngine.UIElements
 
         private BaseFieldMouseDragger m_Dragger;
         internal bool m_UpdateTextFromValue;
+        private bool m_ForceUpdateDisplay;
 
         /// <summary>
         /// The format string for the value.
         /// </summary>
         public string formatString
         {
-            get { return textValueInput.formatString; }
+            get => textValueInput.formatString;
             set
             {
-                textValueInput.formatString = value;
-                SetValueWithoutNotify(this.value);
+                if (textValueInput.formatString != value)
+                {
+                    textValueInput.formatString = value;
+                    textEdition.UpdateText(ValueToString(rawValue));
+                }
             }
         }
 
@@ -87,7 +92,7 @@ namespace UnityEngine.UIElements
             : base(label, maxLength, Char.MinValue, textValueInput)
         {
             m_UpdateTextFromValue = true;
-            SetValueWithoutNotify(default(TValueType));
+            textEdition.UpdateText(ValueToString(rawValue));
             onIsReadOnlyChanged += OnIsReadOnlyChanged;
         }
 
@@ -124,15 +129,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public override TValueType value
         {
-            get { return base.value; }
-            set
-            {
-                base.value = value;
-                if (m_UpdateTextFromValue)
-                {
-                    text = ValueToString(rawValue);
-                }
-            }
+            get => base.value;
+            set => base.value = value;
         }
 
         internal override void UpdateValueFromText()
@@ -187,13 +185,17 @@ namespace UnityEngine.UIElements
         /// <param name="newValue">The new value to set.</param>
         public override void SetValueWithoutNotify(TValueType newValue)
         {
+            var displayNeedsUpdate = m_ForceUpdateDisplay || (m_UpdateTextFromValue && !EqualityComparer<TValueType>.Default.Equals(rawValue, newValue));
             base.SetValueWithoutNotify(newValue);
-            if (m_UpdateTextFromValue)
+
+            if (displayNeedsUpdate)
             {
                 // Value is the same but the text might not be in sync
                 // In the case of an expression like 2+2, the text might not be equal to the result
                 textEdition.UpdateText(ValueToString(rawValue));
             }
+
+            m_ForceUpdateDisplay = false;
         }
 
 
@@ -212,7 +214,8 @@ namespace UnityEngine.UIElements
                 if (string.IsNullOrEmpty(text))
                 {
                     // Make sure that empty field gets the default value
-                    value = default(TValueType);
+                    value = default;
+                    textInputBase.UpdateTextFromValue();
                 }
                 else
                 {
@@ -224,9 +227,18 @@ namespace UnityEngine.UIElements
             {
                 if (showMixedValue)
                 {
-                    value = default(TValueType);
+                    value = default;
+                    textInputBase.UpdateTextFromValue();
                 }
             }
+        }
+
+        internal override void OnViewDataReady()
+        {
+            // Should the field be reloaded, ensure that the value saved in memory is actually displayed when a data key is used.
+            m_ForceUpdateDisplay = true;
+
+            base.OnViewDataReady();
         }
 
         // Implements a control with a value of type T backed by a text.
@@ -310,7 +322,7 @@ namespace UnityEngine.UIElements
 
     // Derive from BaseFieldTraits in order to not inherit from TextInputBaseField UXML attributes.
     /// <summary>
-    /// Specifies the <see cref="TextValueField"/>'s <see cref="UxmlTraits"/>.
+    /// Specifies the <see cref="TextValueField{TValueType}"/>'s <see cref="UxmlTraits"/>.
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class TextValueFieldTraits<TValueType, TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
@@ -320,7 +332,7 @@ namespace UnityEngine.UIElements
         UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
 
         /// <summary>
-        /// Initializes the <see cref="TextValueField"/>'s <see cref="UxmlTraits"/>.
+        /// Initializes the <see cref="TextValueField{TValueType}"/>'s <see cref="UxmlTraits"/>.
         /// </summary>
         /// <param name="ve">The VisualElement to initialize.</param>
         /// <param name="bag">A bag of UXML attribute name-value pairs used to initialize VisualElement members.</param>

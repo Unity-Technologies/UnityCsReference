@@ -43,9 +43,7 @@ namespace UnityEngine.UIElements
         /// <returns>The double parsed from the string.</returns>
         protected override double StringToValue(string str)
         {
-            double v;
-            UINumericFieldsUtils.StringToDouble(str, out v);
-            return v;
+            return UINumericFieldsUtils.StringToDouble(str, out var v) ? v : rawValue;
         }
 
         /// <summary>

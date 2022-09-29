@@ -22,7 +22,8 @@ namespace UnityEditor
         {
             public static readonly float buttonWidth = 200;
 
-            public static readonly GUIContent newLightingSettings = EditorGUIUtility.TrTextContent("New Lighting Settings");
+            public static readonly GUIContent newLightingSettings = EditorGUIUtility.TrTextContent("New", "Create a new Lighting Settings Asset with default settings.");
+            public static readonly GUIContent cloneLightingSettings = EditorGUIUtility.TrTextContent("Clone", "Create a new Lighting Settings Asset based on the current settings.");
 
             public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting Settings");
             public static readonly GUIContent workflowSettings = EditorGUIUtility.TrTextContent("Workflow Settings");
@@ -113,6 +114,24 @@ namespace UnityEditor
         {
         }
 
+        private void CreateLightingSettings(LightingSettings from = null)
+        {
+            LightingSettings ls;
+            if (from == null)
+            {
+                ls = new LightingSettings();
+                ls.name = "New Lighting Settings";
+            }
+            else
+            {
+                ls = Object.Instantiate(from);
+                ls.name = from.name;
+            }
+            Undo.RecordObject(m_LightmapSettings.targetObject, "New Lighting Settings");
+            Lightmapping.lightingSettingsInternal = ls;
+            ProjectWindowUtil.CreateAsset(ls, (ls.name + ".lighting"));
+        }
+
         void LightingSettingsGUI()
         {
             m_ShowLightingSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowLightingSettings.value, Styles.lightingSettings, true);
@@ -121,20 +140,13 @@ namespace UnityEditor
             {
                 ++EditorGUI.indentLevel;
 
+                GUILayout.BeginHorizontal();
                 EditorGUILayout.PropertyField(m_LightingSettingsAsset, GUIContent.Temp("Lighting Settings Asset"));
 
-                EditorGUILayout.Space();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-
-                if (GUILayout.Button(Styles.newLightingSettings, GUILayout.Width(170)))
-                {
-                    var ls = new LightingSettings();
-                    ls.name = "New Lighting Settings";
-                    Undo.RecordObject(m_LightmapSettings.targetObject, "New Lighting Settings");
-                    Lightmapping.lightingSettingsInternal = ls;
-                    ProjectWindowUtil.CreateAsset(ls, (ls.name + ".lighting"));
-                }
+                if (GUILayout.Button(Styles.newLightingSettings, EditorStyles.miniButtonLeft, GUILayout.Width(50)))
+                    CreateLightingSettings();
+                else if (GUILayout.Button(Styles.cloneLightingSettings, EditorStyles.miniButtonRight, GUILayout.Width(50)))
+                    CreateLightingSettings(Lightmapping.GetLightingSettingsOrDefaultsFallback());
 
                 GUILayout.EndHorizontal();
                 EditorGUILayout.Space();

@@ -312,7 +312,11 @@ namespace UnityEditor
             if (GUILayout.Button(GetBakeModeIcon(m_autoLightBakingOn), Styles.statusIcon))
             {
                 Event.current.Use();
-                LightingWindow.CreateLightingWindow();
+
+                if (LightingWindow.isShown)
+                    LightingWindow.DestroyLightingWindow();
+                else
+                    LightingWindow.CreateLightingWindow();
             }
 
             var buttonRect = GUILayoutUtility.GetLastRect();

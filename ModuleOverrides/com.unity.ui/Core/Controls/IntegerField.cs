@@ -43,9 +43,7 @@ namespace UnityEngine.UIElements
         /// <returns>The integer parsed from the string.</returns>
         protected override int StringToValue(string str)
         {
-            long v;
-            UINumericFieldsUtils.StringToLong(str, out v);
-            return Mathf.ClampToInt(v);
+            return UINumericFieldsUtils.StringToLong(str, out var v) ? Mathf.ClampToInt(v) : rawValue;
         }
 
         /// <summary>

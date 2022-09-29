@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         [NativeHeader("Runtime/Misc/PlayerSettings.h")]
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
-        public sealed partial class EmbeddedLinux
+        public sealed partial class QNX
         {
             // Custom path to store data files
             [NativeProperty("HmiPlayerDataPath")]
@@ -20,9 +20,6 @@ namespace UnityEditor
 
             [NativeProperty("HmiForceSRGBBlit")]
             public static extern bool forceSRGBBlit { get; set; }
-
-            [NativeProperty("EmbeddedLinuxEnableGamepadInput")]
-            public static extern bool enableGamepadInput { get; set; }
 
             [NativeProperty("HmiCpuConfiguration")]
             public static extern int[] cpuConfiguration { get; set; }
