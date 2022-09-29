@@ -227,7 +227,7 @@ namespace UnityEngine.UIElements
                     if (lineIndex == firstLineIndex)
                     {
                         lastCharacterOnLine = uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
-                        endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(lastCharacterOnLine);
+                        endPos = uitkTextHandle.textHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
                     else if (lineIndex == lastLineIndex)
                     {
@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
                             uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
                         startPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(firstCharacterOnLine);
 
-                        endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(endIndex);
+                        endPos = uitkTextHandle.textHandle.GetCursorPositionFromStringIndexUsingLineHeight(endIndex, true);
                     }
                     else if (lineIndex != firstLineIndex && lineIndex != lastLineIndex)
                     {
@@ -244,7 +244,7 @@ namespace UnityEngine.UIElements
                         startPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(firstCharacterOnLine);
 
                         lastCharacterOnLine = uitkTextHandle.textHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
-                        endPos = uitkTextHandle.GetCursorPositionFromIndexUsingLineHeight(lastCharacterOnLine);
+                        endPos = uitkTextHandle.textHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
 
                     mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
@@ -265,7 +265,7 @@ namespace UnityEngine.UIElements
                 : Color.white;
 
             var characterHeight = uitkTextHandle.GetCharacterHeightFromIndex(selection.cursorIndex);
-            var width = AlignmentUtils.FloorToPixelGrid(selection.cursorWidth, scaledPixelsPerPoint);
+            var width = AlignmentUtils.CeilToPixelGrid(selection.cursorWidth, scaledPixelsPerPoint);
 
             mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
             {

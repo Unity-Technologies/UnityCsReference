@@ -31,7 +31,9 @@ namespace UnityEditor.EditorTools
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class EditorToolAttribute : ToolAttribute
     {
-        public EditorToolAttribute(string displayName, Type componentToolTarget = null, Type editorToolContext = null)
+        public EditorToolAttribute(string displayName, Type componentToolTarget = null)
+            : base(displayName, componentToolTarget) {}
+        public EditorToolAttribute(string displayName, Type componentToolTarget, Type editorToolContext)
             : base(displayName, componentToolTarget, editorToolContext) {}
     }
 
