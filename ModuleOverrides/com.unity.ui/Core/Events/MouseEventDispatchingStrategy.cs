@@ -53,6 +53,7 @@ namespace UnityEngine.UIElements
 
             // If root IMGUI doesn't use event, send it to other IMGUIs down the line.
             if (evt.propagateToIMGUI ||
+                evt.eventTypeId == DragExitedEvent.TypeId() ||
                 evt.eventTypeId == MouseEnterWindowEvent.TypeId() ||
                 evt.eventTypeId == MouseLeaveWindowEvent.TypeId())
             {

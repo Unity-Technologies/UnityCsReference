@@ -53,8 +53,8 @@ namespace UnityEngine.UIElements
         }
 
         internal VisualElement dragElement { get; private set; }
-        private VisualElement dragMinThumb { get; set; }
-        private VisualElement dragMaxThumb { get; set; }
+        internal VisualElement dragMinThumb { get; private set; }
+        internal VisualElement dragMaxThumb { get; private set; }
         internal ClampedDragger<float> clampedDragger { get; private set; }
 
         // For dragging purpose
@@ -320,8 +320,14 @@ namespace UnityEngine.UIElements
             dragElement.style.left = newPositionLeft;
 
             // Calculate the rect for the mouse selection, in the parent coordinate (MinMaxSlider world) ...
-            m_DragMinThumbRect = new Rect(dragElement.resolvedStyle.left, dragElement.layout.yMin, dragElement.resolvedStyle.unitySliceLeft, dragElement.resolvedStyle.height);
-            m_DragMaxThumbRect = new Rect(dragElement.resolvedStyle.left + (dragElement.resolvedStyle.width - dragElement.resolvedStyle.unitySliceRight), dragElement.layout.yMin, dragElement.resolvedStyle.unitySliceRight, dragElement.resolvedStyle.height);
+            var minThumbX = dragElement.resolvedStyle.left;
+            var maxThumbX = dragElement.resolvedStyle.left + (dragElement.resolvedStyle.width - dragElement.resolvedStyle.unitySliceRight);
+            var minThumbY = dragElement.layout.yMin + dragMinThumb.resolvedStyle.marginTop;
+            var maxThumbY = dragElement.layout.yMin + dragMaxThumb.resolvedStyle.marginTop;
+            var minThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMinThumb.resolvedStyle.height);
+            var maxThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMaxThumb.resolvedStyle.height);
+            m_DragMinThumbRect = new Rect(minThumbX, minThumbY,dragElement.resolvedStyle.unitySliceLeft, minThumbHeight);
+            m_DragMaxThumbRect = new Rect(maxThumbX, maxThumbY, dragElement.resolvedStyle.unitySliceRight, maxThumbHeight);
 
             // The child elements are positioned based on the parent (drag element) coordinate...
             // Set up the Max Thumb for the horizontal slider...

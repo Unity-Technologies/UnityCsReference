@@ -377,6 +377,12 @@ namespace UnityEngine.UIElements
             if (m_CollapseMode)
                 return;
 
+            // Don't try to update the layout if the split view is not displayed. This is because the resolved width and height
+            // will be 0, which will effectively reset the layout.
+            if (resolvedStyle.display == DisplayStyle.None ||
+                resolvedStyle.visibility == Visibility.Hidden)
+                return;
+
             var maxLength = resolvedStyle.width;
             var fixedPaneLength = m_FixedPane.resolvedStyle.width;
             var fixedPaneMinLength = m_FixedPane.resolvedStyle.minWidth.value;
