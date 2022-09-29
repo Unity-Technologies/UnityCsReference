@@ -807,6 +807,40 @@ namespace Unity.Collections
             {
                 return GetEnumerator();
             }
+
+            public readonly ReadOnlySpan<T> AsReadOnlySpan()
+            {
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+                return new ReadOnlySpan<T>(m_Buffer, m_Length);
+            }
+
+            public static implicit operator ReadOnlySpan<T>(in ReadOnly source)
+            {
+                return source.AsReadOnlySpan();
+            }
+        }
+
+        [WriteAccessRequired]
+        public readonly Span<T> AsSpan()
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            return new Span<T>(m_Buffer, m_Length);
+        }
+
+        public readonly ReadOnlySpan<T> AsReadOnlySpan()
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            return new ReadOnlySpan<T>(m_Buffer, m_Length);
+        }
+
+        public static implicit operator Span<T>(in NativeArray<T> source)
+        {
+            return source.AsSpan();
+        }
+
+        public static implicit operator ReadOnlySpan<T>(in NativeArray<T> source)
+        {
+            return source.AsReadOnlySpan();
         }
     }
 

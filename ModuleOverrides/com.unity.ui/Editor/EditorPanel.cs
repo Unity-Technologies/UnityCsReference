@@ -69,7 +69,7 @@ namespace UnityEditor.UIElements
 
         static void OnUpdateMaterial(Material mat)
         {
-            mat.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
+            mat?.SetFloat(s_EditorColorSpaceID, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
         }
 
         public static void InitEditorUpdater(BaseVisualElementPanel panel, VisualTreeUpdater visualTreeUpdater)
