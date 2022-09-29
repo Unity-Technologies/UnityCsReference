@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageName = productDetail.GetString("packageName") ?? string.Empty;
             category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
-            publishNotes = productDetail.GetString("publishNotes") ?? string.Empty;
+            publishNotes = CleanUpHtml(productDetail.GetString("publishNotes") ?? string.Empty);
             firstPublishedDate = productDetail.GetDictionary("properties")?.GetString("firstPublishedDate");
 
             var versionInfo = productDetail.GetDictionary("version");

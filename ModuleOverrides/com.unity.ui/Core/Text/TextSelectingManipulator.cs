@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements
 
             m_SelectingUtilities.OnCursorIndexChange += OnCursorIndexChange;
             m_SelectingUtilities.OnSelectIndexChange += OnSelectIndexChange;
+            m_SelectingUtilities.OnRevealCursorChange += OnRevealCursor;
 
             SyncSelectingUtilitiesWithTextElement();
         }
@@ -59,10 +60,17 @@ namespace UnityEngine.UIElements
             m_SelectingUtilities.text = m_TextElement.text;
         }
 
+        void OnRevealCursor()
+        {
+            m_TextElement.IncrementVersion(VersionChangeType.Repaint);
+        }
+
         void OnSelectIndexChange()
         {
             m_TextElement.IncrementVersion(VersionChangeType.Repaint);
-            m_TextElement.edition.UpdateScrollOffset?.Invoke();
+
+            if(m_SelectingUtilities.revealCursor)
+                m_TextElement.edition.UpdateScrollOffset?.Invoke();
 
             if(HasSelection() && m_TextElement.focusController != null)
                 m_TextElement.focusController.selectedTextElement = m_TextElement;
@@ -71,7 +79,9 @@ namespace UnityEngine.UIElements
         void OnCursorIndexChange()
         {
             m_TextElement.IncrementVersion(VersionChangeType.Repaint);
-            m_TextElement.edition.UpdateScrollOffset?.Invoke();
+
+            if(m_SelectingUtilities.revealCursor)
+                m_TextElement.edition.UpdateScrollOffset?.Invoke();
 
             if(HasSelection() && m_TextElement.focusController != null)
                 m_TextElement.focusController.selectedTextElement = m_TextElement;
@@ -177,12 +187,8 @@ namespace UnityEngine.UIElements
                 return;
 
             if (selectAllOnMouseUp)
-            {
                 m_SelectingUtilities.SelectAll();
 
-                // Scroll offset might need to be updated
-                m_TextElement.edition.UpdateScrollOffset?.Invoke();
-            }
 
             selectAllOnMouseUp = false;
             m_Dragged = false;

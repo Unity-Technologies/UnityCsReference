@@ -480,12 +480,12 @@ namespace UnityEngine
             if (cursorIndex < selectIndex)
             {
                 text = text.Substring(0, cursorIndex) + text.Substring(selectIndex, text.Length - selectIndex);
-                selectIndex = cursorIndex;
+                m_TextSelectingUtility.SetSelectIndexWithoutNotify(cursorIndex);
             }
             else
             {
                 text = text.Substring(0, selectIndex) + text.Substring(cursorIndex, text.Length - cursorIndex);
-                cursorIndex = selectIndex;
+                m_TextSelectingUtility.SetCursorIndexWithoutNotify(selectIndex);
             }
             m_TextSelectingUtility.ClearCursorPos();
 
@@ -498,7 +498,8 @@ namespace UnityEngine
             RestoreCursorState();
             DeleteSelection();
             text = text.Insert(cursorIndex, replace);
-            selectIndex = cursorIndex += replace.Length;
+            m_TextSelectingUtility.SetCursorIndexWithoutNotify(cursorIndex + replace.Length);
+            m_TextSelectingUtility.SetSelectIndexWithoutNotify(selectIndex + replace.Length);
             m_TextSelectingUtility.ClearCursorPos();
         }
 

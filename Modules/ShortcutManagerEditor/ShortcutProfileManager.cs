@@ -510,7 +510,7 @@ namespace UnityEditor.ShortcutManagement
         {
             if (m_ProfileStore.ProfileExists(id))
             {
-                ShortcutProfile tmpProfile = new ShortcutProfile();
+                ShortcutProfile tmpProfile = new ShortcutProfile(id);
                 LoadAndApplyJsonFile(id, tmpProfile);
                 return tmpProfile;
             }

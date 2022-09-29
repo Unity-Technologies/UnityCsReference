@@ -200,6 +200,7 @@ namespace UnityEngine.Rendering
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
         [StaticAccessor("VirtualTexturing::Procedural", StaticAccessorType.DoubleColon)]
+        [Obsolete("Procedural Virtual Texturing is experimental, not ready for production use and Unity does not currently support it. The feature might be changed or removed in the future.", false)]
         public static class Procedural
         {
             // Set the size of the CPU cache(s). All PVT Stacks must have been freed before calling this.
