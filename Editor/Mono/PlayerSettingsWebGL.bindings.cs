@@ -52,6 +52,13 @@ namespace UnityEditor
         Geometric = 2
     }
 
+    public enum WebGLPowerPreference
+    {
+        Default = 0,
+        LowPower = 1,
+        HighPerformance = 2
+    }
+
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
         [NativeHeader("Editor/Mono/PlayerSettingsWebGL.bindings.h")]
@@ -221,6 +228,13 @@ namespace UnityEditor
 
             [NativeProperty("webGLMemoryGeometricGrowthCap", TargetType.Field)]
             public extern static int memoryGeometricGrowthCap
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLPowerPreference", TargetType.Field)]
+            public extern static WebGLPowerPreference powerPreference
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;

@@ -38,7 +38,7 @@ namespace UnityEngine
                 if (value != m_RevealCursor)
                 {
                     m_RevealCursor = value;
-                    OnCursorIndexChange?.Invoke();
+                    OnRevealCursorChange?.Invoke();
                 }
             }
         }
@@ -62,16 +62,18 @@ namespace UnityEngine
             get { return m_CursorIndex; }
             set
             {
-                int oldCursorIndex = m_CursorIndex;
-                m_CursorIndex = value;
-                EnsureValidCodePointIndex(ref m_CursorIndex);
-
-                if (m_CursorIndex != oldCursorIndex)
+                if (m_CursorIndex != value)
                 {
-                    revealCursor = true;
+                    SetCursorIndexWithoutNotify(value);
                     OnCursorIndexChange?.Invoke();
                 }
             }
+        }
+
+        internal void SetCursorIndexWithoutNotify(int index)
+        {
+            m_CursorIndex = index;
+            EnsureValidCodePointIndex(ref m_CursorIndex);
         }
 
         public int selectIndex
@@ -79,13 +81,18 @@ namespace UnityEngine
             get { return m_SelectIndex; }
             set
             {
-                int oldSelectIndex = m_SelectIndex;
-                m_SelectIndex = value;
-                EnsureValidCodePointIndex(ref m_SelectIndex);
-
-                if (m_SelectIndex != oldSelectIndex)
+                if (m_SelectIndex != value)
+                {
+                    SetSelectIndexWithoutNotify(value);
                     OnSelectIndexChange?.Invoke();
+                }
             }
+        }
+
+        internal void SetSelectIndexWithoutNotify(int index)
+        {
+            m_SelectIndex = index;
+            EnsureValidCodePointIndex(ref m_SelectIndex);
         }
 
         /// Returns the selected text
@@ -311,9 +318,7 @@ namespace UnityEngine
             int textLen = text.Length;
 
             if (cursorIndex < textLen)
-            {
-                cursorIndex = IndexOfEndOfLine(cursorIndex) + 1;
-            }
+                cursorIndex = IndexOfEndOfLine(cursorIndex);
             if (selectIndex != 0)
                 selectIndex = text.LastIndexOf(kNewLineChar, selectIndex - 1) + 1;
         }
@@ -722,6 +727,7 @@ namespace UnityEngine
         internal Action OnCursorIndexChange;
 
         internal Action OnSelectIndexChange;
+        internal Action OnRevealCursorChange;
 
         void ClampTextIndex(ref int index)
         {

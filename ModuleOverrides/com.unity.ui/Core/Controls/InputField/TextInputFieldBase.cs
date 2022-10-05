@@ -694,6 +694,10 @@ namespace UnityEngine.UIElements
                     scrollView.verticalScroller.slider.RegisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
                     scrollView.horizontalScroller.slider.RegisterValueChangedCallback(MakeSureScrollViewDoesNotLeakEvents);
 
+                    // We want to make sure the TextElement doesn't loose focus when users are using the slider.
+                    scrollView.verticalScroller.slider.focusable = false;
+                    scrollView.horizontalScroller.slider.focusable = false;
+
                     AddToClassList(multilineInputWithScrollViewUssClassName);
                     textElement.AddToClassList(innerTextElementWithScrollViewUssClassName);
                 }
@@ -716,12 +720,22 @@ namespace UnityEngine.UIElements
                 evt.StopPropagation();
             }
 
+            private IVisualElementScheduledItem m_UpdateScrollOffsetScheduledItem;
             internal void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)
             {
                 if (e.oldRect.size == e.newRect.size)
                     return;
 
-                UpdateScrollOffset();
+                if (m_UpdateScrollOffsetScheduledItem == null)
+                {
+                    m_UpdateScrollOffsetScheduledItem = schedule.Execute(UpdateScrollOffset);
+                }
+                else
+                {
+                    // Restart the scheduled update of the scrollers
+                    m_UpdateScrollOffsetScheduledItem.Pause();
+                    m_UpdateScrollOffsetScheduledItem.Resume();
+                }
             }
 
             internal void TextElementOnGeometryChangedEvent(GeometryChangedEvent e)
@@ -756,8 +770,9 @@ namespace UnityEngine.UIElements
                 return !isReadOnly && enabledInHierarchy;
             }
 
-            // scrollOffset and m_DelayedUpdateScrollOffset are used in automated tests
             internal Vector2 scrollOffset = Vector2.zero;
+            bool m_ScrollViewWasClamped;
+
             internal void UpdateScrollOffset()
             {
                 var selection = textSelection;
@@ -768,6 +783,9 @@ namespace UnityEngine.UIElements
                 {
                     scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width);
                     scrollView.scrollOffset = scrollOffset;
+
+                    m_ScrollViewWasClamped = scrollOffset.x > scrollView.scrollOffset.x || scrollOffset.y > scrollView.scrollOffset.y;
+                    m_UpdateScrollOffsetScheduledItem?.Pause();
                 }
                 else
                 {
@@ -783,6 +801,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            Vector2 lastCursorPos = Vector2.zero;
             Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth)
             {
                 var cursorPos = textSelection.cursorPosition;
@@ -792,15 +811,19 @@ namespace UnityEngine.UIElements
                 var newYOffset = yOffset;
 
                 const int leftScrollOffsetPadding = 5;
+                const float epsilon = 0.05f;
 
                 // Update scrollOffset when cursor moves right.
-                if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth)
-                    newXOffset = cursorPos.x + cursorWidth - contentViewportWidth;
-                // Update scrollOffset when cursor moves left.
-                else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
-                    newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
+                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon || m_ScrollViewWasClamped)
+                {
+                    if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth)
+                        newXOffset = cursorPos.x + cursorWidth - contentViewportWidth;
+                    // Update scrollOffset when cursor moves left.
+                    else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
+                        newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
+                }
 
-                if (textEdition.multiline)
+                if (textEdition.multiline && Math.Abs(lastCursorPos.y - cursorPos.y) > epsilon || m_ScrollViewWasClamped)
                 {
                     // Update scrollOffset when cursor moves down.
                     if ((cursorPos.y - yOffset) > contentRect.height)
@@ -810,10 +833,12 @@ namespace UnityEngine.UIElements
                         newYOffset = cursorPos.y - textSelection.cursorLineHeight;
                 }
 
+                lastCursorPos = cursorPos;
+
                 if (xOffset != newXOffset || yOffset != newYOffset)
                     return new Vector2(newXOffset, newYOffset);
 
-                return scrollOffset;
+                return scrollView != null ? scrollView.scrollOffset : scrollOffset;
             }
 
             internal void SetScrollViewMode()

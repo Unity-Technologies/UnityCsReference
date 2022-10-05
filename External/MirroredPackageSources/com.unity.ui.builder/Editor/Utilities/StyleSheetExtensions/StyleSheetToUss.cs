@@ -283,6 +283,24 @@ namespace Unity.UI.Builder
                 options = new UssExportOptions();
 
             var sb = new StringBuilder();
+            if (sheet.imports != null)
+            {
+                for (var i = 0; i < sheet.imports.Length; ++i)
+                {
+                    var import = sheet.imports[i];
+                    if (!import.styleSheet)
+                        continue;
+                    var stylesheetImportPath = GetPathValueFromAssetRef(import.styleSheet);
+                   
+                    // Skip invalid references.
+                    if (stylesheetImportPath == "none")
+                        continue;
+                   
+                    sb.Append($"@import {stylesheetImportPath};");
+                    sb.Append(BuilderConstants.newlineCharFromEditorSettings);
+                }
+            }
+
             if (sheet.complexSelectors != null)
             {
                 bool isFirst = true;
