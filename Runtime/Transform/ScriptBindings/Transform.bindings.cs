@@ -113,6 +113,8 @@ namespace UnityEngine
         // Set position and rotation in world space
         public extern void SetPositionAndRotation(Vector3 position, Quaternion rotation);
 
+        public extern void SetLocalPositionAndRotation(Vector3 localPosition, Quaternion localRotation);
+
         // Moves the transform in the direction and distance of /translation/.
         public void Translate(Vector3 translation, [UnityEngine.Internal.DefaultValue("Space.Self")] Space relativeTo)
         {

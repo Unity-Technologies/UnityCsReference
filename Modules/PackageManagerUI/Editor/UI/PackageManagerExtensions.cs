@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI
     {
         internal static List<IPackageManagerExtension> Extensions { get { return extensions ?? (extensions = new List<IPackageManagerExtension>()); } }
         static List<IPackageManagerExtension> extensions;
+        internal static bool extensionsGUICreated = false;
 
         /// <summary>
         /// Registers a new Package Manager UI extension
