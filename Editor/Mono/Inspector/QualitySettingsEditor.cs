@@ -68,7 +68,7 @@ namespace UnityEditor
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
             public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
             public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
-            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Where the maximum possible texture mip resolution for a platform is less than full, enabling Texture MipMap Stripping in Player Settings can reduce the package size.");
+            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mips. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
 
             public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
             public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
@@ -499,7 +499,14 @@ namespace UnityEditor
             if (PlayerSettings.mipStripping)
                 return;
 
-            EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info, false);
+            EditorGUILayout.Space(-20f); // Move back towards the mipmap limit groups UI.
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                float marginRight = Presets.Preset.IsEditorTargetAPreset(target) ? 67f : 64f;
+                EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info, false);
+                EditorGUILayout.GetControlRect(false, GUILayoutUtility.GetLastRect().height, GUILayout.Width(marginRight));
+                // Limit the width of the HelpBox in order to avoid clipping into the mipmap limit groups UI.
+            }
         }
 
         /**
@@ -707,13 +714,13 @@ namespace UnityEditor
             {
                 RenderPipelineManager.CleanupRenderPipeline();
             }
+
+            EditorGUILayout.Space(3);
+            m_TextureMipmapLimitGroupsList.DoLayoutList();
             if (QualitySettings.IsTextureResReducedOnAnyPlatform())
             {
                 MipStrippingHintGUI();
             }
-
-            EditorGUILayout.Space(3);
-            m_TextureMipmapLimitGroupsList.DoLayoutList();
 
             EditorGUILayout.PropertyField(anisotropicTexturesProperty);
 

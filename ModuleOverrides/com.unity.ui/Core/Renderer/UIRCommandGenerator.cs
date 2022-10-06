@@ -154,7 +154,6 @@ namespace UnityEngine.UIElements.UIR
                 Color32 textCoreSettingsPage = new Color32(0, 0, 0, 0);
 
                 k_ConvertEntriesToCommandsMarker.Begin();
-                int firstDisplacementUV = -1, lastDisplacementUVPlus1 = -1;
                 foreach (var entry in painter.entries)
                 {
                     if (entry.vertices.Length > 0 && entry.indices.Length > 0)
@@ -196,18 +195,6 @@ namespace UnityEngine.UIElements.UIR
                         // Copy vertices, transforming them as necessary
                         var targetVerticesSlice = verts.Slice(vertsFilled, entry.vertices.Length);
 
-                        if (entry.uvIsDisplacement)
-                        {
-                            if (firstDisplacementUV < 0)
-                            {
-                                firstDisplacementUV = vertsFilled;
-                                lastDisplacementUVPlus1 = vertsFilled + entry.vertices.Length;
-                            }
-                            else if (lastDisplacementUVPlus1 == vertsFilled)
-                                lastDisplacementUVPlus1 += entry.vertices.Length;
-                            else ve.renderChainData.disableNudging = true; // Disjoint displacement UV entries, we can't keep track of them, so disable nudging optimization altogether
-                        }
-
                         int entryIndexCount = entry.indices.Length;
                         int entryIndexOffset = vertsFilled + indexOffset;
                         var targetIndicesSlice = indices.Slice(indicesFilled, entryIndexCount);
@@ -220,7 +207,6 @@ namespace UnityEngine.UIElements.UIR
                             vertDst = (IntPtr)targetVerticesSlice.GetUnsafePtr(),
                             vertCount = targetVerticesSlice.Length,
                             transform = transform,
-                            transformUVs = entry.uvIsDisplacement ? 1 : 0,
                             xformClipPages = xformClipPages,
                             ids = ids,
                             addFlags = addFlags,
@@ -258,12 +244,6 @@ namespace UnityEngine.UIElements.UIR
                     {
                         Debug.Assert(false); // Unable to determine what kind of command to generate here
                     }
-                }
-
-                if (!ve.renderChainData.disableNudging && (firstDisplacementUV >= 0))
-                {
-                    ve.renderChainData.displacementUVStart = firstDisplacementUV;
-                    ve.renderChainData.displacementUVEnd = lastDisplacementUVPlus1;
                 }
 
                 k_ConvertEntriesToCommandsMarker.End();
@@ -522,8 +502,6 @@ namespace UnityEngine.UIElements.UIR
 
             var job = new NudgeJobData
             {
-                vertsBeforeUVDisplacement = ve.renderChainData.displacementUVStart,
-                vertsAfterUVDisplacement = ve.renderChainData.displacementUVEnd,
                 transform = nudgeTransform
             };
 

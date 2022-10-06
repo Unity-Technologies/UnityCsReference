@@ -148,8 +148,7 @@ namespace UnityEditor
             {
                 if (ps.trails.enabled)
                 {
-                    ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
-                    if ((renderer != null) && (renderer.trailMaterial == null))
+                    if (ps.TryGetComponent<ParticleSystemRenderer>(out var renderer) && (renderer.trailMaterial == null))
                     {
                         EditorGUILayout.HelpBox("Assign a Trail Material in the Renderer Module", MessageType.Warning, true);
                         break;

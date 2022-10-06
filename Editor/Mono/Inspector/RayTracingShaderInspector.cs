@@ -3,8 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System.Globalization;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 using System.Collections.Generic;
 
 namespace UnityEditor

@@ -9,7 +9,9 @@ using UnityEngine.Rendering;
 using System.Linq;
 using Object = UnityEngine.Object;
 using System.Globalization;
-using UnityEngine.Experimental.Rendering;
+
+// RayTracingMode enum will be moved into UnityEngine.Rendering in the future.
+using RayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode;
 
 namespace UnityEditor
 {

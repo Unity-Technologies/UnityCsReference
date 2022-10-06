@@ -2,15 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
-using UnityEngine.Rendering;
-using System.Runtime.InteropServices;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     [NativeHeader("Runtime/Shaders/RayTracingShader.h")]
     [NativeHeader("Runtime/Shaders/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]

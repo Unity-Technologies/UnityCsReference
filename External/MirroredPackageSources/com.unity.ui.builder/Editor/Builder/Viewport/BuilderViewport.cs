@@ -34,7 +34,6 @@ namespace Unity.UI.Builder
         BuilderMover m_BuilderMover;
         BuilderZoomer m_BuilderZoomer;
         BuilderPanner m_BuilderPanner;
-        BuilderAnchorer m_BuilderAnchorer;
         BuilderViewportDragger m_BuilderViewportDragger;
         CheckerboardBackground m_CheckerboardBackground;
         BuilderNotifications m_Notifications;
@@ -120,7 +119,6 @@ namespace Unity.UI.Builder
         public BuilderPlacementIndicator placementIndicator => m_BuilderPlacementIndicator;
         public BuilderResizer resizer => m_BuilderResizer;
         public BuilderMover mover => m_BuilderMover;
-        public BuilderAnchorer anchorer => m_BuilderAnchorer;
         public BuilderViewportDragger viewportDragger => m_BuilderViewportDragger;
         public BuilderZoomer zoomer => m_BuilderZoomer;
 
@@ -172,7 +170,6 @@ namespace Unity.UI.Builder
             m_BuilderPlacementIndicator = this.Q<BuilderPlacementIndicator>("placement-indicator");
             m_BuilderResizer = this.Q<BuilderResizer>("resizer");
             m_BuilderMover = this.Q<BuilderMover>("mover");
-            m_BuilderAnchorer = this.Q<BuilderAnchorer>("anchorer");
             m_BuilderZoomer = new BuilderZoomer(this);
             m_BuilderPanner = new BuilderPanner(this);
 
@@ -476,7 +473,6 @@ namespace Unity.UI.Builder
 
             m_BuilderResizer.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
             m_BuilderMover.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
-            m_BuilderAnchorer.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
 
             m_Canvas.SetHighlighted(false);
             switch (m_Selection.selectionType)
@@ -500,7 +496,6 @@ namespace Unity.UI.Builder
         {
             m_BuilderResizer.Deactivate();
             m_BuilderMover.Deactivate();
-            m_BuilderAnchorer.Deactivate();
             m_BuilderSelectionIndicator.Deactivate();
             m_Canvas.SetHighlighted(false);
         }

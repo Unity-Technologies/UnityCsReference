@@ -335,6 +335,13 @@ namespace UnityEditor
                     GUIObject(s_Texts.material, m_Material);
             }
 
+            // Ensure material count is set appropriately (handled in ParticleSystem.cpp BeginUpdate for instances, and handled here for prefabs, because prefabs don't necessarily get updated when viewing their inspectors (UUM-10035)
+            foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
+            {
+                if (ps.TryGetComponent<ParticleSystemRenderer>(out var psRrenderer))
+                    psRrenderer.ConfigureTrailMaterialSlot(ps.trails.enabled);
+            }
+
             var trailMaterial = serializedObject.FindProperty("m_Materials.Array.data[1]"); // Optional - may fail
             if (trailMaterial != null) // Only show if the system has a second material slot
                 GUIObject(s_Texts.trailMaterial, trailMaterial);
@@ -344,16 +351,23 @@ namespace UnityEditor
                 if (!m_RenderMode.hasMultipleDifferentValues)
                 {
                     GUIPopup(s_Texts.sortMode, m_SortMode, s_Texts.sortTypes);
-                    if (renderer != null && SortingGroup.invalidSortingGroupID != renderer.sortingGroupID)
-                    {
-                        using (new EditorGUI.DisabledScope(true))
-                            GUIFloat(s_Texts.sortingFudgeDisabledDueToSortingGroup, m_SortingFudge);
-                    }
-                    else
-                    {
-                        GUIFloat(s_Texts.sortingFudge, m_SortingFudge);
-                    }
+                }
+            }
 
+            if (renderer != null && SortingGroup.invalidSortingGroupID != renderer.sortingGroupID)
+            {
+                using (new EditorGUI.DisabledScope(true))
+                    GUIFloat(s_Texts.sortingFudgeDisabledDueToSortingGroup, m_SortingFudge);
+            }
+            else
+            {
+                GUIFloat(s_Texts.sortingFudge, m_SortingFudge);
+            }
+
+            if (renderMode != RenderMode.None)
+            {
+                if (!m_RenderMode.hasMultipleDifferentValues)
+                {
                     if (renderMode != RenderMode.Mesh)
                     {
                         GUIFloat(s_Texts.minParticleSize, m_MinParticleSize);
@@ -407,18 +421,23 @@ namespace UnityEditor
                 }
 
                 GUIVector3Field(s_Texts.pivot, m_Pivot);
+            }
 
-                if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
-                    if (EditorGUI.EndChangeCheck())
-                        EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
-                }
+            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+            {
+                EditorGUI.BeginChangeCheck();
+                s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
+                if (EditorGUI.EndChangeCheck())
+                    EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
+            }
 
+            if (renderMode != RenderMode.None)
                 GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteractions);
-                GUIToggle(s_Texts.applyActiveColorSpace, m_ApplyActiveColorSpace);
 
+            GUIToggle(s_Texts.applyActiveColorSpace, m_ApplyActiveColorSpace);
+
+            if (renderMode != RenderMode.None)
+            {
                 if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
                     DoVertexStreamsGUI(renderMode);
             }

@@ -92,7 +92,12 @@ namespace UnityEditor.ShortcutManagement
                 action = NoArgumentShortcutMethodProxy;
             }
 
-            return new ShortcutEntry(identifier, defaultCombination, action, context, tag, type, displayName, priority);
+            var entry = new ShortcutEntry(identifier, defaultCombination, action, context, tag, type, displayName, priority);
+
+            foreach (var attribute in methodInfo.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))
+                entry.m_ReservedModifier |= (attribute as ReserveModifiersAttribute).Modifiers;
+
+            return entry;
         }
     }
 

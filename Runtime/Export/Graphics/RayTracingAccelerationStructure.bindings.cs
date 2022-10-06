@@ -5,15 +5,19 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
-using UnityEngine.Rendering;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.Experimental.Rendering
+// RayTracingMode enum will be moved into UnityEngine.Rendering in the future.
+using RayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode;
+
+namespace UnityEngine.Rendering
 {
     [UsedByNativeCode]
     [NativeHeader("Runtime/Shaders/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Export/Graphics/RayTracingAccelerationStructure.bindings.h")]
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     [Flags]
     public enum RayTracingSubMeshFlags
     {
@@ -23,6 +27,7 @@ namespace UnityEngine.Experimental.Rendering
         UniqueAnyHitCalls   = (1 << 2),
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     [Flags]
     public enum RayTracingInstanceCullingFlags
     {
@@ -34,6 +39,7 @@ namespace UnityEngine.Experimental.Rendering
         IgnoreReflectionProbes  = (1 << 4),
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceCullingTest
     {
         public uint instanceMask;
@@ -45,11 +51,14 @@ namespace UnityEngine.Experimental.Rendering
         public bool allowVisualEffects;
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceCullingShaderTagConfig
     {
         public ShaderTagId tagId;
         public ShaderTagId tagValueId;
     }
+
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceMaterialConfig
     {
         public int renderQueueLowerBound;
@@ -60,6 +69,7 @@ namespace UnityEngine.Experimental.Rendering
         public string[] optionalShaderKeywords;
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceCullingMaterialTest
     {
         public string[] deniedShaderPasses;
@@ -67,6 +77,7 @@ namespace UnityEngine.Experimental.Rendering
         public RayTracingInstanceCullingShaderTagConfig[] requiredShaderTags;
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceTriangleCullingConfig
     {
         public string[] optionalDoubleSidedShaderKeywords;
@@ -78,6 +89,7 @@ namespace UnityEngine.Experimental.Rendering
         public bool forceDoubleSided;
     };
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingSubMeshFlagsConfig
     {
         public RayTracingSubMeshFlags opaqueMaterials;
@@ -85,6 +97,7 @@ namespace UnityEngine.Experimental.Rendering
         public RayTracingSubMeshFlags alphaTestedMaterials;
     };
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceCullingConfig
     {
         public RayTracingInstanceCullingFlags flags;
@@ -107,18 +120,22 @@ namespace UnityEngine.Experimental.Rendering
 
         public LODParameters lodParameters;
     }
+
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceMaterialCRC
     {
         public int instanceID;
         public int crc;
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceCullingResults
     {
         public RayTracingInstanceMaterialCRC[] materialsCRC;
         public bool transformsChanged;
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingMeshInstanceConfig
     {
         public RayTracingMeshInstanceConfig(Mesh mesh, uint subMeshIndex, Material material)
@@ -155,6 +172,7 @@ namespace UnityEngine.Experimental.Rendering
         public LightProbeProxyVolume lightProbeProxyVolume;
     }
 
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
     public sealed class RayTracingAccelerationStructure : IDisposable
     {
         [Flags]
@@ -247,9 +265,9 @@ namespace UnityEngine.Experimental.Rendering
             Build(Vector3.zero);
         }
 
-        public void AddInstance(Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF)
+        public int AddInstance(Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF)
         {
-            AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask, id);
+            return AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask, id);
         }
 
         public int AddInstance(GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF)
@@ -307,37 +325,8 @@ namespace UnityEngine.Experimental.Rendering
             UpdateInstanceMask_Handle(handle, mask);
         }
 
-        [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build()", true)]
-        public void Update()
-        {
-            Build(Vector3.zero);
-        }
-
-        [Obsolete("Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build(*)", true)]
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Update", HasExplicitThis = true)]
-        extern public void Update(Vector3 relativeOrigin);
-
-        [Obsolete("This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate method for adding Renderers to the acceleration structure.", false)]
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceDeprecated", HasExplicitThis = true)]
-        extern public void AddInstance([NotNull] Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
-
-        [Obsolete("This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate method for adding procedural geometry (AABBs) to the acceleration structure.", false)]
-        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF)
-        {
-            AddInstance_Procedural_Deprecated(aabbBuffer, numElements, material, Matrix4x4.identity, isCutOff, enableTriangleCulling, frontTriangleCounterClockwise, mask, reuseBounds, id);
-        }
-
-        [Obsolete("This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate method for adding procedural geometry (AABBs) to the acceleration structure.", false)]
-        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF)
-        {
-            AddInstance_Procedural_Deprecated(aabbBuffer, numElements, material, instanceTransform, isCutOff, enableTriangleCulling, frontTriangleCounterClockwise, mask, reuseBounds, id);
-        }
-
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
         extern public void Build(Vector3 relativeOrigin);
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceDeprecated", HasExplicitThis = true)]
-        extern private void AddInstance_Procedural_Deprecated([NotNull] GraphicsBuffer aabbBuffer, uint numElements, [NotNull] Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstance", HasExplicitThis = true)]
         extern private int AddInstance_Procedural([NotNull] GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, [NotNull] Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF);
@@ -388,9 +377,30 @@ namespace UnityEngine.Experimental.Rendering
         extern public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
-        extern private void AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
+        extern private int AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstance", HasExplicitThis = true, ThrowsException = true)]
         extern unsafe private int AddMeshInstance(RayTracingMeshInstanceConfig config, Matrix4x4 matrix, Matrix4x4* prevMatrix, uint id = 0xFFFFFFFF);
+
+
+        // Obsolete methods. To be removed in the future.
+        const string obsoleteBuildMsg1 = "Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build()";
+        [Obsolete(obsoleteBuildMsg1, true)]
+        public void Update() => new NotSupportedException(obsoleteBuildMsg1);
+
+        const string obsoleteBuildMsg2 = "Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build(*)";
+        [Obsolete(obsoleteBuildMsg2, true)]
+        public void Update(Vector3 relativeOrigin) => new NotSupportedException(obsoleteBuildMsg2);
+
+        const string obsoleteRendererMsg = "This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding Renderers to the acceleration structure.";
+        [Obsolete(obsoleteRendererMsg, true)]
+        public void AddInstance(Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteRendererMsg);
+
+        const string obsoleteAABBMsg = "This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
+        [Obsolete(obsoleteAABBMsg, true)]
+        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg);
+
+        [Obsolete(obsoleteAABBMsg, true)]
+        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg);
     }
 }

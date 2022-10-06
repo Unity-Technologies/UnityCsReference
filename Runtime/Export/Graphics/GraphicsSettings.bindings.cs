@@ -46,6 +46,10 @@ namespace UnityEngine.Rendering
             get { return INTERNAL_currentRenderPipeline as RenderPipelineAsset; }
         }
 
+        public static bool isScriptableRenderPipelineEnabled => INTERNAL_currentRenderPipeline != null;
+
+        public static Type currentRenderPipelineAssetType => isScriptableRenderPipelineEnabled ? INTERNAL_currentRenderPipeline.GetType() : null;
+
         //[Obsolete("renderPipelineAsset has been deprecated. Use defaultRenderPipeline instead (UnityUpgradable) -> defaultRenderPipeline", true)]
         // TODO: SRP package needs updating (not break ABV) once that is done we can remove this
         public static RenderPipelineAsset renderPipelineAsset

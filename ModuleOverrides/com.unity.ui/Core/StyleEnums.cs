@@ -304,6 +304,31 @@ namespace UnityEngine.UIElements
         Right = 4,
     }
 
+    /// <summary>
+    /// Defines the position of an element
+    /// </summary>
+    internal enum PositionProperty
+    {
+        /// <summary>
+        /// The top edge of an element.
+        /// </summary>
+        Top = 0,
+
+        /// <summary>
+        /// The bottom edge of an element.
+        /// </summary>
+        Bottom = 1,
+
+        /// <summary>
+        /// The left edge of an element.
+        /// </summary>
+        Left = 2,
+
+        /// <summary>
+        /// The right edge of an element.
+        /// </summary>
+        Right = 3,
+    }
 
     /// <summary>
     /// Defines how the background is repeated

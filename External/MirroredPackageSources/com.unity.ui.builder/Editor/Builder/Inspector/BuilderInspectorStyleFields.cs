@@ -37,6 +37,8 @@ namespace Unity.UI.Builder
 
         public Action<Enum> updateFlexColumnGlobalState { get; set; }
 
+        public Action<Enum> updatePositionAnchorsFoldoutState { get; set; }
+
         public Action updateStyleCategoryFoldoutOverrides { get; set; }
 
         public BuilderInspectorStyleFields(BuilderInspector inspector)
@@ -307,7 +309,7 @@ namespace Unity.UI.Builder
                 .Where(element => !string.IsNullOrEmpty(element.bindingPath)).ToList();
             if (styleFields.Count > 0)
             {
-                var headerLabel = styleRow.Q<Label>(classes: "unity-builder-double-field-label");
+                var headerLabel = styleRow.Q<BindableElement>(classes: "unity-builder-composite-field-label");
                 headerLabel.AddManipulator(new ContextualMenuManipulator(action =>
                 {
                     (action.target as VisualElement).userData = styleFields;
@@ -858,6 +860,9 @@ namespace Unity.UI.Builder
                 // The state of Flex Direction can affect many other Flex-related fields.
                 if (styleName == "flex-direction")
                     updateFlexColumnGlobalState?.Invoke(enumValue);
+                
+                if (styleName == "position")
+                    updatePositionAnchorsFoldoutState?.Invoke(enumValue);
 
                 if (fieldElement is EnumField)
                 {
@@ -2122,6 +2127,9 @@ namespace Unity.UI.Builder
             // The state of Flex Direction can affect many other Flex-related fields.
             if (styleName == "flex-direction")
                 updateFlexColumnGlobalState?.Invoke(e.newValue);
+            
+            if (styleName == "position")
+                updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 
             PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);
         }

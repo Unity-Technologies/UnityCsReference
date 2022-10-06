@@ -829,18 +829,6 @@ namespace UnityEditor.Experimental.GraphView
             Profiler.EndSample();
         }
 
-        static Material s_LineMat;
-
-        static Material lineMat
-        {
-            get
-            {
-                if (s_LineMat == null)
-                    s_LineMat = new Material(EditorGUIUtility.LoadRequired("GraphView/AAEdge.shader") as Shader);
-                return s_LineMat;
-            }
-        }
-
         void DrawEdge(MeshGenerationContext mgc)
         {
             if (edgeWidth <= 0)

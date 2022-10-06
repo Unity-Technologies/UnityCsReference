@@ -132,7 +132,8 @@ namespace Unity.UI.Builder
         public static readonly string InspectorClassPillNotInDocumentClassName = "unity-builder-class-pill--not-in-document";
         public static readonly string InspectorClassHelpBox = "unity-builder-inspector__help-box";
         public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
-        public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-double-field-row";
+        public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-composite-field-row";
+        public static readonly string InspectorCompositeStyleRowElementClassName = "unity-builder-composite-style-row-element";
 
         // Inspector Links VE Property Names
         public static readonly string InspectorLinkedStyleRowVEPropertyName = "__unity-ui-builder-style-row";

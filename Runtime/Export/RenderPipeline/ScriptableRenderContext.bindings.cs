@@ -90,6 +90,9 @@ namespace UnityEngine.Rendering
             LegacySinglePass
         }
         extern private unsafe RendererList CreateSkyboxRendererList_Internal([NotNull("NullExceptionObject")] Camera camera, int mode, Matrix4x4 proj, Matrix4x4 view, Matrix4x4 projR, Matrix4x4 viewR);
+        extern private unsafe RendererList CreateGizmoRendererList_Internal([NotNull("NullExceptionObject")] Camera camera, GizmoSubset gizmoSubset);
+        extern private unsafe RendererList CreateUIOverlayRendererList_Internal([NotNull("NullExceptionObject")] Camera camera);
+        extern private unsafe RendererList CreateWireOverlayRendererList_Internal([NotNull("NullExceptionObject")] Camera camera);
 
         extern private unsafe void PrepareRendererListsAsync_Internal(object rendererLists);
         extern private RendererListStatus QueryRendererListStatus_Internal(RendererList handle);

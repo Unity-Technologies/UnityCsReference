@@ -2120,6 +2120,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\NavMeshObstacleInspector.cs">
       <Link>Editor\Mono\Inspector\NavMeshObstacleInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\NotSupportedOnRenderPipelineInspector.cs">
+      <Link>Editor\Mono\Inspector\NotSupportedOnRenderPipelineInspector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\OcclusionAreaEditor.cs">
       <Link>Editor\Mono\Inspector\OcclusionAreaEditor.cs</Link>
     </Compile>
@@ -4228,6 +4231,18 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\NumericStyleField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\NumericStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionAnchorPoint.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionAnchorPoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionAnchors.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionAnchors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionSection.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionStyleField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\PositionStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\RotateStyleField.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\StyleField\RotateStyleField.cs</Link>

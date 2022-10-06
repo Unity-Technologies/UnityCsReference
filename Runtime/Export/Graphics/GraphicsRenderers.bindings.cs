@@ -10,7 +10,9 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
+
+// RayTracingMode enum will be moved into UnityEngine.Rendering in the future.
+using RayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode;
 
 using LT = UnityEngineInternal.LightmapType;
 

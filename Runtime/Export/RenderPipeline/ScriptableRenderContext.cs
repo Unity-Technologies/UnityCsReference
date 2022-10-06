@@ -364,6 +364,24 @@ namespace UnityEngine.Rendering
             return CreateSkyboxRendererList_Internal(camera, (int)SkyboxXRMode.Off, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity);
         }
 
+        public RendererList CreateGizmoRendererList(Camera camera, GizmoSubset gizmoSubset)
+        {
+            Validate();
+            return CreateGizmoRendererList_Internal(camera, gizmoSubset);
+        }
+
+        public RendererList CreateUIOverlayRendererList(Camera camera)
+        {
+            Validate();
+            return CreateUIOverlayRendererList_Internal(camera);
+        }
+
+        public RendererList CreateWireOverlayRendererList(Camera camera)
+        {
+            Validate();
+            return CreateWireOverlayRendererList_Internal(camera);
+        }
+
         public unsafe void PrepareRendererListsAsync(List<RendererList> rendererLists)
         {
             Validate();

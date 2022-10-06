@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor;
 
@@ -9,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor.Experimental;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.UIElements;
@@ -682,6 +684,14 @@ namespace UnityEditorInternal
             RenderTexture.ReleaseTemporary(tmp);
 
             return true;
+        }
+
+
+        static readonly Regex k_UnityAssemblyRegex = new("^(Unity|UnityEditor|UnityEngine).", RegexOptions.Compiled);
+        internal static bool IsUnityAssembly(Type type)
+        {
+            var assemblyName = type.Assembly.GetName().ToString();
+            return k_UnityAssemblyRegex.IsMatch(assemblyName);
         }
     }
 }

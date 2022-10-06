@@ -133,10 +133,15 @@ namespace UnityEditor
                 if (bp.name == platform)
                 {
                     return DefaultFormatFromTextureParameters(settings,
-                        platformSettings,
+                        !platformSettings.overridden ? GetDefaultPlatformTextureSettings() : platformSettings,
                         DoesSourceTextureHaveAlpha(),
                         IsSourceTextureHDR(),
                         bp.defaultTarget);
+
+                    // Regarding the "GetDefaultPlatformTextureSettings" call: in case 1281084, we made it so that platform settings stop automatically
+                    // resetting to the default platform's settings when the platform override is disabled. This introduced a regression where
+                    // "GetAutomaticFormat" would not return the actual format used by platforms with a disabled override, (as in, the one indicated in
+                    // the default platform's settings) which is why we pass in the default platform's settings instead.
                 }
             }
 

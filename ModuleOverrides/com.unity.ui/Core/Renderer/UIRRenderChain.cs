@@ -986,7 +986,6 @@ namespace UnityEngine.UIElements.UIR
         internal bool disableNudging;
         internal MeshHandle data, closingData;
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
-        internal int displacementUVStart, displacementUVEnd;
         internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
         internal BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
         internal float compositeOpacity;

@@ -123,5 +123,7 @@ namespace UnityEditor.U2D
         extern internal static bool GetSecondaryColorSpace([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string secondaryTextureName);
         extern internal static void SetSecondaryColorSpace([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string secondaryTextureName, bool srGB);
         extern internal static void DeleteSecondaryPlatformSettings([NotNull("NullExceptionObject")] this SpriteAtlas spriteAtlas, string secondaryTextureName);
+        extern internal static string GetSecondaryTextureNameInAtlas(string atlasTextureName);
+        extern internal static string GetPageNumberInAtlas(string atlasTextureName);
     }
 }

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
+using System.Reflection;
 using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
@@ -25,16 +27,26 @@ namespace UnityEditor.Rendering
 
     public static class RenderPipelineEditorUtility
     {
+        public static Type[] GetDerivedTypesSupportedOnCurrentPipeline<T>()
+        {
+            return TypeCache.GetTypesDerivedFrom<T>().Where(t =>
+            {
+                var attribute = t.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
+                return attribute != null && attribute.isSupportedOnCurrentPipeline;
+
+            }).ToArray();
+        }
+
         public static Type FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<TBaseClass>()
         {
             var extensionTypes = TypeCache.GetTypesDerivedFrom<TBaseClass>();
 
             foreach (Type extensionType in extensionTypes)
             {
-                ScriptableRenderPipelineExtensionAttribute attribute = Attribute.GetCustomAttribute(extensionType, typeof(ScriptableRenderPipelineExtensionAttribute)) as ScriptableRenderPipelineExtensionAttribute;
-                if (attribute != null && attribute.inUse)
+                if (Attribute.GetCustomAttribute(extensionType, typeof(ScriptableRenderPipelineExtensionAttribute)) is ScriptableRenderPipelineExtensionAttribute { inUse: true })
                     return extensionType;
             }
+
             return null;
         }
     }

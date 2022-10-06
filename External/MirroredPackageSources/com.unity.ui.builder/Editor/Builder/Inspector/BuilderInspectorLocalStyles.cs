@@ -25,6 +25,7 @@ namespace Unity.UI.Builder
             m_StyleFields = styleFields;
 
             m_StyleFields.updateFlexColumnGlobalState = UpdateFlexColumnGlobalState;
+            m_StyleFields.updatePositionAnchorsFoldoutState = UpdatePositionAnchorsFoldoutState;
             m_StyleFields.updateStyleCategoryFoldoutOverrides = UpdateStyleCategoryFoldoutOverrides;
 
             m_LocalStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-local-styles-foldout");
@@ -44,13 +45,13 @@ namespace Unity.UI.Builder
                     var bindingPath = styleRow.bindingPath;
                     var currentStyleFields = styleRow.Query<BindableElement>().ToList();
 
-                    if (styleRow.ClassListContains("unity-builder-double-field-row"))
+                    if (styleRow.ClassListContains("unity-builder-composite-field-row"))
                         m_StyleFields.BindDoubleFieldRow(styleRow);
 
                     foreach (var styleField in currentStyleFields)
                     {
                         // Avoid fields within fields.
-                        if (styleField.parent != styleRow)
+                        if (!IsIndirectChildOf(styleField, styleRow))
                             continue;
 
                         if (styleField is FoldoutNumberField)
@@ -159,7 +160,7 @@ namespace Unity.UI.Builder
                 foreach (var styleField in styleFields)
                 {
                     // Avoid fields within fields.
-                    if (styleField.parent != styleRow)
+                    if (!IsIndirectChildOf(styleField, styleRow))
                         continue;
 
                     if (styleField is FoldoutField)
@@ -201,6 +202,26 @@ namespace Unity.UI.Builder
             m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexColumnReverseModeClassName, newDirection == FlexDirection.ColumnReverse);
             m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexRowModeClassName, newDirection == FlexDirection.Row);
             m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexRowReverseModeClassName, newDirection == FlexDirection.RowReverse);
+        }
+
+        void UpdatePositionAnchorsFoldoutState(Enum newValue)
+        {
+            var newPosition = (Position)newValue;
+            var foldout = m_Inspector.Q<Foldout>("anchors-foldout");
+            var styleRow = foldout.GetFirstAncestorOfType<BuilderStyleRow>();
+            
+            var styleFields = styleRow.Query<BindableElement>().ToList();
+
+            bool isRowOverride = false;
+            foreach (var styleField in styleFields)
+            {
+                if (BuilderInspectorStyleFields.GetLastStyleProperty(m_Inspector.currentRule, styleField.bindingPath) != null)
+                    isRowOverride = true;
+            }
+
+            foldout.value = newPosition == Position.Absolute || isRowOverride;
+            foldout.text = (newPosition == Position.Absolute) ? "Anchors" : "Offsets";
+            foldout.EnableInClassList(Position.Relative.ToString().ToLower(), newPosition == Position.Relative);
         }
 
         /// <summary>
@@ -299,6 +320,20 @@ namespace Unity.UI.Builder
             });
 
             TransitionPropertyDropdownContent.Content = content;
+        }
+        
+        /// <summary>
+        /// This will return if the styleField is a child of styleRow while still allowing intermediate styling elements between them.
+        /// This will allow styling of composite style rows.
+        /// </summary>
+        static bool IsIndirectChildOf(VisualElement styleField, BuilderStyleRow styleRow)
+        {
+            var currentParent = styleField.parent;
+            while (currentParent != null && currentParent.ClassListContains(BuilderConstants.InspectorCompositeStyleRowElementClassName))
+            {
+                currentParent = currentParent.parent;
+            }
+            return currentParent == styleRow;
         }
     }
 }

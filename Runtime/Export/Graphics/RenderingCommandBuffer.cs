@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Internal;
 
 namespace UnityEngine.Rendering
@@ -287,12 +286,22 @@ namespace UnityEngine.Rendering
 
         public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, string name, ComputeBuffer buffer)
         {
-            Internal_SetRayTracingBufferParam(rayTracingShader, Shader.PropertyToID(name), buffer);
+            Internal_SetRayTracingComputeBufferParam(rayTracingShader, Shader.PropertyToID(name), buffer);
         }
 
         public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer)
         {
-            Internal_SetRayTracingBufferParam(rayTracingShader, nameID, buffer);
+            Internal_SetRayTracingComputeBufferParam(rayTracingShader, nameID, buffer);
+        }
+
+        public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, string name, GraphicsBuffer buffer)
+        {
+            Internal_SetRayTracingGraphicsBufferParam(rayTracingShader, Shader.PropertyToID(name), buffer);
+        }
+
+        public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, int nameID, GraphicsBuffer buffer)
+        {
+            Internal_SetRayTracingGraphicsBufferParam(rayTracingShader, nameID, buffer);
         }
 
         public void SetRayTracingConstantBufferParam(RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer, int offset, int size)

@@ -101,8 +101,6 @@ namespace UnityEngine.UIElements.UIR
         public int closingCount;
 
         public Matrix4x4 transform;
-        public int vertsBeforeUVDisplacement;
-        public int vertsAfterUVDisplacement;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -112,7 +110,6 @@ namespace UnityEngine.UIElements.UIR
         public IntPtr vertDst;
         public int vertCount;
         public Matrix4x4 transform;
-        public int transformUVs;
         public Color32 xformClipPages;
         public Color32 ids;
         public Color32 addFlags;

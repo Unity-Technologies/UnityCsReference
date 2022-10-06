@@ -36,7 +36,7 @@ namespace UnityEditor.UIAutomation
             set; get;
         }
 
-        public AutomatedWindow(T windowToDrive, bool enableStackTraces = true)
+        public AutomatedWindow(T windowToDrive, bool enableStackTraces = false)
         {
             m_EditorWindow = windowToDrive;
             //TODO: find a way to properly pass this data from the runner here.

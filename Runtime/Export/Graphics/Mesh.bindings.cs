@@ -241,6 +241,17 @@ namespace UnityEngine
             return array;
         }
 
+        public unsafe void SetBindposes(NativeArray<Matrix4x4> poses)
+        {
+            if (!poses.IsCreated || poses.Length == 0)
+                throw new ArgumentException("Cannot set bindposes as the native poses array is empty.", "poses");
+
+            SetBindposesFromScript_NativeArray((IntPtr)poses.GetUnsafeReadOnlyPtr(), poses.Length);
+        }
+
+        [NativeMethod("SetBindposes")]
+        extern private void SetBindposesFromScript_NativeArray(IntPtr posesPtr, int posesCount);
+
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "MeshScripting::GetBindposesArray", HasExplicitThis = true)]
         extern private IntPtr GetBindposesArray();

@@ -322,11 +322,13 @@ namespace UnityEditor
         {
             if ((buildPlayerOptions.target == BuildTarget.StandaloneLinux64 ||
                 buildPlayerOptions.target == BuildTarget.StandaloneOSX ||
-                buildPlayerOptions.target == BuildTarget.StandaloneWindows) &&
+                buildPlayerOptions.target == BuildTarget.StandaloneWindows ||
+                buildPlayerOptions.target == BuildTarget.StandaloneWindows64) &&
                 buildPlayerOptions.subtarget == (int)StandaloneBuildSubtarget.Default)
             {
                 buildPlayerOptions.subtarget = (int) EditorUserBuildSettings.standaloneBuildSubtarget;
             }
+            EditorUserBuildSettings.standaloneBuildSubtarget = (StandaloneBuildSubtarget) buildPlayerOptions.subtarget;
 
             return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.subtarget, buildPlayerOptions.options, buildPlayerOptions.extraScriptingDefines);
         }

@@ -3682,7 +3682,7 @@ namespace UnityEditor
             }
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
-            var i = Array.IndexOf(enumData.values, selected);
+            var i = showMixedValue ? -1 : Array.IndexOf(enumData.values, selected);
             var options = EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, enumData);
 
             s_CurrentCheckEnumEnabled = checkEnabled;
@@ -3700,7 +3700,7 @@ namespace UnityEditor
             }
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
-            var i = Array.IndexOf(enumData.flagValues, flagValue);
+            var i = showMixedValue ? -1 : Array.IndexOf(enumData.flagValues, flagValue);
             var options = EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, enumData);
 
             s_CurrentCheckEnumEnabled = checkEnabled;
@@ -3714,7 +3714,11 @@ namespace UnityEditor
         {
             // value --> index
             int i;
-            if (optionValues != null)
+            if (showMixedValue)
+            {
+                i = -1;
+            }
+            else if (optionValues != null)
             {
                 for (i = 0; (i < optionValues.Length) && (selectedValue != optionValues[i]); ++i)
                 {
@@ -3750,9 +3754,7 @@ namespace UnityEditor
             BeginChangeCheck();
             int newValue = IntPopupInternal(position, label, property.intValue, displayedOptions, optionValues, EditorStyles.popup);
             if (EndChangeCheck())
-            {
                 property.intValue = newValue;
-            }
 
             EndProperty();
         }
@@ -5368,7 +5370,7 @@ namespace UnityEditor
                                 GUIUtility.keyboardControl = id;
 
                                 var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
-                                var enabled = new[] {true, wasEnabled && Clipboard.hasColor};
+                                var enabled = new[] { true, wasEnabled && Clipboard.hasColor };
                                 var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
@@ -5376,7 +5378,7 @@ namespace UnityEditor
                                     names,
                                     enabled,
                                     null,
-                                    delegate(object data, string[] options, int selected)
+                                    delegate (object data, string[] options, int selected)
                                     {
                                         if (selected == 0)
                                         {
@@ -5432,6 +5434,7 @@ namespace UnityEditor
                     {
                         EditorGUIUtility.DrawColorSwatch(position2, value, showAlpha, hdr);
                     }
+
                     break;
 
                 case EventType.ValidateCommand:
@@ -5461,7 +5464,7 @@ namespace UnityEditor
                         s_ColorPickID = 0;
                     }
 
-                    // when ColorPicker sends an event back to this control's GUIView, it someties retains keyboardControl
+                    // when ColorPicker sends an event back to this control's GUIView, it sometimes retains keyboardControl
                     if (GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id)
                     {
                         switch (evt.commandName)
@@ -5488,22 +5491,8 @@ namespace UnityEditor
                                 Clipboard.colorValue = value;
                                 evt.Use();
                                 break;
-
                             case EventCommandNames.Paste:
-                                if (Clipboard.hasColor)
-                                {
-                                    Color pasted = Clipboard.colorValue;
-                                    if (!hdr && pasted.maxColorComponent > 1f)
-                                        pasted = pasted.RGBMultiplied(1f / pasted.maxColorComponent);
-                                    // Do not change alpha if color field is not showing alpha
-                                    if (!showAlpha)
-                                        pasted.a = origColor.a;
-
-                                    origColor = pasted;
-
-                                    GUI.changed = true;
-                                    evt.Use();
-                                }
+                                PasteColor(ref origColor, showAlpha, hdr);
                                 break;
                         }
                     }
@@ -5511,14 +5500,44 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(id))
                     {
-                        Event.current.Use();
+                        evt.Use();
                         showMixedValue = false;
                         ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
                         GUIUtility.ExitGUI();
                     }
+                    else if (evt.modifiers == EventModifiers.Control)
+                    {
+                        if (evt.keyCode == KeyCode.C)
+                        {
+                            Clipboard.colorValue = value;
+                            evt.Use();
+                        }
+                        else if (evt.keyCode == KeyCode.V)
+                        {
+                            PasteColor(ref origColor, showAlpha, hdr);
+                        }
+                    }
                     break;
             }
             return origColor;
+        }
+
+        private static void PasteColor(ref Color origColor, bool showAlpha, bool hdr)
+        {
+            if (Clipboard.hasColor)
+            {
+                Color pasted = Clipboard.colorValue;
+                if (!hdr && pasted.maxColorComponent > 1f)
+                    pasted = pasted.RGBMultiplied(1f / pasted.maxColorComponent);
+
+                // Do not change alpha if color field is not showing alpha
+                if (!showAlpha)
+                    pasted.a = origColor.a;
+
+                origColor = pasted;
+                GUI.changed = true;
+                Event.current.Use();
+            }
         }
 
         public static AnimationCurve CurveField(Rect position, AnimationCurve value)
@@ -8583,7 +8602,7 @@ namespace UnityEditor
             else
             {
                 BeginChangeCheck();
-                int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EnumNamesCache.GetEnumLocalizedGUIContents(property));
+                int idx = Popup(position, label, property.enumValueIndex, EnumNamesCache.GetEnumLocalizedGUIContents(property));
                 if (EndChangeCheck())
                 {
                     property.enumValueIndex = idx;

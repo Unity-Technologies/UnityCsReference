@@ -26,7 +26,6 @@ namespace UnityEngine.UIElements.UIR
             public RenderChainCommand customCommand;
             public BMPAlloc clipRectID;
             public VertexFlags addFlags;
-            public bool uvIsDisplacement;
             public bool isTextEntry;
             public bool isClipRegisterEntry;
 
@@ -131,7 +130,6 @@ namespace UnityEngine.UIElements.UIR
             currentElement = ve;
             m_NextMeshWriteDataPoolItem = 0;
             m_SVGBackgroundEntryIndex = -1;
-            currentElement.renderChainData.displacementUVStart = currentElement.renderChainData.displacementUVEnd = 0;
 
             m_MaskDepth = 0;
             m_StencilRef = 0;
@@ -241,7 +239,6 @@ namespace UnityEngine.UIElements.UIR
                 vertices = m_VertsPool.Alloc(vertexCount),
                 indices = m_IndicesPool.Alloc(indexCount),
                 material = material,
-                uvIsDisplacement = (flags & MeshGenerationContext.MeshFlags.UVisDisplacement) == MeshGenerationContext.MeshFlags.UVisDisplacement,
                 clipRectID = m_ClipRectID,
                 stencilRef = m_StencilRef,
                 maskDepth = m_MaskDepth,
@@ -324,7 +321,6 @@ namespace UnityEngine.UIElements.UIR
                 vertices = m_VertsPool.Alloc(vertices.Length),
                 indices = m_IndicesPool.Alloc(indices.Length),
                 material = material,
-                uvIsDisplacement = (flags & MeshGenerationContext.MeshFlags.UVisDisplacement) == MeshGenerationContext.MeshFlags.UVisDisplacement,
                 clipRectID = m_ClipRectID,
                 stencilRef = m_StencilRef,
                 maskDepth = m_MaskDepth,
@@ -437,9 +433,8 @@ namespace UnityEngine.UIElements.UIR
                 m_CurrentEntry.stencilRef = m_StencilRef;
                 m_CurrentEntry.maskDepth = m_MaskDepth;
 
-                // It will need to be updated once we support BitMap font.
-                // Alternatively we could look at the MainText texture format (RGBA vs 8bit Alpha)
-                if (!textInfo.meshInfo[i].material.HasProperty(TextShaderUtilities.ID_GradientScale))
+                // SpriteAssets use an RGBA texture
+                if(((Texture2D)textInfo.meshInfo[i].material.mainTexture).format != TextureFormat.Alpha8)
                 {
                     // Assume a sprite asset
                     var texture = textInfo.meshInfo[i].material.mainTexture;
@@ -456,7 +451,12 @@ namespace UnityEngine.UIElements.UIR
                 else
                 {
                     var texture = textInfo.meshInfo[i].material.mainTexture;
-                    var sdfScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
+
+                    // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
+                    // GradientScale property which results in sdfScale always being 0.
+                    float sdfScale = 0;
+                    if (!TextGeneratorUtilities.IsBitmapRendering(textInfo.meshInfo[i].glyphRenderMode))
+                        sdfScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
 
                     m_CurrentEntry.isTextEntry = true;
                     m_CurrentEntry.fontTexSDFScale = sdfScale;
@@ -467,7 +467,7 @@ namespace UnityEngine.UIElements.UIR
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
                     if (useHints)
-                        isDynamicColor = isDynamicColor || RenderEvents.NeedsTextCoreSettings(currentElement);
+                        isDynamicColor = isDynamicColor || (sdfScale > 0 && RenderEvents.NeedsTextCoreSettings(currentElement));
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
@@ -1558,7 +1558,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_CurrentEntry.vertices = svgEntry.vertices;
             m_CurrentEntry.indices = svgEntry.indices;
-            m_CurrentEntry.uvIsDisplacement = svgEntry.uvIsDisplacement;
             m_CurrentEntry.clipRectID = m_ClipRectID;
             m_CurrentEntry.stencilRef = m_StencilRef;
             m_CurrentEntry.maskDepth = m_MaskDepth;

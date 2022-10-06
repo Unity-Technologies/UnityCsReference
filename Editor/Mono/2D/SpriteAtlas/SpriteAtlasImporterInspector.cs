@@ -875,24 +875,10 @@ namespace UnityEditor.U2D
                         m_OptionValues = new int[m_TotalPages];
                         for (int i = 0; i < m_TotalPages; ++i)
                         {
-                            // Example texName:
-                            //    pageNum                                       secondaryName
-                            //       V                                              | V |
-                            // sactx-2-128x128-Uncompressed-My Sprite Atlas-0fe925a#_Glow-var-0.5...
                             string texName = m_PreviewTextures[i].name;
-                            string pageNum = texName.Split('-')[1];
-                            int hashTag = texName.IndexOf('#');
-                            int dashAfterHashTag = hashTag != -1 ? texName.IndexOf('-', hashTag) : -1;
-
-                            string secondaryName;
-                            if (hashTag == -1)
-                                secondaryName = "";
-                            else if (dashAfterHashTag == -1)
-                                secondaryName = "-" + texName.Substring(hashTag + 1);
-                            else
-                                secondaryName = "-" + texName.Substring(hashTag + 1, dashAfterHashTag - hashTag - 1);
-
-                            m_OptionDisplays[i] = string.Format("#{0}{1}", pageNum, secondaryName);
+                            var pageNum = SpriteAtlasExtensions.GetPageNumberInAtlas(texName);
+                            var secondaryName = SpriteAtlasExtensions.GetSecondaryTextureNameInAtlas(texName);
+                            m_OptionDisplays[i] = secondaryName == "" ? string.Format("MainTex - Page ({0})", pageNum) : string.Format("{0} - Page ({1})", secondaryName, pageNum);
                             m_OptionValues[i] = i;
                         }
                     }

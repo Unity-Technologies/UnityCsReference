@@ -54,7 +54,6 @@ namespace Unity.UI.Builder
                 m_Viewport.parentTracker,
                 m_Viewport.resizer,
                 m_Viewport.mover,
-                m_Viewport.anchorer,
                 m_Viewport.selectionIndicator
             });
 

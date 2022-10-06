@@ -81,5 +81,6 @@ namespace UnityEngine
 
         extern internal bool editorEnabled { get; set; }
         extern public bool supportsMeshInstancing { get; }
+        extern internal void ConfigureTrailMaterialSlot(bool trailsEnabled);
     }
 }

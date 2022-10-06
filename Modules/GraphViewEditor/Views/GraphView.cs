@@ -1489,9 +1489,6 @@ namespace UnityEditor.Experimental.GraphView
             GUI.matrix = m;
         }
 
-        static readonly int s_EditorPixelsPerPointId = Shader.PropertyToID("_EditorPixelsPerPoint");
-        static readonly int s_GraphViewScaleId = Shader.PropertyToID("_GraphViewScale");
-
         void OnBeforeUpdate(IPanel panel)
         {
             redrawn?.Invoke();

@@ -77,7 +77,7 @@ namespace UnityEditor.ShortcutManagement
         public ShortcutType type => m_Type;
         public int priority => m_Priority;
 
-        ShortcutModifiers m_ReservedModifier;
+        internal ShortcutModifiers m_ReservedModifier;
 
         internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, string displayName = null, int priority = int.MaxValue)
             : this(id, defaultCombination, action, context, null, type, displayName, priority) {}
@@ -95,7 +95,7 @@ namespace UnityEditor.ShortcutManagement
 
             if (typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
                 foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))
-                    m_ReservedModifier |= (attribute as ReserveModifiersAttribute).modifier;
+                    m_ReservedModifier |= (attribute as ReserveModifiersAttribute).Modifiers;
         }
 
         public override string ToString()
@@ -118,30 +118,23 @@ namespace UnityEditor.ShortcutManagement
             if (activeCombination.Count < prefix.Count)
                 return false;
 
-            if (prefix.Count != 0 && typeof(IShortcutToolContext).IsAssignableFrom(m_Context))
-            {
-                var lastKeyCombination = prefix.Last();
-                lastKeyCombination = new KeyCombination(lastKeyCombination.keyCode, lastKeyCombination.modifiers & ~m_ReservedModifier);
+            if (prefix.Count == 0)
+                return true;
 
-                var lastKeyCombinationActive = activeCombination[prefix.Count - 1];
-                lastKeyCombinationActive = new KeyCombination(lastKeyCombinationActive.keyCode, lastKeyCombinationActive.modifiers & ~m_ReservedModifier);
-
-                for (int i = 0; i < prefix.Count - 1; i++)
-                {
-                    if (!prefix[i].Equals(activeCombination[i]))
-                        return false;
-                }
-
-                return lastKeyCombination.Equals(lastKeyCombinationActive);
-            }
-
-            for (int i = 0; i < prefix.Count; i++)
-            {
+            for (int i = 0; i < prefix.Count - 1; i++)
                 if (!prefix[i].Equals(activeCombination[i]))
                     return false;
+
+            var lastKeyCombination = prefix.Last();
+            var lastKeyCombinationActive = activeCombination[prefix.Count - 1];
+
+            if(m_ReservedModifier != 0)
+            {
+                lastKeyCombination = new KeyCombination(lastKeyCombination.keyCode, lastKeyCombination.modifiers & ~m_ReservedModifier);
+                lastKeyCombinationActive = new KeyCombination(lastKeyCombinationActive.keyCode, lastKeyCombinationActive.modifiers & ~m_ReservedModifier);
             }
 
-            return true;
+            return lastKeyCombination.Equals(lastKeyCombinationActive);
         }
 
         public bool FullyMatches(List<KeyCombination> other)

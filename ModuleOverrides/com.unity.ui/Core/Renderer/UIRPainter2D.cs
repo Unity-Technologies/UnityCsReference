@@ -58,6 +58,51 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Object to draw 2D vector graphics.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The example below demonstrates how to use the Painter2D class to draw content in a <see cref="VisualElement"/> with
+    /// the <see cref="VisualElement.generateVisualContent"/> callback.
+    /// </para>
+    /// <para>
+    /// You can also create a standalone <see cref="Painter2D.Painter2D"/> object to draw content offscreen,
+    ///  and use the <see cref="Painter2D.SaveToVectorImage"/> method to save the painter content in a <see cref="VectorImage"/> asset.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// <![CDATA[
+    /// using UnityEngine;
+    /// using UnityEngine.UIElements;
+    ///
+    /// [RequireComponent(typeof(UIDocument))]
+    /// public class Painter2DExample : MonoBehaviour
+    /// {
+    ///     public void OnEnable()
+    ///     {
+    ///         var doc = GetComponent<UIDocument>();
+    ///         doc.rootVisualElement.generateVisualContent += Draw;
+    ///     }
+    ///
+    ///     void Draw(MeshGenerationContext ctx)
+    ///     {
+    ///         var painter = ctx.painter2D;
+    ///         painter.lineWidth = 10.0f;
+    ///         painter.lineCap = LineCap.Round;
+    ///         painter.strokeGradient = new Gradient() {
+    ///             colorKeys = new GradientColorKey[] {
+    ///                 new GradientColorKey() { color = Color.red, time = 0.0f },
+    ///                 new GradientColorKey() { color = Color.blue, time = 1.0f }
+    ///             }
+    ///         };
+    ///         painter.BeginPath();
+    ///         painter.MoveTo(new Vector2(10, 10));
+    ///         painter.BezierCurveTo(new Vector2(100, 100), new Vector2(200, 0), new Vector2(300, 100));
+    ///         painter.Stroke();
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
     public class Painter2D : IDisposable
     {
         private MeshGenerationContext m_Ctx;
@@ -412,7 +457,7 @@ namespace UnityEngine.UIElements
         /// The size and content of the vector image will be determined from the bounding-box of the visible content of the painter object.
         /// Any offset of the visible content will not be saved in the vector image.
         /// </remarks>
-        /// <param name="vectorImage">The <see cref="VectorImage"/> object that will be initialized with this painter. This object should not be null.</param>
+        /// <param name="vectorImage">The VectorImage object that will be initialized with this painter. This object should not be null.</param>
         /// <returns>True if the VectorImage initialization succeeded. False otherwise.</returns>
         public bool SaveToVectorImage(VectorImage vectorImage)
         {
