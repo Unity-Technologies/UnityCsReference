@@ -477,7 +477,8 @@ namespace UnityEngine
             {
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
                 text = text.Remove(startIndex, cursorIndex - startIndex);
-                selectIndex = cursorIndex = startIndex;
+                m_TextSelectingUtility.SetCursorIndexWithoutNotify(startIndex);
+                m_TextSelectingUtility.SetSelectIndexWithoutNotify(startIndex);
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }
@@ -492,12 +493,12 @@ namespace UnityEngine
             if (cursorIndex < selectIndex)
             {
                 text = text.Substring(0, cursorIndex) + text.Substring(selectIndex, text.Length - selectIndex);
-                selectIndex = cursorIndex;
+                m_TextSelectingUtility.SetSelectIndexWithoutNotify(cursorIndex);
             }
             else
             {
                 text = text.Substring(0, selectIndex) + text.Substring(cursorIndex, text.Length - cursorIndex);
-                cursorIndex = selectIndex;
+                m_TextSelectingUtility.SetCursorIndexWithoutNotify(selectIndex);
             }
             m_TextSelectingUtility.ClearCursorPos();
 
@@ -511,7 +512,9 @@ namespace UnityEngine
             DeleteSelection();
             text = text.Insert(cursorIndex, replace);
 
-            selectIndex = cursorIndex += replace.Length;
+            var newIndex = cursorIndex + replace.Length;
+            m_TextSelectingUtility.SetCursorIndexWithoutNotify(newIndex);
+            m_TextSelectingUtility.SetSelectIndexWithoutNotify(newIndex);
             m_TextSelectingUtility.ClearCursorPos();
         }
 

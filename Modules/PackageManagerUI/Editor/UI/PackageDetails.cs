@@ -41,12 +41,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             root.StretchToParentSize();
             cache = new VisualElementCache(root);
 
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    customContainer.Add(extension.CreateExtensionUI());
-            });
-
             scrollView.verticalScroller.valueChanged += OnDetailScroll;
             scrollView.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
             detail.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
@@ -69,6 +63,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
             Refresh(m_PageManager.GetSelection());
+        }
+
+        public void OnCreateGUI()
+        {
+            customContainer.Clear();
+
+            PackageManagerExtensions.ExtensionCallback(() =>
+            {
+                foreach (var extension in PackageManagerExtensions.Extensions)
+                    customContainer.Add(extension.CreateExtensionUI());
+            });
+            PackageManagerExtensions.extensionsGUICreated = true;
+
+            if (PackageManagerExtensions.Extensions.Any())
+                Refresh(m_PageManager.GetSelection());
         }
 
         public void OnDisable()
@@ -186,12 +195,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // For now packageInfo, package and packageVersion will all be null when there are multiple packages selected.
             // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
-            var packageInfo = version?.packageInfo;
-            PackageManagerExtensions.ExtensionCallback(() =>
+            if (PackageManagerExtensions.extensionsGUICreated)
             {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageSelectionChange(packageInfo);
-            });
+                var packageInfo = version?.packageInfo;
+                PackageManagerExtensions.ExtensionCallback(() =>
+                {
+                    foreach (var extension in PackageManagerExtensions.Extensions)
+                        extension.OnPackageSelectionChange(packageInfo);
+                });
+            }
 
             m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
         }

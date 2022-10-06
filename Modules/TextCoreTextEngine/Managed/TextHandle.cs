@@ -108,7 +108,7 @@ namespace UnityEngine.TextCore.Text
             return result;
         }
 
-        public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool inverseYAxis = true)
+        public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
             if (textGenerationSettings == null)
                 return Vector2.zero;
@@ -118,18 +118,19 @@ namespace UnityEngine.TextCore.Text
             if (textInfo.characterCount == 0)
                 return result;
 
-            var character = textInfo.textElementInfo[textInfo.characterCount - 1];
-            var line = textInfo.lineInfo[character.lineNumber];
             if (index >= textInfo.characterCount)
+                index = textInfo.characterCount - 1;
+
+            var character = textInfo.textElementInfo[index];
+            var line = textInfo.lineInfo[character.lineNumber];
+
+            if (index >= textInfo.characterCount - 1 || useXAdvance)
             {
                 result += inverseYAxis ?
                     new Vector2(character.xAdvance, screenRect.height - line.descender) :
                     new Vector2(character.xAdvance, line.descender);
                 return result;
             }
-
-            character = textInfo.textElementInfo[index];
-            line = textInfo.lineInfo[character.lineNumber];
 
             result += inverseYAxis ?
                 new Vector2(character.origin, screenRect.height - line.descender) :

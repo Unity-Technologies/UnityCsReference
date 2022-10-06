@@ -710,7 +710,11 @@ namespace UnityEditor
                     {
                         var typeNames = availableTypes.Values.ToList();
                         var types = availableTypes.Keys.ToList();
-                        int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
+                        var viewIndex = types.IndexOf(typeof(GameView));
+                        if (viewIndex == -1)
+                            viewIndex = 0;
+
+                        viewIndex = EditorGUILayout.Popup(viewIndex, typeNames.ToArray(),
                             EditorStyles.toolbarPopup,
                             GUILayout.Width(90));
                         EditorGUILayout.Space();

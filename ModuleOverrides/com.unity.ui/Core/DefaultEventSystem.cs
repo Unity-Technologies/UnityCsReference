@@ -511,7 +511,7 @@ namespace UnityEngine.UIElements
 
         void ProcessTabEvent(Event e, EventModifiers modifiers)
         {
-            if (e.type == EventType.KeyDown && e.character == '\t')
+            if (e.ShouldSendNavigationMoveEventRuntime())
             {
                 var direction = e.shift ? NavigationMoveEvent.Direction.Previous : NavigationMoveEvent.Direction.Next;
                 SendFocusBasedEvent(

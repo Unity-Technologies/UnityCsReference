@@ -92,6 +92,8 @@ namespace UnityEditor
         [ClutchShortcut("Scene View/Temporary Pan Tool for 2D Mode", typeof(SceneViewViewport2D), KeyCode.Mouse1)]
         [ClutchShortcut("Scene View/Temporary Pan Tool 1", typeof(SceneViewViewport), KeyCode.Mouse2)]
         [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 3", typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
+        [ClutchShortcut("Scene View/Temporary Pan Tool 4", typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
         static void TemporaryPan(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Pan);
@@ -253,7 +255,8 @@ namespace UnityEditor
                 bool controlKeyOnMac = (evt.control && Application.platform == RuntimePlatform.OSXEditor);
                 bool actionKey = EditorGUI.actionKey;
                 bool noModifiers = (!actionKey && !controlKeyOnMac && !evt.alt);
-                if (evt.button == 0 && noModifiers) TemporaryPan(new ShortcutArguments() { stage = ShortcutStage.Begin});
+                if (evt.button == 0 && noModifiers)
+                    TemporaryPan(new ShortcutArguments() { stage = ShortcutStage.Begin});
             }
         }
 

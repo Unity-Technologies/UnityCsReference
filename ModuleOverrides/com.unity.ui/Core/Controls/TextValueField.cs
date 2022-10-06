@@ -230,8 +230,8 @@ namespace UnityEngine.UIElements
                     value = default;
                     textInputBase.UpdateTextFromValue();
                 }
+                }
             }
-        }
 
         internal override void OnViewDataReady()
         {

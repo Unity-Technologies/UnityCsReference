@@ -339,6 +339,9 @@ namespace UnityEditor
         [FreeFunction]
         extern public static bool IsPartOfAnyPrefab([NotNull] Object componentOrGameObject);
 
+        [FreeFunction]
+        extern internal static void SetHasSubscribersToAllowRecordingPrefabPropertyOverrides(bool hasSubscribers);
+
         // Returns true if the object is an asset,
         // does not matter if the asset is a regular prefab, a variant or Model
         // Is false for all non-persistent objects

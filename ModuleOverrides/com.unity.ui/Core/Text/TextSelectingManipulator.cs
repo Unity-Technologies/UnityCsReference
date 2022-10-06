@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements
 
             m_SelectingUtilities.OnCursorIndexChange += OnCursorIndexChange;
             m_SelectingUtilities.OnSelectIndexChange += OnSelectIndexChange;
+            m_SelectingUtilities.OnRevealCursorChange += OnRevealCursor;
         }
 
         internal int cursorIndex
@@ -51,22 +52,31 @@ namespace UnityEngine.UIElements
             set => m_SelectingUtilities.selectIndex = value;
         }
 
+        void OnRevealCursor()
+        {
+            m_TextElement.IncrementVersion(VersionChangeType.Repaint);
+        }
+
         void OnSelectIndexChange()
         {
             m_TextElement.IncrementVersion(VersionChangeType.Repaint);
-            m_TextElement.edition.UpdateScrollOffset?.Invoke();
 
             if(HasSelection() && m_TextElement.focusController != null)
                 m_TextElement.focusController.selectedTextElement = m_TextElement;
+
+            if(m_SelectingUtilities.revealCursor)
+                m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
         }
 
         void OnCursorIndexChange()
         {
             m_TextElement.IncrementVersion(VersionChangeType.Repaint);
-            m_TextElement.edition.UpdateScrollOffset?.Invoke();
 
             if(HasSelection() && m_TextElement.focusController != null)
                 m_TextElement.focusController.selectedTextElement = m_TextElement;
+
+            if(m_SelectingUtilities.revealCursor)
+                m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
         }
 
         internal bool RevealCursor()
@@ -135,14 +145,14 @@ namespace UnityEngine.UIElements
                 else if (evt.clickCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else
+                {
                     m_SelectingUtilities.MoveCursorToPosition_Internal(mousePosition, evt.shiftKey);
+                    m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
+                }
 
                 isClicking = true;
                 m_ClickStartPosition = mousePosition;
                 evt.StopPropagation();
-
-                // Scroll offset might need to be updated
-                m_TextElement.edition.UpdateScrollOffset?.Invoke();
             }
         }
 
@@ -157,8 +167,7 @@ namespace UnityEngine.UIElements
             if (m_Dragged)
             {
                 m_SelectingUtilities.SelectToPosition(mousePosition);
-                // Scroll offset might need to be updated
-                m_TextElement.edition.UpdateScrollOffset?.Invoke();
+                m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
 
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp && !m_SelectingUtilities.hasSelection;
             }
@@ -172,12 +181,7 @@ namespace UnityEngine.UIElements
                 return;
 
             if (selectAllOnMouseUp)
-            {
                 m_SelectingUtilities.SelectAll();
-
-                // Scroll offset might need to be updated
-                m_TextElement.edition.UpdateScrollOffset?.Invoke();
-            }
 
             selectAllOnMouseUp = false;
             m_Dragged = false;

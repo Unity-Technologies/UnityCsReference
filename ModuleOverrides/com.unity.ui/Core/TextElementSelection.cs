@@ -243,7 +243,7 @@ namespace UnityEngine.UIElements
                     if (lineIndex == firstLineIndex)
                     {
                         lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
-                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine);
+                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
                     else if (lineIndex == lastLineIndex)
                     {
@@ -251,7 +251,7 @@ namespace UnityEngine.UIElements
                             uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
                         startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(firstCharacterOnLine);
 
-                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(endIndex);
+                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(endIndex, true);
                     }
                     else if (lineIndex != firstLineIndex && lineIndex != lastLineIndex)
                     {
@@ -260,7 +260,7 @@ namespace UnityEngine.UIElements
                         startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(firstCharacterOnLine);
 
                         lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
-                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine);
+                        endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
 
                     startPos += layoutOffset;
@@ -284,7 +284,7 @@ namespace UnityEngine.UIElements
                 : Color.white;
 
             var characterHeight = uitkTextHandle.GetCharacterHeightFromIndex(selection.cursorIndex);
-            var width = AlignmentUtils.FloorToPixelGrid(selection.cursorWidth, scaledPixelsPerPoint);
+            var width = AlignmentUtils.CeilToPixelGrid(selection.cursorWidth, scaledPixelsPerPoint);
 
             mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
             {
