@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -32,6 +31,7 @@ namespace UnityEditor.Toolbars
             m_UIElementsRoot.Add(m_PlayButton = new EditorToolbarToggle
             {
                 name = "Play",
+                tooltip = "Play",
                 onIcon = EditorGUIUtility.FindTexture("PlayButton On"),
                 offIcon = EditorGUIUtility.FindTexture("PlayButton"),
             });
@@ -41,12 +41,17 @@ namespace UnityEditor.Toolbars
             m_UIElementsRoot.Add(m_PauseButton = new EditorToolbarToggle
             {
                 name = "Pause",
+                tooltip = "Pause",
                 onIcon = EditorGUIUtility.FindTexture("PauseButton On"),
                 offIcon = EditorGUIUtility.FindTexture("PauseButton"),
             });
             m_PauseButton.RegisterValueChangedCallback(OnPauseButtonValueChanged);
 
-            m_UIElementsRoot.Add(m_StepButton = new EditorToolbarButton { name = "Step" });
+            m_UIElementsRoot.Add(m_StepButton = new EditorToolbarButton
+            {
+                name = "Step",
+                tooltip = "Step"
+            });
             m_StepButton.clickable.activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
             m_StepButton.clicked += OnStepButtonClicked;
             m_StepButton.icon = EditorGUIUtility.FindTexture("StepButton");

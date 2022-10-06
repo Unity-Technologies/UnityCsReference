@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
         internal void RestoreValueAndText();
 
         internal Func<char, bool> AcceptCharacter { get; set; }
-        internal Action UpdateScrollOffset { get; set; }
+        internal Action<bool> UpdateScrollOffset { get; set; }
         internal Action UpdateValueFromText { get; set; }
         internal Action UpdateTextFromValue { get; set; }
         internal Action MoveFocusToCompositeRoot { get; set; }
@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
         }
 
         Func<char, bool> ITextEdition.AcceptCharacter { get; set; }
-        Action ITextEdition.UpdateScrollOffset { get; set; }
+        Action<bool> ITextEdition.UpdateScrollOffset { get; set; }
         Action ITextEdition.UpdateValueFromText { get; set; }
         Action ITextEdition.UpdateTextFromValue { get; set; }
         Action ITextEdition.MoveFocusToCompositeRoot { get; set; }

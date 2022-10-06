@@ -43,7 +43,7 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// True if the spacer will stretch or shring to occupy available space.
+        /// Return true if the spacer stretches or shrinks to occupy available space.
         /// </summary>
         public bool flex
         {

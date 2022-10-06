@@ -24,6 +24,7 @@ namespace UnityEditor
         {
             get
             {
+                // Modules/EditorToolbar/ToolbarElements/PlayModeButtons.cs
                 yield return "Editor Utility/Play Mode";
             }
         }
@@ -32,6 +33,7 @@ namespace UnityEditor
         {
             get
             {
+                // Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Editor Utility/Layout";
                 yield return "Editor Utility/Layers";
                 yield return "Editor Utility/Search";

@@ -93,22 +93,32 @@ namespace UnityEngine.UIElements
                 if (evt.actionKey && !(evt.altKey && c != '\0'))
                     return;
 
+                // We rely on KeyCode.Tab for both navigation and inserting tabulation.
+                if (c == '\t')
+                    return;
+
+                // Ignore tab in single-line text fields, modifier+tab in multiline text fields
+                if (evt.keyCode == KeyCode.Tab)
+                {
+                    if(!textElement.edition.multiline || evt.shiftKey)
+                    {
+                        if (evt.ShouldSendNavigationMoveEvent())
+                        {
+                            // Do the navigation manually since NavigationTabEvent doesn't pass through
+                            textElement.focusController.FocusNextInDirection(evt.shiftKey
+                                ? VisualElementFocusChangeDirection.left
+                                : VisualElementFocusChangeDirection.right);
+
+                            evt.StopPropagation();
+                        }
+                        return;
+                    }
+                    else if (!evt.ShouldSendNavigationMoveEvent())
+                        return;
+                }
+
                 if (!textElement.edition.multiline && (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return))
                     textElement.edition.UpdateValueFromText?.Invoke();
-
-                // Ignore tab & shift-tab in single-line text fields, modifier+tab in multiline text fields
-                if ((evt.keyCode == KeyCode.Tab || c == '\t') &&
-                    (!textElement.edition.multiline || evt.modifiers != EventModifiers.None))
-                {
-                    // Do the navigation manually since NavigationTabEvent doesn't pass through
-                    if (c == '\t')
-                    {
-                        textElement.focusController.FocusNextInDirection(evt.shiftKey
-                            ? VisualElementFocusChangeDirection.left
-                            : VisualElementFocusChangeDirection.right);
-                    }
-                    return;
-                }
 
                 evt.StopPropagation();
 
@@ -129,10 +139,13 @@ namespace UnityEngine.UIElements
                     textElement.edition.MoveFocusToCompositeRoot?.Invoke();
                 }
 
+                if (evt.keyCode == KeyCode.Tab)
+                    c = '\t';
+
                 if (!textElement.edition.AcceptCharacter(c))
                     return;
 
-                if (c >= k_Space || c == '\t' || c == '\n' || c == '\r' || c == k_LineFeed)
+                if (c >= k_Space || evt.keyCode == KeyCode.Tab || c == '\n' || c == '\r' || c == k_LineFeed)
                 {
                     editingUtilities.Insert(c);
                     m_Changed = true;
@@ -148,6 +161,9 @@ namespace UnityEngine.UIElements
             }
             if (m_Changed)
                 UpdateLabel();
+
+            // The selection indices might have changed.
+            textElement.edition.UpdateScrollOffset?.Invoke(evt.keyCode == KeyCode.Backspace);
         }
 
         void UpdateLabel()
@@ -251,6 +267,9 @@ namespace UnityEngine.UIElements
 
             if (m_Changed)
                 UpdateLabel();
+
+            // The selection indices might have changed.
+            textElement.edition.UpdateScrollOffset?.Invoke(false);
         }
 
         void OnNavigationEvent<TEvent>(NavigationEventBase<TEvent> evt) where TEvent : NavigationEventBase<TEvent>, new()
@@ -262,5 +281,6 @@ namespace UnityEngine.UIElements
                 evt.PreventDefault();
             }
         }
+
     }
 }

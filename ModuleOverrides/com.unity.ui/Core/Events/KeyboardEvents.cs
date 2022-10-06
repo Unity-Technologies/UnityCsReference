@@ -145,6 +145,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Gets a boolean value that indicates whether the Function key is pressed. True means the Function key is pressed.
+        /// False means it isn't.
+        /// </summary>
+        internal bool functionKey
+        {
+            get { return (modifiers & EventModifiers.FunctionKey) != 0; }
+        }
+
+        /// <summary>
         /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
         /// key is pressed. False means it isn't.
         /// </summary>
@@ -290,9 +299,7 @@ namespace UnityEngine.UIElements
                     panel.visualTree.SendEvent(ne);
                 }
             }
-            // Important: wait for character \t instead of KeyCode.Tab, because we don't want to insert a
-            // NavigationTabEvent between the two KeyDownEvents, in case some controls use \t to navigate.
-            else if (character == '\t' && !ctrlKey && !altKey && !commandKey)
+            else if (this.ShouldSendNavigationMoveEvent())
             {
                 using (var ne = NavigationMoveEvent.GetPooled(
                     shiftKey ? NavigationMoveEvent.Direction.Previous : NavigationMoveEvent.Direction.Next,
@@ -315,6 +322,22 @@ namespace UnityEngine.UIElements
                     panel.visualTree.SendEvent(ne);
                 }
             }
+        }
+
+    }
+
+    internal static class KeyboardEventExtensions
+    {
+        internal static bool ShouldSendNavigationMoveEvent(this KeyDownEvent e)
+        {
+            // We must rely on KeyCode.Tab as Shift+Tab on Mac doesn't send the \t character. It sends char(25) instead.
+            return e.keyCode == KeyCode.Tab && !e.ctrlKey && !e.altKey && !e.commandKey && !e.functionKey;
+        }
+
+        internal static bool ShouldSendNavigationMoveEventRuntime(this Event e)
+        {
+            // We must rely on KeyCode.Tab as Shift+Tab on Mac doesn't send the \t character. It sends char(25) instead.
+            return e.type == EventType.KeyDown && e.keyCode == KeyCode.Tab;
         }
     }
 

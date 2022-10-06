@@ -451,15 +451,12 @@ namespace UnityEditor
                 }
                 else
                 {
-                    using (new EditorGUI.DisabledScope(!m_HasApplicableOverrides))
+                    if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(m_ButtonWidth)))
                     {
-                        if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(m_ButtonWidth)))
+                        if (RevertAll() && editorWindow != null)
                         {
-                            if (RevertAll() && editorWindow != null)
-                            {
-                                editorWindow.Close();
-                                GUIUtility.ExitGUI();
-                            }
+                            editorWindow.Close();
+                            GUIUtility.ExitGUI();
                         }
                     }
 

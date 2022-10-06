@@ -243,6 +243,7 @@ namespace UnityEngine.UIElements
         internal const float k_UnsetPageSizeValue = -1.0f;
 
         IVisualElementScheduledItem m_UpdateScrollersScheduledItem;
+        internal Action<bool> OnUpdateScrollers;
 
         internal bool needsHorizontal
         {
@@ -323,12 +324,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private float scrollableWidth
+        internal float scrollableWidth
         {
             get { return contentContainer.boundingBox.width - contentViewport.layout.width; }
         }
 
-        private float scrollableHeight
+        internal float scrollableHeight
         {
             get { return contentContainer.boundingBox.height - contentViewport.layout.height; }
         }
@@ -1166,8 +1167,14 @@ namespace UnityEngine.UIElements
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.pointerType != PointerType.mouse && evt.isPrimary && m_ScrollingPointerId == PointerId.invalidPointerId)
+            if (evt.pointerType == PointerType.mouse || !evt.isPrimary)
+                return;
+
+            if (m_ScrollingPointerId != PointerId.invalidPointerId)
             {
+                ReleaseScrolling(m_ScrollingPointerId, evt.target);
+            }
+
                 m_PostPointerUpAnimation?.Pause();
 
                 var touchStopsVelocityOnly = Mathf.Abs(m_Velocity.x) > 10 || Mathf.Abs(m_Velocity.y) > 10;
@@ -1184,11 +1191,10 @@ namespace UnityEngine.UIElements
                     m_TouchStoppedVelocity = true;
                 }
             }
-        }
 
         void OnPointerMove(PointerMoveEvent evt)
         {
-            if (evt.pointerId != m_ScrollingPointerId)
+            if (evt.pointerType == PointerType.mouse || !evt.isPrimary || evt.pointerId != m_ScrollingPointerId)
                 return;
 
             if (evt.isHandledByDraggable)
@@ -1297,18 +1303,14 @@ namespace UnityEngine.UIElements
             var shouldScrollOffsetChange = scrollOffset != newScrollOffset;
             if (shouldScrollOffsetChange)
             {
-                ApplyTouchScrolling(newScrollOffset);
-                return TouchScrollingResult.Apply;
+                return ApplyTouchScrolling(newScrollOffset) ? TouchScrollingResult.Apply : TouchScrollingResult.Forward;
             }
 
             var shouldBlock = m_StartedMoving && nestedInteractionKind != NestedInteractionKind.ForwardScrolling;
-            if (shouldBlock)
-                return TouchScrollingResult.Block;
-
-            return TouchScrollingResult.Forward;
+            return shouldBlock ? TouchScrollingResult.Block : TouchScrollingResult.Forward;
         }
 
-        void ApplyTouchScrolling(Vector2 newScrollOffset)
+        bool ApplyTouchScrolling(Vector2 newScrollOffset)
         {
             m_StartedMoving = true;
 
@@ -1319,7 +1321,7 @@ namespace UnityEngine.UIElements
                 {
                     m_Velocity = Vector2.zero;
                     scrollOffset = newScrollOffset;
-                    return;
+                    return false;
                 }
 
                 // Account for idle pointer time.
@@ -1336,7 +1338,9 @@ namespace UnityEngine.UIElements
                 m_Velocity = Vector2.Lerp(m_Velocity, newVelocity, deltaTime * k_VelocityLerpTimeFactor);
             }
 
+            var scrollOffsetChanged = scrollOffset != newScrollOffset;
             scrollOffset = newScrollOffset;
+            return scrollOffsetChanged;
         }
 
         bool ReleaseScrolling(int pointerId, IEventHandler target)
@@ -1404,6 +1408,7 @@ namespace UnityEngine.UIElements
             UpdateContentViewTransform();
             // Cancel the scheduled update if this method is not called from the scheduler
             m_UpdateScrollersScheduledItem?.Pause();
+            OnUpdateScrollers?.Invoke(false);
         }
 
         void UpdateViewportContentMargins(bool displayHorizontal, bool displayVertical)
