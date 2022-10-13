@@ -84,8 +84,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false);
         bool UpdateSelectionIfCurrentSelectionIsInvalid();
         void TriggerOnSelectionChanged(bool isExplicitUserSelection = false);
-        void SetSeeAllVersions(string packageUniqueId, bool value);
-        void SetSeeAllVersions(IPackage package, bool value);
         bool IsGroupExpanded(string groupName);
         void SetGroupExpanded(string groupName, bool value);
         string GetGroupName(IPackage package);

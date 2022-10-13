@@ -98,7 +98,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     customAssembly.PathPrefix,
                     customAssembly.AdditionalPrefixes,
                     path => PathFilter(path, customAssembly.PathPrefix, lowerPathPrefix, customAssembly.AdditionalPrefixes, lowerAdditionalPathPrefixes),
-                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, defines),
+                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.Subtarget, settings.CompilationOptions, defines),
                     customAssembly.CompilerOptions)
                 {
                     ExplicitPrecompiledReferences = customAssembly.PrecompiledReferences?.ToList() ?? new List<string>(),

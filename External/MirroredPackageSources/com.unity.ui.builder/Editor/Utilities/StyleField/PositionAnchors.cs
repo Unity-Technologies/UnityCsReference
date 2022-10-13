@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
 
         VisualElement m_OuterContainer;
         VisualElement m_Container;
-        
+
         PositionAnchorPoint m_TopPoint;
         PositionAnchorPoint m_BottomPoint;
         PositionAnchorPoint m_LeftPoint;
@@ -55,7 +55,7 @@ namespace Unity.UI.Builder
                 focusable.defaultValue = true;
             }
         }
-        
+
         public PositionAnchors()
         {
             AddToClassList(k_UssClassName);
@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPathNoExt + ".uss"));
 
             m_OuterContainer = new VisualElement() { name = k_OuterContainerName };
-            
+
             m_Container = new VisualElement
             {
                 name = k_ContainerName,
@@ -75,7 +75,7 @@ namespace Unity.UI.Builder
                 name = k_SquareHoverRectName,
                 pickingMode = PickingMode.Ignore
             };
-            
+
             m_Square = new VisualElement() { name = k_SquareName, tooltip = k_SquareExpandTooltip};
             RegisterSquareHoverInteraction();
             m_Square.AddManipulator(new Clickable(OnSquareClicked));
@@ -85,14 +85,14 @@ namespace Unity.UI.Builder
             m_RightPoint = AddPoint(1, 0.5f, PositionProperty.Right);
             m_BottomPoint = AddPoint(0.5f, 1, PositionProperty.Bottom);
             m_LeftPoint = AddPoint(0, 0.5f, PositionProperty.Left);
-            
+
             m_OuterContainer.Add(m_SquareHoverRect);
             m_OuterContainer.Add(m_Container);
             Add(m_OuterContainer);
 
             tabIndex = 0;
             focusable = true;
-            
+
             RegisterCallback<ClickEvent>(e =>
             {
                 pseudoStates |= (PseudoStates.Focus);
@@ -101,25 +101,25 @@ namespace Unity.UI.Builder
 
         void RegisterSquareHoverInteraction()
         {
-            m_SquareHoverRect.RegisterCallback<MouseEnterEvent>(e => { 
+            m_SquareHoverRect.RegisterCallback<MouseEnterEvent>(e => {
                 m_Container.SendToBack();
             });
             m_SquareHoverRect.RegisterCallback<MouseLeaveEvent>(e =>
             {
-                m_SquareHoverRect.SendToBack(); 
+                m_SquareHoverRect.SendToBack();
             });
         }
 
         void OnSquareClicked(EventBase obj)
         {
             var allSelected = m_TopPoint.value && m_LeftPoint.value && m_RightPoint.value && m_BottomPoint.value;
-            
+
             m_TopPoint.value = !allSelected;
             m_LeftPoint.value = !allSelected;
             m_RightPoint.value = !allSelected;
             m_BottomPoint.value = !allSelected;
         }
-        
+
         void UpdateDefaultAnchors()
         {
             bool defaultTop = !m_BottomPoint.value && !m_TopPoint.value;
@@ -128,12 +128,12 @@ namespace Unity.UI.Builder
             m_TopPoint.EnableInClassList(k_UssDefaultClassName, defaultTop);
             m_LeftPoint.EnableInClassList(k_UssDefaultClassName, defaultLeft);
         }
-        
+
         void UpdateAnchors(PositionProperty positionProperty, bool selected)
         {
             m_Container.EnableInClassList(k_UssAnchoredClassName + "-" + positionProperty.ToString().ToLower(), selected);
             m_SquareHoverRect.EnableInClassList(positionProperty.ToString().ToLower(), selected);
-            
+
             // update square tooltip
             var allSelected = m_TopPoint.value && m_LeftPoint.value && m_RightPoint.value && m_BottomPoint.value;
             m_Square.tooltip = allSelected ? k_SquareDetachTooltip : k_SquareExpandTooltip;
@@ -148,7 +148,7 @@ namespace Unity.UI.Builder
                 x = x,
                 y = y
             };
-            
+
             point.pointSelected += UpdateAnchors;
 
             point.pointHovered += (clicked, enable) =>

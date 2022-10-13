@@ -32,7 +32,7 @@ namespace UnityEditor.Toolbars
             {
                 name = "Play",
                 tooltip = "Play",
-                onIcon = EditorGUIUtility.FindTexture("PlayButton On"),
+                onIcon = EditorGUIUtility.FindTexture("StopButton"),
                 offIcon = EditorGUIUtility.FindTexture("PlayButton"),
             });
             m_PlayButton.RegisterCallback<MouseDownEvent>(evt => OnPlayButtonRMBClick(evt));

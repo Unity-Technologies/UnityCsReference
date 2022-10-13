@@ -35,7 +35,7 @@ namespace UnityEditor
             [NativeProperty("BluetoothUsageDescription")]
             public extern static string bluetoothUsageDescription { get; set; }
 
-            [NativeProperty("macOSURLSchemes", false, TargetType.Field)]
+            [NativeProperty("macOSURLSchemes", false, TargetType.Function)]
             public extern static string[] urlSchemes
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]

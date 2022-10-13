@@ -26,8 +26,6 @@ namespace UnityEditor.PackageManager.UI
 
         IPackage package { get; }
 
-        PackageInfo packageInfo { get; }
-
         bool isInstalled { get; }
     }
 }
@@ -59,6 +57,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool hasEntitlementsError { get; }
 
         SemVersion? version { get; }
+
+        string versionInManifest { get; }
 
         long versionId { get; }
 
@@ -92,8 +92,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsDifferentVersionThanRequested { get; }
 
         bool IsRequestedButOverriddenVersion { get; }
-
-        RegistryInfo registry { get; }
 
         bool isRegistryPackage { get; }
 

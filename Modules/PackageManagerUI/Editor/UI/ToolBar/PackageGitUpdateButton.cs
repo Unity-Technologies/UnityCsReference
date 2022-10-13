@@ -6,16 +6,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageGitUpdateButton : PackageToolBarRegularButton
     {
+        private UpmCache m_UpmCache;
         private PackageOperationDispatcher m_OperationDispatcher;
-        public PackageGitUpdateButton(PackageOperationDispatcher operationDispatcher)
+        public PackageGitUpdateButton(UpmCache upmCache, PackageOperationDispatcher operationDispatcher)
         {
+            m_UpmCache = upmCache;
             m_OperationDispatcher = operationDispatcher;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
             var installedVersion = version.package.versions.installed;
-            m_OperationDispatcher.Install(installedVersion.packageId);
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, true);
+            m_OperationDispatcher.Install(packageInfo.packageId);
             PackageManagerWindowAnalytics.SendEvent("updateGit", installedVersion.uniqueId);
             return true;
         }

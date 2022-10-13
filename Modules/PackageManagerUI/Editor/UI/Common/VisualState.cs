@@ -12,7 +12,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string packageUniqueId;
         public string groupName;
         public bool visible;
-        public bool seeAllVersions;
         public bool lockedByDefault;
         public bool userUnlocked;
 
@@ -24,7 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             this.groupName = groupName;
             this.lockedByDefault = lockedByDefault;
             visible = true;
-            seeAllVersions = false;
             userUnlocked = false;
         }
 
@@ -33,7 +31,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return packageUniqueId == other.packageUniqueId
                    && groupName == other.groupName
                    && visible == other.visible
-                   && seeAllVersions == other.seeAllVersions
                    && lockedByDefault == other.lockedByDefault
                    && userUnlocked == other.userUnlocked;
         }

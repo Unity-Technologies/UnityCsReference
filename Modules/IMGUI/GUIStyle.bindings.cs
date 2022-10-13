@@ -14,7 +14,7 @@ namespace UnityEngine
         [NativeProperty("Background", false, TargetType.Function)] public extern Texture2D background { get; set; }
         [NativeProperty("textColor", false, TargetType.Field)] public extern Color textColor { get; set; }
 
-        [NativeProperty("scaledBackgrounds", false, TargetType.Field)]
+        [NativeProperty("scaledBackgrounds", false, TargetType.Function)]
         public extern Texture2D[] scaledBackgrounds { get; set; }
 
         [FreeFunction(Name = "GUIStyleState_Bindings::Init", IsThreadSafe = true)] private static extern IntPtr Init();

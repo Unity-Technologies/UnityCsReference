@@ -72,5 +72,7 @@ namespace UnityEngine
         }
 
         public static extern void DrawFrustum(Vector3 center, float fov, float maxRange, float minRange, float aspect);
+
+        public static extern float CalculateLOD(Vector3 position, float radius);
     }
 }

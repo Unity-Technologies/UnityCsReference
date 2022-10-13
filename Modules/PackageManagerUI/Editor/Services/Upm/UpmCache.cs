@@ -20,6 +20,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new Dictionary<string, Dictionary<string, object>>();
 
+        private HashSet<string> m_LoadAllVersions = new HashSet<string>();
+
         [SerializeField]
         private long m_SearchPackageInfosTimestamp = 0;
 
@@ -32,7 +34,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageInfo[] m_SerializedProductSearchPackageInfos;
         [SerializeField]
         private PackageInfo[] m_SerializedExtraPackageInfos;
+        [SerializeField]
+        private string[] m_SerializedLoadAllVersions;
 
+        public virtual event Action<string, bool> onLoadAllVersionsChanged = delegate {};
         public virtual event Action<IEnumerable<PackageInfo>> onPackageInfosUpdated;
         public virtual event Action<PackageInfo> onExtraPackageInfoFetched;
 
@@ -91,12 +96,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
+        public virtual bool IsLoadAllVersions(string packageUniqueId)
+        {
+            return m_LoadAllVersions.Contains(packageUniqueId);
+        }
+
+        public virtual void SetLoadAllVersions(string packageUniqueId, bool value)
+        {
+            if (string.IsNullOrEmpty(packageUniqueId) || value == IsLoadAllVersions(packageUniqueId))
+                return;
+            if (value)
+                m_LoadAllVersions.Add(packageUniqueId);
+            else
+                m_LoadAllVersions.Remove(packageUniqueId);
+            onLoadAllVersionsChanged?.Invoke(packageUniqueId, value);
+        }
+
         public void OnBeforeSerialize()
         {
             m_SerializedInstalledPackageInfos = m_InstalledPackageInfos.Values.ToArray();
             m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
             m_SerializedProductSearchPackageInfos = m_ProductSearchPackageInfos.Values.ToArray();
             m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
+
+            m_SerializedLoadAllVersions = m_LoadAllVersions.ToArray();
         }
 
         public void OnAfterDeserialize()
@@ -107,6 +130,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var p in m_SerializedExtraPackageInfos)
                 AddExtraPackageInfo(p);
+
+            m_LoadAllVersions = new HashSet<string>(m_SerializedLoadAllVersions);
         }
 
         public virtual void AddExtraPackageInfo(PackageInfo packageInfo)
@@ -181,6 +206,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public virtual PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
+
+        public virtual PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null)
+        {
+            if (string.IsNullOrEmpty(packageName))
+                return null;
+            if (isInstalled)
+                return GetInstalledPackageInfo(packageName);
+            var searchInfo = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfo(packageName);
+            if (string.IsNullOrEmpty(version) || searchInfo?.version == version)
+                return searchInfo;
+            return GetExtraPackageInfos(packageName)?.Get(version) ?? searchInfo;
+        }
 
         public virtual void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp)
         {

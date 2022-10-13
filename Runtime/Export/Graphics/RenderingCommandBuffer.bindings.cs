@@ -846,16 +846,16 @@ namespace UnityEngine.Rendering
         extern private void SetGlobalMatrixArrayListImpl(int nameID, object values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalFloatArray", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetGlobalFloatArray(int nameID, float[] values);
+        extern public void SetGlobalFloatArray(int nameID, [NotNull]float[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalVectorArray", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetGlobalVectorArray(int nameID, Vector4[] values);
+        extern public void SetGlobalVectorArray(int nameID, [NotNull]Vector4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalMatrixArray", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetGlobalMatrixArray(int nameID, Matrix4x4[] values);
+        extern public void SetGlobalMatrixArray(int nameID, [NotNull]Matrix4x4[] values);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetLateLatchProjectionMatrices", HasExplicitThis = true, ThrowsException = true)]
-        extern public void SetLateLatchProjectionMatrices(Matrix4x4[] projectionMat);
+        extern public void SetLateLatchProjectionMatrices([NotNull]Matrix4x4[] projectionMat);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::MarkLateLatchMatrixShaderPropertyID", HasExplicitThis = true)]
         extern public void MarkLateLatchMatrixShaderPropertyID(CameraLateLatchMatrixType matrixPropertyType, int shaderPropertyID);

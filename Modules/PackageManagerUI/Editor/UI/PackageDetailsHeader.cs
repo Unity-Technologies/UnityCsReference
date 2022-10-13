@@ -138,7 +138,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshQuickStart()
         {
-            var showQuickStartButton = m_Version.HasTag(PackageTag.Feature) && !string.IsNullOrEmpty(UpmPackageDocs.GetQuickStartUrl(m_Version, m_UpmCache));
+            var featurePackageInfo = m_Version != null && m_Version.HasTag(PackageTag.Feature) ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            var showQuickStartButton = !string.IsNullOrEmpty(UpmPackageDocs.GetQuickStartUrl(featurePackageInfo, m_UpmCache));
             if (showQuickStartButton)
             {
                 quickStart.Clear();
@@ -150,7 +151,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewQuickStartClick()
         {
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetQuickStartUrl(m_Version, m_UpmCache), string.Empty, L10n.Tr("quick start documentation"), "viewQuickstart", m_Version, m_Package, m_Application);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetQuickStartUrl(packageInfo, m_UpmCache), string.Empty, L10n.Tr("quick start documentation"), "viewQuickstart", m_Version, m_Package, m_Application);
         }
 
         private void RefreshDependency()
@@ -354,7 +356,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
-                    installedVersionString, m_Version.packageInfo?.projectDependenciesEntry);
+                    installedVersionString, m_Version.versionInManifest);
                 return;
             }
 
@@ -391,7 +393,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshRegistry()
         {
-            var registry = m_Version.registry;
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+            var registry = packageInfo?.registry;
             var showRegistry = registry != null && m_Version.package.product == null;
             UIUtils.SetElementDisplay(detailRegistry, showRegistry);
             UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
@@ -402,7 +405,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var detailRegistryName = L10n.Tr("Unknown");
                 detailRegistry.tooltip = string.Empty;
-                if (m_Version.packageInfo.versions.all.Any())
+                if (packageInfo.versions.all.Any())
                 {
                     detailRegistryName = registry.isDefault ? "Unity Technologies Inc." : registry.name;
                     detailRegistry.tooltip = registry.url;

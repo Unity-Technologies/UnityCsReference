@@ -310,6 +310,14 @@ namespace UnityEditor
         {
             Rect rect = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMaxW * 0.2f, maxWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchFieldWithJump);
 
+            var drawSearchPopupButton = ModeService.HasCapability(ModeCapability.SearchPopupButton, true);
+            if (!drawSearchPopupButton)
+            {
+                // Add a 2px margin if the search popup button is not drawn; we don't want a margin between the search
+                // field and the button if the button is present.
+                rect.xMax -= 2f;
+            }
+
             if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
                 ClickedSearchField();
 
@@ -362,7 +370,11 @@ namespace UnityEditor
             {
                 SearchService.SearchService.HandleSearchEvent(this, Event.current, m_SearchFilter);
             }
-            SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFilter);
+
+            if (drawSearchPopupButton)
+            {
+                SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFilter);
+            }
         }
     }
 }

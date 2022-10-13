@@ -365,7 +365,7 @@ namespace UnityEditor
 
             private static extern string metroFTAName { get; set; }
 
-            [NativeProperty("metroFTAFileTypes", TargetType.Field)]
+            [NativeProperty("metroFTAFileTypes", TargetType.Function)]
             private static extern WSASupportedFileType[] metroFTAFileTypes
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]

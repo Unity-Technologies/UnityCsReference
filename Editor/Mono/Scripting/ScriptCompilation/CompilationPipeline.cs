@@ -184,12 +184,16 @@ namespace UnityEditor.Compilation
         public string Name { get; private set; }
         public string DisplayName { get; private set; }
         public BuildTarget BuildTarget { get; private set; }
+        public bool HasSubtarget { get; private set; }
+        public int Subtarget { get; private set; }
 
-        internal AssemblyDefinitionPlatform(string name, string displayName, BuildTarget buildTarget) : this()
+        internal AssemblyDefinitionPlatform(string name, string displayName, BuildTarget buildTarget, bool hasSubtarget = false, int subtarget = 0) : this()
         {
             Name = name;
             DisplayName = displayName;
             BuildTarget = buildTarget;
+            HasSubtarget = hasSubtarget;
+            Subtarget = subtarget;
         }
     }
 
@@ -397,7 +401,7 @@ namespace UnityEditor.Compilation
         {
             if (assemblyDefinitionPlatforms == null)
             {
-                assemblyDefinitionPlatforms = CustomScriptAssembly.Platforms.Select(p => new AssemblyDefinitionPlatform(p.Name, p.DisplayName, p.BuildTarget)).ToArray();
+                assemblyDefinitionPlatforms = CustomScriptAssembly.Platforms.Select(p => new AssemblyDefinitionPlatform(p.Name, p.DisplayName, p.BuildTarget, p.HasSubTarget, p.SubTarget)).ToArray();
                 Array.Sort(assemblyDefinitionPlatforms, CompareAssemblyDefinitionPlatformByDisplayName);
             }
 

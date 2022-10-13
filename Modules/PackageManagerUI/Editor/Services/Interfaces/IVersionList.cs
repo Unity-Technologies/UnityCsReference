@@ -30,5 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool hasLifecycleVersion { get; }
 
         IPackageVersion GetUpdateTarget(IPackageVersion version);
+
+        int numUnloadedVersions { get; }
     }
 }

@@ -92,7 +92,7 @@ namespace UnityEditor
                 set;
             }
 
-            [NativeProperty("tvOSSmallIconLayers", TargetType.Field)]
+            [NativeProperty("tvOSSmallIconLayers", TargetType.Function)]
             private static extern Texture2D[] smallIconLayers
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -105,7 +105,7 @@ namespace UnityEditor
             internal static void SetSmallIconLayers(Texture2D[] layers) { smallIconLayers = layers; }
 
 
-            [NativeProperty("tvOSSmallIconLayers2x", TargetType.Field)]
+            [NativeProperty("tvOSSmallIconLayers2x", TargetType.Function)]
             private static extern Texture2D[] smallIconLayers2x
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -118,7 +118,7 @@ namespace UnityEditor
             internal static void SetSmallIconLayers2x(Texture2D[] layers) { smallIconLayers2x = layers; }
 
 
-            [NativeProperty("tvOSLargeIconLayers", TargetType.Field)]
+            [NativeProperty("tvOSLargeIconLayers", TargetType.Function)]
             private static extern Texture2D[] largeIconLayers
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -131,7 +131,7 @@ namespace UnityEditor
             internal static void SetLargeIconLayers(Texture2D[] layers) { largeIconLayers = layers; }
 
 
-            [NativeProperty("tvOSLargeIconLayers2x", TargetType.Field)]
+            [NativeProperty("tvOSLargeIconLayers2x", TargetType.Function)]
             private static extern Texture2D[] largeIconLayers2x
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -144,7 +144,7 @@ namespace UnityEditor
             internal static void SetLargeIconLayers2x(Texture2D[] layers) { largeIconLayers2x = layers; }
 
 
-            [NativeProperty("tvOSTopShelfImageLayers", TargetType.Field)]
+            [NativeProperty("tvOSTopShelfImageLayers", TargetType.Function)]
             private static extern Texture2D[] topShelfImageLayers
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -157,7 +157,7 @@ namespace UnityEditor
             internal static void SetTopShelfImageLayers(Texture2D[] layers) { topShelfImageLayers = layers; }
 
 
-            [NativeProperty("tvOSTopShelfImageLayers2x", TargetType.Field)]
+            [NativeProperty("tvOSTopShelfImageLayers2x", TargetType.Function)]
             private static extern Texture2D[] topShelfImageLayers2x
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -169,7 +169,7 @@ namespace UnityEditor
             internal static Texture2D[] GetTopShelfImageLayers2x() { return topShelfImageLayers2x; }
             internal static void SetTopShelfImageLayers2x(Texture2D[] layers) { topShelfImageLayers2x = layers; }
 
-            [NativeProperty("tvOSTopShelfImageWideLayers", TargetType.Field)]
+            [NativeProperty("tvOSTopShelfImageWideLayers", TargetType.Function)]
             private static extern Texture2D[] topShelfImageWideLayers
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
@@ -182,7 +182,7 @@ namespace UnityEditor
             internal static void SetTopShelfImageWideLayers(Texture2D[] layers) { topShelfImageWideLayers = layers; }
 
 
-            [NativeProperty("tvOSTopShelfImageWideLayers2x", TargetType.Field)]
+            [NativeProperty("tvOSTopShelfImageWideLayers2x", TargetType.Function)]
             private static extern Texture2D[] topShelfImageWideLayers2x
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]

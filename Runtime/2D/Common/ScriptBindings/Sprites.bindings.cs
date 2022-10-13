@@ -197,6 +197,13 @@ namespace UnityEngine
 
         public extern int GetPhysicsShapeCount();
 
+        public extern uint GetScriptableObjectsCount();
+        [FreeFunction("SpritesBindings::GetScriptableObjects", ThrowsException = true, HasExplicitThis = true)]
+        public extern uint GetScriptableObjects([NotNull] ScriptableObject[] scriptableObjects);
+        public extern bool AddScriptableObject([NotNull("NullExceptionObject")]ScriptableObject obj);
+        public extern bool RemoveScriptableObjectAt(uint i);
+        public extern bool SetScriptableObjectAt([NotNull("NullExceptionObject")]ScriptableObject obj, uint i);
+
         public int GetPhysicsShapePointCount(int shapeIdx)
         {
             int physicsShapeCount = GetPhysicsShapeCount();
@@ -249,7 +256,7 @@ namespace UnityEngine
         private extern static void OverridePhysicsShapeCount(Sprite sprite, int physicsShapeCount);
 
         [FreeFunction("SpritesBindings::OverridePhysicsShape", ThrowsException = true)]
-        private extern static void OverridePhysicsShape(Sprite sprite, Vector2[] physicsShape, int idx);
+        private extern static void OverridePhysicsShape(Sprite sprite, [NotNull] Vector2[] physicsShape, int idx);
 
         [FreeFunction("SpritesBindings::OverrideGeometry", HasExplicitThis = true)]
         public extern void OverrideGeometry([NotNull] Vector2[] vertices, [NotNull] UInt16[] triangles);

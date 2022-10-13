@@ -120,6 +120,15 @@ namespace UnityEditor.Modules
         //     domain reload, including each time user starts the game, so use this only for
         //     lightweight code.
         void OnUnload();
+
+        IEnumerable<ScriptAssemblyPlatform> GetExtraScriptAssemblyPlatforms(BuildTarget buildTarget);
+    }
+
+    struct ScriptAssemblyPlatform
+    {
+        public string AssemblyNamePostfix;
+        public string TargetNiceName;
+        public int Subtarget;
     }
 
     internal interface IBuildPostprocessor

@@ -40,6 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
+            m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
 
             m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
@@ -52,6 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
+            m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
 
             m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
@@ -124,6 +126,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(packageInfos.Select(p => p.name));
         }
 
+        private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
+        {
+            if (!long.TryParse(packageUniqueId, out var _))
+                GeneratePackagesAndTriggerChangeEvent(new[] { packageUniqueId });
+        }
+
         private void OnShowPreReleasePackagesesOrSeeAllVersionsChanged(bool _)
         {
             var allPackageNames = m_UpmCache.installedPackageInfos.Concat(m_UpmCache.searchPackageInfos).Select(p => p.name).ToHashSet();
@@ -153,14 +161,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var isUnityPackage = m_UpmClient.IsUnityPackage(searchInfo ?? installedInfo);
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
                     var versionList = new UpmVersionList(searchInfo, installedInfo, isUnityPackage, extraVersions);
-                    var filteredVersionList = LifecycleVersonsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
-                    if (!filteredVersionList.Any())
+                    versionList = VersionsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
+                    versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(packageName));
+                    if (!versionList.Any())
                     {
                         packagesToRemove.Add(packageName);
                         continue;
                     }
 
-                    var package = CreatePackage(packageName, filteredVersionList, isDiscoverable: searchInfo != null);
+                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null);
                     updatedPackages.Add(package);
 
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
@@ -219,6 +228,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
+            m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
 
             m_AssetStoreCache.onPurchaseInfosChanged += OnPurchaseInfosChanged;
             m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
@@ -234,6 +244,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
+            m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
 
             m_AssetStoreCache.onPurchaseInfosChanged -= OnPurchaseInfosChanged;
             m_AssetStoreCache.onProductInfoChanged -= OnProductInfoChanged;
@@ -307,6 +318,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
                     var isUnityPackage = m_UpmClient.IsUnityPackage(productSearchInfo ?? installedPackageInfo);
                     var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, isUnityPackage, extraVersions);
+                    versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
                     package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo));
                     if (productInfoFetchError != null)
                         AddError(package, productInfoFetchError.error);
@@ -370,6 +382,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // only trigger the call when the package is not installed, as installed version always have the most up-to-date package info
             if (long.TryParse(packageInfo.assetStore?.productId, out var productId) && m_UpmCache.GetInstalledPackageInfo(packageInfo.name)?.packageId != packageInfo.packageId)
+                GeneratePackagesAndTriggerChangeEvent(new[] { productId });
+        }
+
+        private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
+        {
+            if (long.TryParse(packageUniqueId, out var productId))
                 GeneratePackagesAndTriggerChangeEvent(new[] { productId });
         }
 

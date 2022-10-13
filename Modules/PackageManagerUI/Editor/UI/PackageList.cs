@@ -35,6 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UnityConnectProxy m_UnityConnect;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
+        private UpmCache m_UpmCache;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PageRefreshHandler m_PageRefreshHandler;
@@ -45,6 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
@@ -168,6 +170,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var currentView = this.currentView;
             foreach (var item in args.selection.previousSelections.Where(s => !args.selection.Contains(s.packageUniqueId)).Concat(args.selection))
                 currentView.GetPackageItem(item.packageUniqueId)?.RefreshSelection();
+
+            if (args.selection.previousSelections.Count() == 1)
+                m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault().packageUniqueId, false);
         }
 
         private void OnCheckUpdateProgress()

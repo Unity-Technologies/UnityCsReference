@@ -597,7 +597,7 @@ namespace UnityEngine.VFX
         }
     }
 
-    [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h")]
+    [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h"), RejectDragAndDropMaterial]
     public sealed partial class VFXRenderer : Renderer
     {
     }

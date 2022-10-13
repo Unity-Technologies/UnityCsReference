@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Version?.package == null)
                 return;
 
-            m_PageManager.GetPage().SetSeeAllVersions(m_Version.package, true);
+            m_UpmCache.SetLoadAllVersions(m_Version.package.uniqueId, true);
             PackageManagerWindowAnalytics.SendEvent("seeAllVersions", m_Version.package.uniqueId);
 
             Refresh(m_Version);
@@ -102,28 +102,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                 historyItem.StopSpinner();
             m_VersionHistoryList.Clear();
 
-            if (m_Version?.package?.versions == null)
+            var versions = m_Version?.package?.versions;
+            if (versions == null)
             {
                 UIUtils.SetElementDisplay(m_Container, false);
                 return;
             }
 
-
-            var seeAllVersions = m_PageManager.GetPage().visualStates.Get(m_Version.package?.uniqueId)?.seeAllVersions ?? false;
-            var keyVersions = m_Version.package.versions.key.ToList();
-            var allVersions = m_Version.package.versions.ToList();
-
-            var versions = seeAllVersions ? allVersions : keyVersions;
-            versions.Reverse();
-
-            var seeVersionsToolbar = !seeAllVersions && allVersions.Count > keyVersions.Count && (m_Version.HasTag(PackageTag.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
+            var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_Version.HasTag(PackageTag.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
 
             var latestVersion = m_Version.package?.versions.latest;
             var primaryVersion = m_Version.package?.versions.primary;
-            var multipleVersionsVisible = versions.Count > 1;
+            var multipleVersionsVisible = versions.Skip(1).Any();
 
-            foreach (var v in versions)
+            foreach (var v in versions.Reverse())
             {
                 PackageToolBarRegularButton button;
                 if (primaryVersion?.isInstalled ?? false)

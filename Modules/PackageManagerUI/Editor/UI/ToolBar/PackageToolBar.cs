@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_Application;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
+        private UpmCache m_UpmCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PackageOperationDispatcher m_OperationDispatcher;
@@ -25,6 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
@@ -121,7 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpdateButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_UpdateButton.element);
 
-            m_GitUpdateButton = new PackageGitUpdateButton(m_OperationDispatcher);
+            m_GitUpdateButton = new PackageGitUpdateButton(m_UpmCache, m_OperationDispatcher);
             m_GitUpdateButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
             m_GitUpdateButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_GitUpdateButton.element);

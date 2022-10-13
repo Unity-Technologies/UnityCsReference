@@ -63,8 +63,7 @@ namespace UnityEditorInternal.Profiling
                 ? Styles.frameDebugger
                 : Styles.noFrameDebugger, EditorStyles.toolbarButtonLeft))
             {
-                FrameDebuggerWindow dbg = FrameDebuggerWindow.ShowFrameDebuggerWindow();
-                dbg.EnableIfNeeded();
+                FrameDebuggerWindow.OpenWindowAndToggleEnabled();
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();

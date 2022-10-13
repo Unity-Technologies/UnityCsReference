@@ -860,7 +860,7 @@ namespace Unity.UI.Builder
                 // The state of Flex Direction can affect many other Flex-related fields.
                 if (styleName == "flex-direction")
                     updateFlexColumnGlobalState?.Invoke(enumValue);
-                
+
                 if (styleName == "position")
                     updatePositionAnchorsFoldoutState?.Invoke(enumValue);
 
@@ -2127,7 +2127,7 @@ namespace Unity.UI.Builder
             // The state of Flex Direction can affect many other Flex-related fields.
             if (styleName == "flex-direction")
                 updateFlexColumnGlobalState?.Invoke(e.newValue);
-            
+
             if (styleName == "position")
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 

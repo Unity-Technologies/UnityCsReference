@@ -86,7 +86,7 @@ namespace UnityEngine
         extern public bool enabled { get; set; }
         extern public Camera targetCamera { get; set; }
 
-        extern public void SetBoundingSpheres(BoundingSphere[] array);
+        extern public void SetBoundingSpheres([Unmarshalled]BoundingSphere[] array);
         extern public void SetBoundingSphereCount(int count);
         extern public void EraseSwapBack(int index);
 

@@ -9,13 +9,13 @@ namespace Unity.UI.Builder
         static readonly string k_UssAnchoredClassName = "anchored";
         static readonly string k_VisualContentName = "focus-outline";
         static readonly string k_ClickableAreaName = "clickable-area";
-        
+
         VisualElement m_ClickableArea;
-        
+
         public PositionProperty positionProperty { get; set; }
         public event Action<bool, bool> pointHovered;
         public event Action<PositionProperty, bool> pointSelected;
-        
+
         private bool m_Value;
 
         public float x
@@ -34,9 +34,9 @@ namespace Unity.UI.Builder
             set
             {
                 var previousValue = m_Value;
-                
+
                 SetValueWithoutNotify(value);
-                
+
                 // not checking if previous value is equal to new value before sending event to
                 // be able to send an event toupdate the position style fields when the square preset is clicked
                 using (ChangeEvent<bool> evt = ChangeEvent<bool>.GetPooled(previousValue, m_Value))
@@ -61,7 +61,7 @@ namespace Unity.UI.Builder
             style.position = Position.Absolute;
 
             var visualContentUXMLFile = BuilderConstants.UtilitiesPath + "/StyleField/PositionAnchorPoint.uxml";
-            
+
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(visualContentUXMLFile);
             var visualContent = template.Instantiate();
 
@@ -69,16 +69,16 @@ namespace Unity.UI.Builder
 
             Add(visualContent);
             visualContent.name = k_VisualContentName;
-            
+
             m_ClickableArea = this.Q(k_ClickableAreaName);
 
             AddToClassList(positionProperty.ToString().ToLower());
-            
+
             m_ClickableArea.AddManipulator(new Clickable(() =>
             {
                 value = !value;
             }));
-            
+
             RegisterClickableAreaInteractions();
             this.positionProperty = positionProperty;
             m_ClickableArea.tooltip = positionProperty.ToString();

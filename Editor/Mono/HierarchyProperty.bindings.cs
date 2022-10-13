@@ -153,7 +153,9 @@ namespace UnityEditor
         public extern int colorCode { get; }
 
         [FreeFunction("HierarchyPropertyBindings::IsExpanded", HasExplicitThis = true)]
-        public extern bool IsExpanded(int[] expanded);
+        private extern bool IsExpanded_internal(int[] expanded, bool nonNullEmptyArray);
+
+        public bool IsExpanded(int[] expanded) => IsExpanded_internal(expanded, expanded != null && expanded.Length == 0);
 
         public extern string guid { [FreeFunction("HierarchyPropertyBindings::GetGuid", HasExplicitThis = true)] get; }
         public extern bool alphaSorted { [NativeName("IsAlphaSorted")] get; set; }
@@ -167,18 +169,24 @@ namespace UnityEditor
         public extern GUID[] dynamicDependencies { get; }
 
         [FreeFunction("HierarchyPropertyBindings::Next", HasExplicitThis = true)]
-        public extern bool Next(int[] expanded);
+        private extern bool Next_internal(int[] expanded, bool nonNullEmptyArray);
+        public bool Next(int[] expanded) => Next_internal(expanded, expanded != null && expanded.Length == 0);
         [FreeFunction("HierarchyPropertyBindings::NextWithDepthCheck", HasExplicitThis = true)]
-        public extern bool NextWithDepthCheck(int[] expanded, int minDepth);
+        private extern bool NextWithDepthCheck_internal(int[] expanded, int minDepth, bool nonNullEmptyArray);
+        public bool NextWithDepthCheck(int[] expanded, int minDepth) => NextWithDepthCheck_internal(expanded, minDepth, expanded != null && expanded.Length == 0);
         [FreeFunction("HierarchyPropertyBindings::Previous", HasExplicitThis = true)]
-        public extern bool Previous(int[] expanded);
+        private extern bool Previous_internal(int[] expanded, bool nonNullEmptyArray);
+        public bool Previous(int[] expanded) => Previous_internal(expanded, expanded != null && expanded.Length == 0);
         public extern bool Parent();
         [FreeFunction("HierarchyPropertyBindings::Find", HasExplicitThis = true)]
-        public extern bool Find(int instanceID, int[] expanded);
+        private extern bool Find_internal(int instanceID, int[] expanded, bool nonNullEmptyArray);
+        public bool Find(int instanceID, int[] expanded) => Find_internal(instanceID, expanded, expanded != null && expanded.Length == 0);
         [FreeFunction("HierarchyPropertyBindings::Skip", HasExplicitThis = true)]
-        public extern bool Skip(int count, int[] expanded);
+        private extern bool Skip_internal(int count, int[] expanded, bool nonNullEmptyArray);
+        public bool Skip(int count, int[] expanded) =>Skip_internal(count, expanded, expanded != null && expanded.Length == 0);
         [FreeFunction("HierarchyPropertyBindings::CountRemaining", HasExplicitThis = true)]
-        public extern int CountRemaining(int[] expanded);
+        private extern int CountRemaining_internal(int[] expanded, bool nonNullEmptyArray);
+        public int CountRemaining(int[] expanded) => CountRemaining_internal(expanded, expanded != null && expanded.Length == 0);
 
         public extern int GetInstanceIDIfImported();
 
@@ -205,8 +213,19 @@ namespace UnityEditor
             SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.productIds, filter.anyWithAssetOrigin, filter.showAllHits, filter.importLogFlags);
         }
 
+        internal void CopySearchFilterFrom(HierarchyProperty other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+            CopySearchFilterImpl(other);
+        }
+
         [FreeFunction("HierarchyPropertyBindings::SetSearchFilterImpl", HasExplicitThis = true)]
         extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, string[] regex, int[] productIds, bool anyWithAssetOrigin, bool showAllHits, ImportLogFlags importLogFlags);
+
+        [FreeFunction("HierarchyPropertyBindings::CopySearchFilterImpl", HasExplicitThis = true)]
+        extern void CopySearchFilterImpl(HierarchyProperty other);
+
         [FreeFunction("HierarchyPropertyBindings::FindAllAncestors", HasExplicitThis = true)]
         public extern int[] FindAllAncestors(int[] instanceIDs);
         [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilter")]

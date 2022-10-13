@@ -185,6 +185,7 @@ namespace UnityEditor.MPE
     {
         public static extern string GetAddress();
         public static extern int GetPort();
+        public static extern void DispatchMessages();
         public static extern void Start();
         public static extern void Stop();
         public static extern bool IsRunning();

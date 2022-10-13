@@ -14,7 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver
     {
-        public virtual string name => packageInfo?.name ?? string.Empty;
+        [SerializeField]
+        protected string m_Name;
+        public virtual string name => m_Name ?? string.Empty;
 
         [SerializeField]
         protected string m_DisplayName;
@@ -22,26 +24,26 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_Description;
-        public string description => !string.IsNullOrEmpty(m_Description) ? m_Description : (packageInfo?.description ?? string.Empty);
+        public string description => m_Description ?? string.Empty;
 
         [SerializeField]
         protected string m_VersionString;
         protected SemVersion? m_Version;
         public virtual SemVersion? version => m_Version;
 
+        public virtual string versionInManifest => null;
+
         [SerializeField]
         protected long m_PublishedDateTicks;
-        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? packageInfo?.datePublished : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
+        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? null : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
         [SerializeField]
         protected string m_PublishNotes;
         public string localReleaseNotes => m_PublishNotes;
 
-        public DependencyInfo[] dependencies => packageInfo?.dependencies;
-        public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
-        public EntitlementsInfo entitlements => packageInfo?.entitlements;
-
-        public virtual RegistryInfo registry => null;
+        public virtual DependencyInfo[] dependencies => null;
+        public virtual DependencyInfo[] resolvedDependencies => null;
+        public virtual EntitlementsInfo entitlements => null;
 
         public virtual bool isRegistryPackage => false;
 
@@ -72,20 +74,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 || entitlements.status == EntitlementStatus.NotGranted
                 || entitlements.status == EntitlementStatus.Granted);
 
-        public bool hasEntitlementsError
-        {
-            get
-            {
-                if (hasEntitlements && !entitlements.isAllowed)
-                    return true;
+        public virtual bool hasEntitlementsError => false;
 
-                return packageInfo?.errors.Any(error =>
-                    error.errorCode == ErrorCode.Forbidden ||
-                    error.message.Contains(EntitlementsErrorChecker.k_NoSubscriptionUpmErrorMessage)) ?? false;
-            }
-        }
-
-        public virtual PackageInfo packageInfo => null;
         public virtual IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
         public virtual IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
         public virtual IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
@@ -105,12 +95,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual bool isUnityPackage => false;
 
         public bool IsDifferentVersionThanRequested
-            => !string.IsNullOrEmpty(packageInfo?.projectDependenciesEntry) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
-                packageInfo.projectDependenciesEntry != versionString;
+            => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
+                versionInManifest != versionString;
 
         public bool IsRequestedButOverriddenVersion
             => !string.IsNullOrEmpty(versionString) && !isInstalled &&
-                versionString == m_Package?.versions.primary.packageInfo?.projectDependenciesEntry;
+                versionString == m_Package?.versions.primary.versionInManifest;
 
         public virtual string GetDescriptor(bool isFirstLetterCapitalized = false)
         {

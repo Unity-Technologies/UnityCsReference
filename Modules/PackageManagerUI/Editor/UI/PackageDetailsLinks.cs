@@ -35,6 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private IOProxy m_IOProxy;
+        private UpmCache m_UpmCache;
 
         private enum LinkState
         {
@@ -48,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var container = ServicesContainer.instance;
             m_Application = container.Resolve<ApplicationProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
+            m_UpmCache = container.Resolve<UpmCache>();
         }
 
         public PackageDetailsLinks()
@@ -156,13 +158,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private (LinkState state, string tooltip) GetDocLinkStateAndTooltip(IPackage package, IPackageVersion version)
         {
-            var upmVersion = version as UpmPackageVersion;
-
-            if (upmVersion == null || version.HasTag(PackageTag.Feature))
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
+            if (packageInfo == null || version.HasTag(PackageTag.Feature))
                 return (LinkState.NotVisible, "");
 
-            if (UpmPackageDocs.GetDocumentationUrl(upmVersion).Any() ||
-                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, version)) ||
+            if (UpmPackageDocs.GetDocumentationUrl(packageInfo, version.isUnityPackage).Any() ||
+                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo)) ||
                 version.HasTag(PackageTag.BuiltIn))
                 return (LinkState.Enabled, "");
 
@@ -174,13 +175,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private (LinkState state, string tooltip) GetChangelogLinkStateAndTooltip(IPackage package, IPackageVersion version)
         {
-            var upmVersion = version as UpmPackageVersion;
-
-            if (upmVersion == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
+            if (packageInfo == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
                 return (LinkState.NotVisible, "");
 
-            if (!string.IsNullOrEmpty(UpmPackageDocs.GetChangelogUrl(upmVersion)) ||
-                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineChangelog(m_IOProxy, upmVersion)))
+            if (!string.IsNullOrEmpty(UpmPackageDocs.GetChangelogUrl(packageInfo, version.isUnityPackage)) ||
+                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo)))
                 return (LinkState.Enabled, "");
 
             if (package.product != null && !version.isInstalled)
@@ -191,13 +191,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private (LinkState state, string tooltip) GetLicenseLinkStateAndTooltip(IPackage package, IPackageVersion version)
         {
-            var upmVersion = version as UpmPackageVersion;
-
-            if (upmVersion == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
+            if (packageInfo == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
                 return (LinkState.NotVisible, "");
 
-            if (!string.IsNullOrEmpty(UpmPackageDocs.GetLicensesUrl(upmVersion)) ||
-                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineLicenses(m_IOProxy, upmVersion)))
+            if (!string.IsNullOrEmpty(UpmPackageDocs.GetLicensesUrl(packageInfo, version.isUnityPackage)) ||
+                !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo)))
                 return (LinkState.Enabled, "");
 
             if (package.product != null && !version.isInstalled)
@@ -229,17 +228,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDocClick()
         {
-            ViewUrl(UpmPackageDocs.GetDocumentationUrl(m_Version), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, m_Version), L10n.Tr("documentation"), "viewDocs");
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            var isUnityPackage = m_Version?.isUnityPackage == true;
+            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
         }
 
         private void ViewChangelogClick()
         {
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(m_Version), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, m_Version), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            var isUnityPackage = m_Version?.isUnityPackage == true;
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
         }
 
         private void ViewLicensesClick()
         {
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(m_Version), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, m_Version), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            var isUnityPackage = m_Version?.isUnityPackage == true;
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
         }
 
         private void ViewUseCasesClick()

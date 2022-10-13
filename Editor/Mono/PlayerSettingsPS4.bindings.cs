@@ -210,7 +210,7 @@ namespace UnityEditor
             [NativeProperty("ps4videoRecordingFeaturesUsed", false, TargetType.Field)] extern public static bool videoRecordingFeaturesUsed { get; set; }
             [NativeProperty("ps4contentSearchFeaturesUsed", false, TargetType.Field)] extern public static bool contentSearchFeaturesUsed { get; set; }
             [NativeProperty("ps4attribEyeToEyeDistanceSettingVR", false, TargetType.Field)] extern public static PlayStationVREyeToEyeDistanceSettings attribEyeToEyeDistanceSettingVR { get; set; }
-            [NativeProperty("ps4IncludedModules", false, TargetType.Field)] extern public static string[] includedModules { get; set; }
+            [NativeProperty("ps4IncludedModules", false, TargetType.Function)] extern public static string[] includedModules { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool enableApplicationExit { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }

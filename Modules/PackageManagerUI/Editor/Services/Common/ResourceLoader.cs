@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     }
 
     [Serializable]
-    internal class ResourceLoader
+    internal class ResourceLoader : ISerializationCallbackReceiver
     {
         internal static class StyleSheetPath
         {
@@ -54,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             internal static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
         }
 
-        private enum StyleSheetId : int
+        private enum StyleSheetType : int
         {
             PackageManagerCommon = 0,
             PackageManagerWindow,
@@ -69,29 +69,56 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static string lightOrDarkTheme => EditorGUIUtility.isProSkin ? "Dark" : "Light";
 
-        [SerializeField]
-        private StyleSheet[] m_ResolvedDarkStyleSheets = new StyleSheet[(int)StyleSheetId.Count];
+        // We keep a static array here so that even if we create multiple instances of resource loaders
+        // they'll still share style sheets instead of creating new ones. Style sheets are ScriptableObjects
+        // so they silently survive domain reload even when resource loaders are not serialized
+        private static readonly int[] s_ResolvedDarkStyleSheetIds = new int[(int)StyleSheetType.Count];
+        private static readonly int[] s_ResolvedLightStyleSheetIds = new int[(int)StyleSheetType.Count];
 
         [SerializeField]
-        private StyleSheet[] m_ResolvedLightStyleSheets = new StyleSheet[(int)StyleSheetId.Count];
+        private int[] m_SerializedResolvedDarkStyleSheetIds;
 
-        private StyleSheet[] resolvedStyleSheets => EditorGUIUtility.isProSkin ? m_ResolvedDarkStyleSheets : m_ResolvedLightStyleSheets;
+        [SerializeField]
+        private int[] m_SerializedResolvedLightStyleSheetIds;
+
+        private static int[] resolvedStyleSheetIds => EditorGUIUtility.isProSkin ? s_ResolvedDarkStyleSheetIds : s_ResolvedLightStyleSheetIds;
+
+        public void OnBeforeSerialize()
+        {
+            m_SerializedResolvedDarkStyleSheetIds = s_ResolvedDarkStyleSheetIds;
+            m_SerializedResolvedLightStyleSheetIds = s_ResolvedLightStyleSheetIds;
+        }
+
+        public void OnAfterDeserialize()
+        {
+            for (var i = 0; i < (int)StyleSheetType.Count; i++)
+            {
+                if (s_ResolvedDarkStyleSheetIds[i] == 0 && m_SerializedResolvedDarkStyleSheetIds[i] != 0)
+                    s_ResolvedDarkStyleSheetIds[i] = m_SerializedResolvedDarkStyleSheetIds[i];
+                if (s_ResolvedLightStyleSheetIds[i] == 0 && m_SerializedResolvedLightStyleSheetIds[i] != 0)
+                    s_ResolvedLightStyleSheetIds[i] = m_SerializedResolvedLightStyleSheetIds[i];
+            }
+        }
+
+
+        private StyleSheet FindResolvedStyleSheetFromType(StyleSheetType styleSheetType)
+        {
+            var styleSheetId = resolvedStyleSheetIds[(int)styleSheetType];
+            if (styleSheetId != 0)
+                return UnityEngine.Object.FindObjectFromInstanceID(styleSheetId) as StyleSheet;
+            return null;
+        }
 
         public StyleSheet packageManagerCommonStyleSheet
         {
             get
             {
-                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.PackageManagerCommon];
-                if (styleSheet == null)
-                {
-                    styleSheet = ResolveStyleSheets(StyleSheetPath.defaultCommon,
-                        StyleSheetPath.extensionVariables,
-                        StyleSheetPath.packageManagerVariables,
-                        StyleSheetPath.packageManagerCommon);
-                    styleSheet.name = "PackageManagerCommon" + lightOrDarkTheme;
-                    resolvedStyleSheets[(int)StyleSheetId.PackageManagerCommon] = styleSheet;
-                }
-                return styleSheet;
+                return FindResolvedStyleSheetFromType(StyleSheetType.PackageManagerCommon)
+                    ?? ResolveStyleSheets(StyleSheetType.PackageManagerCommon,
+                                          StyleSheetPath.defaultCommon,
+                                          StyleSheetPath.extensionVariables,
+                                          StyleSheetPath.packageManagerVariables,
+                                          StyleSheetPath.packageManagerCommon);
             }
         }
 
@@ -99,20 +126,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.PackageManagerWindow];
+                var styleSheet = FindResolvedStyleSheetFromType(StyleSheetType.PackageManagerWindow);
                 if (styleSheet == null)
                 {
                     var styleSheetsToResolve = StyleSheetPath.packageManagerComponents.Select(p =>
-                        {
-                            var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
-                            if (styleSheet == null)
-                                throw new ResourceLoaderException($"Unable to load styleSheet {p}");
-                            return styleSheet;
-                        })
-                        .Concat(new[] { packageManagerCommonStyleSheet }).ToArray();
-                    styleSheet = ResolveStyleSheets(styleSheetsToResolve);
-                    styleSheet.name = "PackageManagerWindow" + lightOrDarkTheme;
-                    resolvedStyleSheets[(int)StyleSheetId.PackageManagerWindow] = styleSheet;
+                    {
+                        var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
+                        if (styleSheet == null)
+                            throw new ResourceLoaderException($"Unable to load styleSheet {p}");
+                        return styleSheet;
+                    }).Concat(new[] { packageManagerCommonStyleSheet }).ToArray();
+                    styleSheet = ResolveStyleSheets(StyleSheetType.PackageManagerWindow, styleSheetsToResolve);
                 }
                 return styleSheet;
             }
@@ -122,14 +146,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                var stylesheet = resolvedStyleSheets[(int)StyleSheetId.FiltersDropdown];
-                if (stylesheet == null)
-                {
-                    stylesheet = ResolveStyleSheets(StyleSheetPath.packageManagerVariables, StyleSheetPath.filtersDropdown);
-                    stylesheet.name = "FiltersDropdown" + lightOrDarkTheme;
-                    resolvedStyleSheets[(int)StyleSheetId.FiltersDropdown] = stylesheet;
-                }
-                return stylesheet;
+                return FindResolvedStyleSheetFromType(StyleSheetType.FiltersDropdown)
+                    ?? ResolveStyleSheets(StyleSheetType.FiltersDropdown,
+                                          StyleSheetPath.packageManagerVariables,
+                                          StyleSheetPath.filtersDropdown);
             }
         }
 
@@ -137,14 +157,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.InputDropdown];
-                if (styleSheet == null)
-                {
-                    styleSheet = ResolveStyleSheets(StyleSheetPath.defaultCommon, StyleSheetPath.packageManagerVariables, StyleSheetPath.inputDropdown);
-                    styleSheet.name = "InputDropdown" + lightOrDarkTheme;
-                    resolvedStyleSheets[(int)StyleSheetId.InputDropdown] = styleSheet;
-                }
-                return styleSheet;
+                return FindResolvedStyleSheetFromType(StyleSheetType.InputDropdown)
+                    ?? ResolveStyleSheets(StyleSheetType.InputDropdown,
+                                          StyleSheetPath.defaultCommon,
+                                          StyleSheetPath.packageManagerVariables,
+                                          StyleSheetPath.inputDropdown);
             }
         }
 
@@ -152,20 +169,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                var styleSheet = resolvedStyleSheets[(int)StyleSheetId.InProgressDropdown];
-                if (styleSheet == null)
-                {
-                    styleSheet = ResolveStyleSheets(StyleSheetPath.defaultCommon, StyleSheetPath.packageManagerVariables, StyleSheetPath.inProgressDropdown);
-                    styleSheet.name = "InProgressDropdown" + lightOrDarkTheme;
-                    resolvedStyleSheets[(int)StyleSheetId.InProgressDropdown] = styleSheet;
-                }
-                return styleSheet;
+                return FindResolvedStyleSheetFromType(StyleSheetType.InProgressDropdown)
+                    ?? ResolveStyleSheets(StyleSheetType.InProgressDropdown,
+                                          StyleSheetPath.defaultCommon,
+                                          StyleSheetPath.packageManagerVariables,
+                                          StyleSheetPath.inProgressDropdown);
             }
         }
 
-        private StyleSheet ResolveStyleSheets(params string[] styleSheetPaths)
+        private StyleSheet ResolveStyleSheets(StyleSheetType styleSheetType, params string[] styleSheetPaths)
         {
-            return ResolveStyleSheets(styleSheetPaths.Select(p =>
+            return ResolveStyleSheets(styleSheetType, styleSheetPaths.Select(p =>
             {
                 var styleSheet = m_ApplicationProxy.Load<StyleSheet>(p);
                 if (styleSheet == null)
@@ -174,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }).ToArray());
         }
 
-        private static StyleSheet ResolveStyleSheets(params StyleSheet[] styleSheets)
+        private StyleSheet ResolveStyleSheets(StyleSheetType styleSheetType, params StyleSheet[] styleSheets)
         {
             var styleSheet = ScriptableObject.CreateInstance<StyleSheet>();
             styleSheet.hideFlags = HideFlags.HideAndDontSave;
@@ -183,6 +197,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var resolver = new StyleSheets.StyleSheetResolver();
             resolver.AddStyleSheets(styleSheets);
             resolver.ResolveTo(styleSheet);
+
+            styleSheet.name = styleSheetType.ToString() + lightOrDarkTheme;
+            resolvedStyleSheetIds[(int)styleSheetType] = styleSheet.GetInstanceID();
+
             return styleSheet;
         }
 
@@ -229,13 +247,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Reset()
         {
-            m_ResolvedDarkStyleSheets = new StyleSheet[(int)StyleSheetId.Count];
-            m_ResolvedLightStyleSheets = new StyleSheet[(int)StyleSheetId.Count];
-            _ = packageManagerCommonStyleSheet;
-            _ = packageManagerWindowStyleSheet;
-            _ = filtersDropdownStyleSheet;
-            _ = inputDropdownStyleSheet;
-            _ = inProgressDropdownStyleSheet;
+            foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Concat(s_ResolvedLightStyleSheetIds).Where(id => id != 0))
+                UnityEngine.Object.Destroy(UnityEngine.Object.FindObjectFromInstanceID(styleSheetId));
+
+            for (var i = 0; i < (int)StyleSheetType.Count; i++)
+            {
+                s_ResolvedDarkStyleSheetIds[i] = 0;
+                s_ResolvedLightStyleSheetIds[i] = 0;
+            }
         }
     }
 }

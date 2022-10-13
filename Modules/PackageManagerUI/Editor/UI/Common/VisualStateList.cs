@@ -60,16 +60,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public bool SetSeeAllVersions(string packageUniqueId, bool value)
-        {
-            var state = Get(packageUniqueId);
-            if (state != null && state.seeAllVersions != value)
-            {
-                state.seeAllVersions = value;
-                return true;
-            }
-            return false;
-        }
 
         public virtual bool Contains(string packageUniqueId)
         {

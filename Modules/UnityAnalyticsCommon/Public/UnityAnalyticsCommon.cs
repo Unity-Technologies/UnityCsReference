@@ -8,6 +8,18 @@ using System.Collections;
 
 namespace UnityEngine.Analytics
 {
+    public enum AnalyticsResult
+    {
+        Ok,
+        NotInitialized,
+        AnalyticsDisabled,
+        TooManyItems,
+        SizeLimitReached,
+        TooManyRequests,
+        InvalidData,
+        UnsupportedPlatform
+    }
+
     public static partial class AnalyticsCommon
     {
         public static bool ugsAnalyticsEnabled

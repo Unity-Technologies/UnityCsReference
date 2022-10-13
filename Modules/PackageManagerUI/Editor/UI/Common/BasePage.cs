@@ -283,17 +283,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return AmendSelection(toAddOrUpdate, toRemove);
         }
 
-        public void SetSeeAllVersions(IPackage package, bool value)
-        {
-            SetSeeAllVersions(package?.uniqueId, value);
-        }
-
-        public void SetSeeAllVersions(string packageUniqueId, bool value)
-        {
-            if (visualStates.SetSeeAllVersions(packageUniqueId, value))
-                TriggerOnVisualStateChange(new[] { visualStates.Get(packageUniqueId) });
-        }
-
         public bool IsGroupExpanded(string groupName)
         {
             return !m_CollapsedGroups.Contains(groupName);

@@ -140,6 +140,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
             m_ClientProxy = new ClientProxy();
 
+            if (m_ResourceLoader != null)
+                m_ResourceLoader.Reset();
             m_ResourceLoader = new ResourceLoader();
             m_ExtensionManager = new ExtensionManager();
 

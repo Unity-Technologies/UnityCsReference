@@ -86,7 +86,7 @@ namespace Unity.UI.Builder
         void StyleCategoryContextualMenu(ContextualMenuPopulateEvent evt)
         {
             bool isSelector = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
-            
+
             evt.menu.AppendAction(
                 isSelector ? BuilderConstants.ContextMenuSetAsValueMessage : BuilderConstants.ContextMenuSetAsInlineValueMessage,
                 action => {},
@@ -209,7 +209,7 @@ namespace Unity.UI.Builder
             var newPosition = (Position)newValue;
             var foldout = m_Inspector.Q<Foldout>("anchors-foldout");
             var styleRow = foldout.GetFirstAncestorOfType<BuilderStyleRow>();
-            
+
             var styleFields = styleRow.Query<BindableElement>().ToList();
 
             bool isRowOverride = false;
@@ -321,7 +321,7 @@ namespace Unity.UI.Builder
 
             TransitionPropertyDropdownContent.Content = content;
         }
-        
+
         /// <summary>
         /// This will return if the styleField is a child of styleRow while still allowing intermediate styling elements between them.
         /// This will allow styling of composite style rows.

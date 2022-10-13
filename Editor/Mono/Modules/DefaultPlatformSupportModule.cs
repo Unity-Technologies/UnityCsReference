@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEditor.DeploymentTargets;
 
@@ -57,5 +59,10 @@ namespace UnityEditor.Modules
         public virtual void OnLoad() {}
 
         public virtual void OnUnload() {}
+
+        public virtual IEnumerable<ScriptAssemblyPlatform> GetExtraScriptAssemblyPlatforms(BuildTarget target = BuildTarget.NoTarget)
+        {
+            return Enumerable.Empty<ScriptAssemblyPlatform>();
+        }
     }
 }

@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ExtensionManager m_ExtensionManager;
         private ApplicationProxy m_Application;
+        private UpmCache m_UpmCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
@@ -25,6 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_ExtensionManager = container.Resolve<ExtensionManager>();
             m_Application = container.Resolve<ApplicationProxy>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
@@ -176,13 +178,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // For now packageInfo, package and packageVersion will all be null when there are multiple packages selected.
             // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
-            var packageInfo = version?.packageInfo;
-            PackageManagerExtensions.ExtensionCallback(() =>
+            if (PackageManagerExtensions.Extensions.Any())
             {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageSelectionChange(packageInfo);
-            });
-
+                var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+                PackageManagerExtensions.ExtensionCallback(() =>
+                {
+                    foreach (var extension in PackageManagerExtensions.Extensions)
+                        extension.OnPackageSelectionChange(packageInfo);
+                });
+            }
             m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
         }
 

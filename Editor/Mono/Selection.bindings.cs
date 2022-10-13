@@ -85,14 +85,13 @@ namespace UnityEditor
         extern internal static void SetSelectionWithActiveObject(Object[] newSelection, Object activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        [NativeThrows]
-        extern internal static void SetSelectionWithActiveInstanceID(int[] newSelection, int activeObject);
+        extern internal static void SetSelectionWithActiveInstanceID([NotNull("NullReferenceException")] int[] newSelection, int activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
 
-        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon), NativeThrows]
-        internal static extern void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetFullSelectionByID([NotNull("NullReferenceException")]int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void UpdateSelectionMetaData(Object context, DataMode dataModeHint);
@@ -126,7 +125,13 @@ namespace UnityEditor
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static int[] instanceIDs { get; [NativeThrows] set; }
+        public static int[] instanceIDs { get => GetInstanceIDs(); set => SetInstanceIDs(value); }
+
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        extern static int[] GetInstanceIDs();
+
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        extern static void SetInstanceIDs([NotNull("NullReferenceException")] int[] instanceIDs);
 
         [StaticAccessor("GetSceneTracker()", StaticAccessorType.Dot)]
         [NativeMethod("IsSelected")]

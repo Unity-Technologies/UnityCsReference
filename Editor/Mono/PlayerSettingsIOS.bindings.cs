@@ -594,7 +594,7 @@ namespace UnityEditor
                 return new iOSDeviceRequirementGroup(name);
             }
 
-            [NativeProperty("iOSURLSchemes", false, TargetType.Field)]
+            [NativeProperty("iOSURLSchemes", false, TargetType.Function)]
             public extern static string[] iOSUrlSchemes
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]

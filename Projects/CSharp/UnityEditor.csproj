@@ -2573,6 +2573,9 @@
     <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerEventDetailsView.cs">
       <Link>Editor\Mono\PerformanceTools\FrameDebuggerEventDetailsView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerEventDisplayData.cs">
+      <Link>Editor\Mono\PerformanceTools\FrameDebuggerEventDisplayData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerHelper.cs">
       <Link>Editor\Mono\PerformanceTools\FrameDebuggerHelper.cs</Link>
     </Compile>
@@ -3386,6 +3389,18 @@
     <Compile Include="..\..\Editor\Mono\Shaders\MaterialHierarchyPopup.cs">
       <Link>Editor\Mono\Shaders\MaterialHierarchyPopup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterAttributes.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterConstraintAttributes.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterConstraintAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterData.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterUtil.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterUtil.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SpeedTreeMaterialFixer.cs">
       <Link>Editor\Mono\SpeedTreeMaterialFixer.cs</Link>
     </Compile>
@@ -3530,11 +3545,17 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs">
       <Link>Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\EditorGenericDropdownMenu.cs">
+      <Link>Editor\Mono\UIElements\EditorGenericDropdownMenu.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorMenuExtensions.cs">
       <Link>Editor\Mono\UIElements\EditorMenuExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorWindowPersistentViewData.cs">
       <Link>Editor\Mono\UIElements\EditorWindowPersistentViewData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\GenericDropdownMenuWindowContent.cs">
+      <Link>Editor\Mono\UIElements\GenericDropdownMenuWindowContent.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Inspector\EditorElement.cs">
       <Link>Editor\Mono\UIElements\Inspector\EditorElement.cs</Link>
@@ -5399,9 +5420,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Package.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Package.cs</Link>
     </Compile>
@@ -5428,6 +5446,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UniqueIdMapper.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\UniqueIdMapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VersionsFilter.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\VersionsFilter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs</Link>

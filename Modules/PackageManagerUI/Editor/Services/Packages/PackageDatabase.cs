@@ -189,13 +189,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual IEnumerable<Sample> GetSamples(IPackageVersion version)
         {
-            if (version?.packageInfo == null || version.packageInfo.version != version.version?.ToString())
+            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+            if (packageInfo == null || packageInfo.version != version.version?.ToString())
                 return Enumerable.Empty<Sample>();
 
             if (m_ParsedSamples.TryGetValue(version.uniqueId, out var parsedSamples))
                 return parsedSamples;
 
-            var samples = Sample.FindByPackage(version.packageInfo, m_UpmCache, m_IOProxy, m_AssetDatabase);
+            var samples = Sample.FindByPackage(packageInfo, m_UpmCache, m_IOProxy, m_AssetDatabase);
             m_ParsedSamples[version.uniqueId] = samples;
             return samples;
         }

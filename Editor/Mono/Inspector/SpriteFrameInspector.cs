@@ -2,12 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Text;
 using Unity.Collections;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.U2D;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -23,26 +26,30 @@ namespace UnityEditor
             public static readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites. The values are in pixels units.");
             public static readonly GUIContent borderText = EditorGUIUtility.TrTextContent("L:{0:0.##} B:{1:0.##} R:{2:0.##} T:{3:0.##}");
             public static readonly GUIContent multiValueText = EditorGUIUtility.TrTextContent("-");
+            public static readonly GUIContent elemenText = EditorGUIUtility.TrTextContent("Element {0}");
         }
 
         SerializedProperty m_Name;
         SerializedProperty m_Pivot;
+        SerializedProperty m_ScriptableObjects;
         Vector4 m_BorderValue;
         bool m_BorderHasSameValue = true;
         GUIContent m_SpriteNameContent;
         GUIContent m_SpriteAlignmentContent;
         GUIContent m_SpriteBorderContent;
-
+        StringBuilder m_ElementStringBuilder;
         void OnEnable()
         {
             m_Name = serializedObject.FindProperty("m_Name");
             m_Pivot = serializedObject.FindProperty("m_Pivot");
+            m_ScriptableObjects = serializedObject.FindProperty("m_ScriptableObjects");
             m_BorderValue = sprite.border;
 
             CheckBorderHasSameValue();
             m_SpriteNameContent = new GUIContent(sprite.name);
             m_SpriteAlignmentContent = new GUIContent(UnityString.Format(Styles.spriteAlignmentText.text, m_Pivot.vector2Value.x, m_Pivot.vector2Value.y));
             m_SpriteBorderContent = new GUIContent(UnityString.Format(Styles.borderText.text, m_BorderValue.x, m_BorderValue.y, m_BorderValue.z, m_BorderValue.w));
+            m_ElementStringBuilder = new StringBuilder();
         }
 
         void CheckBorderHasSameValue()
@@ -74,7 +81,70 @@ namespace UnityEditor
             get { return target as Sprite; }
         }
 
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
+        {
+            var rootVisualElement = new VisualElement();
+            rootVisualElement.Add(new IMGUIContainer(OnSpriteFramePropertiesGUI));
+            var listElement = new ListView()
+            {
+                name = "SpriteScriptableObjectListView",
+                style = { height = 300}
+            };
+            listElement.headerTitle = "ScriptableObjects";
+            listElement.showBorder = true;
+            listElement.showAddRemoveFooter = false;
+            listElement.showBoundCollectionSize = false;
+            listElement.showFoldoutHeader = true;
+            listElement.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listElement.userData = (object) m_ScriptableObjects;
+            listElement.showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly;
+            listElement.bindingPath = m_ScriptableObjects.propertyPath;
+            listElement.viewDataKey = m_ScriptableObjects.propertyPath;
+            listElement.name = "unity-list-" + m_ScriptableObjects.propertyPath;
+            listElement.BindProperty(m_ScriptableObjects.serializedObject);
+            listElement.makeItem = () =>
+            {
+                var propertyField = new ObjectField();
+                propertyField.SetEnabled(false);
+                var image = new Image()
+                {
+                    image = EditorGUIUtility.GetHelpIcon(MessageType.Warning),
+                    tooltip = EditorGUIUtility.TrTextContent("ScriptableObject that was previously assigned is no longer available.").text,
+                    style =
+                    {
+                        maxHeight = EditorGUI.kSingleLineHeight,
+                        flexShrink = 0,
+                        alignSelf = Align.FlexEnd,
+                    },
+                    name = "WarningIcon"
+                };
+                propertyField.Add(image);
+
+                return propertyField;
+            };
+            listElement.bindItem = (element, i) =>
+            {
+                var pf = (ObjectField)element;
+                m_ElementStringBuilder.Clear();
+                m_ElementStringBuilder.AppendFormat(Styles.elemenText.text, i);
+                pf.label = m_ElementStringBuilder.ToString();
+                var objReference = m_ScriptableObjects.GetArrayElementAtIndex(i).objectReferenceValue;
+                pf.SetValueWithoutNotify(objReference);
+                var image = pf.Q<Image>("WarningIcon");
+                image.style.visibility = objReference != null ? Visibility.Hidden : Visibility.Visible;
+                image.style.position = objReference != null ? Position.Absolute : Position.Relative;
+                element.MarkDirtyRepaint();
+            };
+            listElement.unbindItem = (element, i) =>
+            {
+                element.Unbind();
+            };
+            listElement.destroyItem = element => element.Unbind();
+            rootVisualElement.Add(listElement);
+            return rootVisualElement;
+        }
+
+        void OnSpriteFramePropertiesGUI()
         {
             if (!m_Name.hasMultipleDifferentValues)
                 EditorGUILayout.LabelField(Styles.nameLabel, m_SpriteNameContent);

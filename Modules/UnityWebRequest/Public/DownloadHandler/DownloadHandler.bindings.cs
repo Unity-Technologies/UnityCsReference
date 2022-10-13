@@ -246,7 +246,7 @@ namespace UnityEngine.Networking
     public class DownloadHandlerScript : DownloadHandler
     {
         private extern static IntPtr Create(DownloadHandlerScript obj);
-        private extern static IntPtr CreatePreallocated(DownloadHandlerScript obj, byte[] preallocatedBuffer);
+        private extern static IntPtr CreatePreallocated(DownloadHandlerScript obj, [Unmarshalled]byte[] preallocatedBuffer);
 
         private void InternalCreateScript()
         {

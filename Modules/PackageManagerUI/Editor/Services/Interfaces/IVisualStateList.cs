@@ -13,7 +13,5 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         VisualState Get(string packageUniqueId);
         bool Contains(string packageUniqueId);
-
-        bool SetSeeAllVersions(string packageUniqueId, bool value);
     }
 }

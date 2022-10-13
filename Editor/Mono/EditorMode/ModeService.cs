@@ -38,7 +38,8 @@ namespace UnityEditor
         StatusBarExtraFeatures,
         SafeMode,
         Remember,
-        AllowAssetCreation
+        AllowAssetCreation,
+        SearchPopupButton
     }
 
     [Serializable]

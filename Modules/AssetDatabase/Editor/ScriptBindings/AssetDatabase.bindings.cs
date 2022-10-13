@@ -1092,5 +1092,19 @@ namespace UnityEditor
         // Binding only created for testing
         [FreeFunction("AssetDatabase::DeleteUnusedContentFiles")]
         internal extern static void TestOnlyDeleteUnusedContentFiles();
+
+        internal enum ImportWorkerModeFlags
+        {
+            kNoFlags = 0,
+            kProfile = 1 << 0
+        };
+
+        // Import Worker Mode binding is just for testing
+        [FreeFunction("AssetDatabase::SetImportWorkerModeFlags")]
+        internal extern static void SetImportWorkerModeFlags(ImportWorkerModeFlags flags);
+        [FreeFunction("AssetDatabase::ClearImportWorkerModeFlags")]
+        internal extern static void ClearImportWorkerModeFlags(ImportWorkerModeFlags flags);
+        [FreeFunction("AssetDatabase::GetImportWorkerModeFlags")]
+         internal extern static ImportWorkerModeFlags GetImportWorkerModeFlags();
     }
 }

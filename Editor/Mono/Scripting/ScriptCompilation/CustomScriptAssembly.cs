@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using UnityEditor.Build;
 using UnityEditor.Compilation;
+using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
@@ -210,15 +212,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string Name { get; private set; }
         public string DisplayName { get; private set; }
         public BuildTarget BuildTarget { get; private set; }
+        public bool HasSubTarget { get; private set; }
+        public int SubTarget { get; private set; }
 
-        public CustomScriptAssemblyPlatform(string name, string displayName, BuildTarget buildTarget) : this()
+        public CustomScriptAssemblyPlatform(string name, string displayName, BuildTarget buildTarget, bool hasSubTarget = false, int subTarget = 0) : this()
         {
             Name = name;
             DisplayName = displayName;
             BuildTarget = buildTarget;
+            HasSubTarget = hasSubTarget;
+            SubTarget = subTarget;
         }
 
-        public CustomScriptAssemblyPlatform(string name, BuildTarget buildTarget) : this(name, name, buildTarget) {}
+        public CustomScriptAssemblyPlatform(string name, BuildTarget buildTarget, bool hasSubTarget = false, int subTarget = 0) : this(name, name, buildTarget, hasSubTarget, subTarget) {}
     }
 
     [DebuggerDisplay("{Name}")]
@@ -292,7 +298,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public static CustomScriptAssemblyPlatform[] Platforms { get; private set; }
+        public static List<CustomScriptAssemblyPlatform> Platforms { get; private set; }
         public static CustomScriptAssemblyPlatform[] DeprecatedPlatforms { get; private set; }
 
         static CustomScriptAssembly()
@@ -300,15 +306,45 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // When removing a platform from Platforms, please add it to DeprecatedPlatforms.
             DiscoveredTargetInfo[] buildTargetList = BuildTargetDiscovery.GetBuildTargetInfoList();
 
-            // Need extra slot for Editor which is not included in the build target list
-            Platforms = new CustomScriptAssemblyPlatform[buildTargetList.Length + 1];
-            Platforms[0] = new CustomScriptAssemblyPlatform("Editor", BuildTarget.NoTarget);
-            for (int i = 1; i < Platforms.Length; i++)
+            // Need extra slots in array for Editor target and subtarget variants which are not included in the build target list
+            const int numEditorTargets = 1;
+
+            Platforms = new List<CustomScriptAssemblyPlatform>(buildTargetList.Length + numEditorTargets)
             {
-                Platforms[i] = new CustomScriptAssemblyPlatform(
-                    BuildTargetDiscovery.GetScriptAssemblyName(buildTargetList[i - 1]),
-                    buildTargetList[i - 1].niceName,
-                    buildTargetList[i - 1].buildTargetPlatformVal);
+                new ("Editor", BuildTarget.NoTarget)
+            };
+
+            for (int i = 0; i < buildTargetList.Length; i++)
+            {
+                // normal case
+                Platforms.Add(
+                    new CustomScriptAssemblyPlatform(
+                    BuildTargetDiscovery.GetScriptAssemblyName(buildTargetList[i]),
+                    buildTargetList[i].niceName,
+                    buildTargetList[i].buildTargetPlatformVal)
+                );
+
+                var extensionModule =
+                    ModuleManager.FindPlatformSupportModule(
+                        ModuleManager.GetTargetStringFromBuildTarget(buildTargetList[i].buildTargetPlatformVal));
+
+                // if this build target has extra custom assembly targets, append those
+                if(extensionModule != null)
+                {
+                    var extraScriptAssemblyPlatforms = extensionModule.GetExtraScriptAssemblyPlatforms(buildTargetList[i].buildTargetPlatformVal);
+                    if (extraScriptAssemblyPlatforms != null && extraScriptAssemblyPlatforms.Any())
+                    {
+                        foreach(var extraPlatform in extraScriptAssemblyPlatforms)
+                        {
+                            Platforms.Add(new CustomScriptAssemblyPlatform(
+                                BuildTargetDiscovery.GetScriptAssemblyName(buildTargetList[i]) + extraPlatform.AssemblyNamePostfix,
+                                extraPlatform.TargetNiceName,
+                                    buildTargetList[i].buildTargetPlatformVal,
+                                    true,
+                                    extraPlatform.Subtarget));
+                        }
+                    }
+                }
             }
 
 #pragma warning disable 0618
@@ -337,7 +373,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return true;
         }
 
-        public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] defines)
+        public bool IsCompatibleWith(BuildTarget buildTarget, int subTarget, EditorScriptCompilationOptions options, string[] defines)
         {
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
@@ -391,10 +427,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (ExcludePlatforms != null)
             {
-                return ExcludePlatforms.All(p => p.BuildTarget != buildTarget);
+                // build target is different
+                // OR build target matches, but subtarget for target assembly is both present and differs
+                return ExcludePlatforms.All(p =>
+                    p.BuildTarget != buildTarget ||
+                    (p.BuildTarget == buildTarget &&
+                    (p.HasSubTarget && p.SubTarget != subTarget)));
             }
 
-            return IncludePlatforms.Any(p => p.BuildTarget == buildTarget);
+            // build target matches, and if present, subtarget matches
+            return IncludePlatforms.Any(p => p.BuildTarget == buildTarget && (!p.HasSubTarget || p.SubTarget == subTarget));
         }
 
         public static CustomScriptAssembly Create(string name, string directory)
