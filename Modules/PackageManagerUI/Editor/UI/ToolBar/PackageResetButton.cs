@@ -80,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), version.package.GetDescriptor()));
 
             var oneDependencyIsDirectAndMatchManifestVersion = customizedDependencies.Any(p => (p.versions.installed?.isDirectDependency ?? false) &&
-                p.versions.installed?.versionString == p.versions.installed?.packageInfo.projectDependenciesEntry);
+                p.versions.installed?.versionString == p.versions.installed?.versionInManifest);
             yield return new ButtonDisableCondition(!oneDependencyIsDirectAndMatchManifestVersion,
                 string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), version.package.GetDescriptor()));
         }

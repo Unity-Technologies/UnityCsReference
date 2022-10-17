@@ -29,10 +29,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UIUtils.SetElementDisplay(this, false);
 
-            if (version?.packageInfo == null)
+            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+            if (packageInfo == null)
                 return;
 
-            var upmReserved = m_UpmCache.ParseUpmReserved(version?.packageInfo);
+            var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
             var platformNames = upmReserved?.GetList<string>("supportedPlatforms") ?? Enumerable.Empty<string>();
 
             if (!platformNames.Any())

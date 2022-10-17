@@ -58,7 +58,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Button != null)
                 versionHistoryItemToggleRightContainer.Add(m_Button.element);
 
-            versionHistoryItemChangeLogLink.clickable.clicked += () => UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(m_Version), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, m_Version), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Version.package, m_ApplicationProxy);
+            versionHistoryItemChangeLogLink.clickable.clicked += VersionHistoryItemChangeLogClicked;
 
             Refresh(multipleVersionsVisible, isLatestVersion);
         }
@@ -69,6 +69,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionHistoryItemToggleSpinner?.Stop();
         }
 
+        private void VersionHistoryItemChangeLogClicked()
+        {
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Version.package, m_ApplicationProxy);
+        }
 
         private void Refresh(bool multipleVersionsVisible, bool isLatestVersion)
         {
@@ -101,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var primary = m_Version.package.versions.primary;
             var recommended = m_Version.package.versions.recommended;
-            var versionInManifest = primary?.packageInfo?.projectDependenciesEntry;
+            var versionInManifest = primary?.versionInManifest;
             var stateText = string.Empty;
 
             if (m_Version == primary)
@@ -161,7 +166,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionHistoryItemChangeLogLabel, false);
             UIUtils.SetElementDisplay(versionHistoryItemChangeLogLink, false);
 
-            var upmReserved = m_UpmCache.ParseUpmReserved(m_Version?.packageInfo);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
             var changeLog = upmReserved?.GetString("changelog");
             var hasChangeLogInInfo = !string.IsNullOrEmpty(changeLog);
             if (hasChangeLogInInfo)
@@ -172,13 +178,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, true);
             }
 
-            if (UpmPackageDocs.HasChangelog(m_Version))
+            if (UpmPackageDocs.HasChangelog(packageInfo))
             {
                 versionHistoryItemChangeLogLink.text = hasChangeLogInInfo ? L10n.Tr("See full changelog") : L10n.Tr("See changelog");
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogLink, true);
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, true);
 
-                var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.package.Is(PackageType.AssetStore) == true && string.IsNullOrEmpty((m_Version as UpmPackageVersion)?.changelogUrl);
+                var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.package.Is(PackageType.AssetStore) == true && string.IsNullOrEmpty(packageInfo?.changelogUrl);
                 versionHistoryItemChangeLogLink.SetEnabled(!disableIfNotInstall);
                 versionHistoryItemChangeLogLink.tooltip = disableIfNotInstall ? PackageDetailsLinks.k_ViewDisabledChangelogToolTip : string.Empty;
             }

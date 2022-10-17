@@ -308,14 +308,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_PageManager.Reload();
                     ServicesContainer.instance.Resolve<AssetStoreCallQueue>().ClearFetchDetails();
                 };
-
-                dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-                dropdownItem.text = L10n.Tr("Internal/Reset Stylesheets");
-                dropdownItem.action = () =>
-                {
-                    PackageManagerWindow.instance?.Close();
-                    m_ResourceLoader.Reset();
-                };
             }
         }
 

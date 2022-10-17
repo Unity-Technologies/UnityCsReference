@@ -166,10 +166,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateLockedUI(visualState.isLocked);
             UpdateDependencyUI(visualState.isLocked);
 
-            var version = selectedVersion;
-            if (version != null && version != targetVersion)
-                visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(version);
-
             RefreshState();
             RefreshSelection();
             RefreshTags();
@@ -303,7 +299,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SeeAllVersionsClick()
         {
-            m_PageManager.SetSeeAllVersions(package, true);
+            m_PageManager.SetSeeAllVersions(package.uniqueId, true);
             PackageManagerWindowAnalytics.SendEvent("seeAllVersions", targetVersion?.uniqueId);
         }
 

@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal static class LifecycleVersonsFilter
+    internal static class VersionsFilter
     {
         public static UpmVersionList GetFilteredVersionList(UpmVersionList versonList, bool seeAllVersions, bool showPreRelease)
         {
@@ -34,7 +34,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     ++numVersionsFilteredOut;
             }
-            return numVersionsFilteredOut == 0 ? versonList : new UpmVersionList(filteredVersions, versonList.lifecycleVersionString, versonList.lifecycleNextVersion);
+            if (numVersionsFilteredOut <= 0)
+                return versonList;
+            return new UpmVersionList(filteredVersions, versonList.lifecycleVersionString, versonList.lifecycleNextVersion);
+        }
+
+        public static UpmVersionList UnloadVersionsIfNeeded(UpmVersionList versonList, bool loadAllVersions)
+        {
+            if (loadAllVersions)
+                return versonList;
+            var numTotalVersions = versonList.Count();
+            if (numTotalVersions == 0)
+                return versonList;
+            var keyVersions = versonList.key.Cast<UpmPackageVersion>().ToArray();
+            var numVersionsToUnload = numTotalVersions - keyVersions.Length;
+            if (numVersionsToUnload <= 0)
+                return versonList;
+            return new UpmVersionList(keyVersions, versonList.lifecycleVersionString, versonList.lifecycleNextVersion, numVersionsToUnload);
         }
     }
 }

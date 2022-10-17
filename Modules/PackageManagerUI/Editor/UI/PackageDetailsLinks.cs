@@ -30,11 +30,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ApplicationProxy m_Application;
         private IOProxy m_IOProxy;
+        private UpmCache m_UpmCache;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_Application = container.Resolve<ApplicationProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
+            m_UpmCache = container.Resolve<UpmCache>();
         }
 
         public PackageDetailsLinks()
@@ -77,14 +79,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             var changelogButton = new Button(ViewChangelogClick) { text = k_ViewChangelogText, classList = { k_LinkClass } };
             var licensesButton = new Button(ViewLicensesClick) { text = k_ViewLicensesText, classList = { k_LinkClass } };
 
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
             // add links related to the upm version
-            if (UpmPackageDocs.HasDocs(version))
+            if (UpmPackageDocs.HasDocs(packageInfo))
                 AddToLinks(upmLinks, documentationButton, false);
 
-            if (UpmPackageDocs.HasChangelog(version))
+            if (UpmPackageDocs.HasChangelog(packageInfo))
                 AddToLinks(upmLinks, changelogButton);
 
-            if (UpmPackageDocs.HasLicenses(version))
+            if (UpmPackageDocs.HasLicenses(packageInfo))
                 AddToLinks(upmLinks, licensesButton);
 
 
@@ -94,23 +97,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (UpmPackageDocs.HasDashboard(version))
                 AddToLinks(upmLinks, new Button(ViewDashboardClick) { text = k_ViewDashboardText, classList = { k_LinkClass } });
 
-            var upmVersion = version as UpmPackageVersion;
             if (upmLinks.Children().Any())
             {
                 Add(upmLinks);
                 if (package.Is(PackageType.AssetStore) && !version.isInstalled)
                 {
-                    if (string.IsNullOrEmpty(upmVersion.documentationUrl))
+                    if (string.IsNullOrEmpty(packageInfo?.documentationUrl))
                     {
                         documentationButton.SetEnabled(false);
                         documentationButton.tooltip = k_ViewDisabledDocumentationToolTip;
                     }
-                    if (string.IsNullOrEmpty(upmVersion.changelogUrl))
+                    if (string.IsNullOrEmpty(packageInfo?.changelogUrl))
                     {
                         changelogButton.SetEnabled(false);
                         changelogButton.tooltip = k_ViewDisabledChangelogToolTip;
                     }
-                    if (string.IsNullOrEmpty(upmVersion.licensesUrl))
+                    if (string.IsNullOrEmpty(packageInfo?.licensesUrl))
                     {
                         licensesButton.SetEnabled(false);
                         licensesButton.tooltip = k_ViewDisabledLicensesToolTip;
@@ -153,17 +155,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDocClick()
         {
-            ViewUrl(UpmPackageDocs.GetDocumentationUrl(m_Version), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, m_Version), L10n.Tr("documentation"), "viewDocs");
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
         }
 
         private void ViewChangelogClick()
         {
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(m_Version), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, m_Version), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
         }
 
         private void ViewLicensesClick()
         {
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(m_Version), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, m_Version), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
         }
 
         private void ViewUseCasesClick()

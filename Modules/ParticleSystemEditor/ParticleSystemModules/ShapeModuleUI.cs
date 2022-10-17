@@ -408,27 +408,6 @@ namespace UnityEditor
             m_Position = GetProperty("m_Position");
             m_Scale = GetProperty("m_Scale");
             m_Rotation = GetProperty("m_Rotation");
-
-            if (!s_Material)
-                s_Material = Material.GetDefaultMaterial();
-            if (!s_TextureMaterial)
-            {
-                s_TextureMaterial = new Material((Shader)EditorGUIUtility.Load("SceneView/ParticleShapeGizmo.shader"));
-                s_TextureMaterial.hideFlags = HideFlags.HideAndDontSave;
-            }
-            if (!s_SphereTextureMaterial)
-            {
-                s_SphereTextureMaterial = new Material((Shader)EditorGUIUtility.Load("SceneView/ParticleShapeGizmoSphere.shader"));
-                s_SphereTextureMaterial.hideFlags = HideFlags.HideAndDontSave;
-            }
-            if (!s_CircleMesh)
-                s_CircleMesh = ((GameObject)EditorGUIUtility.Load("SceneView/Circle.fbx")).transform.GetComponent<MeshFilter>().sharedMesh;
-            if (!s_QuadMesh)
-                s_QuadMesh = Resources.GetBuiltinResource(typeof(Mesh), "Quad.fbx") as Mesh;
-            if (!s_SphereMesh)
-                s_SphereMesh = Resources.GetBuiltinResource(typeof(Mesh), "New-Sphere.fbx") as Mesh;
-            if (!s_HemisphereMesh)
-                s_HemisphereMesh = ((GameObject)EditorGUIUtility.Load("SceneView/Hemisphere.fbx")).transform.GetComponent<MeshFilter>().sharedMesh;
         }
 
         public override float GetXAxisScalar()
@@ -699,10 +678,39 @@ namespace UnityEditor
             return transformMatrix;
         }
 
-        internal static void OnShapeToolGUI(bool allowGizmoEditing, IEnumerable<UnityEngine.Object> targets)
+        private static void InitResources()
         {
             if (s_Texts == null)
                 s_Texts = new Texts();
+
+            if (!s_Material)
+                s_Material = Material.GetDefaultMaterial();
+
+            if (!s_TextureMaterial)
+            {
+                s_TextureMaterial = new Material((Shader)EditorGUIUtility.Load("SceneView/ParticleShapeGizmo.shader"));
+                s_TextureMaterial.hideFlags = HideFlags.HideAndDontSave;
+            }
+
+            if (!s_SphereTextureMaterial)
+            {
+                s_SphereTextureMaterial = new Material((Shader)EditorGUIUtility.Load("SceneView/ParticleShapeGizmoSphere.shader"));
+                s_SphereTextureMaterial.hideFlags = HideFlags.HideAndDontSave;
+            }
+
+            if (!s_CircleMesh)
+                s_CircleMesh = ((GameObject)EditorGUIUtility.Load("SceneView/Circle.fbx")).transform.GetComponent<MeshFilter>().sharedMesh;
+            if (!s_QuadMesh)
+                s_QuadMesh = Resources.GetBuiltinResource(typeof(Mesh), "Quad.fbx") as Mesh;
+            if (!s_SphereMesh)
+                s_SphereMesh = Resources.GetBuiltinResource(typeof(Mesh), "New-Sphere.fbx") as Mesh;
+            if (!s_HemisphereMesh)
+                s_HemisphereMesh = ((GameObject)EditorGUIUtility.Load("SceneView/Hemisphere.fbx")).transform.GetComponent<MeshFilter>().sharedMesh;
+        }
+
+        internal static void OnShapeToolGUI(bool allowGizmoEditing, IEnumerable<UnityEngine.Object> targets)
+        {
+            InitResources();
 
             Color origCol = Handles.color;
             Handles.color = s_GizmoColor;

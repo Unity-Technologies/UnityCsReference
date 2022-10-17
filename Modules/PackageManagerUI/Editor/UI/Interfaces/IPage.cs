@@ -70,8 +70,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove);
         bool ToggleSelection(string packageUniqueId);
         void TriggerOnSelectionChanged();
-        void SetSeeAllVersions(string packageUniqueId, bool value);
-        void SetSeeAllVersions(IPackage package, bool value);
         bool IsGroupExpanded(string groupName);
         void SetGroupExpanded(string groupName, bool value);
         string GetGroupName(IPackage package);

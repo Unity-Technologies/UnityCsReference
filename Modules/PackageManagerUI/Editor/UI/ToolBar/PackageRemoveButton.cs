@@ -138,8 +138,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
-            var isInvalidProjectDependencyVersion = !string.IsNullOrEmpty(version.packageInfo?.projectDependenciesEntry) &&
-                                                    (!SemVersionParser.TryParse(version.packageInfo.projectDependenciesEntry, out var semVersion) || semVersion?.ToString() != version.packageInfo.projectDependenciesEntry);
+            var isInvalidProjectDependencyVersion = !string.IsNullOrEmpty(version.versionInManifest) &&
+                                                    (!SemVersionParser.TryParse(version.versionInManifest, out var semVersion) || semVersion?.ToString() != version.versionInManifest);
             var isInvalidVersion = version.isInstalled &&
                                    version.isDirectDependency &&
                                    isInvalidProjectDependencyVersion;

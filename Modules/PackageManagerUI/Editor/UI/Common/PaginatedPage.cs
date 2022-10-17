@@ -268,12 +268,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_VisualStateList?.Contains(packageUniqueId) ?? false;
         }
 
-        public override void SetSeeAllVersions(string packageUniqueId, bool value)
-        {
-            if (m_VisualStateList.SetSeeAllVersions(packageUniqueId, value))
-                TriggerOnVisualStateChange(new[] { GetVisualState(packageUniqueId) });
-        }
-
         public override void AddSubPage(SubPage subPage)
         {
             // do nothing
