@@ -26,8 +26,6 @@ namespace UnityEditor.PackageManager.UI
 
         IPackage package { get; }
 
-        PackageInfo packageInfo { get; }
-
         bool isInstalled { get; }
     }
 }
@@ -62,6 +60,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         SemVersion? version { get; }
 
+        string versionInManifest { get; }
+
         string versionId { get; }
 
         DateTime? publishedDate { get; }
@@ -94,8 +94,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsDifferentVersionThanRequested { get; }
 
         bool IsRequestedButOverriddenVersion { get; }
-
-        RegistryInfo registry { get; }
 
         bool isRegistryPackage { get; }
 

@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static Dictionary<string, object> GetLatestEditorGameServiceField(IPackage package)
         {
-            return GetEditorGameServiceField(package?.versions?.latest?.packageInfo);
+            return GetEditorGameServiceField(package?.versions?.latest);
         }
 
         internal static Dictionary<string, object> GetEditorGameServiceField(PackageInfo packageInfo)
@@ -96,6 +96,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!upmReserved.ContainsKey(k_GameService))
                 return null;
             return upmReserved[k_GameService] as Dictionary<string, object>;
+        }
+
+        internal static Dictionary<string, object> GetEditorGameServiceField(UI.IPackageVersion version)
+        {
+            if (version == null)
+                return null;
+            var upmCache = ServicesContainer.instance.Resolve<UpmCache>();
+            var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
+            return GetEditorGameServiceField(packageInfo);
         }
 
         internal static int CompareGroup(string groupA, string groupB)
@@ -168,8 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnPackageSelectionChanged(PackageSelectionArgs args)
         {
-            var packageInfo = args.packageVersion?.packageInfo;
-            var editorGameService = GetEditorGameServiceField(packageInfo);
+            var editorGameService = GetEditorGameServiceField(args.packageVersion);
             var configurePath = GetConfigurePathField(editorGameService);
             m_ConfigureButton.visible = !string.IsNullOrEmpty(configurePath);
             m_ConfigureButton.enabled = args.packageVersion?.isInstalled ?? false;
@@ -183,7 +191,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (installedVersion == null)
                 return;
 
-            var editorGameService = GetEditorGameServiceField(installedVersion.packageInfo);
+            var editorGameService = GetEditorGameServiceField(installedVersion);
             var configurePath = GetConfigurePathField(editorGameService);
             if (!string.IsNullOrEmpty(configurePath))
                 PackageManagerWindowAnalytics.SendEvent("configureService", args.package.uniqueId);
@@ -199,7 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string GetDashboardUrl(IPackageVersion version)
         {
-            var editorGameService = GetEditorGameServiceField(version?.packageInfo);
+            var editorGameService = GetEditorGameServiceField(version);
             if (editorGameService == null)
                 return string.Empty;
 
@@ -253,7 +261,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string GetUseCasesUrl(IPackageVersion version)
         {
-            var editorGameService = GetEditorGameServiceField(version?.packageInfo);
+            var editorGameService = GetEditorGameServiceField(version);
             if (editorGameService == null || !editorGameService.ContainsKey(k_UseCasesUrl))
                 return string.Empty;
             return editorGameService[k_UseCasesUrl] as string;

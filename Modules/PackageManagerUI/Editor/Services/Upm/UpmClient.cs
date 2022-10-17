@@ -593,6 +593,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
                 m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
                 m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
+                m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
             }
 
             public void OnDisable()
@@ -601,6 +602,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
                 m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
                 m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
+                m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
             }
 
             private void OnExtraPackageInfoFetched(PackageInfo packageInfo)
@@ -633,8 +635,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var isUnityPackage = m_UpmClient.IsUnityPackage(searchInfo ?? installedInfo);
                         var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
                         var versionList = new UpmVersionList(searchInfo, installedInfo, isUnityPackage, extraVersions);
-                        var filteredVersionList = LifecycleVersonsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
-                        updatedPackages.Add(new UpmPackage(packageName, searchInfo != null, filteredVersionList));
+                        versionList = VersionsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
+                        versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(packageName));
+                        updatedPackages.Add(new UpmPackage(packageName, searchInfo != null, versionList));
                     }
                 }
 
@@ -645,6 +648,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             private void OnPackageInfosUpdated(IEnumerable<PackageInfo> packageInfos)
             {
                 GeneratePackagesAndTriggerChangeEvent(packageInfos.Select(p => p.name));
+            }
+
+            private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
+            {
+                if (!long.TryParse(packageUniqueId, out var _))
+                    GeneratePackagesAndTriggerChangeEvent(new[] { packageUniqueId });
             }
 
             private void OnShowPreReleasePackagesesOrSeeAllVersionsChanged(bool _)

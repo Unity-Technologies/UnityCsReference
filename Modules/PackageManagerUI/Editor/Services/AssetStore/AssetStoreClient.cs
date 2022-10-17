@@ -456,6 +456,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
                 m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
+                m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
 
                 m_AssetStoreCache.onPurchaseInfosChanged += OnPurchaseInfosChanged;
                 m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
@@ -469,6 +470,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
                 m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
+                m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
 
                 m_AssetStoreCache.onPurchaseInfosChanged -= OnPurchaseInfosChanged;
                 m_AssetStoreCache.onProductInfoChanged -= OnProductInfoChanged;
@@ -542,6 +544,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
                         var isUnityPackage = m_UpmClient.IsUnityPackage(productSearchInfo ?? installedPackageInfo);
                         var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, isUnityPackage, extraVersions);
+                        versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
                         package = new AssetStorePackage(packageName, productId, purchaseInfo, productInfo, versionList);
                         if (productInfoFetchError != null)
                             package.AddError(productInfoFetchError.error);
@@ -601,6 +604,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var productId = packageInfo.assetStore?.productId;
                 if (!string.IsNullOrEmpty(productId) && m_UpmCache.GetInstalledPackageInfo(packageInfo.name)?.packageId != packageInfo.packageId)
                     GeneratePackagesAndTriggerChangeEvent(new[] { productId });
+            }
+
+            private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
+            {
+                if (long.TryParse(packageUniqueId, out var _))
+                    GeneratePackagesAndTriggerChangeEvent(new[] { packageUniqueId });
             }
 
             private void OnFetchStatusChanged(FetchStatus fetchStatus)

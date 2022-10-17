@@ -511,6 +511,8 @@ namespace UnityEditor
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
 
+        private const string kDeprecatedAppendixString = " (Deprecated)";
+
         public SerializedProperty FindPropertyAssert(string name)
         {
             SerializedProperty property = serializedObject.FindProperty(name);
@@ -1173,18 +1175,22 @@ namespace UnityEditor
         {
             if (target == BuildTarget.WebGL)
             {
-                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1 (Deprecated)";
+                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1" + kDeprecatedAppendixString;
                 if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3) return "WebGL 2";
             }
             string name = graphicsDeviceType.ToString();
             if (target == BuildTarget.iOS || target == BuildTarget.tvOS)
             {
                 if (name.Contains("OpenGLES"))
-                    name += " (Deprecated)";
+                    name += kDeprecatedAppendixString;
             }
             else if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
             {
-                name += " (Deprecated)";
+                name += kDeprecatedAppendixString;
+            }
+            else if (target == BuildTarget.StandaloneOSX && graphicsDeviceType == GraphicsDeviceType.OpenGLCore)
+            {
+                name += kDeprecatedAppendixString;
             }
             return name;
         }
@@ -1192,7 +1198,7 @@ namespace UnityEditor
         // Parses a GraphicsDeviceType from a string.
         static private GraphicsDeviceType GraphicsDeviceTypeFromString(string graphicsDeviceType)
         {
-            graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
+            graphicsDeviceType = graphicsDeviceType.Replace(kDeprecatedAppendixString, "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
             if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
             if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;

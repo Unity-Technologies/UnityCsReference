@@ -148,6 +148,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var currentView = this.currentView;
             foreach (var item in selection.previousSelections.Where(s => !selection.Contains(s.packageUniqueId)).Concat(selection))
                 currentView.GetPackageItem(item.packageUniqueId)?.RefreshSelection();
+
+            if (selection.previousSelections.Count() == 1)
+                m_PageManager.SetSeeAllVersions(selection.previousSelections.FirstOrDefault().packageUniqueId, false);
         }
 
         private void OnCheckUpdateProgress()

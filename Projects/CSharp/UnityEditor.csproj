@@ -5440,9 +5440,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\LifecycleVersonsFilter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlaceholderPackage.cs</Link>
     </Compile>
@@ -5463,6 +5460,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UIErrorCode.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\UIErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VersionsFilter.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\VersionsFilter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementCache.cs</Link>

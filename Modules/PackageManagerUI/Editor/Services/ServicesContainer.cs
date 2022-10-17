@@ -120,6 +120,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
             m_ClientProxy = new ClientProxy();
 
+            if (m_ResourceLoader != null)
+                m_ResourceLoader.Reset();
             m_ResourceLoader = new ResourceLoader();
             m_ExtensionManager = new ExtensionManager();
 
@@ -174,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_SettingsProxy);
 
             m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetDatabaseProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmCache, m_UpmClient, m_IOProxy);
-            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
+            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmCache, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
 
             m_ExtensionManager.ResolveDependencies(m_PackageManagerPrefs);
 

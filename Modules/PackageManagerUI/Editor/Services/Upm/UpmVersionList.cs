@@ -17,6 +17,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private List<UpmPackageVersion> m_Versions;
 
+        [SerializeField]
+        private int m_NumUnloadedVersions;
+        public int numUnloadedVersions => m_NumUnloadedVersions;
+
         public IEnumerable<IPackageVersion> key
         {
             get
@@ -259,18 +263,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
             var recommendedVersion = mainInfo?.unityLifecycle?.recommendedVersion;
-            if (String.IsNullOrEmpty(recommendedVersion))
+            if (string.IsNullOrEmpty(recommendedVersion))
                 recommendedVersion = mainInfo?.unityLifecycle?.version;
             SetLifecycleVersions(recommendedVersion, mainInfo?.unityLifecycle?.nextVersion);
             UpdateExtraPackageInfos(extraVersions, isUnityPackage);
+            m_NumUnloadedVersions = 0;
         }
 
-        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null, Dictionary<string, PackageInfo> extraVersions = null)
+        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null, int numUnloadedVersions = 0)
         {
             m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
             SetLifecycleVersions(unityLifecycleInfoVersion, unityLifecycleInfoNextVersion);
-            UpdateExtraPackageInfos(extraVersions, versions?.Any(v => v.isUnityPackage) == true);
+            m_NumUnloadedVersions = numUnloadedVersions;
         }
 
         private void UpdateExtraPackageInfos(Dictionary<string, PackageInfo> extraVersions, bool isUnityPackage)
