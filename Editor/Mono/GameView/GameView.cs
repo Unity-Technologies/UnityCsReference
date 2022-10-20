@@ -771,7 +771,7 @@ namespace UnityEditor
                 }
 
                 if (GUILayout.Button(Styles.frameDebuggerContent, EditorStyles.toolbarButton))
-                    FrameDebuggerWindow.ShowFrameDebuggerWindow();
+                    FrameDebuggerWindow.OpenWindowAndToggleEnabled();
 
                 if (RenderDoc.IsLoaded())
                 {

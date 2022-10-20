@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Utils;
 using UnityEditorInternal;
-using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -27,7 +26,7 @@ namespace UnityEditor.ShortcutManagement
         {
             return !string.IsNullOrEmpty(id) &&
                 id.Length <= 127 &&
-                id.IndexOfAny(Path.GetInvalidFileNameChars()) == -1 &&
+                id.IndexOfAny(EditorUtility.GetInvalidFilenameChars().ToCharArray()) == -1 &&
                 id != ShortcutManager.defaultProfileId &&
                 id.IndexOfAny("_%#^".ToCharArray()) == -1 &&
                 id.Trim(" ".ToCharArray()).Length == id.Length;

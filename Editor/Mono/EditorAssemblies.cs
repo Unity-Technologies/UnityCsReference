@@ -70,32 +70,6 @@ namespace UnityEditor
             get { return loadedAssemblies.SelectMany(assembly => AssemblyHelper.GetTypesFromAssembly(assembly)); }
         }
 
-        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
-        static internal IEnumerable<Type> SubclassesOf(Type parent)
-        {
-            return parent.IsInterface ?
-                GetAllTypesWithInterface(parent) :
-                SubclassesOfClass(parent);
-        }
-
-        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
-        static internal IEnumerable<Type> SubclassesOfClass(Type parent)
-        {
-            Type[] types;
-            if (!m_subClasses.TryGetValue(parent, out types))
-            {
-                types = loadedTypes.Where(klass => klass.IsSubclassOf(parent)).ToArray();
-                m_subClasses[parent] = types;
-            }
-            return types;
-        }
-
-        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
-        static internal IEnumerable<Type> SubclassesOfGenericType(Type genericType)
-        {
-            return loadedTypes.Where(klass => IsSubclassOfGenericType(klass, genericType));
-        }
-
         private static bool IsSubclassOfGenericType(Type klass, Type genericType)
         {
             if (klass.IsGenericType && klass.GetGenericTypeDefinition() == genericType)

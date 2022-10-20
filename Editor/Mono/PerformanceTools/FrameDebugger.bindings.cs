@@ -6,13 +6,13 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
 
-namespace UnityEditorInternal
+namespace UnityEditorInternal.FrameDebuggerInternal
 {
     [NativeHeader("Editor/Mono/PerformanceTools/FrameDebugger.bindings.h")]
     [StaticAccessor("FrameDebugger", StaticAccessorType.DoubleColon)]
     internal sealed class FrameDebuggerUtility
     {
-        extern public static void SetEnabled(bool enabled, int remotePlayerGUID);
+        public extern static void SetEnabled(bool enabled, int remotePlayerGUID);
         public extern static int GetRemotePlayerGUID();
         public extern static bool receivingRemoteFrameEventData { [NativeName("IsReceivingRemoteFrameEventData")] get; }
         public extern static bool locallySupported { [NativeName("IsSupported")] get; }
@@ -36,7 +36,7 @@ namespace UnityEditorInternal
             var handle = GCHandle.Alloc(frameDebuggerEventData, GCHandleType.Pinned);
             GetFrameEventDataImpl(handle.AddrOfPinnedObject());
             handle.Free();
-            return frameDebuggerEventData.frameEventIndex == index;
+            return frameDebuggerEventData.m_FrameEventIndex == index;
         }
 
         [FreeFunction("FrameDebuggerBindings::GetFrameEventDataImpl")]

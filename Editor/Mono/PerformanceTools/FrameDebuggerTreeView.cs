@@ -9,8 +9,7 @@ using System.Globalization;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
 
-
-namespace UnityEditorInternal
+namespace UnityEditorInternal.FrameDebuggerInternal
 {
     internal class FrameDebuggerTreeView
     {
@@ -76,6 +75,17 @@ namespace UnityEditorInternal
             m_FrameDebugger.DrawSearchField(string.Empty);
         }
 
+        public void ReselectFrameEventIndex()
+        {
+            int[] selection = m_TreeView.GetSelection();
+            if (selection.Length > 0)
+            {
+                FrameDebuggerTreeViewItem item = m_TreeView.FindItem(selection[0]) as FrameDebuggerTreeViewItem;
+                if (item != null)
+                    m_TreeView.SetSelection(new[] { item.m_EventIndex }, true);
+            }
+        }
+
         public void SelectFrameEventIndex(int eventIndex)
         {
             // Check if we'd end up selecting same "frame event":
@@ -89,7 +99,6 @@ namespace UnityEditorInternal
                 if (item != null && eventIndex == item.m_EventIndex)
                     return;
             }
-
             m_TreeView.SetSelection(new[] { eventIndex }, true);
         }
 
@@ -136,9 +145,7 @@ namespace UnityEditorInternal
             protected override void OnContentGUI(Rect rect, int row, TreeViewItem itemRaw, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
             {
                 if (Event.current.type != EventType.Repaint)
-                {
                     return;
-                }
 
                 FrameDebuggerTreeViewItem item = (FrameDebuggerTreeViewItem)itemRaw;
                 string text;
@@ -150,7 +157,7 @@ namespace UnityEditorInternal
                 childCounter = (isParent) ? 1 : (childCounter + 1);
 
                 // Draw background
-                style = FrameDebuggerStyles.Tree.rowText;
+                style = FrameDebuggerStyles.Tree.s_RowText;
                 tempContent = EditorGUIUtility.TempContent("");
                 style.Draw(rect, tempContent, false, false, false, false);
 
@@ -165,7 +172,7 @@ namespace UnityEditorInternal
                     text = item.m_ChildEventCount.ToString(CultureInfo.InvariantCulture);
                     tempContent = EditorGUIUtility.TempContent(text);
 
-                    style = FrameDebuggerStyles.Tree.rowTextRight;
+                    style = FrameDebuggerStyles.Tree.s_RowTextRight;
                     style.fontStyle = fontStyle;
 
                     Rect r = rect;
@@ -176,7 +183,7 @@ namespace UnityEditorInternal
                     rect.width -= style.CalcSize(tempContent).x + kSmallMargin * 2;
                 }
 
-                style = FrameDebuggerStyles.Tree.rowText;
+                style = FrameDebuggerStyles.Tree.s_RowText;
                 style.fontStyle = fontStyle;
 
                 // draw event name
@@ -200,6 +207,9 @@ namespace UnityEditorInternal
         {
             private FrameDebuggerEvent[] m_FrameEvents;
 
+            public override bool IsRenamingItemAllowed(TreeViewItem item) => false;
+            public override bool CanBeMultiSelected(TreeViewItem item) => false;
+
             public FrameDebuggerTreeViewDataSource(TreeViewController treeView, FrameDebuggerEvent[] frameEvents) : base(treeView)
             {
                 m_FrameEvents = frameEvents;
@@ -219,16 +229,6 @@ namespace UnityEditorInternal
                 // If we already had something in there, we want to preserve user's expanded items.
                 if (wasEmpty)
                     SetExpandedWithChildren(m_RootItem, true);
-            }
-
-            public override bool IsRenamingItemAllowed(TreeViewItem item)
-            {
-                return false;
-            }
-
-            public override bool CanBeMultiSelected(TreeViewItem item)
-            {
-                return false;
             }
 
             // Used while building the tree data source; represents current tree hierarchy level
@@ -286,33 +286,33 @@ namespace UnityEditorInternal
                     while (eventStack.Count > 0 && eventStack.Count > level)
                         CloseLastHierarchyLevel(eventStack, i);
 
-                    if (FrameDebuggerHelper.IsAHierarchyLevelBreakEvent(m_FrameEvents[i].type))
+                    if (FrameDebuggerHelper.IsAHierarchyLevelBreakEvent(m_FrameEvents[i].m_Type))
                         continue;
 
                     // add all further levels for current event
                     for (int j = level; j < names.Length; ++j)
                     {
-                        var parent = eventStack[eventStack.Count - 1];
-                        var newLevel = new FrameDebuggerTreeHierarchyLevel(eventStack.Count - 1, --hierarchyIDCounter, names[j], parent.item);
+                        FrameDebuggerTreeHierarchyLevel parent = eventStack[eventStack.Count - 1];
+                        FrameDebuggerTreeHierarchyLevel newLevel = new FrameDebuggerTreeHierarchyLevel(eventStack.Count - 1, --hierarchyIDCounter, names[j], parent.item);
                         parent.children.Add(newLevel.item);
                         eventStack.Add(newLevel);
                     }
 
-                    if (FrameDebuggerHelper.IsAHiddenEvent(m_FrameEvents[i].type))
+                    if (FrameDebuggerHelper.IsAHiddenEvent(m_FrameEvents[i].m_Type))
                         continue;
 
                     // add leaf event to current level
-                    var eventObj = FrameDebuggerUtility.GetFrameEventObject(i);
-                    var displayName = string.Empty;
+                    Object eventObj = FrameDebuggerUtility.GetFrameEventObject(i);
+                    string displayName = FrameDebuggerStyles.s_FrameEventTypeNames[(int)m_FrameEvents[i].m_Type];
 
                     if (eventObj)
-                        displayName = " " + eventObj.name;
-                    else
-                        displayName = FrameDebuggerStyles.frameEventTypeNames[(int)m_FrameEvents[i].type];
+                        displayName += " " + eventObj.name;
 
                     FrameDebuggerTreeHierarchyLevel parentEvent = eventStack[eventStack.Count - 1];
+
                     int leafEventID = i + 1;
                     FrameDebuggerTreeViewItem item = new FrameDebuggerTreeViewItem(leafEventID, eventStack.Count - 1, parentEvent.item, displayName);
+
                     item.m_FrameEvent = m_FrameEvents[i];
                     parentEvent.children.Add(item);
                     ++parentEvent.item.m_ChildEventCount;
