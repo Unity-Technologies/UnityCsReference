@@ -2629,6 +2629,9 @@
     <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerEventDetailsView.cs">
       <Link>Editor\Mono\PerformanceTools\FrameDebuggerEventDetailsView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerEventDisplayData.cs">
+      <Link>Editor\Mono\PerformanceTools\FrameDebuggerEventDisplayData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PerformanceTools\FrameDebuggerHelper.cs">
       <Link>Editor\Mono\PerformanceTools\FrameDebuggerHelper.cs</Link>
     </Compile>

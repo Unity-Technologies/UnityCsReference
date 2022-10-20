@@ -3,13 +3,18 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
-using UnityEditorInternal;
-using UnityEngine.Networking.PlayerConnection;
-using UnityEditor.Networking.PlayerConnection;
-using UnityEngine.Profiling;
 
-namespace UnityEditor
+using UnityEngine;
+using UnityEngine.Profiling;
+using UnityEngine.Networking.PlayerConnection;
+
+using UnityEditor;
+using UnityEditorInternal;
+using UnityEditorInternal.FrameDebuggerInternal;
+using UnityEditor.Networking.PlayerConnection;
+
+
+namespace UnityEditorInternal.FrameDebuggerInternal
 {
     internal class FrameDebuggerToolbarView
     {
@@ -20,32 +25,24 @@ namespace UnityEditor
         // Returns true if repaint is needed
         public bool DrawToolbar(FrameDebuggerWindow frameDebugger, IConnectionState m_AttachToPlayerState)
         {
+            Profiler.BeginSample("DrawToolbar");
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            Profiler.BeginSample("DrawEnableDisableButton");
             DrawEnableDisableButton(frameDebugger, m_AttachToPlayerState, out bool needsRepaint);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("DrawConnectionDropdown");
             DrawConnectionDropdown(frameDebugger, m_AttachToPlayerState, out bool isEnabled);
-            Profiler.EndSample();
 
             GUI.enabled = isEnabled;
 
-            Profiler.BeginSample("DrawEventLimitSlider");
             DrawEventLimitSlider(frameDebugger, out int newLimit);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("DrawPrevNextButtons");
             DrawPrevNextButtons(frameDebugger, ref newLimit);
-            Profiler.EndSample();
 
             GUILayout.EndHorizontal();
+            Profiler.EndSample();
 
             return needsRepaint;
         }
 
-        private void DrawEnableDisableButton(FrameDebuggerWindow frameDebugger, IConnectionState m_AttachToPlayerState, out bool needsRepaint)
+        private void DrawEnableDisableButton(FrameDebuggerWindow frameDebuggerWindow, IConnectionState m_AttachToPlayerState, out bool needsRepaint)
         {
             needsRepaint = false;
 
@@ -53,18 +50,18 @@ namespace UnityEditor
 
             bool wasEnabled = GUI.enabled;
             GUI.enabled = m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor || FrameDebuggerUtility.locallySupported;
-            GUIContent button = (FrameDebugger.enabled) ? FrameDebuggerStyles.TopToolbar.recordButtonDisable : FrameDebuggerStyles.TopToolbar.recordButtonEnable;
+            GUIContent button = (FrameDebugger.enabled) ? FrameDebuggerStyles.TopToolbar.s_RecordButtonDisable : FrameDebuggerStyles.TopToolbar.s_RecordButtonEnable;
             GUILayout.Toggle(FrameDebugger.enabled, button, EditorStyles.toolbarButtonLeft, GUILayout.MinWidth(80));
             GUI.enabled = wasEnabled;
 
             if (EditorGUI.EndChangeCheck())
             {
-                frameDebugger.ClickEnableFrameDebugger();
+                frameDebuggerWindow.ToggleFrameDebuggerEnabled();
                 needsRepaint = true;
             }
         }
 
-        private void DrawConnectionDropdown(FrameDebuggerWindow frameDebugger, IConnectionState m_AttachToPlayerState, out bool isEnabled)
+        private void DrawConnectionDropdown(FrameDebuggerWindow frameDebuggerWindow, IConnectionState m_AttachToPlayerState, out bool isEnabled)
         {
             PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
             isEnabled = FrameDebugger.enabled;
@@ -76,7 +73,7 @@ namespace UnityEditor
             }
         }
 
-        private void DrawEventLimitSlider(FrameDebuggerWindow frameDebugger, out int newLimit)
+        private void DrawEventLimitSlider(FrameDebuggerWindow frameDebuggerWindow, out int newLimit)
         {
             newLimit = 0;
 
@@ -88,26 +85,32 @@ namespace UnityEditor
             GUI.enabled = wasEnabled;
 
             if (EditorGUI.EndChangeCheck())
-                frameDebugger.ChangeFrameEventLimit(newLimit);
+                frameDebuggerWindow.ChangeFrameEventLimit(newLimit);
         }
 
-        private void DrawPrevNextButtons(FrameDebuggerWindow frameDebugger, ref int newLimit)
+        private void DrawPrevNextButtons(FrameDebuggerWindow frameDebuggerWindow, ref int newLimit)
         {
             bool wasEnabled = GUI.enabled;
 
             GUI.enabled = newLimit > 1;
-            if (GUILayout.Button(FrameDebuggerStyles.TopToolbar.prevFrame, EditorStyles.toolbarButton))
-                frameDebugger.ChangeFrameEventLimit(newLimit - 1);
+            if (GUILayout.Button(FrameDebuggerStyles.TopToolbar.s_PrevFrame, EditorStyles.toolbarButton))
+                frameDebuggerWindow.ChangeFrameEventLimit(newLimit - 1);
 
             GUI.enabled = newLimit < FrameDebuggerUtility.count;
-            if (GUILayout.Button(FrameDebuggerStyles.TopToolbar.nextFrame, EditorStyles.toolbarButtonRight))
-                frameDebugger.ChangeFrameEventLimit(newLimit + 1);
+            if (GUILayout.Button(FrameDebuggerStyles.TopToolbar.s_NextFrame, EditorStyles.toolbarButtonRight))
+                frameDebuggerWindow.ChangeFrameEventLimit(newLimit + 1);
 
             // If we had last event selected, and something changed in the scene so that
             // number of events is different - then try to keep the last event selected.
             if (m_PrevEventsLimit == m_PrevEventsCount)
                 if (FrameDebuggerUtility.count != m_PrevEventsCount && FrameDebuggerUtility.limit == m_PrevEventsLimit)
-                    frameDebugger.ChangeFrameEventLimit(FrameDebuggerUtility.count);
+                    frameDebuggerWindow.ChangeFrameEventLimit(FrameDebuggerUtility.count);
+
+            // The number of events has changed...
+            if (FrameDebuggerUtility.count != m_PrevEventsCount)
+            {
+                frameDebuggerWindow.ReselectItemOnCountChange();
+            }
 
             m_PrevEventsLimit = FrameDebuggerUtility.limit;
             m_PrevEventsCount = FrameDebuggerUtility.count;
