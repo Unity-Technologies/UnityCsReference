@@ -40,8 +40,6 @@ namespace UnityEditor.PackageManager.UI
 
         DependencyInfo[] resolvedDependencies { get; }
 
-        PackageInfo packageInfo { get; }
-
         bool HasTag(PackageTag tag);
 
         bool isInstalled { get; }

@@ -17,18 +17,30 @@ namespace UnityEditor.PackageManager.UI
     {
         private const string k_UnityPrefix = "com.unity.";
         private const string k_UnityAuthor = "Unity Technologies";
+        private static readonly string k_EntitlementsErrorMessage =
+            L10n.Tr("This package is not available to use because there is no license registered for your user. " +
+                    "If you believe you have permission to use this package, " +
+                    "refresh your license in the license management window of Unity Hub. " +
+                    "Otherwise, contact your administrator.");
 
         [SerializeField]
-        private PackageInfo m_PackageInfo;
-        public override PackageInfo packageInfo => m_PackageInfo;
+        private string m_Category;
+        public override string category => m_Category;
 
-        public override string category => m_PackageInfo.category;
+        [SerializeField]
+        private Error[] m_UpmErrors = new Error[0];
 
-        UIError entitlementsError => !entitlements.isAllowed && isInstalled ?
-        new UIError(UIErrorCode.UpmError, L10n.Tr("This package is not available to use because there is no license registered for your user. If you believe you have permission to use this package, refresh your license in the license management window of Unity Hub. Otherwise, contact your administrator.")) : null;
+        private UIError entitlementsError => !entitlements.isAllowed && isInstalled ? new UIError(UIErrorCode.UpmError, k_EntitlementsErrorMessage) : null;
         public override IEnumerable<UIError> errors =>
-            m_PackageInfo.errors.Select(e => new UIError((UIErrorCode)e.errorCode, e.message, UIError.Attribute.None)).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
-        public override bool isDirectDependency => isFullyFetched && m_PackageInfo.isDirectDependency;
+            m_UpmErrors.Select(e => new UIError((UIErrorCode)e.errorCode, e.message, UIError.Attribute.None)).Concat(entitlementsError != null ? new List<UIError> { entitlementsError } : new List<UIError>());
+
+        [SerializeField]
+        private bool m_IsFullyFetched;
+        public override bool isFullyFetched => m_IsFullyFetched;
+
+        [SerializeField]
+        private bool m_IsDirectDependency;
+        public override bool isDirectDependency => isFullyFetched && m_IsDirectDependency;
 
         [SerializeField]
         private string m_PackageId;
@@ -52,23 +64,33 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        public bool isRegistryPackage => m_PackageInfo?.source == PackageSource.Registry;
-        public bool isFromScopedRegistry => isRegistryPackage && m_PackageInfo?.registry?.isDefault == false;
+        [SerializeField]
+        private PackageSource m_Source;
+        public bool isRegistryPackage => m_Source == PackageSource.Registry;
 
         [SerializeField]
-        private bool m_IsFullyFetched;
-        public override bool isFullyFetched => m_IsFullyFetched;
+        private bool m_IsFromScopedRegistry;
+        public bool isFromScopedRegistry => isRegistryPackage && m_IsFromScopedRegistry;
+
+        [SerializeField]
+        private DependencyInfo[] m_Dependencies;
+        public override DependencyInfo[] dependencies => m_Dependencies;
+        [SerializeField]
+        private DependencyInfo[] m_ResolvedDependencies;
+        public override DependencyInfo[] resolvedDependencies => m_ResolvedDependencies;
+        [SerializeField]
+        private EntitlementsInfo m_Entitlements;
+        public override EntitlementsInfo entitlements => m_Entitlements;
 
         public string sourcePath
         {
             get
             {
-                if (m_PackageInfo.source == PackageSource.Local || m_PackageInfo.source == PackageSource.LocalTarball)
-                    return m_PackageInfo.packageId.Substring(m_PackageInfo.packageId.IndexOf("@file:") + 6);
-                else if (m_PackageInfo.source == PackageSource.Git)
-                    return m_PackageInfo.packageId.Split(new[] {'@'}, 2)[1];
-                else
-                    return null;
+                if (HasTag(PackageTag.Local))
+                    return m_PackageId.Substring(m_PackageId.IndexOf("@file:") + 6);
+                if (HasTag(PackageTag.Git))
+                    return m_PackageId.Split(new[] {'@'}, 2)[1];
+                return null;
             }
         }
 
@@ -81,17 +103,11 @@ namespace UnityEditor.PackageManager.UI
 
         public bool installedFromPath => HasTag(PackageTag.Local | PackageTag.Custom | PackageTag.Git);
 
-        public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_PackageInfo.resolvedPath);
+        public override bool isAvailableOnDisk => m_IsFullyFetched && !string.IsNullOrEmpty(m_ResolvedPath);
 
-        public string shortVersionId => FormatPackageId(name, version?.ShortVersion());
-
-        public string documentationUrl => packageInfo?.documentationUrl;
-
-        public string changelogUrl => packageInfo?.changelogUrl;
-
-        public string licensesUrl => packageInfo?.licensesUrl;
-
-        public override string localPath => packageInfo?.resolvedPath;
+        [SerializeField]
+        private string m_ResolvedPath;
+        public override string localPath => m_ResolvedPath;
 
         public override string versionString => m_Version.ToString();
 
@@ -103,7 +119,6 @@ namespace UnityEditor.PackageManager.UI
             m_VersionString = m_Version?.ToString();
             m_DisplayName = displayName;
             m_IsInstalled = isInstalled;
-            m_PackageUniqueId = packageInfo.name;
 
             UpdatePackageInfo(packageInfo, isUnityPackage);
         }
@@ -114,40 +129,58 @@ namespace UnityEditor.PackageManager.UI
             m_VersionString = m_Version?.ToString();
             m_DisplayName = packageInfo.displayName;
             m_IsInstalled = isInstalled;
-            m_PackageUniqueId = packageInfo.name;
 
             UpdatePackageInfo(packageInfo, isUnityPackage);
         }
 
-        internal void UpdatePackageInfo(PackageInfo newPackageInfo, bool isUnityPackage)
+        internal void UpdatePackageInfo(PackageInfo packageInfo, bool isUnityPackage)
         {
-            m_IsFullyFetched = m_Version?.ToString() == newPackageInfo.version;
-            m_PackageInfo = newPackageInfo;
-            m_PackageUniqueId = m_PackageInfo.name;
+            m_IsFullyFetched = m_Version?.ToString() == packageInfo.version;
+            m_PackageUniqueId = packageInfo.name;
             m_IsUnityPackage = isUnityPackage;
+            m_Source = packageInfo.source;
+            m_Category = packageInfo.category;
+            m_IsDirectDependency = packageInfo.isDirectDependency;
+            m_IsFromScopedRegistry = packageInfo.registry?.isDefault == false;
+            m_Name = packageInfo.name;
 
-            RefreshTags();
+            RefreshTags(packageInfo);
 
             // For core packages, or packages that are bundled with Unity without being published, use Unity's build date
-            m_PublishedDateTicks = 0;
-            if (HasTag(PackageTag.Bundled) && m_PackageInfo.datePublished == null)
+            m_PublishedDateTicks = packageInfo.datePublished?.Ticks ?? 0;
+            if (HasTag(PackageTag.Bundled) && packageInfo.datePublished == null)
                 m_PublishedDateTicks = new DateTime(1970, 1, 1).Ticks + InternalEditorUtility.GetUnityVersionDate() * TimeSpan.TicksPerSecond;
 
-            m_Author = this.isUnityPackage ? k_UnityAuthor : m_PackageInfo.author?.name ?? string.Empty;
-
-            if (HasTag(PackageTag.BuiltIn))
-                m_Description = UpmPackageDocs.FetchBuiltinDescription(this);
+            m_Author = this.isUnityPackage ? k_UnityAuthor : packageInfo.author?.name ?? string.Empty;
 
             if (m_IsFullyFetched)
             {
-                m_DisplayName = GetDisplayName(m_PackageInfo);
-                m_PackageId = m_PackageInfo.packageId;
+                m_DisplayName = GetDisplayName(packageInfo);
+                m_PackageId = packageInfo.packageId;
                 if (installedFromPath)
                     m_PackageId = m_PackageId.Replace("\\", "/");
+
+                m_UpmErrors = packageInfo.errors;
+                m_Dependencies = packageInfo.dependencies;
+                m_ResolvedDependencies = packageInfo.resolvedDependencies;
+                m_Entitlements = packageInfo.entitlements;
+                m_ResolvedPath = packageInfo.resolvedPath;
+
+                if (HasTag(PackageTag.BuiltIn))
+                    m_Description = UpmPackageDocs.FetchBuiltinDescription(packageInfo);
+                else
+                    m_Description = packageInfo.description;
             }
             else
             {
                 m_PackageId = FormatPackageId(name, version.ToString());
+
+                m_UpmErrors = new Error[0];
+                m_Dependencies = new DependencyInfo[0];
+                m_ResolvedDependencies = new DependencyInfo[0];
+                m_Entitlements = new EntitlementsInfo();
+                m_ResolvedPath = string.Empty;
+                m_Description = string.Empty;
             }
         }
 
@@ -164,40 +197,48 @@ namespace UnityEditor.PackageManager.UI
         public void SetInstalled(bool value)
         {
             m_IsInstalled = value;
-            RefreshTags();
+            RefreshTagsForLocalAndGit(m_Source);
         }
 
-        private void RefreshTags()
+        private void RefreshTagsForLocalAndGit(PackageSource source)
         {
-            // in the case of git/local packages, we always assume that the non-installed versions are from the registry
-            var source = m_PackageInfo.source == PackageSource.BuiltIn || m_IsInstalled ? m_PackageInfo.source : PackageSource.Registry;
+            if (source == PackageSource.BuiltIn || source == PackageSource.Registry)
+                return;
+
+            m_Tag &= ~(PackageTag.Custom | PackageTag.VersionLocked | PackageTag.Local | PackageTag.Git);
+            if (!m_IsInstalled)
+                return;
+
             switch (source)
             {
-                case PackageSource.BuiltIn:
-                    m_Tag = PackageTag.Bundled | PackageTag.VersionLocked;
-                    if (m_PackageInfo.type == "module")
-                        m_Tag |= PackageTag.BuiltIn;
-                    break;
-
                 case PackageSource.Embedded:
-                    m_Tag = PackageTag.Custom | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Custom | PackageTag.VersionLocked;
                     break;
-
                 case PackageSource.Local:
                 case PackageSource.LocalTarball:
-                    m_Tag = PackageTag.Local;
+                    m_Tag |= PackageTag.Local;
                     break;
-
                 case PackageSource.Git:
-                    m_Tag = PackageTag.Git | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Git | PackageTag.VersionLocked;
                     break;
-
-                case PackageSource.Unknown:
-                case PackageSource.Registry:
                 default:
-                    m_Tag = PackageTag.None;
                     break;
             }
+        }
+
+        private void RefreshTags(PackageInfo packageInfo)
+        {
+            // in the case of git/local packages, we always assume that the non-installed versions are from the registry
+            var source = packageInfo.source == PackageSource.BuiltIn || m_IsInstalled ? packageInfo.source : PackageSource.Registry;
+            m_Tag = PackageTag.None;
+            if (source == PackageSource.BuiltIn)
+            {
+                m_Tag = PackageTag.Bundled | PackageTag.VersionLocked;
+                if (packageInfo.type == "module")
+                    m_Tag |= PackageTag.BuiltIn;
+            }
+            else
+                RefreshTagsForLocalAndGit(packageInfo.source);
 
             m_Tag |= PackageTag.Installable | PackageTag.Removable;
             if (isInstalled && isDirectDependency && !installedFromPath && !HasTag(PackageTag.BuiltIn))
@@ -209,7 +250,7 @@ namespace UnityEditor.PackageManager.UI
                 {
                     m_Tag |= PackageTag.Release;
                     SemVersion? verified;
-                    bool isVerifiedParsed = SemVersionParser.TryParse(m_PackageInfo.versions.verified, out verified);
+                    bool isVerifiedParsed = SemVersionParser.TryParse(packageInfo.versions.verified, out verified);
 
                     if (isVerifiedParsed && m_Version == verified && !installedFromPath)
                         m_Tag |= PackageTag.Verified;

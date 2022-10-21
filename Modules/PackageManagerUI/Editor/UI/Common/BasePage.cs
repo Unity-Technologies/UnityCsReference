@@ -171,13 +171,6 @@ namespace UnityEditor.PackageManager.UI
 
         public abstract void SetExpanded(string packageUniqueId, bool value);
 
-        public void SetSeeAllVersions(IPackage package, bool value)
-        {
-            SetSeeAllVersions(package?.uniqueId, value);
-        }
-
-        public abstract void SetSeeAllVersions(string packageUniqueId, bool value);
-
         public bool IsGroupExpanded(string groupName)
         {
             return !m_CollapsedGroups.Contains(groupName);

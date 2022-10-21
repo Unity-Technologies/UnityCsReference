@@ -65,12 +65,14 @@ namespace UnityEditor.PackageManager.UI
 
         private SelectionProxy m_Selection;
         private AssetDatabaseProxy m_AssetDatabase;
+        private UpmCache m_UpmCache;
         private PackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_Selection = container.Resolve<SelectionProxy>();
             m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
 
@@ -154,7 +156,8 @@ namespace UnityEditor.PackageManager.UI
             GUI.enabled =  targets.Length == 1 && m_Package?.state == PackageState.InDevelopment && (m_Version?.isInstalled ?? false);
             if (GUILayout.Button(Styles.editPackage, EditorStyles.miniButton))
             {
-                var path = m_Version.packageInfo.assetPath;
+                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+                var path = packageInfo.assetPath;
                 var manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{path}/package.json");
                 if (manifest != null)
                     m_Selection.activeObject = manifest;

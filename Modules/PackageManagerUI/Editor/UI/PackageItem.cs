@@ -78,26 +78,17 @@ namespace UnityEditor.PackageManager.UI
 
         public void UpdateVisualState(VisualState newVisualState)
         {
-            var seeAllVersionsOld = visualState?.seeAllVersions ?? false;
-            var selectedVersionIdOld = visualState?.selectedVersionId ?? string.Empty;
-
             visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty);
 
             EnableInClassList("invisible", !visualState.visible);
-
-            if (selectedVersion != null && visualState != null && selectedVersion != targetVersion)
-                visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(selectedVersion);
 
             var expansionChanged = UIUtils.IsElementVisible(versionsContainer) != visualState.expanded;
             if (expansionChanged)
                 UpdateExpanderUI(visualState.expanded);
 
-            var needRefreshVersions = expansionChanged || seeAllVersionsOld != visualState.seeAllVersions;
-            if (needRefreshVersions)
-                RefreshVersions();
+            RefreshVersions();
 
-            if (needRefreshVersions || selectedVersionIdOld != visualState.selectedVersionId)
-                RefreshSelection();
+            RefreshSelection();
         }
 
         internal void SetPackage(IPackage package)
@@ -178,17 +169,15 @@ namespace UnityEditor.PackageManager.UI
 
             versionList.Clear();
 
-            var seeAllVersions = visualState?.seeAllVersions ?? false;
-
             var keyVersions = package.versions.key.ToList();
             var allVersions = package.versions.ToList();
 
-            var versions = seeAllVersions ? allVersions : keyVersions;
+            var versions = package.versions.ToList();
 
             for (var i = versions.Count - 1; i >= 0; i--)
                 versionList.Add(new PackageVersionItem(package, versions[i]));
 
-            var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count;
+            var seeAllVersionsLabelVisible = package.versions.numUnloadedVersions > 0;
             UIUtils.SetElementDisplay(seeAllVersionsLabel, seeAllVersionsLabelVisible);
 
             // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible
@@ -213,6 +202,8 @@ namespace UnityEditor.PackageManager.UI
         private void ToggleExpansion(ChangeEvent<bool> evt)
         {
             SetExpanded(evt.newValue);
+            if (!evt.newValue && m_PageManager.IsSeeAllVersions(package))
+                m_PageManager.SetSeeAllVersions(package, false);
         }
 
         internal void SetExpanded(bool value)

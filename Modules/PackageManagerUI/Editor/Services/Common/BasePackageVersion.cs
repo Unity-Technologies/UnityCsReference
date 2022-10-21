@@ -13,7 +13,9 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver
     {
-        public string name => packageInfo?.name ?? string.Empty;
+        [SerializeField]
+        protected string m_Name;
+        public string name => m_Name ?? string.Empty;
 
         [SerializeField]
         protected string m_DisplayName;
@@ -21,7 +23,7 @@ namespace UnityEditor.PackageManager.UI
 
         [SerializeField]
         protected string m_Description;
-        public string description => !string.IsNullOrEmpty(m_Description) ? m_Description : (packageInfo?.description ?? string.Empty);
+        public string description => m_Description ?? string.Empty;
 
         [SerializeField]
         protected string m_PackageUniqueId;
@@ -34,17 +36,19 @@ namespace UnityEditor.PackageManager.UI
         protected SemVersion? m_Version;
         public SemVersion? version => m_Version;
 
+        public virtual string versionInManifest => null;
+
         [SerializeField]
         protected long m_PublishedDateTicks;
-        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? packageInfo?.datePublished : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
+        public DateTime? publishedDate => m_PublishedDateTicks != 0 ? new DateTime(m_PublishedDateTicks, DateTimeKind.Utc) : (DateTime?)null;
 
         [SerializeField]
         protected string m_PublishNotes;
         public string releaseNotes => m_PublishNotes;
 
-        public DependencyInfo[] dependencies => packageInfo?.dependencies;
-        public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
-        public EntitlementsInfo entitlements => packageInfo?.entitlements;
+        public virtual DependencyInfo[] dependencies => null;
+        public virtual DependencyInfo[] resolvedDependencies => null;
+        public virtual EntitlementsInfo entitlements => null;
 
         [SerializeField]
         protected PackageTag m_Tag;
@@ -53,7 +57,6 @@ namespace UnityEditor.PackageManager.UI
             return (m_Tag & tag) != 0;
         }
 
-        public virtual PackageInfo packageInfo => null;
         public virtual IDictionary<string, string> categoryLinks => null;
         public virtual IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
         public virtual IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();

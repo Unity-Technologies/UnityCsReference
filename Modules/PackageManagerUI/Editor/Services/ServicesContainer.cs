@@ -137,8 +137,8 @@ namespace UnityEditor.PackageManager.UI
 
             m_PackageFiltering.ResolveDependencies(m_UnityConnectProxy, m_SettingsProxy);
 
-            m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetDatabaseProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
-            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
+            m_PackageDatabase.ResolveDependencies(m_UnityConnectProxy, m_AssetDatabaseProxy, m_AssetStoreUtils, m_AssetStoreClient, m_AssetStoreDownloadManager, m_UpmCache, m_UpmClient, m_IOProxy);
+            m_PageManager.ResolveDependencies(m_ApplicationProxy, m_SelectionProxy, m_UnityConnectProxy, m_PackageFiltering, m_PackageManagerPrefs, m_UpmCache, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient, m_PackageDatabase, m_SettingsProxy);
 
             m_DependenciesResolved = true;
         }
