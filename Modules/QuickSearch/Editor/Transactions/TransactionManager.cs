@@ -133,29 +133,18 @@ namespace UnityEditor.Search
             : base(fileName, headerSize)
         {}
 
+        void OpenWriterInner()
+        {
+            m_Fs = File.Open(m_FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+            m_Fs.Seek(0, SeekOrigin.End);
+            m_Br = new BinaryReader(m_Fs, Encoding.UTF8, true);
+            m_Bw = new BinaryWriter(m_Fs, Encoding.UTF8, true);
+        }
+
         public override bool Open()
         {
             if (m_Fs == null)
-            {
-                var tryCount = 0;
-                while (tryCount++ < 10)
-                {
-                    try
-                    {
-                        m_Fs = File.Open(m_FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-                        m_Fs.Seek(0, SeekOrigin.End);
-                        m_Br = new BinaryReader(m_Fs, Encoding.UTF8, true);
-                        m_Bw = new BinaryWriter(m_Fs, Encoding.UTF8, true);
-                        break;
-                    }
-                    catch (System.IO.IOException ex)
-                    {
-                        System.Threading.Thread.Sleep(100);
-                        if (tryCount == 10)
-                            throw ex;
-                    }
-                }
-            }
+                RetriableOperation<IOException>.Execute(OpenWriterInner, 10, TimeSpan.FromMilliseconds(100));
 
             return m_Fs != null;
         }

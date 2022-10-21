@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -97,13 +98,131 @@ namespace UnityEditor.Search
 
     static class MaterialPropertyColumnProvider
     {
-        [SearchColumnProvider("Experimental/MaterialProperty")]
+        class SearchMaterialPropertyCell : VisualElement, IBindable, ISearchTableViewCellValue
+        {
+            private readonly SearchColumn m_SearchColumn;
+            private VisualElement m_ValueElement;
+            private MaterialProperty.PropType? m_CurrentBindedType;
+
+            IBinding IBindable.binding { get => (m_ValueElement as IBindable)?.binding; set { if (m_ValueElement is IBindable b) b.binding = value; } }
+            string IBindable.bindingPath { get => (m_ValueElement as IBindable)?.bindingPath; set { if (m_ValueElement is IBindable b) b.bindingPath = value; } }
+
+            public SearchMaterialPropertyCell(SearchColumn column)
+            {
+                m_SearchColumn = column;
+            }
+
+            private void Create(MaterialProperty property, SearchColumnEventArgs args)
+            {
+                Clear();
+
+                m_ValueElement = null;
+                switch (property.type)
+                {
+                    case MaterialProperty.PropType.Color: m_ValueElement = new UIElements.ColorField(); break;
+                    case MaterialProperty.PropType.Float:
+                        m_ValueElement = new FloatField() { label = "\u2022", style = { flexDirection = FlexDirection.Row } };
+                        break;
+                    case MaterialProperty.PropType.Range:
+                        m_ValueElement = new Slider(0f, 1f);
+                        m_ValueElement.Add(new Label());
+                        m_ValueElement.RegisterCallback<ChangeEvent<float>>(evt =>
+                        {
+                            m_ValueElement.Q<Label>().text = m_ValueElement.tooltip = evt.newValue.ToString();
+                        });
+                        break;
+                    case MaterialProperty.PropType.Vector: m_ValueElement = new Vector4Field(); break;
+                    case MaterialProperty.PropType.Texture:
+                        m_ValueElement = new ObjectField() { objectType = typeof(Texture) };
+                        break;
+                }
+
+                visible = true;
+                m_CurrentBindedType = property.type;
+                if (m_ValueElement != null)
+                {
+                    Add(m_ValueElement);
+                    m_ValueElement.style.flexGrow = 1f;
+                    m_ValueElement.style.flexDirection = FlexDirection.Row;
+                }
+            }
+
+            public void Bind(SearchColumnEventArgs args)
+            {
+                if (args.value is not MaterialProperty matProp)
+                {
+                    visible = false;
+                    return;
+                }
+
+                if (!m_CurrentBindedType.HasValue || m_CurrentBindedType != matProp.type)
+                    Create(matProp, args);
+
+                switch (matProp.type)
+                {
+                    case MaterialProperty.PropType.Color:
+                        {
+                            if (m_ValueElement is INotifyValueChanged<Color> v)
+                                v.SetValueWithoutNotify(matProp.colorValue);
+                        }
+                        break;
+                    case MaterialProperty.PropType.Vector:
+                        {
+                            if (m_ValueElement is INotifyValueChanged<Vector4> v)
+                                v.SetValueWithoutNotify(matProp.vectorValue);
+                        }
+                        break;
+                    case MaterialProperty.PropType.Float:
+                        {
+                            if (m_ValueElement is INotifyValueChanged<float> v)
+                                v.SetValueWithoutNotify(matProp.floatValue);
+                        }
+                        break;
+                    case MaterialProperty.PropType.Range:
+                        {
+                            if (m_ValueElement is Slider s)
+                            { 
+                                s.SetValueWithoutNotify(matProp.floatValue);
+                                s.lowValue = matProp.rangeLimits.x;
+                                s.SetHighValueWithoutNotify(matProp.rangeLimits.y);
+                                s.Q<Label>().text = s.tooltip = matProp.floatValue.ToString();
+                            }
+                        }
+                        break;
+                    case MaterialProperty.PropType.Texture:
+                        {
+                            if (m_ValueElement is INotifyValueChanged<Object> v)
+                                v.SetValueWithoutNotify(matProp.textureValue);
+                        }
+                        break;
+                }
+            }
+
+            void ISearchTableViewCellValue.Update(object newValue)
+            {
+
+            }
+        }
+
+        [SearchColumnProvider("MaterialProperty")]
         public static void InitializeMaterialPropertyColumn(SearchColumn column)
         {
             column.getter = args => MaterialPropertyGetter(args.item, args.column);
             column.setter = args => SetMaterialPropertyValue(args.item, args.column, args.value);
-            column.drawer = args => MaterialPropertyDrawer(args.rect, args.value);
             column.comparer = args => MaterialPropertyComparer(args.lhs.value, args.rhs.value, args.sortAscending);
+            column.cellCreator = args => MaterialMakePropertyField(args);
+            column.binder = (args, ve) => MaterialBindPropertyField(args, ve);
+        }
+
+        private static VisualElement MaterialMakePropertyField(SearchColumn column)
+        {
+            return new SearchMaterialPropertyCell(column);
+        }
+
+        private static void MaterialBindPropertyField(SearchColumnEventArgs args, VisualElement ve)
+        {
+            if (ve is SearchMaterialPropertyCell smpc)
+                smpc.Bind(args);
         }
 
         internal static MaterialProperty GetMaterialProperty(SearchItem item, SearchColumn column)
@@ -145,23 +264,27 @@ namespace UnityEditor.Search
             switch (matProp.type)
             {
                 case MaterialProperty.PropType.Color:
-                    if (matProp.colorValue != (Color)newValue)
-                        matProp.colorValue = (Color)newValue;
+                    if (newValue is Color c && matProp.colorValue != c)
+                        matProp.colorValue = c;
                     break;
 
                 case MaterialProperty.PropType.Vector:
-                    if (matProp.vectorValue != (Vector4)newValue)
-                        matProp.vectorValue = (Vector4)newValue;
+                    if (newValue is Vector4 v && matProp.vectorValue != v)
+                        matProp.vectorValue = v;
                     break;
 
                 case MaterialProperty.PropType.Float:
-                    if (matProp.floatValue != (float)newValue)
-                        matProp.floatValue = (float)newValue;
+                    {
+                        if (newValue is float f && matProp.floatValue != f)
+                            matProp.floatValue = f;
+                    }
                     break;
 
                 case MaterialProperty.PropType.Range:
-                    if (matProp.floatValue != (float)newValue)
-                        matProp.floatValue = (float)newValue;
+                    {
+                        if (newValue is float f && matProp.floatValue != f)
+                            matProp.floatValue = f;
+                    }
                     break;
 
                 case MaterialProperty.PropType.Texture:
@@ -195,15 +318,6 @@ namespace UnityEditor.Search
 
         static int MaterialPropertyComparer(object lhsObj, object rhsObj, bool sortAscending)
         {
-            if (lhsObj == null && rhsObj == null)
-                return 0;
-
-            if (lhsObj == null && rhsObj != null)
-                return sortAscending ? 1 : -1;
-
-            if (lhsObj != null && rhsObj == null)
-                return sortAscending ? -1 : 1;
-
             if (!(lhsObj is MaterialProperty lm) || !(rhsObj is MaterialProperty rm) || lm.type != rm.type)
                 return 0;
 

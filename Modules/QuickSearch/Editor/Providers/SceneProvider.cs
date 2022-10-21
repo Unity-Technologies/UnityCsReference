@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -50,6 +49,7 @@ namespace UnityEditor.Search.Providers
 
             toObject = (item, type) => ObjectFromItem(item, type);
             toKey = (item) => ToKey(item);
+            toInstanceId = (item) => GetItemInstanceId(item);
 
             fetchItems = (context, items, provider) => SearchItems(context, provider);
 
@@ -98,6 +98,8 @@ namespace UnityEditor.Search.Providers
             fetchDescription = (item, context) =>
             {
                 var go = ObjectFromItem(item);
+                if (item.options.HasAny(SearchItemOptions.Compacted))
+                    return go.name;
                 return (item.description = SearchUtils.GetHierarchyPath(go));
             };
 
@@ -298,18 +300,9 @@ namespace UnityEditor.Search.Providers
                     m_HierarchyChanged = false;
                 }
 
-                IEnumerable<GameObject> subset = null;
-                if (context.subset != null)
-                {
-                    subset = context.subset
-                        .Where(item => item.provider.id == "scene")
-                        .Select(item => ObjectFromItem(item))
-                        .Where(obj => obj != null);
-                }
-
                 using (SearchMonitor.GetView())
                 {
-                    yield return queryEngine.Search(context, provider, subset)
+                    yield return queryEngine.Search(context, provider, null)
                         .Where(go => go)
                         .Select(go => AddResult(context, provider, go));
                 }
@@ -364,6 +357,12 @@ namespace UnityEditor.Search.Providers
             Selection.instanceIDs = objects.Select(o => o.GetHashCode()).ToArray();
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
+        }
+
+        private int GetItemInstanceId(SearchItem item)
+        {
+            var obj = ObjectFromItem(item);
+            return obj.GetInstanceID();
         }
 
         private static GameObject ObjectFromItem(in SearchItem item)
@@ -426,7 +425,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Hierarchy")]
         internal static void OpenQuickSearch()
         {
-            QuickSearch.OpenWithContextualProvider(type);
+            SearchUtils.OpenWithContextualProvider(type);
         }
 
         [SearchTemplate(description = "Find mesh object", providerId = type)] internal static string ST1() => @"t=MeshFilter vertices>=1024";

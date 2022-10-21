@@ -60,6 +60,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
+
+            // We need this refresh because there is a small delay between OnEnable and OnCreateGUI
+            // where the UI needs to be refreshed in order to keep a normal state
+            Refresh(m_PageManager.GetPage().GetSelection());
         }
 
         public void OnCreateGUI()
@@ -71,8 +75,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var extension in PackageManagerExtensions.Extensions)
                     customContainer.Add(extension.CreateExtensionUI());
             });
+            PackageManagerExtensions.extensionsGUICreated = true;
 
-            Refresh(m_PageManager.GetPage().GetSelection());
+            if (PackageManagerExtensions.Extensions.Any())
+                Refresh(m_PageManager.GetPage().GetSelection());
         }
 
         public void OnDisable()
@@ -178,7 +184,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // For now packageInfo, package and packageVersion will all be null when there are multiple packages selected.
             // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
-            if (PackageManagerExtensions.Extensions.Any())
+            if (PackageManagerExtensions.extensionsGUICreated)
             {
                 var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
                 PackageManagerExtensions.ExtensionCallback(() =>
@@ -187,6 +193,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         extension.OnPackageSelectionChange(packageInfo);
                 });
             }
+
             m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
         }
 

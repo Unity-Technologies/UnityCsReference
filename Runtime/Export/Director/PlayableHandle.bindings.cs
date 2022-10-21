@@ -46,6 +46,27 @@ namespace UnityEngine.Playables
             return (T)playable;
         }
 
+
+        internal T GetPayload<T>()
+           where T : struct
+        {
+            if (!IsValid())
+                return default;
+
+            var payload = GetScriptInstance();
+            if (payload == null)
+                return default;
+
+            return (T)payload;
+        }
+
+        internal void SetPayload<T>(T payload)
+          where T : struct
+        {
+            if (!IsValid())
+                return;
+            SetScriptInstance(payload);
+        }
         [VisibleToOtherModules]
         internal bool IsPlayableOfType<T>()
         {
@@ -66,6 +87,16 @@ namespace UnityEngine.Playables
         internal Playable GetOutput(int outputPort)
         {
             return new Playable(GetOutputHandle(outputPort));
+        }
+
+        internal int GetOutputPortFromInputConnection(int inputPort)
+        {
+            return GetOutputPortFromInputIndex(inputPort);
+        }
+
+        internal int GetInputPortFromOutputConnection(int inputPort)
+        {
+            return GetInputPortFromOutputIndex(inputPort);
         }
 
         internal bool SetInputWeight(int inputIndex, float weight)
@@ -224,6 +255,14 @@ namespace UnityEngine.Playables
         [VisibleToOtherModules]
         [FreeFunction("PlayableHandleBindings::GetInputCount", HasExplicitThis = true, ThrowsException = true)]
         extern internal int GetInputCount();
+
+        [VisibleToOtherModules]
+        [FreeFunction("PlayableHandleBindings::GetOutputPortFromInputIndex", HasExplicitThis = true, ThrowsException = true)]
+        extern internal int GetOutputPortFromInputIndex(int index);
+
+        [VisibleToOtherModules]
+        [FreeFunction("PlayableHandleBindings::GetInputPortFromOutputIndex", HasExplicitThis = true, ThrowsException = true)]
+        extern internal int GetInputPortFromOutputIndex(int index);
 
         [VisibleToOtherModules]
         [FreeFunction("PlayableHandleBindings::SetInputCount", HasExplicitThis = true, ThrowsException = true)]

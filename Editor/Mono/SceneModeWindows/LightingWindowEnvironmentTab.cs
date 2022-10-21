@@ -172,6 +172,11 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
+        public void OnSummaryGUI()
+        {
+            LightingWindow.Summary();
+        }
+
         public void OnSelectionChange()
         {
         }

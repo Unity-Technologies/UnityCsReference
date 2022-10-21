@@ -14,7 +14,6 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
-using UnityEditor.IMGUI.Controls;
 
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
@@ -28,6 +27,12 @@ using UnityEditor.StyleSheets;
 
 namespace UnityEditor.Search
 {
+
+    static class EventModifiersExtensions
+    {
+        public static bool HasAny(this EventModifiers flags, EventModifiers f) => (flags & f) != 0;
+        public static bool HasAll(this EventModifiers flags, EventModifiers all) => (flags & all) == all;
+    }
 
     /// <summary>
     /// This utility class mainly contains proxy to internal API that are shared between the version in trunk and the package version.
@@ -54,31 +59,6 @@ namespace UnityEditor.Search
             public override string ToString()
             {
                 return $"{root} -> {absPath}";
-            }
-        }
-
-        public struct ColorScope : IDisposable
-        {
-            private bool m_Disposed;
-            private Color m_PreviousColor;
-
-            public ColorScope(Color newColor)
-            {
-                m_Disposed = false;
-                m_PreviousColor = GUI.color;
-                GUI.color = newColor;
-            }
-
-            public ColorScope(float r, float g, float b, float a = 1.0f) : this(new Color(r, g, b, a))
-            {
-            }
-
-            public void Dispose()
-            {
-                if (m_Disposed)
-                    return;
-                m_Disposed = true;
-                GUI.color = m_PreviousColor;
             }
         }
 
@@ -248,11 +228,6 @@ namespace UnityEditor.Search
             return preview;
         }
 
-        internal static void SetChildParentReferences(IList<TreeViewItem> m_Items, TreeViewItem root)
-        {
-            TreeViewUtility.SetChildParentReferences(m_Items, root);
-        }
-
         internal static bool IsEditorValid(Editor e)
         {
             return e && e.serializedObject != null && e.serializedObject.isValid;
@@ -327,6 +302,78 @@ namespace UnityEditor.Search
         internal static void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts)
         {
             Menu.GetMenuItemDefaultShortcuts(outItemNames, outItemDefaultShortcuts);
+        }
+
+        static string PrintTabs(int level)
+        {
+            var tabs = string.Empty;
+            for (int i = 0; i < level; ++i)
+                tabs += "\t";
+            return tabs;
+        }
+
+        static void Append(System.Text.StringBuilder sb, string name, object v, int level, HashSet<object> _seen)
+        {
+            try
+            {
+                var vt = v?.GetType();
+                if (v == null)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: nil");
+                else if (v is UnityEngine.Object ueo)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: ({ueo.GetInstanceID()}) {ueo.name} [{ueo.GetType()}]");
+                else if (v is string s)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {s}");
+                else if (vt.IsPrimitive)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {v}");
+                else if (v is Enum @enum)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {@enum}");
+                else if (v is Delegate d)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {d.Method.DeclaringType.Name}.{d.Method.Name}");
+                else if (v is System.Collections.ICollection coll)
+                {
+                    sb.AppendLine($"{PrintTabs(level)}{name} ({coll.Count}):");
+                    int i = 0;
+                    foreach (var e in coll)
+                        Append(sb, $"[{i++}] {e?.GetType()}", e, level + 2, _seen);
+                }
+                else if (vt.FullName.StartsWith("System.", StringComparison.Ordinal))
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {v}");
+                else
+                    sb.AppendLine(PrintObject(name, v, level + 1, _seen));
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine($"{PrintTabs(level)}{name}: <{ex.Message}>");
+            }
+        }
+
+        static bool PrintField(FieldInfo fi)
+        {
+            if (!fi.DeclaringType.IsSerializable)
+                return false;
+
+            return fi.GetCustomAttribute<NonSerializedAttribute>() == null;
+        }
+
+        public static string PrintObject(string label, object obj, int level = 1, HashSet<object> seen = null)
+        {
+            seen = seen ?? new HashSet<object>();
+            if (!seen.Contains(obj))
+            {
+                seen.Add(obj);
+                var t = obj.GetType();
+                var bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                var sb = new System.Text.StringBuilder();
+                foreach (var item in t.GetFields(bindingAttr).Where(p => PrintField(p)))
+                    Append(sb, item.Name, item.GetValue(obj), level, seen);
+
+                var result = sb.ToString().Trim(' ', '\r', '\n');
+                if (result.Length > 0)
+                    result = "\r\n" + result;
+                return $"{PrintTabs(level - 1)}{label} [{obj?.GetHashCode() ?? -1:X}]: {result}";
+            }
+
+            return $"{PrintTabs(level - 1)}{label}: [{obj?.GetHashCode() ?? -1:X}]";
         }
 
         internal static string FormatProviderList(IEnumerable<SearchProvider> providers, bool fullTimingInfo = false, bool showFetchTime = true)
@@ -595,7 +642,7 @@ namespace UnityEditor.Search
 
         internal static Type GetTypeFromName(string typeName)
         {
-            return TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => t.Name == typeName) ?? typeof(UnityEngine.Object);
+            return TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => string.Equals(t.Name, typeName, StringComparison.Ordinal)) ?? typeof(UnityEngine.Object);
         }
 
         internal static string StripHTML(string input)
@@ -674,6 +721,9 @@ namespace UnityEditor.Search
                 var preview = AssetPreview.GetAssetPreview(obj);
                 if (preview)
                     return preview;
+
+                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID()))
+                    return null;
             }
 
             var assetPath = SearchUtils.GetHierarchyAssetPath(obj, true);
@@ -740,6 +790,11 @@ namespace UnityEditor.Search
             {
                 EditorApplication.tick -= value;
             }
+        }
+
+        public static Action CallAnimated(EditorApplication.CallbackFunction callback, double seconds = 0.05d)
+        {
+            return CallDelayed(callback, seconds);
         }
 
         public static Action CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
@@ -987,32 +1042,6 @@ namespace UnityEditor.Search
             return text;
         }
 
-        static readonly GUILayoutOption[] s_PanelViewLayoutOptions = new[] { GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(false) };
-        public static Vector2 BeginPanelView(Vector2 scrollPosition, GUIStyle panelStyle)
-        {
-            var verticalScrollbar = Styles.scrollbar;
-            GUIScrollGroup g = (GUIScrollGroup)GUILayoutUtility.BeginLayoutGroup(panelStyle, null, typeof(GUIScrollGroup));
-            if (Event.current.type == EventType.Layout)
-            {
-                g.resetCoords = true;
-                g.isVertical = true;
-                g.stretchWidth = 0;
-                g.stretchHeight = 1;
-                g.consideredForMargin = false;
-                g.verticalScrollbar = verticalScrollbar;
-                g.horizontalScrollbar = GUIStyle.none;
-                g.ApplyOptions(s_PanelViewLayoutOptions);
-            }
-            return EditorGUIInternal.DoBeginScrollViewForward(g.rect, scrollPosition,
-                new Rect(0, 0, g.clientWidth - Styles.scrollbarWidth, g.clientHeight), false, false,
-                GUIStyle.none, verticalScrollbar, panelStyle);
-        }
-
-        public static void EndPanelView()
-        {
-            EditorGUILayout.EndScrollView();
-        }
-
         public static ulong GetHashCode64(this string strText)
         {
             if (string.IsNullOrEmpty(strText))
@@ -1148,7 +1177,7 @@ namespace UnityEditor.Search
         static readonly Regex trimmer = new Regex(@"(\s\s+)|(\r\n|\r|\n)+");
         public static string Simplify(string text)
         {
-            return trimmer.Replace(text, " ").Replace("\r\n", " ").Replace('\n', ' ').Trim();
+            return trimmer.Replace(text, " ").Replace("\r\n", " ").Replace('\n', ' ');
         }
 
         public static void OpenGraphViewer(in string searchQuery)

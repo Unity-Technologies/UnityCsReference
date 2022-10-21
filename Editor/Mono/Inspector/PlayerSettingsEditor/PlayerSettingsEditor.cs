@@ -200,7 +200,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
             public static readonly GUIContent scriptingDefineSymbolsApplyRevert = EditorGUIUtility.TrTextContent("Revert");
             public static readonly GUIContent scriptingDefineSymbolsCopyDefines = EditorGUIUtility.TrTextContent("Copy Defines", "Copy applied defines");
-            public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169 and CS0649.");
+            public static readonly GUIContent suppressCommonWarnings = EditorGUIUtility.TrTextContent("Suppress Common Warnings", "Suppresses C# warnings CS0169, CS0649, and CS0282.");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
@@ -653,8 +653,9 @@ namespace UnityEditor
 
             m_ForceSRGBBlit                 = FindPropertyAssert("hmiForceSRGBBlit");
 
-            m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
-            for (int i = 0; i < validPlatforms.Length; i++)
+            var validPlatformsLength = validPlatforms.Length;
+            m_SettingsExtensions = new ISettingEditorExtension[validPlatformsLength];
+            for (int i = 0; i < validPlatformsLength; i++)
             {
                 string module = ModuleManager.GetTargetStringFromBuildTargetGroup(validPlatforms[i].namedBuildTarget.ToBuildTargetGroup());
                 m_SettingsExtensions[i] = ModuleManager.GetEditorSettingsExtension(module);
@@ -673,8 +674,15 @@ namespace UnityEditor
             // we access this cache both from player settings editor and script side when changing api
             s_GraphicsDeviceLists.Clear();
 
+            var selectedPlatform = m_SelectedPlatform.intValue;
+            if (selectedPlatform < 0)
+                selectedPlatform = 0;
+
+            if (selectedPlatform >= validPlatformsLength)
+                selectedPlatform = validPlatformsLength - 1;
+
             // Setup initial values to prevent immediate script recompile (or editor restart)
-            NamedBuildTarget namedBuildTarget = validPlatforms[m_SelectedPlatform.intValue].namedBuildTarget;
+            NamedBuildTarget namedBuildTarget = validPlatforms[selectedPlatform].namedBuildTarget;
             serializedActiveInputHandler = m_ActiveInputHandler.intValue;
             serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
@@ -1009,7 +1017,7 @@ namespace UnityEditor
                         settingsExtension.ResolutionSectionGUI(h, kLabelFloatMinW, kLabelFloatMaxW);
                     }
 
-                    if (namedBuildTarget == NamedBuildTarget.Standalone || namedBuildTarget == NamedBuildTarget.EmbeddedLinux)
+                    if (namedBuildTarget == NamedBuildTarget.Standalone)
                     {
                         GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
 

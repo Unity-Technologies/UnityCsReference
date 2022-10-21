@@ -31,7 +31,10 @@ namespace UnityEngine.Search
         OpenInBuilderMode = 1 << 22,
         OpenInTextMode = 1 << 23,
         DisableBuilderModeToggle = 1 << 24,
-        Borderless = 1 << 25
+        Borderless = 1 << 25,
+        DisableQueryHelpers = 1 << 26,
+
+        ContextSwitchPreservedMask = Borderless | OpenLeftSidePanel | OpenInspectorPreview
     }
 
     [AttributeUsage(AttributeTargets.Field)]

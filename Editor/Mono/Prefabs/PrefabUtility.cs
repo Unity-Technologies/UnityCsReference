@@ -505,7 +505,7 @@ namespace UnityEditor
             HashSet<SerializedObject> changedObjects,
             bool allowApplyDefaultOverride,
             InteractionMode action
-            )
+        )
         {
             bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
 
@@ -1969,13 +1969,13 @@ namespace UnityEditor
             }
         }
 
-        private static void SaveAsPrefabAssetArgumentCheck(GameObject instanceRoot, string path)
+        private static void SaveAsPrefabAssetArgumentCheck(GameObject instanceRoot, string path, bool connectToInstance)
         {
             if (instanceRoot == null)
                 throw new ArgumentNullException("Parameter root is null");
 
-            if (EditorUtility.IsPersistent(instanceRoot))
-                throw new ArgumentException("Can't save persistent object as a Prefab asset");
+            if (EditorUtility.IsPersistent(instanceRoot) && connectToInstance)
+                throw new ArgumentException("Can't save persistent Objects and connect them to the saved Prefab");
 
             if (IsPartOfNonAssetPrefabInstance(instanceRoot))
             {
@@ -2007,7 +2007,7 @@ namespace UnityEditor
 
         public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath, out bool success)
         {
-            SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath);
+            SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath, false);
 
             return SaveAsPrefabAsset_Internal(instanceRoot, assetPath, out success);
         }
@@ -2026,7 +2026,7 @@ namespace UnityEditor
 
         public static GameObject SaveAsPrefabAssetAndConnect(GameObject instanceRoot, string assetPath, InteractionMode action, out bool success)
         {
-            SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath);
+            SaveAsPrefabAssetArgumentCheck(instanceRoot, assetPath, true);
 
             if (IsPathInStreamingAssets(assetPath))
                 throw new ArgumentException("Can't connect a Prefab in the StreamingAssets folder to GameObjects in the scene. To save a Prefab to the StreamingAssets folder use SaveAsPrefabAsset instead.");
@@ -2075,7 +2075,7 @@ namespace UnityEditor
             var assetObject = GetCorrespondingObjectFromSource(instance);
             string path = AssetDatabase.GetAssetPath(assetObject);
 
-            SaveAsPrefabAssetArgumentCheck(instance, path);
+            SaveAsPrefabAssetArgumentCheck(instance, path, true);
 
             ApplyPrefabInstance_Internal(instance);
         }

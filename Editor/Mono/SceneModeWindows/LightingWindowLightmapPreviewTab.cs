@@ -111,6 +111,11 @@ namespace UnityEditor
             LightmapListGUI(lightmaps, realtimeLightmaps);
         }
 
+        public void OnSummaryGUI()
+        {
+            LightingWindow.Summary();
+        }
+
         private void InitSettings()
         {
             if (m_LightmapSettings == null || m_LightmapSettings.targetObject == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())

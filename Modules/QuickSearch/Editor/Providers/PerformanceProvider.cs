@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using UnityEditorInternal;
 using UnityEngine.Profiling;
 using System.Linq;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search.Providers
 {
@@ -79,14 +80,21 @@ namespace UnityEditor.Search.Providers
 
             if (column.selector != "count")
             {
-                column.drawer = args =>
+                column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
                 {
+                    var label = (TextElement)ve;
                     if (Utils.TryGetNumber(args.value, out var d))
-                        GUI.Label(args.rect, GetTimeLabel(d, 0.5d, 2.0d), ItemSelectors.GetItemContentStyle(column));
-                    return args.value;
+                        label.text = GetTimeLabel(d, 0.5d, 2.0d);
+                    else
+                        label.text = string.Empty;
                 };
             }
         }
+
+        [SearchSelector("count", provider: type, cacheable = false)] static object SelectCount(SearchSelectorArgs args) => EditorPerformanceTracker.GetSampleCount(args.current.id);
+        [SearchSelector("peak", provider: type, cacheable = false)] static object SelectPeak(SearchSelectorArgs args) => EditorPerformanceTracker.GetPeakTime(args.current.id);
+        [SearchSelector("avg", provider: type, cacheable = false)] static object SelectAvg(SearchSelectorArgs args) => EditorPerformanceTracker.GetAverageTime(args.current.id);
+        [SearchSelector("total", provider: type, cacheable = false)] static object SelectTotal(SearchSelectorArgs args) => EditorPerformanceTracker.GetTotalTime(args.current.id);
 
         static IEnumerable<SearchColumn> FetchColumns(SearchContext context, IEnumerable<SearchItem> items)
         {

@@ -577,19 +577,6 @@ namespace UnityEditor.Modules
             if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                 EditorCompilation.ClearBeeBuildArtifacts();
 
-            if (Unsupported.IsDeveloperBuild())
-            {
-                NPath editorGitRevisionFile = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/gitrevision.txt";
-                NPath playerGitRevisionFile = $"{BuildPipeline.GetPlaybackEngineDirectory(target, options)}/Bee/gitrevision.txt";
-                if (editorGitRevisionFile.Exists() && playerGitRevisionFile.Exists())
-                {
-                    string editorGitRevision = editorGitRevisionFile.ReadAllText();
-                    string playerGitRevision = playerGitRevisionFile.ReadAllText();
-                    if (editorGitRevision != playerGitRevision)
-                        return $"The Bee libraries used in the editor come from a different revision, than the ones used for the player. Please rebuild both editor and player when making changes to Bee player build libraries. (editor: '{editorGitRevision}', player: '{playerGitRevision}')";
-                }
-            }
-
             return null;
         }
 

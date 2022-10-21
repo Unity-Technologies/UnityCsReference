@@ -110,6 +110,11 @@ namespace UnityEditor
             lightmapSettings.ApplyModifiedProperties();
         }
 
+        public void OnSummaryGUI()
+        {
+            LightingWindow.Summary();
+        }
+
         public void OnSelectionChange()
         {
         }

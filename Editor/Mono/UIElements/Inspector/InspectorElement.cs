@@ -505,6 +505,7 @@ namespace UnityEditor.UIElements
             if (!float.IsNaN(inspectorWidth) && inspectorWidth > 0)
             {
                 EditorGUIUtility.wideMode = inspectorWidth > Editor.k_WideModeMinWidth;
+                EditorGUIUtility.currentViewWidth = inspectorWidth;
             }
             else
             {
@@ -624,6 +625,7 @@ namespace UnityEditor.UIElements
                     //set the current PropertyHandlerCache to the current editor
                     ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
+                    var originalViewWidth = EditorGUIUtility.currentViewWidth;
                     var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
                     EditorGUIUtility.hierarchyMode = true;
 
@@ -708,6 +710,7 @@ namespace UnityEditor.UIElements
                         }
                         EditorGUIUtility.wideMode = originalWideMode;
                         EditorGUIUtility.hierarchyMode = originalHierarchyMode;
+                        EditorGUIUtility.currentViewWidth = originalViewWidth;
                     }
                 }
             };

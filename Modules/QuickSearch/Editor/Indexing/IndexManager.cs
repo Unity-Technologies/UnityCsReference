@@ -127,7 +127,9 @@ namespace UnityEditor.Search
             showPackagesToggle.RegisterValueChangedCallback(evt => OnPackageToggle(evt));
             m_ListViewIndexSettings.Add(showPackagesToggle);
 
-            var splitter = new VisualSplitter(m_ListViewIndexSettings, m_IndexDetailsElement, FlexDirection.Row);
+            var splitter = new TwoPaneSplitView(0, 240f, TwoPaneSplitViewOrientation.Horizontal);
+            splitter.Add(m_ListViewIndexSettings);
+            splitter.Add(m_IndexDetailsElement);
             rootVisualElement.Add(splitter);
 
             m_IndexSettingsTemplates = new List<SearchDatabase.Settings>();

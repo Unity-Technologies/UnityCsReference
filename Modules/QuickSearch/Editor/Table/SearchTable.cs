@@ -37,6 +37,8 @@ namespace UnityEditor.Search
 
         public SearchTable Clone(string newName = null)
         {
+            if (columns == null || columns.Length == 0)
+                return null;
             return new SearchTable(this, newName);
         }
 
@@ -77,6 +79,11 @@ namespace UnityEditor.Search
             }
 
             return null;
+        }
+
+        public override string ToString()
+        {
+            return $"{name} ({id}): {string.Join(", ", columns.Select(c => c.name))}";
         }
     }
 }

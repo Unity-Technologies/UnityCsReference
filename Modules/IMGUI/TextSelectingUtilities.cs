@@ -42,11 +42,10 @@ namespace UnityEngine
         int characterCount => (m_CharacterCount > 0 && m_TextHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
         TextElementInfo[] m_TextElementInfos => m_TextHandle.textInfo.textElementInfo;
 
-
         int m_CursorIndex = 0;
         public int cursorIndex
         {
-            get => EnsureValidCodePointIndex(m_CursorIndex);
+            get => m_TextHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_CursorIndex);
             set
             {
                 if (m_CursorIndex != value)
@@ -65,7 +64,7 @@ namespace UnityEngine
         internal int m_SelectIndex = 0;
         public int selectIndex
         {
-            get => EnsureValidCodePointIndex(m_SelectIndex);
+            get => m_TextHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_SelectIndex);
             set
             {
 

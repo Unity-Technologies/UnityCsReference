@@ -158,12 +158,13 @@ namespace UnityEditor.Search
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
 
-            var windows = Resources.FindObjectsOfTypeAll<QuickSearch>();
+            var windows = Resources.FindObjectsOfTypeAll<SearchWindow>();
             if (windows == null)
                 return;
             foreach (var win in windows)
             {
-                win.Refresh();
+                if (!win.IsPicker())
+                    win.Refresh();
             }
         }
 
@@ -372,9 +373,6 @@ namespace UnityEditor.Search
                 context.sessions.StopAllAsyncSearchSessions();
             }
 
-            if (context.subset != null)
-                allItems = new List<SearchItem>(allItems.Intersect(context.subset));
-
             if (!options.HasAny(SearchFlags.Sorted))
                 return allItems;
 
@@ -384,7 +382,7 @@ namespace UnityEditor.Search
 
         static void HandleItemsIteratorSession(object iterator, List<SearchItem> allItems, SearchProvider provider, SearchContext context, SearchFlags options)
         {
-            if (iterator != null && options.HasAny(SearchFlags.Synchronous))
+            if (iterator != null && context.options.HasAny(SearchFlags.Synchronous))
             {
                 using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
                 {
@@ -403,7 +401,7 @@ namespace UnityEditor.Search
                 var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
                 if (options.HasAny(SearchFlags.FirstBatchAsync))
                 {
-                    session.SendItems(context.subset != null ? allItems.Intersect(context.subset) : allItems);
+                    session.SendItems(allItems);
                     allItems.Clear();
                 }
                 if (sessionEnded)
@@ -663,7 +661,7 @@ namespace UnityEditor.Search
             if (reuseExisting) flags |= SearchFlags.ReuseExistingWindow;
             if (multiselect) flags |= SearchFlags.Multiselect;
             if (dockable) flags |= SearchFlags.Dockable;
-            return QuickSearch.Create<QuickSearch>(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
+            return SearchWindow.Create<SearchWindow>(context, topic, flags).ShowWindow(defaultWidth, defaultHeight, flags);
         }
 
         /// <summary>
@@ -673,7 +671,7 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public static ISearchView ShowWindow(SearchViewState viewState)
         {
-            return QuickSearch.Create(viewState).ShowWindow(viewState.windowSize.x, viewState.windowSize.y,
+            return SearchWindow.Create(viewState).ShowWindow(viewState.windowSize.x, viewState.windowSize.y,
                 SearchFlags.OpenDefault | (viewState.context?.options ?? SearchFlags.None));
         }
 
@@ -684,7 +682,7 @@ namespace UnityEditor.Search
         /// <returns>Returns the QuickSearch window.</returns>
         public static ISearchView ShowContextual(params string[] providerIds)
         {
-            return QuickSearch.OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
+            return SearchUtils.OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
         }
 
         /// <summary>
@@ -720,10 +718,8 @@ namespace UnityEditor.Search
             Action<SearchItem> trackingHandler = null,
             Func<SearchItem, bool> filterHandler = null,
             IEnumerable<SearchItem> subset = null,
-            string title = null, float itemSize = 64f, float defaultWidth = 850f, float defaultHeight = 539f, SearchFlags flags = SearchFlags.None)
+            string title = null, float itemSize = 64f, float defaultWidth = 650f, float defaultHeight = 539f, SearchFlags flags = SearchFlags.None)
         {
-            if (subset != null)
-                context.subset = subset.ToList();
             context.options |= flags | SearchFlags.OpenPicker;
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "item", "api");
             return SearchPickerWindow.ShowPicker(new SearchViewState(context, selectHandler)
@@ -932,7 +928,7 @@ namespace UnityEditor.Search
                 while (EvaluateExpression(context, it))
                     yield return it.Current;
 
-                TableView.SetupColumns(context, expression);
+                SearchUtils.SetupColumns(context, expression);
             }
         }
 

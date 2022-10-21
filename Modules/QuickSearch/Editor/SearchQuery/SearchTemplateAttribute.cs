@@ -86,7 +86,7 @@ namespace UnityEditor.Search
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"Cannot register State provider: {mi.Name}\n{e}");
+                    Debug.LogWarning($"Cannot register Search Template provider: {mi.Name}\n{e}");
                 }
             }
         }

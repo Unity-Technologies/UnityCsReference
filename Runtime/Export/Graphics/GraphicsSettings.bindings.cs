@@ -24,6 +24,7 @@ namespace UnityEngine.Rendering
         extern public static bool lightsUseLinearIntensity   { get; set; }
         extern public static bool lightsUseColorTemperature  { get; set; }
         extern public static uint defaultRenderingLayerMask { get; set; }
+        extern public static Camera.GateFitMode defaultGateFitMode { get; set; }
         extern public static bool useScriptableRenderPipelineBatching { get; set; }
         extern public static bool logWhenShaderIsCompiled { get; set; }
         extern public static bool disableBuiltinCustomRenderTextureUpdate { get; set; }

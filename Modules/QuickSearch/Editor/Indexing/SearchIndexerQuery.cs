@@ -22,13 +22,6 @@ namespace UnityEditor.Search
         {}
     }
 
-    class SearchIndexerQuery : SearchQueryEvaluator<SearchResult>
-    {
-        public SearchIndexerQuery(QueryGraph graph, EvalHandler handler)
-            : base(graph, handler)
-        {}
-    }
-
     class SearchQueryEvaluatorFactory<T> : IQueryHandlerFactory<T, SearchQueryEvaluator<T>, object>
     {
         SearchQueryEvaluator<T>.EvalHandler m_Handler;

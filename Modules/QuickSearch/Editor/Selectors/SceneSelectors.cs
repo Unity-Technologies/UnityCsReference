@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Search.Providers;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -96,8 +97,21 @@ namespace UnityEditor.Search
         public static void InitializeObjectReferenceColumn(SearchColumn column)
         {
             column.getter = args => GetEnabled(args.item);
-            column.drawer = args => DrawEnabled(args);
             column.setter = args => SetEnabled(args);
+            column.cellCreator = col => new Toggle { style = { alignSelf = Align.Center } };
+            column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
+            {
+                var field = (Toggle)ve;
+                if (args.value != null)
+                {
+                    field.visible = true;
+                    field.SetValueWithoutNotify(System.Convert.ToBoolean(args.value));
+                }
+                else
+                {
+                    field.visible = false;
+                }
+            };
         }
 
         public static IEnumerable<SearchColumn> Enumerate(IEnumerable<SearchItem> items)

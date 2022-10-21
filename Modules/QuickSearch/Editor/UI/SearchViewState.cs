@@ -33,8 +33,32 @@ namespace UnityEditor.Search
         [SerializeField] private SearchFunctor<Action<SearchItem>> m_TrackingHandler;
         [SerializeField] private SearchFunctor<Func<SearchItem, bool>> m_FilterHandler;
         [SerializeField] private SearchFunctor<Action<SearchContext, string, string>> m_GroupChanged;
+        [NonSerialized] private SearchGlobalEventHandlerManager m_GlobalEventManager = new SearchGlobalEventHandlerManager();
+        internal SearchGlobalEventHandlerManager globalEventManager => m_GlobalEventManager;
 
-        [SerializeField] public bool hideTabs;
+        [SerializeField] private string m_ActiveQueryGuid;
+        private ISearchQuery m_ActiveQuery;
+        internal ISearchQuery activeQuery
+        {
+            get
+            {
+                if (m_ActiveQuery == null && !string.IsNullOrEmpty(m_ActiveQueryGuid))
+                {
+                    ISearchQuery loadedActiveQuery = SearchQuery.searchQueries.FirstOrDefault(query => query.guid == m_ActiveQueryGuid)
+                        ?? (ISearchQuery)SearchQueryAsset.savedQueries.FirstOrDefault(query => query.guid == m_ActiveQueryGuid);
+                    m_ActiveQuery = loadedActiveQuery;
+                    m_ActiveQueryGuid = null;
+                }
+                return m_ActiveQuery;
+            }
+            set
+            {
+                m_ActiveQuery = value;
+                Dispatcher.Emit(SearchEvent.ActiveQueryChanged, new SearchEventPayload(this, value));
+            }
+        }
+
+        public bool hideTabs;
         public string sessionId;
         public string sessionName;
         public bool excludeClearItem;
@@ -47,6 +71,21 @@ namespace UnityEditor.Search
         public Rect position;
         public SearchViewFlags flags;
         public string group;
+
+        internal int[] m_SelectedIds;
+        internal int[] selectedIds
+        {
+            get
+            {
+                if (m_SelectedIds == null)
+                    m_SelectedIds = new int[0];
+                return m_SelectedIds;
+            }
+            set
+            {
+                m_SelectedIds = value;
+            }
+        }
 
         [SerializeField] public bool queryBuilderEnabled;
 
@@ -178,14 +217,37 @@ namespace UnityEditor.Search
 
         internal void Assign(SearchViewState state)
         {
-            providerIds = state.context.providers.Select(p => p.id).ToArray();
-            searchFlags = state.searchFlags;
-            searchText = state.context.searchText;
+            Assign(state, state.context);
+        }
+
+        internal void Assign(SearchViewState state, SearchContext searchContext)
+        {
+            var previousSearchView = context?.searchView;
+
+            if (searchContext != null)
+            {
+                context = searchContext;
+                if (context != null)
+                    context.searchView = previousSearchView;
+            }
+            searchFlags = searchContext?.options ?? state.searchFlags;
+            searchText = searchContext?.searchText ?? state.searchText;
+            providerIds = searchContext?.GetProviders().Select(p => p.id).ToArray() ?? state.providerIds.ToArray();
+
+            if (tableConfig != null && state.tableConfig?.columns?.Length > 0)
+                tableConfig.columns = state.tableConfig?.columns.ToArray();
+            else
+                tableConfig = state.tableConfig?.Clone();
+
+            if (this == state)
+                return;
+
             sessionId = state.sessionId;
             sessionName = state.sessionName;
             excludeClearItem = state.excludeClearItem;
             ignoreSaveSearches = state.ignoreSaveSearches;
-
+            activeQuery = state.activeQuery;
+            initialQuery = state.initialQuery;
             title = state.title;
             itemSize = state.itemSize;
             position = state.position;
@@ -257,6 +319,7 @@ namespace UnityEditor.Search
             searchFlags = context.options;
             searchText = context.searchText;
             providerIds = GetProviderIds().ToArray();
+            m_ActiveQueryGuid = m_ActiveQuery?.guid;
         }
 
         public void OnAfterDeserialize()
@@ -274,6 +337,13 @@ namespace UnityEditor.Search
             return providerIds;
         }
 
+        internal SearchProvider GetProviderById(string providerId)
+        {
+            if (m_Context != null)
+                return m_Context.GetProviders().FirstOrDefault(p => p.active && p.id == providerId);
+            return null;
+        }
+
         public IEnumerable<string> GetProviderTypes()
         {
             var providers = m_Context != null ? m_Context.GetProviders() : SearchService.GetProviders(providerIds);
@@ -281,5 +351,10 @@ namespace UnityEditor.Search
         }
 
         public bool HasFlag(SearchViewFlags flags) => (this.flags & flags) != 0;
+
+        public override string ToString()
+        {
+            return $"[{sessionId}] {text} ({flags})";
+        }
     }
 }

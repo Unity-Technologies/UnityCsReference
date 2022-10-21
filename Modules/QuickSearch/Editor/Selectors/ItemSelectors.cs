@@ -5,11 +5,34 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
     public static class ItemSelectors
     {
+        internal static class Styles
+        {
+            private static readonly RectOffset paddingNone = new RectOffset(0, 0, 0, 0);
+
+            public static readonly GUIStyle itemLabel = new GUIStyle(EditorStyles.label)
+            {
+                name = "quick-search-item-label",
+                richText = true,
+                wordWrap = false,
+                margin = new RectOffset(8, 4, 4, 2),
+                padding = paddingNone
+            };
+
+            public static readonly GUIStyle itemLabelLeftAligned = new GUIStyle(itemLabel)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                padding = new RectOffset(2, 2, 0, 0)
+            };
+            public static readonly GUIStyle itemLabelCenterAligned = new GUIStyle(itemLabelLeftAligned) { alignment = TextAnchor.MiddleCenter };
+            public static readonly GUIStyle itemLabelrightAligned = new GUIStyle(itemLabelLeftAligned) { alignment = TextAnchor.MiddleRight };
+        }
+
         [SearchSelector("id", priority: 1)] static object GetSearchItemID(SearchItem item) => item.id;
         [SearchSelector("label", priority: 1)] static object GetSearchItemLabel(SearchItem item) => item.GetLabel(item.context);
         [SearchSelector("description", priority: 1)] static object GetSearchItemDesc(SearchItem item) => item.GetDescription(item.context);
@@ -18,7 +41,8 @@ namespace UnityEditor.Search
         [SearchSelector("score", priority: 9)] static object GetSearchItemScore(SearchItem item) => item.score;
         [SearchSelector("options", priority: 9)] static object GetSearchItemOptions(SearchItem item) => item.options;
         [SearchSelector("data", priority: 9)] static object GetSearchItemData(SearchItem item) => item.data?.ToString();
-        [SearchSelector("thumbnail", priority: 9)] static object GetSearchItemThumbnail(SearchItem item) => item.GetThumbnail(item.context, cacheThumbnail: false);
+        [SearchSelector("thumbnail", priority: 9, cacheable = false)] static object GetSearchItemThumbnail(SearchItem item) => item.GetThumbnail(item.context, cacheThumbnail: false);
+        [SearchSelector("preview", priority: 9, cacheable = false)] static object GetSearchItemPreview(SearchItem item) => item.GetPreview(item.context, new Vector2(64, 64), FetchPreviewOptions.Normal, cacheThumbnail: false);
 
         [SearchSelector("Field/(?<fieldName>.+)", priority: 9, printable: false)]
         static object GetSearchItemFieldValue(SearchSelectorArgs args) => args.current.GetValue(args["fieldName"].ToString());
@@ -39,7 +63,7 @@ namespace UnityEditor.Search
                 yield return CreateColumn("ID");
                 yield return CreateColumn("Name", null, "Name");
                 yield return CreateColumn("Value");
-                yield return CreateColumn("Thumbnail");
+                yield return CreateColumn("Thumbnail", "thumbnail", "Texture2D");
                 yield return CreateColumn("Default/Path", "path");
                 yield return CreateColumn("Default/Type", "type");
                 yield return CreateColumn("Default/Provider", "provider");
@@ -64,26 +88,55 @@ namespace UnityEditor.Search
             return (value ?? args.value)?.ToString();
         }
 
-        private static object DrawName(SearchColumnEventArgs args)
+        private static VisualElement CreateVisualElement(SearchColumn column)
         {
+            var image = new Image();
+            var label = new Label { style = { unityTextAlign = GetItemTextAlignment(column) } };
+            var container = new VisualElement();
+            container.AddToClassList("search-table-cell__item-name");
+            container.Add(image);
+            container.Add(label);
+            return container;
+        }
+
+        private static void BindName(SearchColumnEventArgs args, VisualElement ve)
+        {
+            var text = string.Empty;
+            Texture2D thumbnail = null;
+
             if (args.value is Object obj)
             {
-                GUI.Label(args.rect, Utils.GUIContentTemp(obj.name, AssetPreview.GetMiniThumbnail(obj)), GetItemContentStyle(args.column));
+                text = obj.name;
+                thumbnail = AssetPreview.GetMiniThumbnail(obj);
             }
             else if (args.value != null)
             {
                 var item = args.item;
-                var thumbnail = item.GetThumbnail(item.context ?? args.context);
-                GUI.Label(args.rect, Utils.GUIContentTemp(args.value.ToString(), thumbnail), GetItemContentStyle(args.column));
+                text = args.value.ToString();
+                thumbnail = item.GetThumbnail(item.context ?? args.context);
             }
-            return args.value;
+
+            ve.Q<Label>().text = text;
+            ve.Q<Image>().image = thumbnail;
+        }
+
+        [SearchColumnProvider("Default")]
+        internal static void InitializeObjectPathColumn(SearchColumn column)
+        {
+            column.getter = SearchColumn.DefaultSelect;
+            column.setter = null;
+            column.drawer = null;
+            column.comparer = null;
+            column.binder = null;
+            column.cellCreator = null;
         }
 
         [SearchColumnProvider("Name")]
         internal static void InitializeItemNameColumn(SearchColumn column)
         {
             column.getter = GetName;
-            column.drawer = DrawName;
+            column.cellCreator = CreateVisualElement;
+            column.binder = BindName;
         }
 
         public static GUIStyle GetItemContentStyle(SearchColumn column)
@@ -95,42 +148,53 @@ namespace UnityEditor.Search
             return Styles.itemLabelLeftAligned;
         }
 
+        internal static TextAnchor GetItemTextAlignment(SearchColumn column)
+        {
+            if (column.options.HasAny(SearchColumnFlags.TextAlignmentCenter))
+                return TextAnchor.MiddleCenter;
+            if (column.options.HasAny(SearchColumnFlags.TextAlignmentRight))
+                return TextAnchor.MiddleRight;
+            return TextAnchor.MiddleLeft;
+        }
+
         [SearchColumnProvider("size")]
         internal static void InitializeItemSizeColumn(SearchColumn column)
         {
-            column.drawer = args =>
+            column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
             {
-                var itemStyle = GetItemContentStyle(args.column);
+                var label = (TextElement)ve;
+                string text = string.Empty;
                 if (Utils.TryGetNumber(args.value, out var n))
-                    GUI.Label(args.rect, Utils.FormatBytes((long)n), itemStyle);
-                else
-                    GUI.Label(args.rect, args.value?.ToString() ?? string.Empty, itemStyle);
-                return args.value;
+                    text = Utils.FormatBytes((long)n);
+                else if (args.value != null)
+                    text = args.value.ToString();
+                label.text = text;
             };
         }
 
         [SearchColumnProvider("count")]
         internal static void InitializeCountColumn(SearchColumn column)
         {
-            column.drawer = args =>
+            column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
             {
-                var itemStyle = GetItemContentStyle(args.column);
+                var label = (TextElement)ve;
+                string text = string.Empty;
                 if (Utils.TryGetNumber(args.value, out var n))
-                    GUI.Label(args.rect, Utils.FormatCount((ulong)n), itemStyle);
-                else
-                    GUI.Label(args.rect, args.value?.ToString() ?? string.Empty, itemStyle);
-                return args.value;
+                    text = Utils.FormatCount((ulong)n);
+                else if (args.value != null)
+                    text = args.value.ToString();
+                label.text = text;
             };
         }
 
         [SearchColumnProvider("selectable")]
         internal static void InitializeSelectableColumn(SearchColumn column)
         {
-            column.drawer = args =>
+            column.binder = (args, ve) =>
             {
-                var itemStyle = GetItemContentStyle(args.column);
-                EditorGUI.SelectableLabel(args.rect, args.value?.ToString() ?? string.Empty, itemStyle);
-                return args.value;
+                var label = (TextElement)ve;
+                label.text = args.value?.ToString() ?? string.Empty;
+                label.selection.isSelectable = true;
             };
         }
     }

@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -133,6 +133,8 @@ namespace UnityEditor.Search
         public delegate object GetterEntry(SearchColumnEventArgs args);
         public delegate void SetterEntry(SearchColumnEventArgs args);
         public delegate object DrawEntry(SearchColumnEventArgs args);
+        public delegate VisualElement CreateCellVisualElement(SearchColumn column);
+        public delegate void BindEntry(SearchColumnEventArgs args, VisualElement ve);
         public delegate int CompareEntry(SearchColumnCompareArgs args);
 
         public string path;
@@ -146,11 +148,15 @@ namespace UnityEditor.Search
         [SerializeField] private SearchFunctor<GetterEntry> m_Getter;
         [SerializeField] private SearchFunctor<SetterEntry> m_Setter;
         [SerializeField] private SearchFunctor<DrawEntry> m_Drawer;
+        [SerializeField] private SearchFunctor<CreateCellVisualElement> m_CellCreator;
+        [SerializeField] private SearchFunctor<BindEntry> m_Binder;
         [SerializeField] private SearchFunctor<CompareEntry> m_Comparer;
 
         public GetterEntry getter { get => m_Getter?.handler; set => m_Getter.handler = value; }
         public SetterEntry setter { get => m_Setter?.handler; set => m_Setter.handler = value; }
         public DrawEntry drawer { get => m_Drawer?.handler; set => m_Drawer.handler = value; }
+        public CreateCellVisualElement cellCreator { get => m_CellCreator?.handler; set => m_CellCreator.handler = value; }
+        public BindEntry binder { get => m_Binder?.handler; set => m_Binder.handler = value; }
         public CompareEntry comparer { get => m_Comparer?.handler; set => m_Comparer.handler = value; }
 
         public string name => ParseName(path ?? string.Empty);
@@ -177,6 +183,8 @@ namespace UnityEditor.Search
             m_Getter = new SearchFunctor<GetterEntry>();
             m_Setter = new SearchFunctor<SetterEntry>();
             m_Drawer = new SearchFunctor<DrawEntry>();
+            m_CellCreator = new SearchFunctor<CreateCellVisualElement>();
+            m_Binder = new SearchFunctor<BindEntry>();
             m_Comparer = new SearchFunctor<CompareEntry>();
 
             if ((options & SearchColumnFlags.IgnoreSettings) == 0 && !Utils.IsRunningTests())
@@ -191,6 +199,8 @@ namespace UnityEditor.Search
             getter = src.getter;
             setter = src.setter;
             drawer = src.drawer;
+            cellCreator = src.cellCreator;
+            binder = src.binder;
             comparer = src.comparer;
         }
 
@@ -226,6 +236,13 @@ namespace UnityEditor.Search
             return name;
         }
 
+        internal Type GetMatchingType()
+        {
+            var pos = path.IndexOf('/');
+            var typeName = pos == -1 ? path : path.Substring(0, pos);
+            return Utils.GetTypeFromName(typeName);
+        }
+
         public void InitFunctors()
         {
             getter = getter ?? DefaultSelect;
@@ -233,7 +250,7 @@ namespace UnityEditor.Search
                 SearchColumnProvider.Initialize(this);
         }
 
-        private static object DefaultSelect(SearchColumnEventArgs args)
+        internal static object DefaultSelect(SearchColumnEventArgs args)
         {
             return args.column.SelectValue(args.item, args.context);
         }
@@ -257,10 +274,11 @@ namespace UnityEditor.Search
             var providerTypes = new HashSet<string>(context.providers.Select(p => p.type));
 
             // In case there is a valid search group selected in the search view, lets use that instead.
-            if (context.searchView is QuickSearch qs && !string.IsNullOrEmpty(qs.currentGroup) && !string.Equals(qs.currentGroup, "all"))
+            var currentGroup = context.searchView?.currentGroup;
+            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, "all", StringComparison.Ordinal))
             {
                 providerTypes.Clear();
-                providerTypes.Add(qs.currentGroup);
+                providerTypes.Add(currentGroup);
             }
 
             foreach (var s in SelectorManager.selectors)
@@ -390,6 +408,12 @@ namespace UnityEditor.Search
                 if (!string.Equals(p.provider, column.provider, StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                column.setter = null;
+                column.drawer = null;
+                column.comparer = null;
+                column.binder = null;
+                column.cellCreator = null;
+
                 p.handler(column);
                 break;
             }
@@ -405,5 +429,15 @@ namespace UnityEditor.Search
         }
 
         public string provider { get; private set; }
+    }
+
+    class SearchColumnBindException : Exception
+    {
+        public readonly SearchColumn column;
+        public SearchColumnBindException(SearchColumn column, string message)
+            : base(message)
+        {
+            this.column = column;
+        }
     }
 }

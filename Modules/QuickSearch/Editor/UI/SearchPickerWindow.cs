@@ -6,16 +6,17 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Search;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
     [EditorWindowTitle(title = "Search")]
-    class SearchPickerWindow : QuickSearch
+    class SearchPickerWindow : SearchWindow
     {
         internal const string k_SavedSearchTextPrefKey = "picker_search_text";
         const string k_SavedWindowPositionPrefKey = "picker_window_position_offset";
 
-        protected override bool IsPicker()
+        public override bool IsPicker()
         {
             return true;
         }
@@ -23,9 +24,6 @@ namespace UnityEditor.Search
         internal override void OnEnable()
         {
             base.OnEnable();
-
-            // If we get opened from an object field, the caller will steal our focus, so lets put it back in the picker.
-            Utils.CallDelayed(() => { if (this) SelectSearch(); }, 0.1d);
         }
 
         internal override void OnDisable()
@@ -40,28 +38,7 @@ namespace UnityEditor.Search
             base.OnDisable();
         }
 
-        public override void ExecuteSelection()
-        {
-            if (selectCallback == null || selection.Count == 0)
-                return;
-            selectCallback(selection.First(), false);
-            selectCallback = null;
-            CloseSearchWindow();
-        }
-
-        protected override void LoadSessionSettings(SearchViewState args)
-        {
-            RestoreSearchText(args);
-            RefreshSearch();
-            UpdateViewState(args);
-
-            if (!string.IsNullOrEmpty(args.group))
-                SelectGroup(args.group);
-            else if (args.hideAllGroup && context.providers.FirstOrDefault() is SearchProvider firstProvider)
-                SelectGroup(firstProvider.type);
-        }
-
-        private void RestoreSearchText(SearchViewState viewState)
+        protected override void RestoreSearchText(SearchViewState viewState)
         {
             if (Utils.IsRunningTests() || viewState.context == null)
                 return;
@@ -71,26 +48,33 @@ namespace UnityEditor.Search
                 viewState.text = previousSearchText.Trim();
         }
 
+        protected override void HandleEscapeKeyDown(EventBase evt)
+        {
+            if (string.CompareOrdinal(context.searchText, viewState.initialQuery) != 0)
+            {
+                ClearSearch();
+                return;
+            }
+
+            SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
+            selectCallback?.Invoke(null, true);
+            selectCallback = null;
+            CloseSearchWindow();
+        }
+
+        public override void ExecuteSelection()
+        {
+            if (selectCallback == null || selection.Count == 0)
+                return;
+            selectCallback(selection.First(), false);
+            selectCallback = null;
+            CloseSearchWindow();
+        }
+
         protected override IEnumerable<SearchItem> FetchItems()
         {
             if (!viewState.excludeClearItem)
                 yield return SearchItem.clear;
-
-            SearchSettings.ApplyContextOptions(context);
-            foreach (var item in SearchService.GetItems(context))
-            {
-                if (filterCallback != null && !filterCallback(item))
-                    continue;
-                yield return item;
-            }
-        }
-
-        protected override void OnAsyncItemsReceived(SearchContext context, IEnumerable<SearchItem> items)
-        {
-            var filteredItems = items;
-            if (filterCallback != null)
-                filteredItems = filteredItems.Where(item => filterCallback(item));
-            base.OnAsyncItemsReceived(context, filteredItems);
         }
 
         protected override void UpdateWindowTitle()
@@ -99,51 +83,19 @@ namespace UnityEditor.Search
                 titleContent.image = Icons.quickSearchWindow;
         }
 
-        public override void Refresh(RefreshFlags flags = RefreshFlags.Default)
-        {
-            if (flags != RefreshFlags.Default)
-                base.Refresh(flags);
-        }
-
-        protected override void UpdateFocusState(TextEditor te)
-        {
-            te.MoveTextEnd();
-        }
-
-        internal override SearchContext CreateQueryContext(ISearchQuery query)
+        protected override SearchContext CreateQueryContext(ISearchQuery query)
         {
             return SearchService.CreateContext(context?.GetProviders(), query.searchText, context?.options ?? SearchFlags.Default);
         }
 
-        protected override void DrawSyncSearchButton()
-        {
-            // Do nothing
-        }
-
-        protected override bool IsSavedSearchQueryEnabled()
+        internal protected override bool IsSavedSearchQueryEnabled()
         {
             return m_ViewState.HasFlag(SearchViewFlags.EnableSearchQuery);
         }
 
-        protected override void HandleEscapeKeyDown(Event evt)
+        public static SearchPickerWindow ShowPicker(SearchViewState args)
         {
-            if (string.CompareOrdinal(context.searchText, viewState.initialQuery) != 0)
-            {
-                ClearSearch();
-                evt.Use();
-                return;
-            }
-            SendEvent(SearchAnalytics.GenericEventType.QuickSearchDismissEsc);
-            selectCallback?.Invoke(null, true);
-            selectCallback = null;
-            evt.Use();
-            CloseSearchWindow();
-        }
-
-        public static QuickSearch ShowPicker(SearchViewState args)
-        {
-            var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker)) as SearchPickerWindow;
-            qs.searchEventStatus = SearchEventStatus.WaitForEvent;
+            var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker));
             qs.titleContent.text = $"Select {args.title ?? "item"}...";
 
             if (qs.viewState.flags.HasNone(SearchViewFlags.OpenInBuilderMode) && !string.IsNullOrEmpty(qs.context.searchText))
@@ -174,7 +126,7 @@ namespace UnityEditor.Search
             return position.size;
         }
 
-        private void RestoreWindowPosition(SearchViewState viewState)
+        private Rect RestoreWindowPosition(SearchViewState viewState)
         {
             Rect windowPosition = default;
             if (Utils.IsRunningTests() || viewState.HasFlag(SearchViewFlags.Centered))
@@ -193,6 +145,8 @@ namespace UnityEditor.Search
 
             if (windowPosition != default)
                 position = viewState.position = windowPosition;
+
+            return windowPosition;
         }
 
         static void InjectDefaultRuntimeContext(SearchContext context)

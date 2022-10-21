@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -16,33 +17,20 @@ namespace UnityEditor.Search
 
         void CloseEditor();
         void ApplyExpression(string searchText);
-        void DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrayContent);
+        void ApplyChanges();
     }
 
     static class ExpressionBlock
     {
         public static QueryBuilder Create(in string expression)
         {
-            var embeddedBuilder = new QueryBuilder(expression) { drawBackground = false, @readonly = true };
+            var embeddedBuilder = new QueryBuilder(expression) { @readonly = true };
             foreach (var b in embeddedBuilder.blocks)
             {
                 b.@readonly = true;
                 b.disableHovering = true;
             }
             return embeddedBuilder;
-        }
-
-        public static float Layout(in QueryBuilder builder, in float availableSpace)
-        {
-            builder.LayoutBlocks(availableSpace);
-            return builder.width;
-        }
-
-        public static Rect Draw(in float x, in Rect blockRect, in QueryBuilder builder)
-        {
-            var valueRect = new Rect(x - 5f, blockRect.yMin - 5f, builder.width + 24f, builder.height);
-            builder.Draw(Event.current, valueRect, createLayout: false);
-            return valueRect;
         }
     }
 
@@ -74,45 +62,21 @@ namespace UnityEditor.Search
 
         internal override Color GetBackgroundColor() => QueryColors.expression;
 
-        internal override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override void CreateBlockElement(VisualElement container)
         {
-            var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name);
+            AddLabel(container, name);
+            AddSeparator(container);
 
-            var editorWidth = 0f;
-            foreach (var b in m_ArgumentBuilders)
+            foreach (var builder in m_ArgumentBuilders)
             {
-                b.LayoutBlocks(availableSpace);
-                editorWidth += b.width;
+                foreach(var b in builder.EnumerateBlocks())
+                   container.Add(b.CreateGUI());
+                AddSeparator(container);
             }
-
-            var blockWidth = nameContent.width + editorWidth + labelStyle.margin.horizontal * 2f + blockExtraPadding;
-            return GetRect(at, blockWidth, blockHeight);
-        }
-
-        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
-        {
-            var extendedBlockRect = blockRect;
-            var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name);
-
-            if (Event.current.type == EventType.Repaint)
-                DrawBackground(extendedBlockRect, mousePosition);
-
-            var nameRect = DrawName(blockRect, mousePosition, nameContent);
-            var x = nameRect.xMax;
-            foreach (var b in m_ArgumentBuilders)
-            {
-                var builderRect = ExpressionBlock.Draw(x, blockRect, b);
-                x = builderRect.xMax;
-            }
-
-            if (Event.current.type == EventType.Repaint)
-                DrawBorders(extendedBlockRect, mousePosition);
         }
     }
 
-    class QueryExpressionBlockEditor : QuickSearch, IBlockEditor
+    class QueryExpressionBlockEditor : SearchWindow, IBlockEditor
     {
         public EditorWindow window => this;
         public IQueryExpressionBlock block { get; protected set; }
@@ -124,7 +88,12 @@ namespace UnityEditor.Search
             var searchContext = SearchService.CreateContext(qb.searchText, searchFlags);
             var viewState = new SearchViewState(searchContext,
                 UnityEngine.Search.SearchViewFlags.OpenInBuilderMode |
-                UnityEngine.Search.SearchViewFlags.DisableInspectorPreview);
+                UnityEngine.Search.SearchViewFlags.DisableSavedSearchQuery |
+                UnityEngine.Search.SearchViewFlags.Borderless |
+                UnityEngine.Search.SearchViewFlags.DisableInspectorPreview)
+            {
+                ignoreSaveSearches = true
+            };
             var w = Create<QueryExpressionBlockEditor>(viewState) as QueryExpressionBlockEditor;
             w.block = block;
             w.minSize = Vector2.zero;
@@ -153,8 +122,7 @@ namespace UnityEditor.Search
         void Apply()
         {
             block.ApplyExpression(context.searchText);
-            block.CloseEditor();
-            block.source.Apply();
+            block.ApplyChanges();
         }
     }
 }

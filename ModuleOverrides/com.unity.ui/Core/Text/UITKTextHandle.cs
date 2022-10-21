@@ -37,7 +37,7 @@ namespace UnityEngine.UIElements
             return ComputeTextHeight(s_LayoutSettings);
         }
 
-        public TextInfo Update()
+        public virtual TextInfo Update()
         {
             ConvertUssToTextGenerationSettings(textGenerationSettings);
 
@@ -326,6 +326,7 @@ namespace UnityEngine.UIElements
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
             tgs.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
+            tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
             tgs.fontSize = style.fontSize.value > 0
                 ? style.fontSize.value

@@ -29,6 +29,11 @@ namespace UnityEngine.UIElements
         public int maxLength { get; set; }
 
         /// <summary>
+        /// The placeholder property represents a short hint intended to aid the users with data entry when the control has no value.
+        /// </summary>
+        public string placeholder { get; set; }
+
+        /// <summary>
         /// If set to true, the value property isn't updated until either the user presses Enter or the element loses focus.
         /// </summary>
         public bool isDelayed { get; set; }
@@ -47,6 +52,7 @@ namespace UnityEngine.UIElements
         internal Action UpdateValueFromText { get; set; }
         internal Action UpdateTextFromValue { get; set; }
         internal Action MoveFocusToCompositeRoot { get; set; }
+        internal Func<string> GetDefaultValueType { get; set; }
 
         internal void UpdateText(string value);
 
@@ -63,6 +69,11 @@ namespace UnityEngine.UIElements
         /// Returns true if the field is used to edit a password.
         /// </summary>
         public bool isPassword { get; set; }
+
+        /// <summary>
+        /// Hides the placeholder on focus.
+        /// </summary>
+        public bool hidePlaceholderOnFocus { get; set; }
     }
 
     // Text editing and selection management implementation
@@ -213,6 +224,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        string m_PlaceholderText = "";
+        string ITextEdition.placeholder
+        {
+            get => m_PlaceholderText;
+            set
+            {
+                //this approach results not showing leading 0s when input fields are updated from the UI Builder if there is a placeholder text
+                //however since this does not occur at run-time and inputfields are generally empty when placeholder text is set this should be ok
+                //if we want to fix this down the line then defaultValue needs to return null so we could differentiate an empty field vs. one with "0"
+                if (!string.IsNullOrEmpty(value) && text.Equals(edition.GetDefaultValueType()))
+                    text = "";
+
+                m_PlaceholderText = value;
+                OnPlaceholderChanged?.Invoke();
+
+            }
+        }
+
         bool ITextEdition.isDelayed { get; set; }
 
         /// <summary>
@@ -239,6 +268,8 @@ namespace UnityEngine.UIElements
         Action ITextEdition.UpdateValueFromText { get; set; }
         Action ITextEdition.UpdateTextFromValue { get; set; }
         Action ITextEdition.MoveFocusToCompositeRoot { get; set; }
+        internal Action OnPlaceholderChanged { get; set; }
+        Func<string> ITextEdition.GetDefaultValueType { get; set; }
 
         void ITextEdition.UpdateText(string value)
         {
@@ -298,15 +329,36 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool ITextEdition.hidePlaceholderOnFocus
+        {
+            get => m_HidePlaceholderTextOnFocus;
+            set => m_HidePlaceholderTextOnFocus = value;
+        }
+
+        internal bool showPlaceholderText
+        {
+            get
+            {
+                if (edition.hidePlaceholderOnFocus)
+                    return text.Length == 0 && !edition.hasFocus;
+
+                return text.Length == 0;
+            }
+        }
+
         string m_RenderedText;
         internal string renderedText
         {
             get
             {
-                var mskChar = effectiveMaskChar;
+                if (showPlaceholderText)
+                    return m_PlaceholderText + "\u200B";
+
                 // Handles password fields.
+                var mskChar = effectiveMaskChar;
                 if (mskChar != Char.MinValue)
                     return "".PadLeft(text.Length, mskChar) + "\u200B";
+
                 return string.IsNullOrEmpty(m_RenderedText) ? "\u200B" : m_RenderedText;
             }
             set =>
@@ -318,5 +370,6 @@ namespace UnityEngine.UIElements
         string m_OriginalText;
         private char m_MaskChar;
         private bool m_IsPassword;
+        private bool m_HidePlaceholderTextOnFocus;
     }
 }

@@ -20,6 +20,9 @@ namespace UnityEngine
         [NativeProperty("CurTime")]
         public static extern double timeAsDouble { get; }
 
+        [NativeProperty("CurTimeRational")]
+        public static extern Unity.IntegerTime.RationalTime timeAsRational { get; }
+
         // The time this frame has started (RO). This is the time in seconds since the last level has been loaded.
         [NativeProperty("TimeSinceSceneLoad")]
         public static extern float timeSinceLevelLoad { get; }
@@ -91,6 +94,8 @@ namespace UnityEngine
 
         // If /captureDeltaTime/ is set to a value larger than 0, time will advance by that increment.
         public static extern float captureDeltaTime { get; set; }
+
+        public static extern Unity.IntegerTime.RationalTime captureDeltaTimeRational { get; set; }
 
         // /captureFramerate/ is a convenience (and backwards compatible) accessor for the reciprocal of /captureDeltaTime/ rounded to the nearest integer.
         public static int captureFramerate

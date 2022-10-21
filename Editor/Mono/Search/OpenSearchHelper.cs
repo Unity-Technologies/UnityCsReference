@@ -61,16 +61,16 @@ namespace UnityEditor.SearchService
             if (shortcutBinding.keyCombinationSequence.Any(shortcutCombination => keyCombination.Equals(shortcutCombination)))
             {
                 evt.Use();
-                OpenSearchInContext(window, searchText, "jumpShortcut");
+                OpenSearchInContext(window, searchText, "jumpShortcut", true);
             }
         }
 
-        public static void OpenSearchInContext(EditorWindow window, string searchText, string openContext)
+        public static void OpenSearchInContext(EditorWindow window, string searchText, string openContext, bool ignoreContextRestore)
         {
             if (!CommandService.Exists(k_OpenSearchInContextCommand))
                 return;
 
-            CommandService.Execute(k_OpenSearchInContextCommand, CommandHint.Any, searchText, openContext);
+            CommandService.Execute(k_OpenSearchInContextCommand, CommandHint.Any, searchText, openContext, ignoreContextRestore);
             window?.Repaint();
         }
 
@@ -79,7 +79,7 @@ namespace UnityEditor.SearchService
             Rect r = GUILayoutUtility.GetRect(Styles.gotoSearch, EditorStyles.toolbarSearchFieldJumpButton, GUILayout.MaxHeight(EditorGUI.kSingleLineHeight));
             if (EditorGUI.Button(r, Styles.gotoSearch, EditorStyles.toolbarSearchFieldJumpButton))
             {
-                OpenSearchInContext(window, searchText, "jumpButton");
+                OpenSearchInContext(window, searchText, "jumpButton", true);
             }
         }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.Pool
 {
@@ -20,6 +21,7 @@ namespace UnityEngine.Pool
         readonly Action<T> m_ActionOnDestroy;
         readonly int m_MaxSize; // Used to prevent catastrophic memory retention.
         internal bool m_CollectionCheck;
+        T m_FreshlyReleased;
 
         /// <summary>
         /// The total number of active and inactive objects.
@@ -34,7 +36,7 @@ namespace UnityEngine.Pool
         /// <summary>
         /// Number of objects that are currently available in the pool.
         /// </summary>
-        public int CountInactive { get { return m_List.Count; } }
+        public int CountInactive { get { return m_List.Count + (m_FreshlyReleased != null ? 1 : 0); } }
 
         /// <summary>
         /// Creates a new ObjectPool.
@@ -67,10 +69,16 @@ namespace UnityEngine.Pool
         /// Get an object from the pool.
         /// </summary>
         /// <returns>A new object from the pool.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Get()
         {
             T element;
-            if (m_List.Count == 0)
+            if (m_FreshlyReleased!=null)
+            {
+                element = m_FreshlyReleased;
+                m_FreshlyReleased = null;
+            }
+            else if (m_List.Count == 0)
             {
                 element = m_CreateFunc();
                 CountAll++;
@@ -96,10 +104,14 @@ namespace UnityEngine.Pool
         /// Release an object to the pool.
         /// </summary>
         /// <param name="element">Object to release.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Release(T element)
         {
-            if (m_CollectionCheck && m_List.Count > 0)
+            if (m_CollectionCheck && (m_List.Count > 0 || m_FreshlyReleased != null))
             {
+                if (ReferenceEquals(element, m_FreshlyReleased)) {
+                    throw new InvalidOperationException("Trying to release an object that has already been released to the pool.");
+                }
                 for (int i = 0; i < m_List.Count; i++)
                 {
                     if (ReferenceEquals(element, m_List[i]))
@@ -108,8 +120,11 @@ namespace UnityEngine.Pool
             }
 
             m_ActionOnRelease?.Invoke(element);
-
-            if (CountInactive < m_MaxSize)
+            if(m_FreshlyReleased == null)
+            {
+                m_FreshlyReleased = element;
+            }
+            else if (CountInactive < m_MaxSize)
             {
                 m_List.Add(element);
             }
@@ -130,8 +145,13 @@ namespace UnityEngine.Pool
                 {
                     m_ActionOnDestroy(item);
                 }
+                if(m_FreshlyReleased != null)
+                {
+                    m_ActionOnDestroy(m_FreshlyReleased);
+                }
             }
 
+            m_FreshlyReleased = null;
             m_List.Clear();
             CountAll = 0;
         }
@@ -140,6 +160,16 @@ namespace UnityEngine.Pool
         {
             // Ensure we do a clear so the destroy action can be called.
             Clear();
+        }
+
+        /// <summary>
+        /// Introduced only for the purpose of unit tests
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        internal bool HasElement(T element)
+        {
+            return m_FreshlyReleased == element || m_List.Contains(element);
         }
     }
 }

@@ -80,7 +80,7 @@ namespace UnityEditor.Networking.PlayerConnection
         {
             UnregisterAllPersistedListeners(m_PlayerEditorConnectionEvents.connectionEvent);
             UnregisterAllPersistedListeners(m_PlayerEditorConnectionEvents.disconnectionEvent);
-            m_PlayerEditorConnectionEvents.messageTypeSubscribers.Clear();
+            m_PlayerEditorConnectionEvents.Clear();
         }
 
         private void UnregisterAllPersistedListeners(UnityEventBase connectionEvent)

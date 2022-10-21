@@ -45,6 +45,7 @@ namespace UnityEditor
             void OnEnable();
             void OnDisable();
             void OnGUI();
+            void OnSummaryGUI();
             void OnSelectionChange();
         }
 
@@ -113,6 +114,14 @@ namespace UnityEditor
             m_Tabs.Add(Mode.EnvironmentSettings, new LightingWindowEnvironmentTab());
             m_Tabs.Add(Mode.RealtimeLightmaps, new LightingWindowLightmapPreviewTab(LightmapType.DynamicLightmap));
             m_Tabs.Add(Mode.BakedLightmaps, new LightingWindowLightmapPreviewTab(LightmapType.StaticLightmap));
+
+            var customWindowTabs = TypeCache.GetTypesDerivedFrom<LightingWindowTab>();
+            foreach (Type tabType in customWindowTabs)
+            {
+                var tab = Activator.CreateInstance(tabType) as LightingWindowTab;
+                m_Tabs.Add((Mode)tabType.Name.GetHashCode(), tab);
+                tab.m_Parent = this;
+            }
         }
 
         void OnEnable()
@@ -194,8 +203,14 @@ namespace UnityEditor
             if (m_Tabs.ContainsKey(selectedMode))
                 m_Tabs[selectedMode].OnGUI();
 
-            Buttons();
-            Summary();
+            Buttons(selectedMode);
+
+            if (m_Tabs.ContainsKey(selectedMode))
+            {
+                GUILayout.BeginVertical(EditorStyles.helpBox);
+                m_Tabs[selectedMode].OnSummaryGUI();
+                GUILayout.EndVertical();
+            }
 
             lightingSettings.ApplyModifiedProperties();
         }
@@ -247,9 +262,24 @@ namespace UnityEditor
                 modeStringList.Add(Styles.modeStrings[(int)Mode.BakedLightmaps]);
             }
 
+            foreach (var pair in m_Tabs)
+            {
+                var customTab = pair.Value as LightingWindowTab;
+                if (customTab == null) continue;
+
+                int priority = customTab.priority < 0 ? m_Modes.Count : Mathf.Min(customTab.priority, m_Modes.Count);
+                m_Modes.Insert(priority, pair.Key);
+                modeStringList.Insert(priority, customTab.titleContent);
+            }
+
             Debug.Assert(m_Modes.Count == modeStringList.Count);
 
             m_ModeStrings = modeStringList.ToArray();
+        }
+
+        internal void SetToolbarDirty()
+        {
+            m_Modes = null;
         }
 
         void DrawHelpGUI()
@@ -295,6 +325,18 @@ namespace UnityEditor
             Unsupported.SmartReset(RenderSettings.GetRenderSettings());
         }
 
+        void DrawToolbarRange(int start, int end)
+        {
+            var strings = new GUIContent[end - start];
+            Array.Copy(m_ModeStrings, start, strings, 0, strings.Length);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            m_SelectedModeIndex = GUILayout.Toolbar(m_SelectedModeIndex - start, strings, Styles.buttonStyle, GUI.ToolbarButtonSize.FitToContents) + start;
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
+
         void DrawTopBarGUI(Mode selectedMode)
         {
             EditorGUILayout.Space();
@@ -307,16 +349,68 @@ namespace UnityEditor
 
             if (m_Modes.Count > 1)
             {
-                m_SelectedModeIndex = GUILayout.Toolbar(m_SelectedModeIndex, m_ModeStrings, Styles.buttonStyle, GUI.ToolbarButtonSize.FitToContents);
+                // Split the toolbar if it doesn't fit horizontally
+                bool requireSplit = false;
+                float width = position.width - 2 * 16;
+                for (int i = 0; i < m_ModeStrings.Length; i++)
+                {
+                    width -= Styles.buttonStyle.CalcSize(m_ModeStrings[i]).x;
+                    if (width <= 0)
+                    {
+                        requireSplit = true;
+                        break;
+                    }
+                }
+
+                if (requireSplit)
+                {
+                    // Simply split in two to avoid weird layouts
+                    int half = Mathf.CeilToInt(m_ModeStrings.Length / 2.0f);
+
+                    EditorGUILayout.BeginVertical();
+                    DrawToolbarRange(0, half);
+                    DrawToolbarRange(half, m_ModeStrings.Length);
+                    EditorGUILayout.EndVertical();
+                }
+                else
+                    m_SelectedModeIndex = GUILayout.Toolbar(m_SelectedModeIndex, m_ModeStrings, Styles.buttonStyle, GUI.ToolbarButtonSize.FitToContents);
             }
 
             GUILayout.FlexibleSpace();
 
-            DrawHelpGUI();
-            DrawSettingsGUI(selectedMode);
+            var customTab = m_Tabs[selectedMode] as LightingWindowTab;
+            if (customTab != null)
+                customTab.OnHeaderSettingsGUI();
+            else
+            {
+                DrawHelpGUI();
+                DrawSettingsGUI(selectedMode);
+            }
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
+        }
+
+        internal static void FocusTab(LightingWindowTab tab)
+        {
+            EditorApplication.update += WaitForWindow;
+            void WaitForWindow()
+            {
+                // Open window in case it's closed
+                var window = GetWindow<LightingWindow>(utility: false, title: null, focus: false);
+                if (window == null || window.m_Modes == null)
+                    return;
+
+                EditorApplication.update -= WaitForWindow;
+
+                // Select active tab
+                var newMode = (Mode)tab.GetType().Name.GetHashCode();
+                if (window.m_Modes.Contains(newMode))
+                {
+                    window.m_SelectedModeIndex = window.m_Modes.IndexOf(newMode);
+                    window.Repaint();
+                }
+            }
         }
 
         void BakeDropDownCallback(object data)
@@ -347,7 +441,7 @@ namespace UnityEditor
             return false;
         }
 
-        void Buttons()
+        void Buttons(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             {
@@ -394,7 +488,10 @@ namespace UnityEditor
                     bool showBakeButton = iterative || !Lightmapping.isRunning;
                     if (showBakeButton)
                     {
-                        if (EditorGUI.ButtonWithDropdownList(Styles.buildLabel, Styles.BakeModeStrings, BakeDropDownCallback, GUILayout.Width(170)))
+                        var customTab = m_Tabs[selectedMode] as LightingWindowTab;
+                        if (customTab != null)
+                            customTab.OnBakeButtonGUI();
+                        else if (EditorGUI.ButtonWithDropdownList(Styles.buildLabel, Styles.BakeModeStrings, BakeDropDownCallback, GUILayout.Width(170)))
                         {
                             DoBake();
 
@@ -440,10 +537,8 @@ namespace UnityEditor
             Lightmapping.BakeAllReflectionProbesSnapshots();
         }
 
-        void Summary()
+        internal static void Summary()
         {
-            GUILayout.BeginVertical(EditorStyles.helpBox);
-
             long totalMemorySize = 0;
             int lightmapCount = 0;
             Dictionary<Vector2, int> sizes = new Dictionary<Vector2, int>();
@@ -613,8 +708,6 @@ namespace UnityEditor
             string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
             if (deviceName.Length > 0)
                 GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
-            GUILayout.EndVertical();
-
             GUILayout.EndVertical();
         }
 

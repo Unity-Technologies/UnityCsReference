@@ -26,6 +26,8 @@ namespace UnityEngine.UIElements
             UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
             UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
             UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
+            UxmlStringAttributeDescription m_PlaceholderText = new UxmlStringAttributeDescription { name = "placeholder-text" };
+            UxmlBoolAttributeDescription m_HidePlaceholderOnFocus = new UxmlBoolAttributeDescription { name = "hide-placeholder-on-focus" };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
             UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
 
@@ -45,6 +47,8 @@ namespace UnityEngine.UIElements
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
+                field.placeholderText = m_PlaceholderText.GetValueFromBag(bag, cc);
+                field.hidePlaceholderOnFocus = m_HidePlaceholderOnFocus.GetValueFromBag(bag, cc);
                 if (!string.IsNullOrEmpty(maskCharacter))
                 {
                     field.maskChar = maskCharacter[0];
@@ -86,6 +90,12 @@ namespace UnityEngine.UIElements
         /// USS class name of multiline input elements in elements of this type.
         /// </summary>
         public static readonly string multilineInputUssClassName = inputUssClassName + "--multiline";
+
+        /// <summary>
+        /// USS class name of input elements when placeholder text is shown
+        /// </summary>
+        public static readonly string placeholderUssClassName = inputUssClassName + "--placeholder";
+
         /// <summary>
         /// USS class name of multiline input elements with no scroll view.
         /// </summary>
@@ -275,6 +285,24 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// DO NOT USE placeholderText, use textEdition.placeholder instead. This property was added so it can be picked up properly by the UI Builder.
+        /// </summary>
+        internal string placeholderText
+        {
+            get => textEdition.placeholder;
+            set => textEdition.placeholder = value;
+        }
+
+        /// <summary>
+        /// DO NOT USE hidePlaceholderOnFocus, use textEdition.hidePlaceholderOnFocus instead. This property was added so it can be picked up properly by the UI Builder.
+        /// </summary>
+        internal bool hidePlaceholderOnFocus
+        {
+            get => textEdition.hidePlaceholderOnFocus;
+            set => textEdition.hidePlaceholderOnFocus = value;
+        }
+
+        /// <summary>
         /// Options for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
         /// </summary>
         public bool SetVerticalScrollerVisibility(ScrollerVisibility sv)
@@ -335,9 +363,10 @@ namespace UnityEngine.UIElements
             m_TextInputBase.maskChar = maskChar;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
+            textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
         }
 
-        private void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
+        void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
         {
             m_TextInputBase.OnInputCustomStyleResolved(e);
         }
@@ -377,10 +406,12 @@ namespace UnityEngine.UIElements
             //     and we restore it when we exit the control, to prevent coming in a semi-focused state from outside the control.
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
+                UpdatePlaceholderClassList();
                 delegatesFocus = false;
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
+                UpdatePlaceholderClassList();
                 delegatesFocus = true;
 
                 if (evt.leafTarget == this || evt.leafTarget == labelElement)
@@ -403,6 +434,24 @@ namespace UnityEngine.UIElements
                 visualInput?.RemoveFromClassList(mixedValueLabelUssClassName);
                 RemoveFromClassList(mixedValueLabelUssClassName);
             }
+        }
+
+        internal void OnPlaceholderChanged()
+        {
+            if (!string.IsNullOrEmpty(textEdition.placeholder))
+                RegisterCallback<ChangeEvent<TValueType>>(UpdatePlaceholderClassList);
+            else
+                UnregisterCallback<ChangeEvent<TValueType>>(UpdatePlaceholderClassList);
+
+            UpdatePlaceholderClassList();
+        }
+
+        internal void UpdatePlaceholderClassList(ChangeEvent<TValueType> evt = null)
+        {
+            if (textInputBase.textElement.showPlaceholderText)
+                visualInput.AddToClassList(placeholderUssClassName);
+            else
+                visualInput.RemoveFromClassList(placeholderUssClassName);
         }
 
         // UpdateValueFromText and UpdateTextFromValue are overriden by TextValueField and potentially other
@@ -657,6 +706,7 @@ namespace UnityEngine.UIElements
                 textEdition.UpdateValueFromText += UpdateValueFromText;
                 textEdition.UpdateTextFromValue += UpdateTextFromValue;
                 textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
+                textEdition.GetDefaultValueType = GetDefaultValueType;
 
                 AddToClassList(inputUssClassName);
                 name = TextField.textInputUssName;
@@ -775,6 +825,11 @@ namespace UnityEngine.UIElements
 
                 SetScrollViewMode();
                 SetMultilineContainerStyle();
+            }
+
+            private string GetDefaultValueType()
+            {
+                return default(TValueType) == null ? "" : default(TValueType).ToString();
             }
 
             internal virtual bool AcceptCharacter(char c)

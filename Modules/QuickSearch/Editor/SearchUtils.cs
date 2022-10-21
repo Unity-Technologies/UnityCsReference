@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 using UnityEditor.SceneManagement;
 
@@ -21,6 +22,7 @@ namespace UnityEditor.Search
     /// </summary>
     public static class SearchUtils
     {
+        private static readonly string[] k_Dots = { ".", "..", "..." };
         internal static readonly char[] KeywordsValueDelimiters = new[] { ':', '=', '<', '>', '!', '|' };
 
         /// <summary>
@@ -463,27 +465,7 @@ namespace UnityEditor.Search
             if (cacheProvider && s_GroupProviders.TryGetValue(groupId, out var groupProvider))
                 return groupProvider;
 
-            groupProvider = new SearchProvider($"_group_provider_{groupId}", groupId)
-            {
-                type = templateProvider.id,
-                priority = groupPriority,
-                isExplicitProvider = true,
-                actions = templateProvider.actions,
-                showDetails = templateProvider.showDetails,
-                showDetailsOptions = templateProvider.showDetailsOptions,
-                fetchDescription = templateProvider.fetchDescription,
-                fetchItems = templateProvider.fetchItems,
-                fetchLabel = templateProvider.fetchLabel,
-                fetchPreview = templateProvider.fetchPreview,
-                fetchThumbnail = templateProvider.fetchThumbnail,
-                startDrag = templateProvider.startDrag,
-                toObject = templateProvider.toObject,
-                trackSelection = templateProvider.trackSelection,
-                fetchColumns = templateProvider.fetchColumns,
-                toKey = templateProvider.toKey,
-                toType = templateProvider.toType,
-                fetchPropositions = templateProvider.fetchPropositions,
-            };
+            groupProvider = new SearchProvider($"_group_provider_{groupId}", groupId, templateProvider, groupPriority);
 
             if (cacheProvider)
                 s_GroupProviders[groupId] = groupProvider;
@@ -993,9 +975,10 @@ namespace UnityEditor.Search
             Utils.CallDelayed(() => ColumnSelector.AddColumns(columnsAddedHandler, columns, mousePosition, activeColumnIndex));
         }
 
+        [Obsolete("IMGUI support has been removed", error: false)] // 2023.1
         public static EditorWindow ShowColumnEditor(IMGUI.Controls.MultiColumnHeaderState.Column column, Action<IMGUI.Controls.MultiColumnHeaderState.Column> editHandler)
         {
-            return ColumnEditor.ShowWindow(column, editHandler);
+            throw new NotSupportedException("Search IMGUI support has been removed");
         }
 
         public static bool TryParse<T>(string expression, out T result)
@@ -1056,6 +1039,149 @@ namespace UnityEditor.Search
         public static void FrameAssetFromPath(string path)
         {
             Utils.FrameAssetFromPath(path);
+        }
+
+        internal static void OpenPreferences()
+        {
+            SettingsService.OpenUserPreferences(SearchSettings.settingsPreferencesKey);
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchOpenPreferences);
+        }
+
+        internal static IEnumerable<SearchProvider> GetMergedProviders(IEnumerable<SearchProvider> initialProviders, IEnumerable<string> providerIds)
+        {
+            var providers = SearchService.GetProviders(providerIds);
+            if (initialProviders == null)
+                return providers;
+
+            return initialProviders.Concat(providers).Distinct();
+        }
+
+        internal static bool SearchViewSyncEnabled(string groupId)
+        {
+            switch (groupId)
+            {
+                case "asset":
+                    return UnityEditor.SearchService.ProjectSearch.HasEngineOverride();
+                case "scene":
+                    return UnityEditor.SearchService.SceneSearch.HasEngineOverride();
+                default:
+                    return false;
+            }
+        }
+
+        internal static string FormatStatusMessage(SearchContext context, int totalCount)
+        {
+            var providers = context.providers.ToList();
+            if (providers.Count == 0)
+                return L10n.Tr("There is no activated search provider");
+
+            var msg = "Searching ";
+            if (providers.Count > 1)
+                msg += Utils.FormatProviderList(providers.Where(p => !p.isExplicitProvider), showFetchTime: !context.searchInProgress);
+            else
+                msg += Utils.FormatProviderList(providers);
+
+            if (totalCount > 0)
+            {
+                msg += $" and found <b>{totalCount}</b> result";
+                if (totalCount > 1)
+                    msg += "s";
+                if (!context.searchInProgress)
+                {
+                    if (context.searchElapsedTime > 1.0)
+                        msg += $" in {PrintTime(context.searchElapsedTime)}";
+                }
+                else
+                    msg += " so far";
+            }
+            else if (!string.IsNullOrEmpty(context.searchQuery))
+            {
+                if (!context.searchInProgress)
+                    msg += " and found nothing";
+            }
+
+            if (context.searchInProgress)
+                msg += k_Dots[(int)EditorApplication.timeSinceStartup % k_Dots.Length];
+
+            return msg;
+        }
+
+        private static string PrintTime(double timeMs)
+        {
+            if (timeMs >= 1000)
+                return $"{Math.Round(timeMs / 1000.0)} seconds";
+            return $"{Math.Round(timeMs)} ms";
+        }
+
+        internal static void SetupColumns(SearchContext context, SearchExpression expression)
+        {
+            if (context.searchView == null || context.searchView.displayMode != DisplayMode.Table)
+                return;
+
+            if (expression.evaluator.name == nameof(Evaluators.Select))
+            {
+                var selectors = expression.parameters.Skip(1).Where(e => Evaluators.IsSelectorLiteral(e));
+                var tableViewFields = new List<SearchField>(selectors.Select(s => new SearchField(s.innerText.ToString(), s.alias.ToString())));
+                context.searchView.SetupColumns(tableViewFields);
+            }
+        }
+
+        internal static Texture2D GetIconFromDisplayMode(DisplayMode displayMode)
+        {
+            switch (displayMode)
+            {
+                case DisplayMode.Grid:
+                    return EditorGUIUtility.LoadIconRequired("GridView");
+                case DisplayMode.Table:
+                    return EditorGUIUtility.LoadIconRequired("TableView");
+                default:
+                    return EditorGUIUtility.LoadIconRequired("ListView");
+            }
+        }
+
+        internal static DisplayMode GetDisplayModeFromItemSize(float itemSize)
+        {
+            if (itemSize <= (int)DisplayMode.List)
+                return DisplayMode.List;
+
+            if (itemSize >= (int)DisplayMode.Table)
+                return DisplayMode.Table;
+
+            return DisplayMode.Grid;
+        }
+
+        internal static ISearchView OpenWithContextualProvider(params string[] providerIds)
+        {
+            return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
+        }
+
+        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null)
+        {
+            var providers = SearchService.GetProviders(providerIds).ToArray();
+            if (providers.Length != providerIds.Length)
+                Debug.LogWarning($"Cannot find one of these search providers {string.Join(", ", providerIds)}");
+
+            if (providers.Length == 0)
+                return SearchWindow.OpenDefaultQuickSearch();
+
+            var context = SearchService.CreateContext(providers, searchQuery, flags);
+            topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
+            var qsWindow = SearchWindow.Create<SearchWindow>(context, topic);
+
+            var evt = SearchAnalytics.GenericEvent.Create(qsWindow.state.sessionId, SearchAnalytics.GenericEventType.QuickSearchOpen, "Contextual");
+            evt.message = providers[0].id;
+            if (providers.Length > 1)
+                evt.description = providers[1].id;
+            if (providers.Length > 2)
+                evt.description = providers[2].id;
+            if (providers.Length > 3)
+                evt.stringPayload1 = providers[3].id;
+            if (providers.Length > 4)
+                evt.stringPayload1 = providers[4].id;
+
+            SearchAnalytics.SendEvent(evt);
+
+            return qsWindow.ShowWindow();
         }
     }
 }

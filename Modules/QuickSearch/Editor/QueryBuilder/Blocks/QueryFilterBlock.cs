@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -27,14 +28,8 @@ namespace UnityEditor.Search
     {
         public static readonly string[] ops = new[] { "=", "<", "<=", ">=", ">" };
 
-        static class InPlaceStyles
-        {
-            public static readonly GUIStyle objectField = Utils.FromUSS("quick-search-builder-in-place-objectfield");
-            public static readonly GUIStyle objectFieldButton = Utils.FromUSS("quick-search-builder-in-place-objectfield-button");
-            public static readonly Color toggleTint = new Color(1, 1, 1, 0.6f);
-        }
+        private VisualElement m_InPlaceEditorElement;
 
-        private int m_InPlaceEditorId;
         public string id { get; private set; }
         public object formatValue { get; set; }
         public string formatParam { get; set; }
@@ -111,7 +106,7 @@ namespace UnityEditor.Search
                 else if (searchProposition.type?.IsEnum == true)
                 {
                     SetEnumType(searchProposition.type);
-                    source.Apply();
+                    ApplyChanges();
                 }
             }
         }
@@ -130,7 +125,9 @@ namespace UnityEditor.Search
 
         internal override IBlockEditor OpenEditor(in Rect rect)
         {
-            var screenRect = new Rect(rect.position + context.searchView.position.position, rect.size);
+            var screenRect = new Rect((parent != null ? worldBound.position : rect.position) + context.searchView.position.position, rect.size);
+            if (parent != null)
+                screenRect.y -= screenRect.height;
             switch (format)
             {
                 case QueryBlockFormat.Expression: return QueryExpressionBlockEditor.Open(screenRect, this);
@@ -140,7 +137,6 @@ namespace UnityEditor.Search
                 case QueryBlockFormat.Vector4: return QueryVectorBlockEditor.Open(screenRect, this, 4);
                 case QueryBlockFormat.Enum: return QuerySelector.Open(rect, this);
                 case QueryBlockFormat.Color:
-                    GUIUtility.keyboardControl = m_InPlaceEditorId;
                     Color c = Color.black;
                     if (formatValue is Color fc)
                         c = fc;
@@ -189,58 +185,129 @@ namespace UnityEditor.Search
             }
         }
 
-        internal override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override void CreateBlockElement(VisualElement container)
         {
-            if (!HasInPlaceEditor())
-                return base.Layout(at, availableSpace);
+            AddLabel(container, name);
 
-            var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name);
-            var editorWidth = GetInPlaceEditorWidth();
-            var blockWidth = nameContent.width + editorWidth + labelStyle.margin.horizontal * 2f + blockExtraPadding;
-            return GetRect(at, blockWidth, blockHeight);
-        }
+            if (string.Equals(op, ">=", StringComparison.Ordinal))
+                AddLabel(container, "\u2265");
+            else if (string.Equals(op, "<=", StringComparison.Ordinal))
+                AddLabel(container, "\u2264");
+            else if (string.Equals(op, ">", StringComparison.Ordinal))
+                AddLabel(container, "\u003E");
+            else if (string.Equals(op, "<", StringComparison.Ordinal))
+                AddLabel(container, "\u003C");
+            else if (!HasInPlaceEditor())
+                AddSeparator(container);
 
-        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
-        {
             if (!HasInPlaceEditor())
             {
-                base.Draw(blockRect, mousePosition);
-                return;
+                AddLabel(container, formatValue?.ToString() ?? value);
+                AddOpenEditorArrow(container);
             }
-
-            var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name);
-
-            if (Event.current.type == EventType.Repaint)
-                DrawBackground(blockRect, mousePosition);
-
-            var nameRect = DrawName(blockRect, mousePosition, nameContent);
-            EditorGUI.BeginChangeCheck();
-            var newValue = DrawInPlaceEditor(nameRect, blockRect, mousePosition);
-            if (EditorGUI.EndChangeCheck())
-                SetValue(newValue);
-
-            if (Event.current.type == EventType.Repaint)
-                DrawBorders(blockRect, mousePosition);
+            else
+            {
+                if (m_InPlaceEditorElement != null)
+                    UpdateInPlaceEditorValue();
+                else
+                    m_InPlaceEditorElement = CreateInPlaceEditorElement();
+                if (m_InPlaceEditorElement != null)
+                    container.Add(m_InPlaceEditorElement);
+            }
         }
 
-        internal override Rect DrawSeparator(in Rect at)
+        private VisualElement CreateInPlaceEditorElement()
         {
-            var sepRect = new Rect(at.xMax, at.yMin + 1f, 1f, Mathf.Ceil(at.height - 1f));
-            var opRect = new Rect(at.xMax - 6f, at.yMin - 1f, 11f, Mathf.Ceil(at.height - 1f));
-            if (string.Equals(op, ">=", StringComparison.Ordinal))
-                Styles.QueryBuilder.label.Draw(opRect, "\u2265", false, false, false, false);
-            else if (string.Equals(op, "<=", StringComparison.Ordinal))
-                Styles.QueryBuilder.label.Draw(opRect, "\u2264", false, false, false, false);
-            else if (string.Equals(op, ">", StringComparison.Ordinal))
-                Styles.QueryBuilder.label.Draw(opRect, "\u003E", false, false, false, false);
-            else if (string.Equals(op, "<", StringComparison.Ordinal))
-                Styles.QueryBuilder.label.Draw(opRect, "\u003C", false, false, false, false);
-            else
-                return base.DrawSeparator(at);
+            switch (format)
+            {
+                case QueryBlockFormat.Text:
+                    var textField = new TextField() { value = Convert.ToString(formatValue) };
+                    textField.RegisterCallback<ChangeEvent<string>>(evt => SetValue(evt.newValue));
+                    return textField;
 
-            return sepRect;
+                case QueryBlockFormat.Object:
+                    var objectFieldType = formatType ?? typeof(UnityEngine.Object);
+                    var allowSceneObjects = typeof(Component).IsAssignableFrom(objectFieldType) || typeof(GameObject).IsAssignableFrom(objectFieldType);
+                    var objField = new UIElements.ObjectField()
+                    {
+                        allowSceneObjects = allowSceneObjects,
+                        objectType = objectFieldType,
+                        value = formatValue as UnityEngine.Object
+                    };
+                    objField.RegisterCallback<ChangeEvent<UnityEngine.Object>>(evt => SetValue(evt.newValue));
+                    return objField;
+
+                case QueryBlockFormat.Color:
+                    Color c = Color.black;
+                    if (formatValue is Color fc)
+                        c = fc;
+                    var colorField = new UIElements.ColorField() { value = c, showAlpha = true, showEyeDropper = false };
+                    colorField.RegisterCallback<ChangeEvent<Color>>(evt => SetValue(evt.newValue));
+                    return colorField;
+
+                case QueryBlockFormat.Toggle:
+                    var b = false;
+                    if (formatValue is bool fb)
+                        b = fb;
+                    var toggle = new Toggle() { value = b };
+                    toggle.RegisterCallback<ChangeEvent<bool>>(evt => SetValue(evt.newValue));
+                    return toggle;
+
+                 case QueryBlockFormat.Expression:
+                    var expressionContainer = new VisualElement();
+                    foreach (var bh in builder.EnumerateBlocks())
+                        expressionContainer.Add(bh.CreateGUI());
+                    return expressionContainer;
+
+                default:
+                    Debug.LogError($"Cannot create GUI for {GetType().Name} with {format}");
+                    break;
+            }
+
+            return null;
+        }
+
+        private void UpdateInPlaceEditorValue()
+        {
+            switch (format)
+            {
+                case QueryBlockFormat.Text:
+                    if (m_InPlaceEditorElement is TextField tf && Convert.ToString(formatValue) is string v && !string.Equals(v, tf.value, StringComparison.Ordinal))
+                        tf.SetValueWithoutNotify(v);
+                    break;
+                case QueryBlockFormat.Object:
+                    if (m_InPlaceEditorElement is UIElements.ObjectField objField && (formatValue as UnityEngine.Object) != objField.value)
+                        objField.SetValueWithoutNotify(formatValue as UnityEngine.Object);
+                    break;
+
+                case QueryBlockFormat.Color:
+                    Color c = Color.black;
+                    if (formatValue is Color fc)
+                        c = fc;
+                    if (m_InPlaceEditorElement is UIElements.ColorField colorField && c != colorField.value)
+                        colorField.SetValueWithoutNotify(c);
+                    break;
+
+                case QueryBlockFormat.Toggle:
+
+                    var b = false;
+                    if (formatValue is bool fb)
+                        b = fb;
+                    if (m_InPlaceEditorElement is Toggle toggleField && b != toggleField.value)
+                        toggleField.SetValueWithoutNotify(b);
+                    break;
+
+                  case QueryBlockFormat.Expression:
+                      // For expressions, the formatValue is the builder, so recreate the blocks in the container.
+                      var expressionContainer = m_InPlaceEditorElement;
+                      expressionContainer.Clear();
+                      foreach (var bh in builder.EnumerateBlocks())
+                          expressionContainer.Add(bh.CreateGUI());
+                      break;
+
+                default:
+                    throw new NotImplementedException($"Failed to update GUI value ({this}) for {GetType().Name} with {format}");
+            }
         }
 
         internal override Color GetBackgroundColor()
@@ -504,7 +571,7 @@ namespace UnityEditor.Search
             {
                 formatValue = ExpressionBlock.Create(value);
             }
-            source.Repaint();
+            ApplyChanges();
         }
 
         private bool HasInPlaceEditor()
@@ -520,66 +587,6 @@ namespace UnityEditor.Search
             }
 
             return false;
-        }
-
-        private float GetInPlaceEditorWidth()
-        {
-            switch (format)
-            {
-                case QueryBlockFormat.Text:
-                case QueryBlockFormat.Object:
-                    return Mathf.Min(Mathf.Max(80f, Styles.QueryBuilder.label.CalcSize(Utils.GUIContentTemp(Convert.ToString(formatValue))).x), 200f);
-                case QueryBlockFormat.Color: return 20f;
-                case QueryBlockFormat.Toggle: return 4f;
-                case QueryBlockFormat.Expression: return ExpressionBlock.Layout(builder, 10000f);
-            }
-
-            return 0f;
-        }
-
-        private object DrawInPlaceEditor(in Rect at, in Rect blockRect, in Vector2 mousePosition)
-        {
-            var x = at.xMax - 4f;
-            switch (format)
-            {
-                case QueryBlockFormat.Text:
-                    var editorRect = new Rect(x, blockRect.y + 1f, blockRect.width - (x - blockRect.xMin) - 6f, blockRect.height - 2f);
-                    var newText = EditorGUI.TextField(editorRect, Convert.ToString(formatValue));
-                    m_InPlaceEditorId = EditorGUIUtility.s_LastControlID;
-                    return newText;
-                case QueryBlockFormat.Object:
-                    var objectFieldType = formatType ?? typeof(UnityEngine.Object);
-                    var allowSceneObjects = typeof(Component).IsAssignableFrom(objectFieldType) || typeof(GameObject).IsAssignableFrom(objectFieldType);
-                    editorRect = new Rect(x, blockRect.y + 1f, blockRect.width - (x - blockRect.xMin) - 6f, blockRect.height - 2f);
-                    var newObject = EditorGUI.ObjectField(editorRect, formatValue as UnityEngine.Object, objectFieldType, allowSceneObjects: allowSceneObjects, InPlaceStyles.objectField, InPlaceStyles.objectFieldButton);
-                    m_InPlaceEditorId = EditorGUIUtility.s_LastControlID;
-                    return newObject;
-                case QueryBlockFormat.Color:
-                    Color c = Color.black;
-                    if (formatValue is Color fc)
-                        c = fc;
-                    editorRect = new Rect(x, blockRect.y + 2f, blockRect.width - (x - blockRect.xMin) - 8f, blockRect.height - 4f);
-                    c = EditorGUI.ColorField(editorRect, c, showEyedropper: false, showAlpha: true);
-                    m_InPlaceEditorId = EditorGUIUtility.s_LastControlID;
-                    return c;
-                case QueryBlockFormat.Toggle:
-                    var b = false;
-                    if (formatValue is bool fb)
-                        b = fb;
-                    editorRect = new Rect(x, blockRect.y + 2f, blockRect.width - (x - blockRect.xMin) - 8f, blockRect.height - 4f);
-                    var oldColor = GUI.color;
-                    GUI.color = InPlaceStyles.toggleTint;
-                    var value = EditorGUI.Toggle(editorRect, b, EditorStyles.toggle);
-                    GUI.color = oldColor;
-                    return value;
-
-                case QueryBlockFormat.Expression:
-                    ExpressionBlock.Draw(x, blockRect, builder);
-                    DrawArrow(blockRect, mousePosition, editor != null ? QueryContent.UpArrow : QueryContent.DownArrow);
-                    return builder;
-            }
-
-            return null;
         }
 
         public void SetValue(object value)
@@ -617,22 +624,24 @@ namespace UnityEditor.Search
             {
                 this.value = formatValue?.ToString() ?? string.Empty;
             }
-            source.Apply();
+            ApplyChanges();
         }
 
         void IQueryExpressionBlock.CloseEditor()
         {
-            throw new NotImplementedException();
+            editor = null;
         }
 
         void IQueryExpressionBlock.ApplyExpression(string searchText)
         {
-            throw new NotImplementedException();
+            builder.searchText = searchText;
+            builder.Build();
+            ApplyChanges();
         }
 
-        void IQueryExpressionBlock.DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrayContent)
+        void IQueryExpressionBlock.ApplyChanges()
         {
-            throw new NotImplementedException();
+            ApplyChanges();
         }
     }
 }

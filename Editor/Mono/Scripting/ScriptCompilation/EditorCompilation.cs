@@ -965,6 +965,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 additionalCompilationArguments.Add("/nowarn:0169");
                 additionalCompilationArguments.Add("/nowarn:0649");
+                additionalCompilationArguments.Add("/nowarn:0282");
 
                 // The msbuild tool disables warnings 1701 and 1702 by default, so Unity should do the same.
                 additionalCompilationArguments.Add("/nowarn:1701");

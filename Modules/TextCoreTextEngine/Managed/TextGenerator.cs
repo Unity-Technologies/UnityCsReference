@@ -51,6 +51,7 @@ namespace UnityEngine.TextCore.Text
         public bool extraPadding;
         public bool parseControlCharacters = true;
         public bool isOrthographic = true;
+        public bool isPlaceholder = false;
         public bool tagNoParsing = false;
 
         public float characterSpacing;
@@ -106,7 +107,8 @@ namespace UnityEngine.TextCore.Text
                 uvLineOffset.Equals(other.uvLineOffset) &&
                 geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
                 charWidthMaxAdj.Equals(other.charWidthMaxAdj) && textWrappingMode == other.textWrappingMode &&
-                isOrthographic.Equals(other.isOrthographic);
+                isOrthographic.Equals(other.isOrthographic) &&
+                isPlaceholder.Equals(other.isPlaceholder);
         }
 
         public override bool Equals(object obj)
@@ -167,6 +169,7 @@ namespace UnityEngine.TextCore.Text
                 hashCode = (hashCode * 397) ^ charWidthMaxAdj.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textWrappingMode;
                 hashCode = (hashCode * 397) ^ isOrthographic.GetHashCode();
+                hashCode = (hashCode * 397) ^ isPlaceholder.GetHashCode();
                 return hashCode;
             }
         }
@@ -219,6 +222,7 @@ namespace UnityEngine.TextCore.Text
             extraPadding = other.extraPadding;
             parseControlCharacters = other.parseControlCharacters;
             isOrthographic = other.isOrthographic;
+            isPlaceholder = other.isPlaceholder;
 
             characterSpacing = other.characterSpacing;
             wordSpacing = other.wordSpacing;

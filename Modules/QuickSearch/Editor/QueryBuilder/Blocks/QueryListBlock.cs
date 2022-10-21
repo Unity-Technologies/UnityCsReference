@@ -5,16 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
     public abstract class QueryListBlock : QueryBlock
     {
-        const float iconSize = 16f;
-
         public readonly string id;
         public readonly string category;
         protected string label;
@@ -61,7 +59,7 @@ namespace UnityEditor.Search
         public override void Apply(in SearchProposition searchProposition)
         {
             value = searchProposition.data?.ToString() ?? searchProposition.replacement;
-            source.Apply();
+            ApplyChanges();
         }
 
         internal override Color GetBackgroundColor()
@@ -81,46 +79,17 @@ namespace UnityEditor.Search
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
-        internal override Rect Layout(in Vector2 at, in float availableSpace)
-        {
-            if (!icon || alwaysDrawLabel)
-                return base.Layout(at, availableSpace);
-
-            var labelStyle = Styles.QueryBuilder.label;
-            var valueContent = labelStyle.CreateContent(label ?? value);
-            var blockWidth = iconSize + valueContent.width + labelStyle.margin.horizontal + blockExtraPadding + (@readonly ? 0 : QueryContent.DownArrow.width);
-            return GetRect(at, blockWidth, blockHeight);
-        }
-
-        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void CreateBlockElement(VisualElement container)
         {
             if (!icon || alwaysDrawLabel)
             {
-                base.Draw(blockRect, mousePosition);
+                base.CreateBlockElement(container);
                 return;
             }
 
-            var labelStyle = Styles.QueryBuilder.label;
-            var valueContent = labelStyle.CreateContent(label ?? value);
-
-            DrawBackground(blockRect, mousePosition);
-
-            var backgroundTextureRect = new Rect(blockRect.x + 1f, blockRect.y + 1f, 24f, blockRect.height - 2f);
-            var iconBackgroundRadius = new Vector4(borderRadius, 0, 0, editor != null ? 0 : borderRadius);
-            var backgroundTextureRect2 = backgroundTextureRect;
-            if (selected)
-                backgroundTextureRect2.xMin -= 1f;
-            GUI.DrawTexture(backgroundTextureRect2, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, QueryColors.textureBackgroundColor, Vector4.zero, iconBackgroundRadius);
-
-            var valueRect = backgroundTextureRect;
-            var textureRect = backgroundTextureRect;
-            textureRect.x += 5f; textureRect.y += 1f; textureRect.width = iconSize; textureRect.height = iconSize;
-            GUI.DrawTexture(textureRect, icon, ScaleMode.ScaleToFit, true);
-
-            valueRect.x -= 4f;
-            DrawValue(valueRect, blockRect, mousePosition, valueContent);
-
-            DrawBorders(blockRect, mousePosition);
+            AddIcon(container, icon);
+            AddLabel(container, label ?? value);
+            AddOpenEditorArrow(container);
         }
 
         public override string ToString()
@@ -273,7 +242,7 @@ namespace UnityEditor.Search
             if (searchProposition.data is Type t)
             {
                 SetType(t);
-                source.Apply();
+                ApplyChanges();
             }
         }
 
@@ -431,7 +400,7 @@ namespace UnityEditor.Search
             : base(source, id, value, attr)
         {
             icon = Utils.LoadIcon("Filter Icon");
-            alwaysDrawLabel = true;
+            alwaysDrawLabel = false;
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -443,6 +412,7 @@ namespace UnityEditor.Search
             yield return CreateProposition(flags, "Hidden", "hidden", "Search hierarchically hidden objects");
             yield return CreateProposition(flags, "Static", "static", "Search static objects");
             yield return CreateProposition(flags, "Prefab", "prefab", "Search prefab objects");
+            yield return CreateProposition(flags, "Main", "main", "Search main asset representation");
         }
     }
 }

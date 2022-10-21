@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -12,6 +13,8 @@ namespace UnityEditor.Search
     {
         internal override bool wantsEvents => true;
         internal override bool draggable => false;
+
+        static GUIContent createContent = EditorGUIUtility.IconContent("Toolbar Plus More", "|Add new query block (Tab)");
 
         public override string ToString() => null;
         internal override IBlockEditor OpenEditor(in Rect rect) => AddBlock(rect);
@@ -22,15 +25,22 @@ namespace UnityEditor.Search
             hideMenu = true;
         }
 
-        internal override Rect Layout(in Vector2 at, in float availableSpace)
+        internal override Color GetBackgroundColor()
         {
-            return GetRect(at, 20f, 20f);
+            return Color.clear;
         }
 
-        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void UpdateBackgroundColor(bool hovered = false)
         {
-            if (EditorGUI.DropdownButton(blockRect, Styles.QueryBuilder.createContent, FocusType.Passive, Styles.dropdownItem))
-                AddBlock(blockRect);
+            if (hovered)
+                style.backgroundColor = QueryColors.backgroundHoverTint;
+            else
+                style.backgroundColor = GetBackgroundColor();
+        }
+
+        internal override void CreateBlockElement(VisualElement container)
+        {
+            AddImageButton(container, createContent.image, createContent.tooltip, evt => AddBlock(container.worldBound));
         }
 
         private IBlockEditor AddBlock(in Rect buttonRect)
@@ -62,26 +72,5 @@ namespace UnityEditor.Search
                     .Concat(QueryAndOrBlock.BuiltInQueryBuilderPropositions()).OrderBy(p => p);
             }
         }
-    }
-
-    class QueryInsertBlock : IBlockSource
-    {
-        private readonly IBlockSource insertAfter;
-        private readonly IBlockSource insertWith;
-
-        public QueryInsertBlock(IBlockSource insertAfter, IBlockSource insertWith)
-        {
-            this.insertAfter = insertAfter;
-            this.insertWith = insertWith;
-        }
-
-        public string name => insertAfter.name;
-        public string editorTitle => insertAfter.editorTitle;
-        public SearchContext context => insertAfter.context;
-        public bool formatNames => insertAfter.formatNames;
-
-        public IEnumerable<SearchProposition> FetchPropositions() => insertWith.FetchPropositions();
-        public void Apply(in SearchProposition searchProposition) => insertWith.Apply(searchProposition);
-        public void CloseEditor() => insertAfter.CloseEditor();
     }
 }

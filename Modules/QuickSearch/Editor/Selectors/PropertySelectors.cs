@@ -5,7 +5,9 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -87,9 +89,9 @@ namespace UnityEditor.Search
 
             using (var view = SearchMonitor.GetView())
             {
-                var unresolvedPropertyPath = $"{obj.GetType().Name}.{propertyPath}";
-                var propertyPathRecordKey = PropertyDatabase.CreateRecordKey(obj.GetType().Name, unresolvedPropertyPath);
-                if (view.TryLoadAlias(propertyPathRecordKey, out var resolvedPropertyPath))
+                var documentKey = SearchUtils.GetDocumentKey(obj);
+                var recordKey = PropertyDatabase.CreateRecordKey(documentKey, PropertyDatabase.CreatePropertyHash($"{obj.GetType().Name}.{propertyPath}"));
+                if (view.TryLoadAlias(recordKey, out var resolvedPropertyPath))
                 {
                     if (string.IsNullOrEmpty(resolvedPropertyPath))
                     {
@@ -105,7 +107,7 @@ namespace UnityEditor.Search
                 property = so.FindProperty($"m_{propertyPath}");
                 if (property != null)
                 {
-                    view.StoreAlias(propertyPathRecordKey, property.propertyPath);
+                    view.StoreAlias(recordKey, property.propertyPath);
                     return property;
                 }
 
@@ -116,13 +118,13 @@ namespace UnityEditor.Search
                     if (property.name.EndsWith(propertyPath, StringComparison.OrdinalIgnoreCase) ||
                         (property.name.Contains(" ") && property.name.Replace(" ", "").EndsWith(propertyPath, StringComparison.OrdinalIgnoreCase)))
                     {
-                        view.StoreAlias(propertyPathRecordKey, property.propertyPath);
+                        view.StoreAlias(recordKey, property.propertyPath);
                         return property;
                     }
                     next = property.NextVisible(property.hasChildren);
                 }
 
-                view.StoreAlias(propertyPathRecordKey, string.Empty);
+                view.StoreAlias(recordKey, string.Empty);
                 so?.Dispose();
                 so = null;
                 return null;
@@ -215,7 +217,7 @@ namespace UnityEditor.Search
                             selector: "#" + p.propertyPath,
                             provider: p.propertyType.ToString(),
                             content: new GUIContent(Utils.TrimText(p.displayName, 31), iconType, p.tooltip));
-                        Styles.itemLabel.CalcMinMaxWidth(column.content, out column.width, out _);
+                        ItemSelectors.Styles.itemLabel.CalcMinMaxWidth(column.content, out column.width, out _);
                         if (p.hasVisibleChildren)
                             column.width = Mathf.Min(220, column.width);
                         columns.Add(column);
@@ -234,65 +236,60 @@ namespace UnityEditor.Search
         [SearchColumnProvider("Color")]
         public static void InitializeColorColumn(SearchColumn column)
         {
-            column.drawer = args =>
+            column.cellCreator = col => new ColorField()
+            {
+                showAlpha = true,
+                hdr = false,
+                showEyeDropper = false,
+                pickingMode = PickingMode.Ignore
+            };
+            column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
             {
                 if (args.value is Color c)
-                    return EditorGUI.ColorField(args.rect, GUIContent.none, c, showEyedropper: false, showAlpha: true, hdr: false);
-                return args.value;
+                {
+                    var color = (ColorField)ve;
+                    color.value = c;
+                }
+                else if (args.value is MaterialProperty mp)
+                {
+                    var color = (ColorField)ve;
+                    color.value = mp.colorValue;
+                }
             };
         }
 
         [SearchColumnProvider("Texture2D")]
         public static void InitializeTextureColumn(SearchColumn column)
         {
-            column.drawer = args =>
+            column.cellCreator = (col) => new Image()
             {
-                if (args.value is Texture t)
-                    GUI.DrawTexture(args.rect, t, ScaleMode.ScaleToFit);
-                return args.value;
+                style =
+                {
+                    backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit),
+                    backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit),
+                    backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleToFit),
+                    backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleToFit)
+                }
             };
-        }
-
-        static void DrawObjectField(Rect rect, UnityEngine.Object obj)
-        {
-            var mouseInRect = rect.Contains(Event.current.mousePosition);
-            if (Event.current.type == EventType.Repaint)
+            column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
             {
-                var temp = EditorGUIUtility.ObjectContent(obj, obj.GetType());
-                Styles.readOnlyObjectField.Draw(rect, temp, -1, false, mouseInRect);
-            }
-            else if (Event.current.type == EventType.MouseDown && mouseInRect)
-            {
-                Utils.SelectObject(obj, ping: true);
-                Event.current.Use();
-            }
-        }
-
-        internal static object DrawObjectReference(Rect rect, object value)
-        {
-            if (value is UnityEngine.Object obj)
-            {
-                DrawObjectField(rect, obj);
-            }
-            else if (value is string s && GlobalObjectId.TryParse(s, out var gid))
-            {
-                obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
-                if (obj)
-                    DrawObjectField(rect, obj);
-            }
-
-            return value?.ToString();
-        }
-
-        static object DrawObjectReference(SearchColumnEventArgs args)
-        {
-            return DrawObjectReference(args.rect, args.value);
+                var img = (Image)ve;
+                img.image = args.value as Texture;
+            };
         }
 
         [SearchColumnProvider("ObjectReference")]
         public static void InitializeObjectReferenceColumn(SearchColumn column)
         {
-            column.drawer = DrawObjectReference;
+            column.cellCreator = (col) => new UIElements.ObjectField() { objectType = col.GetMatchingType() };
+            column.binder = (SearchColumnEventArgs args, VisualElement ve) =>
+            {
+                var field = (UIElements.ObjectField)ve;
+                field.pickingMode = PickingMode.Ignore;
+                field.objectType = args.value?.GetType() ?? typeof(UnityEngine.Object);
+                field.value = args.value as UnityEngine.Object;
+                field.Query<VisualElement>(className: "unity-object-field__selector").ForEach(e => e.style.display = DisplayStyle.None);
+            };
         }
 
         [SearchColumnProvider("ObjectPath")]
@@ -317,13 +314,42 @@ namespace UnityEditor.Search
 
         static class SerializedPropertyColumnProvider
         {
-            [SearchColumnProvider("Experimental/SerializedProperty")]
+            [SearchColumnProvider("SerializedProperty")]
             public static void InitializeSerializedPropertyColumn(SearchColumn column)
             {
                 column.getter = args => Getter(args.item, args.column);
                 column.setter = args => Setter(args.item, args.column, args.value, args.multiple);
-                column.drawer = args => Drawer(args.rect, args.value);
                 column.comparer = args => Comparer(args.lhs.value, args.rhs.value, args.sortAscending);
+
+                column.cellCreator = args => MakePropertyField(args);
+                column.binder = (args, ve) => BindPropertyField(args, ve);
+            }
+
+            private static VisualElement MakePropertyField(SearchColumn args)
+            {
+                return new PropertyField() { label = string.Empty };
+            }
+
+            private static void BindPropertyField(SearchColumnEventArgs args, VisualElement ve)
+            {
+                if (ve is not PropertyField f)
+                    throw new SearchColumnBindException(args.column, "Rebuild table");
+
+                f.Unbind();
+                if (args.value is SerializedProperty p)
+                {
+                    f.visible = true;
+                    if (p.propertyType == SerializedPropertyType.Integer || p.propertyType == SerializedPropertyType.Float)
+                        f.label = "\u2022";
+                    else
+                        f.label = string.Empty;
+                    f.BindProperty(p);
+                }
+                else
+                {
+                    f.visible = false;
+                    f.Unbind();
+                }
             }
 
             static class DefaultDelegates
@@ -386,73 +412,27 @@ namespace UnityEditor.Search
                     return string.CompareOrdinal(lhs.objectReferenceValue?.name, rhs.objectReferenceValue?.name);
                 }
 
-                public static object DrawCheckboxHandler(Rect r, SerializedProperty prop)
+                internal static int CompareStringHandler(SerializedProperty lhs, SerializedProperty rhs)
                 {
-                    var off = Math.Max(0.0f, (r.width / 2) - 8);
-                    r.x += off;
-                    r.width -= off;
-
-                    EditorGUI.PropertyField(r, prop, GUIContent.none);
-
-                    return prop;
-                }
-
-                public static object DrawQuaternionHandler(Rect r, SerializedProperty prop)
-                {
-                    var eulerAngles = new Vector3();
-
-                    EditorGUI.BeginChangeCheck();
-
-                    for (int i = 0; i < 3; i++)
-                        eulerAngles[i] = float.Parse(prop.quaternionValue.eulerAngles[i].ToString("F7"));
-
-                    var newValue = EditorGUI.Vector3Field(r, "", eulerAngles);
-
-                    if (EditorGUI.EndChangeCheck())
-                        prop.quaternionValue = Quaternion.Euler(newValue);
-
-                    return prop;
-                }
-
-                public static object DrawDefaultHandler(Rect r, SerializedProperty prop)
-                {
-                    var fieldContent = Utils.GUIContentTemp(string.Empty);
-                    using (new PropertyFieldSettingsScope(prop.propertyType, fieldContent))
-                        EditorGUI.PropertyField(r, prop, fieldContent);
-
-                    return prop;
-                }
-
-                readonly struct PropertyFieldSettingsScope : IDisposable
-                {
-                    readonly bool prevWideMode;
-                    readonly float prevLabelWidth;
-
-                    public PropertyFieldSettingsScope(SerializedPropertyType type, GUIContent fieldContent)
-                    {
-                        prevWideMode = EditorGUIUtility.wideMode;
-                        prevLabelWidth = EditorGUIUtility.labelWidth;
-
-                        if (type == SerializedPropertyType.Float)
-                        {
-                            fieldContent.text = "\u2022";
-                            EditorGUIUtility.wideMode = false;
-                            EditorGUIUtility.labelWidth = 10f;
-                        }
-                    }
-
-                    public void Dispose()
-                    {
-                        EditorGUIUtility.wideMode = prevWideMode;
-                        EditorGUIUtility.labelWidth = prevLabelWidth;
-                    }
+                    return string.CompareOrdinal(lhs.stringValue, rhs.stringValue);
                 }
             }
 
             public static object Getter(SearchItem item, SearchColumn column)
             {
                 var p = GetSerializedProperty(item, column, out var _);
-                return p;
+
+                if (column.drawer != null || column.binder != null)
+                {
+                    if (p != null)
+                        p.isExpanded = true;
+                    return p;
+                }
+
+                if (p == null)
+                    return null;
+
+                return GetSerializedPropertyValue(p);
             }
 
             public static void Setter(SearchItem item, SearchColumn column, object newValue, bool multiple)
@@ -478,51 +458,32 @@ namespace UnityEditor.Search
                 }
             }
 
-            public static object Drawer(Rect r, object prop)
-            {
-                if (!(prop is SerializedProperty sp))
-                    return null;
-
-                switch (sp.propertyType)
-                {
-                    case SerializedPropertyType.Boolean: return DefaultDelegates.DrawCheckboxHandler(r, sp);
-                    case SerializedPropertyType.Quaternion: return DefaultDelegates.DrawQuaternionHandler(r, sp);
-                    default: return DefaultDelegates.DrawDefaultHandler(r, sp);
-                }
-            }
-
             public static int Comparer(object lhsObj, object rhsObj, bool sortAscending)
             {
-                if (lhsObj == null && rhsObj == null)
-                    return 0;
-
-                if (lhsObj == null && rhsObj != null)
-                    return sortAscending ? 1 : -1;
-
-                if (lhsObj != null && rhsObj == null)
-                    return sortAscending ? -1 : 1;
-
                 if (!(lhsObj is SerializedProperty lhsProp) ||
                     !(rhsObj is SerializedProperty rhsProp) ||
                     lhsProp.propertyType != rhsProp.propertyType)
                     return 0;
 
+                var sortOrder = sortAscending ? 1 : -1;
+
                 switch (lhsProp.propertyType)
                 {
-                    case SerializedPropertyType.Enum: return DefaultDelegates.CompareEnumHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Float: return DefaultDelegates.CompareFloatHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Integer: return DefaultDelegates.CompareIntHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Color: return DefaultDelegates.CompareColorHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Boolean: return DefaultDelegates.CompareCheckboxHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Vector2: return DefaultDelegates.CompareVector2Handler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Vector2Int: return DefaultDelegates.CompareVector2IntHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Vector3: return DefaultDelegates.CompareVector3Handler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Vector3Int: return DefaultDelegates.CompareVector3IntHandler(lhsProp, rhsProp);
-                    case SerializedPropertyType.Vector4: return DefaultDelegates.CompareVector4Handler(lhsProp, rhsProp);
-                    case SerializedPropertyType.ObjectReference: return DefaultDelegates.CompareReferencesHandler(lhsProp, rhsProp);
+                    case SerializedPropertyType.String: return DefaultDelegates.CompareStringHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Enum: return DefaultDelegates.CompareEnumHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Float: return DefaultDelegates.CompareFloatHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Integer: return DefaultDelegates.CompareIntHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Color: return DefaultDelegates.CompareColorHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Boolean: return DefaultDelegates.CompareCheckboxHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Vector2: return DefaultDelegates.CompareVector2Handler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Vector2Int: return DefaultDelegates.CompareVector2IntHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Vector3: return DefaultDelegates.CompareVector3Handler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Vector3Int: return DefaultDelegates.CompareVector3IntHandler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.Vector4: return DefaultDelegates.CompareVector4Handler(lhsProp, rhsProp) * sortOrder;
+                    case SerializedPropertyType.ObjectReference: return DefaultDelegates.CompareReferencesHandler(lhsProp, rhsProp) * sortOrder;
                 }
 
-                return lhsProp.GetHashCode().CompareTo(rhsProp.GetHashCode());
+                return lhsProp.GetHashCode().CompareTo(rhsProp.GetHashCode()) * sortOrder;
             }
         }
     }

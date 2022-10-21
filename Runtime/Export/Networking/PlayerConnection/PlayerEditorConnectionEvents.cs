@@ -12,8 +12,11 @@ namespace UnityEngine.Networking.PlayerConnection
     [Serializable]
     internal class PlayerEditorConnectionEvents
     {
+        public IReadOnlyList<MessageTypeSubscribers> messageTypeSubscribers => m_MessageTypeSubscribers;
         [SerializeField]
-        public List<MessageTypeSubscribers> messageTypeSubscribers = new List<MessageTypeSubscribers>();
+        private List<MessageTypeSubscribers> m_MessageTypeSubscribers = new List<MessageTypeSubscribers>();
+
+        private Dictionary<Guid, MessageTypeSubscribers> m_SubscriberLookup;
 
         [SerializeField]
         public ConnectionChangeEvent connectionEvent = new ConnectionChangeEvent();
@@ -50,10 +53,20 @@ namespace UnityEngine.Networking.PlayerConnection
             public MessageEvent messageCallback = new MessageEvent();
         }
 
+        private void BuildLookup()
+        {
+            if (m_SubscriberLookup == null)
+            {
+                m_SubscriberLookup = new Dictionary<Guid, MessageTypeSubscribers>();
+                foreach (var subscriber in messageTypeSubscribers)
+                    m_SubscriberLookup.Add(subscriber.MessageTypeId, subscriber);
+            }
+        }
+
         public void InvokeMessageIdSubscribers(Guid messageId, byte[] data, int playerId)
         {
-            IEnumerable<MessageTypeSubscribers> messageSubscribers = messageTypeSubscribers.Where(x => x.MessageTypeId == messageId);
-            if (!messageSubscribers.Any())
+            BuildLookup();
+            if (!m_SubscriberLookup.TryGetValue(messageId, out var eventSubscriber))
             {
                 Debug.LogError("No actions found for messageId: " + messageId);
                 return;
@@ -64,44 +77,47 @@ namespace UnityEngine.Networking.PlayerConnection
                 playerId = playerId,
                 data = data,
             };
-
-            foreach (var eventSubscriber in messageSubscribers)
-            {
-                eventSubscriber.messageCallback.Invoke(messageEventArg);
-            }
+            eventSubscriber.messageCallback.Invoke(messageEventArg);
         }
 
         public UnityEvent<MessageEventArgs> AddAndCreate(Guid messageId)
         {
-            var MessageTypeSubscriber = messageTypeSubscribers.SingleOrDefault(x => x.MessageTypeId == messageId);
-            if (MessageTypeSubscriber == null)
+            BuildLookup();
+            if (!m_SubscriberLookup.TryGetValue(messageId, out var eventSubscriber))
             {
-                MessageTypeSubscriber = new MessageTypeSubscribers
+                eventSubscriber = new MessageTypeSubscribers
                 {
                     MessageTypeId = messageId,
                     messageCallback = new MessageEvent()
                 };
-
-                messageTypeSubscribers.Add(MessageTypeSubscriber);
+                m_MessageTypeSubscribers.Add(eventSubscriber);
+                m_SubscriberLookup.Add(messageId, eventSubscriber);
             }
-            MessageTypeSubscriber.subscriberCount++;
-            return MessageTypeSubscriber.messageCallback;
+            eventSubscriber.subscriberCount += 1;
+            return eventSubscriber.messageCallback;
         }
 
         public void UnregisterManagedCallback(Guid messageId, UnityAction<MessageEventArgs> callback)
         {
-            var messageTypeSubscriber = messageTypeSubscribers.SingleOrDefault(x => x.MessageTypeId == messageId);
-
-            if (messageTypeSubscriber == null)
-            {
+            BuildLookup();
+            if (!m_SubscriberLookup.TryGetValue(messageId, out var eventSubscriber))
                 return;
-            }
-            messageTypeSubscriber.subscriberCount--;
-            messageTypeSubscriber.messageCallback.RemoveListener(callback);
-            if (messageTypeSubscriber.subscriberCount <= 0)
+            eventSubscriber.subscriberCount -= 1;
+            eventSubscriber.messageCallback.RemoveListener(callback);
+            if (eventSubscriber.subscriberCount <= 0)
             {
-                messageTypeSubscribers.Remove(messageTypeSubscriber);
+                m_MessageTypeSubscribers.Remove(eventSubscriber);
+                m_SubscriberLookup.Remove(messageId);
             }
+        }
+
+        public void Clear()
+        {
+            if (m_SubscriberLookup != null)
+            {
+                m_SubscriberLookup.Clear();
+            }
+            m_MessageTypeSubscribers.Clear();
         }
     }
 }

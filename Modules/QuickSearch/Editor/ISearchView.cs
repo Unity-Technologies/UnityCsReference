@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -16,6 +17,8 @@ namespace UnityEditor.Search
     {
         /// <summary>Unspecified ISearchView display mode</summary>
         None = 0,
+        /// <summary>Display as a list view in compact mode</summary>
+        Compact = 1,
         /// <summary>Display as a list view</summary>
         List = 32,
         /// <summary>Display as a Grid of icons of various size.</summary>
@@ -71,7 +74,13 @@ namespace UnityEditor.Search
         ItemsChanged = 1 << 3,
 
         // The current item group has changed.
-        GroupChanged = 1 << 4
+        GroupChanged = 1 << 4,
+
+        // A search query was initiated
+        QueryStarted = 1 << 5,
+
+        // A search query has completed
+        QueryCompleted = 1 << 6,
     }
 
     /// <summary>
@@ -95,6 +104,16 @@ namespace UnityEditor.Search
         SearchContext context { get; }
 
         /// <summary>
+        /// Returns the view state
+        /// </summary>
+        SearchViewState state {  get; }
+
+        /// <summary>
+        /// Current group of items being displayed if any.
+        /// </summary>
+        string currentGroup { get; set; }
+
+        /// <summary>
         /// Defines the size of items in the search view.
         /// </summary>
         float itemIconSize { get; set; }
@@ -113,6 +132,11 @@ namespace UnityEditor.Search
         /// Absolute coordinate of the search view
         /// </summary>
         Rect position { get; }
+
+        /// <summary>
+        /// Indicates if a search is still running
+        /// </summary>
+        bool searchInProgress { get; }
 
         /// <summary>
         /// Callback used to override the select behavior.
@@ -204,8 +228,36 @@ namespace UnityEditor.Search
         /// </summary>
         void SetColumns(IEnumerable<SearchColumn> columns);
 
-        internal bool IsPicker();
+        /// <summary>
+        /// Indicates if the current view is in picking mode or not.
+        /// </summary>
+        /// <returns></returns>
+        bool IsPicker();
 
-        internal int cursorIndex { get; }
+        internal int totalCount { get; }
+        internal bool syncSearch { get; set; }
+        internal SearchPreviewManager previewManager { get; }
+        internal IEnumerable<IGroup> EnumerateGroups();
+        internal void SetupColumns(IList<SearchField> fields);
+        internal IEnumerable<SearchQueryError> GetAllVisibleErrors();
+    }
+
+    interface ISearchQueryView
+    {
+        bool CanSaveQuery();
+        void SaveUserSearchQuery();
+        void SaveProjectSearchQuery();
+        void SaveActiveSearchQuery();
+        void ExecuteSearchQuery(ISearchQuery query);
+    }
+
+    interface ISearchField
+    {
+        int controlID { get; }
+        int cursorIndex { get; }
+        string text { get; }
+
+        void Focus();
+        VisualElement GetTextElement();
     }
 }

@@ -12,7 +12,7 @@ namespace UnityEditor.Search
     static class DefaultAdvancedObjectSelector
     {
         internal const string defaultAdvancedObjectSelectorId = "default_advanced_selector";
-        static QuickSearch s_Window;
+        static SearchWindow s_Window;
 
         [AdvancedObjectSelectorValidator(defaultAdvancedObjectSelectorId)]
         static bool CanOpenSelector(ObjectSelectorSearchContext context)
@@ -52,6 +52,21 @@ namespace UnityEditor.Search
                 yield return SearchService.GetProvider(BuiltInSceneObjectsProvider.type);
         }
 
+        static string BuildInitialQuery(in ObjectSelectorSearchContext selectContext)
+        {
+            var query = string.Empty;
+            var types = selectContext.requiredTypes.ToArray();
+            var typeNames = selectContext.requiredTypeNames.ToArray();
+            for (int i = 0; i < types.Length; ++i)
+            {
+                var name = types[i]?.Name ?? typeNames[i];
+                if (query.Length != 0)
+                    query += ' ';
+                query += $"t:{name}";
+            }
+            return query;
+        }
+
         static void SelectObject(in AdvancedObjectSelectorParameters parameters)
         {
             var selectContext = parameters.context;
@@ -59,7 +74,7 @@ namespace UnityEditor.Search
             if (Utils.IsRunningTests())
                 viewFlags |= SearchFlags.Dockable;
 
-            var searchQuery = string.Join(" ", selectContext.requiredTypeNames.Select(tn => tn == null ? "" : $"t:{tn.ToLowerInvariant()}"));
+            var searchQuery = BuildInitialQuery(selectContext);
             if (string.IsNullOrEmpty(searchQuery))
                 searchQuery = "";
             else
@@ -69,9 +84,10 @@ namespace UnityEditor.Search
             var viewState = new SearchViewState(
                 SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, viewFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
+            if (parameters.context.currentObject)
+                viewState.selectedIds = new int[] { parameters.context.currentObject.GetInstanceID()};
             viewState.context.runtimeContext = new RuntimeSearchContext() { searchEngineContext = selectContext, pickerType = SearchPickerType.AdvancedSearchPicker };
-
-            s_Window = SearchService.ShowPicker(viewState) as QuickSearch;
+            s_Window = SearchService.ShowPicker(viewState) as SearchWindow;
         }
 
         static void EndSession(in AdvancedObjectSelectorParameters parameters)

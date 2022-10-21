@@ -137,6 +137,7 @@ namespace UnityEngine.UIElements
         {
             // Prevent text from changing when the value change
             // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
+            UpdatePlaceholderClassList();
             m_UpdateTextFromValue = false;
             try
             {
@@ -204,7 +205,9 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt == null)
+            //if we want to show placeholder text then we must early out before UpdateValueFromText()
+            bool showPlaceholderText = string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(textEdition.placeholder);
+            if (evt == null || showPlaceholderText)
             {
                 return;
             }
@@ -328,6 +331,8 @@ namespace UnityEngine.UIElements
     public class TextValueFieldTraits<TValueType, TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
         where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
     {
+        UxmlStringAttributeDescription m_PlaceholderText = new UxmlStringAttributeDescription { name = "placeholder-text" };
+        UxmlBoolAttributeDescription m_HidePlaceholderOnFocus = new UxmlBoolAttributeDescription { name = "hide-placeholder-on-focus" };
         UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
         UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
 
@@ -343,6 +348,8 @@ namespace UnityEngine.UIElements
             var field = (TextInputBaseField<TValueType>)ve;
             if (field != null)
             {
+                field.textEdition.placeholder = m_PlaceholderText.GetValueFromBag(bag, cc);
+                field.textEdition.hidePlaceholderOnFocus = m_HidePlaceholderOnFocus.GetValueFromBag(bag, cc);
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
             }

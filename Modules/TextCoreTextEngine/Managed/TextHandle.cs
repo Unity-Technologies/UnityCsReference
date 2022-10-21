@@ -537,6 +537,11 @@ namespace UnityEngine.TextCore.Text
             return characterInfo.ascender - characterInfo.descender;
         }
 
+        public bool IsPlaceholder
+        {
+            get => textGenerationSettings.isPlaceholder;
+        }
+
         public bool IsElided()
         {
             if (textInfo == null)

@@ -26,6 +26,7 @@ namespace UnityEditor
 
         internal int m_DisplayIndex;
         internal bool m_IsFullscreenContainer;
+        internal bool m_IsForceTitleBar;
 
         internal bool m_DontSaveToLayout = false;
         private bool m_HasUnsavedChanges = false;
@@ -370,6 +371,11 @@ namespace UnityEditor
             }
 
             DestroyImmediate(this, true);
+        }
+
+        internal bool InternalIsForceTitleBar()
+        {
+            return m_IsForceTitleBar;
         }
 
         private static List<EditorWindow> FindUnsavedChanges(View view)

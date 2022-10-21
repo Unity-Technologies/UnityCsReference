@@ -35,6 +35,7 @@ namespace UnityEditor.Search
         }
 
         private static readonly ConcurrentQueue<Task> s_ExecutionQueue = new ConcurrentQueue<Task>();
+        private static readonly SearchEventManager s_SearchEventManager = new SearchEventManager();
 
         static Dispatcher()
         {
@@ -86,6 +87,46 @@ namespace UnityEditor.Search
         public static Action CallDelayed(EditorApplication.CallbackFunction callback, double seconds = 0)
         {
             return Utils.CallDelayed(callback, seconds);
+        }
+
+        internal static Action On(string eventName, SearchEventHandler handler)
+        {
+            return s_SearchEventManager.On(eventName, handler);
+        }
+
+        internal static Action On(string eventName, SearchEventHandler handler, int handlerHashCode)
+        {
+            return s_SearchEventManager.On(eventName, handler, handlerHashCode);
+        }
+
+        internal static Action OnOnce(string eventName, SearchEventHandler handler)
+        {
+            return s_SearchEventManager.OnOnce(eventName, handler);
+        }
+
+        internal static Action OnOnce(string eventName, SearchEventHandler handler, int handlerHashCode)
+        {
+            return s_SearchEventManager.OnOnce(eventName, handler, handlerHashCode);
+        }
+
+        internal static void Off(string eventName, SearchEventHandler handler)
+        {
+            s_SearchEventManager.Off(eventName, handler);
+        }
+
+        internal static void Off(string eventName, int handlerHashCode)
+        {
+            s_SearchEventManager.Off(eventName, handlerHashCode);
+        }
+
+        internal static void Emit(string eventName, SearchEventPayload payload)
+        {
+            s_SearchEventManager.Emit(eventName, payload);
+        }
+
+        internal static void Emit(string eventName, SearchEventPayload payload, SearchEventResultHandler onResolved)
+        {
+            s_SearchEventManager.Emit(eventName, payload, onResolved);
         }
     }
 }

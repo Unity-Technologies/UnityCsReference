@@ -697,8 +697,9 @@ namespace UnityEditor.Search
                 try
                 {
                     NotifyFileStoreAboutToChange();
-                    File.Copy(filePathToSwap, filePath, true);
-                    File.Delete(filePathToSwap);
+
+                    RetriableOperation<IOException>.Execute(() => File.Copy(filePathToSwap, filePath, true));
+                    RetriableOperation<IOException>.Execute(() => File.Delete(filePathToSwap));
                 }
                 finally
                 {
@@ -1022,6 +1023,14 @@ namespace UnityEditor.Search
             {
                 if (!File.Exists(path))
                     return;
+                RetriableOperation<IOException>.Execute(() => OpenFileStreamInner(path), 10, TimeSpan.FromMilliseconds(100));
+            }
+        }
+
+        void OpenFileStreamInner(string path)
+        {
+            using (LockRead())
+            {
                 m_Fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
                 m_Br = new BinaryReader(m_Fs, Encoding.UTF8, true);
                 m_Bw = new BinaryWriter(m_Fs, Encoding.UTF8, true);

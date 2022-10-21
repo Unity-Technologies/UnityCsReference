@@ -462,7 +462,13 @@ namespace UnityEditor.Search.Providers
                     purchasePackageIds.Add(purchaseInfo.packageId.ToString());
                 }
 
+                s_RequestCheckPurchases = false;
                 done?.Invoke();
+            }, () =>
+            {
+                startRequest.Stop();
+                s_StartPurchaseRequest = false;
+                s_RequestCheckPurchases = true;
             });
         }
 
@@ -713,7 +719,7 @@ namespace UnityEditor.Search.Providers
             });
         }
 
-        static void GetAllPurchases(Action<List<PurchaseInfo>, string> done)
+        static void GetAllPurchases(Action<List<PurchaseInfo>, string> done, Action cancel)
         {
             GetUserInfo((userInfo, userInfoError) =>
             {
@@ -722,12 +728,25 @@ namespace UnityEditor.Search.Providers
                     done(null, userInfoError);
                     return;
                 }
+
+                if (s_TokenInfo == null)
+                {
+                    cancel();
+                    return;
+                }
+
                 const int kLimit = 50;
                 RequestPurchases(s_TokenInfo.access_token, (purchases, errPurchases) =>
                 {
                     if (errPurchases != null)
                     {
                         done(null, errPurchases);
+                        return;
+                    }
+
+                    if (s_TokenInfo == null)
+                    {
+                        cancel();
                         return;
                     }
 
@@ -885,7 +904,7 @@ namespace UnityEditor.Search.Providers
         {
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchOpen, "SearchAssetStore");
             var storeContext = SearchService.CreateContext(SearchService.GetProvider(k_ProviderId));
-            var qs = QuickSearch.Create(storeContext, topic: "asset store");
+            var qs = SearchWindow.Create(storeContext, topic: "asset store");
             qs.itemIconSize = (int)DisplayMode.Grid;
             qs.SetSearchText(string.Empty);
             qs.ShowWindow();

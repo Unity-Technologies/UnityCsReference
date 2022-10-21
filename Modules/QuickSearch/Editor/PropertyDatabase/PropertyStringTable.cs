@@ -262,12 +262,7 @@ namespace UnityEditor.Search
             m_Disposed = false;
             m_DelayedSync = delayedSync;
 
-            using (LockRead())
-            {
-                m_Fs = File.Open(stringTable.filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
-                m_Br = new BinaryReader(m_Fs, PropertyStringTable.encoding, true);
-                m_Bw = new BinaryWriter(m_Fs, PropertyStringTable.encoding, true);
-            }
+            RetriableOperation<IOException>.Execute(() => InitFileStream(stringTable.filePath), 10, TimeSpan.FromMilliseconds(100));
             stringTable.RegisterStringTableChangedHandler(HandleStringTableChanged);
 
             m_Header = ReadHeader();
@@ -277,6 +272,16 @@ namespace UnityEditor.Search
                 {
                     Clear();
                 }
+            }
+        }
+
+        void InitFileStream(string filePath)
+        {
+            using (LockRead())
+            {
+                m_Fs = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+                m_Br = new BinaryReader(m_Fs, PropertyStringTable.encoding, true);
+                m_Bw = new BinaryWriter(m_Fs, PropertyStringTable.encoding, true);
             }
         }
 

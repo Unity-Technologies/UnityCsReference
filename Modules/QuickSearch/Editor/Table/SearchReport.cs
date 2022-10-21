@@ -233,11 +233,11 @@ namespace UnityEditor.Search
             return ri;
         }
 
-        internal IEnumerable<SearchItem> CreateSearchItems(SearchProvider provider)
+        internal IEnumerable<SearchItem> CreateSearchItems(SearchContext context, SearchProvider provider)
         {
             foreach (var item in items)
             {
-                var newItem = provider.CreateItem(Guid.NewGuid().ToString("N"));
+                var newItem = provider.CreateItem(context, Guid.NewGuid().ToString("N"));
                 for (int i = 0; i < item.fields.Length; ++i)
                     newItem.SetField(item.fields[i].name, item.fields[i].value.TryConvert());
                 yield return newItem;

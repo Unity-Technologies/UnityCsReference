@@ -14,6 +14,16 @@ namespace UnityEditor.Search
         public EditorWindow window => this;
         public B block { get; protected set; }
 
+        static class Styles
+        {
+            public static readonly GUIStyle panelBorder = new GUIStyle("grey_border")
+            {
+                name = "quick-search-border",
+                padding = new RectOffset(1, 1, 1, 1),
+                margin = new RectOffset(0, 0, 0, 0)
+            };
+        }
+
         protected abstract T Draw();
         protected virtual void Apply(in T value)
         {
@@ -22,7 +32,7 @@ namespace UnityEditor.Search
                 filterBlock.formatValue = value;
                 filterBlock.UpdateName();
             }
-            block.source.Apply();
+            block.ApplyChanges();
         }
 
         public void OnGUI()

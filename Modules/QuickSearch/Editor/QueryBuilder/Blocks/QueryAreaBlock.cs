@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -35,7 +34,7 @@ namespace UnityEditor.Search
         {
             if (searchProposition.data is SearchProvider provider)
                 Apply(provider.name, provider.filterId);
-            source.Apply();
+            ApplyChanges();
         }
 
         private void Apply(in string providerName, in string filterId)

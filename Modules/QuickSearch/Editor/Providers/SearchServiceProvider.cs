@@ -70,7 +70,7 @@ namespace UnityEditor.Search
 
         internal static SearchItem CreateItem(string id, string label, string description, object value)
         {
-            var newItem = s_Provider.CreateItem(id, 0, label, description, null, null);
+            var newItem = s_Provider.CreateItem(s_Provider.defaultContext, id, 0, label, description, null, null);
             newItem.value = value;
             return newItem;
         }
@@ -78,6 +78,7 @@ namespace UnityEditor.Search
         internal static UnityEngine.Object ToObject(SearchItem item, Type type)
         {
             var selectItemObject = (item.data as SearchServiceItem) ?? ScriptableObject.CreateInstance<SearchServiceItem>();
+            selectItemObject.hideFlags |= HideFlags.DontSaveInEditor;
             selectItemObject.name = item.label ?? item.value.ToString();
             selectItemObject.item = item;
             if (item.data == null)

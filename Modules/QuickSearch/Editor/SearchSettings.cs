@@ -157,6 +157,18 @@ namespace UnityEditor.Search
 
         internal static int[] expandedQueries { get; set; }
 
+        internal static bool wantsMore
+        {
+            get => defaultFlags.HasAny(SearchFlags.WantsMore);
+            set
+            {
+                if (value)
+                    defaultFlags |= SearchFlags.WantsMore;
+                else
+                    defaultFlags &= ~SearchFlags.WantsMore;
+            }
+        }
+
         // User editor pref
         internal static float itemIconSize { get; set; } = (float)DisplayMode.List;
 
@@ -198,7 +210,7 @@ namespace UnityEditor.Search
 
         private static void Load()
         {
-            if (!File.Exists(projectLocalSettingsPath))
+            if (Application.HasARGV("cleanTestPrefs") || !File.Exists(projectLocalSettingsPath))
             {
                 if (!Directory.Exists("UserSettings/"))
                     Directory.CreateDirectory("UserSettings/");
@@ -279,7 +291,10 @@ namespace UnityEditor.Search
 
             };
 
-            SJSON.Save(settings, projectLocalSettingsPath);
+            RetriableOperation<IOException>.Execute(() =>
+            {
+                SJSON.Save(settings, projectLocalSettingsPath);
+            }, 5, TimeSpan.FromMilliseconds(10));
             SaveFavorites();
 
             EditorPrefs.SetFloat(k_ItemIconSizePrefKey, itemIconSize);
@@ -443,16 +458,6 @@ namespace UnityEditor.Search
             }
         }
 
-        static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
-        {
-            var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
-            var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
-            var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
-            orderedSearchEngines.AddRange(overrides);
-            return orderedSearchEngines;
-        }
-
-
         static void DrawAdvancedObjectSelectorsSettings()
         {
             using (new EditorGUILayout.VerticalScope())
@@ -572,6 +577,16 @@ namespace UnityEditor.Search
                 break;
             }
         }
+
+        static List<UnityEditor.SearchService.ISearchEngineBase> OrderSearchEngines(IEnumerable<UnityEditor.SearchService.ISearchEngineBase> engines)
+        {
+            var defaultEngine = engines.First(engine => engine is UnityEditor.SearchService.LegacySearchEngineBase);
+            var overrides = engines.Where(engine => !(engine is UnityEditor.SearchService.LegacySearchEngineBase));
+            var orderedSearchEngines = new List<UnityEditor.SearchService.ISearchEngineBase> { defaultEngine };
+            orderedSearchEngines.AddRange(overrides);
+            return orderedSearchEngines;
+        }
+
 
         internal static bool TryGetObjectSelectorSettings(string selectorId, out ObjectSelectorsSettings settings)
         {
@@ -989,12 +1004,14 @@ namespace UnityEditor.Search
         public static void AddItemFavorite(SearchItem item)
         {
             searchItemFavorites.Add(item.id);
+            Dispatcher.Emit(SearchEvent.ItemFavoriteStateChanged, new SearchEventPayload(item.context, item.id));
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAddFavoriteItem, item.provider.id);
         }
 
         public static void RemoveItemFavorite(SearchItem item)
         {
             searchItemFavorites.Remove(item.id);
+            Dispatcher.Emit(SearchEvent.ItemFavoriteStateChanged, new SearchEventPayload(item.context, item.id));
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchRemoveFavoriteItem, item.provider.id);
         }
 

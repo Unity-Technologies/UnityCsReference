@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+// #define USE_SEARCH_CONTEXT_VALIDATOR
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using UnityEngine;
 using UnityEditor.SearchService;
 using Object = UnityEngine.Object;
+
 
 namespace UnityEditor.Search
 {
@@ -110,20 +112,286 @@ namespace UnityEditor.Search
     /// The search context encapsulate all the states necessary to perform a query. It allows the full
     /// customization of how a query would be performed.
     /// </summary>
-    [DebuggerDisplay("{m_SearchText}")]
-    public class SearchContext : IDisposable
+    [Serializable]
+    public class SearchContext : IDisposable, ISerializationCallbackReceiver
     {
         private static volatile int s_NextSessionId = 0;
         private static readonly string[] k_Empty = new string[0];
 
-        internal int sessionId;
-        private string m_SearchText = "";
         private string m_CachedPhrase;
         private bool m_Disposed = false;
-        private readonly List<SearchProvider> m_Providers;
+        private QueryMarker[] m_Markers;
+
+
         private readonly List<SearchQueryError> m_QueryErrors = new List<SearchQueryError>();
 
         internal RuntimeSearchContext runtimeContext { get; set; }
+
+        [SerializeField] internal int sessionId;
+        [SerializeField] private string m_SearchText = "";
+        [SerializeField] private SearchFlags m_Flags;
+
+        [NonSerialized] private List<SearchProvider> m_Providers;
+
+        // Fields only used for serialization
+        [SerializeField] private string[] providerIds;
+        [SerializeField] private List<SearchProvider> m_SerializedProviders;
+        [SerializeField] private int m_SerializedSearchViewInstanceID;
+        [SerializeField] private string m_SerializedFilterType;
+
+        /// <summary>
+        /// Progress handle to set the search current progress.
+        /// </summary>
+        public int progressId { get; set; } = -1;
+
+        /// <summary>
+        /// Processed search query (no filterId, no textFilters)
+        /// </summary>
+        public string searchQuery { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Original search query with all markers
+        /// </summary>
+        internal string rawSearchQuery { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Keep a trace of all parsed query markers in the searchText
+        /// </summary>
+        internal QueryMarker[] markers => m_Markers;
+
+        /// <summary>
+        /// Character offset of the processed search query in the raw search text.
+        /// </summary>
+        public int searchQueryOffset { get; private set; } = 0;
+
+        /// <summary>
+        /// Search query tokenized by words. All text filters are discarded and all words are lower cased.
+        /// </summary>
+        public string[] searchWords { get; private set; } = k_Empty;
+
+        /// <summary>
+        /// Returns a phrase that contains only words separated by spaces
+        /// </summary>
+        public string searchPhrase
+        {
+            get
+            {
+                CheckDisposed();
+                if (m_CachedPhrase == null && searchWords.Length > 0)
+                    m_CachedPhrase = string.Join(" ", searchWords).Trim();
+                return m_CachedPhrase ?? string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// All tokens containing a colon (':')
+        /// </summary>
+        public string[] textFilters { get; private set; } = k_Empty;
+
+        /// <summary>
+        /// Editor window that initiated the search.
+        /// </summary>
+        [Obsolete("This property will be removed in the next version.", error: false)] // 2023.1
+        public EditorWindow focusedWindow => searchView as EditorWindow;
+
+        /// <summary>
+        /// Search context options
+        /// </summary>
+        public SearchFlags options { get => m_Flags; set => m_Flags = value; }
+
+        /// <summary>
+        /// Indicates if the search should return results as many as possible.
+        /// </summary>
+        public bool wantsMore
+        {
+            get
+            {
+                return (options & SearchFlags.WantsMore) == SearchFlags.WantsMore;
+            }
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.WantsMore;
+                else
+                    options &= ~SearchFlags.WantsMore;
+            }
+        }
+
+        internal bool showPackages
+        {
+            get => (options & SearchFlags.Packages) == SearchFlags.Packages;
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.Packages;
+                else
+                    options &= ~SearchFlags.Packages;
+            }
+        }
+
+        internal bool noIndexing
+        {
+            get => (options & SearchFlags.NoIndexing) == SearchFlags.NoIndexing;
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.NoIndexing;
+                else
+                    options &= ~SearchFlags.NoIndexing;
+            }
+        }
+
+        internal bool debug
+        {
+            get => (options & SearchFlags.Debug) == SearchFlags.Debug;
+
+            set
+            {
+                if (value)
+                    options |= SearchFlags.Debug;
+                else
+                    options &= ~SearchFlags.Debug;
+            }
+        }
+
+        public bool empty => string.IsNullOrEmpty(m_SearchText);
+
+        /// <summary>
+        /// Raw search text (i.e. what is in the search text box)
+        /// </summary>
+        public string searchText
+        {
+            get => m_SearchText;
+
+            set
+            {
+                if (m_SearchText.Equals(value))
+                    return;
+                SetSearchText(value);
+            }
+        }
+
+        /// <summary>
+        /// Which Providers are active for this particular context.
+        /// </summary>
+        public IEnumerable<SearchProvider> providers
+        {
+            get
+            {
+                CheckDisposed();
+                if (filterId != null)
+                    return m_Providers.Where(p => p.filterId == filterId);
+
+                if (m_Providers.Count == 1)
+                    return m_Providers;
+
+                return m_Providers.Where(p => !p.isExplicitProvider);
+            }
+        }
+
+        /// <summary>
+        /// Returns the time it took to evaluate the last query in milliseconds.
+        /// </summary>
+        internal double searchElapsedTime => TimeSpan.FromTicks(searchFinishTime - searchStartTime).TotalMilliseconds;
+        internal long searchStartTime { get; set; } = 0;
+        internal long searchFinishTime { get; set; } = 0;
+
+        /// <summary>
+        /// Indicates that the search results should be filter for this type.
+        /// </summary>
+        internal Type filterType { get; set; }
+
+        /// <summary>
+        /// An instance of MultiProviderAsyncSearchSession holding all the async search sessions associated with this search context.
+        /// </summary>
+        internal MultiProviderAsyncSearchSession sessions { get; } = new MultiProviderAsyncSearchSession();
+
+        /// <summary>
+        /// The user data field can be used to store private data when running a custom query.
+        /// </summary>
+        internal object userData { get; set; }
+
+        /// <summary>
+        /// Indicates if an asynchronous search is currently in progress for this context.
+        /// </summary>
+        public bool searchInProgress => sessions.searchInProgress;
+
+        /// <summary>
+        /// Return the search result selection if any.
+        /// </summary>
+        public SearchSelection selection => searchView?.selection;
+
+        /// <summary>
+        /// Search view holding and presenting the search results.
+        /// </summary>
+        public ISearchView searchView { get; internal set; }
+
+        /// <summary>
+        /// Explicit filter id. Usually it is the first search token like h:, p: to do an explicit search for a given provider.
+        /// Can be null
+        /// </summary>
+        public string filterId { get; private set; }
+
+        /// <summary>
+        /// This event is used to receive any async search result.
+        /// </summary>
+        public event Action<SearchContext, IEnumerable<SearchItem>> asyncItemReceived
+        {
+            add
+            {
+                CheckDisposed();
+                lock (this)
+                    sessions.asyncItemReceived += value;
+            }
+            remove
+            {
+                lock (this)
+                    sessions.asyncItemReceived -= value;
+            }
+        }
+
+        /// <summary>
+        /// Invoked when a Search is started.
+        /// </summary>
+        public event Action<SearchContext> sessionStarted
+        {
+            add
+            {
+                CheckDisposed();
+                lock (this)
+                    sessions.sessionStarted += value;
+            }
+            remove
+            {
+                lock (this)
+                    sessions.sessionStarted -= value;
+            }
+        }
+
+        /// <summary>
+        /// Invoked when a Search has ended.
+        /// </summary>
+        public event Action<SearchContext> sessionEnded
+        {
+            add
+            {
+                CheckDisposed();
+                lock (this)
+                    sessions.sessionEnded += value;
+            }
+            remove
+            {
+                lock (this)
+                    sessions.sessionEnded -= value;
+            }
+        }
+
+        internal SearchContext()
+        {
+        }
 
         /// <summary>
         /// This special constructor is used to create dummy context for default providers.
@@ -201,12 +469,6 @@ namespace UnityEditor.Search
             Dispose(false);
         }
 
-        [Obsolete("ResetFilter has been deprecated and there is no replacement.", error: true)]
-        public void ResetFilter(bool enableAll)
-        {
-            throw new NotSupportedException();
-        }
-
         /// <summary>
         /// Enable or disable a single provider.
         /// A disabled provider won't be ask to provider items to resolve the query.
@@ -215,6 +477,7 @@ namespace UnityEditor.Search
         /// <param name="isEnabled">If true, enable the provider to perform query.</param>
         public void SetFilter(string providerId, bool isEnabled)
         {
+            CheckDisposed();
             var provider = m_Providers.FirstOrDefault(p => p.id == providerId);
             if (!isEnabled && provider != null)
             {
@@ -235,6 +498,7 @@ namespace UnityEditor.Search
         /// <returns></returns>
         public bool IsEnabled(string providerId)
         {
+            CheckDisposed();
             return m_Providers.Any(p => p.id == providerId);
         }
 
@@ -247,141 +511,9 @@ namespace UnityEditor.Search
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// Progress handle to set the search current progress.
-        /// </summary>
-        public int progressId { get; set; } = -1;
-
-        /// <summary>
-        /// Processed search query (no filterId, no textFilters)
-        /// </summary>
-        public string searchQuery { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Original search query with all markers
-        /// </summary>
-        internal string rawSearchQuery { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Keep a trace of all parsed query markers in the searchText
-        /// </summary>
-        internal QueryMarker[] markers;
-
-        /// <summary>
-        /// Character offset of the processed search query in the raw search text.
-        /// </summary>
-        public int searchQueryOffset { get; private set; } = 0;
-
-        /// <summary>
-        /// Search query tokenized by words. All text filters are discarded and all words are lower cased.
-        /// </summary>
-        public string[] searchWords { get; private set; } = k_Empty;
-
-        /// <summary>
-        /// Returns a phrase that contains only words separated by spaces
-        /// </summary>
-        public string searchPhrase
-        {
-            get
-            {
-                if (m_CachedPhrase == null && searchWords.Length > 0)
-                    m_CachedPhrase = string.Join(" ", searchWords).Trim();
-                return m_CachedPhrase ?? string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// All tokens containing a colon (':')
-        /// </summary>
-        public string[] textFilters { get; private set; } = k_Empty;
-
-        /// <summary>
-        /// Editor window that initiated the search.
-        /// </summary>
-        public EditorWindow focusedWindow { get; internal set; }
-
-        /// <summary>
-        /// Search context options
-        /// </summary>
-        public SearchFlags options { get; set; }
-
-        /// <summary>
-        /// Indicates if the search should return results as many as possible.
-        /// </summary>
-        public bool wantsMore
-        {
-            get
-            {
-                return (options & SearchFlags.WantsMore) == SearchFlags.WantsMore;
-            }
-
-            set
-            {
-                if (value)
-                    options |= SearchFlags.WantsMore;
-                else
-                    options &= ~SearchFlags.WantsMore;
-            }
-        }
-
-        internal bool showPackages
-        {
-            get => (options & SearchFlags.Packages) == SearchFlags.Packages;
-
-            set
-            {
-                if (value)
-                    options |= SearchFlags.Packages;
-                else
-                    options &= ~SearchFlags.Packages;
-            }
-        }
-
-        internal bool noIndexing
-        {
-            get => (options & SearchFlags.NoIndexing) == SearchFlags.NoIndexing;
-
-            set
-            {
-                if (value)
-                    options |= SearchFlags.NoIndexing;
-                else
-                    options &= ~SearchFlags.NoIndexing;
-            }
-        }
-
-        internal bool debug
-        {
-            get => (options & SearchFlags.Debug) == SearchFlags.Debug;
-
-            set
-            {
-                if (value)
-                    options |= SearchFlags.Debug;
-                else
-                    options &= ~SearchFlags.Debug;
-            }
-        }
-
-        public bool empty => string.IsNullOrEmpty(m_SearchText);
-
-        /// <summary>
-        /// Raw search text (i.e. what is in the search text box)
-        /// </summary>
-        public string searchText
-        {
-            get => m_SearchText;
-
-            set
-            {
-                if (m_SearchText.Equals(value))
-                    return;
-                SetSearchText(value);
-            }
-        }
-
         private void SetSearchText(string value)
         {
+            CheckDisposed();
             m_SearchText = value ?? string.Empty;
 
             // Reset a few values
@@ -390,7 +522,7 @@ namespace UnityEditor.Search
 
             searchQueryOffset = 0;
             rawSearchQuery = SearchUtils.ParseSearchText(searchText, m_Providers, out var filteredProvider);
-            searchQuery = QueryMarker.ReplaceMarkersWithRawValues(rawSearchQuery, out markers);
+            searchQuery = QueryMarker.ReplaceMarkersWithRawValues(rawSearchQuery, out m_Markers);
             if (filteredProvider != null)
                 filterId = filteredProvider.filterId;
 
@@ -404,40 +536,27 @@ namespace UnityEditor.Search
             textFilters = tokens.Where(t => t.IndexOf(':') != -1).ToArray();
         }
 
-        /// <summary>
-        /// Which Providers are active for this particular context.
-        /// </summary>
-        public IEnumerable<SearchProvider> providers
-        {
-            get
-            {
-                if (filterId != null)
-                    return m_Providers.Where(p => p.filterId == filterId);
-
-                if (m_Providers.Count == 1)
-                    return m_Providers;
-
-                return m_Providers.Where(p => !p.isExplicitProvider);
-            }
-        }
-
         internal IList<SearchProvider> GetProviders()
         {
+            CheckDisposed();
             return m_Providers;
         }
 
         internal void AddProvider(SearchProvider provider)
         {
+            CheckDisposed();
             UpdateProviders(() => m_Providers.Add(provider));
         }
 
         internal void RemoveProvider(SearchProvider provider)
         {
+            CheckDisposed();
             UpdateProviders(() => m_Providers.Remove(provider));
         }
 
         internal void SetProviders(IEnumerable<SearchProvider> providers = null)
         {
+            CheckDisposed();
             UpdateProviders(() =>
             {
                 m_Providers.Clear();
@@ -461,78 +580,6 @@ namespace UnityEditor.Search
             updateOperation();
             BeginSession();
             SetSearchText(m_SearchText);
-        }
-
-        /// <summary>
-        /// Indicates if an asynchronous search is currently in progress for this context.
-        /// </summary>
-        public bool searchInProgress => sessions.searchInProgress;
-
-        /// <summary>
-        /// Return the search result selection if any.
-        /// </summary>
-        public SearchSelection selection => searchView?.selection;
-
-        /// <summary>
-        /// Search view holding and presenting the search results.
-        /// </summary>
-        public ISearchView searchView { get; internal set; }
-
-        /// <summary>
-        /// Explicit filter id. Usually it is the first search token like h:, p: to do an explicit search for a given provider.
-        /// Can be null
-        /// </summary>
-        public string filterId { get; private set; }
-
-        /// <summary>
-        /// This event is used to receive any async search result.
-        /// </summary>
-        public event Action<SearchContext, IEnumerable<SearchItem>> asyncItemReceived
-        {
-            add
-            {
-                lock (this)
-                    sessions.asyncItemReceived += value;
-            }
-            remove
-            {
-                lock (this)
-                    sessions.asyncItemReceived -= value;
-            }
-        }
-
-        /// <summary>
-        /// Invoked when a Search is started.
-        /// </summary>
-        public event Action<SearchContext> sessionStarted
-        {
-            add
-            {
-                lock (this)
-                    sessions.sessionStarted += value;
-            }
-            remove
-            {
-                lock (this)
-                    sessions.sessionStarted -= value;
-            }
-        }
-
-        /// <summary>
-        /// Invoked when a Search has ended.
-        /// </summary>
-        public event Action<SearchContext> sessionEnded
-        {
-            add
-            {
-                lock (this)
-                    sessions.sessionEnded += value;
-            }
-            remove
-            {
-                lock (this)
-                    sessions.sessionEnded -= value;
-            }
         }
 
         private void BeginSession()
@@ -577,41 +624,15 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
-        /// Returns the time it took to evaluate the last query in milliseconds.
-        /// </summary>
-        internal double searchElapsedTime => TimeSpan.FromTicks(searchFinishTime - searchStartTime).TotalMilliseconds;
-        internal long searchStartTime { get; set; } = 0;
-        internal long searchFinishTime { get; set; } = 0;
-
-        /// <summary>
-        /// Indicates that the search results should be filter for this type.
-        /// </summary>
-        internal Type filterType { get; set; }
-
-        /// <summary>
-        /// An instance of MultiProviderAsyncSearchSession holding all the async search sessions associated with this search context.
-        /// </summary>
-        internal MultiProviderAsyncSearchSession sessions { get; } = new MultiProviderAsyncSearchSession();
-
-        /// <summary>
         /// Get the SearchContext unique hashcode.
         /// </summary>
         /// <returns>Returns the SearchContext unique hashcode.</returns>
         public override int GetHashCode()
         {
+            CheckDisposed();
             var validContextHashOptiopns = options & ~SearchFlags.OpenGlobal;
             return m_Providers.Select(p => p.id.GetHashCode()).Aggregate((int)validContextHashOptiopns, (h1, h2) => (h1 ^ h2).GetHashCode());
         }
-
-        /// <summary>
-        /// Define a subset of items that can be searched.
-        /// </summary>
-        internal List<SearchItem> subset { get; set; }
-
-        /// <summary>
-        /// The user data field can be used to store private data when running a custom query.
-        /// </summary>
-        internal object userData { get; set; }
 
         /// <summary>
         /// Add a new query error on this context.
@@ -621,6 +642,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 m_QueryErrors.Add(error);
             }
         }
@@ -633,6 +655,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 m_QueryErrors.AddRange(errors);
             }
         }
@@ -641,6 +664,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 m_QueryErrors.Clear();
             }
         }
@@ -649,6 +673,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 return m_QueryErrors.Exists(error => error.type == errorType);
             }
         }
@@ -657,6 +682,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 // Return a new list since the list can be modified asynchronously
                 return m_QueryErrors.Where(error => error.type == errorType).ToList();
             }
@@ -666,6 +692,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 // Return a new list since the list can be modified asynchronously
                 return m_QueryErrors.ToArray();
             }
@@ -675,6 +702,7 @@ namespace UnityEditor.Search
         {
             lock (this)
             {
+                CheckDisposed();
                 // Return a new list since the list can be modified asynchronously
                 return m_QueryErrors.Where(error => error.provider.id == providerId).ToList();
             }
@@ -682,15 +710,58 @@ namespace UnityEditor.Search
 
         public override string ToString()
         {
+            CheckDisposed();
             return $"[{GetProviders().Count}, {options}] {searchText.Replace("\n", "")}";
         }
 
         internal bool Tick()
         {
+            CheckDisposed();
             if (!options.HasAny(SearchFlags.Synchronous))
                 return true;
             sessions.Tick();
             return Dispatcher.ProcessOne();
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            var ids = new List<string>();
+            m_SerializedSearchViewInstanceID = (searchView as SearchWindow)?.GetInstanceID() ?? 0;
+            m_SerializedFilterType = filterType?.AssemblyQualifiedName;
+            m_SerializedProviders = new List<SearchProvider>();
+            foreach (var p in m_Providers)
+            {
+                var registeredProvider = SearchService.GetProvider(p.id) ?? SearchService.GetProvider(p.type);
+                if (registeredProvider != null)
+                    ids.Add(p.id);
+                else
+                    m_SerializedProviders.Add(p);
+            }
+            if (m_SerializedProviders.Count == 0)
+                m_SerializedProviders = null;
+            providerIds = ids.Distinct().ToArray();
+        }
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            if (m_SerializedSearchViewInstanceID != 0)
+                searchView = UnityEngine.Object.FindObjectFromInstanceID(m_SerializedSearchViewInstanceID) as ISearchView;
+
+            m_Providers = FilterProviders(providerIds.Select(id => SearchService.GetProvider(id)).Concat(m_SerializedProviders));
+            if (m_SerializedProviders.Count == 0)
+                m_SerializedProviders = null;
+
+            if (!string.IsNullOrEmpty(m_SerializedFilterType))
+                filterType = Type.GetType(m_SerializedFilterType);
+            else
+                m_SerializedFilterType = null;
+
+            SetSearchText(m_SearchText);
+            BeginSession();
+        }
+
+        void CheckDisposed()
+        {
         }
     }
 }

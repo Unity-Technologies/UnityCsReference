@@ -300,5 +300,17 @@ namespace UnityEngine.Playables
         {
             playable.GetHandle().SetTimeWrapMode(value);
         }
+
+        internal static int GetOutputPortFromInputConnection<U>(this U playable, int inputIndex)
+          where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetOutputPortFromInputConnection(inputIndex);
+        }
+
+        internal static int GetInputPortFromOutputConnection<U>(this U playable, int outputIndex)
+          where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetInputPortFromOutputConnection(outputIndex);
+        }
     }
 }

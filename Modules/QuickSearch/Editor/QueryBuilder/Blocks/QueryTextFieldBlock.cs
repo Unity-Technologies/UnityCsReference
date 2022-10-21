@@ -3,15 +3,18 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
     class QueryTextFieldBlock : QueryBlock
     {
-        private UI.SearchField m_SearchField;
+        private ISearchField m_SearchField;
         internal override bool wantsEvents => true;
 
-        public QueryTextFieldBlock(IQuerySource source, UI.SearchField searchField)
+        internal new static readonly string ussClassName = "search-query-textfield-block";
+
+        public QueryTextFieldBlock(IQuerySource source, ISearchField searchField)
             : base(source)
         {
             hideMenu = true;
@@ -22,35 +25,33 @@ namespace UnityEditor.Search
         public override string ToString() => value;
         internal override IBlockEditor OpenEditor(in Rect rect) => null;
 
-        internal override Rect Layout(in Vector2 at, in float availableSpace)
-        {
-            const float blockSpacing = 4f;
-
-            if (m_SearchField == null)
-                m_SearchField = new UI.SearchField();
-
-            var spaceLeft = availableSpace - at.x - blockSpacing;
-            var size = Styles.queryBuilderSearchField.CalcSize(Utils.GUIContentTemp(value));
-            return GetRect(at, Mathf.Max(spaceLeft, size.x), size.y);
-        }
-
-        internal UI.SearchField GetSearchField()
+        internal ISearchField GetSearchField()
         {
             return m_SearchField;
         }
 
-        internal override void Draw(in Rect blockRect, in Vector2 mousePosition)
+        internal override void CreateBlockElement(VisualElement container)
         {
-            var evt = Event.current;
-            if (evt.type == EventType.MouseDown && blockRect.Contains(evt.mousePosition))
-                source.BlockActivated(this);
+            var textElement = m_SearchField.GetTextElement();
+            if (textElement == null)
+                return;
 
-            var newSearchText = m_SearchField.Draw(blockRect, value, Styles.queryBuilderSearchField);
-            if (!string.Equals(newSearchText, value))
-            {
-                value = newSearchText;
-                source.Apply();
-            }
+            // Calling RegisterCallback for the same callback on the same phase has no effect,
+            // so no need to unregister if already registered.
+            textElement.RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+
+            container.AddToClassList(ussClassName);
+            container.Add(textElement);
+        }
+
+        void OnPointerDownEvent(PointerDownEvent evt)
+        {
+            source.BlockActivated(this);
+        }
+
+        internal override Color GetBackgroundColor()
+        {
+            return Color.clear;
         }
     }
 }

@@ -69,7 +69,7 @@ namespace UnityEditor.Search
             if (searchQuery != null)
             {
                 searchText = searchQuery.text;
-                providers = QuickSearch.GetMergedProviders(providers, searchQuery.providerIds);
+                providers = SearchUtils.GetMergedProviders(providers, searchQuery.providerIds);
             }
 
             var context = SearchService.CreateContext(providers, searchText);

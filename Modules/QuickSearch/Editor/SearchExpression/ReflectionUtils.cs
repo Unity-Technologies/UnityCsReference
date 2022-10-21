@@ -50,6 +50,7 @@ namespace UnityEditor.Search
             where TAttribute : Attribute
         {
             return TypeCache.GetMethodsWithAttribute<TAttribute>()
+                .Where(mi => !mi.IsConstructor)
                 .Aggregate(new List<THandlerWrapper>(), (accumulated, mi) =>
                 {
                     try

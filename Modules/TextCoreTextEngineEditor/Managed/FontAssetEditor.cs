@@ -13,6 +13,7 @@ using Glyph = UnityEngine.TextCore.Glyph;
 using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
 
+
 namespace UnityEditor.TextCore.Text
 {
     [CustomPropertyDrawer(typeof(FontWeightPair))]
@@ -73,46 +74,6 @@ namespace UnityEditor.TextCore.Text
             public int atlasWidth;
             public int atlasHeight;
         }
-
-        /// <summary>
-        /// Material used to display SDF glyphs in the Character and Glyph tables.
-        /// </summary>
-        internal static Material internalSDFMaterial
-        {
-            get
-            {
-                if (s_InternalSDFMaterial == null)
-                {
-                    Shader shader = Shader.Find("Hidden/TextCore/Distance Field SSD");
-
-                    if (shader != null)
-                        s_InternalSDFMaterial = new Material(shader);
-                }
-
-                return s_InternalSDFMaterial;
-            }
-        }
-        static Material s_InternalSDFMaterial;
-
-        /// <summary>
-        /// Material used to display Bitmap glyphs in the Character and Glyph tables.
-        /// </summary>
-        internal static Material internalBitmapMaterial
-        {
-            get
-            {
-                if (s_InternalBitmapMaterial == null)
-                {
-                    Shader shader = Shader.Find("Hidden/Internal-GUITextureClipText");
-
-                    if (shader != null)
-                        s_InternalBitmapMaterial = new Material(shader);
-                }
-
-                return s_InternalBitmapMaterial;
-            }
-        }
-        static Material s_InternalBitmapMaterial;
 
         private static string[] s_UiStateLabel = new string[] { "<i>(Click to collapse)</i> ", "<i>(Click to expand)</i> " };
         private GUIContent[] m_AtlasResolutionLabels = { new GUIContent("8"), new GUIContent("16"), new GUIContent("32"), new GUIContent("64"), new GUIContent("128"), new GUIContent("256"), new GUIContent("512"), new GUIContent("1024"), new GUIContent("2048"), new GUIContent("4096"), new GUIContent("8192") };
@@ -2825,7 +2786,7 @@ namespace UnityEditor.TextCore.Text
             Material mat;
             if (((GlyphRasterModes)m_fontAsset.atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
             {
-                mat = internalBitmapMaterial;
+                mat = EditorShaderUtilities.internalBitmapMaterial;
 
                 if (mat == null)
                     return;
@@ -2834,7 +2795,7 @@ namespace UnityEditor.TextCore.Text
             }
             else
             {
-                mat = internalSDFMaterial;
+                mat = EditorShaderUtilities.internalSDFMaterial;
 
                 if (mat == null)
                     return;

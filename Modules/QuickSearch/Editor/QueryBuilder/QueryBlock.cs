@@ -5,30 +5,46 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
-    public abstract class QueryBlock : IBlockSource
+    public abstract class QueryBlock : VisualElement, IBlockSource
     {
+        [Obsolete]
         protected internal const float arrowOffset = 5f;
-        protected internal const float blockHeight = UI.SearchField.minSinglelineTextHeight;
+        [Obsolete]
         protected internal const float blockExtraPadding = 4f;
+        protected internal const float blockHeight = 20f;
+        [Obsolete]
         protected internal const float borderRadius = 8f;
-
+        [Obsolete]
         protected internal Rect arrowRect { get; set; }
-        protected internal Rect valueRect { get; set; }
+        public new string name { get => base.name; protected set => base.name = value; }
+
+        internal static readonly string ussClassName = "search-query-block";
+        internal static readonly string disabledClassName = ussClassName.WithUssElement("disabled");
+        internal static readonly string excludedClassName = ussClassName.WithUssElement("excluded");
+        internal static readonly string noBackgroundClassName = ussClassName.WithUssElement("no-background");
+        internal static readonly string iconClassName = ussClassName.WithUssElement("icon");
+        internal static readonly string separatorClassName = ussClassName.WithUssElement("separator");
+        internal static readonly string arrowButtonClassName = "search-query-open-arrow";
+
+        private bool m_Selected = false;
+        private Vector3 m_InitiateDragPosition = default;
+        private Vector3 m_InitiateDragTargetPosition = default;
 
         public IQuerySource source { get; private set; }
         public SearchContext context => source.context; // TODO: Can this be removed from here?
         internal IBlockEditor editor { get; set; }
 
-        public string name { get; protected set; }
         public string value { get; set; }
+        [Obsolete]
+        protected internal Rect valueRect { get; set; }
         public string op { get; protected set; }
         internal bool explicitQuotes { get; set; }
         bool IBlockSource.formatNames => formatNames;
         internal virtual bool formatNames => true;
-        internal virtual bool visible => true;
         internal virtual bool wantsEvents => false;
         internal virtual bool canExclude => true;
         internal virtual bool canDisable => true;
@@ -39,29 +55,22 @@ namespace UnityEditor.Search
         internal bool @readonly { get; set; }
         internal bool disableHovering { get; set; }
         internal bool excluded { get; set; }
-        internal bool selected { get; set; }
-        internal string tooltip { get; set; }
-        internal string editorTitle { get; set; }
-
-        internal Rect drawRect { get; set; }
-        internal Rect layoutRect { get; set; }
-        internal float width => layoutRect.width;
-        internal float height => layoutRect.height;
-        internal Vector2 size => layoutRect.size;
-
-        internal virtual Rect openRect
+        internal bool selected
         {
-            get
+            get => m_Selected;
+            set
             {
-                var openRect = new Rect(arrowRect.x, arrowRect.y, arrowRect.width, arrowRect.height);
-                openRect.xMin -= 10f;
-                openRect.xMax = drawRect.xMax;
-                if (canOpenEditorOnValueClicked)
-                    openRect.xMin = valueRect.xMin;
-
-                return openRect;
+                m_Selected = value;
+                if (m_Selected)
+                    pseudoStates |= PseudoStates.Checked;
+                else
+                    pseudoStates &= ~PseudoStates.Checked;
+                UpdateBackgroundColor();
             }
         }
+        internal string editorTitle { get; set; }
+
+        internal Rect drawRect => worldBound;
 
         string IBlockSource.name => name;
         string IBlockSource.editorTitle => editorTitle;
@@ -70,6 +79,19 @@ namespace UnityEditor.Search
         internal QueryBlock(IQuerySource source)
         {
             this.source = source;
+
+            AddToClassList(ussClassName);
+
+            RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+
+            RegisterCallback<PointerUpEvent>(OnBlockClicked);
+            RegisterCallback<ContextClickEvent>(OnContextClick);
+
+            RegisterCallback<PointerDownEvent>(OnPointerDown);
+            RegisterCallback<PointerMoveEvent>(OnBlockDragged);
+            RegisterCallback<PointerUpEvent>(OnPointerUp, useTrickleDown: TrickleDown.TrickleDown);
+            RegisterCallback<PointerCaptureOutEvent>(OnDragExited);
         }
 
         public override string ToString()
@@ -81,9 +103,10 @@ namespace UnityEditor.Search
             return $"{name}={value}";
         }
 
-        void Delete()
+        internal void Delete()
         {
             source.RemoveBlock(this);
+            parent?.Remove(this);
         }
 
         void OpenMenu(Event evt)
@@ -120,25 +143,31 @@ namespace UnityEditor.Search
         private void ToggleDisabled()
         {
             disabled = !disabled;
-            source.Apply();
+            ApplyChanges();
         }
-
 
         internal virtual void AddContextualMenuItems(GenericMenu menu) {}
 
-        void OpenEditor(Event evt, in Rect rect)
+        private bool OpenEditor(Event evt, in Rect rect)
         {
             if (editor == null)
             {
                 editor = OpenEditor(rect);
                 if (editor != null)
-                    evt.Use();
+                {
+                    UpdateOpenEditorStyles(opened: true);
+                    evt?.Use();
+                    return true;
+                }
             }
             else if (editor.window)
             {
                 editor.window.Close();
                 editor = null;
+                UpdateOpenEditorStyles(opened: false);
             }
+
+            return false;
         }
 
         internal virtual IBlockEditor OpenEditor(in Rect rect)
@@ -150,181 +179,27 @@ namespace UnityEditor.Search
         {
             editor = null;
             context?.searchView?.Repaint();
+            UpdateOpenEditorStyles(opened: false);
         }
 
-        internal Rect GetRect(in Vector2 at, in float width, in float height)
+        private void UpdateOpenEditorStyles(bool opened = false)
         {
-            return new Rect(at, new Vector2(width, height));
-        }
-
-        internal virtual bool HandleEvents(Event evt, in Rect blockRect)
-        {
-            return false;
-        }
-
-        private void DefaultHandleEvents(Event evt, in Rect blockRect)
-        {
-            var hovered = blockRect.Contains(evt.mousePosition);
-            if (evt.type == EventType.ContextClick && hovered)
+            if (opened)
             {
-                OpenMenu(evt);
+                style.borderBottomLeftRadius = 0f;
+                style.borderBottomRightRadius = 0f;
             }
-            else if (evt.type == EventType.MouseDown && hovered)
+            else
             {
-                if (evt.button == 0)
-                {
-                    if ((evt.control || evt.command) && canExclude)
-                    {
-                        ToggleExcluded();
-                        evt.Use();
-                    }
-                    else if (evt.alt && canDisable)
-                    {
-                        ToggleDisabled();
-                        evt.Use();
-                    }
-                    else if (!disabled)
-                    {
-                        if (openRect != Rect.zero)
-                        {
-                            if (openRect.Contains(evt.mousePosition))
-                                OpenEditor(evt, blockRect);
-                        }
-                        else if (!wantsEvents)
-                        {
-                            OpenEditor(evt, blockRect);
-                        }
-
-                        source.BlockActivated(this);
-                        evt.Use();
-                    }
-                }
-                else if (evt.button == 2)
-                {
-                    Utils.CallDelayed(Delete);
-                    evt.Use();
-                }
-                else
-                    OpenMenu(evt);
+                style.borderBottomLeftRadius = new StyleLength(StyleKeyword.Null);
+                style.borderBottomRightRadius = new StyleLength(StyleKeyword.Null);
             }
         }
 
         private void ToggleExcluded()
         {
             excluded = !excluded;
-            source.Apply();
-        }
-
-        internal Rect Draw(Event evt, in Rect builderRect)
-        {
-            drawRect = GUIUtility.AlignRectToDevice(new Rect(layoutRect.position + builderRect.position, layoutRect.size));
-            if (evt.type == EventType.Repaint || (wantsEvents && !@readonly))
-            {
-                var oldColor = GUI.color;
-                if (disabled)
-                    GUI.color = GUI.color * new Color(1f, 1f, 1f, 0.5f);
-
-                Draw(drawRect, evt.mousePosition);
-                GUI.color = oldColor;
-
-                if (evt.type == EventType.Repaint)
-                {
-                    if (excluded)
-                    {
-                        var disabledLine = new Rect(drawRect.x + 4f, drawRect.center.y, drawRect.width - 8f, 2f);
-                        GUI.DrawTexture(disabledLine, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, Color.black, 0, 1);
-                    }
-                }
-            }
-
-            if (!@readonly && !hideMenu)
-            {
-                if (!wantsEvents || !HandleEvents(evt, drawRect))
-                    DefaultHandleEvents(evt, drawRect);
-            }
-
-            return drawRect;
-        }
-
-        internal virtual Rect Layout(in Vector2 at, in float availableSpace)
-        {
-            var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name, null, tooltip);
-            var valueContent = labelStyle.CreateContent(value, null, tooltip);
-            var blockWidth = nameContent.width + valueContent.width + labelStyle.margin.horizontal * 2f;
-            if (!@readonly)
-                blockWidth += blockExtraPadding + QueryContent.DownArrow.width;
-            return GetRect(at, blockWidth, blockHeight);
-        }
-
-        internal virtual void Draw(in Rect blockRect, in Vector2 mousePosition)
-        {
-            var labelStyle = Styles.QueryBuilder.label;
-            var nameContent = labelStyle.CreateContent(name, null, tooltip);
-            var valueContent = labelStyle.CreateContent(value, null, tooltip);
-
-            DrawBackground(blockRect, mousePosition);
-
-            var nameRect = DrawName(blockRect, mousePosition, nameContent);
-            var sepRect = DrawSeparator(nameRect);
-            DrawValue(sepRect, blockRect, mousePosition, valueContent);
-
-            DrawBorders(blockRect, mousePosition);
-        }
-
-        internal void DrawValue(in Rect at, in Rect blockRect, in Vector2 mousePosition, in QueryContent valueContent)
-        {
-            var x = at.xMax + valueContent.style.margin.left;
-            valueRect = new Rect(x, blockRect.y - 1f, blockRect.width - (x - blockRect.xMin) - valueContent.style.margin.right, blockRect.height);
-            valueContent.Draw(valueRect, mousePosition);
-
-            if (!@readonly)
-                DrawArrow(blockRect, mousePosition, editor != null ? QueryContent.UpArrow : QueryContent.DownArrow);
-        }
-
-        internal void DrawArrow(in Rect blockRect, in Vector2 mousePosition, QueryContent arrowContent)
-        {
-            var arrow = editor != null ? QueryContent.UpArrow : QueryContent.DownArrow;
-            arrowRect = new Rect(blockRect.xMax - arrowContent.width - arrowOffset, blockRect.y - 1f, arrow.width, blockRect.height);
-            EditorGUIUtility.AddCursorRect(openRect, MouseCursor.Link);
-            arrowContent.Draw(arrowRect, mousePosition);
-        }
-
-        internal virtual Rect DrawSeparator(in Rect at)
-        {
-            var sepRect = new Rect(at.xMax, at.yMin + 1f, 1f, Mathf.Ceil(at.height - 1f));
-            GUI.DrawTexture(sepRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, Styles.QueryBuilder.splitterColor, 0f, 0f);
-            return sepRect;
-        }
-
-        internal Rect DrawName(in Rect blockRect, in Vector2 mousePosition, QueryContent nameContent)
-        {
-            var nameRect = blockRect;
-            nameRect.y -= 1;
-            nameRect.width = nameContent.width + nameContent.style.margin.horizontal;
-            nameRect.xMin += nameContent.style.margin.left;
-            return nameContent.Draw(nameRect, mousePosition);
-        }
-
-        internal void DrawBorders(in Rect blockRect, in Vector2 mousePosition)
-        {
-            if (selected)
-            {
-                var borderColor = QueryColors.selectedBorderColor;
-                var borderWidth4 = new Vector4(1, 1, 1, 1);
-                var borderRadius4 = editor != null ? new Vector4(borderRadius, borderRadius, 0, 0) : new Vector4(borderRadius, borderRadius, borderRadius, borderRadius);
-                GUI.DrawTexture(blockRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, borderColor, borderWidth4, borderRadius4);
-            }
-        }
-
-        internal void DrawBackground(in Rect blockRect, in Vector2 mousePosition)
-        {
-            var borderRadius4 = editor != null ? new Vector4(borderRadius, borderRadius, 0, 0) : new Vector4(borderRadius, borderRadius, borderRadius, borderRadius);
-            var bgColor = GetBackgroundColor();
-            var isHovered = !disableHovering && blockRect.Contains(mousePosition);
-            var color = (isHovered || selected) ? bgColor * QueryColors.selectedTint : bgColor;
-            GUI.DrawTexture(blockRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, color, Vector4.zero, borderRadius4);
-            GUIView.current.MarkHotRegion(GUIClip.UnclipToWindow(blockRect));
+            ApplyChanges();
         }
 
         internal virtual Color GetBackgroundColor() => Color.red;
@@ -341,7 +216,7 @@ namespace UnityEditor.Search
         internal void SetOperator(in string op)
         {
             this.op = op;
-            source.Apply();
+            ApplyChanges();
         }
 
         public virtual void Apply(in SearchProposition searchProposition) => throw new NotSupportedException($"Cannot apply {searchProposition} for {this} control");
@@ -350,6 +225,20 @@ namespace UnityEditor.Search
         void IBlockSource.Apply(in SearchProposition searchProposition)
         {
             Apply(searchProposition);
+            UpdateGUI();
+        }
+
+        internal void ApplyChanges()
+        {
+            source.Apply();
+            UpdateGUI();
+            source.Repaint();
+        }
+
+        internal virtual void UpdateGUI()
+        {
+            if (parent != null)
+                CreateGUI();
         }
 
         IEnumerable<SearchProposition> IBlockSource.FetchPropositions()
@@ -360,6 +249,205 @@ namespace UnityEditor.Search
         void IBlockSource.CloseEditor()
         {
             CloseEditor();
+        }
+
+        internal VisualElement CreateGUI()
+        {
+            Clear();
+
+            this.SetClassState(hideMenu, noBackgroundClassName);
+            this.SetClassState(disabled, disabledClassName);
+            this.SetClassState(excluded, excludedClassName);
+
+            UpdateBackgroundColor();
+            CreateBlockElement(this);
+            return this;
+        }
+
+        internal virtual void CreateBlockElement(VisualElement container)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                AddLabel(container, name);
+                AddSeparator(container);
+            }
+            AddLabel(container, value);
+
+            if (!@readonly)
+                AddOpenEditorArrow(container);
+        }
+
+        internal void AddSeparator(VisualElement container)
+        {
+            container.Add(new BlockSeparator());
+        }
+
+        internal void AddIcon(VisualElement container, in Texture icon)
+        {
+            var imgIcon = new Image() { image = icon };
+            imgIcon.AddToClassList(iconClassName);
+            container.Add(imgIcon);
+        }
+
+        internal Label AddLabel(VisualElement container, string text)
+        {
+            if (excluded)
+                text = $"<s>{text}</s>";
+            var label = new Label(text);
+            if (string.IsNullOrEmpty(tooltip) && !string.Equals(text, tooltip))
+                label.tooltip = tooltip;
+            container.Add(label);
+            return label;
+        }
+
+        internal void AddOpenEditorArrow(VisualElement container)
+        {
+            if (@readonly)
+                return;
+            AddImageButton(container, EditorGUIUtility.LoadGeneratedIconOrNormalIcon("icon dropdown"));
+        }
+
+        internal Image AddImageButton(VisualElement container, Texture image, in string tooltip = null, EventCallback<ClickEvent> handler = null)
+        {
+            var imgButton = new Image() { image = image };
+            imgButton.tooltip = tooltip;
+            imgButton.AddToClassList(arrowButtonClassName);
+            imgButton.RegisterCallback<ClickEvent>(handler ?? OnOpenBlockEditor);
+            container.Add(imgButton);
+            return imgButton;
+        }
+
+        private void OnContextClick(ContextClickEvent evt)
+        {
+            if (!@readonly && !hideMenu)
+                OpenMenu(evt.imguiEvent);
+        }
+
+        private void OnBlockClicked(PointerUpEvent evt)
+        {
+            if (evt.button == 2 && !@readonly)
+                Utils.CallDelayed(Delete);
+            else if (evt.button == 0 && evt.altKey && canDisable)
+                ToggleDisabled();
+            else if (evt.button == 0 && (evt.commandKey || evt.ctrlKey) && canExclude)
+                ToggleExcluded();
+            else
+                source.BlockActivated(this);
+        }
+
+        internal void OnOpenBlockEditor(ClickEvent evt)
+        {
+            if (evt.target is VisualElement ve)
+            {
+                var openRect = ve.parent.worldBound;
+                openRect.x -= 1f;
+                OpenEditor(evt.imguiEvent, openRect);
+            }
+        }
+
+        private void OnMouseLeave(MouseLeaveEvent evt)
+        {
+            UpdateBackgroundColor();
+        }
+
+        private void OnMouseEnter(MouseEnterEvent evt)
+        {
+            UpdateBackgroundColor(hovered: true);
+        }
+
+        internal virtual void UpdateBackgroundColor(bool hovered = false)
+        {
+            var bgColor = GetBackgroundColor();
+            if (m_Selected || hovered)
+                bgColor *= QueryColors.selectedTint;
+            style.backgroundColor = bgColor;
+        }
+
+        private void OnPointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != 0)
+                return;
+            if (!draggable)
+                return;
+            m_InitiateDragPosition = evt.position;
+            m_InitiateDragTargetPosition = transform.position;
+        }
+
+        private void OnPointerUp(PointerUpEvent evt)
+        {
+            m_InitiateDragPosition = default;
+
+            if (!this.HasPointerCapture(evt.pointerId))
+                return;
+
+            this.ReleasePointer(evt.pointerId);
+            evt.StopPropagation();
+            evt.PreventDefault();
+        }
+
+        private void OnBlockDragged(PointerMoveEvent evt)
+        {
+            Vector3 pointerDelta = evt.position - m_InitiateDragPosition;
+
+            if (this.HasPointerCapture(evt.pointerId))
+            {
+                transform.position = new Vector3(m_InitiateDragTargetPosition.x + pointerDelta.x, m_InitiateDragTargetPosition.y + pointerDelta.y, 0.5f);
+
+                // Check if we should switch position with another block
+                var targetIndex = parent.IndexOf(this);
+                foreach (var b in source.EnumerateBlocks())
+                {
+                    if (!draggable || (!b.canDisable && !b.canExclude))
+                        continue;
+
+                    if (b != this && b.worldBound.Overlaps(worldBound))
+                    {
+                        b.style.opacity = 0.5f;
+                        var swapWithIndex = parent.IndexOf(b);
+                        var moveLeft = (Mathf.Abs(worldBound.xMin - b.worldBound.xMin) < 5f && targetIndex + 1 != swapWithIndex);
+                        var moveRight = (Mathf.Abs(worldBound.xMax - b.worldBound.xMax) < 5f && targetIndex - 1 != swapWithIndex);
+                        if (moveLeft || moveRight)
+                        {
+                            if (!source.SwapBlock(this, b))
+                                continue;
+
+                            m_InitiateDragPosition = evt.position;
+                            m_InitiateDragTargetPosition = b.transform.position;
+
+                            if (moveLeft)
+                                PlaceBehind(b);
+                            else
+                                PlaceInFront(b);
+
+                            transform.position = m_InitiateDragTargetPosition;
+                            break;
+                        }
+                    }
+                    else
+                        b.style.opacity = new StyleFloat(StyleKeyword.Null);
+                }
+            }
+            else
+            {
+                if (m_InitiateDragPosition == default)
+                    return;
+
+                if (pointerDelta.sqrMagnitude < 10f)
+                    return;
+
+                this.Focus();
+                this.CapturePointer(evt.pointerId);
+            }
+        }
+
+        private void OnDragExited(PointerCaptureOutEvent evt)
+        {
+            transform.position = new Vector3(0, 0, m_InitiateDragTargetPosition.z);
+            m_InitiateDragPosition = default;
+            m_InitiateDragTargetPosition = default;
+
+            foreach (var b in source.EnumerateBlocks())
+                b.style.opacity = new StyleFloat(StyleKeyword.Null);
         }
     }
 }

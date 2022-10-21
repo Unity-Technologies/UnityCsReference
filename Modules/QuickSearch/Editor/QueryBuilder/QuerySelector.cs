@@ -14,16 +14,35 @@ namespace UnityEditor.Search
     {
         class Styles
         {
+            public const float minSinglelineTextHeight = 20f;
+
             public static readonly GUIStyle itemStyle = new GUIStyle("DD LargeItemStyle")
             {
                 fixedHeight = 22
             };
 
-            public static readonly GUIStyle textStyle = new GUIStyle(Search.Styles.QueryBuilder.label)
+            public static readonly Color labelColor;
+            public static readonly GUIStyle label;
+            public static readonly GUIStyle textStyle;
+
+            static Styles()
             {
-                padding = new RectOffset(0, 0, 0, 0),
-                alignment = TextAnchor.MiddleCenter
-            };
+                ColorUtility.TryParseHtmlString("#202427", out labelColor);
+
+                label = new GUIStyle("ToolbarLabel")
+                {
+                    richText = true,
+                    alignment = TextAnchor.MiddleLeft,
+                    margin = new RectOffset(6, 6, 0, 0),
+                    normal = new GUIStyleState { textColor = labelColor },
+                    hover = new GUIStyleState { textColor = labelColor }
+                };
+                textStyle = new GUIStyle(label)
+                {
+                    padding = new RectOffset(0, 0, 0, 0),
+                    alignment = TextAnchor.MiddleCenter
+                };
+            }
 
             public static readonly GUIStyle propositionIcon = new GUIStyle("label")
             {
@@ -56,7 +75,7 @@ namespace UnityEditor.Search
 
         internal override Rect GetItemRect(in GUIContent content)
         {
-            return GUILayoutUtility.GetRect(host.window.position.width - 18f, UI.SearchField.minSinglelineTextHeight + 2, lineStyle, GUILayout.ExpandWidth(true));
+            return GUILayoutUtility.GetRect(host.window.position.width - 18f, QueryBlock.blockHeight + 2, lineStyle, GUILayout.ExpandWidth(true));
         }
 
         internal override Vector2 CalcItemSize(GUIContent content)
@@ -66,7 +85,7 @@ namespace UnityEditor.Search
 
         internal override float CalcItemHeight(GUIContent content, float width)
         {
-            return UI.SearchField.minSinglelineTextHeight + 2;
+            return Styles.minSinglelineTextHeight + 2;
         }
 
         internal override void DrawLineSeparator()

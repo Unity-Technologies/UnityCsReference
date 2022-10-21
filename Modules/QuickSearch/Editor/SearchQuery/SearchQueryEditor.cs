@@ -2,313 +2,163 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEditorInternal;
+using UnityEngine.UIElements;
+using System;
 
 namespace UnityEditor.Search
 {
-    [CustomEditor(typeof(SearchQueryAsset), editorForChildClasses: false, isFallback = false)]
+    [ExcludeFromPreset, CustomEditor(typeof(SearchQueryAsset), editorForChildClasses: false, isFallback = false)]
     class SearchQueryEditor : Editor
     {
-        private SearchResultView m_ResultView;
-        private SortedSearchList m_Results;
-        private SearchContext m_SearchContext;
-        private SerializedProperty m_IconProperty;
+        private SearchView m_ResultView;
         private SerializedProperty m_DescriptionProperty;
         private SerializedProperty m_TextProperty;
-        private SerializedProperty m_ProvidersProperty;
         private SerializedProperty m_IsSearchTemplateProperty;
-        private ReorderableList m_ProvidersList;
-        private List<string> m_EnabledProviderIds;
-        private bool m_ProviderFoldout;
+        private SerializedProperty m_IconProperty;
+        private SerializedProperty m_ViewStateProperty;
+        private ScrollView m_InspectorScrollView;
+        private VisualElement m_HeaderElement;
+
+        private SearchQueryAsset query => target as SearchQueryAsset;
+
+        public override bool RequiresConstantRepaint() => false;
+        public override bool UseDefaultMargins() => false;
+        internal override bool CanOpenMultipleObjects() => false;
+        internal override bool HasLargeHeader() => false;
+        internal override bool ShouldTryToMakeEditableOnOpen() => false;
+        internal override string targetTitle => query.displayName;
+        protected override bool ShouldHideOpenButton() => false;
 
         public void OnEnable()
         {
-            m_IconProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.icon));
             m_DescriptionProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.description));
             m_TextProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.text));
-            m_ProvidersProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.providerIds));
             m_IsSearchTemplateProperty = serializedObject.FindProperty("m_IsSearchTemplate");
+            m_IconProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.icon));
+            m_ViewStateProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.viewState));
 
-            PopulateValidEnabledProviderIds();
-            m_ProviderFoldout = EditorPrefs.GetBool("SearchQuery.ShowProviderList", false);
+            var newViewState = new SearchViewState();
+            newViewState.Assign(query.GetViewState());
+            newViewState.flags |= UnityEngine.Search.SearchViewFlags.DisableQueryHelpers;
+            m_ResultView = new SearchView(newViewState);
+        }
 
-            m_ProvidersList = new ReorderableList(m_EnabledProviderIds, typeof(string), false, false, true, true)
+        public override VisualElement CreateInspectorGUI()
+        {
+            var body = new VisualElement();
+            body.AddToClassList("search-inspector");
+            SearchElement.AppendStyleSheets(body);
+
+            m_HeaderElement = new VisualElement();
+            m_HeaderElement.AddToClassList("search-inspector-header");
+            m_HeaderElement.style.flexDirection = FlexDirection.Column;
+
+            m_HeaderElement.Add(new UIElements.PropertyField(m_IsSearchTemplateProperty));
+            m_HeaderElement.Add(new UIElements.PropertyField(m_IconProperty));
+            m_HeaderElement.Add(new UIElements.PropertyField(m_TextProperty));
+            m_HeaderElement.Add(new UIElements.PropertyField(m_DescriptionProperty));
+
+            if (Unsupported.IsSourceBuild())
+                m_HeaderElement.Add(new UIElements.PropertyField(m_ViewStateProperty, "Debug View State") { });
+            m_HeaderElement.Add(new SearchGroupBar("", m_ResultView));
+
+            body.Add(m_HeaderElement);
+            body.Add(m_ResultView);
+
+            m_ResultView.RegisterCallback<AttachToPanelEvent>(OnBodyAttached);
+            m_ResultView.RegisterCallback<DetachFromPanelEvent>(OnBodyDetached);
+            return body;
+        }
+
+        private void OnBodyAttached(AttachToPanelEvent evt)
+        {
+            var body = (VisualElement)evt.target;
+
+            // We can get in a situation where 2 scrollbars appear in the inspector if
+            // the result view has lots of results, because the listview has a maximum height
+            // of 4000. Because of that, we choose to have the result view exactly as high as
+            // the available space in the inspector. Therefore, we query the scrollview of the inspector
+            // and resize the result view based its size.
+            m_InspectorScrollView = body?.GetFirstAncestorOfType<ScrollView>();
+            if (m_InspectorScrollView != null)
             {
-                onAddCallback = AddProvider,
-                onCanAddCallback = list => true,
-                onRemoveCallback = RemoveProvider,
-                onCanRemoveCallback = list => m_ProvidersProperty.arraySize > 0,
-                drawElementCallback = DrawProviderElement,
-                elementHeight = EditorGUIUtility.singleLineHeight
-            };
+                m_InspectorScrollView.RegisterCallback<GeometryChangedEvent>(ResizeResultView);
+                m_InspectorScrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+                m_InspectorScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                Utils.CallDelayed(ResizeResultView);
+            }
+        }
 
-            SetupContext();
+        private void OnBodyDetached(DetachFromPanelEvent evt)
+        {
+            if (m_InspectorScrollView != null)
+            {
+                m_InspectorScrollView.UnregisterCallback<GeometryChangedEvent>(ResizeResultView);
+                m_InspectorScrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
+                m_InspectorScrollView.horizontalScrollerVisibility = ScrollerVisibility.Auto;
+                m_InspectorScrollView = null;
+            }
+        }
+
+        private void ResizeResultView(GeometryChangedEvent evt)
+        {
+            ResizeResultView();
+        }
+
+        private void ResizeResultView()
+        {
+            if (m_InspectorScrollView == null || m_ResultView == null || m_HeaderElement == null)
+                return;
+
+            // To avoid the 2 scrollbars situation, we resize the result view according to the size available in the scrollview.
+            m_ResultView.style.height = m_InspectorScrollView.worldBound.yMax - m_HeaderElement.worldBound.yMax;
+        }
+
+        public override bool HasPreviewGUI() => true;
+
+        public override void DrawPreview(Rect previewArea)
+        {
+            if (m_ResultView == null)
+                return;
+
+            var selectedItem = m_ResultView.selection.FirstOrDefault();
+            if (selectedItem == null)
+                return;
+
+            var preview = selectedItem.GetPreview(m_ResultView.context, previewArea.size, FetchPreviewOptions.Large | FetchPreviewOptions.Preview2D);
+            if (preview)
+                GUI.DrawTexture(previewArea, preview, scaleMode: ScaleMode.ScaleToFit);
+        }
+
+        public override GUIContent GetPreviewTitle()
+        {
+            if (m_ResultView == null)
+                return GUIContent.none;
+
+            var selectedItem = m_ResultView.selection.FirstOrDefault();
+            if (selectedItem == null)
+                return GUIContent.Temp("No selection");
+
+            return new GUIContent(selectedItem.GetLabel(m_ResultView.context, stripHTML: true), selectedItem.GetThumbnail(m_ResultView.context));
+        }
+
+        public override string GetInfoString()
+        {
+            if (m_ResultView == null)
+                return string.Empty;
+
+            var selectedItem = m_ResultView.selection.FirstOrDefault();
+            if (selectedItem == null)
+                return query.description;
+
+            return selectedItem.GetDescription(m_ResultView.context, stripHTML: true);
         }
 
         public void OnDisable()
         {
-            m_SearchContext.asyncItemReceived -= OnAsyncItemsReceived;
-            m_SearchContext.Dispose();
-            m_Results.Dispose();
-        }
-
-        private void PopulateValidEnabledProviderIds()
-        {
-            m_EnabledProviderIds = new List<string>(m_ProvidersProperty.arraySize);
-            for (int i = 0; i < m_ProvidersProperty.arraySize; i++)
-            {
-                var id = m_ProvidersProperty.GetArrayElementAtIndex(i).stringValue;
-                if (SearchService.GetProvider(id) != null && !m_EnabledProviderIds.Contains(id))
-                {
-                    m_EnabledProviderIds.Add(id);
-                }
-            }
-        }
-
-        private IEnumerable<SearchProvider> GetDisabledProviders()
-        {
-            return SearchService.OrderedProviders.Where(p => !m_EnabledProviderIds.Contains(p.id));
-        }
-
-        private void SetupContext()
-        {
-            m_Results?.Dispose();
             m_ResultView?.Dispose();
-            if (m_SearchContext != null)
-            {
-                m_SearchContext.Dispose();
-                m_SearchContext.asyncItemReceived -= OnAsyncItemsReceived;
-            }
-
-            var providerIds = m_EnabledProviderIds.Count != 0 ? m_EnabledProviderIds : SearchService.GetActiveProviders().Select(p => p.id);
-            m_SearchContext = SearchService.CreateContext(providerIds, m_TextProperty.stringValue, SearchSettings.GetContextOptions());
-            m_SearchContext.asyncItemReceived += OnAsyncItemsReceived;
-            m_Results = new SortedSearchList(m_SearchContext);
-            m_ResultView = new SearchResultView(m_Results);
-
-            RefreshResults();
-        }
-
-        private void SetItems(IEnumerable<SearchItem> items)
-        {
-            m_Results.Clear();
-            m_Results.AddItems(items);
-            Repaint();
-        }
-
-        private void OnAsyncItemsReceived(SearchContext context, IEnumerable<SearchItem> items)
-        {
-            m_Results.AddItems(items);
-            Repaint();
-        }
-
-        private void RefreshResults()
-        {
-            SetItems(SearchService.GetItems(m_SearchContext));
-        }
-
-        public override bool HasPreviewGUI()
-        {
-            return true;
-        }
-
-        public override bool RequiresConstantRepaint()
-        {
-            return false;
-        }
-
-        public override bool UseDefaultMargins()
-        {
-            return false;
-        }
-
-        // Implement to create your own interactive custom preview. Interactive custom previews are used in the preview area of the inspector and the object selector.
-        public override void OnInteractivePreviewGUI(Rect r, GUIStyle background)
-        {
-            m_ResultView.OnGUI(r);
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.UpdateIfRequiredOrScript();
-            CheckContext();
-
-            EditorGUILayout.BeginHorizontal();
-            {
-                Vector2 dropDownSize = EditorGUI.GetObjectIconDropDownSize(32, 32);
-                var iconRect = GUILayoutUtility.GetRect(dropDownSize.x, dropDownSize.y, GUILayout.ExpandWidth(false));
-                ObjectIconDropDown(iconRect, m_IconProperty);
-
-                EditorGUILayout.BeginVertical();
-                {
-                    var originalText = m_TextProperty.stringValue;
-                    EditorGUILayout.DelayedTextField(m_TextProperty, EditorGUIUtility.TrTextContent("Search Text"));
-                    if (originalText != m_TextProperty.stringValue)
-                    {
-                        m_SearchContext.searchText = m_TextProperty.stringValue;
-                        RefreshResults();
-                    }
-
-                    EditorGUILayout.PropertyField(m_DescriptionProperty);
-                    EditorGUILayout.PropertyField(m_IsSearchTemplateProperty);
-                }
-                EditorGUILayout.EndVertical();
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(20);
-            EditorGUI.BeginChangeCheck();
-            m_ProviderFoldout = EditorGUILayout.Foldout(m_ProviderFoldout, L10n.Tr("Providers"), true);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorPrefs.SetBool("SearchQuery.ShowProviderList", m_ProviderFoldout);
-            }
-            EditorGUILayout.EndHorizontal();
-
-            if (m_ProviderFoldout)
-                m_ProvidersList.DoLayoutList();
-
-            if (serializedObject.hasModifiedProperties)
-                serializedObject.ApplyModifiedProperties();
-        }
-
-        private static GUIStyle s_IconButtonStyle;
-        private static Material s_IconTextureInactive;
-        private static GUIContent s_IconDropDown;
-        public void ObjectIconDropDown(Rect position, SerializedProperty iconProperty)
-        {
-            const float kDropDownArrowMargin = 2;
-            const float kDropDownArrowWidth = 12;
-            const float kDropDownArrowHeight = 12;
-
-            if (s_IconTextureInactive == null)
-                s_IconTextureInactive = (Material)EditorGUIUtility.LoadRequired("Inspectors/InactiveGUI.mat");
-
-            if (s_IconButtonStyle == null)
-                s_IconButtonStyle = new GUIStyle("IconButton") { fixedWidth = 0, fixedHeight = 0 };
-
-            void SelectIcon(UnityEngine.Object obj, bool isCanceled)
-            {
-                if (!isCanceled)
-                {
-                    iconProperty.objectReferenceValue = obj;
-                    iconProperty.serializedObject.ApplyModifiedProperties();
-                    SearchService.RefreshWindows();
-                }
-            }
-
-            if (EditorGUI.DropdownButton(position, GUIContent.none, FocusType.Passive, s_IconButtonStyle))
-            {
-                SearchUtils.ShowIconPicker(SelectIcon);
-                GUIUtility.ExitGUI();
-            }
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                var contentPosition = position;
-
-                contentPosition.xMin += kDropDownArrowMargin;
-                contentPosition.xMax -= kDropDownArrowMargin + kDropDownArrowWidth / 2;
-                contentPosition.yMin += kDropDownArrowMargin;
-                contentPosition.yMax -= kDropDownArrowMargin + kDropDownArrowWidth / 2;
-
-                Rect arrowRect = new Rect(
-                    contentPosition.x + contentPosition.width - kDropDownArrowWidth / 2,
-                    contentPosition.y + contentPosition.height - kDropDownArrowHeight / 2,
-                    kDropDownArrowWidth, kDropDownArrowHeight);
-                Texture2D icon = null;
-
-                if (!iconProperty.hasMultipleDifferentValues)
-                    icon = iconProperty.objectReferenceValue as Texture2D ?? AssetPreview.GetMiniThumbnail(targets[0]);
-                if (icon == null)
-                    icon = Icons.favorite;
-
-                Vector2 iconSize = contentPosition.size;
-
-                if (icon)
-                {
-                    iconSize.x = Mathf.Min(icon.width, iconSize.x);
-                    iconSize.y = Mathf.Min(icon.height, iconSize.y);
-                }
-                Rect iconRect = new Rect(
-                    contentPosition.x + contentPosition.width / 2 - iconSize.x / 2,
-                    contentPosition.y + contentPosition.height / 2 - iconSize.y / 2,
-                    iconSize.x, iconSize.y);
-
-                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
-                if (s_IconDropDown == null)
-                    s_IconDropDown = EditorGUIUtility.IconContent("Icon Dropdown");
-                GUIStyle.none.Draw(arrowRect, s_IconDropDown, false, false, false, false);
-            }
-        }
-
-
-        void AddProvider(ReorderableList list)
-        {
-            var menu = new GenericMenu();
-            var disabledProviders = GetDisabledProviders().ToList();
-            for (var i = 0; i < disabledProviders.Count; ++i)
-            {
-                var provider = disabledProviders[i];
-                menu.AddItem(new GUIContent(provider.name), false, AddProvider, provider);
-                if (!provider.isExplicitProvider && i + 1 < disabledProviders.Count && disabledProviders[i + 1].isExplicitProvider)
-                {
-                    menu.AddSeparator(string.Empty);
-                }
-            }
-            menu.ShowAsContext();
-        }
-
-        void AddProvider(object providerObj)
-        {
-            if (providerObj is SearchProvider provider && !m_EnabledProviderIds.Contains(provider.id))
-            {
-                m_EnabledProviderIds.Add(provider.id);
-                UpdateEnabledProviders();
-            }
-        }
-
-        void RemoveProvider(ReorderableList list)
-        {
-            var index = list.index;
-            if (index != -1 && index < m_EnabledProviderIds.Count)
-            {
-                var toRemove = SearchService.GetProvider(m_EnabledProviderIds[index]);
-                if (toRemove == null)
-                    return;
-                m_EnabledProviderIds.Remove(toRemove.id);
-                UpdateEnabledProviders();
-
-                if (index >= list.count)
-                    list.index = list.count - 1;
-            }
-        }
-
-        void UpdateEnabledProviders()
-        {
-            m_ProvidersProperty.arraySize = m_EnabledProviderIds.Count;
-            for (var i = 0; i < m_EnabledProviderIds.Count; ++i)
-            {
-                m_ProvidersProperty.GetArrayElementAtIndex(i).stringValue = m_EnabledProviderIds[i];
-            }
-            serializedObject.ApplyModifiedProperties();
-            SetupContext();
-        }
-
-        void DrawProviderElement(Rect rect, int index, bool selected, bool focused)
-        {
-            if (index >= 0 && index < m_EnabledProviderIds.Count)
-                GUI.Label(rect, SearchService.GetProvider(m_EnabledProviderIds[index])?.name ?? "<unknown>");
-        }
-
-        void CheckContext()
-        {
-            if (m_SearchContext.searchText != m_TextProperty.stringValue)
-                SetupContext();
         }
     }
 }

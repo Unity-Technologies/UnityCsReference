@@ -209,8 +209,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 try
                 {
-                    var licenseFile = IOProxy.PathsCombine(packageInfo.resolvedPath, "LICENSE.md");
-                    return IOProxy.FileExists(licenseFile) ? licenseFile : string.Empty;
+                    // Attempt preferred Markdown extension
+                    var markdownLicense = IOProxy.PathsCombine(packageInfo.resolvedPath, "LICENSE.md");
+                    if (IOProxy.FileExists(markdownLicense))
+                    {
+                        return markdownLicense;
+                    }
+
+                    // Follow up with GitHub preferred naming
+                    var githubLicense = IOProxy.PathsCombine(packageInfo.resolvedPath, "LICENSE");
+                    if (IOProxy.FileExists(githubLicense))
+                    {
+                        return githubLicense;
+                    }
+
+                    return string.Empty;
                 }
                 catch (System.IO.IOException) {}
             }

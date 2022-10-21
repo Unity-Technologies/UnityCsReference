@@ -44,6 +44,9 @@ namespace UnityEditor.Search
     [Serializable]
     class SearchQuery : ISearchQuery
     {
+        internal const string k_LastUsedTimePropertyName = "LastUsedTime";
+        internal const string k_QueryItemsNumberPropertyName = "TotalQueryItemsNumber";
+
         public static string userSearchSettingsFolder => Utils.CleanPath(Path.Combine(InternalEditorUtility.unityPreferencesFolder, "Search"));
         public string searchText
         {
@@ -122,7 +125,7 @@ namespace UnityEditor.Search
             {
                 using (var view = SearchMonitor.GetView())
                 {
-                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_LastUsedTimePropertyName);
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, k_LastUsedTimePropertyName);
                     if (view.TryLoadProperty(recordKey, out object data))
                         m_LastUsedTime = (long)data;
                 }
@@ -136,7 +139,7 @@ namespace UnityEditor.Search
             {
                 using (var view = SearchMonitor.GetView())
                 {
-                    var recordKey = PropertyDatabase.CreateRecordKey(guid, QuickSearch.k_QueryItemsNumberPropertyName);
+                    var recordKey = PropertyDatabase.CreateRecordKey(guid, k_QueryItemsNumberPropertyName);
                     if (view.TryLoadProperty(recordKey, out object data))
                         m_ItemCount = (int)data;
                 }
@@ -145,7 +148,7 @@ namespace UnityEditor.Search
             }
         }
 
-        public static IEnumerable<SearchQuery> searchQueries
+        public static List<SearchQuery> searchQueries
         {
             get
             {
@@ -168,10 +171,10 @@ namespace UnityEditor.Search
             viewState = new SearchViewState();
         }
 
-        public SearchQuery(SearchViewState state, SearchTable table)
+        public SearchQuery(SearchViewState state)
             : this()
         {
-            Set(state, table);
+            Set(state);
             name = description = Utils.Simplify(state.context.searchText);
         }
 
@@ -180,13 +183,11 @@ namespace UnityEditor.Search
             return name;
         }
 
-        public void Set(SearchViewState state, SearchTable table)
+        public void Set(SearchViewState state)
         {
             if (viewState == null)
                 viewState = new SearchViewState();
-            viewState.Assign(state);
-            if (table != null)
-                viewState.tableConfig = table.Clone();
+            viewState.Assign(state, new SearchContext(state.context));
         }
 
         public IEnumerable<string> GetProviderIds()
@@ -225,17 +226,18 @@ namespace UnityEditor.Search
             return !string.IsNullOrEmpty(query.filePath) && query.filePath.StartsWith(userSearchSettingsFolder);
         }
 
-        public static SearchQuery AddUserQuery(SearchViewState state, SearchTable table = null)
+        public static SearchQuery AddUserQuery(SearchViewState state)
         {
-            return AddSearchQuery(userSearchSettingsFolder, state, table);
+            return AddSearchQuery(userSearchSettingsFolder, state);
         }
 
-        public static SearchQuery AddSearchQuery(string folder, SearchViewState state, SearchTable table = null)
+        public static SearchQuery AddSearchQuery(string folder, SearchViewState state)
         {
-            var query = new SearchQuery(state, table);
+            var query = new SearchQuery(state);
             query.filePath = Path.Combine(folder, $"{query.guid}.query");
-            s_SearchQueries.Add(query);
+            searchQueries.Add(query);
             SaveSearchQuery(query);
+            Dispatcher.Emit(SearchEvent.UserQueryAdded, new SearchEventPayload(state, query));
             return query;
         }
 
@@ -246,16 +248,18 @@ namespace UnityEditor.Search
                 Directory.CreateDirectory(folder);
             var queryJson = EditorJsonUtility.ToJson(query, true);
             Utils.WriteTextFileToDisk(query.filePath, queryJson);
+            Dispatcher.Emit(SearchEvent.SearchQueryChanged, new SearchEventPayload(query.viewState, query));
         }
 
         public static void RemoveSearchQuery(SearchQuery query)
         {
-            var index = s_SearchQueries.IndexOf(query);
+            var index = searchQueries.IndexOf(query);
             if (index != -1)
             {
-                s_SearchQueries.RemoveAt(index);
+                searchQueries.RemoveAt(index);
                 if (File.Exists(query.filePath))
                     File.Delete(query.filePath);
+                Dispatcher.Emit(SearchEvent.UserQueryRemoved, new SearchEventPayload(query.viewState));
             }
         }
 
@@ -300,15 +304,16 @@ namespace UnityEditor.Search
 
         public static ISearchView Open(ISearchQuery query, SearchFlags additionalFlags)
         {
-            var viewState = query.GetViewState();
+            var viewState = new SearchViewState();
+            viewState.Assign(query.GetViewState());
             viewState.text = query.searchText;
+            viewState.activeQuery = query;
+            viewState.searchFlags |= additionalFlags;
+            viewState.searchFlags &= ~SearchFlags.ReuseExistingWindow;
             if (viewState.context != null)
-                viewState.context.options |= additionalFlags;
+                viewState.context.options = viewState.searchFlags;
             else
-            {
-                viewState.searchFlags |= additionalFlags;
                 viewState.BuildContext();
-            }
             return SearchService.ShowWindow(viewState);
         }
 
@@ -329,8 +334,31 @@ namespace UnityEditor.Search
         {
             if (query.thumbnail)
                 return query.thumbnail;
-            var displayMode = QuickSearch.GetDisplayModeFromItemSize(query.GetViewState().itemSize);
-            return QuickSearch.GetIconFromDisplayMode(displayMode);
+            var displayMode = SearchUtils.GetDisplayModeFromItemSize(query.GetViewState().itemSize);
+            return SearchUtils.GetIconFromDisplayMode(displayMode);
+        }
+
+        internal static void SaveLastUsedTimeToPropertyDatabase(ISearchQuery activeQuery)
+        {
+            if (activeQuery == null)
+                return;
+
+            using (var view = SearchMonitor.GetView())
+            {
+                var recordKey = PropertyDatabase.CreateRecordKey(activeQuery.guid, k_LastUsedTimePropertyName);
+                view.StoreProperty(recordKey, DateTime.Now.Ticks);
+            }
+        }
+
+        internal static long GetLastUsedTime(ISearchQuery query)
+        {
+            using (var view = SearchMonitor.GetView())
+            {
+                var recordKey = PropertyDatabase.CreateRecordKey(query.guid, k_LastUsedTimePropertyName);
+                if (view.TryLoadProperty(recordKey, out object data))
+                    return (long)data;
+            }
+            return 0;
         }
     }
 }

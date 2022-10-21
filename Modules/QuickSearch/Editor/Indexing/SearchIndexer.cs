@@ -253,11 +253,6 @@ namespace UnityEditor.Search
         internal readonly string m_Source;
         internal readonly SearchDocumentFlags flags;
 
-        [Obsolete("Search document index is no longer used and will be removed.", error: true)]
-        public int index { get => throw new NotSupportedException("Obsolete"); }
-
-        [Obsolete("Use name to get the document name and source to get the document source path.", error: true)]
-        public string path => throw new NotSupportedException("Obsolete");
         public string name => m_Name ?? m_Source ?? id;
         public string source => m_Source ?? id;
         public bool valid => !string.IsNullOrEmpty(id);
@@ -289,13 +284,6 @@ namespace UnityEditor.Search
         public SearchDocument(SearchDocument doc, string path)
             : this(doc.id, path, doc.m_Source, doc.score, doc.flags)
         {
-        }
-
-        [Obsolete("Search document index is no longer used and will be removed.", error: true)]
-        public SearchDocument(int index, string id, string path = null, int score = int.MaxValue)
-            : this(id, path, path, score)
-        {
-            throw new NotSupportedException("Obsolete");
         }
 
         /// <summary>
@@ -485,7 +473,7 @@ namespace UnityEditor.Search
         private SearchQueryEvaluator<SearchResult>.EvalResult EvaluateSearchNode(SearchQueryEvaluator<SearchResult>.EvalHandlerArgs args)
         {
             if (args.op == SearchIndexOperator.None)
-                return SearchIndexerQuery.EvalResult.None;
+                return SearchQueryEvaluator<SearchResult>.EvalResult.None;
 
             SearchResultCollection subset = null;
             if (args.andSet != null)
@@ -514,7 +502,7 @@ namespace UnityEditor.Search
             if (args.orSet != null)
                 results = results.Concat(args.orSet);
 
-            return SearchIndexerQuery.EvalResult.Combined(results);
+            return SearchQueryEvaluator<SearchResult>.EvalResult.Combined(results);
         }
 
         /// <summary>
