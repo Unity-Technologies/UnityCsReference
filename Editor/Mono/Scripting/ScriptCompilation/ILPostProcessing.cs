@@ -17,6 +17,44 @@ namespace UnityEditor.Scripting.ScriptCompilation
         string[] AssemblySearchPaths { get; }
     }
 
+    internal static class ILPostProcessingSearchPaths
+    {
+        class SearchPathComparer : IComparer<string>
+        {
+            readonly string _editorAssemblyPath;
+            readonly string _editorAssemblyPathPrefix;
+
+            public SearchPathComparer(string editorContentPath)
+            {
+                _editorAssemblyPath = $"{editorContentPath}/Managed";
+                _editorAssemblyPathPrefix = $"{editorContentPath}/Managed/";
+            }
+
+            int SearchPathPriority(string path)
+            {
+                if (path == _editorAssemblyPath || path.StartsWith(_editorAssemblyPathPrefix))
+                {
+                    return 0;
+                }
+                return 1;
+            }
+            public int Compare(string leftPath, string rightPath)
+            {
+                var leftPrio = SearchPathPriority(leftPath);
+                var rightPrio = SearchPathPriority(rightPath);
+                if (leftPrio == rightPrio)
+                {
+                    return Comparer<string>.Default.Compare(leftPath, rightPath);
+                }
+                return Comparer<int>.Default.Compare(leftPrio, rightPrio);
+            }
+        }
+        public static IEnumerable<string> SortSearchPathWithEditorAssembliesFirst(this IEnumerable<string> searchPaths, string editorContentPath)
+        {
+            return searchPaths.OrderBy(path => path, new SearchPathComparer(editorContentPath));
+        }
+    }
+
     internal class ILPostProcessing : IILPostProcessing
     {
         EditorCompilation editorCompilation;
@@ -90,7 +128,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     paths.Add(assemblyOutputFullPath);
 
                     var allPaths = assemblyReferencesPaths.Concat(precompiledReferencesPaths).Concat(paths);
-                    assemblySearchPaths = allPaths.Select(AssetPath.GetDirectoryName).Distinct().ToArray();
+                    assemblySearchPaths = allPaths.Select(AssetPath.GetDirectoryName).Distinct().SortSearchPathWithEditorAssembliesFirst(EditorApplication.applicationContentsPath).ToArray();
                 }
 
                 return assemblySearchPaths;

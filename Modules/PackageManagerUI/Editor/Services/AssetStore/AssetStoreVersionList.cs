@@ -28,6 +28,8 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion primary => importAvailable ?? latest;
 
+        public int numUnloadedVersions => 0;
+
         public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
         {
             ResolveDependencies(assetStoreUtils, ioProxy);

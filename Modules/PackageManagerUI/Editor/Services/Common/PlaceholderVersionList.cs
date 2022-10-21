@@ -30,6 +30,8 @@ namespace UnityEditor.PackageManager.UI
 
         public IPackageVersion primary => m_Versions[0];
 
+        public int numUnloadedVersions => 0;
+
         public PlaceholderVersionList(PlaceholderPackageVersion version)
         {
             m_Versions = new[] { version };

@@ -120,12 +120,6 @@ namespace UnityEditor.PackageManager.UI
                 TriggerOnVisualStateChange(new[] { m_VisualStateList.GetVisualState(packageUniqueId) });
         }
 
-        public override void SetSeeAllVersions(string packageUniqueId, bool value)
-        {
-            if (m_VisualStateList.SetSeeAllVersions(packageUniqueId, value))
-                TriggerOnVisualStateChange(new[] { m_VisualStateList.GetVisualState(packageUniqueId) });
-        }
-
         public override bool Contains(string packageUniqueId)
         {
             return m_VisualStateList.Contains(packageUniqueId);

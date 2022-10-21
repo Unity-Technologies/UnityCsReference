@@ -17,6 +17,10 @@ namespace UnityEditor.PackageManager.UI
         [SerializeField]
         private List<UpmPackageVersion> m_Versions;
 
+        [SerializeField]
+        private int m_NumUnloadedVersions;
+        public int numUnloadedVersions => m_NumUnloadedVersions;
+
         public IEnumerable<IPackageVersion> key
         {
             get
@@ -124,10 +128,11 @@ namespace UnityEditor.PackageManager.UI
             return sortedVersions.Count - 1;
         }
 
-        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null)
+        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, int numUnloadedVersions = 0)
         {
             m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
+            m_NumUnloadedVersions = numUnloadedVersions;
         }
 
         public UpmVersionList(PackageInfo info, bool isInstalled, bool isUnityPackage)

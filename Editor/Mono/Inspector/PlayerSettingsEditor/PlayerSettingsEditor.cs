@@ -2189,7 +2189,7 @@ namespace UnityEditor
             var defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
             var oldIdentifier = "";
             var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultIdentifier, targetGroup);
-            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
             var warningMessage = SettingsContent.applicationIdentifierWarning.text;
             var errorMessage = GetApplicationIdentifierError(targetGroup).text;
 
@@ -2250,7 +2250,7 @@ namespace UnityEditor
 
         internal static void ShowBuildNumberUI(SerializedProperty prop, BuildTargetGroup targetGroup, string label, string tooltip)
         {
-            var buildTargetGroup = (targetGroup == BuildTargetGroup.iOS) ? "iPhone" : targetGroup.ToString();
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
 
             if (!prop.serializedObject.isEditingMultipleObjects)
             {
@@ -2271,7 +2271,7 @@ namespace UnityEditor
 
         private ScriptingImplementation GetCurrentBackendForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_ScriptingBackend.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_ScriptingBackend.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (ScriptingImplementation)entry.FindPropertyRelative("second").intValue;
             else
                 return PlayerSettings.GetDefaultScriptingBackend(targetGroup);
@@ -2279,7 +2279,7 @@ namespace UnityEditor
 
         private Il2CppCompilerConfiguration GetCurrentIl2CppCompilerConfigurationForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_Il2CppCompilerConfiguration.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (Il2CppCompilerConfiguration)entry.FindPropertyRelative("second").intValue;
             else
                 return Il2CppCompilerConfiguration.Release;
@@ -2287,7 +2287,7 @@ namespace UnityEditor
 
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(BuildTargetGroup targetGroup, ScriptingImplementation backend)
         {
-            if (m_ManagedStrippingLevel.TryGetMapEntry(targetGroup.ToString(), out var entry))
+            if (m_ManagedStrippingLevel.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (ManagedStrippingLevel)entry.FindPropertyRelative("second").intValue;
             else
             {
@@ -2300,7 +2300,7 @@ namespace UnityEditor
 
         private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(BuildTargetGroup targetGroup)
         {
-            if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup.AsBuildTargetGroupShortName(), out var entry))
+            if (m_APICompatibilityLevel.TryGetMapEntry(BuildPipeline.GetBuildTargetGroupName(targetGroup), out var entry))
                 return (ApiCompatibilityLevel)entry.FindPropertyRelative("second").intValue;
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
@@ -2350,7 +2350,7 @@ namespace UnityEditor
 
                                 if (newBackend != currentBackend)
                                 {
-                                    m_ScriptingBackend.SetMapValue(targetGroup.ToString(), (int)newBackend);
+                                    m_ScriptingBackend.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newBackend);
                                     currentBackend = newBackend;
                                 }
                             }
@@ -2376,7 +2376,7 @@ namespace UnityEditor
 
                             if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
                             {
-                                m_APICompatibilityLevel.SetMapValue(targetGroup.AsBuildTargetGroupShortName(), (int)currentAPICompatibilityLevel);
+                                m_APICompatibilityLevel.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)currentAPICompatibilityLevel);
                                 serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
 
                                 if (EditorUserBuildSettings.activeBuildTargetGroup == targetGroup)
@@ -2403,7 +2403,7 @@ namespace UnityEditor
                                 var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
                                 if (currentConfiguration != newConfiguration)
-                                    m_Il2CppCompilerConfiguration.SetMapValue(targetGroup.ToString(), (int)newConfiguration);
+                                    m_Il2CppCompilerConfiguration.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newConfiguration);
                             }
                         }
                     }
@@ -2810,7 +2810,7 @@ namespace UnityEditor
 
                         newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
                         if (newManagedStrippingLevel != currentManagedStrippingLevel)
-                            m_ManagedStrippingLevel.SetMapValue(targetGroup.ToString(), (int)newManagedStrippingLevel);
+                            m_ManagedStrippingLevel.SetMapValue(BuildPipeline.GetBuildTargetGroupName(targetGroup), (int)newManagedStrippingLevel);
                     }
                 }
             }

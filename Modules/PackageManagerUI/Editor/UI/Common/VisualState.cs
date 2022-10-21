@@ -13,7 +13,6 @@ namespace UnityEditor.PackageManager.UI
         public string groupName;
         public bool visible;
         public bool expanded;
-        public bool seeAllVersions;
         public string selectedVersionId;
 
         public VisualState(string packageUniqueId, string groupName)
@@ -22,7 +21,6 @@ namespace UnityEditor.PackageManager.UI
             this.groupName = groupName;
             visible = true;
             expanded = false;
-            seeAllVersions = false;
             selectedVersionId = string.Empty;
         }
 
@@ -32,7 +30,6 @@ namespace UnityEditor.PackageManager.UI
                 && groupName == other.groupName
                 && visible == other.visible
                 && expanded == other.expanded
-                && seeAllVersions == other.seeAllVersions
                 && selectedVersionId == other.selectedVersionId;
         }
 

@@ -44,9 +44,9 @@ namespace UnityEditor.PackageManager.UI
             RefreshUnityType();
         }
 
-        internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
+        internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions, int numUnloadedVersions)
         {
-            m_VersionList = new UpmVersionList(updatedVersions);
+            m_VersionList = new UpmVersionList(updatedVersions, numUnloadedVersions);
             RefreshUnityType();
             ClearErrors();
         }

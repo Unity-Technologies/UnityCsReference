@@ -138,6 +138,7 @@ namespace UnityEditor.PackageManager.UI
         private AssetDatabaseProxy m_AssetDatabase;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
+        private UpmCache m_UpmCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
@@ -152,6 +153,7 @@ namespace UnityEditor.PackageManager.UI
             m_AssetDatabase = container.Resolve<AssetDatabaseProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
@@ -342,7 +344,7 @@ namespace UnityEditor.PackageManager.UI
 
         void RefreshExtensions(IPackageVersion version)
         {
-            var packageInfo = version?.packageInfo;
+            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
             PackageManagerExtensions.ExtensionCallback(() =>
             {
                 foreach (var extension in PackageManagerExtensions.Extensions)
@@ -500,11 +502,11 @@ namespace UnityEditor.PackageManager.UI
 
         private void RefreshRegistry()
         {
-            var registry = displayVersion.packageInfo?.registry;
             var showRegistry = (displayVersion as UpmPackageVersion)?.isRegistryPackage ?? false;
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
             if (showRegistry)
             {
+                var registry = m_UpmCache.GetBestMatchPackageInfo(displayVersion.name, displayVersion.isInstalled, displayVersion.versionString)?.registry;
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
                 detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
                 detailRegistryName.tooltip = registry.url;
@@ -581,14 +583,15 @@ namespace UnityEditor.PackageManager.UI
                 });
             }
 
+            var packageInfo = displayVersion != null ? m_UpmCache.GetBestMatchPackageInfo(displayVersion.name, displayVersion.isInstalled, displayVersion.versionString) : null;
             // add links related to the upm version
-            if (UpmPackageDocs.HasDocs(displayVersion))
+            if (UpmPackageDocs.HasDocs(packageInfo))
                 AddToLinks(new Button(ViewDocClick) { text = L10n.Tr("View documentation"), classList = { "unity-button", "link" } });
 
-            if (UpmPackageDocs.HasChangelog(displayVersion))
+            if (UpmPackageDocs.HasChangelog(packageInfo))
                 AddToLinks(new Button(ViewChangelogClick) { text = L10n.Tr("View changelog"), classList = { "unity-button", "link" } });
 
-            if (UpmPackageDocs.HasLicenses(displayVersion))
+            if (UpmPackageDocs.HasLicenses(packageInfo))
                 AddToLinks(new Button(ViewLicensesClick) { text = L10n.Tr("View licenses"), classList = { "unity-button", "link" } });
 
             UIUtils.SetElementDisplay(detailLinksContainer, detailLinksContainer.childCount != 0);
@@ -1208,14 +1211,14 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerWindowAnalytics.SendEvent("uninstall", displayVersion?.uniqueId);
         }
 
-        private void ViewOfflineDocs(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        private void ViewOfflineDocs(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string> getUrl, string messageOnNotFound)
         {
-            if (!version.isAvailableOnDisk)
+            if (string.IsNullOrEmpty(packageInfo?.resolvedPath))
             {
                 EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("This package is not available offline."), L10n.Tr("Ok"));
                 return;
             }
-            var offlineUrl = getUrl(m_IOProxy, version, true);
+            var offlineUrl = getUrl(m_IOProxy, packageInfo, true);
             if (!string.IsNullOrEmpty(offlineUrl))
                 m_Application.RevealInFinder(offlineUrl);
             else
@@ -1245,64 +1248,67 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void ViewUrlCascade(string[] urls,IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
+        private void ViewUrlCascade(string[] urls, PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string[]> getUrl, string messageOnNotFound)
         {
-            var onlineUrls = getUrl(m_IOProxy, version, true);
+            var onlineUrls = getUrl(m_IOProxy, packageInfo, true);
             if (urls.Length > 0)
             { 
                 OpenWebUrl(urls[0], () =>
                 {
-                   ViewUrlCascade(urls.ToList().Skip(1).ToArray(), version, getUrl, messageOnNotFound);
+                   ViewUrlCascade(urls.ToList().Skip(1).ToArray(), packageInfo, getUrl, messageOnNotFound);
                 });
             }
             else
             {
-                string GetUrls(IOProxy IOProxy, IPackageVersion version, bool offline) => onlineUrls[0];
-                ViewOfflineDocs(version, GetUrls, messageOnNotFound);
+                string GetUrls(IOProxy IOProxy, PackageInfo packageInfo, bool offline) => onlineUrls[0];
+                ViewOfflineDocs(packageInfo, GetUrls, messageOnNotFound);
             }
         }
 
-        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string> getUrl, string messageOnNotFound)
+        private void ViewUrl(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string> getUrl, string messageOnNotFound)
         {
-            var onlineUrl = getUrl(m_IOProxy, version, false);
+            var onlineUrl = getUrl(m_IOProxy, packageInfo, false);
             if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
             {
                 OpenWebUrl(onlineUrl, () =>
                 {
-                    ViewOfflineDocs(version, getUrl, messageOnNotFound);
+                    ViewOfflineDocs(packageInfo, getUrl, messageOnNotFound);
                 });
                 return;
             }
-            ViewOfflineDocs(version, getUrl, messageOnNotFound);
+            ViewOfflineDocs(packageInfo, getUrl, messageOnNotFound);
         }
 
-        private void ViewUrl(IPackageVersion version, Func<IOProxy, IPackageVersion, bool, string[]> getUrl, string messageOnNotFound)
+        private void ViewUrl(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string[]> getUrl, string messageOnNotFound)
         {
-            var onlineUrl = getUrl(m_IOProxy, version, false);
+            var onlineUrl = getUrl(m_IOProxy, packageInfo, false);
             if (m_Application.isInternetReachable)
             {
-                ViewUrlCascade(onlineUrl, version, getUrl, messageOnNotFound);
+                ViewUrlCascade(onlineUrl, packageInfo, getUrl, messageOnNotFound);
             }
             else
             {
-                string GetUrls(IOProxy IOProxy, IPackageVersion version, bool offline) => onlineUrl[0];
-                ViewOfflineDocs(version, GetUrls, messageOnNotFound);
+                string GetUrls(IOProxy IOProxy, PackageInfo packageInfo, bool offline) => onlineUrl[0];
+                ViewOfflineDocs(packageInfo, GetUrls, messageOnNotFound);
             }
         }
 
         private void ViewDocClick()
         {
-            ViewUrl(displayVersion, UpmPackageDocs.GetDocumentationUrl, L10n.Tr("This package does not contain offline documentation."));
+            var packageInfo = displayVersion != null ? m_UpmCache.GetBestMatchPackageInfo(displayVersion.name, displayVersion.isInstalled, displayVersion.versionString) : null;
+            ViewUrl(packageInfo, UpmPackageDocs.GetDocumentationUrl, L10n.Tr("This package does not contain offline documentation."));
         }
 
         private void ViewChangelogClick()
         {
-            ViewUrl(displayVersion, UpmPackageDocs.GetChangelogUrl, L10n.Tr("This package does not contain offline changelog."));
+            var packageInfo = displayVersion != null ? m_UpmCache.GetBestMatchPackageInfo(displayVersion.name, displayVersion.isInstalled, displayVersion.versionString) : null;
+            ViewUrl(packageInfo, UpmPackageDocs.GetChangelogUrl, L10n.Tr("This package does not contain offline changelog."));
         }
 
         private void ViewLicensesClick()
         {
-            ViewUrl(displayVersion, UpmPackageDocs.GetLicensesUrl, L10n.Tr("This package does not contain offline licenses."));
+            var packageInfo = displayVersion != null ? m_UpmCache.GetBestMatchPackageInfo(displayVersion.name, displayVersion.isInstalled, displayVersion.versionString) : null;
+            ViewUrl(packageInfo, UpmPackageDocs.GetLicensesUrl, L10n.Tr("This package does not contain offline licenses."));
         }
 
         private void ImportClick()

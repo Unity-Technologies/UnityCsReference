@@ -22,5 +22,8 @@ namespace UnityEditor.PackageManager.UI
         // the primary version is most important version that we want to show to the user
         // it will be the default that will be displayed if no versions are selected
         IPackageVersion primary { get; }
+
+        // This refers to the number of versions that's unloaded from the memory for performance gains
+        int numUnloadedVersions { get; }
     }
 }

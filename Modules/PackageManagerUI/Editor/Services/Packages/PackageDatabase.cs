@@ -63,6 +63,8 @@ namespace UnityEditor.PackageManager.UI
         [NonSerialized]
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         [NonSerialized]
+        private UpmCache m_UpmCache;
+        [NonSerialized]
         private UpmClient m_UpmClient;
         [NonSerialized]
         private IOProxy m_IOProxy;
@@ -71,6 +73,7 @@ namespace UnityEditor.PackageManager.UI
             AssetStoreUtils assetStoreUtils,
             AssetStoreClient assetStoreClient,
             AssetStoreDownloadManager assetStoreDownloadManager,
+            UpmCache upmCache,
             UpmClient upmClient,
             IOProxy ioProxy)
         {
@@ -78,6 +81,7 @@ namespace UnityEditor.PackageManager.UI
             m_AssetDatabase = assetDatabase;
             m_AssetStoreClient = assetStoreClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
+            m_UpmCache = upmCache;
             m_UpmClient = upmClient;
             m_IOProxy = ioProxy;
 
@@ -203,13 +207,14 @@ namespace UnityEditor.PackageManager.UI
 
         public virtual IEnumerable<Sample> GetSamples(IPackageVersion version)
         {
-            if (version?.packageInfo == null || version.packageInfo.version != version.version?.ToString())
+            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+            if (packageInfo == null || packageInfo.version != version.version?.ToString())
                 return Enumerable.Empty<Sample>();
 
             if (m_ParsedSamples.TryGetValue(version.uniqueId, out var parsedSamples))
                 return parsedSamples;
 
-            var samples = Sample.FindByPackage(version.packageInfo, m_IOProxy, m_AssetDatabase);
+            var samples = Sample.FindByPackage(packageInfo, m_IOProxy, m_AssetDatabase);
             m_ParsedSamples[version.uniqueId] = samples;
             return samples;
         }

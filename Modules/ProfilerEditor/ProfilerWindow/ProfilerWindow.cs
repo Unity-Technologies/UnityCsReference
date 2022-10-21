@@ -1032,7 +1032,7 @@ namespace UnityEditor
             if (GUILayout.Button(Styles.helpButtonContent, EditorStyles.toolbarButton))
             {
                 var help = Help.FindHelpNamed("ProfilerWindow");
-                Application.OpenURL(help);
+                Help.BrowseURL(help);
             }
 
             // Overflow Menu

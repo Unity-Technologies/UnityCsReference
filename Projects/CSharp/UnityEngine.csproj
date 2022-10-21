@@ -1627,6 +1627,12 @@
     <Compile Include="..\..\Modules\UNET\ScriptBindings\UNETworking.bindings.cs">
       <Link>Modules\UNET\ScriptBindings\UNETworking.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.bindings.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityAnalytics\ContinuousEvent\ContinuousEvent.bindings.cs">
       <Link>Modules\UnityAnalytics\ContinuousEvent\ContinuousEvent.bindings.cs</Link>
     </Compile>
