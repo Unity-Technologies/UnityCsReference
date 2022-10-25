@@ -123,6 +123,12 @@ namespace Unity.UI.Builder
             return str;
         }
 
+        private static string GetPathValueFromAssetRef(UnityEngine.Object assetRef)
+        {
+            var assetPath = URIHelpers.MakeAssetUri(assetRef);
+            return assetRef == null ? "none" : $"url('{assetPath}')";
+        }
+
         public static void ValueHandlesToUssString(StringBuilder sb, StyleSheet sheet, UssExportOptions options, string propertyName, StyleValueHandle[] values, ref int valueIndex, int valueCount = -1)
         {
             for (; valueIndex < values.Length && valueCount != 0; --valueCount)
@@ -275,6 +281,24 @@ namespace Unity.UI.Builder
                 options = new UssExportOptions();
 
             var sb = new StringBuilder();
+            if (sheet.imports != null)
+            {
+                for (var i = 0; i < sheet.imports.Length; ++i)
+                {
+                    var import = sheet.imports[i];
+                    if (!import.styleSheet)
+                        continue;
+                    var stylesheetImportPath = GetPathValueFromAssetRef(import.styleSheet);
+
+                    // Skip invalid references.
+                    if (stylesheetImportPath == "none")
+                        continue;
+
+                    sb.Append($"@import {stylesheetImportPath};");
+                    sb.Append(BuilderConstants.newlineCharFromEditorSettings);
+                }
+            }
+
             if (sheet.complexSelectors != null)
             {
                 bool isFirst = true;

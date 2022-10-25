@@ -66,19 +66,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (state != null && state.expanded != value)
             {
                 state.expanded = value;
-                if (!value)
-                    state.seeAllVersions = false;
-                return true;
-            }
-            return false;
-        }
-
-        public bool SetSeeAllVersions(string packageUniqueId, bool value)
-        {
-            var state = GetVisualState(packageUniqueId);
-            if (state != null && state.seeAllVersions != value)
-            {
-                state.seeAllVersions = value;
                 return true;
             }
             return false;

@@ -28,5 +28,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isNonLifecycleVersionInstalled { get; }
 
         bool hasLifecycleVersion { get; }
+
+        // This refers to the number of versions that's unloaded from the memory for performance gains
+        int numUnloadedVersions { get; }
     }
 }

@@ -24,8 +24,6 @@ namespace UnityEditor.PackageManager.UI
 
         string packageUniqueId { get; }
 
-        PackageInfo packageInfo { get; }
-
         bool isInstalled { get; }
     }
 }
@@ -54,6 +52,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         SemVersion? version { get; }
 
+        string versionInManifest { get; }
+
         string versionId { get; }
 
         DateTime? publishedDate { get; }
@@ -80,7 +80,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<PackageSizeInfo> sizes { get; }
 
         EntitlementsInfo entitlements { get; }
-
-        RegistryInfo registry { get; }
     }
 }

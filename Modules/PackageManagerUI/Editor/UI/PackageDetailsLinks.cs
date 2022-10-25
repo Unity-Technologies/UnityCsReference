@@ -72,14 +72,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }, package.links.First() != link);
             }
 
+            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+
             // add links related to the upm version
-            if (UpmPackageDocs.HasDocs(version))
+            if (UpmPackageDocs.HasDocs(packageInfo))
                 AddToLinks(leftItems, new Button(ViewDocClick) { text = k_ViewDocumentationText, classList = { k_LinkClass } }, false);
 
-            if (UpmPackageDocs.HasChangelog(version))
+            if (UpmPackageDocs.HasChangelog(packageInfo))
                 AddToLinks(leftItems, new Button(ViewChangelogClick) { text = k_ViewChangelogText, classList = { k_LinkClass } });
 
-            if (UpmPackageDocs.HasLicenses(version))
+            if (UpmPackageDocs.HasLicenses(packageInfo))
                 AddToLinks(leftItems, new Button(ViewLicensesClick) { text = k_ViewLicensesText, classList = { k_LinkClass } });
 
             var topOffset = false;
@@ -196,17 +198,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDocClick()
         {
-            ViewUrl(UpmPackageDocs.GetDocumentationUrl(m_Version), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, m_Version), L10n.Tr("documentation"), "viewDocs");
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
         }
 
         private void ViewChangelogClick()
         {
-            ViewUrl(UpmPackageDocs.GetChangelogUrl(m_Version), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, m_Version), L10n.Tr("changelog"), "viewChangelog");
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog");
         }
 
         private void ViewLicensesClick()
         {
-            ViewUrl(UpmPackageDocs.GetLicensesUrl(m_Version), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, m_Version), L10n.Tr("license documentation"), "viewLicense");
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense");
         }
 
         private void ViewQuickStartClick()
@@ -216,7 +221,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string GetQuickStartUrl(IPackageVersion version)
         {
-            var upmReserved = m_UpmCache.ParseUpmReserved(version?.packageInfo);
+            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
+            var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
             return upmReserved?.GetString("quickstart") ?? string.Empty;
         }
     }

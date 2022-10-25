@@ -705,6 +705,36 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetBatchingForPlatform(BuildTarget platform, int staticBatching, int dynamicBatching);
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetShaderChunkSizeInMBForPlatform(BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetShaderChunkSizeInMBForPlatform(BuildTarget buildTarget, int sizeInMegabytes);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetShaderChunkCountForPlatform(BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetShaderChunkCountForPlatform(BuildTarget buildTarget, int chunkCount);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetDefaultShaderChunkSizeInMB();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetDefaultShaderChunkSizeInMB(int sizeInMegabytes);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetDefaultShaderChunkCount();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetDefaultShaderChunkCount(int chunkCount);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern bool GetOverrideShaderChunkSettingsForPlatform(BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetOverrideShaderChunkSettingsForPlatform(BuildTarget buildTarget, bool value);
+
         [NativeMethod("GetLightmapEncodingQuality")]
         internal static extern LightmapEncodingQuality GetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup);
 

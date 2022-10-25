@@ -63,8 +63,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void SetExpanded(string packageUniqueId, bool value);
         void SetExpanded(IPackage package, bool value);
-        void SetSeeAllVersions(string packageUniqueId, bool value);
-        void SetSeeAllVersions(IPackage package, bool value);
         bool IsGroupExpanded(string groupName);
         void SetGroupExpanded(string groupName, bool value);
         string GetGroupName(IPackage package);

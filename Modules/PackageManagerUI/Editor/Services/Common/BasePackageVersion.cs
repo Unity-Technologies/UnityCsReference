@@ -14,8 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePackageVersion : IPackageVersion, ISerializationCallbackReceiver
     {
-        private const string k_NoSubscriptionErrorMessage = "You do not have a subscription for this package";
-        public string name => packageInfo?.name ?? string.Empty;
+        [SerializeField]
+        protected string m_Name;
+        public string name => m_Name ?? string.Empty;
 
         [SerializeField]
         protected string m_DisplayName;
@@ -23,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_Description;
-        public string description => !string.IsNullOrEmpty(m_Description) ? m_Description : (packageInfo?.description ?? string.Empty);
+        public string description => m_Description ?? string.Empty;
 
         [SerializeField]
         protected string m_PackageUniqueId;
@@ -36,19 +37,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected SemVersion? m_Version;
         public SemVersion? version => m_Version;
 
+        public virtual string versionInManifest => null;
+
         [SerializeField]
         protected long m_PublishedDateTicks;
-        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? packageInfo?.datePublished : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
+        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? null : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
         [SerializeField]
         protected string m_PublishNotes;
         public string releaseNotes => m_PublishNotes;
 
-        public DependencyInfo[] dependencies => packageInfo?.dependencies;
-        public DependencyInfo[] resolvedDependencies => packageInfo?.resolvedDependencies;
-        public EntitlementsInfo entitlements => packageInfo?.entitlements;
-
-        public virtual RegistryInfo registry => null;
+        public virtual DependencyInfo[] dependencies => null;
+        public virtual DependencyInfo[] resolvedDependencies => null;
+        public virtual EntitlementsInfo entitlements => null;
 
         [SerializeField]
         protected PackageTag m_Tag;
@@ -59,20 +60,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasEntitlements => entitlements != null && (entitlements.licenseType != EntitlementLicenseType.Public || entitlements.status == EntitlementStatus.NotGranted || entitlements.status == EntitlementStatus.Granted);
 
-        public bool hasEntitlementsError
-        {
-            get
-            {
-                if (!hasEntitlements || entitlements.isAllowed)
-                    return packageInfo?.errors.Any(error =>
-                        error.errorCode == ErrorCode.Forbidden ||
-                        error.message.IndexOf(k_NoSubscriptionErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0) ?? false;
+        public virtual bool hasEntitlementsError => false;
 
-                return true;
-            }
-        }
-
-        public virtual PackageInfo packageInfo => null;
         public virtual IDictionary<string, string> categoryLinks => null;
         public virtual IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
         public virtual IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();

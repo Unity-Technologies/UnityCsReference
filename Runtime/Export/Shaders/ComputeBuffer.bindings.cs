@@ -44,11 +44,14 @@ namespace UnityEngine
             {
                 // Release native resources
                 DestroyBuffer(this);
+
+                RemoveBufferFromLeakDetector();
             }
             else if (m_Ptr != IntPtr.Zero)
             {
                 // We cannot call DestroyBuffer through GC - it is scripting_api and requires main thread, prefer leak instead of a crash
-                Debug.LogWarning(string.Format("GarbageCollector disposing of ComputeBuffer allocated in {0} at line {1}. Please use ComputeBuffer.Release() or .Dispose() to manually release the buffer.", GetFileName(), GetLineNumber()));
+                if (UnsafeUtility.GetLeakDetectionMode() == NativeLeakDetectionMode.Disabled)
+                    Debug.LogWarning("GarbageCollector disposing of ComputeBuffer. Please use ComputeBuffer.Release() or .Dispose() to manually release the buffer. To see the stack trace where the leaked resource was allocated, set the UnsafeUtility LeakDetectionMode to EnabledWithStackTrace.");
             }
 
             m_Ptr = IntPtr.Zero;
@@ -93,7 +96,7 @@ namespace UnityEngine
 
             m_Ptr = InitBuffer(count, stride, type, usage);
 
-            SaveCallstack(stackDepth);
+            AddBufferToLeakDetector();
         }
 
         public void Release()
@@ -314,19 +317,20 @@ namespace UnityEngine
 
         extern public IntPtr GetNativeBufferPtr();
 
-        [ThreadSafe]
-        extern internal string GetFileName();
-
-        [ThreadSafe]
-        extern internal int GetLineNumber();
-
-        internal void SaveCallstack(int stackDepth)
+        internal void AddBufferToLeakDetector()
         {
-            StackFrame frame = new StackFrame(stackDepth, true);
-            SaveCallstack_Internal(frame.GetFileName(), frame.GetFileLineNumber());
+            if (m_Ptr == null)
+                return;
+
+            UnsafeUtility.LeakRecord(m_Ptr, LeakCategory.Persistent, 2);
         }
 
-        [NativeName("SetAllocationData")]
-        extern private void SaveCallstack_Internal(string fileName, int lineNumber);
+        internal void RemoveBufferFromLeakDetector()
+        {
+            if (m_Ptr == null)
+                return;
+
+            UnsafeUtility.LeakErase(m_Ptr, LeakCategory.Persistent);
+        }
     }
 }

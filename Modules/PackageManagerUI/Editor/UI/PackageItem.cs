@@ -188,21 +188,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             var showVersionList = !targetVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(package.displayName);
             UIUtils.SetElementDisplay(m_VersionList, showVersionList);
 
-            var version = selectedVersion;
-            if (version != null && version != targetVersion)
-                visualState.seeAllVersions = visualState.seeAllVersions || !package.versions.key.Contains(version);
-
             RefreshState();
 
-            var expansionChanged = previousVisualState.expanded != visualState.expanded;
-            var seeAllVersionsChanged = previousVisualState.seeAllVersions != visualState.seeAllVersions;
-            var needRefreshVersions = showVersionList && (expansionChanged || seeAllVersionsChanged);
-            if (needRefreshVersions)
-                RefreshVersions();
+            RefreshVersions();
 
-            var selectedVersionIdOld = previousVisualState.selectedVersionId ?? string.Empty;
-            if (needRefreshVersions || selectedVersionIdOld != visualState.selectedVersionId)
-                RefreshSelection();
+            RefreshSelection();
 
             RefreshTags();
             RefreshEntitlement();
@@ -277,12 +267,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_VersionList.Clear();
 
-            var seeAllVersions = visualState?.seeAllVersions ?? false;
-            var keyVersions = package.versions.key.ToList();
-            var allVersions = package.versions.ToList();
-
-            var versions = seeAllVersions ? allVersions : keyVersions;
-
+            var versions = package.versions.ToList();
             for (var i = versions.Count - 1; i >= 0; i--)
             {
                 // even if package is not installed, we want to show the recommended label
@@ -292,7 +277,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_VersionList.Add(new PackageVersionItem(package, versions[i], alwaysShowRecommendedLabel, isLatestVersion));
             }
 
-            var seeAllVersionsLabelVisible = !seeAllVersions && allVersions.Count > keyVersions.Count
+            var seeAllVersionsLabelVisible = package.versions.numUnloadedVersions > 0
                 && (package.Is(PackageType.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_SeeAllVersionsLabel, seeAllVersionsLabelVisible);
 
@@ -338,6 +323,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ToggleExpansion(ChangeEvent<bool> evt)
         {
             SetExpanded(evt.newValue);
+            if (!evt.newValue && m_PageManager.IsSeeAllVersions(package))
+                m_PageManager.SetSeeAllVersions(package, false);
         }
 
         internal void SetExpanded(bool value)

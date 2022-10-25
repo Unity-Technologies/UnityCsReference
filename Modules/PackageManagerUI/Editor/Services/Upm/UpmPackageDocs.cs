@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -16,38 +17,38 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the link in the description text.
         internal const string k_BuiltinPackageDocsUrlKey = "Scripting API: ";
 
-        public static string[] FetchUrlsFromDescription(UpmPackageVersion version)
+        public static string[] FetchUrlsFromDescription(PackageInfo packageInfo)
         {
             var applicationProxy = ServicesContainer.instance.Resolve<ApplicationProxy>();
             List<string> urls = new List<string>();
 
-            var descriptionSlitWithUrl = version.packageInfo.description.Split(new[] { $"{k_BuiltinPackageDocsUrlKey}https://docs.unity3d.com/" }, StringSplitOptions.None);
+            var descriptionSlitWithUrl = packageInfo.description.Split(new[] { $"{k_BuiltinPackageDocsUrlKey}https://docs.unity3d.com/" }, StringSplitOptions.None);
             if (descriptionSlitWithUrl.Length > 1)
                 urls.Add($"https://docs.unity3d.com/{applicationProxy.shortUnityVersion}/Documentation/" + descriptionSlitWithUrl[1]);
 
-            var descriptionSlitWithoutUrl = version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
+            var descriptionSlitWithoutUrl = packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None);
             if (descriptionSlitWithoutUrl.Length > 1)
                 urls.Add(descriptionSlitWithoutUrl[1]);
 
             return urls.ToArray();
         }
 
-        public static string FetchBuiltinDescription(UpmPackageVersion version)
+        public static string FetchBuiltinDescription(PackageInfo packageInfo)
         {
-            return string.IsNullOrEmpty(version?.packageInfo?.description) ?
-                string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), version.displayName) :
-                version.packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None)[0];
+            return string.IsNullOrEmpty(packageInfo.description) ?
+                string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), packageInfo.displayName) :
+                packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None)[0];
         }
 
-        public static string GetOfflineDocumentation(IOProxy IOProxy, IPackageVersion version)
+        public static string GetOfflineDocumentation(IOProxy IOProxy, PackageInfo packageInfo)
         {
-            if (version?.isAvailableOnDisk == true && version.packageInfo != null)
+            if (!string.IsNullOrEmpty(packageInfo?.resolvedPath))
             {
                 try
                 {
-                    var docsFolder = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "Documentation~");
+                    var docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation~");
                     if (!IOProxy.DirectoryExists(docsFolder))
-                        docsFolder = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "Documentation");
+                        docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation");
                     if (IOProxy.DirectoryExists(docsFolder))
                     {
                         var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
@@ -62,40 +63,46 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static string[] GetDocumentationUrl(IPackageVersion version)
+        public static string GetShortVersionId(PackageInfo packageInfo)
         {
-            var upmVersion = version as UpmPackageVersion;
-            if (upmVersion == null)
-                return new string[] { };
-
-            if (!string.IsNullOrEmpty(upmVersion.documentationUrl))
-                return new string[] { upmVersion.documentationUrl };
-
-            if (upmVersion.HasTag(PackageTag.BuiltIn) && !string.IsNullOrEmpty(upmVersion.description))
-                return FetchUrlsFromDescription(upmVersion);
-
-            return new string[] { $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/index.html" };
-        }
-
-        public static string GetChangelogUrl(IPackageVersion version)
-        {
-            var upmVersion = version as UpmPackageVersion;
-            if (upmVersion == null)
+            if (string.IsNullOrEmpty(packageInfo?.version))
                 return string.Empty;
-
-            if (!string.IsNullOrEmpty(upmVersion.changelogUrl))
-                return upmVersion.changelogUrl;
-
-            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/changelog/CHANGELOG.html";
+            SemVersionParser.TryParse(packageInfo.version, out var semVer);
+            return semVer == null ? string.Empty : UpmPackageVersion.FormatPackageId(packageInfo.name, semVer.Value.ShortVersion());
         }
 
-        public static string GetOfflineChangelog(IOProxy IOProxy, IPackageVersion version)
+        public static string[] GetDocumentationUrl(PackageInfo packageInfo)
         {
-            if (version?.isAvailableOnDisk == true && version.packageInfo != null)
+            if (!string.IsNullOrEmpty(packageInfo?.documentationUrl))
+                return new string[] { packageInfo.documentationUrl };
+
+            if (IsBuiltIn(packageInfo) && !string.IsNullOrEmpty(packageInfo.description))
+                return FetchUrlsFromDescription(packageInfo);
+
+            var shortVersionId = GetShortVersionId(packageInfo);
+            if (string.IsNullOrEmpty(shortVersionId))
+                return new string[0];
+            return new string[] { $"https://docs.unity3d.com/Packages/{shortVersionId}/index.html" };
+        }
+
+        public static string GetChangelogUrl(PackageInfo packageInfo)
+        {
+            if (!string.IsNullOrEmpty(packageInfo?.changelogUrl))
+                return packageInfo.changelogUrl;
+
+            var shortVersionId = GetShortVersionId(packageInfo);
+            if (string.IsNullOrEmpty(shortVersionId))
+                return string.Empty;
+            return $"https://docs.unity3d.com/Packages/{shortVersionId}/changelog/CHANGELOG.html";
+        }
+
+        public static string GetOfflineChangelog(IOProxy IOProxy, PackageInfo packageInfo)
+        {
+            if (!string.IsNullOrEmpty(packageInfo?.resolvedPath))
             {
                 try
                 {
-                    var changelogFile = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "CHANGELOG.md");
+                    var changelogFile = IOProxy.PathsCombine(packageInfo.resolvedPath, "CHANGELOG.md");
                     return IOProxy.FileExists(changelogFile) ? changelogFile : string.Empty;
                 }
                 catch (System.IO.IOException) {}
@@ -103,25 +110,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static string GetLicensesUrl(IPackageVersion version)
+        public static string GetLicensesUrl(PackageInfo packageInfo)
         {
-            var upmVersion = version as UpmPackageVersion;
-            if (upmVersion == null)
+            if (!string.IsNullOrEmpty(packageInfo?.licensesUrl))
+                return packageInfo.licensesUrl;
+
+            var shortVersionId = GetShortVersionId(packageInfo);
+            if (string.IsNullOrEmpty(shortVersionId))
                 return string.Empty;
-
-            if (!string.IsNullOrEmpty(upmVersion.licensesUrl))
-                return upmVersion.licensesUrl;
-
-            return $"https://docs.unity3d.com/Packages/{upmVersion.shortVersionId}/license/index.html";
+            return $"https://docs.unity3d.com/Packages/{shortVersionId}/license/index.html";
         }
 
-        public static string GetOfflineLicenses(IOProxy IOProxy, IPackageVersion version)
+        public static string GetOfflineLicenses(IOProxy IOProxy, PackageInfo packageInfo)
         {
-            if (version?.isAvailableOnDisk == true && version.packageInfo != null)
+            if (!string.IsNullOrEmpty(packageInfo?.resolvedPath))
             {
                 try
                 {
-                    var licenseFile = IOProxy.PathsCombine(version.packageInfo.resolvedPath, "LICENSE.md");
+                    var licenseFile = IOProxy.PathsCombine(packageInfo.resolvedPath, "LICENSE.md");
                     return IOProxy.FileExists(licenseFile) ? licenseFile : string.Empty;
                 }
                 catch (System.IO.IOException) {}
@@ -129,28 +135,40 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static bool HasDocs(IPackageVersion version)
+        public static bool HasDocs(PackageInfo packageInfo)
         {
-            var upmVersion = version as UpmPackageVersion;
-            if (!string.IsNullOrEmpty(upmVersion?.documentationUrl))
-                return true;
-            return upmVersion != null && !version.HasTag(PackageTag.Feature);
+            if (packageInfo == null)
+                return false;
+            return !string.IsNullOrEmpty(packageInfo.documentationUrl) || !IsFeature(packageInfo);
         }
 
-        public static bool HasChangelog(IPackageVersion version)
+        public static bool HasChangelog(PackageInfo packageInfo)
         {
-            var upmVersion = version as UpmPackageVersion;
-            if (!string.IsNullOrEmpty(upmVersion?.changelogUrl))
-                return true;
-            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
+            if (packageInfo == null)
+                return false;
+            return !string.IsNullOrEmpty(packageInfo.changelogUrl) || !IsBuiltInOrFeature(packageInfo);
         }
 
-        public static bool HasLicenses(IPackageVersion version)
+        public static bool HasLicenses(PackageInfo packageInfo)
         {
-            var upmVersion = version as UpmPackageVersion;
-            if (!string.IsNullOrEmpty(upmVersion?.licensesUrl))
-                return true;
-            return upmVersion != null && !version.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
+            if (packageInfo == null)
+                return false;
+            return !string.IsNullOrEmpty(packageInfo.licensesUrl) || !IsBuiltInOrFeature(packageInfo);
+        }
+
+        private static bool IsBuiltIn(PackageInfo packageInfo)
+        {
+            return packageInfo.source == PackageSource.BuiltIn && packageInfo.type == "module";
+        }
+
+        private static bool IsFeature(PackageInfo packageInfo)
+        {
+            return packageInfo.source == PackageSource.BuiltIn && packageInfo.type == "feature";
+        }
+
+        private static bool IsBuiltInOrFeature(PackageInfo packageInfo)
+        {
+            return packageInfo.source == PackageSource.BuiltIn && (packageInfo.type == "module" || packageInfo.type == "feature");
         }
     }
 }

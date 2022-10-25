@@ -409,8 +409,6 @@ namespace UnityEditor.Overlays
 
         public void OnBeforeSerialize()
         {
-            m_SaveData.Clear();
-
             void SaveContainer(List<Overlay> overlays)
             {
                 for (var index = 0; index < overlays.Count; index++)
@@ -440,7 +438,11 @@ namespace UnityEditor.Overlays
                         snapOffsetDelta = overlay.m_SnapOffsetDelta
                     };
 
-                    m_SaveData.Add(saveData);
+                    int existing = m_SaveData.FindIndex(x => x.id == overlay.id);
+                    if (existing < 0)
+                        m_SaveData.Add(saveData);
+                    else
+                        m_SaveData[existing] = saveData;
                 }
             }
 

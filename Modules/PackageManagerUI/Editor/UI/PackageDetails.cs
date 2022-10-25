@@ -135,6 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ApplicationProxy m_Application;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
+        private UpmCache m_UpmCache;
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
@@ -147,6 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = container.Resolve<ApplicationProxy>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
@@ -361,12 +363,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void RefreshExtensions(IPackage package, IPackageVersion version)
         {
-            var packageInfo = version?.packageInfo;
-            PackageManagerExtensions.ExtensionCallback(() =>
+            if (PackageManagerExtensions.Extensions.Any())
             {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageSelectionChange(packageInfo);
-            });
+                var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+                PackageManagerExtensions.ExtensionCallback(() =>
+                {
+                    foreach (var extension in PackageManagerExtensions.Extensions)
+                        extension.OnPackageSelectionChange(packageInfo);
+                });
+            }
 
             m_ExtensionManager.SendPackageSelectionChangedEvent(package, version);
         }
@@ -617,7 +622,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), package.GetDescriptor()));
 
                     var oneDependencyIsDirectAndMatchManifestVersion = customizedDependencies.Any(p => (p.versions.installed?.isDirectDependency ?? false) &&
-                        p.versions.installed?.versionString == p.versions.installed?.packageInfo.projectDependenciesEntry);
+                        p.versions.installed?.versionString == p.versions.installed?.versionInManifest);
                     var disableIfOneDependencyVersionIsOverridden = new ButtonDisableCondition(!oneDependencyIsDirectAndMatchManifestVersion,
                         string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), package.GetDescriptor()));
 
@@ -829,7 +834,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installedVersion = package.versions.installed;
             if (installedVersion?.HasTag(PackageTag.Git) == true)
             {
-                m_PackageDatabase.Install(installedVersion.packageInfo.packageId);
+                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(installedVersion.name, true);
+                m_PackageDatabase.Install(packageInfo.packageId);
                 RefreshPackageActionButtons();
                 return;
             }
