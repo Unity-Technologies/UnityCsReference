@@ -2,13 +2,59 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 
 namespace UnityEngine.TextCore.LowLevel
 {
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct OTL_Table
+    {
+        public OTL_Script[] scripts;
+        public OTL_Feature[] features;
+        public OTL_Lookup[] lookups;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [DebuggerDisplay("Script = {tag},  Language Count = {languages.Length}")]
+    internal struct OTL_Script
+    {
+        public string tag;
+        public OTL_Language[] languages;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [DebuggerDisplay("Language = {tag},  Feature Count = {featureIndexes.Length}")]
+    internal struct OTL_Language
+    {
+        public string tag;
+        public uint[] featureIndexes;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [DebuggerDisplay("Feature = {tag},  Lookup Count = {lookupIndexes.Length}")]
+    internal struct OTL_Feature
+    {
+        public string tag;
+        public uint[] lookupIndexes;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [DebuggerDisplay("{(OTL_LookupType)lookupType}")]
+    internal struct OTL_Lookup
+    {
+        public uint lookupType;
+        public uint lookupFlag;
+        public uint markFilteringSet;
+    }
+
     /// <summary>
     ///  Structure used for marshalling glyphs between managed and native code.
     /// </summary>

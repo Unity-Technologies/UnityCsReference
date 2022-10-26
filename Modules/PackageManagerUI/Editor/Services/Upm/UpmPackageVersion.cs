@@ -230,7 +230,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isUnityPackage)
             {
                 var previewTagString = "Preview";
-                SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out _);
+                SemVersion? lifecycleVersionParsed;
+                var isLifecycleVersionValid = SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out lifecycleVersionParsed);
 
                 if (m_Version?.HasPreReleaseVersionTag() == true)
                 {
@@ -240,14 +241,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                         m_Tag |= PackageTag.PreRelease;
                 }
-                else if (m_Version?.IsNotPreReleaseOrExperimental() == true)
-                {
-                    m_Tag |= PackageTag.Release;
-                }
                 else if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
                          m_Version?.IsExperimental() == true ||
                          previewTagString.Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
                     m_Tag |= PackageTag.Experimental;
+                else if (isLifecycleVersionValid && m_Version?.IsEqualOrPatchOf(lifecycleVersionParsed) == true)
+                {
+                    m_Tag |= PackageTag.Release;
+                }
             }
         }
 

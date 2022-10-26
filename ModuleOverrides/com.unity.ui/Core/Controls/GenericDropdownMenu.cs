@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class GenericDropdownMenu : IGenericMenu
     {
-        class MenuItem
+        internal class MenuItem
         {
             public string name;
             public VisualElement element;
@@ -59,6 +59,9 @@ namespace UnityEngine.UIElements
         public static readonly string separatorUssClassName = ussClassName + "__separator";
 
         List<MenuItem> m_Items = new List<MenuItem>();
+        // Used in tests
+        internal List<MenuItem> items => m_Items;
+
         VisualElement m_MenuContainer;
         VisualElement m_OuterContainer;
         ScrollView m_ScrollView;
@@ -67,8 +70,12 @@ namespace UnityEngine.UIElements
         Rect m_DesiredRect;
         KeyboardNavigationManipulator m_NavigationManipulator;
 
-        // Used for tests
         internal VisualElement menuContainer => m_MenuContainer;
+        internal VisualElement outerContainer => m_OuterContainer;
+        internal ScrollView scrollView => m_ScrollView;
+
+        internal bool isSingleSelectionDropdown { get; set; }
+        internal bool closeOnParentResize { get; set; }
 
         /// <summary>
         /// Returns the content container for the <see cref="GenericDropdownMenu"/>. Allows users to create their own
@@ -97,6 +104,9 @@ namespace UnityEngine.UIElements
 
             m_MenuContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             m_MenuContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            isSingleSelectionDropdown = true;
+            closeOnParentResize = true;
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)
@@ -258,7 +268,10 @@ namespace UnityEngine.UIElements
                 item.action?.Invoke();
                 item.actionUserData?.Invoke(item.element.userData);
 
-                Hide(true);
+                if (isSingleSelectionDropdown)
+                {
+                    Hide(true);
+                }
             }
 
             if (evt.pointerId != PointerId.mousePointerId)
@@ -284,7 +297,10 @@ namespace UnityEngine.UIElements
 
         void OnParentResized(GeometryChangedEvent evt)
         {
-            Hide(true);
+            if (closeOnParentResize)
+            {
+                Hide(true);
+            }
         }
 
         void UpdateSelection(VisualElement target)
@@ -421,13 +437,13 @@ namespace UnityEngine.UIElements
             rowElement.SetEnabled(isEnabled);
             rowElement.userData = data;
 
+            var checkElement = new VisualElement();
+            checkElement.AddToClassList(checkmarkUssClassName);
+            checkElement.pickingMode = PickingMode.Ignore;
+            rowElement.Add(checkElement);
+
             if (isChecked)
             {
-                var checkElement = new VisualElement();
-                checkElement.AddToClassList(checkmarkUssClassName);
-                checkElement.pickingMode = PickingMode.Ignore;
-                rowElement.Add(checkElement);
-
                 rowElement.pseudoStates |= PseudoStates.Checked;
             }
 
@@ -446,6 +462,25 @@ namespace UnityEngine.UIElements
             m_Items.Add(menuItem);
 
             return menuItem;
+        }
+
+        internal void UpdateItem(string itemName, bool isChecked)
+        {
+            var item = m_Items.Find(x => x.name == itemName);
+
+            if (item == null)
+            {
+                return;
+            }
+
+            if (isChecked)
+            {
+                item.element.pseudoStates |= PseudoStates.Checked;
+            }
+            else
+            {
+                item.element.pseudoStates &= ~PseudoStates.Checked;
+            }
         }
 
         /// <summary>
@@ -469,6 +504,8 @@ namespace UnityEngine.UIElements
             }
 
             m_TargetElement = targetElement;
+            m_TargetElement.RegisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
+
             m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
 
             if (m_PanelRootVisualContainer == null)
@@ -498,6 +535,11 @@ namespace UnityEngine.UIElements
 
             if (targetElement != null)
                 targetElement.pseudoStates |= PseudoStates.Active;
+        }
+
+        private void OnTargetElementDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            Hide();
         }
 
         void OnContainerGeometryChanged(GeometryChangedEvent evt)

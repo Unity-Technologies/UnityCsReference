@@ -250,6 +250,8 @@ namespace UnityEditor
             if (param.ShouldShow(ScaleHandleParam.Handle.XYZ) && (ids.xyz == GUIUtility.hotControl || !isHot))
             {
                 color = isProportionalScale ? constrainProportionsScaleHandleColor : ToActiveColorSpace(centerColor);
+                if (isDisabled)
+                    color = Color.Lerp(color, staticColor, staticBlend);
                 proportionalScale = false;
                 EditorGUI.BeginChangeCheck();
                 s_CurrentMultiplier = ScaleValueHandle(ids.xyz, s_CurrentMultiplier, position, rotation, handleSize * param.xyzSize, CubeHandleCap, EditorSnapSettings.scale);

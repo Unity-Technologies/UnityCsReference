@@ -4,10 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+using System.Text;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
-using UnityEngine.Profiling;
 
 namespace UnityEditor.UIElements
 {
@@ -22,6 +21,10 @@ namespace UnityEditor.UIElements
         static readonly int s_NothingIndex = 0;
         static readonly int s_EverythingIndex = 1;
         static readonly int s_TotalIndex = 2;
+
+        static readonly string s_MixedLabel = L10n.Tr("Mixed...");
+        static readonly string s_EverythingLabel = L10n.Tr("Everything");
+        static readonly string s_NothingLabel = L10n.Tr("Nothing");
 
         // This is the list of string representing all the user choices
         List<string> m_UserChoices;
@@ -38,9 +41,47 @@ namespace UnityEditor.UIElements
         // This is containing a mask to cover all the choices from the list. Computed with the help of m_UserChoicesMasks
         //     or based on the power of 2 mask values.
         int m_FullChoiceMask;
+        internal int fullChoiceMask => m_FullChoiceMask;
+
+        EditorGenericDropdownMenu m_GenericDropdownMenu;
 
         internal BaseMaskField(string label) : base(label)
         {
+            createMenuCallback = () =>
+            {
+                m_GenericDropdownMenu = new EditorGenericDropdownMenu();
+                return m_GenericDropdownMenu;
+            };
+
+            textElement.RegisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);
+        }
+
+        private void OnTextElementGeometryChanged(GeometryChangedEvent evt)
+        {
+            var mask = ValueToMask(value);
+
+            switch (mask)
+            {
+                case 0:
+                case ~0:
+                    // Don't do anything for Nothing or Everything
+                    break;
+                default:
+                    // Mixed values
+                    if (!IsPowerOf2(mask))
+                    {
+                        // If the current text is "Mixed..." and we now have more space, we might need to check if the
+                        // actual values would fit.
+                        // If the current label contains the actual values and we now have less space, we might need to
+                        // change it to "Mixed..."
+                        if (textElement.text == s_MixedLabel && evt.oldRect.width < evt.newRect.width
+                            || textElement.text != s_MixedLabel && evt.oldRect.width > evt.newRect.width)
+                        {
+                            textElement.text = GetMixedString();
+                        }
+                    }
+                    break;
+            }
         }
 
         /// <summary>
@@ -76,15 +117,26 @@ namespace UnityEditor.UIElements
                 {
                     m_Choices.Clear();
                 }
-                m_Choices.Add(L10n.Tr("Nothing"));
-                m_Choices.Add(L10n.Tr("Everything"));
-                m_Choices.AddRange(m_UserChoices);
 
                 ComputeFullChoiceMask();
+
+                m_Choices.Add(GetNothingName());
+                m_Choices.Add(GetEverythingName());
+                m_Choices.AddRange(m_UserChoices);
 
                 // Make sure to update the text displayed
                 SetValueWithoutNotify(rawValue);
             }
+        }
+
+        internal virtual string GetNothingName()
+        {
+            return s_NothingLabel;
+        }
+
+        internal virtual string GetEverythingName()
+        {
+            return s_EverythingLabel;
         }
 
         /// <summary>
@@ -138,6 +190,11 @@ namespace UnityEditor.UIElements
                         m_FullChoiceMask = 0;
                         foreach (int itemMask in m_UserChoicesMasks)
                         {
+                            if (itemMask == ~0)
+                            {
+                                continue;
+                            }
+
                             m_FullChoiceMask |= itemMask;
                         }
                     }
@@ -224,11 +281,65 @@ namespace UnityEditor.UIElements
                     }
                     else
                     {
-                        newValueToShowUser = L10n.Tr("Mixed...");
+                        if (m_UserChoicesMasks != null)
+                        {
+                            // Check if there's a name defined for this value
+                            for (int i = 0; i < m_UserChoicesMasks.Count; i++)
+                            {
+                                var itemMask = m_UserChoicesMasks[i];
+                                if (itemMask == itemIndex)
+                                {
+                                    var index = i + s_TotalIndex;
+                                    newValueToShowUser = m_Choices[index];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(newValueToShowUser))
+                        {
+                            newValueToShowUser = GetMixedString();
+                        }
                     }
                     break;
             }
             return newValueToShowUser;
+        }
+
+        private string GetMixedString()
+        {
+            var sb = GenericPool<StringBuilder>.Get();
+
+            foreach (var item in m_Choices)
+            {
+                var maskOfItem = GetMaskValueOfItem(item);
+
+                if (!IsItemSelected(maskOfItem))
+                {
+                    continue;
+                }
+
+                if (sb.Length > 0)
+                {
+                    sb.Append(", ");
+                }
+
+                sb.Append(item);
+            }
+
+            var mixedString = sb.ToString();
+            var minSize = textElement.MeasureTextSize(mixedString, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
+
+            // If text doesn't fit, we use "Mixed..."
+            if (float.IsNaN(textElement.resolvedStyle.width) || minSize.x > textElement.resolvedStyle.width)
+            {
+                mixedString = s_MixedLabel;
+            }
+
+            sb.Clear();
+            GenericPool<StringBuilder>.Release(sb);
+
+            return mixedString;
         }
 
         public override void SetValueWithoutNotify(TChoice newValue)
@@ -243,37 +354,60 @@ namespace UnityEditor.UIElements
                 throw new ArgumentNullException(nameof(menu));
             }
 
+            foreach (var item in m_Choices)
+            {
+                var maskOfItem = GetMaskValueOfItem(item);
+                var isSelected = IsItemSelected(maskOfItem);
+
+                menu.AddItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected, () => ChangeValueFromMenu(item));
+            }
+        }
+
+        private bool IsItemSelected(int maskOfItem)
+        {
             int valueMask = ValueToMask(value);
+            var isSelected = false;
+
+            switch (maskOfItem)
+            {
+                case 0:
+                    if (valueMask == 0)
+                    {
+                        isSelected = true;
+                    }
+                    break;
+
+                case ~0:
+                    if (valueMask == ~0)
+                    {
+                        isSelected = true;
+                    }
+                    break;
+
+                default:
+                    if ((maskOfItem & valueMask) == maskOfItem)
+                    {
+                        isSelected = true;
+                    }
+                    break;
+            }
+
+            return isSelected;
+        }
+
+        private void UpdateMenuItems()
+        {
+            if (m_GenericDropdownMenu == null)
+            {
+                return;
+            }
 
             foreach (var item in m_Choices)
             {
                 var maskOfItem = GetMaskValueOfItem(item);
-                var isSelected = false;
-                switch (maskOfItem)
-                {
-                    case 0:
-                        if (valueMask == 0)
-                        {
-                            isSelected = true;
-                        }
-                        break;
+                var isSelected = IsItemSelected(maskOfItem);
 
-                    case ~0:
-                        if (valueMask == ~0)
-                        {
-                            isSelected = true;
-                        }
-                        break;
-
-                    default:
-                        if ((maskOfItem & valueMask) == maskOfItem)
-                        {
-                            isSelected = true;
-                        }
-                        break;
-                }
-
-                menu.AddItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected, () => ChangeValueFromMenu(item));
+                m_GenericDropdownMenu.UpdateItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected);
             }
         }
 
@@ -334,6 +468,8 @@ namespace UnityEditor.UIElements
             }
             // Finally, make sure to update the value of the mask...
             value = MaskToValue(newMask);
+
+            UpdateMenuItems();
         }
 
         // Returns the mask to be used for the item...

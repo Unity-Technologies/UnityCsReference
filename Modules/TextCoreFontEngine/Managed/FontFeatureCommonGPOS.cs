@@ -3,16 +3,21 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 
-namespace UnityEngine.TextCore.Text
+namespace UnityEngine.TextCore.LowLevel
 {
     /// <summary>
     /// A GlyphAnchorPoint defines the position of an anchor point relative to the origin of a glyph.
     /// This data structure is used by the Mark-to-Base, Mark-to-Mark and Mark-to-Ligature OpenType font features.
     /// </summary>
     [Serializable]
-    public struct GlyphAnchorPoint
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct GlyphAnchorPoint
     {
         /// <summary>
         /// The x coordinate of the anchor point relative to the glyph.
@@ -29,9 +34,11 @@ namespace UnityEngine.TextCore.Text
         // =============================================
 
         [SerializeField]
+        [NativeName("xPositionAdjustment")]
         private float m_XCoordinate;
 
         [SerializeField]
+        [NativeName("yPositionAdjustment")]
         private float m_YCoordinate;
     }
 
@@ -40,7 +47,9 @@ namespace UnityEngine.TextCore.Text
     /// This data structure is used by the Mark-to-Base, Mark-to-Mark and Mark-to-Ligature OpenType font features.
     /// </summary>
     [Serializable]
-    public struct MarkPositionAdjustment
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MarkPositionAdjustment
     {
         /// <summary>
         /// The horizontal positional adjustment of the glyph relative to the anchor point of its parent base glyph.
@@ -68,18 +77,21 @@ namespace UnityEngine.TextCore.Text
         // =============================================
 
         [SerializeField]
+        [NativeName("xCoordinate")]
         private float m_XPositionAdjustment;
 
         [SerializeField]
+        [NativeName("yCoordinate")]
         private float m_YPositionAdjustment;
     };
-
 
     /// <summary>
     /// A MarkToBaseAdjustmentRecord defines the positional adjustment between a base glyph and mark glyph.
     /// </summary>
     [Serializable]
-    public struct MarkToBaseAdjustmentRecord
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MarkToBaseAdjustmentRecord
     {
         /// <summary>
         /// The index of the base glyph.
@@ -106,15 +118,19 @@ namespace UnityEngine.TextCore.Text
         // =============================================
 
         [SerializeField]
+        [NativeName("baseGlyphID")]
         private uint m_BaseGlyphID;
 
         [SerializeField]
+        [NativeName("baseAnchor")]
         private GlyphAnchorPoint m_BaseGlyphAnchorPoint;
 
         [SerializeField]
+        [NativeName("markGlyphID")]
         private uint m_MarkGlyphID;
 
         [SerializeField]
+        [NativeName("markPositionAdjustment")]
         private MarkPositionAdjustment m_MarkPositionAdjustment;
     }
 
@@ -122,7 +138,9 @@ namespace UnityEngine.TextCore.Text
     /// A MarkToMarkAdjustmentRecord defines the positional adjustment between two mark glyphs.
     /// </summary>
     [Serializable]
-    public struct MarkToMarkAdjustmentRecord
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MarkToMarkAdjustmentRecord
     {
         /// <summary>
         /// The index of the base glyph.
@@ -149,15 +167,19 @@ namespace UnityEngine.TextCore.Text
         // =============================================
 
         [SerializeField]
+        [NativeName("baseMarkGlyphID")]
         private uint m_BaseMarkGlyphID;
 
         [SerializeField]
+        [NativeName("baseMarkAnchor")]
         private GlyphAnchorPoint m_BaseMarkGlyphAnchorPoint;
 
         [SerializeField]
+        [NativeName("combiningMarkGlyphID")]
         private uint m_CombiningMarkGlyphID;
 
         [SerializeField]
+        [NativeName("combiningMarkPositionAdjustment")]
         private MarkPositionAdjustment m_CombiningMarkPositionAdjustment;
     }
 }

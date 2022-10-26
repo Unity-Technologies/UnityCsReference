@@ -29,11 +29,14 @@ namespace UnityEditor
         private const float kPulseSpeed = 0.45f; // Pulses per second
         private const float kPopupDuration = 0.33f; // How long time in seconds the popup takes
         private const int kExpansionMovementSize = 5; // How many pixels the rect expands out in the pulsing movement
+        // Twice the IMGUI speed because UIToolkit ScrollView scroll offset has a frame delay between updates
+        private static readonly float kUIToolkitScrollSpeed = scrollSpeed * 2;
 
         private static bool s_RecursionLock = false;
 
         private static VisualElement activeElement = null;
         private static ScrollView activeScrollView = null;
+        private static bool activeIsImgui = false;
 
         private static GUIStyle s_HighlightStyle;
         private static GUIStyle highlightStyle
@@ -54,8 +57,9 @@ namespace UnityEditor
             activeVisible = false;
             activeText = string.Empty;
             activeElement = null;
-            activeIsImguiContainer = false;
+            activeIsImgui = false;
             activeScrollView = null;
+            useUIToolkitScrolling = true;
             activeRect = new Rect();
 
             searchMode = HighlightSearchMode.None;
@@ -165,7 +169,7 @@ namespace UnityEditor
                 Search();
             }
 
-            if (isUIToolkitWindow)
+            if (useUIToolkitScrolling)
                 HandleScroll();
 
             // Keep elapsed time explicitly rather than measuring time since highlight began.
@@ -246,7 +250,7 @@ namespace UnityEditor
         {
             searchMode = s_SearchMode;
 
-            if (isUIToolkitWindow && !activeIsImguiContainer)
+            if (isUIToolkitWindow && !activeIsImgui)
             {
                 var found = activeElement != null;
                 if (!found)
@@ -262,15 +266,15 @@ namespace UnityEditor
                     return true;
                 }
 
-                activeIsImguiContainer = true;
+                activeIsImgui = true;
             }
 
             // Try IMGUI
             s_View.RepaintImmediately();
             if (searchMode == HighlightSearchMode.None)
             {
-                if (!activeIsImguiContainer)
-                    return true; // Success - control was found in pure Imgui window
+                if (activeIsImgui && !useUIToolkitScrolling)
+                    return true; // Success - control was found in window that doesn't use UIToolkit ScrollView
 
                 if (activeElement != null)
                     return true; // Already found the IMGUIContainer
@@ -281,10 +285,8 @@ namespace UnityEditor
                 r.y -= windowPos.y;
 
                 activeElement = SearchIMGUIContainer(s_ViewWindow.rootVisualElement, r.center);
-                if (activeElement != null)
-                    return true;
-
-                activeIsImguiContainer = false;
+                useUIToolkitScrolling = activeScrollView != null;
+                return true;
             }
 
             s_SearchMode = HighlightSearchMode.None;
@@ -359,7 +361,7 @@ namespace UnityEditor
                 var paddedRect = new Rect(r.x - padding, r.y - padding,
                     r.width + padding * 2, r.height + padding * 2);
 
-                activeVisible = !ScrollTowardsRect(activeScrollView, paddedRect, scrollSpeed);
+                activeVisible = !ScrollTowardsRect(activeScrollView, paddedRect, kUIToolkitScrollSpeed);
             }
             else
             {

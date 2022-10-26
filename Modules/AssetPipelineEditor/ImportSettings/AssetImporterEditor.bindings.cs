@@ -35,8 +35,6 @@ namespace UnityEditor.AssetImporters
         {
             if (editor is AssetImporterEditor importerEditor)
             {
-                importerEditor.serializedObject.Update();
-                importerEditor.extraDataSerializedObject?.Update();
                 importerEditor.hasUnsavedChanges = importerEditor.HasModified();
             }
         }

@@ -142,13 +142,13 @@ namespace UnityEditor.PackageManager
             return new RemoveRequest(operationId, status, packageName);
         }
 
-        internal static RemoveScopedRegistryRequest RemoveScopedRegistry(string registryName)
+        internal static RemoveScopedRegistryRequest RemoveScopedRegistry(string registryId)
         {
-            if (string.IsNullOrWhiteSpace(registryName))
-                throw new ArgumentException("Registry name cannot be null, empty or whitespace", nameof(registryName));
+            if (string.IsNullOrWhiteSpace(registryId))
+                throw new ArgumentException("Registry ID cannot be null, empty or whitespace", nameof(registryId));
 
             long operationId;
-            var status = RemoveScopedRegistry(out operationId, registryName);
+            var status = RemoveScopedRegistry(out operationId, registryId);
             return new RemoveScopedRegistryRequest(operationId, status);
         }
 
@@ -213,13 +213,13 @@ namespace UnityEditor.PackageManager
             return new PackRequest(operationId, status);
         }
 
-        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options)
+        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryId, UpdateScopedRegistryOptions options)
         {
-            if (string.IsNullOrWhiteSpace(registryName))
-                throw new ArgumentException("Registry name cannot be null, empty or whitespace", nameof(registryName));
+            if (string.IsNullOrWhiteSpace(registryId))
+                throw new ArgumentException("Registry ID cannot be null, empty or whitespace", nameof(registryId));
 
             long operationId;
-            var status = UpdateScopedRegistry(out operationId, registryName, options);
+            var status = UpdateScopedRegistry(out operationId, registryId, options);
             return new UpdateScopedRegistryRequest(operationId, status);
         }
     }

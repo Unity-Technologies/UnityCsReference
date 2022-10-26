@@ -158,7 +158,14 @@ namespace Unity.UI.Builder
             m_StyleSelectorElementContainer = this.Q(BuilderConstants.StyleSelectorElementContainerName);
             m_DocumentRootElement = this.Q("document");
             m_DocumentRootElement.StretchToParentSize();
-
+            
+            // Fix UUM-16247 : Ensure the size of the document cannot be changed inside the builder with the :root selector
+            m_DocumentRootElement.style.width = StyleKeyword.Initial;
+            m_DocumentRootElement.style.height = StyleKeyword.Initial;
+            m_DocumentRootElement.style.minWidth = StyleKeyword.Initial;
+            m_DocumentRootElement.style.maxWidth = StyleKeyword.Initial;
+            m_DocumentRootElement.style.minHeight = StyleKeyword.Initial;
+            m_DocumentRootElement.style.maxHeight = StyleKeyword.Initial;
 
             m_Canvas.documentRootElement = m_DocumentRootElement;
             m_EditorLayer = this.Q("__unity-editor-layer");
@@ -275,7 +282,7 @@ namespace Unity.UI.Builder
         public VisualElement PickElement(Vector2 mousePosition, List<VisualElement> pickedElements = null)
         {
             var pickAllFunc = typeof(Panel).GetMethod("PickAll", BindingFlags.Static | BindingFlags.NonPublic);
-            var pickedElement = pickAllFunc.Invoke(obj: null, parameters: new object[] { m_DocumentRootElement, mousePosition, pickedElements }) as VisualElement;
+            var pickedElement = pickAllFunc.Invoke(obj: null, parameters: new object[] { m_DocumentRootElement, mousePosition, pickedElements, true }) as VisualElement;
 
             if (pickedElement == null)
                 return null;
