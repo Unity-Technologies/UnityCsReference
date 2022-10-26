@@ -178,7 +178,8 @@ namespace UnityEngine.UIElements
             evt.StopPropagation();
         }
 
-        private void ShowMenu()
+        // Used in tests
+        internal void ShowMenu()
         {
             IGenericMenu menu;
             if (createMenuCallback != null)

@@ -8,7 +8,9 @@ namespace UnityEditor.PackageManager
     {
         Unknown,
         Default,
+        Global,
         User,
+        Project,
         Environment,
     }
 }

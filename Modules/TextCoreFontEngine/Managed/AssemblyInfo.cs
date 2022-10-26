@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
+[assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor.Tests")]
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 
 // Make internal visible to various tests.

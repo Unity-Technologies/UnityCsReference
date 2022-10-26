@@ -12,6 +12,11 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a dropdown for switching between enum flag values that are marked with the Flags attribute.
     /// </summary>
+    /// <description>
+    /// An option for the value 0 with name "Nothing" and an option for the value ~0 (that is, all bits set) with the
+    /// name "Everything" are always displayed at the top of the menu. The names for the values 0 and ~0 can be
+    /// overriden by defining these values in the enum type.
+    /// </description>
     public class EnumFlagsField : BaseMaskField<Enum>
     {
         /// <summary>
@@ -141,8 +146,8 @@ namespace UnityEditor.UIElements
             if (!m_EnumData.flags)
                 Debug.LogWarning("EnumMaskField is not bound to enum type with the [Flags] attribute");
 
-            choices = new List<string>(m_EnumData.displayNames);
             choicesMasks = new List<int>(m_EnumData.flagValues);
+            choices = new List<string>(m_EnumData.displayNames);
 
             SetValueWithoutNotify(defaultValue);
         }
@@ -177,6 +182,27 @@ namespace UnityEditor.UIElements
         {
             m_EnumType = enumType;
             m_EnumData = EnumDataUtility.GetCachedEnumData(m_EnumType, !includeObsoleteValues);
+        }
+
+        internal override string GetNothingName()
+        {
+            if (m_EnumData.flagValues != null && m_EnumData.flagValues.Length > 0 && m_EnumData.flagValues[0] == 0)
+            {
+                return m_EnumData.displayNames[0];
+            }
+
+            return base.GetNothingName();
+        }
+
+        internal override string GetEverythingName()
+        {
+            if (m_EnumData.flagValues != null && m_EnumData.flagValues.Length > 0
+                && m_EnumData.flagValues[^1] == ~0)
+            {
+                return m_EnumData.displayNames[^1];
+            }
+
+            return base.GetEverythingName();
         }
     }
 }

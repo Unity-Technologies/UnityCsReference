@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
-using UnityEngine.TextCore.LowLevel;
-
-using Glyph = UnityEngine.TextCore.Glyph;
+using UnityEngine.TextCore;
 
 
 namespace UnityEditor.TextCore.Text
@@ -14,7 +12,8 @@ namespace UnityEditor.TextCore.Text
     [CustomPropertyDrawer(typeof(Glyph))]
     internal class GlyphPropertyDrawer : PropertyDrawer
     {
-        private static string k_ColorProperty = "_Color";
+        private Dictionary<uint, GlyphProxy> m_GlyphLookupDictionary;
+
         private static readonly GUIContent k_ScaleLabel = new GUIContent("Scale:", "The scale of this glyph.");
         private static readonly GUIContent k_AtlasIndexLabel = new GUIContent("Atlas Index:", "The index of the atlas texture that contains this glyph.");
         private static readonly GUIContent k_ClassTypeLabel = new GUIContent("Class Type:", "The class definition type of this glyph.");
@@ -27,6 +26,10 @@ namespace UnityEditor.TextCore.Text
             SerializedProperty prop_Scale = property.FindPropertyRelative("m_Scale");
             SerializedProperty prop_AtlasIndex = property.FindPropertyRelative("m_AtlasIndex");
             SerializedProperty prop_ClassDefinitionType = property.FindPropertyRelative("m_ClassDefinitionType");
+
+            // Refresh glyph proxy lookup dictionary if needed.
+            if (TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup)
+                TextCorePropertyDrawerUtilities.RefreshGlyphProxyLookup(property.serializedObject);
 
             GUIStyle style = new GUIStyle(EditorStyles.label);
             style.richText = true;
@@ -55,7 +58,7 @@ namespace UnityEditor.TextCore.Text
                 EditorGUI.PropertyField(new Rect(rect.x + 190, rect.y + 65, minWidth, 18), prop_ClassDefinitionType, k_ClassTypeLabel);
             }
 
-            DrawGlyph(position, property);
+            DrawGlyph(prop_GlyphIndex.uintValue, new Rect(position.x, position.y + 10, 64, 80), property);
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -63,60 +66,37 @@ namespace UnityEditor.TextCore.Text
             return 130f;
         }
 
-        void DrawGlyph(Rect position, SerializedProperty property)
+        void DrawGlyph(uint glyphIndex, Rect position, SerializedProperty property)
         {
-            // Serialized object can either be a FontAsset or a TMP_FontAsset
+            // Get a reference to the serialized object which can either be a TMP_FontAsset or FontAsset.
             SerializedObject so = property.serializedObject;
-
             if (so == null)
                 return;
 
-            // Get reference to the atlas texture for the given atlas index.
-            int atlasIndex = property.FindPropertyRelative("m_AtlasIndex").intValue;
+            if (m_GlyphLookupDictionary == null)
+                m_GlyphLookupDictionary = TextCorePropertyDrawerUtilities.GetGlyphProxyLookupDictionary(so);
 
-            SerializedProperty atlasTextureProperty = so.FindProperty("m_AtlasTextures");
-            Texture2D atlasTexture = atlasTextureProperty.GetArrayElementAtIndex(atlasIndex).objectReferenceValue as Texture2D;
-            if (atlasTexture == null)
+            // Try getting a reference to the glyph for the given glyph index.
+            if (!m_GlyphLookupDictionary.TryGetValue(glyphIndex, out GlyphProxy glyph))
+                return;
+
+            Texture2D atlasTexture;
+            if (TextCorePropertyDrawerUtilities.TryGetAtlasTextureFromSerializedObject(so, glyph.atlasIndex, out atlasTexture) == false)
                 return;
 
             Material mat;
-
-            GlyphRenderMode atlasRenderMode = (GlyphRenderMode)so.FindProperty("m_AtlasRenderMode").intValue;
-            int atlasPadding = so.FindProperty("m_AtlasPadding").intValue;
-
-            if (((GlyphRasterModes)atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
-            {
-                mat = FontAssetEditor.internalBitmapMaterial;
-
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-                mat.SetColor(k_ColorProperty, Color.white);
-            }
-            else
-            {
-                mat = FontAssetEditor.internalSDFMaterial;
-
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-                mat.SetFloat(TextShaderUtilities.ID_GradientScale, atlasPadding + 1);
-            }
+            if (TextCorePropertyDrawerUtilities.TryGetMaterial(so, atlasTexture, out mat) == false)
+                return;
 
             // Draw glyph from atlas texture.
-            Rect glyphDrawPosition = new Rect(position.x, position.y + 2, 64, 80);
+            Rect glyphDrawPosition = position;
 
-            SerializedProperty glyphRectProperty = property.FindPropertyRelative("m_GlyphRect");
-
-            int padding = atlasPadding;
-            int padding2X = padding * 2;
-
-            int glyphOriginX = glyphRectProperty.FindPropertyRelative("m_X").intValue - padding;
-            int glyphOriginY = glyphRectProperty.FindPropertyRelative("m_Y").intValue - padding;
-            int glyphWidth = glyphRectProperty.FindPropertyRelative("m_Width").intValue + padding2X;
-            int glyphHeight = glyphRectProperty.FindPropertyRelative("m_Height").intValue + padding2X;
+            int padding = so.FindProperty("m_AtlasPadding").intValue;
+            GlyphRect glyphRect = glyph.glyphRect;
+            int glyphOriginX = glyphRect.x - padding;
+            int glyphOriginY = glyphRect.y - padding;
+            int glyphWidth = glyphRect.width + padding * 2;
+            int glyphHeight = glyphRect.height + padding * 2;
 
             SerializedProperty faceInfoProperty = so.FindProperty("m_FaceInfo");
             float ascentLine = faceInfoProperty.FindPropertyRelative("m_AscentLine").floatValue;

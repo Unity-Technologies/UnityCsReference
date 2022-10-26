@@ -576,7 +576,10 @@ namespace UnityEditor.AssetImporters
             }
             AssetDatabase.StartAssetEditing();
             foreach (string path in paths)
-                AssetDatabase.ImportAsset(path);
+            {
+                if(File.Exists(path))
+                    AssetDatabase.ImportAsset(path);
+            }
             AssetDatabase.StopAssetEditing();
         }
 

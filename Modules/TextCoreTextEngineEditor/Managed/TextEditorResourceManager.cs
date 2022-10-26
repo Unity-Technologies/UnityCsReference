@@ -199,6 +199,8 @@ namespace UnityEditor.TextCore.Text
                 {
                     EditorUtility.SetDirty(obj);
                 }
+
+                TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup = true;
             }
 
             if (objUpdateCount > 0)

@@ -3592,11 +3592,17 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs">
       <Link>Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\EditorGenericDropdownMenu.cs">
+      <Link>Editor\Mono\UIElements\EditorGenericDropdownMenu.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorMenuExtensions.cs">
       <Link>Editor\Mono\UIElements\EditorMenuExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorWindowPersistentViewData.cs">
       <Link>Editor\Mono\UIElements\EditorWindowPersistentViewData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\GenericDropdownMenuWindowContent.cs">
+      <Link>Editor\Mono\UIElements\GenericDropdownMenuWindowContent.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Inspector\EditorElement.cs">
       <Link>Editor\Mono\UIElements\Inspector\EditorElement.cs</Link>
@@ -7804,9 +7810,6 @@
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\CharacterPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\CharacterPropertyDrawer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\EditorShaderUtilities.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\EditorShaderUtilities.cs</Link>
     </Compile>
@@ -7822,26 +7825,41 @@
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetEditorUtilities.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetEditorUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphMetricsPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphMetricsPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\CharacterPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\CharacterPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphPairAdjustmentRecordPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphPairAdjustmentRecordPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphMetricsPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphMetricsPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphPairAdjustmentRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphPairAdjustmentRecordPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\GlyphRectPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\GlyphRectPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\LigatureSubstitutionRecordPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\LigatureSubstitutionRecordPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphRectPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\GlyphRectPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\MarkToBaseAdjustmentRecordPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\MarkToBaseAdjustmentRecordPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\LigatureSubstitutionRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\LigatureSubstitutionRecordPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\MarkToMarkAdjustmentRecordPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\MarkToMarkAdjustmentRecordPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\MarkToBaseAdjustmentRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\MarkToBaseAdjustmentRecordPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\MarkToMarkAdjustmentRecordPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\MarkToMarkAdjustmentRecordPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\SpriteCharacterPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\SpriteCharacterPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\SpriteGlyphPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\SpriteGlyphPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\TextCorePropertyDrawerUtilities.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\TextCorePropertyDrawerUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\UnicodeLineBreakingRulesPropertyDrawer.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\PropertyDrawers\UnicodeLineBreakingRulesPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SerializedPropertyHolder.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\SerializedPropertyHolder.cs</Link>
@@ -7854,12 +7872,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteAssetImporter.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteAssetImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteCharacterPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteCharacterPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\SpriteGlyphPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\SpriteGlyphPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextAssetPostProcessor.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextAssetPostProcessor.cs</Link>
@@ -7905,9 +7917,6 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextStyleSheetEditor.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextStyleSheetEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\UnicodeLineBreakingRulesPropertyDrawer.cs">
-      <Link>Modules\TextCoreTextEngineEditor\Managed\UnicodeLineBreakingRulesPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRenderingEditor\TextRenderingCommands.cs">
       <Link>Modules\TextRenderingEditor\TextRenderingCommands.cs</Link>

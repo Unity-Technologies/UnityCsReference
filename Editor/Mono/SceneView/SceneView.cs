@@ -1642,7 +1642,7 @@ namespace UnityEditor
             int alreadyInPlaceCounter = 0;
             foreach (Transform transform in transforms)
             {
-                if (transform == null || transform.parent == null || PrefabUtility.IsPartOfNonAssetPrefabInstance(transform))
+                if (transform == null || transform.parent == null || PrefabUtility.IsPartOfNonAssetPrefabInstance(transform.parent))
                 {
                     return false;
                 }

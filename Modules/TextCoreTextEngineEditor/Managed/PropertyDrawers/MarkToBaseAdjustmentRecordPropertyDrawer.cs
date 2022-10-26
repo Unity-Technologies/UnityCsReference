@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
@@ -13,14 +14,14 @@ namespace UnityEditor.TextCore.Text
     [CustomPropertyDrawer(typeof(MarkToBaseAdjustmentRecord))]
     internal class MarkToBaseAdjustmentRecordPropertyDrawer : PropertyDrawer
     {
+        private Dictionary<uint, GlyphProxy> m_GlyphLookupDictionary;
+
         private bool isEditingEnabled = false;
         private bool isSelectable = false;
 
         private string m_PreviousInput;
 
-        //private FontAsset m_FontAsset;
-
-        static GUIContent s_CharacterTextFieldLabel = new GUIContent("Char:", "Enter the character or its UTF16 or UTF32 Unicode character escape sequence. For UTF16 use \"\\uFF00\" and for UTF32 use \"\\UFF00FF00\" representation.");
+        //static GUIContent s_CharacterTextFieldLabel = new GUIContent("Char:", "Enter the character or its UTF16 or UTF32 Unicode character escape sequence. For UTF16 use \"\\uFF00\" and for UTF32 use \"\\UFF00FF00\" representation.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -30,6 +31,10 @@ namespace UnityEditor.TextCore.Text
             SerializedProperty prop_MarkGlyphID = property.FindPropertyRelative("m_MarkGlyphID");
             SerializedProperty prop_MarkAdjustmentRecord = property.FindPropertyRelative("m_MarkPositionAdjustment");
 
+            // Refresh glyph proxy lookup dictionary if needed.
+            if (TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup)
+                TextCorePropertyDrawerUtilities.RefreshGlyphProxyLookup(property.serializedObject);
+
             position.yMin += 2;
 
             float width = position.width / 2;
@@ -38,7 +43,7 @@ namespace UnityEditor.TextCore.Text
             Rect rect;
 
             isEditingEnabled = GUI.enabled;
-            isSelectable = label.text == "Selectable" ? true : false;
+            isSelectable = label.text == "Selectable";
 
             if (isSelectable)
                 GUILayoutUtility.GetRect(position.width, 75);
@@ -64,13 +69,7 @@ namespace UnityEditor.TextCore.Text
                     EditorGUI.DelayedIntField(new Rect(position.x + (64 - labelWidth) / 2, position.y + 60, 64, 18), prop_BaseGlyphID, new GUIContent("ID:"));
                     if (EditorGUI.EndChangeCheck())
                     {
-                        FontAsset fontAsset = property.serializedObject.targetObject as FontAsset;
-                        if (fontAsset != null)
-                        {
-                            property.serializedObject.ApplyModifiedProperties();
-                            fontAsset.ReadFontAssetDefinition();
-                            TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
-                        }
+
                     }
                 }
 
@@ -83,7 +82,7 @@ namespace UnityEditor.TextCore.Text
                 rect.y += 20;
                 EditorGUI.PropertyField(rect, prop_BaseGlyphAnchorPoint.FindPropertyRelative("m_YCoordinate"), new GUIContent("Y:"));
 
-                DrawGlyph((uint)prop_BaseGlyphID.intValue, new Rect(position.x, position.y, position.width, position.height), property);
+                DrawGlyph((uint)prop_BaseGlyphID.intValue, new Rect(position.x, position.y + 2, 64, 60), property);
             }
 
             // Mark Glyph
@@ -103,13 +102,7 @@ namespace UnityEditor.TextCore.Text
                     EditorGUI.DelayedIntField(new Rect(position.width / 2 + 20 + (64 - labelWidth) / 2, position.y + 60, 64, 18), prop_MarkGlyphID, new GUIContent("ID:"));
                     if (EditorGUI.EndChangeCheck())
                     {
-                         FontAsset fontAsset = property.serializedObject.targetObject as FontAsset;
-                         if (fontAsset != null)
-                         {
-                             property.serializedObject.ApplyModifiedProperties();
-                             fontAsset.ReadFontAssetDefinition();
-                             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
-                         }
+
                     }
                 }
 
@@ -122,7 +115,7 @@ namespace UnityEditor.TextCore.Text
                 rect.y += 20;
                 EditorGUI.PropertyField(rect, prop_MarkAdjustmentRecord.FindPropertyRelative("m_YPositionAdjustment"), new GUIContent("Y:"));
 
-                DrawGlyph((uint)prop_MarkGlyphID.intValue, new Rect(position.width / 2 + 20, position.y, position.width, position.height), property);
+                DrawGlyph((uint)prop_MarkGlyphID.intValue, new Rect(position.width / 2 + 20, position.y + 2, 64, 60), property);
             }
         }
 
@@ -195,61 +188,40 @@ namespace UnityEditor.TextCore.Text
             return unicode;
         }
 
-        void DrawGlyph(uint glyphIndex, Rect position, SerializedProperty property)
+        void DrawGlyph(uint glyphIndex, Rect glyphDrawPosition, SerializedProperty property)
         {
-            // Get a reference to the font asset
-            FontAsset fontAsset = property.serializedObject.targetObject as FontAsset;
-
-            if (fontAsset == null)
+            // Get a reference to the serialized object which can either be a TMP_FontAsset or FontAsset.
+            SerializedObject so = property.serializedObject;
+            if (so == null)
                 return;
 
-            Glyph glyph;
+            if (m_GlyphLookupDictionary == null)
+                m_GlyphLookupDictionary = TextCorePropertyDrawerUtilities.GetGlyphProxyLookupDictionary(so);
 
-            // Check if glyph is present in the atlas texture.
-            if (!fontAsset.glyphLookupTable.TryGetValue(glyphIndex, out glyph))
+            // Try getting a reference to the glyph for the given glyph index.
+            if (!m_GlyphLookupDictionary.TryGetValue(glyphIndex, out GlyphProxy glyph))
                 return;
 
-            // Get the atlas index of the glyph and lookup its atlas texture
-            int atlasIndex = glyph.atlasIndex;
-            Texture2D atlasTexture = fontAsset.atlasTextures.Length > atlasIndex ? fontAsset.atlasTextures[atlasIndex] : null;
-
-            if (atlasTexture == null)
+            Texture2D atlasTexture;
+            if (TextCorePropertyDrawerUtilities.TryGetAtlasTextureFromSerializedObject(so, glyph.atlasIndex, out atlasTexture) == false)
                 return;
 
             Material mat;
-            if (((GlyphRasterModes)fontAsset.atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
-            {
-                mat = FontAssetEditor.internalBitmapMaterial;
+            if (TextCorePropertyDrawerUtilities.TryGetMaterial(so, atlasTexture, out mat) == false)
+                return;
 
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-            }
-            else
-            {
-                mat = FontAssetEditor.internalSDFMaterial;
-
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-                mat.SetFloat(TextShaderUtilities.ID_GradientScale, fontAsset.atlasPadding + 1);
-            }
-
-            // Draw glyph from atlas texture.
-            Rect glyphDrawPosition = new Rect(position.x, position.y + 2, 64, 60);
-
+            int padding = so.FindProperty("m_AtlasPadding").intValue;
             GlyphRect glyphRect = glyph.glyphRect;
-
-            int padding = fontAsset.atlasPadding;
-
             int glyphOriginX = glyphRect.x - padding;
             int glyphOriginY = glyphRect.y - padding;
             int glyphWidth = glyphRect.width + padding * 2;
             int glyphHeight = glyphRect.height + padding * 2;
 
-            float normalizedHeight = fontAsset.faceInfo.ascentLine - fontAsset.faceInfo.descentLine;
+            SerializedProperty faceInfoProperty = so.FindProperty("m_FaceInfo");
+            float ascentLine = faceInfoProperty.FindPropertyRelative("m_AscentLine").floatValue;
+            float descentLine = faceInfoProperty.FindPropertyRelative("m_DescentLine").floatValue;
+
+            float normalizedHeight = ascentLine - descentLine;
             float scale = glyphDrawPosition.width / normalizedHeight;
 
             // Compute the normalized texture coordinates
@@ -266,7 +238,5 @@ namespace UnityEditor.TextCore.Text
                 Graphics.DrawTexture(glyphDrawPosition, atlasTexture, texCoords, 0, 0, 0, 0, new Color(1f, 1f, 1f), mat);
             }
         }
-
-
     }
 }

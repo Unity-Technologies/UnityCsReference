@@ -15,21 +15,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (seeAllVersions || !versonList.Any(v => v.isUnityPackage))
                 return versonList;
 
-            var packageTagsToKeep = PackageTag.Release | PackageTag.ReleaseCandidate;
+            var packageTagsToExclude = PackageTag.PreRelease | PackageTag.Experimental;
 
             var installedVersion = versonList.installed;
             if (showPreRelease || installedVersion?.HasTag(PackageTag.PreRelease | PackageTag.Experimental) == true)
-                packageTagsToKeep |= PackageTag.PreRelease;
+                packageTagsToExclude &= ~PackageTag.PreRelease;
 
             // should see updates to the installed experimental packages, if they exist
             if (installedVersion?.HasTag(PackageTag.Experimental) == true)
-                packageTagsToKeep |= PackageTag.Experimental;
+                packageTagsToExclude &= ~PackageTag.Experimental;
 
             var numVersionsFilteredOut = 0;
             var filteredVersions = new List<UpmPackageVersion>();
             foreach (var version in versonList.Cast<UpmPackageVersion>())
             {
-                if (version.isInstalled || version.HasTag(packageTagsToKeep))
+                if (version.isInstalled || !version.HasTag(packageTagsToExclude))
                     filteredVersions.Add(version);
                 else
                     ++numVersionsFilteredOut;

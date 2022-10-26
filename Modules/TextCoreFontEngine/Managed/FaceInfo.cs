@@ -45,6 +45,11 @@ namespace UnityEngine.TextCore
         /// </summary>
         public float scale { get { return m_Scale; } set { m_Scale = value; } }
 
+        /// <summary>
+        /// The units per EM for the font face.
+        /// </summary>
+        internal int unitsPerEM { get { return m_UnitsPerEM; } set { m_UnitsPerEM = value; } }
+
         // Key metrics for the typeface
 
         /// <summary>
@@ -148,6 +153,10 @@ namespace UnityEngine.TextCore
         private float m_Scale;
 
         [SerializeField]
+        [NativeName("unitsPerEM")]
+        private int m_UnitsPerEM;
+
+        [SerializeField]
         [NativeName("lineHeight")]
         private float m_LineHeight;
 
@@ -210,7 +219,7 @@ namespace UnityEngine.TextCore
         /// <summary>
         /// Constructor used for testing
         /// </summary>
-        internal FaceInfo(string familyName, string styleName, int pointSize, float scale, float lineHeight, float ascentLine, float capLine, float meanLine, float baseline, float descentLine, float superscriptOffset, float superscriptSize, float subscriptOffset, float subscriptSize, float underlineOffset, float underlineThickness, float strikethroughOffset, float strikethroughThickness, float tabWidth)
+        internal FaceInfo(string familyName, string styleName, int pointSize, float scale, int unitsPerEM, float lineHeight, float ascentLine, float capLine, float meanLine, float baseline, float descentLine, float superscriptOffset, float superscriptSize, float subscriptOffset, float subscriptSize, float underlineOffset, float underlineThickness, float strikethroughOffset, float strikethroughThickness, float tabWidth)
         {
             m_FaceIndex = 0;
             m_FamilyName = familyName;
@@ -218,6 +227,7 @@ namespace UnityEngine.TextCore
 
             m_PointSize = pointSize;
             m_Scale = scale;
+            m_UnitsPerEM = unitsPerEM;
 
             m_LineHeight = lineHeight;
             m_AscentLine = ascentLine;
@@ -252,6 +262,7 @@ namespace UnityEngine.TextCore
                 faceIndex == other.faceIndex &&
                 pointSize == other.pointSize &&
                 FontEngineUtilities.Approximately(scale, other.scale) &&
+                FontEngineUtilities.Approximately(unitsPerEM, other.unitsPerEM) &&
                 FontEngineUtilities.Approximately(lineHeight, other.lineHeight) &&
                 FontEngineUtilities.Approximately(ascentLine, other.ascentLine) &&
                 FontEngineUtilities.Approximately(capLine, other.capLine) &&
