@@ -617,7 +617,7 @@ namespace UnityEditorInternal
                             var modification = new PropertyModification();
 
                             modification.target = targetObjects[j];
-                            modification.propertyPath = singleProperty.propertyPath;
+                            modification.propertyPath = (singleProperty.isReferencingAManagedReferenceField ? singleProperty.managedReferencePropertyPath : singleProperty.propertyPath);
                             modification.value = value;
                             modification.objectReference = objectReference;
                             modifications.Add(modification);
@@ -643,7 +643,7 @@ namespace UnityEditorInternal
                             var modification = new PropertyModification();
 
                             modification.target = targetObjects[j];
-                            modification.propertyPath = propertyIter.propertyPath;
+                            modification.propertyPath = (propertyIter.isReferencingAManagedReferenceField ? propertyIter.managedReferencePropertyPath : propertyIter.propertyPath);
                             modification.value = value;
                             modification.objectReference = objectReference;
                             modifications.Add(modification);

@@ -40,16 +40,19 @@ namespace UnityEditor.PackageManager
         [NativeName("capabilities")]
         private SearchCapabilities m_Capabilities;
 
-        internal RegistryInfo() : this("", "", "", new string[0], false, SearchCapabilities.None) {}
+        [SerializeField]
+        [NativeName("configSource")]
+        private ConfigSource m_ConfigSource;
 
-        internal RegistryInfo(string id, string name, string url, string[] scopes, bool isDefault, SearchCapabilities capabilities)
+        internal RegistryInfo(string id = "", string name = "", string url = "", string[] scopes = null, bool isDefault = false, SearchCapabilities capabilities = SearchCapabilities.None, ConfigSource configSource = ConfigSource.Unknown)
         {
             m_Id = id;
             m_Name = name;
             m_Url = url;
-            m_Scopes = scopes;
+            m_Scopes = scopes ?? Array.Empty<string>();
             m_IsDefault = isDefault;
             m_Capabilities = capabilities;
+            m_ConfigSource = configSource;
         }
 
         internal string id { get { return m_Id;  } }
@@ -58,5 +61,6 @@ namespace UnityEditor.PackageManager
         internal string[] scopes { get { return m_Scopes; } }
         public bool isDefault { get { return m_IsDefault; } }
         internal SearchCapabilities capabilities { get { return m_Capabilities; } }
+        internal ConfigSource configSource { get { return m_ConfigSource; } }
     }
 }

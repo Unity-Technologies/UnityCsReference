@@ -848,6 +848,27 @@ namespace UnityEditor
         [NativeName("GetPropertyPathInCurrentManagedTypeTree")]
         internal extern string GetPropertyPathInCurrentManagedTypeTreeInternal();
 
+
+        /// <summary>
+        /// If the current field is on a SerializeReference instance this returns the path
+        /// of the field relative the ManagedReferenceRegistry. managedReferences[refId].field
+        /// </summary>
+        internal string managedReferencePropertyPath
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetManagedReferencePropertyPathInternal();
+            }
+        }
+
+        /// <summary>
+        /// Returns the path of the current field relative to the managed reference registry managedReferences[refId].
+        /// </summary>
+        // Useful in the same context as 'isReferencingAManagedReferenceField'.
+        [NativeName("GetManagedReferencePropertyPath")]
+        internal extern string GetManagedReferencePropertyPathInternal();
+
         // Is property's value different from the prefab it belongs to?
         public bool prefabOverride
         {

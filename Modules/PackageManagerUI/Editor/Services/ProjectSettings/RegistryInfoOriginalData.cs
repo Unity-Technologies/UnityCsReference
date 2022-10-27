@@ -25,6 +25,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string[] scopes => m_RegistryInfo?.scopes;
 
+        public ConfigSource configSource => m_RegistryInfo?.configSource ?? ConfigSource.Unknown;
+
         public void SetRegistryInfo(RegistryInfo registryInfo)
         {
             // make a copy to prevent alteration of underlying scoped registries
@@ -34,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private RegistryInfo CopyOriginal(RegistryInfo original)
         {
-            return original != null ? new RegistryInfo(original.id, original.name, original.url, original.scopes?.Clone() as string[], original.isDefault, original.capabilities)
+            return original != null ? new RegistryInfo(original.id, original.name, original.url, original.scopes?.Clone() as string[], original.isDefault, original.capabilities, original.configSource)
                 : null;
         }
 
