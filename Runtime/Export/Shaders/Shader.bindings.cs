@@ -30,6 +30,8 @@ namespace UnityEngine
         public static Shader Find(string name) => ResourcesAPI.ActiveAPI.FindShaderByName(name);
         [FreeFunction("GetBuiltinResource<Shader>")] extern internal static Shader FindBuiltin(string name);
 
+        [NativeProperty("MaxChunksRuntimeOverride")] extern public static int maximumChunksOverride { get; set; }
+
         [NativeProperty("MaximumShaderLOD")] extern public int maximumLOD { get; set; }
         [NativeProperty("GlobalMaximumShaderLOD")] extern public static int globalMaximumLOD { get; set; }
         extern public bool isSupported {[NativeMethod("IsSupported")] get; }

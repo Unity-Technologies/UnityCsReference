@@ -374,11 +374,12 @@ namespace UnityEngine.UIElements
             {
                 if (Event.current.type != EventType.Layout && canAffectFocus)
                 {
+                    bool alreadyUsed = Event.current.type == EventType.Used;
                     int currentKeyboardFocus = GUIUtility.keyboardControl;
                     int result = GUIUtility.CheckForTabEvent(Event.current);
                     if (focusController != null)
                     {
-                        if (result < 0)
+                        if (result < 0 && !alreadyUsed)
                         {
                             // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
                             // We should switch the focus to the next VisualElement.
@@ -414,7 +415,7 @@ namespace UnityEngine.UIElements
                                 }
                             }
                         }
-                        else if (result > 0)
+                        else if (result > 0 && !alreadyUsed)
                         {
                             // A positive result indicates that the focused control has changed to one of our elements; result holds the control id.
                             focusController.imguiKeyboardControl = GUIUtility.keyboardControl;

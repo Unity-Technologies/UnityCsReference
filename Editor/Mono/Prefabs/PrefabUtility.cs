@@ -523,69 +523,7 @@ namespace UnityEditor
             var serializedObjects = new List<SerializedObject>();
             var changedObjects = new HashSet<SerializedObject>();
 
-            bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
-
-            SerializedProperty property = null;
-            SerializedProperty endProperty = null;
-            if (optionalSingleInstanceProperty != null)
-            {
-                bool cancel;
-                property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
-                    optionalSingleInstanceProperty,
-                    prefabSourceSerializedObject,
-                    action,
-                    out cancel);
-
-                if (cancel)
-                    return;
-
-                if (property == null)
-                {
-                    // We didn't find any mismatching array so just use the property the user supplied.
-                    property = optionalSingleInstanceProperty.Copy();
-                }
-                endProperty = property.GetEndProperty();
-            }
-            else
-            {
-                // Note: Mismatching array sizes are not a problem when applying entire component,
-                // since array sizes will always be applied before array content.
-                SerializedObject so = new SerializedObject(prefabInstanceObject);
-                property = so.GetIterator();
-            }
-
-            if (!property.hasVisibleChildren)
-            {
-                if (property.prefabOverride)
-                    ApplySingleProperty(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, true, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
-            }
-            else
-            {
-                while (property.Next(property.hasVisibleChildren) && (endProperty == null || !SerializedProperty.EqualContents(property, endProperty)))
-                {
-                    // If we apply a property that has child properties that are object references, and if they
-                    // reference non-asset objects, those references will get lost, since ApplySingleProperty
-                    // only patches up references in the provided property; not its children.
-                    // This could be fixed by letting ApplySingleProperty patch up all its child properties as well,
-                    // but then calling ApplySingleProperty n times would result in time complexity n*log(n).
-                    // Instead we only call ApplySingleProperty for visible leaf properties - the ones that actually
-                    // contain the data.
-                    // Technically, leaf properties contain the data, but we're using visible leafs here, which
-                    // corresponds to leaf nodes as shown in the Inspector. Note, this is not related to foldout
-                    // expanded state; it's related to the fact that some nodes can have flags that hide them.
-                    // Furthermore, special property types - like object references, which is what we're particularly
-                    // interested in - are hardcoded to have their child nodes hidden. We need to call
-                    // ApplySingleProperty on the object reference property and not its hidden children, so we use
-                    // hasHiddenChildren, not hasChildren, to determine which properties to call the method on.
-                    // Applying all visible leaf properties applies all data only once and ensures that when an
-                    // object reference is applied, it's via its own property and not a parent property.
-
-                    // NOTE: all property modifications are leafs except in the context of managed references.
-                    // Managed references can be overriden (and have visible children).
-                    if (property.prefabOverride && (property.propertyType == SerializedPropertyType.ManagedReference || !property.hasVisibleChildren))
-                        ApplySingleProperty(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowApplyDefaultOverride, serializedObjects, changedObjects, action);
-                }
-            }
+            HandleApplySingleProperties(prefabInstanceObject, optionalSingleInstanceProperty, assetPath, prefabSourceObject, prefabSourceSerializedObject, serializedObjects, changedObjects, allowApplyDefaultOverride, action);
 
             // Ensure importing of saved Prefab Assets only kicks in after all Prefab Asset have been saved
             AssetDatabase.StartAssetEditing();
@@ -625,6 +563,111 @@ namespace UnityEditor
             finally
             {
                 AssetDatabase.StopAssetEditing();
+            }
+        }
+
+        static void HandleApplySingleProperties(
+            Object prefabInstanceObject,
+            SerializedProperty optionalSingleInstanceProperty,
+            string assetPath, Object prefabSourceObject,
+            SerializedObject prefabSourceSerializedObject,
+            List<SerializedObject> serializedObjects,
+            HashSet<SerializedObject> changedObjects,
+            bool allowApplyDefaultOverride,
+            InteractionMode action
+            )
+        {
+            bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
+
+            SerializedProperty property = null;
+            SerializedProperty endProperty = null;
+            if (optionalSingleInstanceProperty != null)
+            {
+                bool cancel;
+                property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
+                    optionalSingleInstanceProperty,
+                    prefabSourceSerializedObject,
+                    action,
+                    out cancel);
+
+                if (cancel)
+                    return;
+
+                if (property == null)
+                {
+                    // We didn't find any mismatching array so just use the property the user supplied.
+                    property = optionalSingleInstanceProperty.Copy();
+                }
+                endProperty = property.GetEndProperty();
+            }
+            else
+            {
+                // Note: Mismatching array sizes are not a problem when applying entire component,
+                // since array sizes will always be applied before array content.
+                SerializedObject so = new SerializedObject(prefabInstanceObject);
+                property = so.GetIterator();
+            }
+
+            bool allowWarnAboutApplyingPartsOfManagedReferences = property.isReferencingAManagedReferenceField;
+
+            if (!property.hasVisibleChildren)
+            {
+                if (property.prefabOverride)
+                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, true, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out _);
+            }
+            else
+            {
+                if (property.prefabOverride && property.propertyType == SerializedPropertyType.ManagedReference)
+                {
+                    allowWarnAboutApplyingPartsOfManagedReferences = false; // we should always be allowed to apply a managed reference root
+                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out _);
+                }
+
+                var visitedManagedReferenceProperties = new HashSet<long>();
+                bool visitChildren = property.hasVisibleChildren;
+
+                while (property.Next(visitChildren) && (endProperty == null || !SerializedProperty.EqualContents(property, endProperty)))
+                {
+                    // If we apply a property that has child properties that are object references, and if they
+                    // reference non-asset objects, those references will get lost, since ApplySingleProperty
+                    // only patches up references in the provided property; not its children.
+                    // This could be fixed by letting ApplySingleProperty patch up all its child properties as well,
+                    // but then calling ApplySingleProperty n times would result in time complexity n*log(n).
+                    // Instead we only call ApplySingleProperty for visible leaf properties - the ones that actually
+                    // contain the data.
+                    // Technically, leaf properties contain the data, but we're using visible leafs here, which
+                    // corresponds to leaf nodes as shown in the Inspector. Note, this is not related to foldout
+                    // expanded state; it's related to the fact that some nodes can have flags that hide them.
+                    // Furthermore, special property types - like object references, which is what we're particularly
+                    // interested in - are hardcoded to have their child nodes hidden. We need to call
+                    // ApplySingleProperty on the object reference property and not its hidden children, so we use
+                    // hasHiddenChildren, not hasChildren, to determine which properties to call the method on.
+                    // Applying all visible leaf properties applies all data only once and ensures that when an
+                    // object reference is applied, it's via its own property and not a parent property.
+
+                    // NOTE: all property modifications are leafs except in the context of managed references.
+                    // Managed references can be overriden (and have visible children).
+                    bool isManagedReferenceRoot = property.propertyType == SerializedPropertyType.ManagedReference;
+                    bool skipRestOfProperties = false;
+                    if (property.prefabOverride && (isManagedReferenceRoot || !property.hasVisibleChildren))
+                        ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out skipRestOfProperties);
+
+                    if (skipRestOfProperties)
+                        break;
+
+                    // Avoid cyclic mangaged references
+                    if (isManagedReferenceRoot)
+                    {
+                        if (visitedManagedReferenceProperties.Add(property.managedReferenceId))
+                            visitChildren = property.hasVisibleChildren; // First time seeing managed reference, so allow entering children if needed
+                        else
+                            visitChildren = false;
+                    }
+                    else
+                    {
+                        visitChildren = property.hasVisibleChildren;
+                    }
+                }
             }
         }
 
@@ -681,6 +724,16 @@ namespace UnityEditor
                 // Check if found array has different length on instance than on Asset.
                 SerializedProperty arrayPropertyOnInstance = optionalSingleInstanceProperty.serializedObject.FindProperty(arrayPropertyPath);
                 SerializedProperty arrayPropertyOnAsset = prefabSourceSerializedObject.FindProperty(arrayPropertyPath);
+
+                // With the ManagedReferences feature we no longer guarantee that the Prefab Asset will have the same property so we need to check
+                // if it exists (could be a base class without any properties)
+                if (arrayPropertyOnAsset == null)
+                {
+                    WarnIfApplyingManagedReferenceFieldIsNotPossible(optionalSingleInstanceProperty, null, action);
+                    cancel = true;
+                    return null;
+                }
+
                 if (arrayPropertyOnInstance.arraySize > arrayPropertyOnAsset.arraySize)
                 {
                     // Array size mismatches. Check if the property the user is attempting to apply
@@ -720,17 +773,21 @@ namespace UnityEditor
         // That may be thousands of times if a component has lots of array data.
         // We provide as much information as possible to the method as parameters
         // so we don't have to recalculate it for each call.
-        static void ApplySingleProperty(
+        static void ApplySinglePropertyAndRemoveOverride(
             SerializedProperty instanceProperty,
             SerializedObject prefabSourceSerializedObject,
             Object applyTarget,
             bool isObjectOnRootInAsset,
             bool singlePropertyOnly,
+            bool allowWarnAboutApplyingPartsOfManagedReferences,
             bool allowApplyDefaultOverride,
             List<SerializedObject> serializedObjects,
             HashSet<SerializedObject> changedObjects,
-            InteractionMode action)
+            InteractionMode action,
+            out bool skipRestOfProperties)
         {
+            skipRestOfProperties = false;
+
             if (!allowApplyDefaultOverride && isObjectOnRootInAsset && IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty))
             {
                 if (singlePropertyOnly)
@@ -751,6 +808,7 @@ namespace UnityEditor
             SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
             if (sourceProperty == null)
             {
+                // Special handling for arrays
                 bool cancel;
                 var instanceArrayProperty = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(instanceProperty, prefabSourceSerializedObject, InteractionMode.AutomatedAction, out cancel);
                 if (instanceArrayProperty != null)
@@ -765,15 +823,34 @@ namespace UnityEditor
                         return;
                     }
                 }
-                else
-                {
-                    Debug.LogError($"ApplySingleProperty copy state error: SerializedProperty could not be found for {instanceProperty.propertyPath}. Please report a bug.");
-                    return;
-                }
+            }
+
+            if (allowWarnAboutApplyingPartsOfManagedReferences && WarnIfApplyingManagedReferenceFieldIsNotPossible(instanceProperty, sourceProperty, action))
+            {
+                skipRestOfProperties = true;
+                return;
+            }
+
+            if (sourceProperty == null)
+            {
+                // If we reach here we need to investigate the situation in which it happens and fix it
+                Debug.LogError($"ApplySinglePropertyAndRemoveOverride error: Unhandled situation for {instanceProperty.propertyPath}. Please report a bug.");
+                skipRestOfProperties = true;
+                return;
             }
 
             // Copy overridden property value to asset
-            prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
+            if (instanceProperty.propertyType == SerializedPropertyType.ManagedReference)
+            {
+                // For a managed reference root property we assign the entire object reference value so we can handle if the Asset value is null from start, since in
+                // this case we cannot use CopyFromSerializedProperty as we do for normal properties.
+                sourceProperty.managedReferenceValue = instanceProperty.managedReferenceValue;
+            }
+            else
+            {
+                prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
+            }
+
             changedObjects.Add(prefabSourceSerializedObject);
 
             // Abort if property has reference to object in scene.
@@ -857,6 +934,10 @@ namespace UnityEditor
                 return;
 
             foreach (var property in instanceProperties)
+                if (WarnIfRevertingManagedReferenceIsNotPossible(property, action))
+                    return;
+
+            foreach (var property in instanceProperties)
                 RevertPropertyOverride(property, action);
         }
 
@@ -867,12 +948,110 @@ namespace UnityEditor
 
             ThrowExceptionIfAllPrefabInstanceObjectsAreInvalid(instanceProperty.serializedObject.targetObjects, false);
 
+            if (WarnIfRevertingManagedReferenceIsNotPossible(instanceProperty, action))
+                return;
+
             instanceProperty.prefabOverride = false;
+
             // Because prefabOverride changed ApplyModifiedProperties will do a prefab merge causing the revert.
             if (action == InteractionMode.UserAction)
                 instanceProperty.serializedObject.ApplyModifiedProperties();
             else
                 instanceProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static bool WarnIfApplyingManagedReferenceFieldIsNotPossible(SerializedProperty instanceProperty, SerializedProperty sourceProperty, InteractionMode action)
+        {
+            bool isReferencingAManagedReferenceField = instanceProperty.isReferencingAManagedReferenceField;
+            if (!isReferencingAManagedReferenceField)
+                return false;
+
+            if (sourceProperty != null)
+            {
+                // Even if we find the propertyPath on the source object we also need to validate if this is a managed reference to the correct source object, except when
+                // applying an entire object because then entire state is transfered to the asset and can merged back to the instance so here we don't show the dialog.
+                bool applyingNotPossible = instanceProperty.managedReferencePropertyPath != sourceProperty.managedReferencePropertyPath;
+                if (applyingNotPossible)
+                {
+                    string title = L10n.Tr("Mismatching Objects");
+                    string errorMsg = L10n.Tr("Cannot apply SerializeReference field since the Prefab instance is referencing a new object compared to the Prefab Asset.\n\nThis means that the changes from the Prefab Asset cannot be merged back to the Prefab instance.\n\nYou can apply the root of the field or the entire component");
+                    if (action == InteractionMode.AutomatedAction)
+                        throw new InvalidOperationException(title + ": " + errorMsg + $"(instance property { instanceProperty.managedReferencePropertyPath}, asset property { sourceProperty.managedReferencePropertyPath})");
+                    else
+                        EditorUtility.DisplayDialog(
+                            title,
+                            errorMsg,
+                            L10n.Tr("OK"));
+                    return true;
+                }
+            }
+            else
+            {
+                // Special handling for managed references.
+                // If we have a valid managedReferencePropertyPath then the types must be different since we could not find the
+                // propertyPath on the Prefab Asset, tell the user that this is not supported.
+                if (!string.IsNullOrEmpty(instanceProperty.managedReferencePropertyPath))
+                {
+                    string title = L10n.Tr("Mismatching Types");
+                    string errorMsg = L10n.Tr("Cannot apply a SerializeReference sub field when the type from the Prefab instance is different from the Prefab Asset.\n\nYou can apply the root of the field or the entire component");
+                    if (action == InteractionMode.AutomatedAction)
+                        throw new InvalidOperationException(title + ": " + errorMsg);
+                    else
+                        EditorUtility.DisplayDialog(
+                            title,
+                            errorMsg,
+                            L10n.Tr("OK"));
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool WarnIfRevertingManagedReferenceIsNotPossible(SerializedProperty instanceProperty, InteractionMode action)
+        {
+            if (!instanceProperty.isReferencingAManagedReferenceField)
+                return false;
+
+            var instanceObject = instanceProperty.serializedObject.targetObject;
+            var prefabSourceObject = GetCorrespondingObjectFromSource(instanceObject);
+            SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
+            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
+
+            string errorMsg = "";
+            string title = "";
+            if (sourceProperty != null)
+            {
+                // Object mismatch:
+                bool revertingNotPossible = instanceProperty.managedReferencePropertyPath != sourceProperty.managedReferencePropertyPath;
+                if (revertingNotPossible)
+                {
+                    title = L10n.Tr("Mismatching Objects");
+                    errorMsg = L10n.Tr("Cannot revert a single SerializeReference field since the Prefab instance is referencing a new object compared to the Prefab Asset.\n\nThis means that the entire object is considered an override, cannot revert parts of it.\n\nYou can revert the root of the serialized reference or the entire component.");
+                }
+            }
+            else
+            {
+                // Type mismatch:
+                title = L10n.Tr("Mismatching Types");
+                errorMsg = L10n.Tr("Cannot revert a parts of a SerializeReference property since the Prefab instance is referencing a different type compared to the Prefab Asset.\n\nYou can revert the root of the serialized reference or the entire component.");
+            }
+
+            bool warnUser = !string.IsNullOrEmpty(errorMsg);
+            if (warnUser)
+            {
+                if (action == InteractionMode.AutomatedAction)
+                {
+                    throw new InvalidOperationException(title + ": " + errorMsg);
+                }
+                else if (action == InteractionMode.UserAction)
+                {
+                    EditorUtility.DisplayDialog(title, errorMsg, L10n.Tr("OK"));
+                }
+            }
+
+            return warnUser;
         }
 
         public static void ApplyObjectOverride(Object instanceComponentOrGameObject, string assetPath, InteractionMode action)

@@ -299,12 +299,13 @@ namespace UnityEditor
                 TakeInfo takeInfo = singleImporter.importedTakeInfos[i];
 
                 string uniqueName = MakeUniqueClipName(takeInfo.defaultClipName, allClipNames);
+                string uniqueIdentifier = MakeUniqueClipName(takeInfo.name, allClipNames);
                 allClipNames.Add(uniqueName);
 
                 arrayElemProp.Next(false);
                 AnimationClipInfoProperties info = new AnimationClipInfoProperties(arrayElemProp);
                 info.name = uniqueName;
-                InitAnimationClipInfoProperties(info, takeInfo);
+                InitAnimationClipInfoProperties(info, takeInfo, uniqueIdentifier, 0);
             }
             UpdateList();
 
@@ -900,14 +901,22 @@ namespace UnityEditor
             AnimationClipInfoProperties info = new AnimationClipInfoProperties(property);
 
             info.name = uniqueName;
-            InitAnimationClipInfoProperties(info, takeInfo);
+            InitAnimationClipInfoProperties(info, takeInfo, uniqueName, m_ClipAnimations.arraySize - 1);
             UpdateList();
         }
 
-        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo)
+        void InitAnimationClipInfoProperties(AnimationClipInfoProperties info, TakeInfo takeInfo, string uniqueIdentifier, int clipOffset)
         {
             SetupTakeNameAndFrames(info, takeInfo);
-            info.internalID = 0L;
+
+            var animationClipType = UnityType.FindTypeByName("AnimationClip");
+
+            long id = ImportSettingInternalID.FindInternalID(serializedObject, animationClipType, uniqueIdentifier);
+
+            info.internalID = id == 0L
+                ? AssetImporter.MakeLocalFileIDWithHash(animationClipType.persistentTypeID, uniqueIdentifier, clipOffset)
+                : id;
+
             info.wrapMode = (int)WrapMode.Default;
             info.loop = false;
             info.orientationOffsetY = 0;

@@ -286,6 +286,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GetRegistryLabel(draft.original?.name)?.EnableInClassList(k_SelectedRegistryClass, false);
             m_SettingsProxy.SelectRegistry(registryName);
             GetRegistryLabel(registryName).EnableInClassList(k_SelectedRegistryClass, true);
+            removeRegistryButton.SetEnabled(canEditSelectedRegistry);
             UpdateRegistryDetails();
         }
 
@@ -362,6 +363,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var registryInfo in m_SettingsProxy.scopedRegistries)
             {
+                if (m_RegistryLabels.ContainsKey(registryInfo.name))
+                {
+                    // Workaround because registries are keyed by registryInfo.name rather than registryInfo.id.
+                    // Without this, the UI just fails to render and there's an uncaught
+                    // ArgumentException error logged in the console due to a duplicate key error
+                    // thrown by m_RegistryLabels.Add below.
+                    UnityEngine.Debug.LogWarning(
+                        string.Format(
+                            L10n.Tr("Unable to display a scoped registry named {0} defined in a UPM configuration file: an existing scoped registry has the same name in your project manifest. Rename one of the conflicting scoped registries if you want to see them all in the Scoped Registry list."),
+                            registryInfo.name)
+                    );
+                    continue;
+                }
                 var label = new Label(registryInfo.name);
                 label.OnLeftClick(() => OnRegistryLabelClicked(registryInfo.name));
 
@@ -387,11 +401,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             addRegistryButton.SetEnabled(!showAddNewScopedRegistryLabel);
-            removeRegistryButton.SetEnabled(registriesList.childCount > 0 && !(showAddNewScopedRegistryLabel && registriesList.childCount == 1));
+            removeRegistryButton.SetEnabled(registriesList.childCount > 0 && !(showAddNewScopedRegistryLabel && registriesList.childCount == 1) && canEditSelectedRegistry);
         }
 
         private void UpdateRegistryDetails()
         {
+            registriesRightContainer.SetEnabled(canEditSelectedRegistry);
+
             registryNameTextField.SetValueWithoutNotify(draft.name ?? string.Empty);
             registryUrlTextField.SetValueWithoutNotify(draft.url ?? string.Empty);
 
@@ -442,9 +458,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
+        private bool canEditSelectedRegistry
+        {
+            get
+            {
+                // Disallow editing existing registries defined in User or Global UPM configuration files for now
+                return draft.original == null || draft.original.configSource == ConfigSource.Project;
+            }
+        }
+
         private HelpBox scopedRegistriesInfoBox => cache.Get<HelpBox>("scopedRegistriesInfoBox");
         private HelpBox scopedRegistryErrorBox => cache.Get<HelpBox>("scopedRegistryErrorBox");
         internal VisualElement registriesList => cache.Get<VisualElement>("registriesList");
+        internal VisualElement registriesRightContainer => cache.Get<VisualElement>("registriesRightContainer");
         internal TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");
         internal TextField registryUrlTextField => cache.Get<TextField>("registryUrlTextField");
         internal VisualElement scopesList => cache.Get<VisualElement>("scopesList");
