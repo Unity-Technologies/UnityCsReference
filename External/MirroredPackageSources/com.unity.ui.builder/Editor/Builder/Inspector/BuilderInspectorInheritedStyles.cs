@@ -221,7 +221,7 @@ namespace Unity.UI.Builder
 
         void OnStyleClassDelete(EventBase evt)
         {
-            var target = evt.target as VisualElement;
+            var target = evt.elementTarget;
             var className = target.userData as string;
 
             // Actually remove the style class from the element in the canvas.

@@ -121,7 +121,7 @@ namespace UnityEngine.UIElements
         {
             using (ExecuteCommandEvent evt = ExecuteCommandEvent.GetPooled(command))
             {
-                evt.target = this;
+                evt.elementTarget = this;
                 SendEvent(evt);
             }
         }
@@ -278,7 +278,7 @@ namespace UnityEngine.UIElements
                 // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
                 using (InputEvent evt = InputEvent.GetPooled(text, value))
                 {
-                    evt.target = parent;
+                    evt.elementTarget = parent;
                     ((INotifyValueChanged<string>)this).SetValueWithoutNotify(value);
                     parent?.SendEvent(evt);
                 }

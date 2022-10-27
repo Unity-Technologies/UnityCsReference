@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements.Experimental
         {
             if (m_Event != null && m_Event.log)
             {
-                IPanel panel = (m_Event.target as VisualElement)?.panel;
+                IPanel panel = m_Event.elementTarget?.panel;
                 IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
 
                 m_Event.eventLogger.LogCall(GetCallbackHashCode(), GetCallbackName(), m_Event,
@@ -85,7 +85,7 @@ namespace UnityEngine.UIElements.Experimental
         {
             if (m_Event != null && m_Event.log)
             {
-                IPanel panel = (m_Event.target as VisualElement)?.panel;
+                IPanel panel = m_Event.elementTarget?.panel;
                 IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
                 m_Event.eventLogger.LogIMGUICall(m_Event,
                     (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, capture);
@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements.Experimental
         {
             if (m_Event != null && m_Event.log)
             {
-                IPanel panel = (m_Event.target as VisualElement)?.panel;
+                IPanel panel = m_Event.elementTarget?.panel;
                 IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
                 m_Event.eventLogger.LogExecuteDefaultAction(m_Event, m_Event.propagationPhase,
                     (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, capture);
@@ -199,8 +199,7 @@ namespace UnityEngine.UIElements.Experimental
 
         void LogPropagationPathsInternal(EventBase evt, PropagationPaths paths)
         {
-            var pathsCopy = paths == null ? new PropagationPaths() : new PropagationPaths(paths);
-            AddPropagationPaths(evt, pathsCopy);
+            AddPropagationPaths(evt, paths);
             UpdateModificationCount();
         }
 
@@ -406,6 +405,11 @@ namespace UnityEngine.UIElements.Experimental
                 }
             }
 
+            void SendEvent(EventBase evt)
+            {
+                (panel as BaseVisualElementPanel)?.SendEvent(evt);
+            }
+
             for (var i = 0; i < sortedEventsCount; i++)
             {
                 if (!isReplaying)
@@ -423,126 +427,106 @@ namespace UnityEngine.UIElements.Experimental
                 if (eventBase.eventTypeId == MouseMoveEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseMove;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove));
                 }
                 else if (eventBase.eventTypeId == MouseDownEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseDown;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown));
                 }
                 else if (eventBase.eventTypeId == MouseUpEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseUp;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp));
                 }
                 else if (eventBase.eventTypeId == ContextClickEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.ContextClick;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.ContextClick), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ContextClick));
                 }
                 else if (eventBase.eventTypeId == MouseEnterWindowEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseEnterWindow;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseEnterWindow), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseEnterWindow));
                 }
                 else if (eventBase.eventTypeId == MouseLeaveWindowEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseLeaveWindow;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseLeaveWindow), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseLeaveWindow));
                 }
                 else if (eventBase.eventTypeId == PointerMoveEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseMove;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove));
                 }
                 else if (eventBase.eventTypeId == PointerDownEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseDown;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown));
                 }
                 else if (eventBase.eventTypeId == PointerUpEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.MouseUp;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp));
                 }
                 else if (eventBase.eventTypeId == WheelEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
                 {
                     newEvent.type = EventType.ScrollWheel;
                     newEvent.delta = eventBase.delta;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.ScrollWheel), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ScrollWheel));
                 }
                 else if (eventBase.eventTypeId == KeyDownEvent.TypeId())
                 {
                     newEvent.type = EventType.KeyDown;
                     newEvent.character = eventBase.character;
                     newEvent.keyCode = eventBase.keyCode;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.KeyDown), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.KeyDown));
                 }
                 else if (eventBase.eventTypeId == KeyUpEvent.TypeId())
                 {
                     newEvent.type = EventType.KeyUp;
                     newEvent.character = eventBase.character;
                     newEvent.keyCode = eventBase.keyCode;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.KeyUp), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.KeyUp));
                 }
                 else if (eventBase.eventTypeId == NavigationMoveEvent.TypeId())
                 {
-                    panel.dispatcher.Dispatch(NavigationMoveEvent.GetPooled(eventBase.navigationDirection, eventBase.deviceType, eventBase.modifiers), panel,
-                        DispatchMode.Default);
+                    SendEvent(NavigationMoveEvent.GetPooled(eventBase.navigationDirection, eventBase.deviceType, eventBase.modifiers));
                 }
                 else if (eventBase.eventTypeId == NavigationSubmitEvent.TypeId())
                 {
-                    panel.dispatcher.Dispatch(NavigationSubmitEvent.GetPooled(eventBase.deviceType, eventBase.modifiers), panel,
-                        DispatchMode.Default);
+                    SendEvent(NavigationSubmitEvent.GetPooled(eventBase.deviceType, eventBase.modifiers));
                 }
                 else if (eventBase.eventTypeId == NavigationCancelEvent.TypeId())
                 {
-                    panel.dispatcher.Dispatch(NavigationCancelEvent.GetPooled(eventBase.deviceType, eventBase.modifiers), panel,
-                        DispatchMode.Default);
+                    SendEvent(NavigationCancelEvent.GetPooled(eventBase.deviceType, eventBase.modifiers));
                 }
                 else if (eventBase.eventTypeId == DragUpdatedEvent.TypeId())
                 {
                     newEvent.type = EventType.DragUpdated;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.DragUpdated), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.DragUpdated));
                 }
                 else if (eventBase.eventTypeId == DragPerformEvent.TypeId())
                 {
                     newEvent.type = EventType.DragPerform;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.DragPerform), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.DragPerform));
                 }
                 else if (eventBase.eventTypeId == DragExitedEvent.TypeId())
                 {
                     newEvent.type = EventType.DragExited;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.DragExited), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.DragExited));
                 }
                 else if (eventBase.eventTypeId == ValidateCommandEvent.TypeId())
                 {
                     newEvent.type = EventType.ValidateCommand;
                     newEvent.commandName = eventBase.commandName;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.ValidateCommand), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ValidateCommand));
                 }
                 else if (eventBase.eventTypeId == ExecuteCommandEvent.TypeId())
                 {
                     newEvent.type = EventType.ExecuteCommand;
                     newEvent.commandName = eventBase.commandName;
-                    panel.dispatcher.Dispatch(UIElementsUtility.CreateEvent(newEvent, EventType.ExecuteCommand), panel,
-                        DispatchMode.Default);
+                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ExecuteCommand));
                 }
                 else if (eventBase.eventTypeId == IMGUIEvent.TypeId())
                 {
@@ -677,7 +661,7 @@ namespace UnityEngine.UIElements.Experimental
 
             if (m_Log)
             {
-                var pathObject = new EventDebuggerPathTrace(panel, evt, paths);
+                var pathObject = new EventDebuggerPathTrace(panel, evt, new PropagationPaths(paths));
 
                 if (!m_EventPathObjects.TryGetValue(panel, out var list))
                 {

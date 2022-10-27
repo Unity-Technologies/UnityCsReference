@@ -180,8 +180,8 @@ namespace UnityEditor.SceneManagement
             var animWindows = AnimationWindow.GetAllAnimationWindows();
             foreach (var animWindow in animWindows)
             {
-                animWindow.state.StopPreview();
-                animWindow.state.StopPlayback();
+                animWindow.previewing = false;
+                animWindow.playing = false;
             }
         }
 

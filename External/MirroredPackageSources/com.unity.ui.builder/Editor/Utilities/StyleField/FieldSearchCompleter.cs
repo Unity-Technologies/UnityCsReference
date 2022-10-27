@@ -457,7 +457,7 @@ namespace Unity.UI.Builder
                 {
                     using (var evt = KeyDownEvent.GetPooled(e.character, e.keyCode, e.modifiers))
                     {
-                        evt.target = popup.listView.scrollView.contentContainer;
+                        evt.elementTarget = popup.listView.scrollView.contentContainer;
                         popup.listView.SendEvent(evt);
                     }
                 }

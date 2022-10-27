@@ -165,7 +165,7 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(visualTree.panel != null);
             m_IsApplyingStyles = true;
-            m_StyleContextHierarchyTraversal.PrepareTraversal(panel.scaledPixelsPerPoint);
+            m_StyleContextHierarchyTraversal.PrepareTraversal(panel, panel.scaledPixelsPerPoint);
             m_StyleContextHierarchyTraversal.Traverse(visualTree);
             m_IsApplyingStyles = false;
         }
@@ -222,10 +222,13 @@ namespace UnityEngine.UIElements
         StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(OnProcessMatchResult);
         StylePropertyReader m_StylePropertyReader = new StylePropertyReader();
 
+        private BaseVisualElementPanel currentPanel { get; set; }
+
         public StyleMatchingContext styleMatchingContext => m_StyleMatchingContext;
 
-        public void PrepareTraversal(float pixelsPerPoint)
+        public void PrepareTraversal(BaseVisualElementPanel panel, float pixelsPerPoint)
         {
+            currentPanel = panel;
             currentPixelsPerPoint = pixelsPerPoint;
         }
 
@@ -370,8 +373,8 @@ namespace UnityEngine.UIElements
             {
                 using (var evt = CustomStyleResolvedEvent.GetPooled())
                 {
-                    evt.target = element;
-                    element.HandleEventAtTargetAndDefaultPhase(evt);
+                    evt.elementTarget = element;
+                    EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(evt, currentPanel, element);
                 }
             }
 

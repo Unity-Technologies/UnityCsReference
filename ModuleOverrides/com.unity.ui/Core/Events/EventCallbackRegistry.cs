@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
 {
@@ -24,8 +26,8 @@ namespace UnityEngine.UIElements
 
     internal enum CallbackPhase
     {
-        TargetAndBubbleUp = 1 << 0,
-        TrickleDownAndTarget = 1 << 1
+        BubbleUp = 0,
+        TrickleDown = 1
     }
 
     internal enum InvokePolicy
@@ -66,22 +68,22 @@ namespace UnityEngine.UIElements
 
     internal class EventCallbackList
     {
-        List<EventCallbackFunctorBase> m_List;
-        public int trickleDownCallbackCount { get; private set; }
-        public int bubbleUpCallbackCount { get; private set; }
+        public static readonly EventCallbackList EmptyList = new EventCallbackList();
+        private static readonly EventCallbackFunctorBase[] EmptyArray = new EventCallbackFunctorBase[0];
+
+        private EventCallbackFunctorBase[] m_Array;
+        private int m_Count;
 
         public EventCallbackList()
         {
-            m_List = new List<EventCallbackFunctorBase>();
-            trickleDownCallbackCount = 0;
-            bubbleUpCallbackCount = 0;
+            m_Array = EmptyArray;
         }
 
         public EventCallbackList(EventCallbackList source)
         {
-            m_List = new List<EventCallbackFunctorBase>(source.m_List);
-            trickleDownCallbackCount = 0;
-            bubbleUpCallbackCount = 0;
+            m_Count = source.m_Count;
+            m_Array = new EventCallbackFunctorBase[m_Count];
+            Array.Copy(source.m_Array, m_Array, m_Count);
         }
 
         public bool Contains(long eventTypeId, Delegate callback, CallbackPhase phase)
@@ -91,11 +93,11 @@ namespace UnityEngine.UIElements
 
         public EventCallbackFunctorBase Find(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            for (int i = 0; i < m_List.Count; i++)
+            for (int i = 0; i < m_Count; i++)
             {
-                if (m_List[i].IsEquivalentTo(eventTypeId, callback, phase))
+                if (m_Array[i].IsEquivalentTo(eventTypeId, callback, phase))
                 {
-                    return m_List[i];
+                    return m_Array[i];
                 }
             }
             return null;
@@ -103,21 +105,13 @@ namespace UnityEngine.UIElements
 
         public bool Remove(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            for (int i = 0; i < m_List.Count; i++)
+            for (int i = 0; i < m_Count; i++)
             {
-                if (m_List[i].IsEquivalentTo(eventTypeId, callback, phase))
+                if (m_Array[i].IsEquivalentTo(eventTypeId, callback, phase))
                 {
-                    m_List.RemoveAt(i);
-
-                    if (phase == CallbackPhase.TrickleDownAndTarget)
-                    {
-                        trickleDownCallbackCount--;
-                    }
-                    else if (phase == CallbackPhase.TargetAndBubbleUp)
-                    {
-                        bubbleUpCallbackCount--;
-                    }
-
+                    m_Count--;
+                    Array.Copy(m_Array, i+1, m_Array, i, m_Count-i);
+                    m_Array[m_Count] = default;
                     return true;
                 }
             }
@@ -126,51 +120,33 @@ namespace UnityEngine.UIElements
 
         public void Add(EventCallbackFunctorBase item)
         {
-            m_List.Add(item);
-
-            if (item.phase == CallbackPhase.TrickleDownAndTarget)
-            {
-                trickleDownCallbackCount++;
-            }
-            else if (item.phase == CallbackPhase.TargetAndBubbleUp)
-            {
-                bubbleUpCallbackCount++;
-            }
+            if (m_Count >= m_Array.Length)
+                Array.Resize(ref m_Array, Mathf.NextPowerOfTwo(m_Count + 4)); // size goes 0, 4, 8, 16, etc.
+            m_Array[m_Count++] = item;
         }
 
         public void AddRange(EventCallbackList list)
         {
-            m_List.AddRange(list.m_List);
-
-            foreach (var item in list.m_List)
-            {
-                if (item.phase == CallbackPhase.TrickleDownAndTarget)
-                {
-                    trickleDownCallbackCount++;
-                }
-                else if (item.phase == CallbackPhase.TargetAndBubbleUp)
-                {
-                    bubbleUpCallbackCount++;
-                }
-            }
+            if (m_Count + list.m_Count > m_Array.Length)
+                Array.Resize(ref m_Array, Mathf.NextPowerOfTwo(m_Count + list.m_Count));
+            Array.Copy(list.m_Array, 0, m_Array, m_Count, list.m_Count);
+            m_Count += list.m_Count;
         }
 
-        public int Count
-        {
-            get { return m_List.Count; }
-        }
+        public int Count => m_Count;
+
+        public Span<EventCallbackFunctorBase> Span => new Span<EventCallbackFunctorBase>(m_Array, 0, m_Count);
 
         public EventCallbackFunctorBase this[int i]
         {
-            get { return m_List[i]; }
-            set { m_List[i] = value; }
+            get { return m_Array[i]; }
+            set { m_Array[i] = value; }
         }
 
         public void Clear()
         {
-            m_List.Clear();
-            trickleDownCallbackCount = 0;
-            bubbleUpCallbackCount = 0;
+            Array.Clear(m_Array, 0, m_Count);
+            m_Count = 0;
         }
     }
 
@@ -188,198 +164,183 @@ namespace UnityEngine.UIElements
             s_ListPool.Release(toRelease);
         }
 
-        private EventCallbackList m_Callbacks;
-        private EventCallbackList m_TemporaryCallbacks;
-        int m_IsInvoking;
-
-        public EventCallbackRegistry()
+        struct DynamicCallbackList
         {
-            m_IsInvoking = 0;
-        }
+            [NotNull] private EventCallbackList m_Callbacks;
+            [CanBeNull] private EventCallbackList m_TemporaryCallbacks;
+            private int m_IsInvoking;
 
-        EventCallbackList GetCallbackListForWriting()
-        {
-            if (m_IsInvoking > 0)
+            public int Count => m_Callbacks.Count;
+
+            public static DynamicCallbackList Create()
             {
-                if (m_TemporaryCallbacks == null)
+                return new DynamicCallbackList
                 {
-                    if (m_Callbacks != null)
+                    m_Callbacks = EventCallbackList.EmptyList,
+                    m_TemporaryCallbacks = null,
+                    m_IsInvoking = 0
+                };
+            }
+
+            [NotNull] public EventCallbackList GetCallbackListForWriting()
+            {
+                return m_IsInvoking == 0
+                    ? (m_Callbacks != EventCallbackList.EmptyList ? m_Callbacks : m_Callbacks = GetCallbackList())
+                    : (m_TemporaryCallbacks ??= GetCallbackList(m_Callbacks));
+            }
+
+            [NotNull] public readonly EventCallbackList GetCallbackListForReading()
+            {
+                return m_TemporaryCallbacks ?? m_Callbacks;
+            }
+
+            public void Invoke(EventBase evt, BaseVisualElementPanel panel, VisualElement target)
+            {
+                BeginInvoke();
+                try
+                {
+                    // Some callbacks require an enabled target. For uniformity, we don't update this between calls.
+                    var enabled = !evt.skipDisabledElements || target.enabledInHierarchy;
+                    var eventTypeId = evt.eventTypeId;
+                    foreach (var callback in m_Callbacks.Span)
                     {
-                        m_TemporaryCallbacks = GetCallbackList(m_Callbacks);
-                    }
-                    else
-                    {
-                        m_TemporaryCallbacks = GetCallbackList();
+                        if (callback.eventTypeId == eventTypeId && target.elementPanel == panel &&
+                            (enabled || callback.invokePolicy == InvokePolicy.IncludeDisabled))
+                        {
+                            callback.Invoke(evt);
+
+                            if (evt.isImmediatePropagationStopped)
+                                break;
+                        }
                     }
                 }
-
-                return m_TemporaryCallbacks;
-            }
-            else
-            {
-                if (m_Callbacks == null)
+                finally
                 {
-                    m_Callbacks = GetCallbackList();
+                    EndInvoke();
                 }
+            }
 
-                return m_Callbacks;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void BeginInvoke()
+            {
+                m_IsInvoking++;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void EndInvoke()
+            {
+                m_IsInvoking--;
+
+                if (m_IsInvoking == 0)
+                {
+                    // If callbacks were modified during callback invocation, update them now.
+                    if (m_TemporaryCallbacks != null)
+                    {
+                        if (m_Callbacks != EventCallbackList.EmptyList) ReleaseCallbackList(m_Callbacks);
+                        m_Callbacks = GetCallbackList(m_TemporaryCallbacks);
+                        ReleaseCallbackList(m_TemporaryCallbacks);
+                        m_TemporaryCallbacks = null;
+                    }
+                }
             }
         }
 
-        EventCallbackList GetCallbackListForReading()
-        {
-            if (m_TemporaryCallbacks != null)
-            {
-                return m_TemporaryCallbacks;
-            }
+        private DynamicCallbackList m_TrickleDownCallbacks = DynamicCallbackList.Create();
+        private DynamicCallbackList m_BubbleUpCallbacks = DynamicCallbackList.Create();
 
-            return m_Callbacks;
+        ref DynamicCallbackList GetDynamicCallbackList(CallbackPhase phase)
+        {
+            return ref phase == CallbackPhase.TrickleDown ? ref m_TrickleDownCallbacks : ref m_BubbleUpCallbacks;
         }
 
-        bool ShouldRegisterCallback(long eventTypeId, Delegate callback, CallbackPhase phase)
+        private bool UnregisterCallback(long eventTypeId, [NotNull] Delegate callback, TrickleDown useTrickleDown)
         {
-            if (callback == null)
-            {
-                return false;
-            }
-
-            EventCallbackList callbackList = GetCallbackListForReading();
-            if (callbackList != null)
-            {
-                return !callbackList.Contains(eventTypeId, callback, phase);
-            }
-
-            return true;
-        }
-
-        bool UnregisterCallback(long eventTypeId, Delegate callback, TrickleDown useTrickleDown)
-        {
-            if (callback == null)
-            {
-                return false;
-            }
-
-            EventCallbackList callbackList = GetCallbackListForWriting();
-            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDownAndTarget : CallbackPhase.TargetAndBubbleUp;
+            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDown : CallbackPhase.BubbleUp;
+            ref var dynamicCallbackList = ref GetDynamicCallbackList(callbackPhase);
+            EventCallbackList callbackList = dynamicCallbackList.GetCallbackListForWriting();
             return callbackList.Remove(eventTypeId, callback, callbackPhase);
         }
 
-        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default) where TEventType : EventBase<TEventType>, new()
+        public void RegisterCallback<TEventType>([NotNull] EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default) where TEventType : EventBase<TEventType>, new()
         {
-            if (callback == null)
-                throw new ArgumentException("callback parameter is null");
-
             long eventTypeId = EventBase<TEventType>.TypeId();
-            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDownAndTarget : CallbackPhase.TargetAndBubbleUp;
+            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDown : CallbackPhase.BubbleUp;
+            ref var dynamicCallbackList = ref GetDynamicCallbackList(callbackPhase);
 
-            EventCallbackList callbackList = GetCallbackListForReading();
-            if (callbackList == null || callbackList.Contains(eventTypeId, callback, callbackPhase) == false)
+            EventCallbackList callbackList = dynamicCallbackList.GetCallbackListForReading();
+            if (callbackList.Contains(eventTypeId, callback, callbackPhase))
+                return;
+
+            callbackList = dynamicCallbackList.GetCallbackListForWriting();
+            callbackList.Add(new EventCallbackFunctor<TEventType>(callback, callbackPhase, invokePolicy));
+        }
+
+        public void RegisterCallback<TEventType, TCallbackArgs>([NotNull] EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default) where TEventType : EventBase<TEventType>, new()
+        {
+            long eventTypeId = EventBase<TEventType>.TypeId();
+            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDown : CallbackPhase.BubbleUp;
+            ref var dynamicCallbackList = ref GetDynamicCallbackList(callbackPhase);
+
+            EventCallbackList callbackList = dynamicCallbackList.GetCallbackListForReading();
+            if (callbackList.Find(eventTypeId, callback, callbackPhase) is EventCallbackFunctor<TEventType, TCallbackArgs> functor)
             {
-                callbackList = GetCallbackListForWriting();
-                callbackList.Add(new EventCallbackFunctor<TEventType>(callback, callbackPhase, invokePolicy));
-            }
-        }
-
-        public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown, InvokePolicy invokePolicy = default) where TEventType : EventBase<TEventType>, new()
-        {
-            if (callback == null)
-                throw new ArgumentException("callback parameter is null");
-
-            long eventTypeId = EventBase<TEventType>.TypeId();
-            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDownAndTarget : CallbackPhase.TargetAndBubbleUp;
-
-            EventCallbackList callbackList = GetCallbackListForReading();
-            if (callbackList != null)
-            {
-                var functor = callbackList.Find(eventTypeId, callback, callbackPhase) as EventCallbackFunctor<TEventType, TCallbackArgs>;
-                if (functor != null)
-                {
-                    functor.userArgs = userArgs;
-                    return;
-                }
-            }
-            callbackList = GetCallbackListForWriting();
-            callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, callbackPhase, invokePolicy));
-        }
-
-        public bool UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
-        {
-            long eventTypeId = EventBase<TEventType>.TypeId();
-            return UnregisterCallback(eventTypeId, callback, useTrickleDown);
-        }
-
-        public bool UnregisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
-        {
-            long eventTypeId = EventBase<TEventType>.TypeId();
-            return UnregisterCallback(eventTypeId, callback, useTrickleDown);
-        }
-
-        internal bool TryGetUserArgs<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown, out TCallbackArgs userArgs) where TEventType : EventBase<TEventType>, new()
-        {
-            userArgs = default;
-
-            if (callback == null)
-                return false;
-
-            EventCallbackList list = GetCallbackListForReading();
-            long eventTypeId = EventBase<TEventType>.TypeId();
-            var callbackPhase = useTrickleDown == TrickleDown.TrickleDown ? CallbackPhase.TrickleDownAndTarget : CallbackPhase.TargetAndBubbleUp;
-            var functor = list.Find(eventTypeId, callback, callbackPhase) as EventCallbackFunctor<TEventType, TCallbackArgs>;
-
-            if (functor == null)
-                return false;
-
-            userArgs = functor.userArgs;
-
-            return true;
-        }
-
-        public void InvokeCallbacks(EventBase evt, PropagationPhase propagationPhase)
-        {
-            if (m_Callbacks == null)
-            {
+                functor.userArgs = userArgs;
                 return;
             }
 
-            m_IsInvoking++;
-            var requiresIncludeDisabledPolicy = evt.skipDisabledElements && evt.currentTarget is VisualElement ve && !ve.enabledInHierarchy;
-            for (var i = 0; i < m_Callbacks.Count; i++)
-            {
-                if (evt.isImmediatePropagationStopped)
-                    break;
+            callbackList = dynamicCallbackList.GetCallbackListForWriting();
+            callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, callbackPhase, invokePolicy));
+        }
 
-                if (requiresIncludeDisabledPolicy &&
-                    m_Callbacks[i].invokePolicy != InvokePolicy.IncludeDisabled)
-                {
-                    continue;
-                }
+        // Return value is used for unit tests only
+        public bool UnregisterCallback<TEventType>([NotNull] EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+        {
+            long eventTypeId = EventBase<TEventType>.TypeId();
+            return UnregisterCallback(eventTypeId, callback, useTrickleDown);
+        }
 
-                m_Callbacks[i].Invoke(evt, propagationPhase);
-            }
+        public bool UnregisterCallback<TEventType, TCallbackArgs>([NotNull] EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
+        {
+            long eventTypeId = EventBase<TEventType>.TypeId();
+            return UnregisterCallback(eventTypeId, callback, useTrickleDown);
+        }
 
-            m_IsInvoking--;
+        // For unit tests only
+        internal void InvokeCallbacks(EventBase evt, PropagationPhase propagationPhase)
+        {
+            var target = (VisualElement) evt.currentTarget;
+            var panel = target.elementPanel;
+            if (propagationPhase == PropagationPhase.AtTarget)
+                InvokeCallbacksAtTarget(evt, panel, target);
+            else if (propagationPhase == PropagationPhase.TrickleDown)
+                InvokeCallbacks(evt, panel, target, CallbackPhase.TrickleDown);
+            else if (propagationPhase == PropagationPhase.BubbleUp)
+                InvokeCallbacks(evt, panel, target, CallbackPhase.BubbleUp);
+        }
 
-            if (m_IsInvoking == 0)
-            {
-                // If callbacks were modified during callback invocation, update them now.
-                if (m_TemporaryCallbacks != null)
-                {
-                    ReleaseCallbackList(m_Callbacks);
-                    m_Callbacks = GetCallbackList(m_TemporaryCallbacks);
-                    ReleaseCallbackList(m_TemporaryCallbacks);
-                    m_TemporaryCallbacks = null;
-                }
-            }
+        public void InvokeCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel,
+            [NotNull] VisualElement target, CallbackPhase phase)
+        {
+            ref var dynamicCallbackList = ref GetDynamicCallbackList(phase);
+            dynamicCallbackList.Invoke(evt, panel, target);
+        }
+
+        public void InvokeCallbacksAtTarget(EventBase evt, [NotNull] BaseVisualElementPanel panel,
+            [NotNull] VisualElement target)
+        {
+            m_TrickleDownCallbacks.Invoke(evt, panel, target);
+            if (!evt.isPropagationStopped)
+                m_BubbleUpCallbacks.Invoke(evt, panel, target);
         }
 
         public bool HasTrickleDownHandlers()
         {
-            return m_Callbacks != null && m_Callbacks.trickleDownCallbackCount > 0;
+            return m_TrickleDownCallbacks.Count > 0;
         }
 
         public bool HasBubbleHandlers()
         {
-            return m_Callbacks != null && m_Callbacks.bubbleUpCallbackCount > 0;
+            return m_BubbleUpCallbacks.Count > 0;
         }
     }
 }

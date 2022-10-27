@@ -236,7 +236,7 @@ namespace UnityEngine.UIElements
         void OnPointerDown(PointerDownEvent evt)
         {
             m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
-            UpdateSelection(evt.target as VisualElement);
+            UpdateSelection(evt.elementTarget);
 
             if (evt.pointerId != PointerId.mousePointerId)
             {
@@ -249,7 +249,7 @@ namespace UnityEngine.UIElements
         void OnPointerMove(PointerMoveEvent evt)
         {
             m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
-            UpdateSelection(evt.target as VisualElement);
+            UpdateSelection(evt.elementTarget);
 
             if (evt.pointerId != PointerId.mousePointerId)
             {

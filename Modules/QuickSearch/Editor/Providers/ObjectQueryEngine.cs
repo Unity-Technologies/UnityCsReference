@@ -292,7 +292,11 @@ namespace UnityEditor.Search.Providers
                         if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
                             continue;
 
-                        types.Add(c.GetType().Name.ToLowerInvariant());
+                        var componentType = c.GetType();
+                        var shortName = componentType.Name;
+                        types.Add(shortName.ToLowerInvariant());
+                        if (componentType.FullName != shortName)
+                            types.Add(componentType.FullName.ToLowerInvariant());
                     }
                 }
 

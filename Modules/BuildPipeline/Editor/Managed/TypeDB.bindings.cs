@@ -3,20 +3,24 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using System.Runtime.Serialization;
 
 namespace UnityEditor.Build.Player
 {
     public static class TypeDbHelper
     {
+        [Obsolete("TryGet(path, out typeDb) is deprecated. Use TryGet(path, assemblyPath, out typeDb) instead.")]
         public static bool TryGet(string path, out TypeDB typeDb)
+        {
+            return TryGet(path, path, out typeDb);
+        }
+
+        public static bool TryGet(string path, string assemblyPath, out TypeDB typeDb)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -26,12 +30,10 @@ namespace UnityEditor.Build.Player
             typeDb = new TypeDB();
 
             var typeDbFilePathsFrom = BuildPlayerDataGenerator.GetTypeDbFilePathsFrom(path);
-            AssemblyInfoManaged[] extractAssemblyTypeInfo =
-                AssemblyHelper.ExtractAssemblyTypeInfoFromFiles(typeDbFilePathsFrom);
-
+            AssemblyInfoManaged[] extractAssemblyTypeInfo = AssemblyHelper.ExtractAssemblyTypeInfoFromFiles(typeDbFilePathsFrom);
             if (extractAssemblyTypeInfo != null && extractAssemblyTypeInfo.Any())
             {
-                typeDb.AddAssemblyInfo(extractAssemblyTypeInfo, path);
+                typeDb.AddAssemblyInfo(extractAssemblyTypeInfo, assemblyPath);
                 return true;
             }
             return false;

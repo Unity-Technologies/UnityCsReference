@@ -24,8 +24,11 @@ namespace UnityEditor
             public readonly GUIStyle preBackground = "preBackground";
             public readonly GUIStyle pivotdotactive = "U2D.pivotDotActive";
             public readonly GUIStyle pivotdot = "U2D.pivotDot";
-            public static readonly GUIContent noSpriteEditorWindowTitle = EditorGUIUtility.TrTextContent("Sprite Editor Window");
-            public static readonly GUIContent noSpriteEditorWindow = EditorGUIUtility.TrTextContent("No Sprite Editor Window registered. Please download 2D Sprite package from Package Manager.");
+            public static readonly GUIContent openSpriteEditor = EditorGUIUtility.TrTextContent("Open Sprite Editor");
+            public static readonly GUIContent install2DPackage = EditorGUIUtility.TrTextContent("Install 2D Sprite Package");
+            public static readonly GUIContent failedToInstall2DPackageTitle = EditorGUIUtility.TrTextContent("Installation Failed");
+            public static readonly GUIContent failedToInstall2DPackageContent = EditorGUIUtility.TrTextContent("Failed to install package com.unity.2d.sprite.\nErrorCode: {0}\nMessage: {1}");
+            public static readonly GUIContent install2DPackageReason = EditorGUIUtility.TrTextContent("The Sprite Editor window is not available because the 2D Sprite package is not installed. Click on the 'Install 2D Sprite Package' button to install the package to edit Sprites in Sprite Editor window.");
             public static readonly GUIContent okText = EditorGUIUtility.TrTextContent("OK");
             public readonly GUIStyle dragBorderdot = new GUIStyle();
             public readonly GUIStyle dragBorderDotActive = new GUIStyle();
@@ -92,6 +95,7 @@ namespace UnityEditor
         protected float m_Zoom = -1f;
         protected float m_MipLevel = 0;
         protected Vector2 m_ScrollPosition = new Vector2();
+        static LaunchSpriteEditorWindowAfterDomainReload s_LaunchSpriteEditorWindowAfterDomainReload;
 
         protected float GetMinZoom()
         {
@@ -376,6 +380,17 @@ namespace UnityEditor
                 drawAction(drawRect);
         }
 
+        internal static bool DoOpenSpriteEditorWindowUI()
+        {
+            var buttonText = showSpriteEditorWindow == null ? Styles.install2DPackage : Styles.openSpriteEditor;
+            GUILayout.BeginVertical();
+            var clicked = GUILayout.Button(buttonText);
+            if (showSpriteEditorWindow == null)
+                EditorGUILayout.HelpBox(Styles.install2DPackageReason.text, MessageType.Info, true);
+            GUILayout.EndVertical();
+            return clicked;
+        }
+
         [Obsolete("Use SpriteUtility.SetShowSpriteEditorWindowWithObject instead")]
         internal static void SetShowSpriteEditorWindow(Func<bool> spriteEditorWindow)
         {
@@ -399,14 +414,40 @@ namespace UnityEditor
 
         internal static bool ShowSpriteEditorWindow(UnityEngine.Object obj = null)
         {
+            if (showSpriteEditorWindow == null)
+            {
+                var installSuccess = InstallSpritePackage();
+                if (installSuccess)
+                {
+                    s_LaunchSpriteEditorWindowAfterDomainReload = ScriptableObject.CreateInstance<LaunchSpriteEditorWindowAfterDomainReload>();
+                    s_LaunchSpriteEditorWindowAfterDomainReload.selectedObject = obj;
+                }
+                return installSuccess;
+            }
+
             return showSpriteEditorWindow(obj != null ? obj : Selection.activeObject);
         }
 
-        static Func<UnityEngine.Object, bool> showSpriteEditorWindow = (_) =>
+
+        static Func<UnityEngine.Object, bool> showSpriteEditorWindow = null;
+
+        static bool InstallSpritePackage()
         {
-            EditorUtility.DisplayDialog(Styles.noSpriteEditorWindowTitle.text, Styles.noSpriteEditorWindow.text, Styles.okText.text);
-            return false;
-        };
+            if(s_LaunchSpriteEditorWindowAfterDomainReload != null)
+                DestroyImmediate(s_LaunchSpriteEditorWindowAfterDomainReload);
+
+            var addRequest = PackageManager.Client.Add("com.unity.2d.sprite");
+            while (!addRequest.IsCompleted)
+                System.Threading.Thread.Sleep(10);
+
+            if (addRequest.Status == PackageManager.StatusCode.Failure)
+            {
+                var message = String.Format(Styles.failedToInstall2DPackageContent.text, addRequest.Error.errorCode, addRequest.Error.message);
+                EditorUtility.DisplayDialog(Styles.failedToInstall2DPackageTitle.text, message, Styles.okText.text);
+            }
+
+            return addRequest.Status == PackageManager.StatusCode.Success;
+        }
 
         internal static void ApplySpriteEditorWindow()
         {
@@ -415,4 +456,45 @@ namespace UnityEditor
 
         static Action applySpriteEditorWindow = () => {};
     } // class
+
+    internal class LaunchSpriteEditorWindowAfterDomainReload : ScriptableObject
+    {
+        [SerializeField]
+        UnityEngine.Object m_SelectedObject;
+
+        public UnityEngine.Object selectedObject
+        {
+            get => m_SelectedObject;
+            set => m_SelectedObject = value;
+        }
+
+        public LaunchSpriteEditorWindowAfterDomainReload()
+        {
+            AssemblyReloadEvents.afterAssemblyReload += WaitForEditorApplicaionUpdate;
+        }
+
+        void WaitForEditorApplicaionUpdate()
+        {
+            AssemblyReloadEvents.afterAssemblyReload -= WaitForEditorApplicaionUpdate;
+            // Do this to ensure asset database has finish importing the assets needed by Sprite Editor Window
+            EditorApplication.update += OpenSpriteEditor;
+        }
+
+        void OpenSpriteEditor()
+        {
+            EditorApplication.update -= OpenSpriteEditor;
+            try
+            {
+                SpriteUtilityWindow.ShowSpriteEditorWindow(selectedObject);
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                DestroyImmediate(this);
+            }
+        }
+    }
 }

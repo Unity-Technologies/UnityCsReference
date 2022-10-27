@@ -190,7 +190,6 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
                 EventPropagation.SkipDisabledElements;
-            propagateToIMGUI = false;
             modifiers = EventModifiers.None;
             deviceType = NavigationDeviceType.Unknown;
         }
@@ -217,6 +216,11 @@ namespace UnityEngine.UIElements
             e.modifiers = modifiers;
             e.deviceType = deviceType;
             return e;
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToFocusedElementOrPanelRoot(this, panel);
         }
     }
 

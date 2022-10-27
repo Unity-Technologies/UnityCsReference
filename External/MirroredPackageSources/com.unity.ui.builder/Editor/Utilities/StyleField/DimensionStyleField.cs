@@ -108,7 +108,7 @@ namespace Unity.UI.Builder
             // The value didn't change but the state of this control in regards to the value did.
             using (var e = ChangeEvent<string>.GetPooled(value, value))
             {
-                e.target = this;
+                e.elementTarget = this;
                 SendEvent(e);
             }
         }

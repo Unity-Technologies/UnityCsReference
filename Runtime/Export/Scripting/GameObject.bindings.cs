@@ -202,6 +202,14 @@ namespace UnityEngine
             return FindGameObjectWithTag(tag);
         }
 
+        [FreeFunction(Name = "GameObjectBindings::FindGameObjectsWithTagForListInternal", ThrowsException = true)]
+        private static extern void FindGameObjectsWithTagForListInternal(string tag, object results);
+
+        public static void FindGameObjectsWithTag(string tag, List<GameObject> results)
+        {
+            FindGameObjectsWithTagForListInternal(tag, results);
+        }
+
         public void SendMessageUpwards(string methodName, SendMessageOptions options)
         {
             SendMessageUpwards(methodName, null, options);

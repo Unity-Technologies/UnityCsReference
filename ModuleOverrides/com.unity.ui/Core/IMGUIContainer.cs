@@ -509,7 +509,7 @@ namespace UnityEngine.UIElements
             IncrementVersion(VersionChangeType.Layout);
         }
 
-        internal void ProcessEvent(EventBase evt)
+        private void ProcessEvent(EventBase evt)
         {
             if (evt.imguiEvent != null && SendEventToIMGUI(evt) ||
                 // Prevent navigation events since IMGUI already uses KeyDown events
@@ -633,10 +633,10 @@ namespace UnityEngine.UIElements
         private static bool IsDockAreaMouseUp(EventBase evt)
         {
             return evt.eventTypeId == MouseUpEvent.TypeId() &&
-                   evt.target == (evt.target as VisualElement)?.elementPanel.rootIMGUIContainer;
+                   evt.elementTarget == evt.elementTarget?.elementPanel.rootIMGUIContainer;
         }
 
-        private bool HandleIMGUIEvent(Event e, bool canAffectFocus)
+        internal bool HandleIMGUIEvent(Event e, bool canAffectFocus)
         {
             return HandleIMGUIEvent(e, onGUIHandler, canAffectFocus);
         }
@@ -713,14 +713,27 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
+        [EventInterest(typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            // If IMGUIContainer is in the propagation path, it's necessarily AtTarget because it can't be the parent
+            // of any other element.
+            if (!evt.isPropagationStopped)
+                ProcessEvent(evt);
+        }
+
+        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
+        [EventInterest(typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
+        internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
+        {
+            if (!evt.isPropagationStopped)
+                ProcessEvent(evt);
+        }
+
         [EventInterest(typeof(BlurEvent), typeof(FocusEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
-            if (evt == null)
-            {
-                return;
-            }
-
             // no call to base.ExecuteDefaultAction(evt):
             // - we dont want mouse click to directly give focus to IMGUIContainer:
             //   they should be handled by IMGUI and if an IMGUI control grabs the

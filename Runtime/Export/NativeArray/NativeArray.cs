@@ -26,7 +26,7 @@ namespace Unity.Collections
     [NativeContainerSupportsMinMaxWriteRestriction]
     [NativeContainerSupportsDeallocateOnJobCompletion]
     [NativeContainerSupportsDeferredConvertListToArray]
-    [DebuggerDisplay("Length = {Length}")]
+    [DebuggerDisplay("Length = {m_Length}")]
     [DebuggerTypeProxy(typeof(NativeArrayDebugView<>))]
     public unsafe struct NativeArray<T> : IDisposable, IEnumerable<T>, IEquatable<NativeArray<T>> where T : struct
     {
@@ -881,7 +881,7 @@ namespace Unity.Collections
     /// <summary>
     /// DebuggerTypeProxy for <see cref="NativeArray{T}"/>
     /// </summary>
-    internal sealed class NativeArrayDebugView<T> where T : struct
+    internal unsafe sealed class NativeArrayDebugView<T> where T : struct
     {
         NativeArray<T> m_Array;
 
@@ -890,7 +890,30 @@ namespace Unity.Collections
             m_Array = array;
         }
 
-        public T[] Items => m_Array.ToArray();
+        public T[] Items
+        {
+            get
+            {
+                if (!m_Array.IsCreated)
+                {
+                    return default;
+                }
+
+                // Trying to avoid safety checks, so that container can be read in debugger if it's safety handle
+                // is in write-only mode.
+                var length = m_Array.m_Length;
+                var dst = new T[length];
+
+                var handle = GCHandle.Alloc(dst, GCHandleType.Pinned);
+                var addr = handle.AddrOfPinnedObject();
+
+                UnsafeUtility.MemCpy((void*)addr, m_Array.m_Buffer, length * UnsafeUtility.SizeOf<T>());
+
+                handle.Free();
+
+                return dst;
+            }
+        }
     }
 
     /// <summary>
@@ -905,7 +928,18 @@ namespace Unity.Collections
             m_Array = array;
         }
 
-        public T[] Items => m_Array.ToArray();
+        public T[] Items
+        {
+            get
+            {
+                if (!m_Array.IsCreated)
+                {
+                    return default;
+                }
+
+                return m_Array.ToArray();
+            }
+        }
     }
 }
 namespace Unity.Collections.LowLevel.Unsafe

@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
         public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction, FocusController focusController, bool bIsFocusDelegated = false)
         {
             T e = GetPooled();
-            e.target = target;
+            e.elementTarget = (VisualElement) target;
             e.relatedTarget = relatedTarget;
             e.direction = direction;
             e.focusController = focusController;
@@ -184,7 +184,7 @@ namespace UnityEngine.UIElements
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
-            focusController.ProcessPendingFocusChange(target as Focusable);
+            focusController.ProcessPendingFocusChange(elementTarget);
         }
     }
 }

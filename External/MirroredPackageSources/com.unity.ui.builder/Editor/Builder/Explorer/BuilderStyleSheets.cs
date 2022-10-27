@@ -19,6 +19,7 @@ namespace Unity.UI.Builder
         VisualElement m_NewSelectorTextInputField;
         ToolbarMenu m_PseudoStatesMenu;
         BuilderTooltipPreview m_TooltipPreview;
+        BuilderStyleSheetsDragger m_StyleSheetsDragger;
 
         enum FieldFocusStep
         {
@@ -75,7 +76,7 @@ namespace Unity.UI.Builder
 
             m_NewSelectorTextInputField.RegisterCallback<FocusEvent>((evt) =>
             {
-                var input = evt.target as VisualElement;
+                var input = evt.elementTarget;
                 var field = GetTextFieldParent(input);
                 m_FieldFocusStep = FieldFocusStep.FocusedFromStandby;
                 if (field.text == BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage || m_ShouldRefocusSelectorFieldOnBlur)
@@ -120,7 +121,7 @@ namespace Unity.UI.Builder
 
             m_NewSelectorTextInputField.RegisterCallback<BlurEvent>((evt) =>
             {
-                var input = evt.target as VisualElement;
+                var input = evt.elementTarget;
                 var field = GetTextFieldParent(input);
 
                 HideTooltip();
@@ -153,6 +154,7 @@ namespace Unity.UI.Builder
             // Init drag stylesheet root
             classDragger.builderStylesheetRoot = container;
             styleSheetsDragger.builderStylesheetRoot = container;
+            m_StyleSheetsDragger = styleSheetsDragger;
 
             RegisterCallback<GeometryChangedEvent>(e => AdjustPosition());
         }
@@ -339,6 +341,12 @@ namespace Unity.UI.Builder
 
             UpdateNewSelectorFieldEnabledStateFromDocument();
             UpdateSubtitleFromActiveUSS();
+        }
+
+        // Used by unit tests to reset state after stylesheets drag
+        internal void ResetStyleSheetsDragger()
+        {
+            m_StyleSheetsDragger.Reset();
         }
     }
 }

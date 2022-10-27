@@ -129,6 +129,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
+[assembly: InternalsVisibleTo("Unity.Animation.Editor.AnimationWindow")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]

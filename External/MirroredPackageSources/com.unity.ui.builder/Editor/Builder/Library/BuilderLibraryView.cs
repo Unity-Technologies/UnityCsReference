@@ -99,7 +99,7 @@ namespace Unity.UI.Builder
 
         void OnItemMouseEnter(MouseEnterEvent evt)
         {
-            var box = evt.target as VisualElement;
+            var box = evt.elementTarget;
             var libraryTreeItem = box.GetProperty(BuilderConstants.LibraryItemLinkedManipulatorVEPropertyName) as BuilderLibraryTreeItem;
 
             if (!libraryTreeItem.hasPreview)

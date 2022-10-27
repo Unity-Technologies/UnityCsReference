@@ -50,6 +50,10 @@ namespace UnityEditor
             public static GUIContent textSerializeMappingsOnOneLine = EditorGUIUtility.TrTextContent("Force Serialize References On One Line", "Forces Unity to write references and other inline mappings on one line, to help reduce version control noise");
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
+            public static GUIContent buildPipelineHeader = EditorGUIUtility.TrTextContent("Build Pipeline");
+            public static GUIContent ucbpEnableAssetBundles = EditorGUIUtility.TrTextContent("Multi-Process AssetBundle Building", "Enable experimental improvements to the AssetBundle Build Pipeline aimed at reducing build times with multi-process importing and providing more efficient incremental content building");
+            public static readonly GUIContent ucbpLearnMore = new GUIContent("Learn more...", "Review official Unity documentation for important considerations around these experimental improvements.");
+
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
@@ -452,6 +456,27 @@ namespace UnityEditor
                     EditorSettings.serializeInlineMappingsOnOneLine = m_SerializeInlineMappingsOnOneLine.boolValue;
                 }
             }
+
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+            GUI.enabled = true;
+            GUILayout.Label(Content.buildPipelineHeader, EditorStyles.boldLabel);
+            GUI.enabled = editorEnabled;
+            if (GUILayout.Button(Content.ucbpLearnMore, EditorStyles.linkLabel))
+            {
+                var help = Help.FindHelpNamed("AssetBundles-Building");
+                Application.OpenURL(help);
+            }
+            GUILayout.EndHorizontal();
+
+            EditorGUI.BeginChangeCheck();
+            bool parallelAssetBundleBuilding = EditorBuildSettings.UseParallelAssetBundleBuilding;
+            parallelAssetBundleBuilding = EditorGUILayout.Toggle(Content.ucbpEnableAssetBundles, parallelAssetBundleBuilding);
+            if (EditorGUI.EndChangeCheck())
+                EditorBuildSettings.UseParallelAssetBundleBuilding = parallelAssetBundleBuilding;
+            if(parallelAssetBundleBuilding)
+                EditorGUILayout.HelpBox("Please review official documentation before building any content with these experimental improvements enabled. These improvements apply only to AssetBundles built with BuildPipeline.BuildAssetBundles() and do not apply to AssetBundles built with Scriptable Build Pipeline or Addressables.", MessageType.Info);
 
             GUILayout.Space(10);
 

@@ -101,7 +101,7 @@ namespace UnityEditor.UIElements
                 {
                     using (ChangeEvent<Color> evt = ChangeEvent<Color>.GetPooled(rawValue, value))
                     {
-                        evt.target = this;
+                        evt.elementTarget = this;
                         SetValueWithoutNotify(value);
                         SendEvent(evt);
                     }

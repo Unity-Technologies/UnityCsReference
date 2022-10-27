@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
         public static T GetPooled(IEventHandler target, IEventHandler relatedTarget, int pointerId)
         {
             T e = GetPooled();
-            e.target = target;
+            e.elementTarget = (VisualElement) target;
             e.relatedTarget = relatedTarget;
             e.pointerId = pointerId;
             return e;

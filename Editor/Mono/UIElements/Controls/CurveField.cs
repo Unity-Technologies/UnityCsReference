@@ -156,7 +156,7 @@ namespace UnityEditor.UIElements
                     {
                         using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(rawValue, value))
                         {
-                            evt.target = this;
+                            evt.elementTarget = this;
                             SetValueWithoutNotify(value);
                             SendEvent(evt);
                         }

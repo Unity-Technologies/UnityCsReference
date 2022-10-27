@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditorInternal
 {
     [System.Serializable]
-    internal class AnimationWindowState : ScriptableObject, ICurveEditorState
+    class AnimationWindowState : ICurveEditorState
     {
         public enum RefreshType
         {
@@ -30,20 +30,24 @@ namespace UnityEditorInternal
             SnapToClipFrame = 2
         }
 
-        [SerializeField] public AnimationWindowHierarchyState hierarchyState; // Persistent state of treeview on the left side of window
         [SerializeField] public AnimEditor animEditor; // Reference to owner of this state. Used to trigger repaints.
+        [SerializeField] public AnimationWindowHierarchyState hierarchyState = new(); // Persistent state of treeview on the left side of window
+        [NonSerialized] public AnimationWindowHierarchyDataSource hierarchyData;
+
+        [SerializeReference] private TimeArea m_TimeArea; // Either curveeditor or dopesheet depending on which is selected
+        [SerializeReference] private AnimationWindowControl m_ControlInterface;
+        [SerializeReference] private IAnimationWindowController m_OverrideControlInterface;
+
+        [SerializeReference] private AnimationWindowSelectionItem m_EmptySelection;
+        [SerializeReference] private AnimationWindowSelectionItem m_Selection; // Internal selection
+        [SerializeField] private AnimationWindowKeySelection m_KeySelection; // What is selected. Hashes persist cache reload, because they are from keyframe time+value
+
         [SerializeField] public bool showCurveEditor; // Do we show dopesheet or curves
         [SerializeField] public bool linkedWithSequencer; // Toggle Sequencer selection mode.
         [SerializeField] private bool m_RippleTime; // Toggle ripple time option for curve editor and dopesheet.
         private bool m_RippleTimeClutch; // Toggle ripple time option for curve editor and dopesheet.
-        [SerializeField] private TimeArea m_TimeArea; // Either curveeditor or dopesheet depending on which is selected
-        [SerializeField] private AnimationWindowSelectionItem m_EmptySelection;
-        [SerializeField] private AnimationWindowSelectionItem m_Selection; // Internal selection
-        [SerializeField] private AnimationWindowKeySelection m_KeySelection; // What is selected. Hashes persist cache reload, because they are from keyframe time+value
         [SerializeField] private int m_ActiveKeyframeHash; // Which keyframe is active (selected key that user previously interacted with)
         [SerializeField] private float m_FrameRate = kDefaultFrameRate;
-        [SerializeField] private AnimationWindowControl m_ControlInterface;
-        [SerializeField] private IAnimationWindowControl m_OverrideControlInterface;
         [SerializeField] private int[] m_SelectionFilter;
 
         [NonSerialized] public Action onStartLiveEdit;
@@ -52,10 +56,13 @@ namespace UnityEditorInternal
 
         private static List<AnimationWindowKeyframe> s_KeyframeClipboard; // For copy-pasting keyframes
 
-        [NonSerialized] public AnimationWindowHierarchyDataSource hierarchyData;
+        private bool m_AllCurvesCacheDirty = true;
+        private bool m_FilteredCurvesCacheDirty = true;
+        private bool m_ActiveCurvesCacheDirty = true;
+        private List<AnimationWindowCurve> m_AllCurvesCache = new ();
+        private List<AnimationWindowCurve> m_FilteredCurvesCache = new ();
+        private List<AnimationWindowCurve> m_ActiveCurvesCache = new ();
 
-        private List<AnimationWindowCurve> m_AllCurvesCache;
-        private List<AnimationWindowCurve> m_ActiveCurvesCache;
         private List<DopeLine> m_dopelinesCache;
         private List<AnimationWindowKeyframe> m_SelectedKeysCache;
         private Bounds? m_SelectionBoundsCache;
@@ -97,30 +104,14 @@ namespace UnityEditorInternal
                     return m_Selection;
 
                 if (m_EmptySelection == null)
-                {
                     m_EmptySelection = AnimationClipSelectionItem.Create(null, null);
-                    m_EmptySelection.hideFlags = HideFlags.HideAndDontSave;
-                }
 
                 return m_EmptySelection;
             }
 
             set
             {
-                if (m_Selection != null)
-                    Object.DestroyImmediate(m_Selection);
-
-                // Make a copy and take ownership
-                if (value != null)
-                {
-                    m_Selection = Object.Instantiate(value);
-                    m_Selection.hideFlags = HideFlags.HideAndDontSave;
-                }
-                else
-                {
-                    m_Selection = null;
-                }
-
+                m_Selection = value;
                 OnSelectionChanged();
             }
         }
@@ -194,33 +185,19 @@ namespace UnityEditorInternal
             }
         }
 
-        public IAnimationWindowControl controlInterface
+        public IAnimationWindowController controlInterface => m_OverrideControlInterface ?? m_ControlInterface;
+
+        public IAnimationWindowController overrideControlInterface
         {
-            get
-            {
-                if (m_OverrideControlInterface != null)
-                    return m_OverrideControlInterface;
-
-                return m_ControlInterface;
-            }
-        }
-
-        public IAnimationWindowControl overrideControlInterface
-        {
-            get
-            {
-                return m_OverrideControlInterface;
-            }
-
+            get => m_OverrideControlInterface;
             set
             {
                 if (m_OverrideControlInterface != null)
-                    Object.DestroyImmediate(m_OverrideControlInterface);
+                    m_OverrideControlInterface.OnDestroy();
 
                 m_OverrideControlInterface = value;
             }
         }
-
 
         public bool filterBySelection
         {
@@ -291,11 +268,11 @@ namespace UnityEditorInternal
 
             if (refresh == RefreshType.Everything)
             {
-                selection.ClearCache();
+                m_AllCurvesCacheDirty = true;
+                m_FilteredCurvesCacheDirty = true;
+                m_ActiveCurvesCacheDirty = true;
 
                 m_ActiveKeyframeCache = null;
-                m_AllCurvesCache = null;
-                m_ActiveCurvesCache = null;
                 m_dopelinesCache = null;
                 m_SelectedKeysCache = null;
                 m_SelectionBoundsCache = null;
@@ -354,16 +331,12 @@ namespace UnityEditorInternal
         private void PurgeSelection()
         {
             linkedWithSequencer = false;
-            Object.DestroyImmediate(m_OverrideControlInterface);
-
-            // Selected object could have been changed when unlocking the animation window
-            Object.DestroyImmediate(m_Selection);
+            m_OverrideControlInterface = null;
             m_Selection = null;
         }
 
         public void OnEnable()
         {
-            hideFlags = HideFlags.HideAndDontSave;
             AnimationUtility.onCurveWasModified += CurveWasModified;
             Undo.undoRedoEvent += UndoRedoPerformed;
             AssemblyReloadEvents.beforeAssemblyReload += PurgeSelection;
@@ -372,10 +345,15 @@ namespace UnityEditorInternal
             onStartLiveEdit += () => {};
             onEndLiveEdit += () => {};
 
-            if (m_ControlInterface == null)
-                m_ControlInterface = CreateInstance(typeof(AnimationWindowControl)) as AnimationWindowControl;
-            m_ControlInterface.state = this;
+            m_ControlInterface = new AnimationWindowControl
+            {
+                state = this
+            };
             m_ControlInterface.OnEnable();
+
+            m_AllCurvesCacheDirty = true;
+            m_FilteredCurvesCacheDirty = true;
+            m_ActiveCurvesCacheDirty = true;
         }
 
         public void OnDisable()
@@ -385,17 +363,21 @@ namespace UnityEditorInternal
             AssemblyReloadEvents.beforeAssemblyReload -= PurgeSelection;
 
             m_ControlInterface.OnDisable();
+            previewing = false;
         }
 
         public void OnDestroy()
         {
             m_ControlInterface.OnDestroy();
+            m_ControlInterface = null;
 
-            Object.DestroyImmediate(m_EmptySelection);
-            Object.DestroyImmediate(m_Selection);
+            if (m_OverrideControlInterface != null)
+            {
+                m_OverrideControlInterface.OnDestroy();
+                m_OverrideControlInterface = null;
+            }
+
             Object.DestroyImmediate(m_KeySelection);
-            Object.DestroyImmediate(m_ControlInterface);
-            Object.DestroyImmediate(m_OverrideControlInterface);
         }
 
         public void OnSelectionChanged()
@@ -437,7 +419,7 @@ namespace UnityEditorInternal
         public void UndoRedoPerformed(in UndoRedoInfo info)
         {
             refresh = RefreshType.Everything;
-            controlInterface.ResampleAnimation();
+            ResampleAnimation();
         }
 
         // When curve is modified, we never trigger refresh right away. We order a refresh at later time by setting refresh to appropriate value.
@@ -454,10 +436,10 @@ namespace UnityEditorInternal
                 bool hadPhantom = false;
                 int hashCode = binding.GetHashCode();
 
-                List<AnimationWindowCurve> curves = selection.curves;
+                var curves = filteredCurves;
                 for (int j = 0; j < curves.Count; ++j)
                 {
-                    AnimationWindowCurve curve = curves[j];
+                    var curve = curves[j];
                     int curveHash = curve.GetBindingHashCode();
                     if (curveHash == hashCode)
                     {
@@ -567,15 +549,30 @@ namespace UnityEditorInternal
                 AnimationUtility.SetEditorCurve(curve.clip, curve.binding, null);
         }
 
-        public bool previewing { get { return controlInterface.previewing; } }
-
-        public bool canPreview { get { return controlInterface.canPreview; } }
-
-        public void StartPreview()
+        public bool previewing
         {
-            controlInterface.StartPreview();
-            controlInterface.ResampleAnimation();
+            get => controlInterface.previewing;
+            set
+            {
+                if (controlInterface.previewing == value)
+                    return;
+
+                if (value)
+                {
+                    if (canPreview)
+                        controlInterface.previewing = true;
+                }
+                else
+                {
+                    // Automatically stop recording and playback when stopping preview.
+                    controlInterface.playing = false;
+                    controlInterface.recording = false;
+                    controlInterface.previewing = false;
+                }
+            }
         }
+
+        public bool canPreview => controlInterface.canPreview;
 
         public void UpdateCurvesDisplayName()
         {
@@ -583,47 +580,84 @@ namespace UnityEditorInternal
                 hierarchyData.UpdateSerializeReferenceCurvesArrayNiceDisplayName();
         }
 
-        public void StopPreview()
+        public bool recording
         {
-            controlInterface.StopPreview();
+            get => controlInterface.recording;
+            set
+            {
+                if (controlInterface.recording == value)
+                    return;
+
+                if (value)
+                {
+                    if (canRecord)
+                    {
+                        // Auto-Preview when starting recording
+                        controlInterface.previewing = true;
+
+                        if (controlInterface.previewing)
+                            controlInterface.recording = true;
+                    }
+                }
+                else
+                    controlInterface.recording = false;
+            }
         }
 
-        public bool recording { get { return controlInterface.recording; } }
+        public bool canRecord => controlInterface.canRecord;
 
-        public bool canRecord { get { return controlInterface.canRecord; } }
-
-        public void StartRecording()
+        public bool playing
         {
-            controlInterface.StartRecording(selection.sourceObject);
-            controlInterface.ResampleAnimation();
+            get => controlInterface.playing;
+            set
+            {
+                if (controlInterface.playing == value)
+                    return;
+
+                if (value)
+                {
+                    if (canPlay)
+                    {
+                        // Auto-Preview when starting playback.
+                        controlInterface.previewing = true;
+
+                        if (controlInterface.previewing)
+                            controlInterface.playing = true;
+                    }
+                }
+                else
+                    controlInterface.playing = false;
+            }
         }
 
-        public void StopRecording()
-        {
-            controlInterface.StopRecording();
-        }
-
-        public bool playing { get { return controlInterface.playing; } }
-
-        public void StartPlayback()
-        {
-            controlInterface.StartPlayback();
-        }
-
-        public void StopPlayback()
-        {
-            controlInterface.StopPlayback();
-        }
+        public bool canPlay => controlInterface.canPlay;
 
         public void ResampleAnimation()
         {
+            if (disabled)
+                return;
+
+            if (controlInterface.previewing == false)
+                return;
+            if (controlInterface.canPreview == false)
+                return;
+
             controlInterface.ResampleAnimation();
         }
 
-        public void ClearCandidates()
+        public bool PlaybackUpdate()
         {
-            controlInterface.ClearCandidates();
+            if (disabled)
+                return false;
+
+            if (!controlInterface.playing)
+                return false;
+
+            return controlInterface.PlaybackUpdate();
         }
+
+        public void ClearCandidates() => controlInterface.ClearCandidates();
+        public void ProcessCandidates() => controlInterface.ProcessCandidates();
 
         public bool ShouldShowCurve(AnimationWindowCurve curve)
         {
@@ -652,34 +686,203 @@ namespace UnityEditorInternal
             m_SelectionFilter = (filterBySelection) ? (int[])Selection.instanceIDs.Clone() : null;
         }
 
+        void RebuildAllCurvesCacheIfNecessary()
+        {
+            if (m_AllCurvesCacheDirty == false && m_AllCurvesCache != null)
+                return;
+
+            if (m_AllCurvesCache == null)
+                m_AllCurvesCache = new List<AnimationWindowCurve>();
+            else
+                m_AllCurvesCache.Clear();
+
+            var animationClip = activeAnimationClip;
+            if (animationClip == null)
+                return;
+
+            EditorCurveBinding[] curveBindings = AnimationUtility.GetCurveBindings(animationClip);
+            EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(animationClip);
+
+            List<AnimationWindowCurve> transformCurves = new List<AnimationWindowCurve>();
+
+            foreach (EditorCurveBinding curveBinding in curveBindings)
+            {
+                if (AnimationWindowUtility.ShouldShowAnimationWindowCurve(curveBinding))
+                {
+                    AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, curveBinding, controlInterface.GetValueType(curveBinding));
+                    curve.selectionBinding = selection;
+
+                    m_AllCurvesCache.Add(curve);
+
+                    if (AnimationWindowUtility.IsActualTransformCurve(curveBinding))
+                    {
+                        transformCurves.Add(curve);
+                    }
+                }
+            }
+
+            foreach (EditorCurveBinding curveBinding in objectCurveBindings)
+            {
+                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, curveBinding, controlInterface.GetValueType(curveBinding));
+                curve.selectionBinding = selection;
+
+                m_AllCurvesCache.Add(curve);
+            }
+
+            transformCurves.Sort();
+            if (transformCurves.Count > 0)
+            {
+                FillInMissingTransformCurves(animationClip, transformCurves, ref m_AllCurvesCache);
+            }
+
+            // Curves need to be sorted with path/type/property name so it's possible to construct hierarchy from them
+            // Sorting logic in AnimationWindowCurve.CompareTo()
+            m_AllCurvesCache.Sort();
+
+            m_AllCurvesCacheDirty = false;
+        }
+
+        private void RebuildFilteredCurvesCacheIfNecessary()
+        {
+            if (m_FilteredCurvesCacheDirty == false && m_FilteredCurvesCache != null)
+                return;
+
+            if (m_FilteredCurvesCache == null)
+                m_FilteredCurvesCache = new List<AnimationWindowCurve>();
+            else
+                m_FilteredCurvesCache.Clear();
+
+            for (int i = 0; i < m_AllCurvesCache.Count; ++i)
+            {
+                if (ShouldShowCurve(m_AllCurvesCache[i]))
+                    m_FilteredCurvesCache.Add(m_AllCurvesCache[i]);
+            }
+
+            m_FilteredCurvesCacheDirty = false;
+        }
+
+        private void RebuildActiveCurvesCacheIfNecessary()
+        {
+            if (m_ActiveCurvesCacheDirty == false && m_ActiveCurvesCache != null)
+                return;
+
+            if (m_ActiveCurvesCache == null)
+                m_ActiveCurvesCache = new List<AnimationWindowCurve>();
+            else
+                m_ActiveCurvesCache.Clear();
+
+            if (hierarchyState != null && hierarchyData != null)
+            {
+                foreach (int id in hierarchyState.selectedIDs)
+                {
+                    TreeViewItem node = hierarchyData.FindItem(id);
+                    AnimationWindowHierarchyNode hierarchyNode = node as AnimationWindowHierarchyNode;
+
+                    if (hierarchyNode == null)
+                        continue;
+
+                    AnimationWindowCurve[] curves = hierarchyNode.curves;
+                    if (curves == null)
+                        continue;
+
+                    foreach (AnimationWindowCurve curve in curves)
+                        if (!m_ActiveCurvesCache.Contains(curve))
+                            m_ActiveCurvesCache.Add(curve);
+                }
+
+                m_ActiveCurvesCache.Sort();
+            }
+
+            m_ActiveCurvesCacheDirty = false;
+        }
+
+        private void FillInMissingTransformCurves(AnimationClip animationClip, List<AnimationWindowCurve> transformCurves, ref List<AnimationWindowCurve> curvesCache)
+        {
+            EditorCurveBinding lastBinding = transformCurves[0].binding;
+            var propertyGroup = new EditorCurveBinding ? [3];
+            string propertyGroupName;
+            foreach (var transformCurve in transformCurves)
+            {
+                var transformBinding = transformCurve.binding;
+                //if it's a new property group
+                if (transformBinding.path != lastBinding.path
+                    || AnimationWindowUtility.GetPropertyGroupName(transformBinding.propertyName) != AnimationWindowUtility.GetPropertyGroupName(lastBinding.propertyName))
+                {
+                    propertyGroupName = AnimationWindowUtility.GetPropertyGroupName(lastBinding.propertyName);
+
+                    FillPropertyGroup(animationClip, ref propertyGroup, lastBinding, propertyGroupName, ref curvesCache);
+
+                    lastBinding = transformBinding;
+
+                    propertyGroup = new EditorCurveBinding ? [3];
+                }
+
+                AssignBindingToRightSlot(transformBinding, ref propertyGroup);
+            }
+            FillPropertyGroup(animationClip, ref propertyGroup, lastBinding, AnimationWindowUtility.GetPropertyGroupName(lastBinding.propertyName), ref curvesCache);
+        }
+
+        private void FillPropertyGroup(AnimationClip animationClip, ref EditorCurveBinding?[] propertyGroup, EditorCurveBinding lastBinding, string propertyGroupName, ref List<AnimationWindowCurve> curvesCache)
+        {
+            var newBinding = lastBinding;
+            newBinding.isPhantom = true;
+            if (!propertyGroup[0].HasValue)
+            {
+                newBinding.propertyName = propertyGroupName + ".x";
+                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, newBinding, controlInterface.GetValueType(newBinding));
+                curve.selectionBinding = selection;
+                curvesCache.Add(curve);
+            }
+
+            if (!propertyGroup[1].HasValue)
+            {
+                newBinding.propertyName = propertyGroupName + ".y";
+                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, newBinding, controlInterface.GetValueType(newBinding));
+                curve.selectionBinding = selection;
+                curvesCache.Add(curve);
+            }
+
+            if (!propertyGroup[2].HasValue)
+            {
+                newBinding.propertyName = propertyGroupName + ".z";
+                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, newBinding, controlInterface.GetValueType(newBinding));
+                curve.selectionBinding = selection;
+                curvesCache.Add(curve);
+            }
+        }
+
+        private void AssignBindingToRightSlot(EditorCurveBinding transformBinding, ref EditorCurveBinding?[] propertyGroup)
+        {
+            if (transformBinding.propertyName.EndsWith(".x"))
+            {
+                propertyGroup[0] = transformBinding;
+            }
+            else if (transformBinding.propertyName.EndsWith(".y"))
+            {
+                propertyGroup[1] = transformBinding;
+            }
+            else if (transformBinding.propertyName.EndsWith(".z"))
+            {
+                propertyGroup[2] = transformBinding;
+            }
+        }
+
         public List<AnimationWindowCurve> allCurves
         {
             get
             {
-                if (m_AllCurvesCache == null)
-                {
-                    if (!selection.animationIsEditable && !showReadOnly)
-                    {
-                        // Empty list.
-                        m_AllCurvesCache = new List<AnimationWindowCurve>();
-                    }
-                    else if (!filterBySelection || activeRootGameObject == null)
-                    {
-                        m_AllCurvesCache = selection.curves;
-                    }
-                    else
-                    {
-                        List<AnimationWindowCurve> allCurvesUnfiltered = selection.curves;
-                        m_AllCurvesCache = new List<AnimationWindowCurve>();
-                        for (int i = 0; i < allCurvesUnfiltered.Count; ++i)
-                        {
-                            if (ShouldShowCurve(allCurvesUnfiltered[i]))
-                                m_AllCurvesCache.Add(allCurvesUnfiltered[i]);
-                        }
-                    }
-                }
-
+                RebuildAllCurvesCacheIfNecessary();
                 return m_AllCurvesCache;
+            }
+        }
+
+        public List<AnimationWindowCurve> filteredCurves
+        {
+            get
+            {
+                RebuildAllCurvesCacheIfNecessary();
+                RebuildFilteredCurvesCacheIfNecessary();
+                return m_FilteredCurvesCache;
             }
         }
 
@@ -687,32 +890,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                if (m_ActiveCurvesCache == null)
-                {
-                    m_ActiveCurvesCache = new List<AnimationWindowCurve>();
-                    if (hierarchyState != null && hierarchyData != null)
-                    {
-                        foreach (int id in hierarchyState.selectedIDs)
-                        {
-                            TreeViewItem node = hierarchyData.FindItem(id);
-                            AnimationWindowHierarchyNode hierarchyNode = node as AnimationWindowHierarchyNode;
-
-                            if (hierarchyNode == null)
-                                continue;
-
-                            AnimationWindowCurve[] curves = hierarchyNode.curves;
-                            if (curves == null)
-                                continue;
-
-                            foreach (AnimationWindowCurve curve in curves)
-                                if (!m_ActiveCurvesCache.Contains(curve))
-                                    m_ActiveCurvesCache.Add(curve);
-                        }
-
-                        m_ActiveCurvesCache.Sort();
-                    }
-                }
-
+                RebuildActiveCurvesCacheIfNecessary();
                 return m_ActiveCurvesCache;
             }
         }
@@ -730,7 +908,7 @@ namespace UnityEditorInternal
 
                     // If there are no active curves, we would end up with empty curve editor so we just give all curves insteads
                     if (!activeCurveWrappers.Any())
-                        foreach (AnimationWindowCurve curve in allCurves)
+                        foreach (AnimationWindowCurve curve in filteredCurves)
                             if (!curve.isDiscreteCurve)
                                 activeCurveWrappers.Add(AnimationWindowUtility.GetCurveWrapper(curve, curve.clip));
 
@@ -804,7 +982,7 @@ namespace UnityEditorInternal
             {
                 if (m_ActiveKeyframeCache == null)
                 {
-                    foreach (AnimationWindowCurve curve in allCurves)
+                    foreach (AnimationWindowCurve curve in filteredCurves)
                     {
                         foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                         {
@@ -829,7 +1007,7 @@ namespace UnityEditorInternal
                 if (m_SelectedKeysCache == null)
                 {
                     m_SelectedKeysCache = new List<AnimationWindowKeyframe>();
-                    foreach (AnimationWindowCurve curve in allCurves)
+                    foreach (AnimationWindowCurve curve in filteredCurves)
                     {
                         foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                         {
@@ -887,7 +1065,7 @@ namespace UnityEditorInternal
             {
                 if (m_KeySelection == null)
                 {
-                    m_KeySelection = CreateInstance<AnimationWindowKeySelection>();
+                    m_KeySelection = ScriptableObject.CreateInstance<AnimationWindowKeySelection>();
                     m_KeySelection.hideFlags = HideFlags.HideAndDontSave;
                 }
 
@@ -897,7 +1075,7 @@ namespace UnityEditorInternal
             {
                 if (m_KeySelection == null)
                 {
-                    m_KeySelection = CreateInstance<AnimationWindowKeySelection>();
+                    m_KeySelection = ScriptableObject.CreateInstance<AnimationWindowKeySelection>();
                     m_KeySelection.hideFlags = HideFlags.HideAndDontSave;
                 }
 
@@ -1391,7 +1569,7 @@ namespace UnityEditorInternal
 
                 if (m_ModifiedCurves.Contains(curveWrapper.id))
                 {
-                    AnimationWindowCurve curve = allCurves.Find(c => c.GetHashCode() == curveWrapper.id);
+                    AnimationWindowCurve curve = filteredCurves.Find(c => c.GetHashCode() == curveWrapper.id);
                     if (curve != null)
                     {
                         //  Boundaries have changed, invalidate all curves
@@ -1425,9 +1603,9 @@ namespace UnityEditorInternal
 
         private void ReloadModifiedAnimationCurveCache()
         {
-            for (int i = 0; i < allCurves.Count; ++i)
+            for (int i = 0; i < filteredCurves.Count; ++i)
             {
-                AnimationWindowCurve curve = allCurves[i];
+                AnimationWindowCurve curve = filteredCurves[i];
                 if (m_ModifiedCurves.Contains(curve.GetHashCode()))
                     curve.LoadKeyframes(curve.clip);
             }
@@ -1465,7 +1643,7 @@ namespace UnityEditorInternal
             }
 
             //  Values do not change whenever a new curve is added, so we force an inspector update here.
-            controlInterface.ResampleAnimation();
+            ResampleAnimation();
 
             m_lastAddedCurveBinding = null;
         }
@@ -1658,7 +1836,7 @@ namespace UnityEditorInternal
                     SaveKeySelection(kEditCurveUndoLabel);
 
                     // Reposition all keyframes to match the new sampling rate
-                    foreach (var curve in selection.curves)
+                    foreach (var curve in allCurves)
                     {
                         foreach (var key in curve.m_Keyframes)
                         {
@@ -1667,7 +1845,7 @@ namespace UnityEditorInternal
                         }
                     }
 
-                    SaveCurves(activeAnimationClip, selection.curves, kEditCurveUndoLabel);
+                    SaveCurves(activeAnimationClip, allCurves, kEditCurveUndoLabel);
 
                     AnimationEvent[] events = AnimationUtility.GetAnimationEvents(activeAnimationClip);
                     foreach (AnimationEvent ev in events)
@@ -1699,9 +1877,19 @@ namespace UnityEditorInternal
             }
         }
 
-        public AnimationKeyTime time { get { return controlInterface.time; } }
-        public int currentFrame { get { return time.frame; } set { controlInterface.GoToFrame(value); } }
-        public float currentTime { get { return time.time; } set { controlInterface.GoToTime(value); } }
+        public AnimationKeyTime time => AnimationKeyTime.Time(controlInterface.time, frameRate);
+
+        public int currentFrame
+        {
+            get => controlInterface.frame;
+            set => controlInterface.frame = value;
+        }
+
+        public float currentTime
+        {
+            get => controlInterface.time;
+            set => controlInterface.time = value;
+        }
 
         public TimeArea.TimeFormat timeFormat { get { return AnimationWindowOptions.timeFormat; } set { AnimationWindowOptions.timeFormat = value; } }
 
@@ -1831,5 +2019,44 @@ namespace UnityEditorInternal
         {
             return visibleTimeSpan / rect.width;
         }
+
+        public void GoToPreviousFrame()
+        {
+            controlInterface.frame -= 1;
+        }
+
+        public void GoToNextFrame()
+        {
+            controlInterface.frame += 1;
+        }
+
+        public void GoToPreviousKeyframe()
+        {
+            List<AnimationWindowCurve> curves = (showCurveEditor && activeCurves.Count > 0) ? activeCurves : filteredCurves;
+
+            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), controlInterface.time, clipFrameRate);
+            controlInterface.time = SnapToFrame(newTime, SnapMode.SnapToFrame);
+        }
+
+        public void GoToNextKeyframe()
+        {
+            List<AnimationWindowCurve> curves = (showCurveEditor && activeCurves.Count > 0) ? activeCurves : filteredCurves;
+
+            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), controlInterface.time, clipFrameRate);
+            controlInterface.time = SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame);
+        }
+
+        public void GoToFirstKeyframe()
+        {
+            if (activeAnimationClip)
+                controlInterface.time = activeAnimationClip.startTime;
+        }
+
+        public void GoToLastKeyframe()
+        {
+            if (activeAnimationClip)
+                controlInterface.time = activeAnimationClip.stopTime;
+        }
+
     }
 }

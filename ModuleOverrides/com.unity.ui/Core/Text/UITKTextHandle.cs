@@ -134,7 +134,7 @@ namespace UnityEngine.UIElements
                 {
                     using (Experimental.PointerDownLinkTagEvent e = Experimental.PointerDownLinkTagEvent.GetPooled(pde, link.GetLinkId(), link.GetLinkText(textInfo)))
                     {
-                        e.target = m_TextElement;
+                        e.elementTarget = m_TextElement;
                         m_TextElement.SendEvent(e);
                     }
                 }
@@ -155,7 +155,7 @@ namespace UnityEngine.UIElements
                 {
                     using (Experimental.PointerUpLinkTagEvent e = Experimental.PointerUpLinkTagEvent.GetPooled(pue, link.GetLinkId(), link.GetLinkText(textInfo)))
                     {
-                        e.target = m_TextElement;
+                        e.elementTarget = m_TextElement;
                         m_TextElement.SendEvent(e);
                     }
                 }
@@ -179,7 +179,7 @@ namespace UnityEngine.UIElements
                         currentLinkIDHash = link.hashCode;
                         using (Experimental.PointerOverLinkTagEvent e = Experimental.PointerOverLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
                         {
-                            e.target = m_TextElement;
+                            e.elementTarget = m_TextElement;
                             m_TextElement.SendEvent(e);
                         }
 
@@ -190,7 +190,7 @@ namespace UnityEngine.UIElements
                     {
                         using (Experimental.PointerMoveLinkTagEvent e = Experimental.PointerMoveLinkTagEvent.GetPooled(pme, link.GetLinkId(), link.GetLinkText(textInfo)))
                         {
-                            e.target = m_TextElement;
+                            e.elementTarget = m_TextElement;
                             m_TextElement.SendEvent(e);
                         }
 
@@ -205,7 +205,7 @@ namespace UnityEngine.UIElements
                 currentLinkIDHash = -1;
                 using (Experimental.PointerOutLinkTagEvent e = Experimental.PointerOutLinkTagEvent.GetPooled(pme, String.Empty))
                 {
-                    e.target = m_TextElement;
+                    e.elementTarget = m_TextElement;
                     m_TextElement.SendEvent(e);
                 }
             }
@@ -217,7 +217,7 @@ namespace UnityEngine.UIElements
             {
                 using (Experimental.PointerOutLinkTagEvent e = Experimental.PointerOutLinkTagEvent.GetPooled(poe, String.Empty))
                 {
-                    e.target = m_TextElement;
+                    e.elementTarget = m_TextElement;
                     m_TextElement.SendEvent(e);
                 }
 

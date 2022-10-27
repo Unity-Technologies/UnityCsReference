@@ -19,7 +19,8 @@ namespace UnityEditor
         PingPong = (int)WrapMode.PingPong
     }
 
-    internal class AnimEditor : ScriptableObject
+    [Serializable]
+    class AnimEditor : ScriptableObject
     {
         // Active Animation windows
         private static List<AnimEditor> s_AnimationWindows = new List<AnimEditor>();
@@ -27,12 +28,12 @@ namespace UnityEditor
         public bool stateDisabled { get { return m_State.disabled; } }
 
         [SerializeField] private SplitterState m_HorizontalSplitter;
-        [SerializeField] private AnimationWindowState m_State;
-        [SerializeField] private DopeSheetEditor m_DopeSheet;
+        [SerializeReference] private AnimationWindowState m_State;
+        [SerializeReference] private DopeSheetEditor m_DopeSheet;
+        [SerializeReference] private CurveEditor m_CurveEditor;
         [SerializeField] private AnimationWindowHierarchy m_Hierarchy;
         [SerializeField] private AnimationWindowClipPopup m_ClipPopup;
         [SerializeField] private AnimationEventTimeLine m_Events;
-        [SerializeField] private CurveEditor m_CurveEditor;
         [SerializeField] private AnimEditorOverlay m_Overlay;
         [SerializeField] private EditorWindow m_OwnerWindow;
 
@@ -138,7 +139,7 @@ namespace UnityEditor
             }
         }
 
-        public IAnimationWindowControl controlInterface
+        public IAnimationWindowController controlInterface
         {
             get
             {
@@ -146,7 +147,7 @@ namespace UnityEditor
             }
         }
 
-        public IAnimationWindowControl overrideControlInterface
+        public IAnimationWindowController overrideControlInterface
         {
             get
             {
@@ -186,8 +187,8 @@ namespace UnityEditor
 
             m_State.OnGUI();
 
-            if (m_State.disabled && controlInterface.recording)
-                m_State.StopRecording();
+            if (m_State.disabled && m_State.recording)
+                m_State.recording = false;
 
             SynchronizeLayout();
 
@@ -359,14 +360,13 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            hideFlags = HideFlags.HideAndDontSave;
             s_AnimationWindows.Add(this);
 
             if (m_State == null)
             {
-                m_State = CreateInstance(typeof(AnimationWindowState)) as AnimationWindowState;
-                m_State.hideFlags = HideFlags.HideAndDontSave;
+                m_State = new AnimationWindowState();
                 m_State.animEditor = this;
+
                 InitializeHorizontalSplitter();
                 InitializeClipSelection();
                 InitializeDopeSheet();
@@ -382,6 +382,8 @@ namespace UnityEditor
             m_ClipPopup.state = m_State;
             m_Overlay.state = m_State;
 
+            m_State.OnEnable();
+
             m_CurveEditor.curvesUpdated += SaveChangedCurvesFromCurveEditor;
             m_CurveEditor.OnEnable();
         }
@@ -396,18 +398,14 @@ namespace UnityEditor
                 m_CurveEditor.OnDisable();
             }
 
-            if (m_DopeSheet != null)
-                m_DopeSheet.OnDisable();
-
+            m_DopeSheet?.OnDisable();
             m_State.OnDisable();
         }
 
         public void OnDestroy()
         {
-            if (m_CurveEditor != null)
-                m_CurveEditor.OnDestroy();
-
-            DestroyImmediate(m_State);
+            m_CurveEditor?.OnDestroy();
+            m_State?.OnDestroy();
         }
 
         public void OnSelectionChanged()
@@ -430,7 +428,7 @@ namespace UnityEditor
         public void OnEndLiveEdit()
         {
             UpdateSelectedKeysToCurveEditor();
-            controlInterface.ResampleAnimation();
+            m_State.ResampleAnimation();
         }
 
         public void OnLostFocus()
@@ -445,10 +443,10 @@ namespace UnityEditor
 
         private void PlaybackUpdate()
         {
-            if (m_State.disabled && controlInterface.playing)
-                controlInterface.StopPlayback();
+            if (m_State.disabled && m_State.playing)
+                m_State.playing = false;
 
-            if (controlInterface.PlaybackUpdate())
+            if (m_State.PlaybackUpdate())
                 Repaint();
         }
 
@@ -774,7 +772,7 @@ namespace UnityEditor
 
         private void AddKeyframeButtonOnGUI()
         {
-            bool canAddKey = selection.animationIsEditable && m_State.allCurves.Count != 0;
+            bool canAddKey = selection.animationIsEditable && m_State.filteredCurves.Count != 0;
             using (new EditorGUI.DisabledScope(!canAddKey))
             {
                 if (GUILayout.Button(AnimationWindowStyles.addKeyframeContent, AnimationWindowStyles.animClipToolbarButton))
@@ -792,19 +790,19 @@ namespace UnityEditor
 
         private void PlayControlsOnGUI()
         {
-            using (new EditorGUI.DisabledScope(!controlInterface.canPreview))
+            using (new EditorGUI.DisabledScope(!m_State.canPreview))
             {
                 PreviewButtonOnGUI();
             }
 
-            using (new EditorGUI.DisabledScope(!controlInterface.canRecord))
+            using (new EditorGUI.DisabledScope(!m_State.canRecord))
             {
                 RecordButtonOnGUI();
             }
 
             if (GUILayout.Button(AnimationWindowStyles.firstKeyContent, EditorStyles.toolbarButton))
             {
-                controlInterface.GoToFirstKeyframe();
+                state.GoToFirstKeyframe();
 
                 // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
                 EditorGUI.EndEditingActiveTextField();
@@ -812,20 +810,20 @@ namespace UnityEditor
 
             if (GUILayout.Button(AnimationWindowStyles.prevKeyContent, EditorStyles.toolbarButton))
             {
-                controlInterface.GoToPreviousKeyframe();
+                state.GoToPreviousKeyframe();
 
                 // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
                 EditorGUI.EndEditingActiveTextField();
             }
 
-            using (new EditorGUI.DisabledScope(!controlInterface.canPlay))
+            using (new EditorGUI.DisabledScope(!m_State.canPlay))
             {
                 PlayButtonOnGUI();
             }
 
             if (GUILayout.Button(AnimationWindowStyles.nextKeyContent, EditorStyles.toolbarButton))
             {
-                controlInterface.GoToNextKeyframe();
+                state.GoToNextKeyframe();
 
                 // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
                 EditorGUI.EndEditingActiveTextField();
@@ -833,7 +831,7 @@ namespace UnityEditor
 
             if (GUILayout.Button(AnimationWindowStyles.lastKeyContent, EditorStyles.toolbarButton))
             {
-                controlInterface.GoToLastKeyframe();
+                state.GoToLastKeyframe();
 
                 // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
                 EditorGUI.EndEditingActiveTextField();
@@ -845,7 +843,7 @@ namespace UnityEditor
             int newFrame = EditorGUILayout.DelayedIntField(m_State.currentFrame, EditorStyles.toolbarTextField, GUILayout.Width(kIntFieldWidth));
             if (EditorGUI.EndChangeCheck())
             {
-                controlInterface.GoToFrame(newFrame);
+                state.currentFrame = newFrame;
             }
         }
 
@@ -881,9 +879,9 @@ namespace UnityEditor
             animEditor.Repaint();
         }
 
-        static void ExecuteShortcut(ShortcutArguments args, Action<IAnimationWindowControl> exp)
+        static void ExecuteShortcut(ShortcutArguments args, Action<AnimationWindowState> exp)
         {
-            ExecuteShortcut(args, animEditor => exp(animEditor.controlInterface));
+            ExecuteShortcut(args, animEditor => exp(animEditor.state));
         }
 
         [FormerlyPrefKeyAs("Animation/Show Curves", "c")]
@@ -897,12 +895,9 @@ namespace UnityEditor
         [Shortcut("Animation/Play Animation", typeof(AnimationWindow), KeyCode.Space)]
         static void TogglePlayAnimation(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface =>
+            ExecuteShortcut(args, state =>
             {
-                if (controlInterface.playing)
-                    controlInterface.StopPlayback();
-                else
-                    controlInterface.StartPlayback();
+                state.playing = !state.playing;
             });
         }
 
@@ -910,42 +905,42 @@ namespace UnityEditor
         [Shortcut("Animation/Next Frame", typeof(AnimationWindow), KeyCode.Period)]
         static void NextFrame(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface => controlInterface.GoToNextFrame());
+            ExecuteShortcut(args, state => state.GoToNextFrame());
         }
 
         [FormerlyPrefKeyAs("Animation/Previous Frame", ",")]
         [Shortcut("Animation/Previous Frame", typeof(AnimationWindow), KeyCode.Comma)]
         static void PreviousFrame(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousFrame());
+            ExecuteShortcut(args, state => state.GoToPreviousFrame());
         }
 
         [FormerlyPrefKeyAs("Animation/Previous Keyframe", "&,")]
         [Shortcut("Animation/Previous Keyframe", typeof(AnimationWindow), KeyCode.Comma, ShortcutModifiers.Alt)]
         static void PreviousKeyFrame(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousKeyframe());
+            ExecuteShortcut(args, state => state.GoToPreviousKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Next Keyframe", "&.")]
         [Shortcut("Animation/Next Keyframe", typeof(AnimationWindow), KeyCode.Period, ShortcutModifiers.Alt)]
         static void NextKeyFrame(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface => controlInterface.GoToNextKeyframe());
+            ExecuteShortcut(args, state => state.GoToNextKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/First Keyframe", "#,")]
         [Shortcut("Animation/First Keyframe", typeof(AnimationWindow), KeyCode.Comma, ShortcutModifiers.Shift)]
         static void FirstKeyFrame(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface => controlInterface.GoToFirstKeyframe());
+            ExecuteShortcut(args, state => state.GoToFirstKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Last Keyframe", "#.")]
         [Shortcut("Animation/Last Keyframe", typeof(AnimationWindow), KeyCode.Period, ShortcutModifiers.Shift)]
         static void LastKeyFrame(ShortcutArguments args)
         {
-            ExecuteShortcut(args, controlInterface => controlInterface.GoToLastKeyframe());
+            ExecuteShortcut(args, state => state.GoToLastKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Key Selected", "k")]
@@ -959,8 +954,8 @@ namespace UnityEditor
             var animEditor = animationWindow.animEditor;
 
             animEditor.SaveCurveEditorKeySelection();
-            AnimationWindowUtility.AddSelectedKeyframes(animEditor.m_State, animEditor.controlInterface.time);
-            animEditor.controlInterface.ClearCandidates();
+            AnimationWindowUtility.AddSelectedKeyframes(animEditor.m_State, AnimationKeyTime.Frame(animEditor.state.currentFrame, animEditor.state.frameRate));
+            animEditor.state.ClearCandidates();
             animEditor.UpdateSelectedKeysToCurveEditor();
 
             animEditor.Repaint();
@@ -977,7 +972,7 @@ namespace UnityEditor
             var animEditor = animationWindow.animEditor;
 
             animEditor.SaveCurveEditorKeySelection();
-            animEditor.controlInterface.ProcessCandidates();
+            animEditor.state.ProcessCandidates();
             animEditor.UpdateSelectedKeysToCurveEditor();
 
             animEditor.Repaint();
@@ -1004,13 +999,10 @@ namespace UnityEditor
         private void PlayButtonOnGUI()
         {
             EditorGUI.BeginChangeCheck();
-            bool playbackEnabled = GUILayout.Toggle(controlInterface.playing, AnimationWindowStyles.playContent, EditorStyles.toolbarButton);
+            bool playbackEnabled = GUILayout.Toggle(m_State.playing, AnimationWindowStyles.playContent, EditorStyles.toolbarButton);
             if (EditorGUI.EndChangeCheck())
             {
-                if (playbackEnabled)
-                    controlInterface.StartPlayback();
-                else
-                    controlInterface.StopPlayback();
+                m_State.playing = playbackEnabled;
 
                 // Stop text editing.  User may be editing frame navigation ui which will not update until we exit text editing.
                 EditorGUI.EndEditingActiveTextField();
@@ -1021,13 +1013,10 @@ namespace UnityEditor
         {
             EditorGUI.BeginChangeCheck();
 
-            bool recordingEnabled = GUILayout.Toggle(controlInterface.previewing, AnimationWindowStyles.previewContent, EditorStyles.toolbarButton);
+            bool recordingEnabled = GUILayout.Toggle(m_State.previewing, AnimationWindowStyles.previewContent, EditorStyles.toolbarButton);
             if (EditorGUI.EndChangeCheck())
             {
-                if (recordingEnabled)
-                    m_State.StartPreview();
-                else
-                    m_State.StopPreview();
+                m_State.previewing = recordingEnabled;
             }
         }
 
@@ -1036,22 +1025,20 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             Color backupColor = GUI.color;
-            if (controlInterface.recording)
+            if (m_State.recording)
             {
                 Color recordedColor = AnimationMode.recordedPropertyColor;
                 recordedColor.a *= GUI.color.a;
                 GUI.color = recordedColor;
             }
 
-            bool recordingEnabled = GUILayout.Toggle(controlInterface.recording, AnimationWindowStyles.recordContent, EditorStyles.toolbarButton);
+            bool recordingEnabled = GUILayout.Toggle(m_State.recording, AnimationWindowStyles.recordContent, EditorStyles.toolbarButton);
             if (EditorGUI.EndChangeCheck())
             {
-                if (recordingEnabled)
-                    m_State.StartRecording();
-                else
-                {
-                    m_State.StopRecording();
+                m_State.recording = recordingEnabled;
 
+                if (!recordingEnabled)
+                {
                     // Force refresh in inspector as stopping recording does not invalidate any data.
                     InspectorWindow.RepaintAllInspectors();
                 }
@@ -1120,9 +1107,9 @@ namespace UnityEditor
         {
             Color color = inRangeColor;
 
-            if (controlInterface.recording)
+            if (m_State.recording)
                 color *= AnimationMode.recordedPropertyColor;
-            else if (controlInterface.previewing)
+            else if (m_State.previewing)
                 color *= AnimationMode.animatedPropertyColor;
             else
                 color = Color.clear;
@@ -1135,9 +1122,9 @@ namespace UnityEditor
         {
             Color color = outOfRangeColor;
 
-            if (controlInterface.recording)
+            if (m_State.recording)
                 color *= AnimationMode.recordedPropertyColor;
-            else if (controlInterface.previewing)
+            else if (m_State.previewing)
                 color *= AnimationMode.animatedPropertyColor;
 
             Vector2 timeRange = m_State.timeRange;
@@ -1222,7 +1209,7 @@ namespace UnityEditor
             m_State.ClearKeySelections();
             foreach (CurveSelection curveSelection in m_CurveEditor.selectedCurves)
             {
-                AnimationWindowKeyframe keyFrame = AnimationWindowUtility.CurveSelectionToAnimationWindowKeyframe(curveSelection, m_State.allCurves);
+                AnimationWindowKeyframe keyFrame = AnimationWindowUtility.CurveSelectionToAnimationWindowKeyframe(curveSelection, m_State.filteredCurves);
                 if (keyFrame != null)
                     m_State.SelectKey(keyFrame);
             }

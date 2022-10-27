@@ -172,7 +172,7 @@ namespace UnityEngine.UIElements
 
                         using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(previousValue, m_Value))
                         {
-                            evt.target = this;
+                            evt.elementTarget = this;
                             SendEvent(evt);
                         }
                     }
@@ -474,7 +474,7 @@ namespace UnityEngine.UIElements
                 {
                     using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(oldValue, m_Value))
                     {
-                        evt.target = this;
+                        evt.elementTarget = this;
                         SetValueWithoutNotify(m_Value);
                         SendEvent(evt);
                     }

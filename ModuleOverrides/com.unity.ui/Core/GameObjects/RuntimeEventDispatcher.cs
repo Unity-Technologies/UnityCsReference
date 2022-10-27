@@ -10,15 +10,7 @@ namespace UnityEngine.UIElements
     {
         public static EventDispatcher Create()
         {
-            return EventDispatcher.CreateForRuntime(new List<IEventDispatchingStrategy>
-            {
-                new NavigationEventDispatchingStrategy(),
-                new PointerCaptureDispatchingStrategy(),
-                new KeyboardEventDispatchingStrategy(),
-                new PointerEventDispatchingStrategy(),
-                new MouseEventDispatchingStrategy(), //TODO: remove all runtime mouse events (PointerWheelEvent?)
-                new DefaultDispatchingStrategy(),
-            });
+            return EventDispatcher.CreateDefault();
         }
     }
 }

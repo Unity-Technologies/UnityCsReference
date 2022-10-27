@@ -75,7 +75,7 @@ namespace Unity.UI.Builder
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            var focusable = evt.target as VisualElement;
+            var focusable = evt.elementTarget;
             focusable.UnregisterCallback<FocusEvent>(OnChildFocus);
             focusable.UnregisterCallback<BlurEvent>(OnChildBlur);
         }

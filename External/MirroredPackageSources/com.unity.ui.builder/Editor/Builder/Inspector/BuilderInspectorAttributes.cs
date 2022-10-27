@@ -256,7 +256,7 @@ namespace Unity.UI.Builder
                 {
                     // When possible, the popup should have the same width as the input field, so that the auto-complete
                     // characters will try to match said input field.
-                    c.popup.anchoredControl = ((VisualElement)evt.target).Q(className: "unity-text-field__input");
+                    c.popup.anchoredControl = evt.elementTarget.Q(className: "unity-text-field__input");
                 }, completer);
                 completer.matcherCallback += (str, info) => info.value.IndexOf(str, StringComparison.OrdinalIgnoreCase) >= 0;
                 completer.itemHeight = 36;
@@ -769,11 +769,15 @@ namespace Unity.UI.Builder
 
         void BuildAttributeFieldContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            BuildAttributeFieldContextualMenu(evt.menu, evt.target as VisualElement);
+            BuildAttributeFieldContextualMenu(evt.menu, evt.elementTarget);
         }
 
         void BuildAttributeFieldContextualMenu(DropdownMenu menu, VisualElement fieldElement)
         {
+            // if the context menu is already populated by the field (text field) then ignore
+            if (menu.MenuItems() != null & menu.MenuItems().Count > 0)
+                return;
+
             menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetMessage,
                 UnsetAttributeProperty,

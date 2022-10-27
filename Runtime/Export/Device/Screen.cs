@@ -116,5 +116,13 @@ namespace UnityEngine.Device
         public static DisplayInfo mainWindowDisplayInfo => ShimManager.screenShim.mainWindowDisplayInfo;
         public static void GetDisplayLayout(List<DisplayInfo> displayLayout) => ShimManager.screenShim.GetDisplayLayout(displayLayout);
         public static AsyncOperation MoveMainWindowTo(in DisplayInfo display, Vector2Int position) => ShimManager.screenShim.MoveMainWindowTo(display, position);
+
+        public static void SetMSAASamples(int numSamples) => ShimManager.screenShim.SetMSAASamples(numSamples);
+
+        public static int msaaSamples
+        {
+            get => ShimManager.screenShim.msaaSamples;
+        }
+
     }
 }

@@ -27,106 +27,83 @@ namespace UnityEngine.UIElements
 
     internal abstract class EventCallbackFunctorBase
     {
-        public CallbackPhase phase { get; }
-        public InvokePolicy invokePolicy { get; }
+        public readonly long eventTypeId;
+        public readonly CallbackPhase phase;
+        public readonly InvokePolicy invokePolicy;
 
-        protected EventCallbackFunctorBase(CallbackPhase phase, InvokePolicy invokePolicy)
+        protected EventCallbackFunctorBase(long eventTypeId, CallbackPhase phase, InvokePolicy invokePolicy)
         {
+            this.eventTypeId = eventTypeId;
             this.phase = phase;
             this.invokePolicy = invokePolicy;
         }
 
-        public abstract void Invoke(EventBase evt, PropagationPhase propagationPhase);
+        // For unit tests only
+        internal void Invoke(EventBase evt, PropagationPhase propagationPhase)
+        {
+            if (eventTypeId == evt.eventTypeId && (phase == CallbackPhase.TrickleDown
+                    ? propagationPhase == PropagationPhase.TrickleDown || propagationPhase == PropagationPhase.AtTarget
+                    : propagationPhase == PropagationPhase.AtTarget || propagationPhase == PropagationPhase.BubbleUp))
+                Invoke(evt);
+        }
+
+        public abstract void Invoke(EventBase evt);
 
         public abstract bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase);
-
-        protected bool PhaseMatches(PropagationPhase propagationPhase)
-        {
-            switch (phase)
-            {
-                case CallbackPhase.TrickleDownAndTarget:
-                    if (propagationPhase != PropagationPhase.TrickleDown && propagationPhase != PropagationPhase.AtTarget)
-                        return false;
-                    break;
-
-                case CallbackPhase.TargetAndBubbleUp:
-                    if (propagationPhase != PropagationPhase.AtTarget && propagationPhase != PropagationPhase.BubbleUp)
-                        return false;
-                    break;
-            }
-
-            return true;
-        }
     }
 
-    internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
+    internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase
+        where TEventType : EventBase<TEventType>, new()
     {
         readonly EventCallback<TEventType> m_Callback;
-        readonly long m_EventTypeId;
 
-        public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase, InvokePolicy invokePolicy = default) : base(phase, invokePolicy)
+        public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase,
+            InvokePolicy invokePolicy = InvokePolicy.Default)
+            : base(EventBase<TEventType>.TypeId(), phase, invokePolicy)
         {
             m_Callback = callback;
-            m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
-        public override void Invoke(EventBase evt, PropagationPhase propagationPhase)
+        public override void Invoke(EventBase evt)
         {
-            if (evt == null)
-                throw new ArgumentNullException(nameof(evt));
-
-            if (evt.eventTypeId != m_EventTypeId)
-                return;
-
-            if (PhaseMatches(propagationPhase))
+            using (new EventDebuggerLogCall(m_Callback, evt))
             {
-                using (new EventDebuggerLogCall(m_Callback, evt))
-                {
-                    m_Callback(evt as TEventType);
-                }
+                m_Callback(evt as TEventType);
             }
         }
 
         public override bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (this.phase == phase));
+            return ((this.eventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (this.phase == phase));
         }
     }
 
-    internal class EventCallbackFunctor<TEventType, TCallbackArgs> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
+    internal class EventCallbackFunctor<TEventType, TCallbackArgs> : EventCallbackFunctorBase
+        where TEventType : EventBase<TEventType>, new()
     {
         readonly EventCallback<TEventType, TCallbackArgs> m_Callback;
-        readonly long m_EventTypeId;
 
         internal TCallbackArgs userArgs { get; set; }
 
-        public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, CallbackPhase phase, InvokePolicy invokePolicy) : base(phase, invokePolicy)
+        public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs,
+            CallbackPhase phase, InvokePolicy invokePolicy = InvokePolicy.Default)
+            : base(EventBase<TEventType>.TypeId(), phase, invokePolicy)
         {
             this.userArgs = userArgs;
             m_Callback = callback;
-            m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
-        public override void Invoke(EventBase evt, PropagationPhase propagationPhase)
+        public override void Invoke(EventBase evt)
         {
-            if (evt == null)
-                throw new ArgumentNullException(nameof(evt));
-
-            if (evt.eventTypeId != m_EventTypeId)
-                return;
-
-            if (PhaseMatches(propagationPhase))
+            using (new EventDebuggerLogCall(m_Callback, evt))
             {
-                using (new EventDebuggerLogCall(m_Callback, evt))
-                {
-                    m_Callback(evt as TEventType, userArgs);
-                }
+                m_Callback(evt as TEventType, userArgs);
             }
         }
 
         public override bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (this.phase == phase));
+            return ((this.eventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (this.phase == phase));
         }
     }
 }

@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements
                 // TextInputFieldBase during the Javascript event handler, preventing the
                 // keyboard from being displayed. Disable the capture behavior for WebGL.
                 textElement.CaptureMouse();
-                m_LastPointerDownTarget = evt.target as VisualElement;
+                m_LastPointerDownTarget = evt.elementTarget;
             }
             else if (!edition.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId())
             {

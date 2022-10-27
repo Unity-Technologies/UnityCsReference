@@ -12,9 +12,266 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
-    internal class AddCurvesPopupHierarchyDataSource : TreeViewDataSource
+    class AddCurvesPopupHierarchyDataSource : TreeViewDataSource
     {
-        public static bool showEntireHierarchy { get; set; }
+        struct TreeViewBuilder
+        {
+            struct KeyComparer : IComparer<Key>
+            {
+                static readonly Type s_GameObjectType = typeof(GameObject);
+                static readonly Type s_TransformType = typeof(Transform);
+
+                public int Compare(Key x, Key y)
+                {
+                    var result = String.Compare(x.path, y.path, StringComparison.Ordinal);
+                    if (result == 0 && x.type != y.type)
+                    {
+                        // Make sure GameObject properties appear first, then Transform.
+                        if (x.type == s_GameObjectType)
+                            return -1;
+                        if (y.type == s_GameObjectType)
+                            return 1;
+                        if (x.type == typeof(Transform))
+                            return -1;
+                        if (y.type == typeof(Transform))
+                            return 1;
+
+                        return String.Compare(x.type.Name, y.type.Name, StringComparison.Ordinal);
+                    }
+
+                    return result;
+                }
+            }
+
+            struct Key
+            {
+                public string path;
+                public Type type;
+            }
+
+            SortedDictionary<Key, List<EditorCurveBinding>> m_AccumulatedBindings;
+            AnimationWindowState m_State;
+
+            public TreeViewBuilder(AnimationWindowState state)
+            {
+                m_AccumulatedBindings = new SortedDictionary<Key, List<EditorCurveBinding>>(new KeyComparer());
+                m_State = state;
+            }
+
+            public void Add(EditorCurveBinding binding)
+            {
+                var key = new Key { path = binding.path, type = binding.type };
+
+                if (m_AccumulatedBindings.TryGetValue(key, out var bindings))
+                    bindings.Add(binding);
+                else
+                    m_AccumulatedBindings[key] = new List<EditorCurveBinding>(new [] {binding});
+            }
+
+            public TreeViewItem CreateTreeView()
+            {
+                TreeViewItem rootNode;
+
+                // Bindings of a single Component/ScriptableObject, skip the group node.
+                if (m_AccumulatedBindings.Count == 1)
+                {
+                    rootNode = AddAnimatableObjectToHierarchy(m_AccumulatedBindings.First().Value, null, "");
+                }
+                else
+                {
+                    var groupNodes = new Dictionary<string, TreeViewItem>();
+                    var childNodes = new Dictionary<TreeViewItem, List<TreeViewItem>>();
+                    var inheritedNodeWeights = new Dictionary<TreeViewItem, int>();
+
+                    rootNode = new AddCurvesPopupObjectNode(null, string.Empty, string.Empty);
+
+                    TreeViewItem groupNode = rootNode;
+
+                    groupNodes.Add(string.Empty, (rootNode));
+                    childNodes.Add(groupNode, new List<TreeViewItem>());
+                    inheritedNodeWeights.Add(groupNode, 0);
+
+                    string currentPath = string.Empty;
+                    foreach (var kvp in m_AccumulatedBindings)
+                    {
+                        if (!currentPath.Equals(kvp.Key.path))
+                        {
+                            TreeViewItem parentNode = rootNode;
+                            var parentPath = GetParentPath(kvp.Key.path);
+
+                            while (parentPath != null)
+                            {
+                                if (groupNodes.TryGetValue(parentPath, out var node))
+                                {
+                                    parentNode = node;
+                                    break;
+                                }
+
+                                parentPath = GetParentPath(parentPath);
+                            }
+
+                            groupNode = new AddCurvesPopupObjectNode(parentNode, kvp.Key.path, "", GetObjectName(kvp.Key.path));
+                            groupNodes.Add(kvp.Key.path, groupNode);
+                            childNodes.Add(groupNode, new List<TreeViewItem>());
+                            inheritedNodeWeights.Add(groupNode, 0);
+
+                            childNodes[parentNode].Add(groupNode);
+
+                            currentPath = kvp.Key.path;
+                        }
+
+                        var bindings = kvp.Value;
+
+                        for (int i = bindings.Count - 1; i >= 0; --i)
+                        {
+                            // Let's not add those that already have a existing curve.
+                            if (AnimationWindowUtility.IsCurveCreated(m_State.activeAnimationClip, bindings[i]))
+                                bindings.RemoveAt(i);
+                            // Remove animator enabled property which shouldn't be animated.
+                            else if (bindings[i].type == typeof(Animator) && bindings[i].propertyName == "m_Enabled")
+                                bindings.RemoveAt(i);
+                        }
+
+                        if (bindings.Count > 0)
+                        {
+                            // Builtin GameObject attributes.
+                            if (kvp.Key.type == typeof(GameObject))
+                            {
+                                // Don't show for the root go
+                                if (!string.IsNullOrEmpty(kvp.Key.path))
+                                {
+                                    TreeViewItem newNode = CreateNode(kvp.Value.ToArray(), groupNode, null);
+                                    if (newNode != null)
+                                        childNodes[groupNode].Add(newNode);
+                                }
+                            }
+                            else
+                            {
+                                childNodes[groupNode].Add(AddAnimatableObjectToHierarchy(bindings, groupNode, kvp.Key.path));
+
+                                var parentGroupNode = groupNode;
+                                while (parentGroupNode != null)
+                                {
+                                    inheritedNodeWeights[parentGroupNode] += bindings.Count;
+                                    parentGroupNode = parentGroupNode.parent;
+                                }
+                            }
+                        }
+                    }
+
+                    // Remove empty leaves from tree view.
+                    foreach (var kvp in inheritedNodeWeights)
+                    {
+                        // Remove Leaves nodes without properties.
+                        if (inheritedNodeWeights[kvp.Key] == 0 && kvp.Key.parent != null)
+                        {
+                            childNodes[kvp.Key.parent].Remove(kvp.Key);
+                            kvp.Key.parent = null;
+                        }
+                    }
+
+                    // Set child parent references.
+                    foreach (var kvp in childNodes)
+                    {
+                        TreeViewUtility.SetChildParentReferences(kvp.Value, kvp.Key);
+                    }
+                }
+
+                m_AccumulatedBindings.Clear();
+
+                return rootNode;
+            }
+
+            private string GetParentPath(string path)
+            {
+                if (String.IsNullOrEmpty(path))
+                    return null;
+
+                int index = path.LastIndexOf('/');
+                if (index == -1)
+                    return string.Empty;
+
+                return path.Substring(0, index);
+            }
+
+            private string GetObjectName(string path)
+            {
+                if (String.IsNullOrEmpty(path))
+                    return null;
+
+                int index = path.LastIndexOf('/');
+                if (index == -1)
+                    return path;
+
+                return path.Substring(index + 1);
+            }
+
+            private string GetClassName(EditorCurveBinding binding)
+            {
+                if (m_State.activeRootGameObject != null)
+                {
+                    Object target = AnimationUtility.GetAnimatedObject(m_State.activeRootGameObject, binding);
+                    if (target != null)
+                        return ObjectNames.GetInspectorTitle(target);
+                }
+
+                return binding.type.Name;
+            }
+
+            private Texture2D GetIcon(EditorCurveBinding binding)
+            {
+                return AssetPreview.GetMiniTypeThumbnail(binding.type);
+            }
+
+            private TreeViewItem AddAnimatableObjectToHierarchy(List<EditorCurveBinding> curveBindings, TreeViewItem parentNode, string path)
+            {
+                TreeViewItem node = new AddCurvesPopupObjectNode(parentNode, path, GetClassName(curveBindings[0]));
+                node.icon = GetIcon(curveBindings[0]);
+
+                List<TreeViewItem> childNodes = new List<TreeViewItem>();
+                List<EditorCurveBinding> singlePropertyBindings = new List<EditorCurveBinding>();
+                SerializedObject so = null;
+
+                for (int i = 0; i < curveBindings.Count; i++)
+                {
+                    EditorCurveBinding curveBinding = curveBindings[i];
+                    if (m_State.activeRootGameObject && curveBinding.isSerializeReferenceCurve)
+                    {
+                        var animatedObject = AnimationUtility.GetAnimatedObject(m_State.activeRootGameObject, curveBinding);
+                        if (animatedObject != null && (so == null || so.targetObject != animatedObject))
+                            so = new SerializedObject(animatedObject);
+                    }
+
+                    singlePropertyBindings.Add(curveBinding);
+
+                    // We expect curveBindings to come sorted by propertyname
+                    if (i == curveBindings.Count - 1 || AnimationWindowUtility.GetPropertyGroupName(curveBindings[i + 1].propertyName) != AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName))
+                    {
+                        TreeViewItem newNode = CreateNode(singlePropertyBindings.ToArray(), node, so);
+                        if (newNode != null)
+                            childNodes.Add(newNode);
+                        singlePropertyBindings.Clear();
+                    }
+                }
+
+                childNodes.Sort();
+
+                TreeViewUtility.SetChildParentReferences(childNodes, node);
+                return node;
+            }
+
+            private TreeViewItem CreateNode(EditorCurveBinding[] curveBindings, TreeViewItem parentNode, SerializedObject so)
+            {
+                var node = new AddCurvesPopupPropertyNode(parentNode, curveBindings, AnimationWindowUtility.GetNicePropertyGroupDisplayName(curveBindings[0], so));
+
+                // For RectTransform.position we only want .z
+                if (AnimationWindowUtility.IsRectTransformPosition(node.curveBindings[0]))
+                    node.curveBindings = new EditorCurveBinding[] {node.curveBindings[2]};
+
+                node.icon = parentNode.icon;
+                return node;
+            }
+        }
 
         public AddCurvesPopupHierarchyDataSource(TreeViewController treeView)
             : base(treeView)
@@ -34,196 +291,29 @@ namespace UnityEditorInternal
             m_RootItem = null;
             if (AddCurvesPopup.s_State.selection.canAddCurves)
             {
-                GameObject rootGameObject = AddCurvesPopup.s_State.activeRootGameObject;
-                ScriptableObject scriptableObject = AddCurvesPopup.s_State.activeScriptableObject;
-
-                if (rootGameObject != null)
-                {
-                    AddGameObjectToHierarchy(rootGameObject, rootGameObject, AddCurvesPopup.s_State.activeAnimationClip, m_RootItem);
-                }
-                else if (scriptableObject != null)
-                {
-                    AddScriptableObjectToHierarchy(scriptableObject, AddCurvesPopup.s_State.activeAnimationClip, m_RootItem);
-                }
+                var state = AddCurvesPopup.s_State;
+                AddBindingsToHierarchy(state.controlInterface.GetAnimatableBindings());
             }
 
             SetupRootNodeSettings();
             m_NeedRefreshRows = true;
         }
 
-        private TreeViewItem AddGameObjectToHierarchy(GameObject gameObject, GameObject rootGameObject, AnimationClip animationClip, TreeViewItem parent)
+        private void AddBindingsToHierarchy(EditorCurveBinding[] bindings)
         {
-            string path = AnimationUtility.CalculateTransformPath(gameObject.transform, rootGameObject.transform);
-            AddCurvesPopupGameObjectNode node = new AddCurvesPopupGameObjectNode(gameObject, parent, gameObject.name);
-            List<TreeViewItem> childNodes = new List<TreeViewItem>();
-
-            if (m_RootItem == null)
-                m_RootItem = node;
-
-            // Iterate over all animatable objects
-            EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(gameObject, rootGameObject);
-            List<EditorCurveBinding> singleObjectBindings = new List<EditorCurveBinding>();
-            for (int i = 0; i < allCurveBindings.Length; i++)
+            if (bindings == null || bindings.Length == 0)
             {
-                EditorCurveBinding curveBinding = allCurveBindings[i];
-
-                singleObjectBindings.Add(curveBinding);
-
-                // Don't create group for GameObject.m_IsActive. It looks messy
-                if (curveBinding.propertyName == "m_IsActive")
-                {
-                    // Don't show for the root go
-                    if (curveBinding.path != "")
-                    {
-                        TreeViewItem newNode = CreateNode(singleObjectBindings.ToArray(), node, null);
-                        if (newNode != null)
-                            childNodes.Add(newNode);
-                        singleObjectBindings.Clear();
-                    }
-                    else
-                    {
-                        singleObjectBindings.Clear();
-                    }
-                }
-                else
-                {
-                    // We expect allCurveBindings to come sorted by type
-
-                    bool isLastItemOverall = (i == allCurveBindings.Length - 1);
-                    bool isLastItemOnThisGroup = false;
-
-                    if (!isLastItemOverall)
-                        isLastItemOnThisGroup = (allCurveBindings[i + 1].type != curveBinding.type);
-
-                    // Let's not add those that already have a existing curve.
-                    if (AnimationWindowUtility.IsCurveCreated(animationClip, curveBinding))
-                        singleObjectBindings.Remove(curveBinding);
-
-                    // Remove animator enabled property which shouldn't be animated.
-                    if (curveBinding.type == typeof(Animator) && curveBinding.propertyName == "m_Enabled")
-                        singleObjectBindings.Remove(curveBinding);
-
-                    if ((isLastItemOverall || isLastItemOnThisGroup) && singleObjectBindings.Count > 0)
-                    {
-                        childNodes.Add(AddAnimatableObjectToHierarchy(singleObjectBindings.ToArray(), node, path));
-                        singleObjectBindings.Clear();
-                    }
-                }
+                m_RootItem = new AddCurvesPopupObjectNode(null, "", "");
+                return;
             }
 
-            if (showEntireHierarchy)
+            var builder = new TreeViewBuilder(AddCurvesPopup.s_State);
+            for (int i = 0; i < bindings.Length; i++)
             {
-                // Iterate over all child GOs
-                for (int i = 0; i < gameObject.transform.childCount; i++)
-                {
-                    Transform childTransform = gameObject.transform.GetChild(i);
-                    TreeViewItem childNode = AddGameObjectToHierarchy(childTransform.gameObject, rootGameObject, animationClip, node);
-                    if (childNode != null)
-                        childNodes.Add(childNode);
-                }
+                builder.Add(bindings[i]);
             }
 
-            // Remove Leaf nodes without properties.
-            if (childNodes.Count == 0)
-            {
-                node.parent = null;
-                return null;
-            }
-
-            TreeViewUtility.SetChildParentReferences(childNodes, node);
-            return node;
-        }
-
-        private TreeViewItem AddScriptableObjectToHierarchy(ScriptableObject scriptableObject, AnimationClip clip, TreeViewItem parent)
-        {
-            EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(scriptableObject);
-            EditorCurveBinding[] availableBindings = allCurveBindings.Where(c => !AnimationWindowUtility.IsCurveCreated(clip, c)).ToArray();
-
-            TreeViewItem node = null;
-            if (availableBindings.Length > 0)
-                node = AddAnimatableObjectToHierarchy(availableBindings, parent, "");
-            else
-                node = new AddCurvesPopupObjectNode(parent, "", scriptableObject.name);
-
-            if (m_RootItem == null)
-                m_RootItem = node;
-
-            return node;
-        }
-
-        static string GetClassName(EditorCurveBinding binding)
-        {
-            if (AddCurvesPopup.s_State.activeRootGameObject != null)
-            {
-                Object target = AnimationUtility.GetAnimatedObject(AddCurvesPopup.s_State.activeRootGameObject, binding);
-                if (target)
-                    return ObjectNames.GetInspectorTitle(target);
-            }
-
-            return binding.type.Name;
-        }
-
-        static Texture2D GetIcon(EditorCurveBinding binding)
-        {
-            if (AddCurvesPopup.s_State.activeRootGameObject != null)
-            {
-                return AssetPreview.GetMiniThumbnail(AnimationUtility.GetAnimatedObject(AddCurvesPopup.s_State.activeRootGameObject, binding));
-            }
-            else if (AddCurvesPopup.s_State.activeScriptableObject != null)
-            {
-                return AssetPreview.GetMiniThumbnail(AddCurvesPopup.s_State.activeScriptableObject);
-            }
-
-            return null;
-        }
-
-        private TreeViewItem AddAnimatableObjectToHierarchy(EditorCurveBinding[] curveBindings, TreeViewItem parentNode, string path)
-        {
-            TreeViewItem node = new AddCurvesPopupObjectNode(parentNode, path, GetClassName(curveBindings[0]));
-            node.icon = GetIcon(curveBindings[0]);
-
-            List<TreeViewItem> childNodes = new List<TreeViewItem>();
-            List<EditorCurveBinding> singlePropertyBindings = new List<EditorCurveBinding>();
-            SerializedObject so = null;
-
-            for (int i = 0; i < curveBindings.Length; i++)
-            {
-                EditorCurveBinding curveBinding = curveBindings[i];
-                if (curveBinding.isSerializeReferenceCurve)
-                {
-                    var animatedObject = AnimationUtility.GetAnimatedObject(AddCurvesPopup.s_State.activeRootGameObject, curveBinding);
-                    if (animatedObject != null && (so == null || so.targetObject != animatedObject))
-                        so = new SerializedObject(animatedObject);
-                }
-
-                singlePropertyBindings.Add(curveBinding);
-
-                // We expect curveBindings to come sorted by propertyname
-                if (i == curveBindings.Length - 1 || AnimationWindowUtility.GetPropertyGroupName(curveBindings[i + 1].propertyName) != AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName))
-                {
-                    TreeViewItem newNode = CreateNode(singlePropertyBindings.ToArray(), node, so);
-                    if (newNode != null)
-                        childNodes.Add(newNode);
-                    singlePropertyBindings.Clear();
-                }
-            }
-
-            childNodes.Sort();
-
-            TreeViewUtility.SetChildParentReferences(childNodes, node);
-            return node;
-        }
-
-        private TreeViewItem CreateNode(EditorCurveBinding[] curveBindings, TreeViewItem parentNode, SerializedObject so)
-        {
-            var node = new AddCurvesPopupPropertyNode(parentNode, curveBindings, AnimationWindowUtility.GetNicePropertyDisplayName(curveBindings[0], so));
-
-            // For RectTransform.position we only want .z
-            if (AnimationWindowUtility.IsRectTransformPosition(node.curveBindings[0]))
-                node.curveBindings = new EditorCurveBinding[] {node.curveBindings[2]};
-
-            node.icon = parentNode.icon;
-            return node;
+            m_RootItem = builder.CreateTreeView();
         }
 
         public void UpdateData()
@@ -232,28 +322,20 @@ namespace UnityEditorInternal
         }
     }
 
-    internal class AddCurvesPopupGameObjectNode : TreeViewItem
+    class AddCurvesPopupObjectNode : TreeViewItem
     {
-        public AddCurvesPopupGameObjectNode(GameObject gameObject, TreeViewItem parent, string displayName)
-            : base(gameObject.GetInstanceID(), parent != null ? parent.depth + 1 : -1, parent, displayName)
+        public AddCurvesPopupObjectNode(TreeViewItem parent, string path, string className, string displayName = null)
+            : base((path + className).GetHashCode(), parent != null ? parent.depth + 1 : -1, parent, displayName ?? className)
         {
         }
     }
 
-    internal class AddCurvesPopupObjectNode : TreeViewItem
-    {
-        public AddCurvesPopupObjectNode(TreeViewItem parent, string path, string className)
-            : base((path + className).GetHashCode(), parent != null ? parent.depth + 1 : -1, parent, className)
-        {
-        }
-    }
-
-    internal class AddCurvesPopupPropertyNode : TreeViewItem
+    class AddCurvesPopupPropertyNode : TreeViewItem
     {
         public EditorCurveBinding[] curveBindings;
 
-        public AddCurvesPopupPropertyNode(TreeViewItem parent, EditorCurveBinding[] curveBindings, string displayPath)
-            : base(curveBindings[0].GetHashCode(), parent.depth + 1, parent, displayPath)
+        public AddCurvesPopupPropertyNode(TreeViewItem parent, EditorCurveBinding[] curveBindings, string displayName)
+            : base(curveBindings[0].GetHashCode(), parent.depth + 1, parent, displayName)
         {
             this.curveBindings = curveBindings;
         }

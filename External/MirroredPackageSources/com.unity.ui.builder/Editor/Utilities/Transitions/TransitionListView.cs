@@ -110,7 +110,7 @@ namespace Unity.UI.Builder
 
             using (var evt = TransitionAddedEvent.GetPooled())
             {
-                evt.target = this;
+                evt.elementTarget = this;
                 evt.transition = transition;
                 SendEvent(evt);
             }
@@ -128,7 +128,7 @@ namespace Unity.UI.Builder
         {
             using (var evt = TransitionRemovedEvent.GetPooled())
             {
-                evt.target = this;
+                evt.elementTarget = this;
                 evt.index = field.index;
                 SendEvent(evt);
             }
@@ -138,7 +138,7 @@ namespace Unity.UI.Builder
         {
             using (var pooled = TransitionChangedEvent.GetPooled())
             {
-                pooled.target = this;
+                pooled.elementTarget = this;
                 pooled.field = field;
                 pooled.transition = field.GetTransitionData();
                 pooled.changeType = changeType;

@@ -356,7 +356,7 @@ namespace UnityEditor.UIElements.Debugger
             m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection);
             splitter.rightPane.Add(m_StylesDebuggerContainer);
 
-            DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
+            DebuggerEventDispatchUtilities.s_GlobalPanelDebug = this;
 
             m_RepaintOverlay = new RepaintOverlayPainter();
             m_PickOverlay = new HighlightOverlayPainter();
@@ -374,8 +374,8 @@ namespace UnityEditor.UIElements.Debugger
 
             EditorApplication.update -= EditorUpdate;
 
-            if (DebuggerEventDispatchingStrategy.s_GlobalPanelDebug == this)
-                DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = null;
+            if (DebuggerEventDispatchUtilities.s_GlobalPanelDebug == this)
+                DebuggerEventDispatchUtilities.s_GlobalPanelDebug = null;
         }
 
         void EditorUpdate()
@@ -386,9 +386,9 @@ namespace UnityEditor.UIElements.Debugger
         public void OnFocus()
         {
             // Avoid taking focus in case of another debugger picking on this one
-            var globalPanelDebugger = DebuggerEventDispatchingStrategy.s_GlobalPanelDebug as UIElementsDebuggerImpl;
+            var globalPanelDebugger = DebuggerEventDispatchUtilities.s_GlobalPanelDebug as UIElementsDebuggerImpl;
             if (globalPanelDebugger == null || !globalPanelDebugger.m_Context.pickElement)
-                DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
+                DebuggerEventDispatchUtilities.s_GlobalPanelDebug = this;
         }
 
         public override void Refresh()
@@ -546,7 +546,7 @@ namespace UnityEditor.UIElements.Debugger
 
             var evtBase = ev as EventBase;
             var evtType = evtBase.eventTypeId;
-            var target = evtBase.target as VisualElement;
+            var target = evtBase.elementTarget;
 
             // Ignore events on detached elements
             if (panel == null)
@@ -623,7 +623,7 @@ namespace UnityEditor.UIElements.Debugger
                 return;
 
             var evtBase = ev as EventBase;
-            var target = evtBase.target as VisualElement;
+            var target = evtBase.elementTarget;
             var targetIsImguiContainer = target is IMGUIContainer;
 
             if (target != null)

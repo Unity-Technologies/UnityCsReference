@@ -352,6 +352,10 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Custom"),
             };
             public readonly GUIContent spriteGenerateFallbackPhysicsShape = EditorGUIUtility.TrTextContent("Generate Physics Shape", "Generates a default physics shape from the outline of the Sprite/s when a physics shape has not been set in the Sprite Editor.");
+            public readonly GUIContent applyAndContinueToSpriteEditor = EditorGUIUtility.TrTextContent("Unapplied import settings for \'{0}\'.\n Apply changes and continue to Sprite Editor Window?");
+            public readonly GUIContent unappliedImportSettings = EditorGUIUtility.TrTextContent("Unapplied import settings");
+            public readonly GUIContent yes = EditorGUIUtility.TrTextContent("Yes");
+            public readonly GUIContent no = EditorGUIUtility.TrTextContent("No");
 
             public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TrTextContent("Alpha Is Transparency", "If the alpha channel of your texture represents transparency, enable this property to dilate the color channels of visible texels into fully transparent areas. This effectively adds padding around transparent areas that prevents filtering artifacts from forming on their edges. Unity does not support this property for HDR textures. \n\nThis property makes the color data of invisible texels undefined. Disable this property to preserve invisible texels' original color data.");
 
@@ -1103,20 +1107,17 @@ namespace UnityEditor
                 if (m_SpriteMode.intValue != (int)SpriteImportMode.Polygon)
                     ToggleFromInt(m_SpriteGenerateFallbackPhysicsShape, s_Styles.spriteGenerateFallbackPhysicsShape);
 
+                EditorGUI.indentLevel--;
                 using (new EditorGUI.DisabledScope(targets.Length != 1))
                 {
-                    GUILayout.BeginHorizontal();
-
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Sprite Editor"))
+                    if (SpriteUtilityWindow.DoOpenSpriteEditorWindowUI())
                     {
                         if (HasModified())
                         {
                             // To ensure Sprite Editor Window to have the latest texture import setting,
                             // We must applied those modified values first.
-                            string dialogText = "Unapplied import settings for \'" + ((TextureImporter)target).assetPath + "\'.\n";
-                            dialogText += "Apply and continue to sprite editor or cancel.";
-                            if (EditorUtility.DisplayDialog("Unapplied import settings", dialogText, "Apply", "Cancel"))
+                            var dialogText = string.Format(s_Styles.applyAndContinueToSpriteEditor.text, ((TextureImporter)target).assetPath);
+                            if (EditorUtility.DisplayDialog(s_Styles.unappliedImportSettings.text, dialogText, s_Styles.yes.text, s_Styles.no.text))
                             {
                                 SaveChanges();
                                 SpriteUtilityWindow.ShowSpriteEditorWindow(this.assetTarget);
@@ -1130,12 +1131,10 @@ namespace UnityEditor
                             SpriteUtilityWindow.ShowSpriteEditorWindow(this.assetTarget);
                         }
                     }
-                    GUILayout.EndHorizontal();
                 }
             }
-            EditorGUILayout.EndFadeGroup();
 
-            EditorGUI.indentLevel--;
+            EditorGUILayout.EndFadeGroup();
         }
 
         internal static void DoMipmapLimitsGUI(SerializedProperty ignoreMipmapLimitProp, SerializedProperty groupNameProp)

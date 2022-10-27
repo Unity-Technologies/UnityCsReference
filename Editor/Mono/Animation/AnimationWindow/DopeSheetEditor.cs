@@ -9,13 +9,14 @@ using System.Collections.Generic;
 using Event = UnityEngine.Event;
 using Object = UnityEngine.Object;
 using System.Collections;
+using System.Linq;
 
 namespace UnityEditorInternal
 {
     [System.Serializable]
-    internal class DopeSheetEditor : TimeArea, CurveUpdater
+    class DopeSheetEditor : TimeArea, CurveUpdater
     {
-        public AnimationWindowState state;
+        [SerializeReference] public AnimationWindowState state;
 
         // How much rendered keyframe left edge is visually offset when compared to the time it represents.
         // A diamond shape left edge isn't representing the time, the middle part is.
@@ -830,29 +831,46 @@ namespace UnityEditorInternal
 
         private bool DopelineForValueTypeExists(Type valueType)
         {
-            return state.allCurves.Exists(curve => curve.valueType == valueType);
+            return state.filteredCurves.Exists(curve => curve.valueType == valueType);
+        }
+
+        public EditorCurveBinding[] GetAnimatableProperties(AnimationWindowSelectionItem selection, Type valueType)
+        {
+            EditorCurveBinding[] allBindings = null;
+            if (selection.gameObject != null)
+            {
+                allBindings = state.controlInterface.GetAnimatableBindings(selection.gameObject);
+            }
+            else if (selection.scriptableObject != null)
+            {
+                allBindings = state.controlInterface.GetAnimatableBindings();
+            }
+
+            return allBindings
+                .Where(binding => state.controlInterface.GetValueType(binding) == valueType)
+                .ToArray();
         }
 
         private EditorCurveBinding? CreateNewPptrDopeline(AnimationWindowSelectionItem selectedItem, Type valueType)
         {
-            List<EditorCurveBinding> potentialBindings = null;
+            EditorCurveBinding[] potentialBindings = null;
             if (selectedItem.rootGameObject != null)
             {
-                potentialBindings = AnimationWindowUtility.GetAnimatableProperties(selectedItem.rootGameObject, selectedItem.rootGameObject, valueType);
-                if (potentialBindings.Count == 0 && valueType == typeof(Sprite))  // No animatable properties for Sprite available. Default as SpriteRenderer.
+                potentialBindings = GetAnimatableProperties(selectedItem, valueType);
+                if (potentialBindings.Length == 0 && valueType == typeof(Sprite))  // No animatable properties for Sprite available. Default as SpriteRenderer.
                 {
                     return CreateNewSpriteRendererDopeline(selectedItem.rootGameObject, selectedItem.rootGameObject);
                 }
             }
             else if (selectedItem.scriptableObject != null)
             {
-                potentialBindings = AnimationWindowUtility.GetAnimatableProperties(selectedItem.scriptableObject, valueType);
+                potentialBindings = GetAnimatableProperties(selectedItem, valueType);
             }
 
-            if (potentialBindings == null || potentialBindings.Count == 0)
+            if (potentialBindings == null || potentialBindings.Length == 0)
                 return null;
 
-            if (potentialBindings.Count == 1) // Single property for this valuetype, return it
+            if (potentialBindings.Length == 1) // Single property for this valuetype, return it
             {
                 return potentialBindings[0];
             }
@@ -882,20 +900,16 @@ namespace UnityEditorInternal
                 DoSpriteDropAfterGeneratingNewDopeline(animationClip, bindings[selected]);
         }
 
-        private EditorCurveBinding? CreateNewSpriteRendererDopeline(GameObject targetGameObject, GameObject rootGameObject)
+        private EditorCurveBinding CreateNewSpriteRendererDopeline(GameObject targetGameObject, GameObject rootGameObject)
         {
             // Let's make sure there is spriterenderer to animate
             if (!targetGameObject.GetComponent<SpriteRenderer>())
                 targetGameObject.AddComponent<SpriteRenderer>();
 
-            // Now we should always find an animatable binding for it
-            List<EditorCurveBinding> curveBindings = AnimationWindowUtility.GetAnimatableProperties(targetGameObject, rootGameObject, typeof(SpriteRenderer), typeof(Sprite));
-            if (curveBindings.Count == 1)
-                return curveBindings[0];
-
-            // Something went wrong
-            Debug.LogError("Unable to create animatable SpriteRenderer component");
-            return null;
+            return EditorCurveBinding.PPtrCurve(
+                AnimationUtility.CalculateTransformPath(targetGameObject.transform, rootGameObject.transform),
+                typeof(SpriteRenderer),
+                "m_Sprite");
         }
 
         private void HandleDragAndDrop(DopeLine dopeline)
@@ -1473,7 +1487,7 @@ namespace UnityEditorInternal
 
             foreach (ChangedCurve changedCurve in changedCurves)
             {
-                AnimationWindowCurve curve = state.allCurves.Find(c => changedCurve.curveId == c.GetHashCode());
+                AnimationWindowCurve curve = state.filteredCurves.Find(c => changedCurve.curveId == c.GetHashCode());
                 if (curve != null)
                 {
                     AnimationUtility.SetEditorCurve(curve.clip, changedCurve.binding, changedCurve.curve);

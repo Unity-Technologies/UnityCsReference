@@ -7,19 +7,17 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Collections;
 using Object = UnityEngine.Object;
 
 using UnityEngine.Playables;
 using UnityEngine.Animations;
 
-using UnityEngine.Experimental.Animations;
-
 using Unity.Profiling;
 
 namespace UnityEditorInternal
 {
-    internal class AnimationWindowControl : IAnimationWindowControl, IAnimationContextualResponder
+    [Serializable]
+    class AnimationWindowControl : IAnimationWindowController, IAnimationContextualResponder
     {
         class CandidateRecordingState : IAnimationRecordingState
         {
@@ -135,35 +133,34 @@ namespace UnityEditorInternal
 
         private static ProfilerMarker s_ResampleAnimationMarker = new ProfilerMarker("AnimationWindowControl.ResampleAnimation");
 
-        public override void OnEnable()
+        public void OnEnable()
         {
-            base.OnEnable();
-
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
-            StopPreview();
-            StopPlayback();
-
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        }
+
+        public void OnCreate(AnimationWindow animationWindow, Component component)
+        {
+            // nothing to do.
         }
 
         public void OnDestroy()
         {
             if (m_Driver != null)
-                DestroyImmediate(m_Driver);
+                ScriptableObject.DestroyImmediate(m_Driver);
         }
 
-        public override void OnSelectionChanged()
+        public void OnSelectionChanged()
         {
             // Set back time at beginning and stop recording.
             if (state != null)
                 m_Time = AnimationKeyTime.Time(0f, state.frameRate);
 
             StopPreview();
-            StopPlayback();
         }
 
         void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -172,59 +169,29 @@ namespace UnityEditorInternal
                 state == PlayModeStateChange.ExitingEditMode)
             {
                 StopPreview();
-                StopPlayback();
             }
         }
 
-        public override AnimationKeyTime time
+        public float time
         {
-            get
-            {
-                return m_Time;
-            }
+            get => m_Time.time;
+            set => SetCurrentTime(value);
         }
 
-        public override void GoToTime(float time)
+        public int frame
+        {
+            get => m_Time.frame;
+            set => SetCurrentFrame(value);
+        }
+
+        public void GoToTime(float time)
         {
             SetCurrentTime(time);
         }
 
-        public override void GoToFrame(int frame)
+        public void GoToFrame(int frame)
         {
             SetCurrentFrame(frame);
-        }
-
-        public override void StartScrubTime()
-        {
-            // nothing to do...
-        }
-
-        public override void ScrubTime(float time)
-        {
-            SetCurrentTime(time);
-        }
-
-        public override void EndScrubTime()
-        {
-            // nothing to do...
-        }
-
-        public override void GoToPreviousFrame()
-        {
-            SetCurrentFrame(time.frame - 1);
-        }
-
-        public override void GoToNextFrame()
-        {
-            SetCurrentFrame(time.frame + 1);
-        }
-
-        public override void GoToPreviousKeyframe()
-        {
-            List<AnimationWindowCurve> curves = (state.showCurveEditor && state.activeCurves.Count > 0) ? state.activeCurves : state.allCurves;
-
-            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
-            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
         }
 
         public void GoToPreviousKeyframe(PropertyModification[] modifications)
@@ -234,25 +201,17 @@ namespace UnityEditorInternal
                 return;
 
             List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
-            for (int i = 0; i < state.allCurves.Count; ++i)
+            for (int i = 0; i < state.filteredCurves.Count; ++i)
             {
-                AnimationWindowCurve curve = state.allCurves[i];
+                AnimationWindowCurve curve = state.filteredCurves[i];
                 if (Array.Exists(bindings, binding => curve.binding.Equals(binding)))
                     curves.Add(curve);
             }
 
-            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
+            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time, state.clipFrameRate);
             SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
 
             state.Repaint();
-        }
-
-        public override void GoToNextKeyframe()
-        {
-            List<AnimationWindowCurve> curves = (state.showCurveEditor && state.activeCurves.Count > 0) ? state.activeCurves : state.allCurves;
-
-            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
-            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
         }
 
         public void GoToNextKeyframe(PropertyModification[] modifications)
@@ -262,40 +221,28 @@ namespace UnityEditorInternal
                 return;
 
             List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
-            for (int i = 0; i < state.allCurves.Count; ++i)
+            for (int i = 0; i < state.filteredCurves.Count; ++i)
             {
-                AnimationWindowCurve curve = state.allCurves[i];
+                AnimationWindowCurve curve = state.filteredCurves[i];
                 if (Array.Exists(bindings, binding => curve.binding.Equals(binding)))
                     curves.Add(curve);
             }
 
-            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
+            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time, state.clipFrameRate);
             SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToFrame));
 
             state.Repaint();
         }
 
-        public override void GoToFirstKeyframe()
-        {
-            if (state.activeAnimationClip)
-                SetCurrentTime(state.activeAnimationClip.startTime);
-        }
-
-        public override void GoToLastKeyframe()
-        {
-            if (state.activeAnimationClip)
-                SetCurrentTime(state.activeAnimationClip.stopTime);
-        }
-
         private void SnapTimeToFrame()
         {
-            float newTime = state.FrameToTime(time.frame);
+            float newTime = state.FrameToTime(frame);
             SetCurrentTime(newTime);
         }
 
         private void SetCurrentTime(float value)
         {
-            if (!Mathf.Approximately(value, time.time))
+            if (!Mathf.Approximately(value, time))
             {
                 m_Time = AnimationKeyTime.Time(value, state.frameRate);
                 StartPreview();
@@ -306,7 +253,7 @@ namespace UnityEditorInternal
 
         private void SetCurrentFrame(int value)
         {
-            if (value != time.frame)
+            if (value != frame)
             {
                 m_Time = AnimationKeyTime.Frame(value, state.frameRate);
                 StartPreview();
@@ -315,7 +262,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public override bool canPlay
+        public bool canPlay
         {
             get
             {
@@ -323,34 +270,35 @@ namespace UnityEditorInternal
             }
         }
 
-        public override bool playing
+        public bool playing
         {
             get
             {
                 return AnimationMode.InAnimationPlaybackMode() && previewing;
             }
-        }
-
-        public override bool StartPlayback()
-        {
-            if (!canPlay)
-                return false;
-
-            if (!playing)
+            set
             {
-                AnimationMode.StartAnimationPlaybackMode();
-
-                m_PreviousUpdateTime = Time.realtimeSinceStartup;
-
-                // Auto-Preview when start playing
-                StartPreview();
-                ClearCandidates();
+                if (value)
+                    StartPlayback();
+                else
+                    StopPlayback();
             }
-
-            return true;
         }
 
-        public override void StopPlayback()
+        private void StartPlayback()
+        {
+            if (!canPlay || playing)
+                return;
+
+            AnimationMode.StartAnimationPlaybackMode();
+
+            m_PreviousUpdateTime = Time.realtimeSinceStartup;
+
+            // Auto-Preview when start playing
+            ClearCandidates();
+        }
+
+        private void StopPlayback()
         {
             if (AnimationMode.InAnimationPlaybackMode())
             {
@@ -361,15 +309,12 @@ namespace UnityEditorInternal
             }
         }
 
-        public override bool PlaybackUpdate()
+        public bool PlaybackUpdate()
         {
-            if (!playing)
-                return false;
-
             float deltaTime = Time.realtimeSinceStartup - m_PreviousUpdateTime;
             m_PreviousUpdateTime = Time.realtimeSinceStartup;
 
-            float newTime = time.time + deltaTime;
+            float newTime = time + deltaTime;
 
             // looping
             if (newTime > state.maxTime)
@@ -382,7 +327,7 @@ namespace UnityEditorInternal
             return true;
         }
 
-        public override bool canPreview
+        public bool canPreview
         {
             get
             {
@@ -395,7 +340,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public override bool previewing
+        public bool previewing
         {
             get
             {
@@ -405,15 +350,19 @@ namespace UnityEditorInternal
 
                 return AnimationMode.InAnimationMode(driver);
             }
+            set
+            {
+                if (value)
+                    StartPreview();
+                else
+                    StopPreview();
+            }
         }
 
-        public override bool StartPreview()
+        private void StartPreview()
         {
-            if (previewing)
-                return true;
-
-            if (!canPreview)
-                return false;
+            if (previewing || !canPreview)
+                return;
 
             AnimationMode.StartAnimationMode(GetAnimationModeDriver());
             AnimationPropertyContextualMenu.Instance.SetResponder(this);
@@ -439,16 +388,15 @@ namespace UnityEditorInternal
                 }
             }
 
-            return true;
+            ResampleAnimation();
         }
 
-        public override void StopPreview()
+        private void StopPreview()
         {
-            if (previewing)
-                OnExitingAnimationMode();
+            if (!previewing)
+                return;
 
-            StopPlayback();
-            StopRecording();
+            OnExitingAnimationMode();
 
             ConstrainProportionsTransformScale.m_IsAnimationPreview = false;
 
@@ -488,7 +436,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public override bool canRecord
+        public bool canRecord
         {
             get
             {
@@ -499,7 +447,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public override bool recording
+        public bool recording
         {
             get
             {
@@ -507,37 +455,30 @@ namespace UnityEditorInternal
                     return AnimationMode.InAnimationRecording();
                 return false;
             }
-        }
-
-        public override bool StartRecording(Object targetObject)
-        {
-            return StartRecording();
-        }
-
-        private bool StartRecording()
-        {
-            if (recording)
-                return true;
-
-            if (!canRecord)
-                return false;
-
-            if (StartPreview())
+            set
             {
-                AnimationMode.StartAnimationRecording();
-                ClearCandidates();
-                return true;
+                if (value)
+                    StartRecording();
+                else
+                    StopRecording();
             }
-
-            return false;
         }
 
-        public override void StopRecording()
+        private void StartRecording()
         {
-            if (recording)
-            {
-                AnimationMode.StopAnimationRecording();
-            }
+            if (!canRecord || recording)
+                return;
+
+            AnimationMode.StartAnimationRecording();
+            ClearCandidates();
+        }
+
+        private void StopRecording()
+        {
+            if (!recording)
+                return;
+
+            AnimationMode.StopAnimationRecording();
         }
 
         private void StartCandidateRecording()
@@ -624,7 +565,7 @@ namespace UnityEditorInternal
                 m_GraphRoot = (Playable)motionX;
             }
 
-            var output = AnimationPlayableOutput.Create(m_Graph, "ouput", animator);
+            var output = AnimationPlayableOutput.Create(m_Graph, "output", animator);
             output.SetSourcePlayable(m_GraphRoot);
             output.SetWeight(0.0f);
         }
@@ -639,7 +580,7 @@ namespace UnityEditorInternal
             return null;
         }
 
-        public override void ResampleAnimation()
+        public void ResampleAnimation()
         {
             ResampleAnimation(ResampleFlags.Default);
         }
@@ -649,9 +590,7 @@ namespace UnityEditorInternal
             if (state.disabled)
                 return;
 
-            if (previewing == false)
-                return;
-            if (canPreview == false)
+            if (!canPreview || !previewing)
                 return;
 
             s_ResampleAnimationMarker.Begin();
@@ -702,16 +641,16 @@ namespace UnityEditorInternal
 
                     m_ClipPlayable.SetSampleRate(playing ? -1 : state.activeAnimationClip.frameRate);
 
-                    AnimationMode.SamplePlayableGraph(m_Graph, 0, time.time);
+                    AnimationMode.SamplePlayableGraph(m_Graph, 0, time);
 
                     // This will cover euler/quaternion matching in basic playable graphs only (animation clip + candidate clip).
-                    AnimationUtility.SampleEulerHint(state.activeRootGameObject, state.activeAnimationClip, time.time, WrapMode.Clamp);
+                    AnimationUtility.SampleEulerHint(state.activeRootGameObject, state.activeAnimationClip, time, WrapMode.Clamp);
                     if (!m_CandidateClip.empty)
-                        AnimationUtility.SampleEulerHint(state.activeRootGameObject, m_CandidateClip, time.time, WrapMode.Clamp);
+                        AnimationUtility.SampleEulerHint(state.activeRootGameObject, m_CandidateClip, time, WrapMode.Clamp);
                 }
                 else
                 {
-                    AnimationMode.SampleAnimationClip(state.activeRootGameObject, state.activeAnimationClip, time.time);
+                    AnimationMode.SampleAnimationClip(state.activeRootGameObject, state.activeAnimationClip, time);
                     if (!m_CandidateClip.empty)
                         AnimationMode.SampleCandidateClip(state.activeRootGameObject, m_CandidateClip, 0f);
                 }
@@ -736,7 +675,7 @@ namespace UnityEditorInternal
         {
             if (m_Driver == null)
             {
-                m_Driver = CreateInstance<AnimationModeDriver>();
+                m_Driver = ScriptableObject.CreateInstance<AnimationModeDriver>();
                 m_Driver.hideFlags = HideFlags.HideAndDontSave;
                 m_Driver.name = "AnimationWindowDriver";
                 m_Driver.isKeyCallback += (Object target, string propertyPath) =>
@@ -766,7 +705,7 @@ namespace UnityEditorInternal
         {
             if (m_CandidateDriver == null)
             {
-                m_CandidateDriver = CreateInstance<AnimationModeDriver>();
+                m_CandidateDriver = ScriptableObject.CreateInstance<AnimationModeDriver>();
                 m_CandidateDriver.name = "AnimationWindowCandidateDriver";
             }
 
@@ -933,7 +872,7 @@ namespace UnityEditorInternal
             m_CandidateClip = null;
         }
 
-        public override void ClearCandidates()
+        public void ClearCandidates()
         {
             StopCandidateRecording();
 
@@ -941,7 +880,7 @@ namespace UnityEditorInternal
                 m_CandidateClip.ClearCurves();
         }
 
-        public override void ProcessCandidates()
+        public void ProcessCandidates()
         {
             BeginKeyModification();
 
@@ -950,15 +889,15 @@ namespace UnityEditorInternal
 
             List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
 
-            for (int i = 0; i < state.allCurves.Count; ++i)
+            for (int i = 0; i < state.filteredCurves.Count; ++i)
             {
-                AnimationWindowCurve curve = state.allCurves[i];
+                AnimationWindowCurve curve = state.filteredCurves[i];
                 EditorCurveBinding remappedBinding = RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(curve.binding, m_CandidateClip);
                 if (Array.Exists(bindings, binding => remappedBinding.Equals(binding)) || Array.Exists(objectCurveBindings, binding => remappedBinding.Equals(binding)))
                     curves.Add(curve);
             }
 
-            AnimationWindowUtility.AddKeyframes(state, curves, time);
+            AnimationWindowUtility.AddKeyframes(state, curves, m_Time);
 
             EndKeyModification();
 
@@ -973,9 +912,9 @@ namespace UnityEditorInternal
             if (bindings.Length == 0)
                 return keys;
 
-            for (int i = 0; i < state.allCurves.Count; ++i)
+            for (int i = 0; i < state.filteredCurves.Count; ++i)
             {
-                AnimationWindowCurve curve = state.allCurves[i];
+                AnimationWindowCurve curve = state.filteredCurves[i];
                 if (Array.Exists(bindings, binding => curve.binding.Equals(binding)))
                 {
                     int keyIndex = curve.GetKeyframeIndex(state.time);
@@ -1074,7 +1013,7 @@ namespace UnityEditorInternal
 
         public bool HasAnyCurves()
         {
-            return (state.allCurves.Count > 0);
+            return (state.filteredCurves.Count > 0);
         }
 
         public void AddKey(SerializedProperty property)
@@ -1169,7 +1108,7 @@ namespace UnityEditorInternal
         {
             BeginKeyModification();
 
-            AnimationWindowUtility.AddKeyframes(state, state.allCurves, time);
+            AnimationWindowUtility.AddKeyframes(state, state.filteredCurves, m_Time);
             ClearCandidates();
 
             EndKeyModification();
@@ -1188,6 +1127,75 @@ namespace UnityEditorInternal
         {
             if (animEditor != null)
                 animEditor.EndKeyModification();
+        }
+
+        public EditorCurveBinding[] GetAnimatableBindings()
+        {
+            var rootGameObject = state.activeRootGameObject;
+            var scriptableObject = state.activeScriptableObject;
+
+            if (rootGameObject != null)
+            {
+                return AnimationWindowUtility.GetAnimatableBindings(rootGameObject);
+            }
+            if (scriptableObject != null)
+            {
+                return AnimationUtility.GetAnimatableBindings(scriptableObject);
+            }
+
+            return Array.Empty<EditorCurveBinding>();
+        }
+
+        public EditorCurveBinding[] GetAnimatableBindings(GameObject gameObject)
+        {
+            var rootGameObject = state.activeRootGameObject;
+            return AnimationUtility.GetAnimatableBindings(gameObject, rootGameObject);
+        }
+
+        public Type GetValueType(EditorCurveBinding binding)
+        {
+            var rootGameObject = state.activeRootGameObject;
+            var scriptableObject = state.activeScriptableObject;
+
+            if (rootGameObject != null)
+            {
+                return AnimationUtility.GetEditorCurveValueType(rootGameObject, binding);
+            }
+            else if (scriptableObject != null)
+            {
+                return AnimationUtility.GetEditorCurveValueType(scriptableObject, binding);
+            }
+            else
+            {
+                if (binding.isPPtrCurve)
+                {
+                    // Cannot extract type of PPtrCurve.
+                    return null;
+                }
+                else
+                {
+                    // Cannot extract type of AnimationCurve.  Default to float.
+                    return typeof(float);
+                }
+            }
+        }
+
+        public float GetFloatValue(EditorCurveBinding binding)
+        {
+            AnimationUtility.GetFloatValue(state.activeRootGameObject, binding, out var value);
+            return value;
+        }
+
+        public int GetIntValue(EditorCurveBinding binding)
+        {
+            AnimationUtility.GetDiscreteIntValue(state.activeRootGameObject, binding, out var value);
+            return value;
+        }
+
+        public Object GetObjectReferenceValue(EditorCurveBinding binding)
+        {
+            AnimationUtility.GetObjectReferenceValue(state.activeRootGameObject, binding, out var value);
+            return value;
         }
     }
 }

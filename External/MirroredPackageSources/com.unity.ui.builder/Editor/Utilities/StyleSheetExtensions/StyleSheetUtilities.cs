@@ -89,7 +89,7 @@ namespace Unity.UI.Builder
 
         static void OnSelectorElementDetachedFromPanel(DetachFromPanelEvent e)
         {
-            RemoveFakeSelector(e.target as VisualElement);
+            RemoveFakeSelector(e.elementTarget);
         }
 
         public static Dimension.Unit ConvertToDimensionUnit(LengthUnit unit)

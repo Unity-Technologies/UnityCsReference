@@ -48,10 +48,10 @@ namespace UnityEditorInternal
 
             List<AnimationWindowHierarchyNode> childNodes = new List<AnimationWindowHierarchyNode>();
 
-            if (state.allCurves.Count > 0)
+            if (state.filteredCurves.Count > 0)
             {
                 AnimationWindowHierarchyMasterNode masterNode = new AnimationWindowHierarchyMasterNode();
-                masterNode.curves = state.allCurves.ToArray();
+                masterNode.curves = state.filteredCurves.ToArray();
 
                 childNodes.Add(masterNode);
             }
@@ -75,18 +75,18 @@ namespace UnityEditorInternal
             List<AnimationWindowHierarchyNode> nodes = new List<AnimationWindowHierarchyNode>();
             List<AnimationWindowCurve> singlePropertyCurves = new List<AnimationWindowCurve>();
 
-            AnimationWindowCurve[] curves = state.allCurves.ToArray();
+            List<AnimationWindowCurve> curves = state.filteredCurves;
             AnimationWindowHierarchyNode parentNode = (AnimationWindowHierarchyNode)m_RootItem;
             SerializedObject so = null;
 
-            for (int i = 0; i < curves.Length; i++)
+            for (int i = 0; i < curves.Count; i++)
             {
                 AnimationWindowCurve curve = curves[i];
 
                 if (!state.ShouldShowCurve(curve))
                     continue;
 
-                AnimationWindowCurve nextCurve = i < curves.Length - 1 ? curves[i + 1] : null;
+                AnimationWindowCurve nextCurve = i < curves.Count - 1 ? curves[i + 1] : null;
 
                 if (curve.isSerializeReferenceCurve && state.activeRootGameObject != null)
                 {
@@ -102,7 +102,7 @@ namespace UnityEditorInternal
 
                 // We expect curveBindings to come sorted by propertyname
                 // So we compare curve vs nextCurve. If its different path or different group (think "scale.xyz" as group), then we know this is the last element of such group.
-                if (i == curves.Length - 1 || !areSameGroup || !areSamePathAndType)
+                if (i == curves.Count - 1 || !areSameGroup || !areSamePathAndType)
                 {
                     if (singlePropertyCurves.Count > 1)
                         nodes.Add(AddPropertyGroupToHierarchy(singlePropertyCurves.ToArray(), parentNode, so));
@@ -155,12 +155,6 @@ namespace UnityEditorInternal
 
         public Texture2D GetIcon(EditorCurveBinding curveBinding)
         {
-            if (state.activeRootGameObject != null)
-            {
-                Object animatedObject = AnimationUtility.GetAnimatedObject(state.activeRootGameObject, curveBinding);
-                if (animatedObject != null)
-                    return AssetPreview.GetMiniThumbnail(animatedObject);
-            }
             return AssetPreview.GetMiniTypeThumbnail(curveBinding.type);
         }
 

@@ -53,7 +53,7 @@ namespace UnityEngine.UIElements
 
             var clickStatus = m_ClickStatus[pe.pointerId];
 
-            var newTarget = evt.target as VisualElement;
+            var newTarget = evt.elementTarget;
 
             if (newTarget != clickStatus.m_Target)
             {
@@ -86,17 +86,17 @@ namespace UnityEngine.UIElements
             var clickStatus = m_ClickStatus[pe.pointerId];
 
             // Filter out event where button is released outside the window.
-            var element = evt.target as VisualElement;
+            var element = evt.elementTarget;
             if (element != null && ContainsPointer(element, pe.position))
             {
                 if (clickStatus.m_Target != null && clickStatus.m_ClickCount > 0)
                 {
-                    var target = clickStatus.m_Target.FindCommonAncestor(evt.target as VisualElement);
+                    var target = clickStatus.m_Target.FindCommonAncestor(evt.elementTarget);
                     if (target != null)
                     {
-                        using (var clickEvent = ClickEvent.GetPooled(evt as PointerUpEvent, clickStatus.m_ClickCount))
+                        using (var clickEvent = ClickEvent.GetPooled(pe, clickStatus.m_ClickCount))
                         {
-                            clickEvent.target = target;
+                            clickEvent.elementTarget = target;
                             target.SendEvent(clickEvent);
                         }
                     }
@@ -115,34 +115,29 @@ namespace UnityEngine.UIElements
             clickStatus.Reset();
         }
 
-        public void ProcessEvent(EventBase evt)
+        public void ProcessEvent<TEvent>(PointerEventBase<TEvent> evt)
+            where TEvent : PointerEventBase<TEvent>, new()
         {
-            IPointerEvent pe = evt as IPointerEvent;
-            if (pe == null)
-            {
-                return;
-            }
-
-            if (evt.eventTypeId == PointerDownEvent.TypeId() && pe.button == 0)
+            if (evt.eventTypeId == PointerDownEvent.TypeId() && evt.button == 0)
             {
                 StartClickTracking(evt);
             }
             else if (evt.eventTypeId == PointerMoveEvent.TypeId())
             {
                 // Button 1 pressed while another button was already pressed.
-                if (pe.button == 0 && (pe.pressedButtons & 1) == 1)
+                if (evt.button == 0 && (evt.pressedButtons & 1) == 1)
                 {
                     StartClickTracking(evt);
                 }
                 // Button 1 released while another button is still pressed.
-                else if (pe.button == 0 && (pe.pressedButtons & 1) == 0)
+                else if (evt.button == 0 && (evt.pressedButtons & 1) == 0)
                 {
                     SendClickEvent(evt);
                 }
                 // Pointer moved or other button pressed/released
                 else
                 {
-                    var clickStatus = m_ClickStatus[pe.pointerId];
+                    var clickStatus = m_ClickStatus[evt.pointerId];
                     if (clickStatus.m_Target != null)
                     {
                         // stop the multi-click sequence on move
@@ -150,10 +145,9 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
-            else if (evt.eventTypeId == PointerCancelEvent.TypeId()
-                     || evt.eventTypeId == DragUpdatedEvent.TypeId()
-            )
+            else if (evt.eventTypeId == PointerCancelEvent.TypeId())
             {
+                //TODO: #if UNITY_EDITOR maybe we need to react to DragUpdatedEvent too by calling CancelClickTracking
                 CancelClickTracking(evt);
 
                 // Note that we don't cancel the click when we have a PointerStationaryEvent anymore. Touch stationary
@@ -161,7 +155,7 @@ namespace UnityEngine.UIElements
                 // where the touch begin event occured. If we want to cancel the ClickEvent after the touch has been
                 // idle for some time, then we need to manually track the duration of the stationary phase.
             }
-            else if (evt.eventTypeId == PointerUpEvent.TypeId() && pe.button == 0)
+            else if (evt.eventTypeId == PointerUpEvent.TypeId() && evt.button == 0)
             {
                 SendClickEvent(evt);
             }

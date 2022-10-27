@@ -162,7 +162,7 @@ namespace UnityEngine.UIElements
 
         private void ProcessEvent(EventBase evt)
         {
-            if (evt != null && evt.target == evt.leafTarget)
+            if (evt != null && evt.elementTarget == evt.leafTarget)
             {
                 focusController?.SwitchFocusOnEvent(evt);
             }

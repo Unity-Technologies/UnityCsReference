@@ -640,7 +640,7 @@ namespace UnityEngine.UIElements.Internal
 
             if (Math.Abs(evt.newRect.width - evt.oldRect.width) < float.Epsilon)
                 return;
-            RaiseColumnResized(columnContainer.IndexOf(evt.target as VisualElement));
+            RaiseColumnResized(columnContainer.IndexOf(evt.elementTarget));
         }
 
         /// <summary>

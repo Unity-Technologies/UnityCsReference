@@ -224,6 +224,10 @@ namespace UnityEngine.UIElements
         internal bool HasEventCallbacksOrDefaultActionAtTarget(EventCategory eventCategory) =>
             0 != ((m_DefaultActionAtTargetEventCategories | eventCallbackCategories) & (1 << (int)eventCategory));
 
+        // Use this to skip ExecuteDefaultActionAtTarget.
+        internal bool HasDefaultActionAtTarget(EventCategory eventCategory) =>
+            0 != (m_DefaultActionAtTargetEventCategories & (1 << (int)eventCategory));
+
         // Use this to skip ExecuteDefaultAction.
         internal bool HasDefaultAction(EventCategory eventCategory) =>
             0 != (m_DefaultActionEventCategories & (1 << (int)eventCategory));
@@ -346,6 +350,7 @@ namespace UnityEngine.UIElements
         Navigation,
         Command,
         Tooltip,
+        DragAndDrop,
         IMGUI,
         Reserved = 31   // used by Panel.m_RootContainer to force it to be a nextParentWithEventCallback
     }
@@ -363,6 +368,7 @@ namespace UnityEngine.UIElements
             1 << EventCategory.EnterLeaveWindow |
             1 << EventCategory.Keyboard |
             1 << EventCategory.Command |
+            1 << EventCategory.DragAndDrop |
             1 << EventCategory.IMGUI,
 
         // Events types that won't trigger parent callbacks

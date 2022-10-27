@@ -12,7 +12,7 @@ namespace UnityEditor
     [System.Serializable]
     class AnimationWindowClipPopup
     {
-        [SerializeField] public AnimationWindowState state;
+        [SerializeReference] public AnimationWindowState state;
 
         static int s_ClipPopupHash = "s_ClipPopupHash".GetHashCode();
 

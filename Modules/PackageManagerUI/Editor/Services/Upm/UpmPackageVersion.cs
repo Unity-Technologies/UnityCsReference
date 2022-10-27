@@ -254,14 +254,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else
                     m_Tag |= PackageTag.PreRelease;
             }
-            else if (isLifecycleVersionValid && m_Version.Value.IsEqualOrPatchOf(lifecycleVersionParsed))
-            {
-                m_Tag |= PackageTag.Release;
-            }
             else if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
                         m_Version?.IsExperimental() == true ||
                         previewTagString.Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Experimental;
+            else if (isLifecycleVersionValid && m_Version.Value.IsEqualOrPatchOf(lifecycleVersionParsed))
+            {
+                m_Tag |= PackageTag.Release;
+            }
         }
 
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)

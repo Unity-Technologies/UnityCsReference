@@ -26,6 +26,7 @@ namespace UnityEditor.Build.Content
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildUtilities.h")]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildInterfaceProfile.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/TraceEventProfile.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static partial class ContentBuildInterface
     {
@@ -229,5 +230,13 @@ namespace UnityEditor.Build.Content
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
 
         public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType(Type type, TypeDB typeDB);
+
+        // These APIs are used in the UCBP performance tests. Perhaps they should be exposed in the future
+        // to allow users to create a single performance capture that contains multiple content builds
+        extern internal static bool StartTraceEventProfileCapture();
+        extern internal static bool StopTraceEventProfileCaptureWithReport(string filename);
+        extern internal static bool IsTraceEventProfileCaptureRunning();
+        extern internal static int BeginTraceProfileBlock(string name);
+        extern internal static void EndTraceProfileBlock(int index);
     }
 }

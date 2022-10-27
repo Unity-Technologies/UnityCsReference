@@ -469,7 +469,7 @@ namespace UnityEditor.Modules
         }
         protected virtual RunnableProgram BeeBackendProgram(BuildPostProcessArgs args) => null;
 
-        BuildRequest SetupBuildRequest(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
+        protected virtual BuildRequest SetupBuildRequest(BuildPostProcessArgs args, ILPostProcessingProgram ilpp)
         {
             RunnableProgram buildProgram = MakePlayerBuildProgram(args);
             var cacheMode = ((args.options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)

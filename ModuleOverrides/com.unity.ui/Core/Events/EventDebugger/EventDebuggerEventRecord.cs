@@ -27,7 +27,6 @@ namespace UnityEngine.UIElements.Experimental
         [field: SerializeField]
         internal long timestamp { get; private set; }
         public IEventHandler target { get; set; }
-        private List<IEventHandler> skipElements { get; set; }
         [field: SerializeField]
         public bool hasUnderlyingPhysicalEvent { get; private set; }
         private bool isPropagationStopped { get; set; }
@@ -82,8 +81,6 @@ namespace UnityEngine.UIElements.Experimental
             timestamp = evt.timestamp;
 
             target = evt.target;
-
-            skipElements = evt.skipElements;
 
             isPropagationStopped = evt.isPropagationStopped;
             isImmediatePropagationStopped = evt.isImmediatePropagationStopped;

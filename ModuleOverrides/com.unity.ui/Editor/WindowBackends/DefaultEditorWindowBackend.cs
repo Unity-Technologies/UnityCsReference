@@ -181,6 +181,7 @@ namespace UnityEditor.UIElements
             root.RegisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
             root.RegisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
             root.RegisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+            root.RegisterCallback<MouseUpEvent>(SendMouseUpOutsideWindowToDockArea);
             m_RegisteredRoot = root;
         }
 
@@ -193,6 +194,7 @@ namespace UnityEditor.UIElements
                 root.UnregisterCallback<MouseDownEvent>(SendEventToSplitterGUI, k_TricklePhase);
                 root.UnregisterCallback<MouseUpEvent>(SendEventToSplitterGUI, k_TricklePhase);
                 root.UnregisterCallback<MouseMoveEvent>(SendEventToSplitterGUI, k_TricklePhase);
+                root.UnregisterCallback<MouseUpEvent>(SendMouseUpOutsideWindowToDockArea);
             }
         }
 
@@ -205,6 +207,20 @@ namespace UnityEditor.UIElements
             // we assume imguiContainer != null && editorWindowModel != null
 
             imguiContainer.HandleIMGUIEvent(ev.imguiEvent, editorWindowModel.onSplitterGUIHandler, false);
+
+            if (ev.imguiEvent.rawType == EventType.Used)
+                ev.StopPropagation();
+        }
+
+        private void SendMouseUpOutsideWindowToDockArea(MouseUpEvent ev)
+        {
+            // Fix for case 1306631 - a MouseUp event received outside of the GameView
+            // is re-directed to the DockArea IMGUIContainer.
+
+            if (ev.imguiEvent == null || ev.imguiEvent.rawType == EventType.Used || ev.target != visualTree)
+                return;
+
+            imguiContainer.HandleIMGUIEvent(ev.imguiEvent, false);
 
             if (ev.imguiEvent.rawType == EventType.Used)
                 ev.StopPropagation();

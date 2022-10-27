@@ -121,14 +121,13 @@ namespace UnityEngine.UIElements
         struct EventRecord
         {
             public EventBase m_Event;
-            public IPanel m_Panel;
+            public BaseVisualElementPanel m_Panel;
             public StackTrace m_StackTrace;
             public string stackTrace => m_StackTrace?.ToString() ?? string.Empty;
         }
 
-        private ClickDetector m_ClickDetector = new ClickDetector();
+        internal ClickDetector m_ClickDetector = new ClickDetector();
 
-        List<IEventDispatchingStrategy> m_DispatchingStrategies;
         static readonly ObjectPool<Queue<EventRecord>> k_EventQueuePool = new ObjectPool<Queue<EventRecord>>(() => new Queue<EventRecord>());
         Queue<EventRecord> m_Queue;
         internal PointerDispatchState pointerState { get; } = new PointerDispatchState();
@@ -161,44 +160,17 @@ namespace UnityEngine.UIElements
             s_EditorEventDispatcher = null;
         }
 
-        private DebuggerEventDispatchingStrategy m_DebuggerEventDispatchingStrategy;
-
-        private static readonly IEventDispatchingStrategy[] s_EditorStrategies =
-        {
-            new PointerCaptureDispatchingStrategy(),
-            new MouseCaptureDispatchingStrategy(),
-            new KeyboardEventDispatchingStrategy(),
-            new PointerEventDispatchingStrategy(),
-            new MouseEventDispatchingStrategy(),
-            new NavigationEventDispatchingStrategy(),
-            new CommandEventDispatchingStrategy(),
-            new IMGUIEventDispatchingStrategy(),
-            new DefaultDispatchingStrategy(),
-        };
-
         internal static EventDispatcher CreateDefault()
         {
-            return new EventDispatcher(s_EditorStrategies);
-        }
-
-        internal static EventDispatcher CreateForRuntime(IList<IEventDispatchingStrategy> strategies)
-        {
-            return new EventDispatcher(strategies);
+#pragma warning disable 618
+            return new EventDispatcher();
+#pragma warning restore 618
         }
 
         // Remove once PanelDebug stops using it.
         [Obsolete("Please use EventDispatcher.CreateDefault().")]
-        internal EventDispatcher() : this(s_EditorStrategies)
+        internal EventDispatcher()
         {
-        }
-
-        private EventDispatcher(IList<IEventDispatchingStrategy> strategies)
-        {
-            m_DispatchingStrategies = new List<IEventDispatchingStrategy>();
-            m_DebuggerEventDispatchingStrategy = new DebuggerEventDispatchingStrategy();
-            m_DispatchingStrategies.Add(m_DebuggerEventDispatchingStrategy);
-            m_DispatchingStrategies.AddRange(strategies);
-
             m_Queue = k_EventQueuePool.Get();
         }
 
@@ -210,7 +182,7 @@ namespace UnityEngine.UIElements
 
         internal bool processingEvents { get; private set; }
 
-        internal void Dispatch(EventBase evt, [NotNull] IPanel panel, DispatchMode dispatchMode)
+        internal void Dispatch(EventBase evt, [NotNull] BaseVisualElementPanel panel, DispatchMode dispatchMode)
         {
             evt.MarkReceivedByDispatcher();
 
@@ -234,8 +206,7 @@ namespace UnityEngine.UIElements
                 {
                     m_Event = evt,
                     m_Panel = panel,
-                    m_StackTrace = panel is BaseVisualElementPanel p &&
-                                   p.panelDebug != null && p.panelDebug.hasAttachedDebuggers ? new StackTrace() : null
+                    m_StackTrace = (panel.panelDebug?.hasAttachedDebuggers ?? false) ? new StackTrace() : null
                 });
             }
         }
@@ -312,7 +283,7 @@ namespace UnityEngine.UIElements
                 {
                     EventRecord eventRecord = queueToProcess.Dequeue();
                     EventBase evt = eventRecord.m_Event;
-                    IPanel panel = eventRecord.m_Panel;
+                    BaseVisualElementPanel panel = eventRecord.m_Panel;
                     try
                     {
                         ProcessEvent(evt, panel);
@@ -341,7 +312,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void ProcessEvent(EventBase evt, [NotNull] IPanel panel)
+        void ProcessEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel)
         {
             Event e = evt.imguiEvent;
             // Sometimes (in tests only?) we receive Used events. Protect our verification from this case.
@@ -351,73 +322,17 @@ namespace UnityEngine.UIElements
             {
                 evt.PreDispatch(panel);
 
-                if (!evt.stopDispatch && !evt.isPropagationStopped)
+                if (!DebuggerEventDispatchUtilities.InterceptEvent(evt, panel))
                 {
-                    ApplyDispatchingStrategies(evt, panel, imguiEventIsInitiallyUsed);
+
+                evt.Dispatch(panel);
+
                 }
-
-                // Last chance to build a path. Some dispatching strategies (e.g. PointerCaptureDispatchingStrategy)
-                // don't call PropagateEvents but still need to call ExecuteDefaultActions on composite roots.
-                var path = evt.path;
-                if (path == null && evt.bubblesOrTricklesDown && evt.leafTarget is VisualElement leafTarget)
-                {
-                    path = PropagationPaths.Build(leafTarget, evt);
-                    evt.path = path;
-                    EventDebugger.LogPropagationPaths(evt, path);
-                }
-
-                if (path != null)
-                {
-                    foreach (var element in path.targetElements)
-                    {
-                        if (element.panel == panel)
-                        {
-                            evt.target = element;
-                            EventDispatchUtilities.ExecuteDefaultAction(evt);
-                        }
-                    }
-
-                    // Reset target to leaf target
-                    evt.target = evt.leafTarget;
-                }
-                else
-                {
-                    // If no propagation path, make sure EventDispatchUtilities.ExecuteDefaultAction has a target
-                    if (!(evt.target is VisualElement target))
-                    {
-                        evt.target = target = panel.visualTree;
-                    }
-
-                    if (target.panel == panel)
-                    {
-                        EventDispatchUtilities.ExecuteDefaultAction(evt);
-                    }
-                }
-
-                m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
+                DebuggerEventDispatchUtilities.PostDispatch(evt, panel);
 
                 evt.PostDispatch(panel);
 
-                m_ClickDetector.ProcessEvent(evt);
-
                 Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || e == null || e.rawType != EventType.Used, "Event is used but not stopped.");
-            }
-        }
-
-        void ApplyDispatchingStrategies(EventBase evt, IPanel panel, bool imguiEventIsInitiallyUsed)
-        {
-            foreach (var strategy in m_DispatchingStrategies)
-            {
-                if (strategy.CanDispatchEvent(evt))
-                {
-                    strategy.DispatchEvent(evt, panel);
-
-                    Debug.Assert(imguiEventIsInitiallyUsed || evt.isPropagationStopped || evt.imguiEvent == null || evt.imguiEvent.rawType != EventType.Used,
-                        "Unexpected condition: !evt.isPropagationStopped && evt.imguiEvent.rawType == EventType.Used.");
-
-                    if (evt.stopDispatch || evt.isPropagationStopped)
-                        break;
-                }
             }
         }
     }

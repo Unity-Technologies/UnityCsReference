@@ -354,6 +354,14 @@ namespace UnityEngine
             SetResolution(width, height, fullscreen, 0);
         }
 
+        extern public static void SetMSAASamples(int numSamples);
+        extern private static int GetMSAASamples();
+
+        public static int msaaSamples
+        {
+            get { return GetMSAASamples(); }
+        }
+
         public static Vector2Int mainWindowPosition
         {
             get
@@ -444,6 +452,16 @@ namespace UnityEngine
         public static void SetResolution(int width, int height, bool fullscreen)
         {
             SetResolution(width, height, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed, new RefreshRate { numerator = 0, denominator = 1 });
+        }
+
+        public static void SetMSAASamples(int numSamples)
+        {
+            ShimManager.screenShim.SetMSAASamples(numSamples);
+        }
+
+        public static int msaaSamples
+        {
+            get { return ShimManager.screenShim.msaaSamples; }
         }
 
         public static bool fullScreen

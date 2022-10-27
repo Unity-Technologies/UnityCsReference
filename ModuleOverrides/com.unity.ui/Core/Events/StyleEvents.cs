@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public ICustomStyle customStyle
         {
-            get { return (target as VisualElement)?.customStyle; }
+            get { return elementTarget?.customStyle; }
         }
     }
 }

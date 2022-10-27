@@ -44,6 +44,16 @@ namespace UnityEngine
             SetResolution(width, height, fullscreenMode, new RefreshRate() { numerator = (uint)preferredRefreshRate, denominator = 1 });
         }
 
+        public virtual void SetMSAASamples(int numSamples)
+        {
+            EditorScreen.SetMSAASamples(numSamples);
+        }
+
+        public virtual int msaaSamples
+        {
+            get { return EditorScreen.msaaSamples; }
+        }
+
         public virtual bool fullScreen
         {
             get { return EditorScreen.fullScreen; }

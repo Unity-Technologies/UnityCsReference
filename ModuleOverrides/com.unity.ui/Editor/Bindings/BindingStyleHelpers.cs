@@ -334,7 +334,7 @@ namespace UnityEditor.UIElements.Bindings
 
         private static void ReUpdateLivePropertyBarStyleEvent(GeometryChangedEvent evt, VisualElement bar)
         {
-            var element = evt.target as VisualElement;
+            var element = evt.elementTarget;
             if (element == null)
                 return;
 
@@ -380,10 +380,9 @@ namespace UnityEditor.UIElements.Bindings
             if (evt.button != (int)MouseButton.RightMouse)
                 return;
 
-            if (!(evt.target is VisualElement element))
-                return;
+            VisualElement element = evt.elementTarget;
 
-            var property = element.userData as SerializedProperty;
+            var property = element?.userData as SerializedProperty;
             if (property == null)
                 return;
 

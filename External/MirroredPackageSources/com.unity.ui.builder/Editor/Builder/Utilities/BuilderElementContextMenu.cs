@@ -45,7 +45,7 @@ namespace Unity.UI.Builder
 
         void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
         {
-            var target = evt.target as VisualElement;
+            var target = evt.elementTarget;
 
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);

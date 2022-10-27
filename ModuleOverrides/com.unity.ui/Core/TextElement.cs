@@ -379,7 +379,7 @@ namespace UnityEngine.UIElements
                     {
                         using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(this.text, value))
                         {
-                            evt.target = this;
+                            evt.elementTarget = this;
                             ((INotifyValueChanged<string>) this).SetValueWithoutNotify(value);
                             SendEvent(evt);
                         }

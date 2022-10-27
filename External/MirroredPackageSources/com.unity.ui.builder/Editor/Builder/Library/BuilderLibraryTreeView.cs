@@ -48,7 +48,7 @@ namespace Unity.UI.Builder
 
         void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt)
         {
-            var libraryItem = GetLibraryTreeItem((VisualElement)evt.target);
+            var libraryItem = GetLibraryTreeItem(evt.elementTarget);
 
             evt.menu.AppendAction(
                 "Add",

@@ -316,7 +316,7 @@ namespace UnityEditor.UIElements.Debugger
 
         void OnToggleValueChanged(ChangeEvent<bool> e)
         {
-            var element = e.target as VisualElement;
+            var element = e.elementTarget;
             var index = (int)element.userData;
             var choice = m_FilteredChoices[index];
             m_State[choice.TypeId] = e.newValue;
@@ -364,7 +364,7 @@ namespace UnityEditor.UIElements.Debugger
             FilterEvents(value);
             using (var evt = ChangeEvent<string>.GetPooled(null, null))
             {
-                evt.target = this;
+                evt.elementTarget = this;
                 SendEvent(evt);
             }
         }

@@ -150,7 +150,7 @@ namespace UnityEngine.UIElements
                     {
                         using (ChangeEvent<float> evt = ChangeEvent<float>.GetPooled(m_Value, value))
                         {
-                            evt.target = this;
+                            evt.elementTarget = this;
                             SetValueWithoutNotify(value);
                             SendEvent(evt);
                         }

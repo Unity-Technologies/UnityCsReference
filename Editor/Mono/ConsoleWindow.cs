@@ -1254,7 +1254,7 @@ namespace UnityEditor
             m_RestoreLatestSelection = false;
         }
 
-        [UsedImplicitly] private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
+        internal static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
 
         [UsedImplicitly, RequiredByNativeCode]
         private static void SendEntryDoubleClicked(LogEntry entry)

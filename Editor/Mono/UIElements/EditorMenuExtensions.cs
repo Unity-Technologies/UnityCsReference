@@ -71,9 +71,9 @@ namespace UnityEditor.UIElements
             {
                 position = ((IPointerEvent)triggerEvent).position;
             }
-            else if (triggerEvent.target is VisualElement)
+            else if (triggerEvent.elementTarget != null)
             {
-                position = ((VisualElement)triggerEvent.target).layout.center;
+                position = triggerEvent.elementTarget.layout.center;
             }
 
             genericMenu.DropDown(new Rect(position, Vector2.zero));

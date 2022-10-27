@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements
                 new Vector2IntField.UxmlFactory(),
                 new Vector3IntField.UxmlFactory(),
                 new BoundsField.UxmlFactory(),
-                new BoundsIntField.UxmlFactory()
+                new BoundsIntField.UxmlFactory(),
             };
 
             foreach (var factory in factories)

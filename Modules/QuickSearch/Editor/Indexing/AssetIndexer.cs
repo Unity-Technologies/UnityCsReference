@@ -76,9 +76,17 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
                 if (objType == typeof(MonoScript))
                     IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
-                IndexProperty(documentIndex, name, objType.Name, saveKeyword: true, exact: exact);
+
+                IndexType(objType, documentIndex);
                 objType = objType.BaseType;
             }
+        }
+
+        private void IndexType(Type objType, int documentIndex)
+        {
+            IndexProperty(documentIndex, "t", objType.Name, saveKeyword: true);
+            if (objType.Name != objType.FullName)
+                IndexProperty(documentIndex, "t", objType.FullName, exact: true, saveKeyword: true);
         }
 
         private void IndexSubAsset(Object subObj, string containerPath, bool checkIfDocumentExists, bool hasCustomIndexers)
@@ -189,7 +197,7 @@ namespace UnityEditor.Search
                                 var c = gocs[componentIndex];
                                 if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                                     continue;
-                                IndexProperty(documentIndex, "t", c.GetType().Name, saveKeyword: true);
+                                IndexType(c.GetType(), documentIndex);
                             }
                         }
                     }

@@ -5,6 +5,8 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
 
@@ -17,6 +19,8 @@ namespace UnityEditor
         private static List<AnimationWindow> s_AnimationWindows = new List<AnimationWindow>();
         internal static List<AnimationWindow> GetAllAnimationWindows() { return s_AnimationWindows; }
 
+        private static Type[] s_CustomControllerTypes = null;
+
         private AnimEditor m_AnimEditor;
 
         [SerializeField]
@@ -28,13 +32,7 @@ namespace UnityEditor
         private GUIContent m_DefaultTitleContent;
         private GUIContent m_RecordTitleContent;
 
-        internal AnimEditor animEditor
-        {
-            get
-            {
-                return m_AnimEditor;
-            }
-        }
+        internal AnimEditor animEditor => m_AnimEditor;
 
         internal AnimationWindowState state
         {
@@ -81,10 +79,7 @@ namespace UnityEditor
             {
                 if (m_AnimEditor != null)
                 {
-                    if (value)
-                        m_AnimEditor.state.StartPreview();
-                    else
-                        m_AnimEditor.state.StopPreview();
+                    m_AnimEditor.state.previewing = value;
                 }
             }
         }
@@ -116,10 +111,7 @@ namespace UnityEditor
             {
                 if (m_AnimEditor != null)
                 {
-                    if (value)
-                        m_AnimEditor.state.StartRecording();
-                    else
-                        m_AnimEditor.state.StopRecording();
+                    m_AnimEditor.state.recording = value;
                 }
             }
         }
@@ -151,10 +143,7 @@ namespace UnityEditor
             {
                 if (m_AnimEditor != null)
                 {
-                    if (value)
-                        m_AnimEditor.state.StartPlayback();
-                    else
-                        m_AnimEditor.state.StopPlayback();
+                    m_AnimEditor.state.playing = value;
                 }
             }
         }
@@ -212,7 +201,7 @@ namespace UnityEditor
         {
             if (m_AnimEditor == null)
             {
-                m_AnimEditor = CreateInstance(typeof(AnimEditor)) as AnimEditor;
+                m_AnimEditor = CreateInstance<AnimEditor>();
                 m_AnimEditor.hideFlags = HideFlags.HideAndDontSave;
             }
 
@@ -272,22 +261,19 @@ namespace UnityEditor
                 m_LockTracker.isLocked = false;
             }
 
-            GameObject activeGameObject = activeObject as GameObject;
-            if (activeGameObject != null)
+            if (activeObject is GameObject activeGameObject)
             {
                 EditGameObject(activeGameObject);
             }
             else
             {
-                Transform activeTransform = activeObject as Transform;
-                if (activeTransform != null)
+                if (activeObject is Transform activeTransform)
                 {
                     EditGameObject(activeTransform.gameObject);
                 }
                 else
                 {
-                    AnimationClip activeAnimationClip = activeObject as AnimationClip;
-                    if (activeAnimationClip != null)
+                    if (activeObject is AnimationClip activeAnimationClip)
                         EditAnimationClip(activeAnimationClip);
                 }
             }
@@ -329,7 +315,31 @@ namespace UnityEditor
 
         internal bool EditGameObject(GameObject gameObject)
         {
-            return EditGameObjectInternal(gameObject, (IAnimationWindowControl)null);
+            if (EditorUtility.IsPersistent(gameObject))
+                return false;
+
+            if ((gameObject.hideFlags & HideFlags.NotEditable) != 0)
+                return false;
+
+            var newSelection = GameObjectSelectionItem.Create(gameObject);
+            if (ShouldUpdateGameObjectSelection(newSelection))
+            {
+                m_AnimEditor.selection = newSelection;
+
+                IAnimationWindowController controller = null;
+
+                var rootGameObject = newSelection.rootGameObject;
+                if (rootGameObject != null)
+                    controller = FindCustomController(rootGameObject);
+
+                m_AnimEditor.overrideControlInterface = controller;
+
+                m_LastSelectedObjectID = gameObject != null ? gameObject.GetInstanceID() : 0;
+            }
+            else
+                m_AnimEditor.OnSelectionUpdated();
+
+            return true;
         }
 
         internal bool EditAnimationClip(AnimationClip animationClip)
@@ -337,7 +347,7 @@ namespace UnityEditor
             if (state.linkedWithSequencer == true)
                 return false;
 
-            EditAnimationClipInternal(animationClip, (Object)null, (IAnimationWindowControl)null);
+            EditAnimationClipInternal(animationClip, (Object)null, (IAnimationWindowController)null);
             return true;
         }
 
@@ -345,6 +355,10 @@ namespace UnityEditor
         {
             EditAnimationClipInternal(animationClip, sourceObject, controlInterface);
             state.linkedWithSequencer = true;
+
+            if (controlInterface != null)
+                controlInterface.Init(state);
+
             return true;
         }
 
@@ -360,29 +374,35 @@ namespace UnityEditor
             }
         }
 
-        private bool EditGameObjectInternal(GameObject gameObject, IAnimationWindowControl controlInterface)
+        private IAnimationWindowController FindCustomController(GameObject gameObject)
         {
-            if (EditorUtility.IsPersistent(gameObject))
-                return false;
+            IAnimationWindowController controller = null;
 
-            if ((gameObject.hideFlags & HideFlags.NotEditable) != 0)
-                return false;
-
-            var newSelection = GameObjectSelectionItem.Create(gameObject);
-            if (ShouldUpdateGameObjectSelection(newSelection))
+            if (s_CustomControllerTypes == null)
             {
-                m_AnimEditor.selection = newSelection;
-                m_AnimEditor.overrideControlInterface = controlInterface;
-
-                m_LastSelectedObjectID = gameObject != null ? gameObject.GetInstanceID() : 0;
+                s_CustomControllerTypes = TypeCache
+                    .GetTypesWithAttribute<AnimationWindowControllerAttribute>()
+                    .Where(type => typeof(IAnimationWindowController).IsAssignableFrom(type))
+                    .ToArray();
             }
-            else
-                m_AnimEditor.OnSelectionUpdated();
 
-            return true;
+            foreach (var controllerType in s_CustomControllerTypes)
+            {
+                var attribute = controllerType.GetCustomAttribute<AnimationWindowControllerAttribute>();
+                var component = gameObject.GetComponent(attribute.componentType);
+
+                if (component != null)
+                {
+                    controller = (IAnimationWindowController)Activator.CreateInstance(controllerType);
+                    controller.OnCreate(this, component);
+                    break;
+                }
+            }
+
+            return controller;
         }
 
-        private void EditAnimationClipInternal(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
+        private void EditAnimationClipInternal(AnimationClip animationClip, Object sourceObject, IAnimationWindowController controlInterface)
         {
             var newSelection = AnimationClipSelectionItem.Create(animationClip, sourceObject);
             if (ShouldUpdateSelection(newSelection))

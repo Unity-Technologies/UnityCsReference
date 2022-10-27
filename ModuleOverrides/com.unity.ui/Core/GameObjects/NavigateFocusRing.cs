@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
         {
             if (e.eventTypeId == PointerDownEvent.TypeId())
             {
-                if (focusController.GetFocusableParentForPointerEvent(e.target as Focusable, out var target))
+                if (focusController.GetFocusableParentForPointerEvent(e.elementTarget, out var target))
                     return VisualElementFocusChangeTarget.GetPooled(target);
             }
 

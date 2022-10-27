@@ -12,14 +12,13 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
-    internal class AnimationWindowSelectionItem : ScriptableObject, System.IEquatable<AnimationWindowSelectionItem>, ISelectionBinding
+    [Serializable]
+    abstract class AnimationWindowSelectionItem : System.IEquatable<AnimationWindowSelectionItem>, ISelectionBinding
     {
         [SerializeField] private int m_Id;
         [SerializeField] private GameObject m_GameObject;
         [SerializeField] private ScriptableObject m_ScriptableObject;
         [SerializeField] private AnimationClip m_AnimationClip;
-
-        private List<AnimationWindowCurve> m_CurvesCache = null;
 
         public virtual int id { get { return m_Id; } set { m_Id = value; } }
 
@@ -195,148 +194,12 @@ namespace UnityEditorInternal
 
         public virtual bool canSyncSceneSelection { get { return true; } }
 
-        public List<AnimationWindowCurve> curves
-        {
-            get
-            {
-                if (m_CurvesCache == null)
-                {
-                    m_CurvesCache = new List<AnimationWindowCurve>();
-
-                    if (animationClip != null)
-                    {
-                        EditorCurveBinding[] curveBindings = AnimationUtility.GetCurveBindings(animationClip);
-                        EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(animationClip);
-
-                        List<AnimationWindowCurve> transformCurves = new List<AnimationWindowCurve>();
-
-                        foreach (EditorCurveBinding curveBinding in curveBindings)
-                        {
-                            if (AnimationWindowUtility.ShouldShowAnimationWindowCurve(curveBinding))
-                            {
-                                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, curveBinding, GetEditorCurveValueType(curveBinding));
-                                curve.selectionBinding = this;
-
-                                m_CurvesCache.Add(curve);
-
-                                if (AnimationWindowUtility.IsActualTransformCurve(curveBinding))
-                                {
-                                    transformCurves.Add(curve);
-                                }
-                            }
-                        }
-
-                        foreach (EditorCurveBinding curveBinding in objectCurveBindings)
-                        {
-                            AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, curveBinding, GetEditorCurveValueType(curveBinding));
-                            curve.selectionBinding = this;
-
-                            m_CurvesCache.Add(curve);
-                        }
-
-                        transformCurves.Sort();
-                        if (transformCurves.Count > 0)
-                        {
-                            FillInMissingTransformCurves(transformCurves, ref m_CurvesCache);
-                        }
-                    }
-                    // Curves need to be sorted with path/type/property name so it's possible to construct hierarchy from them
-                    // Sorting logic in AnimationWindowCurve.CompareTo()
-                    m_CurvesCache.Sort();
-                }
-
-                return m_CurvesCache;
-            }
-        }
-
-        private void FillInMissingTransformCurves(List<AnimationWindowCurve> transformCurves, ref List<AnimationWindowCurve> curvesCache)
-        {
-            EditorCurveBinding lastBinding = transformCurves[0].binding;
-            var propertyGroup = new EditorCurveBinding ? [3];
-            string propertyGroupName;
-            foreach (var transformCurve in transformCurves)
-            {
-                var transformBinding = transformCurve.binding;
-                //if it's a new property group
-                if (transformBinding.path != lastBinding.path
-                    || AnimationWindowUtility.GetPropertyGroupName(transformBinding.propertyName) != AnimationWindowUtility.GetPropertyGroupName(lastBinding.propertyName))
-                {
-                    propertyGroupName = AnimationWindowUtility.GetPropertyGroupName(lastBinding.propertyName);
-
-                    FillPropertyGroup(ref propertyGroup, lastBinding, propertyGroupName, ref curvesCache);
-
-                    lastBinding = transformBinding;
-
-                    propertyGroup = new EditorCurveBinding ? [3];
-                }
-
-                AssignBindingToRightSlot(transformBinding, ref propertyGroup);
-            }
-            FillPropertyGroup(ref propertyGroup, lastBinding, AnimationWindowUtility.GetPropertyGroupName(lastBinding.propertyName), ref curvesCache);
-        }
-
-        private void FillPropertyGroup(ref EditorCurveBinding?[] propertyGroup, EditorCurveBinding lastBinding, string propertyGroupName, ref List<AnimationWindowCurve> curvesCache)
-        {
-            var newBinding = lastBinding;
-            newBinding.isPhantom = true;
-            if (!propertyGroup[0].HasValue)
-            {
-                newBinding.propertyName = propertyGroupName + ".x";
-                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, newBinding, GetEditorCurveValueType(newBinding));
-                curve.selectionBinding = this;
-                curvesCache.Add(curve);
-            }
-
-            if (!propertyGroup[1].HasValue)
-            {
-                newBinding.propertyName = propertyGroupName + ".y";
-                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, newBinding, GetEditorCurveValueType(newBinding));
-                curve.selectionBinding = this;
-                curvesCache.Add(curve);
-            }
-
-            if (!propertyGroup[2].HasValue)
-            {
-                newBinding.propertyName = propertyGroupName + ".z";
-                AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, newBinding, GetEditorCurveValueType(newBinding));
-                curve.selectionBinding = this;
-                curvesCache.Add(curve);
-            }
-        }
-
-        private void AssignBindingToRightSlot(EditorCurveBinding transformBinding, ref EditorCurveBinding?[] propertyGroup)
-        {
-            if (transformBinding.propertyName.EndsWith(".x"))
-            {
-                propertyGroup[0] = transformBinding;
-            }
-            else if (transformBinding.propertyName.EndsWith(".y"))
-            {
-                propertyGroup[1] = transformBinding;
-            }
-            else if (transformBinding.propertyName.EndsWith(".z"))
-            {
-                propertyGroup[2] = transformBinding;
-            }
-        }
-
-        public static AnimationWindowSelectionItem Create()
-        {
-            AnimationWindowSelectionItem selectionItem = CreateInstance(typeof(AnimationWindowSelectionItem)) as AnimationWindowSelectionItem;
-            return selectionItem;
-        }
-
         public int GetRefreshHash()
         {
             return unchecked (id * 19603 ^
                 (animationClip != null ? 729 * animationClip.GetHashCode() : 0) ^
                 (rootGameObject != null ? 27 * rootGameObject.GetHashCode() : 0) ^
                 (scriptableObject != null ? scriptableObject.GetHashCode() : 0));
-        }
-
-        public void ClearCache()
-        {
-            m_CurvesCache = null;
         }
 
         virtual public void Synchronize()
@@ -350,31 +213,6 @@ namespace UnityEditorInternal
                 animationClip == other.animationClip &&
                 gameObject == other.gameObject &&
                 scriptableObject == other.scriptableObject;
-        }
-
-        public Type GetEditorCurveValueType(EditorCurveBinding curveBinding)
-        {
-            if (rootGameObject != null)
-            {
-                return AnimationUtility.GetEditorCurveValueType(rootGameObject, curveBinding);
-            }
-            else if (scriptableObject != null)
-            {
-                return AnimationUtility.GetEditorCurveValueType(scriptableObject, curveBinding);
-            }
-            else
-            {
-                if (curveBinding.isPPtrCurve)
-                {
-                    // Cannot extract type of PPtrCurve.
-                    return null;
-                }
-                else
-                {
-                    // Cannot extract type of AnimationCurve.  Default to float.
-                    return typeof(float);
-                }
-            }
         }
     }
 }

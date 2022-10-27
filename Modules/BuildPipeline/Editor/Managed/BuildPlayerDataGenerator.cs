@@ -57,7 +57,7 @@ namespace UnityEditor.Build.Player
             // Can happen when building an empty project with no serializable types
             if (!Directory.Exists(path))
                 return Array.Empty<string>();
-            return Directory.GetFiles(path, "TypeDb-*", SearchOption.AllDirectories);
+            return Directory.GetFiles(path, "TypeDb-*.json", SearchOption.AllDirectories);
         }
     }
 }

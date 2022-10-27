@@ -8,11 +8,12 @@ using UnityEditor;
 
 namespace UnityEditorInternal
 {
+    [Serializable]
     internal class GameObjectSelectionItem : AnimationWindowSelectionItem
     {
         public static GameObjectSelectionItem Create(GameObject gameObject)
         {
-            GameObjectSelectionItem selectionItem = CreateInstance(typeof(GameObjectSelectionItem)) as GameObjectSelectionItem;
+            var selectionItem = new GameObjectSelectionItem();
 
             selectionItem.gameObject = gameObject;
             selectionItem.animationClip = null;

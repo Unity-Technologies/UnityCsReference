@@ -4,19 +4,34 @@
 
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Animations;
 
 namespace UnityEditorInternal
 {
     static internal class CurveBindingUtility
     {
+        // Current value of the property that rootGO + curveBinding is pointing to
+        public static object GetCurrentValue(AnimationWindowState state, EditorCurveBinding binding)
+        {
+            if (binding.isPPtrCurve)
+            {
+                return state.controlInterface.GetObjectReferenceValue(binding);
+            }
+            else if (binding.isDiscreteCurve)
+            {
+                return state.controlInterface.GetIntValue(binding);
+            }
+
+            return state.controlInterface.GetFloatValue(binding);
+        }
+
+
         // Retrieve current value.  If bindings are available and value is animated, use bindings to get value.
         // Otherwise, evaluate AnimationWindowCurve at current time.
         public static object GetCurrentValue(AnimationWindowState state, AnimationWindowCurve curve)
         {
             if (state.previewing && curve.rootGameObject != null)
             {
-                return AnimationWindowUtility.GetCurrentValue(curve.rootGameObject, curve.binding);
+                return GetCurrentValue(state, curve.binding);
             }
             else
             {

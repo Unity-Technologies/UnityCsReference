@@ -171,8 +171,6 @@ namespace UnityEditorInternal
             // the control id counter to shift when scrolling through the view.
             if (DoTreeViewButton(m_HierarchyItemButtonControlIDs[row], rectWithMargin, k_AnimatePropertyLabel, GUI.skin.button))
             {
-                AddCurvesPopupHierarchyDataSource.showEntireHierarchy = true;
-
                 if (AddCurvesPopup.ShowAtPosition(rectWithMargin, state, OnNewCurveAdded))
                 {
                     GUIUtility.ExitGUI();
@@ -248,7 +246,7 @@ namespace UnityEditorInternal
                 if (node is AnimationWindowHierarchyPropertyNode)
                     rect.width -= k_ValueFieldOffsetFromRightSide + 2;
 
-                bool isLeftOverCurve = AnimationWindowUtility.IsNodeLeftOverCurve(node);
+                bool isLeftOverCurve = AnimationWindowUtility.IsNodeLeftOverCurve(state, node);
                 bool isAmbiguous = AnimationWindowUtility.IsNodeAmbiguous(node);
                 bool isPhantom = AnimationWindowUtility.IsNodePhantom(node);
 
@@ -872,7 +870,7 @@ namespace UnityEditorInternal
                     {
                         EditorCurveBinding newBinding = AnimationWindowUtility.GetRenamedBinding(curve.binding, newName);
 
-                        if (AnimationWindowUtility.CurveExists(newBinding, state.allCurves.ToArray()))
+                        if (AnimationWindowUtility.CurveExists(newBinding, state.filteredCurves.ToArray()))
                         {
                             Debug.LogWarning("Curve already exists, renaming cancelled.");
                             continue;

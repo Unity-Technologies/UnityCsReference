@@ -165,7 +165,7 @@ namespace UnityEngine.UIElements
                 dragging = false;
                 m_DrivenField.value = startValue;
                 m_DrivenField.StopDragging();
-                IPanel panel = (evt.target as VisualElement)?.panel;
+                IPanel panel = evt.elementTarget?.panel;
                 panel.ReleasePointer(PointerId.mousePointerId);
                 (panel as BaseVisualElementPanel)?.uiElementsBridge?.SetWantsMouseJumping(0);
             }

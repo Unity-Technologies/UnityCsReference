@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -19,9 +20,26 @@ namespace UnityEngine.UIElements
         void SendEvent(EventBase e);
 
         /// <summary>
-        /// Handle an event.
+        /// Handles an event according to its propagation phase and current target, by executing the element's
+        /// default action, default action at target, or callbacks associated with the event.
         /// </summary>
         /// <param name="evt">The event to handle.</param>
+        /// <remarks>
+        /// The <see cref="EventDispatcher"/> may invoke this method multiple times for the same event: once for each
+        /// propagation phase and each target along the event's propagation path if it has matching callbacks or,
+        /// in the case of the leaf target, if it overrides default actions for the event.
+        ///
+        /// Do not use this method to intercept all events whose propagation path include this element. There is no
+        /// guarantee that it will or will not be invoked for a propagation phase or target along the propagation path
+        /// if that target has no callbacks for the event and has no default action override that can receive the event.
+        ///
+        /// Use <see cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>,
+        /// <see cref="CallbackEventHandler.ExecuteDefaultAction"/>, or <see cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
+        /// for more predictable results.
+        /// </remarks>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>
+        /// <seealso cref="CallbackEventHandler.ExecuteDefaultAction"/>
+        /// <seealso cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
         void HandleEvent(EventBase evt);
 
         /// <summary>
@@ -46,7 +64,7 @@ namespace UnityEngine.UIElements
         // This enables early outs in some dispatching strategies.
         internal bool isIMGUIContainer = false;
 
-        EventCallbackRegistry m_CallbackRegistry;
+        internal EventCallbackRegistry m_CallbackRegistry;
 
         /// <summary>
         /// Adds an event handler to the instance. If the event handler has already been registered for the same phase (either TrickleDown or BubbleUp) then this method has no effect.
@@ -55,12 +73,10 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            if (m_CallbackRegistry == null)
-            {
-                m_CallbackRegistry = new EventCallbackRegistry();
-            }
+            if (callback == null)
+                throw new ArgumentException("callback parameter is null");
 
-            m_CallbackRegistry.RegisterCallback(callback, useTrickleDown, default);
+            (m_CallbackRegistry ??= new EventCallbackRegistry()).RegisterCallback(callback, useTrickleDown, default);
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
 
@@ -83,12 +99,10 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            if (m_CallbackRegistry == null)
-            {
-                m_CallbackRegistry = new EventCallbackRegistry();
-            }
+            if (callback == null)
+                throw new ArgumentException("callback parameter is null");
 
-            m_CallbackRegistry.RegisterCallback(callback, userArgs, useTrickleDown, default);
+            (m_CallbackRegistry ??= new EventCallbackRegistry()).RegisterCallback(callback, userArgs, useTrickleDown, default);
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
 
@@ -97,12 +111,7 @@ namespace UnityEngine.UIElements
 
         internal void RegisterCallback<TEventType>(EventCallback<TEventType> callback, InvokePolicy invokePolicy, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            if (m_CallbackRegistry == null)
-            {
-                m_CallbackRegistry = new EventCallbackRegistry();
-            }
-
-            m_CallbackRegistry.RegisterCallback(callback, useTrickleDown, invokePolicy);
+            (m_CallbackRegistry ??= new EventCallbackRegistry()).RegisterCallback(callback, useTrickleDown, invokePolicy);
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
 
@@ -116,10 +125,10 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            if (m_CallbackRegistry != null)
-            {
-                m_CallbackRegistry.UnregisterCallback(callback, useTrickleDown);
-            }
+            if (callback == null)
+                throw new ArgumentException("callback parameter is null");
+
+            m_CallbackRegistry?.UnregisterCallback(callback, useTrickleDown);
 
             GlobalCallbackRegistry.UnregisterListeners<TEventType>(this, callback);
         }
@@ -131,24 +140,12 @@ namespace UnityEngine.UIElements
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
-            if (m_CallbackRegistry != null)
-            {
-                m_CallbackRegistry.UnregisterCallback(callback, useTrickleDown);
-            }
+            if (callback == null)
+                throw new ArgumentException("callback parameter is null");
+
+            m_CallbackRegistry?.UnregisterCallback(callback, useTrickleDown);
 
             GlobalCallbackRegistry.UnregisterListeners<TEventType>(this, callback);
-        }
-
-        internal bool TryGetUserArgs<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown, out TCallbackArgs userData) where TEventType : EventBase<TEventType>, new()
-        {
-            userData = default(TCallbackArgs);
-
-            if (m_CallbackRegistry != null)
-            {
-                return m_CallbackRegistry.TryGetUserArgs(callback, useTrickleDown, out userData);
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -159,135 +156,15 @@ namespace UnityEngine.UIElements
 
         internal abstract void SendEvent(EventBase e, DispatchMode dispatchMode);
 
-        internal void HandleEventAtTargetPhase(EventBase evt)
-        {
-            evt.currentTarget = evt.target;
-            evt.propagationPhase = PropagationPhase.AtTarget;
-            HandleEventAtCurrentTargetAndPhase(evt);
-            evt.propagationPhase = PropagationPhase.DefaultActionAtTarget;
-            HandleEventAtCurrentTargetAndPhase(evt);
-        }
-
-        internal void HandleEventAtTargetAndDefaultPhase(EventBase evt)
-        {
-            HandleEventAtTargetPhase(evt);
-            evt.propagationPhase = PropagationPhase.DefaultAction;
-            HandleEventAtCurrentTargetAndPhase(evt);
-        }
-
-        internal void HandleEventAtCurrentTargetAndPhase(EventBase evt)
-        {
-#pragma warning disable 618
-            // Inline this virtual call as soon as we can reasonably remove HandleEvent from the API.
-            HandleEvent(evt);
-#pragma warning restore 618
-
-            HandleEventEditorInternal(evt);
-        }
-
-        // For unit tests (e.g. see UIElementsTestHelpers.cs)
-        internal virtual void HandleEventEditorInternal(EventBase evt)
-        {
-        }
+        internal abstract void HandleEvent(EventBase e);
 
         void IEventHandler.HandleEvent(EventBase evt)
-        {
-            HandleEventAtCurrentTargetAndPhase(evt);
-        }
-
-        /// <summary>
-        /// Handles an event according to its propagation phase and current target, by executing the element's
-        /// default action, default action at target, or callbacks associated with the event.
-        /// </summary>
-        /// <param name="evt">The event to handle.</param>
-        /// <remarks>
-        /// The <see cref="EventDispatcher"/> may invoke this method multiple times for the same event: once for each
-        /// propagation phase and each target along the event's propagation path if it has matching callbacks or,
-        /// in the case of the leaf target, if it overrides default actions for the event.
-        ///
-        /// Do not use this method to intercept all events whose propagation path include this element. There is no
-        /// guarantee that it will or will not be invoked for a propagation phase or target along the propagation path
-        /// if that target has no callbacks for the event and has no default action override that can receive the event.
-        ///
-        /// Use <see cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>,
-        /// <see cref="CallbackEventHandler.ExecuteDefaultAction"/>, or <see cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
-        /// for more predictable results.
-        /// </remarks>
-        /// <seealso cref="CallbackEventHandler.RegisterCallback{TEventType}"/>
-        /// <seealso cref="CallbackEventHandler.ExecuteDefaultAction"/>
-        /// <seealso cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
-        [Obsolete("The virtual method CallbackEventHandler.HandleEvent is deprecated and will be removed in " +
-            "a future release. Please override ExecuteDefaultAction instead.")]
-        public virtual void HandleEvent(EventBase evt)
         {
             // This is only useful because HandleEvent is public and can be called from user code.
             if (evt == null)
                 return;
 
-            switch (evt.propagationPhase)
-            {
-                case PropagationPhase.TrickleDown:
-                case PropagationPhase.BubbleUp:
-                {
-                    if (!evt.isPropagationStopped)
-                    {
-                        m_CallbackRegistry?.InvokeCallbacks(evt, evt.propagationPhase);
-                    }
-                    if (isIMGUIContainer && !evt.isPropagationStopped)
-                    {
-                        ((IMGUIContainer) this).ProcessEvent(evt);
-                    }
-                    break;
-                }
-
-                case PropagationPhase.AtTarget:
-                {
-                    //We make sure we invoke callbacks from the TrickleDownPhase before the BubbleUp ones when we are directly at target
-                    if (!evt.isPropagationStopped)
-                    {
-                        m_CallbackRegistry?.InvokeCallbacks(evt, PropagationPhase.TrickleDown);
-                    }
-                    if (!evt.isPropagationStopped)
-                    {
-                        m_CallbackRegistry?.InvokeCallbacks(evt, PropagationPhase.BubbleUp);
-                    }
-                    if (isIMGUIContainer && !evt.isPropagationStopped)
-                    {
-                        ((IMGUIContainer) this).ProcessEvent(evt);
-                    }
-                }
-                break;
-
-                case PropagationPhase.DefaultActionAtTarget:
-                {
-                    if (!evt.isDefaultPrevented)
-                    {
-                        using (new EventDebuggerLogExecuteDefaultAction(evt))
-                        {
-                            if (evt.skipDisabledElements && this is VisualElement ve && !ve.enabledInHierarchy)
-                                ExecuteDefaultActionDisabledAtTarget(evt);
-                            else
-                                ExecuteDefaultActionAtTarget(evt);
-                        }
-                    }
-                    break;
-                }
-
-                case PropagationPhase.DefaultAction:
-                {
-                    if (!evt.isDefaultPrevented)
-                    {
-                        using (new EventDebuggerLogExecuteDefaultAction(evt))
-                        {
-                            if (evt.skipDisabledElements && this is VisualElement ve && !ve.enabledInHierarchy)
-                                ExecuteDefaultActionDisabled(evt);
-                            else
-                                ExecuteDefaultAction(evt);
-                        }
-                    }
-                    break;
-                }
-            }
+            HandleEvent(evt);
         }
 
         /// <summary>
@@ -352,5 +229,11 @@ namespace UnityEngine.UIElements
 
         internal const string ExecuteDefaultActionName = nameof(ExecuteDefaultAction);
         internal const string ExecuteDefaultActionAtTargetName = nameof(ExecuteDefaultActionAtTarget);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ExecuteDefaultActionInternal(EventBase evt) => ExecuteDefaultAction(evt);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ExecuteDefaultActionAtTargetInternal(EventBase evt) => ExecuteDefaultActionAtTarget(evt);
     }
 }

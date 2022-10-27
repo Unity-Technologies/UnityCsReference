@@ -55,7 +55,7 @@ namespace Unity.UI.Builder
             {
                 using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(oldValue, cleanValue))
                 {
-                    evt.target = this;
+                    evt.elementTarget = this;
                     SendEvent(evt);
                 }
             }

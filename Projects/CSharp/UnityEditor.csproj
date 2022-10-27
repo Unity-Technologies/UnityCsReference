@@ -6,7 +6,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_HEIGHTMESH_RUNTIME_SUPPORT;ENABLE_NAVIGATION_PACKAGE_DEBUG_VISUALIZATION;ENABLE_NAVIGATION_UI_REQUIRES_PACKAGE;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_GGP_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_HEIGHTMESH_RUNTIME_SUPPORT;ENABLE_NAVIGATION_PACKAGE_DEBUG_VISUALIZATION;ENABLE_NAVIGATION_UI_REQUIRES_PACKAGE;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_BJM_API;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_GGP_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;USE_ITEM_LIBRARY_MODULE;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
     <LangVersion>latest</LangVersion>
     <NoWarn>1071;0169;0649;0626</NoWarn>
   </PropertyGroup>
@@ -112,6 +112,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowControl.cs">
       <Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowControl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowControllerAttribute.cs">
+      <Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowControllerAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowCurve.cs">
       <Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowCurve.cs</Link>
@@ -229,6 +232,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\IAnimationWindowControl.cs">
       <Link>Editor\Mono\Animation\AnimationWindow\IAnimationWindowControl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\IAnimationWindowController.cs">
+      <Link>Editor\Mono\Animation\AnimationWindow\IAnimationWindowController.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\MinMaxCurveEditorWindow.cs">
       <Link>Editor\Mono\Animation\AnimationWindow\MinMaxCurveEditorWindow.cs</Link>
@@ -4772,11 +4778,20 @@
     <Compile Include="..\..\Modules\AudioEditor\ScriptBindings\AudioMixerSnapshotController.bindings.cs">
       <Link>Modules\AudioEditor\ScriptBindings\AudioMixerSnapshotController.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildArchiveImporter.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildArchiveImporter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildCompression.deprecated.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildCompression.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildDefines.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildDefines.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildInstructionImporter.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildInstructionImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildMetaDataImporter.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildMetaDataImporter.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildOutput.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildOutput.cs</Link>
@@ -4826,11 +4841,17 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\UnifiedBuildPipelineInternalApi.bindings.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\UnifiedBuildPipelineInternalApi.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\WriteCommand.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\WriteCommand.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Shared\ReferencesArtifactGenerator.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Shared\ReferencesArtifactGenerator.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Ucbp\BuildPipelineContext.bindings.cs">
+      <Link>Modules\BuildPipeline\Editor\Ucbp\BuildPipelineContext.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildFile.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildFile.cs</Link>
@@ -5041,6 +5062,1302 @@
     </Compile>
     <Compile Include="..\..\Modules\GenericRemoteEditor\Public\GenericRemote.bindings.cs">
       <Link>Modules\GenericRemoteEditor\Public\GenericRemote.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\AssemblyInfo.cs">
+      <Link>Modules\GraphToolsFoundationEditor\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\BaseGraphTool.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\BaseGraphTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\CommandDispatcher.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\CommandDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\DeclarationHighlighter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\DeclarationHighlighter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\IPersistedStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\IPersistedStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\PersistedState.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\PersistedState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\PersistedStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\PersistedStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\PersistedStateComponentHelpers.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\PersistedStateComponentHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\StateCache_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\PersistedStates\StateCache_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\SelectionStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\SelectionStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\SimpleChangeset.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\SimpleChangeset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\DeclarationHighlighterStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\DeclarationHighlighterStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\GraphProcessingStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\GraphProcessingStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\ToolStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\ToolStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\UndoStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\UndoStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\UndoStateRecorder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\CommandStateObserver\ToolState\UndoStateRecorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\Inspectors\GraphAssetInspector_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\Inspectors\GraphAssetInspector_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\ItemLibrarySize.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\ItemLibrarySize.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\OpenedGraph.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\OpenedGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\Preferences.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\Preferences.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\Utility\AssemblyCache_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\Utility\AssemblyCache_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\Utility\ConsoleWindowHelper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\Utility\ConsoleWindowHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\Utility\MeshDrawingHelpers_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\Utility\MeshDrawingHelpers_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\EditorCommon\Utility\TestHelpers_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\EditorCommon\Utility\TestHelpers_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\GraphProcessors\GraphProcessor.cs">
+      <Link>Modules\GraphToolsFoundationEditor\GraphProcessors\GraphProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\GraphProcessors\GraphProcessorContainer.cs">
+      <Link>Modules\GraphToolsFoundationEditor\GraphProcessors\GraphProcessorContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\GraphProcessors\VariableNodeGraphProcessor_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\GraphProcessors\VariableNodeGraphProcessor_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\AnalyticsEvent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\AnalyticsEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\IItemLibraryAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\IItemLibraryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryDatabase.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryDatabase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryDatabaseBase.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryDatabaseBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryFilter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryFuncFilter_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryFuncFilter_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryItem.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryLibrary_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryLibrary_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryPreferences_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ItemLibraryPreferences_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\UI\ItemLibraryControl_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\UI\ItemLibraryControl_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\UI\ItemLibraryWindow.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\UI\ItemLibraryWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\UI\ItemLibraryWindowAlignment_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\UI\ItemLibraryWindowAlignment_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\UI\LibraryTreeView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\UI\LibraryTreeView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\UI\VisualElementsHelpers_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\UI\VisualElementsHelpers_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\CategoryView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\CategoryView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ICategoryView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ICategoryView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\IItemView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\IItemView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ITreeItemView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ITreeItemView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ItemView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ItemView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ResultsViewMode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\ResultsViewMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\TreeItemViewExtensions_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\ItemLibrary\ViewModels\TreeItemViewExtensions_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Algorithms\NodeWireDiff.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Algorithms\NodeWireDiff.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\InspectorUsePropertyAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\InspectorUsePropertyAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\InspectorUseSetterMethodAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\InspectorUseSetterMethodAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\ModelSettingAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\ModelSettingAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\AbstractNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\AbstractNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\BadgeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\BadgeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\ErrorBadgeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\ErrorBadgeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\BlackboardGraphModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\BlackboardGraphModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\GroupItemExtension.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\GroupItemExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\GroupModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\GroupModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\SectionModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\SectionModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\BlockNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\BlockNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ConstantNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ConstantNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\AnyConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\AnyConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\BooleanConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\BooleanConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\ColorConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\ColorConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Constant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Constant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\ConstantGeneric.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\ConstantGeneric.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\DoubleConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\DoubleConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\EnumConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\EnumConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\FloatConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\FloatConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\IntConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\IntConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\MeshConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\MeshConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\QuaternionConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\QuaternionConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\StringConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\StringConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Texture2DConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Texture2DConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Texture3DConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Texture3DConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\TypeToConstantMapper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\TypeToConstantMapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector2Constant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector2Constant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector3Constant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector3Constant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector4Constant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector4Constant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ContextNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ContextNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\DataWirePortalEntryModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\DataWirePortalEntryModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\DataWirePortalExitModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\DataWirePortalExitModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\DeclarationModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\DeclarationModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ExecutionWirePortalEntryModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ExecutionWirePortalEntryModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ExecutionWirePortalExitModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ExecutionWirePortalExitModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphElementModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphElementModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\InputOutputPortsNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\InputOutputPortsNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Model.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Model.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ModelInspector\InspectorModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ModelInspector\InspectorModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ModelInspector\InspectorSectionModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ModelInspector\InspectorSectionModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\NodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\NodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\OrderedPorts.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\OrderedPorts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlacematModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlacematModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PortModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PortModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PortNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PortNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PortReference.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PortReference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PortWireIndex_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PortWireIndex_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\StickyNoteModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\StickyNoteModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Subgraph.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Subgraph.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\SubgraphNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\SubgraphNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\VariableDeclarationModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\VariableDeclarationModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\VariableNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\VariableNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\WireModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\WireModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\WirePortalModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\WirePortalModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Capabilities.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Capabilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Capabilities\ICloneable.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Capabilities\ICloneable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Capabilities\IHasDeclarationModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Capabilities\IHasDeclarationModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Capabilities\IModelCapabilities.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Capabilities\IModelCapabilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ChangeHint.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\ChangeHint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\CloneHelpers.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\CloneHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\GraphElementModelExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\GraphElementModelExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\GraphModelExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\GraphModelExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\ListExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\ListExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\ModelHelpers.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\ModelHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\NodeModelExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\NodeModelExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\PortModelExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\PortModelExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\VariableDeclarationModelExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\VariableDeclarationModelExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Extensions\WireModelExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Extensions\WireModelExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\GraphAsset.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\GraphAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\GraphChangeDescription.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\GraphChangeDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\GraphTraversal_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\GraphTraversal_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\IGraphElementContainer.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\IGraphElementContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\IGroupItemModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\IGroupItemModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\IHasInspectorSurrogate.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\IHasInspectorSurrogate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\ISingleInputPortNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\ISingleInputPortNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\ISingleOutputPortNodeModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\ISingleOutputPortNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\IStringWrapperConstantModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\IStringWrapperConstantModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\InternalModels\GhostWireModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\InternalModels\GhostWireModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ModelState.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\ModelState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\PortDirection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\PortDirection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\PortOrientation.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\PortOrientation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\PortType.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\PortType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ReorderType.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\ReorderType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\SerializableGUIDExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\SerializableGUIDExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\AllowMultipleDataOutputInstances.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\AllowMultipleDataOutputInstances.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\IDependency.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\IDependency.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\LinkedNodesDependency.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\LinkedNodesDependency.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\PortalNodesDependency.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\PortalNodesDependency.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\StencilBase.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\StencilBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\StencilHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\StencilHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\StringExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\SubgraphPropertiesField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\SubgraphPropertiesField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\TypeHandleExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\TypeHandleExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\TypeSerializerHelper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\TypeSerializerHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ZOrderMove.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\ZOrderMove.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\ContextDatabase.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\ContextDatabase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\EnumValuesAdapter_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\EnumValuesAdapter_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\FindInGraphAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\FindInGraphAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\GraphElementItemDatabase.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\GraphElementItemDatabase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\GraphElementLibraryAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\GraphElementLibraryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\GraphNodeCreationData.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\GraphNodeCreationData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\GraphNodeLibraryAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\GraphNodeLibraryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\GraphNodeModelLibraryItem.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\GraphNodeModelLibraryItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\IGraphElementLibraryAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\IGraphElementLibraryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\Interfaces\IItemDatabaseProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\Interfaces\IItemDatabaseProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\Interfaces\IItemLibraryDataProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\Interfaces\IItemLibraryDataProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\Interfaces\ILibraryFilterProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\Interfaces\ILibraryFilterProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\ItemLibraryData.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\ItemLibraryData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\ItemLibraryService.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\ItemLibraryService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\LibraryHelpAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\LibraryHelpAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\LibraryItemAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\LibraryItemAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\NodeCreation\INodeCreationData.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\NodeCreation\INodeCreationData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\NodeCreation\NodeDataCreationExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\NodeCreation\NodeDataCreationExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\SearchContext.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\SearchContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\SimpleLibraryAdapter.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\SimpleLibraryAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\TypeLibraryItem.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\TypeLibraryItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\SmartSearch\TypeLibraryItemExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\SmartSearch\TypeLibraryItemExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\AutomaticGraphProcessingObserver.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\AutomaticGraphProcessingObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingError.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingResult.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingStatuses.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\GraphProcessingStatuses.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\QuickFix.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\QuickFix.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\ViewModel\GraphProcessingErrorModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\StateComponents\GraphProcessing\ViewModel\GraphProcessingErrorModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Stencil\DefaultDatabaseProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Stencil\DefaultDatabaseProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Stencil\GraphTemplate.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Stencil\GraphTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Stencil\GraphTemplateGeneric.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Stencil\GraphTemplateGeneric.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Stencil\Stencil.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Stencil\Stencil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\BlackboardCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\BlackboardCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ContextSearcherCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ContextSearcherCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\CreateNodeCommandExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\CreateNodeCommandExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GlobalSelectionCommandHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GlobalSelectionCommandHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GraphElementCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GraphElementCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GraphLoadingCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GraphLoadingCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GraphViewCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\GraphViewCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\InsertBlocksInContextCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\InsertBlocksInContextCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ItemLibraryCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ItemLibraryCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\CollapseInspectorSectionCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\CollapseInspectorSectionCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\SetInspectedGraphElementModelFieldCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\SetInspectedGraphElementModelFieldCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\SetInspectedGraphModelFieldCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\SetInspectedGraphModelFieldCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\SetInspectedObjectFieldCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\ModelInspector\SetInspectedObjectFieldCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\NodeCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\NodeCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\PlacematCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\PlacematCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\PortalCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\PortalCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\StickyNoteCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\StickyNoteCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\SubgraphCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\SubgraphCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\UndoRedoCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\UndoRedoCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\VariableDeclarationCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\VariableDeclarationCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\VariableNodeCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\VariableNodeCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\WireCommands.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\CommandDispatch\Commands\WireCommands.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Decorators\GridBackground.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Decorators\GridBackground.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\BlackboardViewFactoryExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\BlackboardViewFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ContextualizedModelViews_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ContextualizedModelViews_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ElementBuilder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ElementBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ExtensionMethodCache.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ExtensionMethodCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\GraphViewFactoryExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\GraphViewFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\InspectorSectionContext.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\InspectorSectionContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\MiniMapViewFactoryExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\MiniMapViewFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ModelInspectorCreateSectionFactoryExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ModelInspectorCreateSectionFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ModelInspectorFactoryExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ModelInspectorFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ModelViewFactory.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ModelViewFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ModelViewMapping_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ModelViewMapping_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Factory\ViewForModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Factory\ViewForModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\GraphElementHelper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\GraphElementHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\LineView_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\LineView_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\AutoAlignmentHelper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\AutoAlignmentHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\AutoDistributingHelper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\AutoDistributingHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\AutoPlacementHelper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\AutoPlacementHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\BlackboardClickSelector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\BlackboardClickSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\BlackboardContextualMenuManipulator.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\BlackboardContextualMenuManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\ClickSelector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\ClickSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\ContentDragger.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\ContentDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\ContentZoomer.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\ContentZoomer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\ElementResizer_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\ElementResizer_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\FreehandSelector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\FreehandSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\GraphViewClickSelector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\GraphViewClickSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\GraphViewContextualMenuManipulator.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\GraphViewContextualMenuManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\RectangleSelector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\RectangleSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SelectionDragger.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SelectionDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SelectionDropper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SelectionDropper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapReference_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapReference_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapStrategy.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToBordersStrategy_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToBordersStrategy_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToGridStrategy_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToGridStrategy_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToPortStrategy_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToPortStrategy_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToSpacingStrategy_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\SnapToSpacingStrategy_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\Snapper_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\Snapper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\WireConnector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\WireConnector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\WireDragHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\WireDragHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\WireManipulator.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\WireManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelViewPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelViewPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\BaseMultipleModelViewsPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\BaseMultipleModelViewsPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardGroupItemsPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardGroupItemsPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardHeaderPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardHeaderPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardSectionListPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardSectionListPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardVariablePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardVariablePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardVariablePropertiesPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelViewParts\BlackboardVariablePropertiesPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\Blackboard.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\Blackboard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardCreationContext.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardCreationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardElement.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardGroup.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardRow.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardSection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardVariablePropertyView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\BlackboardVariablePropertyView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\GroupItemOrderComparer_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\GroupItemOrderComparer_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\DependencyTypes.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\DependencyTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphElementPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphElementPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\CollapseButtonPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\CollapseButtonPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ConstantNodeEditorPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ConstantNodeEditorPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ContextBlocksPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ContextBlocksPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\EditableTitlePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\EditableTitlePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\FourWayResizerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\FourWayResizerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\IconTitleProgressPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\IconTitleProgressPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\InOutPortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\InOutPortContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeCollapseButtonPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeCollapseButtonPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeLodCachePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeLodCachePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConnectorPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConnectorPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConnectorWithIconPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConnectorWithIconPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConstantEditorPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConstantEditorPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SinglePortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SinglePortContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\StickyNoteContentPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\StickyNoteContentPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SubgraphIconTitleProgressPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SubgraphIconTitleProgressPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\TokenLodCachePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\TokenLodCachePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\VerticalPortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\VerticalPortContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireBubblePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireBubblePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireControlPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireControlPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Badge.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Badge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockDragInfos_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockDragInfos_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\CollapsibleInOutNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\CollapsibleInOutNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ContextNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ContextNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorBadge.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorBadge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\GraphElement.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\GraphElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ISelectionDraggerTarget.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ISelectionDraggerTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Line_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Line_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\MiniMap.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\MiniMap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Node.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Node.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Placemat\Placemat.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Placemat\Placemat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Placemat\PlacematCommandsExtension_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Placemat\PlacematCommandsExtension_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Placemat\PlacematContainer.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Placemat\PlacematContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Port.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Port.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\StickyNote.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\StickyNote.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\SubgraphNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\SubgraphNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\TokenNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\TokenNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Wire.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Wire.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\SubgraphCustomPropertyField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\SubgraphCustomPropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\CollapseButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\CollapseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\PortContainer.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\PortContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\ResizableElement.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\ResizableElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\SelectionBorder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\SelectionBorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\WireBubble.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\WireBubble.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\WireControl.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\WireControl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\InlineValueEditor\ConstantEditorBuilder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\InlineValueEditor\ConstantEditorBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\InlineValueEditor\ConstantEditorExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\InlineValueEditor\ConstantEditorExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\InlineValueEditor\InlineValueEditor.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\InlineValueEditor\InlineValueEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\CollapsibleSection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\CollapsibleSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\FieldsInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\FieldsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\ICustomPropertyFieldBuilder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\ICustomPropertyFieldBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\InspectorSection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\InspectorSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\ModelInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\ModelInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\NodePortsInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\NodePortsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\BaseModelPropertyField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\BaseModelPropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\CollapsibleSectionHeader.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\CollapsibleSectionHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\ConstantField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\ConstantField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\CustomizableModelPropertyField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\CustomizableModelPropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\MissingFieldEditor.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\MissingFieldEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\ModelPropertyField.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\ModelPropertyField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\ModelSerializedFieldField_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\ModelSerializedFieldField_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\SerializedFieldsInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\UIElements\SerializedFieldsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\VariableFieldsInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\VariableFieldsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\WireFieldsInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\WireFieldsInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IDragSource.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IDragSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IModelViewContainer_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IModelViewContainer_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IMultipleModelPartContainer.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IMultipleModelPartContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IShowItemLibraryUI_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IShowItemLibraryUI_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IViewContext.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IViewContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\ModelView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\ModelView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\ModelViewPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\ModelViewPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\ModelViewPartList.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\ModelViewPartList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\MultipleModelsView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\MultipleModelsView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIDependencies.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIDependencies.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIDependenciesExtensions_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIDependenciesExtensions_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBlockBorder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBlockBorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBorder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\EditableLabel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\EditableLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\VisualElementExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\VisualElementExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\PromptItemLibraryEvent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\PromptItemLibraryEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\IDiscoveryShortcutProviderProxy_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\IDiscoveryShortcutProviderProxy_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutEventBase.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutEventBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutEvents.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutProviderProxy_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ShortcutProviderProxy_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ToolShortcutDiscoveryProvider_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ToolShortcutDiscoveryProvider_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ToolShortcutEntryInfo_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ToolShortcutEntryInfo_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Shortcuts\ToolShortcutEventAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Shortcuts\ToolShortcutEventAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\BreadcrumbsToolbar\BreadcrumbsToolbar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\BreadcrumbsToolbar\BreadcrumbsToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\BreadcrumbsToolbar\BreadcrumbsToolbarProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\BreadcrumbsToolbar\BreadcrumbsToolbarProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\BreadcrumbsToolbar\GraphBreadcrumbs.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\BreadcrumbsToolbar\GraphBreadcrumbs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorCountLabel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorCountLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorOverlayToolbar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorOverlayToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorToolbarButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorToolbarButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorToolbarProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorToolbarProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorToolbarUpdateObserver.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\ErrorToolbarUpdateObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\NextErrorButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\NextErrorButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\PreviousErrorButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\PreviousErrorButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\SetCurrentErrorCommand.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ErrorToolbar\SetCurrentErrorCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\IToolbarElement.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\IToolbarElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\BuildAllButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\BuildAllButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\MainOverlayToolbar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\MainOverlayToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\MainToolbarButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\MainToolbarButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\MainToolbarProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\MainToolbarProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\NewGraphButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\NewGraphButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\SaveButton.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\MainToolbar\SaveButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\OptionsToolbar\OptionDropDownMenu.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\OptionsToolbar\OptionDropDownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\OptionsToolbar\OptionsMenuToolbar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\OptionsToolbar\OptionsMenuToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\OptionsToolbar\OptionsToolbarProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\OptionsToolbar\OptionsToolbarProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\OverlayToolbar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\OverlayToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\OverlayToolbarProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\OverlayToolbarProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\BlackboardPanelToggle.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\BlackboardPanelToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\InspectorPanelToggle.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\InspectorPanelToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\MiniMapPanelToggle.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\MiniMapPanelToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\PanelToggle.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\PanelToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\PanelsToolbar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\PanelsToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\PanelsToolbarProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\PanelsToolbar\PanelsToolbarProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ToolbarExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ToolbarExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Toolbars\ToolbarUpdateObserver.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Toolbars\ToolbarUpdateObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\DisposableList.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\DisposableList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\GraphAssetCreationHelpers.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\GraphAssetCreationHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\PositionDependenciesManager_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\PositionDependenciesManager_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\RectUtils_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\RectUtils_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\StringUtilsExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\StringUtilsExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\SubgraphCreationHelpers_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\SubgraphCreationHelpers_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\VisualElementAttacher.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\VisualElementAttacher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardCommandsExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardCommandsExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardCommandsRegistrar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardCommandsRegistrar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardGraphLoadedObserver.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardGraphLoadedObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardOverlay_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardOverlay_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewCommandHandlers.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewCommandHandlers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewSelection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Blackboard\BlackboardViewStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\BlankPage.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\BlankPage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\CopyPasteData.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\CopyPasteData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphModelStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphModelStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewCommandsExtensions.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewCommandsExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewCommandsRegistrar.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewCommandsRegistrar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewSelection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewZoomMode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphViewZoomMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\ProcessOnIdleAgent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\ProcessOnIdleAgent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\SelectionDropperDropHandler.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\SelectionDropperDropHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\WireOrderObserver_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\WireOrderObserver_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\IDragAndDropHandler.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\IDragAndDropHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Minimap\MiniMapOverlay_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Minimap\MiniMapOverlay_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Minimap\MiniMapView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Minimap\MiniMapView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\Minimap\MiniMapViewModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\Minimap\MiniMapViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\InspectorSelectionObserver_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\InspectorSelectionObserver_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorCreateSectionMethodsCacheAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorCreateSectionMethodsCacheAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorGraphLoadedObserver.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorGraphLoadedObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorOverlay_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorOverlay_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorStateComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorViewModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelInspector\ModelInspectorViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ModelViewUpdater.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ModelViewUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\OnboardingProvider.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\OnboardingProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\RootView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\RootView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\RootViewModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\RootViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\ViewSelection.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\ViewSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Windows\GraphProcessingStatusObserver_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Windows\GraphProcessingStatusObserver_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Windows\GraphViewEditorWindow.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Windows\GraphViewEditorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Windows\GraphViewSettings.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Windows\GraphViewSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Windows\WindowAssetModificationWatcher_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Windows\WindowAssetModificationWatcher_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Windows\WindowAssetPostprocessingWatcher_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Windows\WindowAssetPostprocessingWatcher_Internal.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\AssemblyInfo.cs">
       <Link>Modules\GraphViewEditor\AssemblyInfo.cs</Link>

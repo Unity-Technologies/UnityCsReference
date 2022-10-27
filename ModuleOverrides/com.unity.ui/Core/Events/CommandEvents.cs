@@ -79,6 +79,11 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToFocusedElementOrPanelRoot(this, panel);
+        }
+
         protected CommandEventBase()
         {
             LocalInit();

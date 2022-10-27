@@ -79,7 +79,7 @@ namespace UnityEditor.UIElements
             {
                 using (var tooltipEvent = TooltipEvent.GetPooled())
                 {
-                    tooltipEvent.target = target;
+                    tooltipEvent.elementTarget = target;
                     tooltipEvent.tooltip = null;
                     tooltipEvent.rect = Rect.zero;
                     target.SendEvent(tooltipEvent);

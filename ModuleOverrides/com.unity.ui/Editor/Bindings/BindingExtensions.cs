@@ -84,8 +84,8 @@ namespace UnityEditor.UIElements.Bindings
         private static bool SendBindingEvent<TEventType>(TEventType evt, VisualElement target)
             where TEventType : EventBase<TEventType>, new()
         {
-            evt.target = target;
-            target.HandleEventAtTargetAndDefaultPhase(evt);
+            evt.elementTarget = target;
+            EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(evt, target.elementPanel, target);
             return evt.isPropagationStopped;
         }
 
@@ -977,7 +977,7 @@ namespace UnityEditor.UIElements.Bindings
                 using (SerializedPropertyChangeEvent evt = SerializedPropertyChangeEvent.GetPooled())
                 {
                     evt.changedProperty = prop;
-                    evt.target = element;
+                    evt.elementTarget = element;
                     element.SendEvent(evt);
                 }
             }
@@ -989,7 +989,7 @@ namespace UnityEditor.UIElements.Bindings
             {
                 using (SerializedObjectChangeEvent evt = SerializedObjectChangeEvent.GetPooled(obj))
                 {
-                    evt.target = element;
+                    evt.elementTarget = element;
                     element.SendEvent(evt);
                 }
             }
@@ -1750,7 +1750,7 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     using (ChangeEvent<TValue> evt = ChangeEvent<TValue>.GetPooled(originalValue, originalValue))
                     {
-                        evt.target = handler;
+                        evt.elementTarget = handler;
                         handler.SendEvent(evt);
                     }
                 }
@@ -1858,7 +1858,7 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     using (ChangeEvent<Enum> evt = ChangeEvent<Enum>.GetPooled(previousValue, previousValue))
                     {
-                        evt.target = handler;
+                        evt.elementTarget = handler;
                         handler.SendEvent(evt);
                     }
                 }
@@ -2065,7 +2065,7 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(c.value, c.value))
                     {
-                        evt.target = handler;
+                        evt.elementTarget = handler;
                         handler.SendEvent(evt);
                     }
                 }
@@ -2208,7 +2208,7 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(previousFieldValue, previousFieldValue))
                     {
-                        evt.target = handler;
+                        evt.elementTarget = handler;
                         handler.SendEvent(evt);
                     }
                 }

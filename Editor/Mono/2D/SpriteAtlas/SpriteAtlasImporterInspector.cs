@@ -51,6 +51,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent atlasTypeLabel = EditorGUIUtility.TrTextContent("Type");
             public readonly GUIContent defaultPlatformLabel = EditorGUIUtility.TrTextContent("Default");
             public readonly GUIContent masterAtlasLabel = EditorGUIUtility.TrTextContent("Master Atlas", "Assigning another Sprite Atlas asset will make this atlas a variant of it.");
+            public readonly GUIContent packerLabel = EditorGUIUtility.TrTextContent("Scriptable Packer", "Scriptable Object that implements custom packing for Sprite-Atlas.");
             public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TrTextContent("Include in Build", "Packed textures will be included in the build by default.");
             public readonly GUIContent enableRotationLabel = EditorGUIUtility.TrTextContent("Allow Rotation", "Try rotating the sprite to fit better during packing.");
             public readonly GUIContent enableTightPackingLabel = EditorGUIUtility.TrTextContent("Tight Packing", "Use the mesh outline to fit instead of the whole texture rect during packing.");
@@ -137,6 +138,7 @@ namespace UnityEditor.U2D
 
         private SerializedProperty m_MasterAtlas;
         private SerializedProperty m_VariantScale;
+        private SerializedProperty m_ScriptablePacker;
 
         private string m_Hash;
         private int m_PreviewPage = 0;
@@ -231,6 +233,7 @@ namespace UnityEditor.U2D
                 hashCode = (int)2166136261 ^ (int) obj.FindProperty("m_MasterAtlas").contentHash;
                 hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_ImporterData").contentHash;
                 hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_IsVariant").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_ScriptablePacker").contentHash;
             }
             return hashCode;
         }
@@ -310,6 +313,7 @@ namespace UnityEditor.U2D
                 return;
 
             m_MasterAtlas = serializedAssetObject.FindProperty("m_MasterAtlas");
+            m_ScriptablePacker = serializedAssetObject.FindProperty("m_ScriptablePacker");
             m_Packables = serializedAssetObject.FindProperty("m_ImporterData.packables");
             m_PackableList = new ReorderableList(serializedAssetObject, m_Packables, true, true, true, true);
             m_PackableList.onAddCallback = AddPackable;
@@ -541,7 +545,7 @@ namespace UnityEditor.U2D
                 // Reinit the platform setting view
                 m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(IsTargetMaster());
             }
-
+            m_ScriptablePacker.objectReferenceValue = EditorGUILayout.ObjectField(styles.packerLabel, m_ScriptablePacker.objectReferenceValue, typeof(UnityEditor.U2D.ScriptablePacker), false);
             if (atlasType == AtlasType.Variant)
             {
                 EditorGUI.BeginChangeCheck();

@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
 
                 using (ChangeEvent<bool> evt = ChangeEvent<bool>.GetPooled(m_Value, value))
                 {
-                    evt.target = this;
+                    evt.elementTarget = this;
                     SetValueWithoutNotify(value);
                     SendEvent(evt);
                     SaveViewData();

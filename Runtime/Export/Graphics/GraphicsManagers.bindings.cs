@@ -197,6 +197,9 @@ namespace UnityEngine
 
         extern public static int count { [NativeName("GetQualitySettingsCount")] get; }
 
+        extern internal static int GetStrippedMaximumLODLevel();
+        extern internal static void SetStrippedMaximumLODLevel(int maximumLODLevel);
+
         extern public static bool streamingMipmapsActive { get; set; }
         extern public static float streamingMipmapsMemoryBudget { get; set; }
         extern public static int streamingMipmapsRenderersPerFrame { get; set; }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
 {
@@ -261,8 +262,6 @@ namespace UnityEngine.UIElements
     internal interface IPointerEventInternal
     {
         bool triggeredByOS { get; set; }
-
-        bool recomputeTopElementUnderPointer { get; set; }
     }
 
     internal static class PointerEventHelper
@@ -543,8 +542,6 @@ namespace UnityEngine.UIElements
 
         bool IPointerEventInternal.triggeredByOS { get; set; }
 
-        bool IPointerEventInternal.recomputeTopElementUnderPointer { get; set; }
-
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -557,7 +554,6 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
-            propagateToIMGUI = false;
 
             pointerId = 0;
             pointerType = PointerType.unknown;
@@ -583,7 +579,6 @@ namespace UnityEngine.UIElements
             modifiers = EventModifiers.None;
 
             ((IPointerEventInternal)this).triggeredByOS = false;
-            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = false;
         }
 
         /// <summary>
@@ -1023,7 +1018,14 @@ namespace UnityEngine.UIElements
                 (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
             }
 
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+
             base.PostDispatch(panel);
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToCapturingElementOrElementUnderPointer(this, panel, pointerId, position);
         }
 
         protected PointerEventBase()
@@ -1066,7 +1068,6 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
                 EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
-            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1085,8 +1086,8 @@ namespace UnityEngine.UIElements
                 {
                     using (var evt = MouseDownEvent.GetPooled(this))
                     {
-                        evt.target = target;
-                        evt.target.SendEvent(evt);
+                        evt.elementTarget = elementTarget;
+                        elementTarget.SendEvent(evt);
                     }
                 }
             }
@@ -1138,7 +1139,6 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
             ((IPointerEventInternal)this).triggeredByOS = true;
-            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
             isHandledByDraggable = false;
         }
 
@@ -1158,24 +1158,24 @@ namespace UnityEngine.UIElements
                 {
                     using (var evt = MouseDownEvent.GetPooled(this))
                     {
-                        evt.target = target;
-                        evt.target.SendEvent(evt);
+                        evt.elementTarget = elementTarget;
+                        elementTarget.SendEvent(evt);
                     }
                 }
                 else if (imguiEvent != null && imguiEvent.rawType == EventType.MouseUp)
                 {
                     using (var evt = MouseUpEvent.GetPooled(this))
                     {
-                        evt.target = target;
-                        evt.target.SendEvent(evt);
+                        evt.elementTarget = elementTarget;
+                        elementTarget.SendEvent(evt);
                     }
                 }
                 else
                 {
                     using (var evt = MouseMoveEvent.GetPooled(this))
                     {
-                        evt.target = target;
-                        evt.target.SendEvent(evt);
+                        evt.elementTarget = elementTarget;
+                        elementTarget.SendEvent(evt);
                     }
                 }
             }
@@ -1217,7 +1217,6 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
             ((IPointerEventInternal)this).triggeredByOS = true;
-            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1262,7 +1261,6 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
                 EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
-            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1286,8 +1284,8 @@ namespace UnityEngine.UIElements
             {
                 using (var evt = MouseUpEvent.GetPooled(this))
                 {
-                    evt.target = target;
-                    evt.target.SendEvent(evt);
+                    evt.elementTarget = elementTarget;
+                    elementTarget.SendEvent(evt);
                 }
             }
 
@@ -1327,7 +1325,6 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
-            ((IPointerEventInternal)this).recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1351,8 +1348,8 @@ namespace UnityEngine.UIElements
             {
                 using (var evt = MouseUpEvent.GetPooled(this))
                 {
-                    evt.target = target;
-                    target.SendEvent(evt);
+                    evt.elementTarget = elementTarget;
+                    elementTarget.SendEvent(evt);
                 }
             }
 
@@ -1407,16 +1404,20 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
-        internal static ClickEvent GetPooled(PointerUpEvent pointerEvent, int clickCount)
+        internal static ClickEvent GetPooled(IPointerEvent pointerEvent, int clickCount)
         {
-            var evt = PointerEventBase<ClickEvent>.GetPooled((IPointerEvent)pointerEvent);
+            var evt = PointerEventBase<ClickEvent>.GetPooled(pointerEvent);
             evt.clickCount = clickCount;
             return evt;
         }
+
+        // Note that ClickDetector always sends ClickEvents with an assigned target. However, we're not assuming we can
+        // dispatch directly to target because users may send their own ClickEvents with a position and no target.
     }
 
     /// <summary>
     /// This event is sent when a pointer enters a VisualElement or one of its descendants.
+    /// The event is cancellable, it does not trickle down, and it does not bubble up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerEnterEvent : PointerEventBase<PointerEnterEvent>
@@ -1447,10 +1448,16 @@ namespace UnityEngine.UIElements
         {
             LocalInit();
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer exits an element and all of its descendants.
+    /// The event is cancellable, it does not trickle down, and it does not bubble up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerLeaveEvent : PointerEventBase<PointerLeaveEvent>
@@ -1481,10 +1488,16 @@ namespace UnityEngine.UIElements
         {
             LocalInit();
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer enters an element.
+    /// The event trickles down, it bubbles up, and it is cancellable.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerOverEvent : PointerEventBase<PointerOverEvent>
@@ -1493,10 +1506,16 @@ namespace UnityEngine.UIElements
         {
             SetCreateFunction(() => new PointerOverEvent());
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer exits an element.
+    /// The event trickles down, it bubbles up, and it is cancellable.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerOutEvent : PointerEventBase<PointerOutEvent>
@@ -1506,6 +1525,9 @@ namespace UnityEngine.UIElements
             SetCreateFunction(() => new PointerOutEvent());
         }
 
-
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
+        }
     }
 }

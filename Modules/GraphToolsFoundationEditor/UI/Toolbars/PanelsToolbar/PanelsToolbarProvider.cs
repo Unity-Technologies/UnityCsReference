@@ -1,0 +1,21 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+
+namespace Unity.GraphToolsFoundation.Editor
+{
+    /// <summary>
+    /// Default implementation of <see cref="OverlayToolbarProvider"/> for the toggle toolbar.
+    /// </summary>
+    class PanelsToolbarProvider : OverlayToolbarProvider
+    {
+        /// <inheritdoc />
+        public override IEnumerable<string> GetElementIds()
+        {
+            return new[] { BlackboardPanelToggle.id, InspectorPanelToggle.id, MiniMapPanelToggle.id };
+        }
+    }
+}

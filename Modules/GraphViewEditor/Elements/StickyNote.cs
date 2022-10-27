@@ -29,7 +29,7 @@ namespace UnityEditor.Experimental.GraphView
         public static StickyNoteChangeEvent GetPooled(StickyNote target, StickyNoteChange change)
         {
             var evt = GetPooled();
-            evt.target = target;
+            evt.elementTarget = target;
             evt.change = change;
             return evt;
         }
@@ -384,7 +384,10 @@ namespace UnityEditor.Experimental.GraphView
 
         void NotifyChange(StickyNoteChange change)
         {
-            panel.dispatcher.Dispatch(StickyNoteChangeEvent.GetPooled(this, change), panel, DispatchMode.Queued);
+            using (var evt = StickyNoteChangeEvent.GetPooled(this, change))
+            {
+                SendEvent(evt);
+            }
         }
 
         void OnContentsMouseDown(MouseDownEvent e)

@@ -4,10 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
+using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {
-    class PropagationPaths
+    class PropagationPaths : IDisposable
     {
         static readonly ObjectPool<PropagationPaths> s_Pool = new ObjectPool<PropagationPaths>(() => new PropagationPaths());
 
@@ -33,24 +35,17 @@ namespace UnityEngine.UIElements
             bubbleUpPath = new List<VisualElement>(k_DefaultPropagationDepth);
         }
 
-        public PropagationPaths(PropagationPaths paths)
+        public PropagationPaths(PropagationPaths paths) : this()
         {
-            trickleDownPath = new List<VisualElement>(paths.trickleDownPath);
-            targetElements = new List<VisualElement>(paths.targetElements);
-            bubbleUpPath = new List<VisualElement>(paths.bubbleUpPath);
+            if (paths != null)
+            {
+                trickleDownPath.AddRange(paths.trickleDownPath);
+                targetElements.AddRange(paths.targetElements);
+                bubbleUpPath.AddRange(paths.bubbleUpPath);
+            }
         }
 
-        internal static PropagationPaths Copy(PropagationPaths paths)
-        {
-            PropagationPaths copyPaths = s_Pool.Get();
-            copyPaths.trickleDownPath.AddRange(paths.trickleDownPath);
-            copyPaths.targetElements.AddRange(paths.targetElements);
-            copyPaths.bubbleUpPath.AddRange(paths.bubbleUpPath);
-
-            return copyPaths;
-        }
-
-        public static PropagationPaths Build(VisualElement elem, EventBase evt)
+        [NotNull] public static PropagationPaths Build(VisualElement elem, EventBase evt)
         {
             PropagationPaths paths = s_Pool.Get();
             var eventCategory = evt.eventCategory;
@@ -82,10 +77,40 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+
+            EventDebugger.LogPropagationPaths(evt, paths);
+
             return paths;
         }
 
-        public void Release()
+        [NotNull] public static PropagationPaths BuildAtTarget(VisualElement elem, EventBase evt)
+        {
+            PropagationPaths paths = s_Pool.Get();
+            var eventCategory = evt.eventCategory;
+
+            // Skip element if it has no event callbacks, default action, or default action at target
+            if (elem.HasEventCallbacksOrDefaultActions(eventCategory))
+                paths.targetElements.Add(elem);
+
+            // Go through the entire hierarchy. Don't bother checking elem.HasParentEventCallbacks because
+            // 1. It too goes through the entire parent hierarchy, and
+            // 2. It would require dirtying the parent categories when we set isCompositeRoot, so more overhead
+            for (var ve = elem.nextParentWithEventCallback; ve != null; ve = ve.nextParentWithEventCallback)
+            {
+                if (ve.isCompositeRoot && !evt.ignoreCompositeRoots)
+                {
+                    // Callback for elem must be called at the Target phase. Skip if no callback.
+                    if (ve.HasEventCallbacksOrDefaultActions(eventCategory))
+                        paths.targetElements.Add(ve);
+                }
+            }
+
+            EventDebugger.LogPropagationPaths(evt, paths);
+
+            return paths;
+        }
+
+        public void Dispose()
         {
             // Empty paths to avoid leaking VisualElements.
             bubbleUpPath.Clear();

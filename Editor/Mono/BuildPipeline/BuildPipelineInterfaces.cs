@@ -11,6 +11,8 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.Profiling;
 using UnityEditor.Rendering;
 using UnityEngine.Scripting;
+using UnityEditor.AssetImporters;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor.Build
 {
@@ -225,8 +227,9 @@ namespace UnityEditor.Build
 
         private class AttributeCallbackWrapper : IPostprocessBuildWithReport, IProcessSceneWithReport, IActiveBuildTargetChanged
         {
-            int m_callbackOrder;
-            MethodInfo m_method;
+            internal int m_callbackOrder;
+            internal MethodInfo m_method;
+
             public int callbackOrder { get { return m_callbackOrder; } }
 
             public AttributeCallbackWrapper(MethodInfo m)
@@ -522,6 +525,40 @@ namespace UnityEditor.Build
                 },
                 report && ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0));
 #pragma warning restore 618
+        }
+
+        [RequiredByNativeCode]
+        internal static Hash128 OnSceneProcess_HashVersion()
+        {
+            Hash128 hashVersion = new Hash128();
+
+            Type versionAttrribute = typeof(BuildCallbackVersionAttribute);
+#pragma warning disable 618
+            if (processors.sceneProcessors != null)
+            {
+                foreach (IProcessScene processor in processors.sceneProcessors)
+                {
+                    Type processorType = processor.GetType();
+                    hashVersion.Append(processorType.AssemblyQualifiedName);
+
+                    BuildCallbackVersionAttribute attribute = Attribute.GetCustomAttribute(processorType, versionAttrribute, false) as BuildCallbackVersionAttribute;
+                    hashVersion.Append(attribute != null ? attribute.Version : 1);
+                }
+            }
+#pragma warning restore 618
+
+            if (processors.sceneProcessorsWithReport != null)
+            {
+                foreach (IProcessSceneWithReport processor in processors.sceneProcessorsWithReport)
+                {
+                    Type processorType = processor.GetType();
+                    hashVersion.Append(processorType.AssemblyQualifiedName);
+
+                    BuildCallbackVersionAttribute attribute = Attribute.GetCustomAttribute(processorType, versionAttrribute, false) as BuildCallbackVersionAttribute;
+                    hashVersion.Append(attribute != null ? attribute.Version : 1);
+                }
+            }
+            return hashVersion;
         }
 
         [RequiredByNativeCode]

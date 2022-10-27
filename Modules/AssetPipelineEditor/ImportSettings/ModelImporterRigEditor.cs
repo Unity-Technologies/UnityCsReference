@@ -7,6 +7,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using UnityEditor.AssetImporters;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -48,11 +49,6 @@ namespace UnityEditor
         SerializedProperty m_SrcHasExtraRoot;
         [CacheProperty("m_HumanDescription.m_HasExtraRoot")]
         SerializedProperty m_DstHasExtraRoot;
-
-        [CacheProperty]
-        SerializedProperty m_RigImportErrors;
-        [CacheProperty]
-        SerializedProperty m_RigImportWarnings;
 
         [CacheProperty("m_HumanDescription.m_Human")]
         SerializedProperty m_HumanBoneArray;
@@ -96,6 +92,7 @@ namespace UnityEditor
         }
 
         private bool m_CanMultiEditTransformList;
+        private const string k_RigErrorPrefix = "Rig Error: ";
 
         bool m_IsBiped = false;
         List<string> m_BipedMappingReport = null;
@@ -560,23 +557,20 @@ With this option, this model will not create any avatar but only import animatio
         {
             serializedObject.Update();
 
-            string errors = m_RigImportErrors.stringValue;
-            string warnings = m_RigImportWarnings.stringValue;
+            ImportLog importLog = AssetImporter.GetImportLog(singleImporter.assetPath);
+            ImportLog.ImportLogEntry[] importRigErrors = importLog ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Error && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+            ImportLog.ImportLogEntry[] importRigWarnings = importLog ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Warning && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
 
-            if (errors.Length > 0)
+            if (importRigErrors.Length > 0)
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.HelpBox("Error(s) found while importing rig in this animation file. Open \"Import Messages\" foldout below for more details", MessageType.Error);
             }
-            else
+            else if (importRigWarnings.Length > 0)
             {
-                if (warnings.Length > 0)
-                {
-                    EditorGUILayout.Space();
-                    EditorGUILayout.HelpBox("Warning(s) found while importing rig in this animation file. Open \"Import Messages\" foldout below for more details", MessageType.Warning);
-                }
+                EditorGUILayout.Space();
+                EditorGUILayout.HelpBox("Warning(s) found while importing rig in this animation file. Open \"Import Messages\" foldout below for more details", MessageType.Warning);
             }
-
 
             // Animation type
             EditorGUI.BeginChangeCheck();
@@ -655,8 +649,8 @@ With this option, this model will not create any avatar but only import animatio
                     }
                 }
             }
-
-            if (errors.Length > 0 || warnings.Length > 0)
+            
+            if (importRigErrors.Length > 0 || importRigWarnings.Length > 0)
             {
                 EditorGUILayout.Space();
 
@@ -664,10 +658,11 @@ With this option, this model will not create any avatar but only import animatio
 
                 if (importMessageFoldout)
                 {
-                    if (errors.Length > 0)
-                        EditorGUILayout.HelpBox(errors, MessageType.None);
-                    else if (warnings.Length > 0)
-                        EditorGUILayout.HelpBox(warnings, MessageType.None);
+                    foreach (var importRigError in importRigErrors)
+                        EditorGUILayout.HelpBox(importRigError.message, MessageType.Error);
+
+                    foreach (var importRigWarning in importRigWarnings)
+                        EditorGUILayout.HelpBox(importRigWarning.message, MessageType.Warning);
                 }
             }
         }

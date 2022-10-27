@@ -17,6 +17,7 @@ namespace UnityEditor.DeploymentTargets
         //  changes between launches.
         internal static readonly DeploymentTargetId kDefault = new DeploymentTargetId("__builtin__target_default");
         internal static readonly DeploymentTargetId kAll = new DeploymentTargetId("__builtin__target_all");
+        internal static readonly DeploymentTargetId kEnterIP = new DeploymentTargetId("__builtin__enter_ip");
 
         public string id;
 

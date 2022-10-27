@@ -153,8 +153,8 @@ namespace UnityEngine.UIElements
                 using (var evt = GeometryChangedEvent.GetPooled(changeElement.Key, ve.lastLayout))
                 {
                     evt.layoutPass = currentLayoutPass;
-                    evt.target = ve;
-                    ve.HandleEventAtTargetAndDefaultPhase(evt);
+                    evt.elementTarget = ve;
+                    EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(evt, panel, ve);
                 }
             }
         }

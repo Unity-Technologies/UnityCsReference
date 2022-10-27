@@ -663,7 +663,7 @@ namespace Unity.UI.Builder
             {
                 ClearHighlightOverlay();
 
-                var explorerItem = e.target as VisualElement;
+                var explorerItem = e.elementTarget;
                 var documentElement = explorerItem?.GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
                 HighlightAllRelatedDocumentElements(documentElement);
             });

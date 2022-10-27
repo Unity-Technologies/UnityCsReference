@@ -135,6 +135,7 @@ namespace UnityEditor
         public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }
         extern public static bool Contains(int instanceID);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.CreateFolder() was called as part of running an import in a worker process.")]
         extern public static string CreateFolder(string parentFolder, string newFolderName);
 
         public static bool IsMainAsset(Object obj) { return IsMainAsset(obj.GetInstanceID()); }
@@ -225,12 +226,17 @@ namespace UnityEditor
         extern public static void ReleaseCachedFileHandles();
 
         extern public static string ValidateMoveAsset(string oldPath, string newPath);
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.MoveAsset() was called as part of running an import in a worker process.")]
         extern public static string MoveAsset(string oldPath, string newPath);
         [NativeThrows]
         extern public static string ExtractAsset(Object asset, string newPath);
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.RenameAsset() was called as part of running an import in a worker process.")]
         extern public static string RenameAsset(string pathName, string newName);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.MoveAssetToTrash() was called as part of running an import in a worker process.")]
         extern public static bool MoveAssetToTrash(string path);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "Asset deletion method was called as part of running an import in a worker process.")]
         extern private static bool DeleteAssetsCommon(string[] paths, object outFailedPaths, bool moveAssetsToTrash);
 
         public static bool MoveAssetsToTrash(string[] paths, List<string> outFailedPaths)
@@ -242,6 +248,7 @@ namespace UnityEditor
             return DeleteAssetsCommon(paths, outFailedPaths, true);
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.DeleteAsset() was called as part of running an import in a worker process.")]
         extern public static bool DeleteAsset(string path);
 
         public static bool DeleteAssets(string[] paths, List<string> outFailedPaths)
@@ -255,6 +262,7 @@ namespace UnityEditor
 
         [uei.ExcludeFromDocs] public static void ImportAsset(string path) { ImportAsset(path, ImportAssetOptions.Default); }
         extern public static void ImportAsset(string path, [uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.CopyAsset() was called as part of running an import in a worker process.")]
         extern public static bool CopyAsset(string path, string newPath);
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be copied during AssetImporting as this leads to new asset creation in the middle of an import.")]
@@ -270,14 +278,16 @@ namespace UnityEditor
         [NativeThrows]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be created during gathering of import dependencies")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Warning, "AssetDatabase.CreateAsset() was called as part of running an import. Please make sure this function is not called from ScriptedImporters or PostProcessors, as it is a source of non-determinism and will be disallowed in a forthcoming release.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.CreateAsset() was called as part of running an import in a worker process.")]
         extern public static void CreateAsset([NotNull] Object asset, string path);
         [NativeThrows]
         extern static internal void CreateAssetFromObjects(Object[] assets, string path);
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.AddObjectToAsset() was called as part of running an import in a worker process.")]
         extern public static void AddObjectToAsset([NotNull] Object objectToAdd, string path);
-
         static public void AddObjectToAsset(Object objectToAdd, Object assetObject) { AddObjectToAsset_Obj(objectToAdd, assetObject); }
         [NativeThrows]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.AddObjectToAsset() was called as part of running an import in a worker process.")]
         extern private static void AddObjectToAsset_Obj([NotNull] Object newAsset, [NotNull] Object sameAssetFile);
 
         extern static internal void AddInstanceIDToAssetWithRandomFileId(int instanceIDToAdd, Object assetObject, bool hide);
@@ -786,6 +796,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetDatabase::RemoveObjectFromAsset")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.RemoveObjectFromAsset() was called as part of running an import in a worker process.")]
         extern public static void RemoveObjectFromAsset([NotNull] Object objectToRemove);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Cannot call AssetDatabase.LoadObjectAsync during the gathering of import dependencies.")]
@@ -1105,6 +1116,6 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::ClearImportWorkerModeFlags")]
         internal extern static void ClearImportWorkerModeFlags(ImportWorkerModeFlags flags);
         [FreeFunction("AssetDatabase::GetImportWorkerModeFlags")]
-         internal extern static ImportWorkerModeFlags GetImportWorkerModeFlags();
+        internal extern static ImportWorkerModeFlags GetImportWorkerModeFlags();
     }
 }

@@ -121,7 +121,7 @@ namespace UnityEditor
         [FreeFunction("InstantiateObjectRemoveAllNonAnimationComponents")]
         private static extern Object Internal_InstantiateRemoveAllNonAnimationComponentsSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos, Quaternion rot);
 
-        [FreeFunction("UnloadUnusedAssetsImmediate")]
+        [FreeFunction("ManagedUnloadUnusedAssetsImmediate")]
         private static extern void UnloadUnusedAssets(bool managedObjects);
 
         [Obsolete("Use EditorUtility.UnloadUnusedAssetsImmediate instead", false)]

@@ -781,17 +781,7 @@ namespace UnityEngine.UIElements
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
             var initFunc = initEditorUpdater ?? initEditorUpdaterFunc;
             initFunc.Invoke(this, m_VisualTreeUpdater);
-            m_RootContainer = new VisualElement
-            {
-                name = VisualElementUtils.GetUniqueName("unity-panel-container"),
-                viewDataKey = "PanelContainer",
-                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore,
-
-                // Setting eventCallbackCategories will ensure panel.visualTree is always a valid next parent.
-                // This allows deeper elements to have an active tracking version based on their panel
-                // if they would not otherwise have a next parent with callbacks.
-                eventCallbackCategories = 1 << (int)EventCategory.Reserved
-            };
+            m_RootContainer = contextType == ContextType.Editor ? new EditorPanelRootElement() : new PanelRootElement();
 
             // Required!
             visualTree.SetPanel(this);
@@ -1288,5 +1278,52 @@ namespace UnityEngine.UIElements
     internal interface IRuntimePanelComponent
     {
         IPanel panel { get; set; }
+    }
+
+    internal class PanelRootElement : VisualElement
+    {
+        public PanelRootElement()
+        {
+            name = VisualElementUtils.GetUniqueName("unity-panel-container");
+            viewDataKey = "PanelContainer";
+            pickingMode = PickingMode.Ignore;
+
+            // Setting eventCallbackCategories will ensure panel.visualTree is always a valid next parent.
+            // This allows deeper elements to have an active tracking version based on their panel
+            // if they would not otherwise have a next parent with callbacks.
+            eventCallbackCategories = 1 << (int) EventCategory.Reserved;
+        }
+    }
+
+    internal class EditorPanelRootElement : PanelRootElement
+    {
+        public EditorPanelRootElement()
+        {
+            pickingMode = PickingMode.Position;
+
+            RegisterCallback<ExecuteCommandEvent>(OnEventCompletedAtAnyTarget);
+            RegisterCallback<ValidateCommandEvent>(OnEventCompletedAtAnyTarget);
+            RegisterCallback<DragExitedEvent>(OnEventCompletedAtAnyTarget);
+            RegisterCallback<MouseEnterWindowEvent>(OnEventCompletedAtAnyTarget);
+            RegisterCallback<MouseLeaveWindowEvent>(OnEventCompletedAtAnyTarget);
+            RegisterCallback<IMGUIEvent>(OnEventCompletedAtAnyTarget);
+        }
+
+        private void OnEventCompletedAtAnyTarget(EventBase evt)
+        {
+            // Send to other IMGUIContainers. If target is an IMGUIContainer, already processed, it will be skipped.
+            EventDispatchUtilities.PropagateToRemainingIMGUIContainers(evt, this);
+
+            // Stop propagateToIMGUI to prevent ExecuteDefaultActionAtTarget below from also kicking in.
+            evt.propagateToIMGUI = false;
+        }
+
+        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            // Send to all IMGUIContainers. Current target is an EditorPanelRootElement so it doesn't specially need to be skipped.
+            if (!evt.isPropagationStopped && evt.propagateToIMGUI)
+                EventDispatchUtilities.PropagateToRemainingIMGUIContainers(evt, this);
+        }
     }
 }

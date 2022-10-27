@@ -50,5 +50,10 @@ namespace UnityEngine.UIElements
         {
             LocalInit();
         }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToPanelRoot(this, panel);
+        }
     }
 }

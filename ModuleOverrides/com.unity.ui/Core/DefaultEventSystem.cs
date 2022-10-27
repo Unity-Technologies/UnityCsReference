@@ -295,7 +295,7 @@ namespace UnityEngine.UIElements
             {
                 using (EventBase evt = evtFactory(arg))
                 {
-                    evt.target = m_PreviousFocusedElement ?? m_PreviousFocusedPanel.visualTree;
+                    evt.elementTarget = (VisualElement) m_PreviousFocusedElement ?? m_PreviousFocusedPanel.visualTree;
                     m_PreviousFocusedPanel.visualTree.SendEvent(evt);
                     UpdateFocusedPanel(m_PreviousFocusedPanel);
                     return;
@@ -316,7 +316,7 @@ namespace UnityEngine.UIElements
                     {
                         // Since there was no focused element, send event to the visualTree to avoid reacting to a
                         // focus change in between events.
-                        evt.target = runtimePanel.visualTree;
+                        evt.elementTarget = runtimePanel.visualTree;
                         runtimePanel.visualTree.SendEvent(evt);
 
                         if (runtimePanel.focusController.focusedElement != null)

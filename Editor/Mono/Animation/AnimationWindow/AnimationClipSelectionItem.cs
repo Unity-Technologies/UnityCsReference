@@ -10,16 +10,18 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
+    [Serializable]
     internal class AnimationClipSelectionItem : AnimationWindowSelectionItem
     {
-        public static AnimationClipSelectionItem Create(AnimationClip animationClip, Object sourceObject)
+        public static AnimationClipSelectionItem Create(AnimationClip animationClip, Object sourceObject = null)
         {
-            AnimationClipSelectionItem selectionItem = CreateInstance(typeof(AnimationClipSelectionItem)) as AnimationClipSelectionItem;
-
-            selectionItem.gameObject = sourceObject as GameObject;
-            selectionItem.scriptableObject = sourceObject as ScriptableObject;
-            selectionItem.animationClip = animationClip;
-            selectionItem.id = 0; // no need for id since there's only one item in selection.
+            var selectionItem = new AnimationClipSelectionItem
+            {
+                gameObject = sourceObject as GameObject,
+                scriptableObject = sourceObject as ScriptableObject,
+                animationClip = animationClip,
+                id = 0
+            };
 
             return selectionItem;
         }

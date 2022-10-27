@@ -59,6 +59,7 @@ namespace UnityEditor.U2D
         [NativeName("sRGB")]
         private bool m_sRGB;
 
+        public int maxTextureSize { get { return m_MaxTextureSize; } }
         public int anisoLevel { get { return m_AnisoLevel; } set { m_AnisoLevel = value; } }
         public FilterMode filterMode { get { return (FilterMode)m_FilterMode; } set { m_FilterMode = (int)value; } }
         public bool generateMipMaps { get { return m_GenerateMipMaps; } set { m_GenerateMipMaps = value; } }

@@ -327,7 +327,7 @@ namespace UnityEngine.UIElements
 
             private void QueueEvent(EventBase evt, ElementPropertyPair epp)
             {
-                evt.target = epp.element;
+                evt.elementTarget = epp.element;
                 Queue<EventBase> queue;
 
                 if (!m_NextFrameEventsState.elementPropertyQueuedEvents.TryGetValue(epp, out queue))
@@ -492,7 +492,7 @@ namespace UnityEngine.UIElements
 
                 using (var evt = TransitionCancelEvent.GetPooled(new StylePropertyName(stylePropertyId), elapsedTimeMs / 1000.0f))
                 {
-                    evt.target = ve;
+                    evt.elementTarget = ve;
                     ve.SendEvent(evt);
                 }
             }

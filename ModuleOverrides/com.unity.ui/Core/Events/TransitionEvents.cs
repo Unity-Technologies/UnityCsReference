@@ -141,7 +141,6 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles;
-            propagateToIMGUI = false;
             stylePropertyNames.propertiesList.Clear();
             elapsedTime = default;
         }

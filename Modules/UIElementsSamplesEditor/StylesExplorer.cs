@@ -63,7 +63,7 @@ namespace UnityEditor.UIElements.Samples
 
         private static void ContainerGeometryChange(GeometryChangedEvent evt)
         {
-            var container = evt.target as VisualElement;
+            var container = evt.elementTarget;
             ContainerSetColumnCount(container);
         }
 

@@ -232,6 +232,11 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToFocusedElementOrPanelRoot(this, panel);
+        }
+
         protected KeyboardEventBase()
         {
             LocalInit();
@@ -287,7 +292,7 @@ namespace UnityEngine.UIElements
             {
                 using (var ne = NavigationSubmitEvent.GetPooled(NavigationDeviceType.Keyboard, modifiers))
                 {
-                    ne.target = leafTarget;
+                    ne.elementTarget = elementTarget;
                     panel.visualTree.SendEvent(ne);
                 }
             }
@@ -295,7 +300,7 @@ namespace UnityEngine.UIElements
             {
                 using (var ne = NavigationCancelEvent.GetPooled(NavigationDeviceType.Keyboard, modifiers))
                 {
-                    ne.target = leafTarget;
+                    ne.elementTarget = elementTarget;
                     panel.visualTree.SendEvent(ne);
                 }
             }
@@ -305,7 +310,7 @@ namespace UnityEngine.UIElements
                     shiftKey ? NavigationMoveEvent.Direction.Previous : NavigationMoveEvent.Direction.Next,
                     NavigationDeviceType.Keyboard, modifiers))
                 {
-                    ne.target = leafTarget;
+                    ne.elementTarget = elementTarget;
                     panel.visualTree.SendEvent(ne);
                 }
             }
@@ -318,7 +323,7 @@ namespace UnityEngine.UIElements
                     Vector2.down;
                 using (var ne = NavigationMoveEvent.GetPooled(d, NavigationDeviceType.Keyboard, modifiers))
                 {
-                    ne.target = leafTarget;
+                    ne.elementTarget = elementTarget;
                     panel.visualTree.SendEvent(ne);
                 }
             }

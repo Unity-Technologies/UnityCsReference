@@ -21,7 +21,7 @@ namespace UnityEditor
 
         [SerializeField] private TickHandler m_VTicks;
 
-        private List<float> m_TickCache = new List<float>(1000);
+        static readonly List<float> s_TickCache = new List<float>(1000);
 
         public TickHandler vTicks
         {
@@ -114,12 +114,12 @@ namespace UnityEditor
                 float strength = hTicks.GetStrengthOfLevel(l) * .9f;
                 if (strength > kTickRulerFatThreshold)
                 {
-                    m_TickCache.Clear();
-                    hTicks.GetTicksAtLevel(l, true, m_TickCache);
-                    for (int i = 0; i < m_TickCache.Count; i++)
+                    s_TickCache.Clear();
+                    hTicks.GetTicksAtLevel(l, true, s_TickCache);
+                    for (int i = 0; i < s_TickCache.Count; i++)
                     {
-                        if (m_TickCache[i] < 0) continue;
-                        int frame = Mathf.RoundToInt(m_TickCache[i] * frameRate);
+                        if (s_TickCache[i] < 0) continue;
+                        int frame = Mathf.RoundToInt(s_TickCache[i] * frameRate);
                         float x = FrameToPixel(frame, frameRate, position, theShowArea);
                         // Draw line
                         DrawVerticalLineFast(x, 0.0f, position.height, tickColor);
@@ -166,13 +166,13 @@ namespace UnityEditor
                 for (int l = 0; l < hTicks.tickLevels; l++)
                 {
                     float strength = hTicks.GetStrengthOfLevel(l) * .9f;
-                    m_TickCache.Clear();
-                    hTicks.GetTicksAtLevel(l, true, m_TickCache);
-                    for (int i = 0; i < m_TickCache.Count; i++)
+                    s_TickCache.Clear();
+                    hTicks.GetTicksAtLevel(l, true, s_TickCache);
+                    for (int i = 0; i < s_TickCache.Count; i++)
                     {
-                        if (m_TickCache[i] < hRangeMin || m_TickCache[i] > hRangeMax)
+                        if (s_TickCache[i] < hRangeMin || s_TickCache[i] > hRangeMax)
                             continue;
-                        int frame = Mathf.RoundToInt(m_TickCache[i] * frameRate);
+                        int frame = Mathf.RoundToInt(s_TickCache[i] * frameRate);
 
                         float height = useEntireHeight
                             ? position.height
@@ -192,19 +192,19 @@ namespace UnityEditor
             {
                 // Draw tick labels
                 int labelLevel = hTicks.GetLevelWithMinSeparation(kTickRulerDistLabel);
-                m_TickCache.Clear();
-                hTicks.GetTicksAtLevel(labelLevel, false, m_TickCache);
-                for (int i = 0; i < m_TickCache.Count; i++)
+                s_TickCache.Clear();
+                hTicks.GetTicksAtLevel(labelLevel, false, s_TickCache);
+                for (int i = 0; i < s_TickCache.Count; i++)
                 {
-                    if (m_TickCache[i] < hRangeMin || m_TickCache[i] > hRangeMax)
+                    if (s_TickCache[i] < hRangeMin || s_TickCache[i] > hRangeMax)
                         continue;
 
-                    int frame = Mathf.RoundToInt(m_TickCache[i] * frameRate);
+                    int frame = Mathf.RoundToInt(s_TickCache[i] * frameRate);
                     // Important to take floor of positions of GUI stuff to get pixel correct alignment of
                     // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
 
                     float labelpos = Mathf.Floor(FrameToPixel(frame, frameRate, position));
-                    string label = FormatTickTime(m_TickCache[i], frameRate, timeFormat);
+                    string label = FormatTickTime(s_TickCache[i], frameRate, timeFormat);
                     GUI.Label(new Rect(labelpos + 3, -1, 40, 20), label, timeAreaStyles.timelineTick);
                 }
             }

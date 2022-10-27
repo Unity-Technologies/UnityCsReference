@@ -35,9 +35,9 @@ namespace UnityEditor
         //is it placeholder curve
         private int   m_isPhantom;
 
-        //is it a unknow curve: mean it needs to be processed further more to find out what is this curve
+        //is it a unknown curve: mean it needs to be processed further more to find out what is this curve
         // This is necessary to support old user code using FloatCurve for non float type
-        private int  m_isUnknowCurve;
+        private int  m_isUnknownCurve;
 
         // This is only used internally for deleting curves
         internal int  m_ClassID;
@@ -103,7 +103,7 @@ namespace UnityEditor
             binding.m_isPPtrCurve = 0;
             binding.m_isDiscreteCurve = 0;
             binding.m_isSerializeReferenceCurve = 0;
-            binding.m_isUnknowCurve = 1;
+            binding.m_isUnknownCurve = 1;
 
             return binding;
         }
@@ -115,7 +115,7 @@ namespace UnityEditor
             binding.m_isPPtrCurve = 1;
             binding.m_isDiscreteCurve = 1;
             binding.m_isSerializeReferenceCurve = 0;
-            binding.m_isUnknowCurve = 0;
+            binding.m_isUnknownCurve = 0;
             return binding;
         }
 
@@ -126,7 +126,7 @@ namespace UnityEditor
             binding.m_isPPtrCurve = 0;
             binding.m_isDiscreteCurve = 1;
             binding.m_isSerializeReferenceCurve = 0;
-            binding.m_isUnknowCurve = 0;
+            binding.m_isUnknownCurve = 0;
 
             return binding;
         }
@@ -138,7 +138,7 @@ namespace UnityEditor
             binding.m_isPPtrCurve = isPPtr ? 1 : 0;
             binding.m_isDiscreteCurve = isDiscrete || isPPtr ? 1 : 0;
             binding.m_isSerializeReferenceCurve = 1;
-            binding.m_isUnknowCurve = 0;
+            binding.m_isUnknownCurve = 0;
 
             return binding;
         }

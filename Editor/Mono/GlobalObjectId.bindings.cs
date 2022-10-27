@@ -5,17 +5,22 @@
 using System;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using UnityEngine;
+using UnityEditor.Experimental;
 
 #pragma warning disable 649
 #pragma warning disable 169
 namespace UnityEditor
 {
+    [Serializable]
     [NativeHeader("Editor/Src/GlobalObjectId.h")]
-    public struct GlobalObjectId : IEquatable<GlobalObjectId>
+    public struct GlobalObjectId : IEquatable<GlobalObjectId>, IComparable<GlobalObjectId>
     {
         internal SceneObjectIdentifier  m_SceneObjectIdentifier;
         internal GUID                   m_AssetGUID;
         internal int                    m_IdentifierType;
+
+        internal enum IdentifierType { NullIdentifier = 0, ImportedAsset = 1, SceneObject = 2, SourceAsset = 3, BuiltInAsset = 4 };
 
         public ulong targetObjectId { get { return m_SceneObjectIdentifier.TargetObject; } }
         public ulong targetPrefabId { get { return m_SceneObjectIdentifier.TargetPrefab; } }
@@ -54,10 +59,20 @@ namespace UnityEditor
 
         public bool Equals(GlobalObjectId other)
         {
-            return m_SceneObjectIdentifier.TargetObject == other.m_SceneObjectIdentifier.TargetObject &&
-                m_SceneObjectIdentifier.TargetPrefab == other.m_SceneObjectIdentifier.TargetPrefab &&
+            return m_SceneObjectIdentifier.Equals(other.m_SceneObjectIdentifier) &&
                 m_AssetGUID == other.m_AssetGUID &&
                 m_IdentifierType == other.m_IdentifierType;
+        }
+
+        public int CompareTo(GlobalObjectId other)
+        {
+            if (m_AssetGUID != other.m_AssetGUID)
+                return m_AssetGUID.CompareTo(other.assetGUID);
+            if (!m_SceneObjectIdentifier.Equals(other.m_SceneObjectIdentifier))
+                return m_SceneObjectIdentifier.CompareTo(other.m_SceneObjectIdentifier);
+            if (m_IdentifierType != other.m_IdentifierType)
+                return m_IdentifierType.CompareTo(m_IdentifierType);
+            return 0;
         }
 
         public static bool TryParse(string stringValue, out GlobalObjectId id)

@@ -934,7 +934,7 @@ namespace UnityEditor.UIElements
         {
             using (var evt = SerializedPropertyChangeEvent.GetPooled(m_SerializedProperty))
             {
-                evt.target = this;
+                evt.elementTarget = this;
                 SendEvent(evt);
             }
         }

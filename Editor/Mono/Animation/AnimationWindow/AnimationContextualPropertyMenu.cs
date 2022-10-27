@@ -2,16 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 using UnityEditor;
-using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
-    internal class AnimationPropertyContextualMenu
+    class AnimationPropertyContextualMenu
     {
         public static AnimationPropertyContextualMenu Instance = new AnimationPropertyContextualMenu();
 

@@ -84,6 +84,12 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(m_Sprite, Styles.spriteLabel);
+            using (new EditorGUI.DisabledScope(m_Sprite.objectReferenceValue == null))
+            {
+                if(SpriteUtilityWindow.DoOpenSpriteEditorWindowUI())
+                    SpriteUtilityWindow.ShowSpriteEditorWindow(m_Sprite.objectReferenceValue);
+            }
+            GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_Color, Styles.colorLabel, true);
 
             FlipToggles();

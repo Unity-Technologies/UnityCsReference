@@ -10,6 +10,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
 using System.Globalization;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -104,10 +105,6 @@ namespace UnityEditor
 
 #pragma warning disable 0649
         [CacheProperty]
-        private SerializedProperty m_RigImportErrors;
-        [CacheProperty]
-        private SerializedProperty m_RigImportWarnings;
-        [CacheProperty]
         private SerializedProperty m_AnimationImportErrors;
         [CacheProperty]
         private SerializedProperty m_AnimationImportWarnings;
@@ -119,12 +116,14 @@ namespace UnityEditor
 
         string m_Errors;
         string m_Warnings;
-        string m_RigWarnings;
         string m_RetargetWarnings;
 
         GUIContent[] m_MotionNodeList;
         private static bool s_MotionNodeFoldout = false;
         private static bool s_ImportMessageFoldout = false;
+
+        //Prefix used to pick up errors concerning the rig importation
+        private const string k_RigErrorPrefix = "Rig Error: ";
 
         ReorderableList m_ClipList;
 
@@ -242,7 +241,6 @@ namespace UnityEditor
             // caching errors values now as they can't change until next re-import that will triggers a new OnEnable
             m_Errors = m_AnimationImportErrors.stringValue;
             m_Warnings = m_AnimationImportWarnings.stringValue;
-            m_RigWarnings = m_RigImportWarnings.stringValue;
             m_RetargetWarnings = m_AnimationRetargetingWarnings.stringValue;
 
             RegisterListeners();
@@ -369,7 +367,7 @@ namespace UnityEditor
             DeserializeClips();
         }
 
-        void AnimationClipGUI()
+        void AnimationClipGUI(ImportLog.ImportLogEntry[] importRigWarnings)
         {
             if (m_Errors.Length > 0)
             {
@@ -377,7 +375,7 @@ namespace UnityEditor
             }
             else
             {
-                if (m_RigWarnings.Length > 0)
+                if (importRigWarnings.Length > 0)
                 {
                     EditorGUILayout.HelpBox(styles.WarningsFoundWhileImportingRig);
                 }
@@ -456,6 +454,10 @@ namespace UnityEditor
 
             if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)
             {
+                ImportLog importLog = AssetImporter.GetImportLog(singleImporter.assetPath);
+                ImportLog.ImportLogEntry[] importRigErrors = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Error && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+                ImportLog.ImportLogEntry[] importRigWarnings = importLog != null ? importLog.logEntries.Where(x => x.flags == ImportLogFlags.Warning && x.message.StartsWith(k_RigErrorPrefix)).ToArray() : new ImportLog.ImportLogEntry[0];
+
                 bool hasNoValidAnimationData = targets.Length == 1 && !m_ContainsAnimation.boolValue && singleImporter.animationType != ModelImporterAnimationType.None;
                 if (IsDeprecatedMultiAnimationRootImport())
                     EditorGUILayout.HelpBox(styles.AnimationDataWas);
@@ -467,9 +469,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        string errors = m_RigImportErrors.stringValue;
-
-                        if (errors.Length > 0)
+                        if (importRigErrors.Length > 0)
                         {
                             EditorGUILayout.HelpBox(styles.ErrorsFoundWhileImporting);
                         }
@@ -485,7 +485,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsAre);
                 else if (singleImporter.importedTakeInfos.Length != 0)
                 {
-                    AnimationClipGUI();
+                    AnimationClipGUI(importRigWarnings);
                 }
             }
         }

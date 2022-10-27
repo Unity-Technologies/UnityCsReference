@@ -83,6 +83,17 @@ namespace Unity.UI.Builder
             m_Root.Add(m_DraggedElement);
         }
 
+        internal void Reset()
+        {
+            m_Active = false;
+            m_WeStartedTheDrag = false;
+            m_Start = default;
+            m_LastHoverElement = default;
+            m_LastRowHoverElement = default;
+            m_LastHoverElementChildIndex = default;
+            s_CurrentlyActiveBuilderDragger = default;
+        }
+
         protected virtual VisualElement CreateDraggedElement()
         {
             return new VisualElement();
@@ -189,7 +200,7 @@ namespace Unity.UI.Builder
 
         void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
         {
-            var target = evt.target as VisualElement;
+            var target = evt.elementTarget;
 
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
@@ -522,7 +533,7 @@ namespace Unity.UI.Builder
                 || evt.modifiers.HasFlag(EventModifiers.Command))
                 return;
 
-            var element = evt.target as VisualElement;
+            var element = evt.elementTarget;
             var ancestor = element is BuilderExplorerItem ? element as BuilderExplorerItem : element?.GetFirstAncestorOfType<BuilderExplorerItem>();
             if (ancestor == null)
                 return;
@@ -574,7 +585,8 @@ namespace Unity.UI.Builder
                     int index;
                     GetPickedElementFromHoverElement(out newParent, out index);
 
-                    PerformAction(newParent, DestinationPane.Hierarchy, localHierarchyMouse, index);
+                    if (newParent != null)
+                        PerformAction(newParent, DestinationPane.Hierarchy, localHierarchyMouse, index);
                 }
                 else if (builderStylesheetRoot != null && builderStylesheetRoot.ContainsPoint(localStylesheetMouse))
                 {
@@ -582,7 +594,8 @@ namespace Unity.UI.Builder
                     int index;
                     GetPickedElementFromHoverElement(out newParent, out index);
 
-                    PerformAction(newParent, DestinationPane.Stylesheet, localStylesheetMouse, index);
+                    if (newParent != null)
+                        PerformAction(newParent, DestinationPane.Stylesheet, localStylesheetMouse, index);
                 }
                 else if (viewport != null && m_Canvas.ContainsPoint(localCanvasMouse))
                 {

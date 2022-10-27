@@ -108,6 +108,8 @@ namespace UnityEditor
             FailedTypeMismatch
         }
 
+        public static extern bool UseParallelAssetBundleBuilding { get; set; }
+
         [NativeMethod("AddConfigObject")]
         static extern ConfigObjectResult AddConfigObjectInternal(string name, Object obj, bool overwrite);
         public static extern bool RemoveConfigObject(string name);

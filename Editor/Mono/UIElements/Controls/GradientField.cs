@@ -50,7 +50,7 @@ namespace UnityEditor.UIElements
                 {
                     using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(rawValue, value))
                     {
-                        evt.target = this;
+                        evt.elementTarget = this;
                         SetValueWithoutNotify(value);
                         SendEvent(evt);
                     }

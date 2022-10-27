@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Internal;
 
 using Object = UnityEngine.Object;
+using UnityEngine.Animations;
 
 namespace UnityEditor
 {
@@ -52,6 +53,7 @@ namespace UnityEditor
     }
 
     [NativeHeader("Editor/Src/Animation/AnimationUtility.bindings.h")]
+    [NativeHeader("Modules/Animation/ScriptBindings/GenericBinding.bindings.h")]
     public partial class AnimationUtility
     {
         public enum CurveModifiedType
@@ -454,5 +456,8 @@ namespace UnityEditor
 
         [Obsolete("SetAnimationType is no longer supported.")]
         public static void SetAnimationType(AnimationClip clip, ModelImporterAnimationType type) {}
+
+
+        extern public static GenericBinding[] EditorCurveBindingsToGenericBindings(EditorCurveBinding[] editorCurveBindings);
     }
 }

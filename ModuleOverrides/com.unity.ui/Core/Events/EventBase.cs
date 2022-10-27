@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEngine.UIElements.Experimental;
-
 
 namespace UnityEngine.UIElements
 {
@@ -36,6 +36,7 @@ namespace UnityEngine.UIElements
             Cancellable = 4,
             SkipDisabledElements = 8,
             IgnoreCompositeRoots = 16,
+            BubblesOrTricklesDown = Bubbles | TricklesDown,
         }
 
         [Flags]
@@ -48,11 +49,10 @@ namespace UnityEngine.UIElements
             Dispatching = 8,
             Pooled = 16,
             IMGUIEventIsValid = 32,
-            StopDispatch = 64,
-            PropagateToIMGUI = 128,
-            Dispatched = 512,
-            Processed = 1024,
-            ProcessedByFocusController = 2048,
+            PropagateToIMGUI = 64,
+            Dispatched = 128,
+            Processed = 256,
+            ProcessedByFocusController = 512,
         }
 
         internal EventCategory eventCategory { get; }
@@ -76,8 +76,6 @@ namespace UnityEngine.UIElements
         }
 
         internal EventPropagation propagation { get; set; }
-
-        internal PropagationPaths path { get; set; }
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
@@ -110,6 +108,11 @@ namespace UnityEngine.UIElements
             PostDispatch();
 #pragma warning restore 618
             processed = true;
+        }
+
+        internal virtual void Dispatch([NotNull] BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DefaultDispatch(this, panel);
         }
 
         /// <summary>
@@ -150,9 +153,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool bubblesOrTricklesDown =>
-            (propagation & (EventPropagation.Bubbles | EventPropagation.TricklesDown)) != 0;
-
         internal bool skipDisabledElements
         {
             get { return (propagation & EventPropagation.SkipDisabledElements) != 0; }
@@ -185,32 +185,21 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true.
-        internal IEventHandler leafTarget { get; private set; }
+        internal bool bubblesOrTricklesDown => (propagation & EventPropagation.BubblesOrTricklesDown) != 0;
 
-        IEventHandler m_Target;
+        // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true.
+        internal VisualElement leafTarget { get; set; }
+
+        internal VisualElement elementTarget { get; set; }
 
         /// <summary>
-        /// The target visual element that received this event. Unlike currentTarget, this target does not change when the event is sent to other elements along the propagation path.
+        /// The target visual element that received this event. Unlike currentTarget, this target does not change when
+        /// the event is sent to other elements along the propagation path.
         /// </summary>
         public IEventHandler target
         {
-            get { return m_Target; }
-            set
-            {
-                m_Target = value;
-                if (leafTarget == null)
-                {
-                    leafTarget = value;
-                }
-            }
-        }
-
-        internal List<IEventHandler> skipElements { get; } = new List<IEventHandler>();
-
-        internal bool Skip(IEventHandler h)
-        {
-            return skipElements.Contains(h);
+            get => elementTarget;
+            set => elementTarget = value as VisualElement;
         }
 
         /// <summary>
@@ -405,22 +394,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool stopDispatch
-        {
-            get { return (lifeCycleStatus & LifeCycleStatus.StopDispatch) != LifeCycleStatus.None; }
-            set
-            {
-                if (value)
-                {
-                    lifeCycleStatus |= LifeCycleStatus.StopDispatch;
-                }
-                else
-                {
-                    lifeCycleStatus &= ~LifeCycleStatus.StopDispatch;
-                }
-            }
-        }
-
         internal bool propagateToIMGUI
         {
             get { return (lifeCycleStatus & LifeCycleStatus.PropagateToIMGUI) != LifeCycleStatus.None; }
@@ -511,12 +484,8 @@ namespace UnityEngine.UIElements
 
             propagation = EventPropagation.None;
 
-            path?.Release();
-            path = null;
             leafTarget = null;
-            target = null;
-
-            skipElements.Clear();
+            elementTarget = null;
 
             isPropagationStopped = false;
             isImmediatePropagationStopped = false;
@@ -528,7 +497,6 @@ namespace UnityEngine.UIElements
             m_CurrentTarget = null;
 
             dispatch = false;
-            stopDispatch = false;
             propagateToIMGUI = true;
 
             dispatched = false;

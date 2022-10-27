@@ -15,7 +15,7 @@ namespace UnityEditorInternal
     [System.Serializable]
     internal class AnimEditorOverlay
     {
-        public AnimationWindowState state;
+        [SerializeReference] public AnimationWindowState state;
 
         private TimeCursorManipulator m_PlayHeadCursor;
 
@@ -71,21 +71,20 @@ namespace UnityEditorInternal
 
         private bool OnStartDragPlayHead(Event evt)
         {
-            state.controlInterface.StopPlayback();
-            state.controlInterface.StartScrubTime();
-            state.controlInterface.ScrubTime(MousePositionToTime(evt));
+            state.playing = false;
+
+            state.controlInterface.time = MousePositionToTime(evt);
             return true;
         }
 
         private bool OnDragPlayHead(Event evt)
         {
-            state.controlInterface.ScrubTime(MousePositionToTime(evt));
+            state.controlInterface.time = MousePositionToTime(evt);
             return true;
         }
 
         private bool OnEndDragPlayHead(Event evt)
         {
-            state.controlInterface.EndScrubTime();
             return true;
         }
 

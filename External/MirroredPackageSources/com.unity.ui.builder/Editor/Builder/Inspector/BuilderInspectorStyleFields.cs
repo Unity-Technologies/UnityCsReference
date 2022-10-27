@@ -312,7 +312,7 @@ namespace Unity.UI.Builder
                 var headerLabel = styleRow.Q<BindableElement>(classes: "unity-builder-composite-field-label");
                 headerLabel.AddManipulator(new ContextualMenuManipulator(action =>
                 {
-                    (action.target as VisualElement).userData = styleFields;
+                    action.elementTarget.userData = styleFields;
                     BuildStyleFieldContextualMenu(action);
                 }));
             }
@@ -337,7 +337,7 @@ namespace Unity.UI.Builder
             foldoutElement.headerInputField.AddManipulator(
                 new ContextualMenuManipulator((e) =>
                 {
-                    e.target = foldoutElement.header;
+                    e.elementTarget = foldoutElement.header;
                     BuildStyleFieldContextualMenu(e);
                 }));
 
@@ -367,7 +367,7 @@ namespace Unity.UI.Builder
             foldoutElement.headerInputField.AddManipulator(
                 new ContextualMenuManipulator((e) =>
                 {
-                    e.target = foldoutElement.header;
+                    e.elementTarget = foldoutElement.header;
                     BuildStyleFieldContextualMenu(e);
                 }));
 
@@ -378,7 +378,7 @@ namespace Unity.UI.Builder
         void DispatchChangeEvent<TValueType>(BaseField<TValueType> field)
         {
             var e = ChangeEvent<TValueType>.GetPooled(field.value, field.value);
-            e.target = field;
+            e.elementTarget = field;
             field.SendEvent(e);
         }
 
@@ -1127,11 +1127,15 @@ namespace Unity.UI.Builder
 
         void BuildStyleFieldContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            BuildStyleFieldContextualMenu(evt.menu, evt.target as VisualElement);
+            BuildStyleFieldContextualMenu(evt.menu, evt.elementTarget);
         }
 
         void BuildStyleFieldContextualMenu(DropdownMenu menu, VisualElement fieldElement)
         {
+            // if the context menu is already populated by the field (text field) then ignore
+            if (menu.MenuItems() != null & menu.MenuItems().Count > 0)
+                return;
+
             var isSelector = BuilderSharedStyles.IsSelectorElement(currentVisualElement);
 
             if (fieldElement.HasProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName))
@@ -1717,7 +1721,7 @@ namespace Unity.UI.Builder
 
         void OnFieldDimensionChange(ChangeEvent<int> e, string styleName)
         {
-            OnFieldDimensionChangeImpl(e.newValue, Dimension.Unit.Pixel, e.target as VisualElement, styleName);
+            OnFieldDimensionChangeImpl(e.newValue, Dimension.Unit.Pixel, e.elementTarget, styleName);
         }
 
         void OnDimensionStyleFieldValueChange(ChangeEvent<string> e, string styleName)
@@ -1794,7 +1798,7 @@ namespace Unity.UI.Builder
 
         void OnFieldValueChange(ChangeEvent<int> e, string styleName)
         {
-            OnFieldValueChangeImpl(e.newValue, e.target as VisualElement, styleName);
+            OnFieldValueChangeImpl(e.newValue, e.elementTarget, styleName);
         }
 
         void OnFieldValueChangeIntToFloat(ChangeEvent<int> e, string styleName)
@@ -1816,7 +1820,7 @@ namespace Unity.UI.Builder
             else // TODO: Assume only one value.
                 styleSheet.SetValue(styleProperty.values[0], newValue);
 
-            PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
         void OnFieldValueChangeImpl(float newValue, VisualElement target, string styleName)
@@ -1844,7 +1848,7 @@ namespace Unity.UI.Builder
 
         void OnFieldValueChange(ChangeEvent<float> e, string styleName)
         {
-            OnFieldValueChangeImpl(e.newValue, e.target as VisualElement, styleName);
+            OnFieldValueChangeImpl(e.newValue, e.elementTarget, styleName);
         }
 
         void OnNumericStyleFieldValueChange(ChangeEvent<string> e, string styleName)
@@ -1916,12 +1920,12 @@ namespace Unity.UI.Builder
             else // TODO: Assume only one value.
                 styleSheet.SetValue(styleProperty.values[0], e.newValue);
 
-            PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
         void OnFieldValueChange(ChangeEvent<string> e, string styleName)
         {
-            var field = e.target as VisualElement;
+            var field = e.elementTarget;
 
             // HACK: For some reason, when using "Pick Element" feature of Debugger and
             // hovering over the button strips, we get bogus value change events with
@@ -1966,7 +1970,7 @@ namespace Unity.UI.Builder
                     styleSheet.SetValue(styleProperty.values[0], e.newValue);
             }
 
-            PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
         void OnFieldValueChange(ChangeEvent<Object> e, string styleName)
@@ -2131,7 +2135,7 @@ namespace Unity.UI.Builder
             if (styleName == "position")
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 
-            PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
         // TODO: Transition Utilities (to be moved to new BuilderStyleUtilities.cs once the Intuitive Placement branch is merged)

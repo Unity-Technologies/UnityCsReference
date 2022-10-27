@@ -14,6 +14,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for drag and drop events.
     /// </summary>
+    [EventCategory(EventCategory.DragAndDrop)]
     public abstract class DragAndDropEventBase<T> : MouseEventBase<T>, IDragAndDropEvent where T : DragAndDropEventBase<T>, new()
     {
         protected override void Init()

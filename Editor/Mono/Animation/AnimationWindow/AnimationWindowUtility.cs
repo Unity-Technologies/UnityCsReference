@@ -16,7 +16,7 @@ using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 
 namespace UnityEditorInternal
 {
-    static internal class AnimationWindowUtility
+    static class AnimationWindowUtility
     {
         public static void SaveCurve(AnimationClip clip, AnimationWindowCurve curve)
         {
@@ -111,11 +111,11 @@ namespace UnityEditorInternal
 
         public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowState state, AnimationClip animationClip, EditorCurveBinding binding)
         {
-            Type type = state.selection.GetEditorCurveValueType(binding);
+            Type type = state.controlInterface.GetValueType(binding);
 
             AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, binding, type);
 
-            object currentValue = CurveBindingUtility.GetCurrentValue(state.activeRootGameObject, binding);
+            object currentValue = CurveBindingUtility.GetCurrentValue(state, binding);
             if (animationClip.length == 0.0F)
             {
                 AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, animationClip.frameRate));
@@ -138,7 +138,7 @@ namespace UnityEditorInternal
             return true;
         }
 
-        public static bool IsNodeLeftOverCurve(AnimationWindowHierarchyNode node)
+        public static bool IsNodeLeftOverCurve(AnimationWindowState state, AnimationWindowHierarchyNode node)
         {
             if (node.binding != null)
             {
@@ -150,7 +150,7 @@ namespace UnityEditorInternal
                         if (selectionBinding.rootGameObject == null && selectionBinding.scriptableObject == null)
                             return false;
 
-                        return selectionBinding.GetEditorCurveValueType((EditorCurveBinding)node.binding) == null;
+                        return state.controlInterface.GetValueType((EditorCurveBinding)node.binding) == null;
                     }
                 }
             }
@@ -159,7 +159,7 @@ namespace UnityEditorInternal
             if (node.hasChildren)
             {
                 foreach (var child in node.children)
-                    return IsNodeLeftOverCurve(child as AnimationWindowHierarchyNode);
+                    return IsNodeLeftOverCurve(state, child as AnimationWindowHierarchyNode);
             }
 
             return false;
@@ -200,7 +200,7 @@ namespace UnityEditorInternal
 
         public static void AddSelectedKeyframes(AnimationWindowState state, AnimationKeyTime time)
         {
-            List<AnimationWindowCurve> curves = state.activeCurves.Count > 0 ? state.activeCurves : state.allCurves;
+            List<AnimationWindowCurve> curves = state.activeCurves.Count > 0 ? state.activeCurves : state.filteredCurves;
             AddKeyframes(state, curves, time);
         }
 
@@ -485,40 +485,25 @@ namespace UnityEditorInternal
             }
         }
 
-        public static List<EditorCurveBinding> GetAnimatableProperties(GameObject gameObject, GameObject root, Type valueType)
+        public static EditorCurveBinding[] GetAnimatableBindings(GameObject rootGameObject)
         {
-            EditorCurveBinding[] animatable = AnimationUtility.GetAnimatableBindings(gameObject, root);
+            if (rootGameObject != null)
+            {
+                var transforms = rootGameObject.GetComponentsInChildren<Transform>();
 
-            List<EditorCurveBinding> result = new List<EditorCurveBinding>();
-            foreach (EditorCurveBinding binding in animatable)
-                if (AnimationUtility.GetEditorCurveValueType(root, binding) == valueType)
-                    result.Add(binding);
+                // At least 10 bindings for Transform (m_LocalPosition, m_LocalRotation, m_LocalScale) and 1 binding for GameObject (m_IsActive)
+                const int kMinNumberOfBindingsPerGameObject = 11;
 
-            return result;
-        }
+                var bindings = new List<EditorCurveBinding>(transforms.Length * kMinNumberOfBindingsPerGameObject);
+                for (int i = 0; i < transforms.Length; ++i)
+                {
+                    bindings.AddRange(AnimationUtility.GetAnimatableBindings(transforms[i].gameObject, rootGameObject));
+                }
 
-        public static List<EditorCurveBinding> GetAnimatableProperties(GameObject gameObject, GameObject root, Type objectType, Type valueType)
-        {
-            EditorCurveBinding[] animatable = AnimationUtility.GetAnimatableBindings(gameObject, root);
+                return bindings.ToArray();
+            }
 
-            List<EditorCurveBinding> result = new List<EditorCurveBinding>();
-            foreach (EditorCurveBinding binding in animatable)
-                if (binding.type == objectType && AnimationUtility.GetEditorCurveValueType(root, binding) == valueType)
-                    result.Add(binding);
-
-            return result;
-        }
-
-        public static List<EditorCurveBinding> GetAnimatableProperties(ScriptableObject scriptableObject, Type valueType)
-        {
-            EditorCurveBinding[] animatable = AnimationUtility.GetAnimatableBindings(scriptableObject);
-
-            List<EditorCurveBinding> result = new List<EditorCurveBinding>();
-            foreach (EditorCurveBinding binding in animatable)
-                if (AnimationUtility.GetEditorCurveValueType(scriptableObject, binding) == valueType)
-                    result.Add(binding);
-
-            return result;
+            return Array.Empty<EditorCurveBinding>();
         }
 
         public static bool PropertyIsAnimatable(Object targetObject, string propertyPath, Object rootObject)
@@ -1142,6 +1127,14 @@ namespace UnityEditorInternal
                 if (tr.TryGetComponent(out Animation animation))
                 {
                     return animation;
+                }
+
+                if (tr.TryGetComponent(out IAnimationClipSource clipPlayer))
+                {
+                    if (clipPlayer is Component clipPlayerComponent)
+                    {
+                        return clipPlayerComponent;
+                    }
                 }
 
                 if (tr == tr.root)

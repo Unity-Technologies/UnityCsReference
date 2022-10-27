@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using JetBrains.Annotations;
 using UnityEngine.Assertions;
 using UnityEngine.Yoga;
 using UnityEngine.UIElements.StyleSheets;
@@ -1311,17 +1312,17 @@ namespace UnityEngine.UIElements
 
         void WillChangePanel(BaseVisualElementPanel destinationPanel)
         {
-            if (panel != null)
+            if (elementPanel != null)
             {
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
                     if (HasEventCallbacksOrDefaultActions(DetachFromPanelEvent.EventCategory))
                     {
-                        using (var e = DetachFromPanelEvent.GetPooled(panel, destinationPanel))
+                        using (var e = DetachFromPanelEvent.GetPooled(elementPanel, destinationPanel))
                         {
-                            e.target = this;
-                            HandleEventAtTargetAndDefaultPhase(e);
+                            e.elementTarget = this;
+                            EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(e, elementPanel, this);
                         }
                     }
                 }
@@ -1332,7 +1333,7 @@ namespace UnityEngine.UIElements
 
         void HasChangedPanel(BaseVisualElementPanel prevPanel)
         {
-            if (panel != null)
+            if (elementPanel != null)
             {
                 yogaNode.Config = elementPanel.yogaConfig;
                 RegisterRunningAnimations();
@@ -1345,10 +1346,10 @@ namespace UnityEngine.UIElements
                 {
                     if (HasEventCallbacksOrDefaultActions(AttachToPanelEvent.EventCategory))
                     {
-                        using (var e = AttachToPanelEvent.GetPooled(prevPanel, panel))
+                        using (var e = AttachToPanelEvent.GetPooled(prevPanel, elementPanel))
                         {
-                            e.target = this;
-                            HandleEventAtTargetAndDefaultPhase(e);
+                            e.elementTarget = this;
+                            EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(e, elementPanel, this);
                         }
                     }
                     m_Flags &= ~VisualElementFlags.NeedsAttachToPanelEvent;
@@ -1384,6 +1385,11 @@ namespace UnityEngine.UIElements
         internal sealed override void SendEvent(EventBase e, DispatchMode dispatchMode)
         {
             elementPanel?.SendEvent(e, dispatchMode);
+        }
+
+        internal sealed override void HandleEvent(EventBase e)
+        {
+            EventDispatchUtilities.HandleEvent(e, this);
         }
 
         internal void IncrementVersion(VersionChangeType changeType)

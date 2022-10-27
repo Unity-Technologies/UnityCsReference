@@ -245,7 +245,7 @@ namespace UnityEngine.UIElements
         void OnUncollapsedPaneResized(GeometryChangedEvent evt)
         {
             UpdateDragLineAnchorOffset();
-            (evt.target as VisualElement).UnregisterCallback<GeometryChangedEvent>(OnUncollapsedPaneResized);
+            evt.elementTarget.UnregisterCallback<GeometryChangedEvent>(OnUncollapsedPaneResized);
         }
 
         internal void Init(int fixedPaneIndex, float fixedPaneInitialDimension, TwoPaneSplitViewOrientation orientation)

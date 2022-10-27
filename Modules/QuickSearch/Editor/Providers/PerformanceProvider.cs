@@ -51,9 +51,15 @@ namespace UnityEditor.Search.Providers
                     new SearchAction("enable_deep", "Enable Deep Profiling...", _ => SetProfilerDeepProfile(true), _ => !ProfilerDriver.deepProfiling),
                     new SearchAction("start_deep", "Deep Profile...", item => StartProfilerRecording(item.id, true, deepProfile: true), _ => ProfilerDriver.deepProfiling && !ProfilerDriver.enabled),
                     new SearchAction("log", "Callstack", item => EditorPerformanceTracker.GetCallstack(item.id, cs => CaptureCallstack(item, cs))),
-                    new SearchAction("reset", "Reset", item => EditorPerformanceTracker.Reset(item.id)),
+                    new SearchAction("reset", "Reset", ResetItems),
                 })
             };
+        }
+
+        private static void ResetItems(SearchItem[] items)
+        {
+            foreach (var item in items)
+                EditorPerformanceTracker.Reset(item.id);
         }
 
         private static SearchTable GetDefaultTableConfig(SearchContext context)

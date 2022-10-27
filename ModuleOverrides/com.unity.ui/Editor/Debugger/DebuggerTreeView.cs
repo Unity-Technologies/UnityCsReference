@@ -177,11 +177,11 @@ namespace UnityEditor.UIElements.Debugger
                 element.name = itemContentName;
                 element.RegisterCallback<MouseEnterEvent>((e) =>
                 {
-                    HighlightItemInTargetWindow(e.target as VisualElement);
+                    HighlightItemInTargetWindow(e.elementTarget);
                 });
                 element.RegisterCallback<MouseLeaveEvent>((e) =>
                 {
-                    UnhighlightItemInTargetWindow(e.target as VisualElement);
+                    UnhighlightItemInTargetWindow(e.elementTarget);
                 });
                 return element;
             };

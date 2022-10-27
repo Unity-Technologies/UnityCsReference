@@ -145,7 +145,7 @@ namespace UnityEditor
                     int validatedPathCount = 1;
                     for (int i = 1; i < paths.Length; i++)
                     {
-                        if (paths[i].EndsWith(".materialinfo") || paths[i].EndsWith(".importpathinfo"))
+                        if (paths[i].EndsWith(".materialinfo") || paths[i].EndsWith(".importpathinfo") || paths[i].EndsWith(".alphapathinfo"))
                             validatedPathCount++;
                     }
 

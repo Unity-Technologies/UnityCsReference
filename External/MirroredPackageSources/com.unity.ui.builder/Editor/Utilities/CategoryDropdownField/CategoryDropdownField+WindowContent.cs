@@ -98,7 +98,7 @@ namespace Unity.UI.Builder
                 searchField.AddToClassList(k_SearchField);
                 searchField.RegisterCallback<AttachToPanelEvent>(evt =>
                 {
-                    ((VisualElement) evt.target)?.Focus();
+                    evt.elementTarget?.Focus();
                 });
 
                 searchField.RegisterCallback<KeyDownEvent>(evt =>
@@ -342,7 +342,7 @@ namespace Unity.UI.Builder
 
             void OnItemSelected(PointerUpEvent evt)
             {
-                var e = (VisualElement) evt.target;
+                var e = evt.elementTarget;
                 var ctx = (SelectionContext) e.GetProperty(k_SelectionContextKey);
                 // We must go through the context here, because the elements are pooled and the closure would bind on
                 // the previous time the element was used.
