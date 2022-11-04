@@ -17,6 +17,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private List<UpmPackageVersion> m_Versions;
 
+        [SerializeField]
+        private int m_NumUnloadedVersions;
+        public int numUnloadedVersions => m_NumUnloadedVersions;
+
         public IEnumerable<IPackageVersion> key
         {
             get
@@ -47,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     //  and add that
                     if (resolvedLifecycleVersion.HasTag(PackageTag.ReleaseCandidate) && resolvedLifecycleVersion.version?.HasPreReleaseVersionTag() == true)
                     {
-                        var latestReleasePatchOfUnityLifecycleVersion = m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release) &&
+                        var latestReleasePatchOfUnityLifecycleVersion = m_Versions.LastOrDefault(v => !v.HasTag(PackageTag.PreRelease | PackageTag.ReleaseCandidate | PackageTag.Experimental) &&
                             (v.version?.IsPatchOf(resolvedLifecycleVersion.version) == true || v.version?.IsMajorMinorPatchEqualTo(resolvedLifecycleVersion.version) == true));
 
                         if (latestReleasePatchOfUnityLifecycleVersion != null)
@@ -116,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // otherwise, it's either Release or tagged as Release Candidate because Editor is in Alpha or Beta, and we should
                 //  take the latest patch of it
                 else
-                    return m_Versions.LastOrDefault(v => v.HasTag(PackageTag.Release | PackageTag.ReleaseCandidate) &&
+                    return m_Versions.LastOrDefault(v => !v.HasTag(PackageTag.PreRelease | PackageTag.Experimental) &&
                         ((v.version?.IsPatchOf(m_LifecycleVersion) == true) || v.version == m_LifecycleVersion));
             }
         }
@@ -242,13 +246,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return sortedVersions.Count - 1;
         }
 
-        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null)
+        public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null, int numUnloadedVersions = 0)
         {
             m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
 
             m_LifecycleVersionString = unityLifecycleInfoVersion;
             m_LifecycleNextVersionString = unityLifecycleInfoNextVersion;
+            m_NumUnloadedVersions = numUnloadedVersions;
 
             if (m_LifecycleVersionString != null)
                 SemVersionParser.TryParse(m_LifecycleVersionString, out m_LifecycleVersion);

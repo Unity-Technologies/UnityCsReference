@@ -58,9 +58,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshUnityType();
         }
 
-        internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions)
+        internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions, int numUnloadedVersions)
         {
-            m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion);
+            m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion, numUnloadedVersions);
             RefreshUnityType();
             ClearErrors();
         }

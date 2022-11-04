@@ -266,6 +266,20 @@ namespace UnityEditor
         BPTC = 6
     }
 
+    // Windows platform input APIs
+    // Keep in sync with WindowsGamepadBackendHint enum from PlayerSettings.h
+    public enum WindowsGamepadBackendHint
+    {
+        // Backend selected automatically based on platform support
+        WindowsGamepadBackendHintDefault = 0,
+
+        // XInput
+        WindowsGamepadBackendHintXInput = 1,
+
+        // GameInput
+        WindowsGamepadBackendHintWindowsGamingInput = 2
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     [NativeClass(null)]
     [NativeHeader("Editor/Mono/PlayerSettings.bindings.h")]
@@ -704,6 +718,36 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetBatchingForPlatform(BuildTarget platform, int staticBatching, int dynamicBatching);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetShaderChunkSizeInMBForPlatform(BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetShaderChunkSizeInMBForPlatform(BuildTarget buildTarget, int sizeInMegabytes);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetShaderChunkCountForPlatform(BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetShaderChunkCountForPlatform(BuildTarget buildTarget, int chunkCount);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetDefaultShaderChunkSizeInMB();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetDefaultShaderChunkSizeInMB(int sizeInMegabytes);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern int GetDefaultShaderChunkCount();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetDefaultShaderChunkCount(int chunkCount);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern bool GetOverrideShaderChunkSettingsForPlatform(BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        public static extern void SetOverrideShaderChunkSettingsForPlatform(BuildTarget buildTarget, bool value);
 
         [NativeMethod("GetLightmapEncodingQuality")]
         internal static extern LightmapEncodingQuality GetLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup);
@@ -1534,6 +1578,19 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().GetDisableOldInputManagerSupport")]
         internal static extern bool GetDisableOldInputManagerSupport();
+
+        [FreeFunction("GetPlayerSettings().GetWindowsGamepadBackendHint")]
+        internal static extern WindowsGamepadBackendHint GetWindowsGamepadBackendHint();
+
+        [FreeFunction("GetPlayerSettings().SetWindowsGamepadBackendHint")]
+        internal static extern void SetWindowsGamepadBackendHint(WindowsGamepadBackendHint value);
+
+        // The input API backend used on Windows platforms
+        public static WindowsGamepadBackendHint windowsGamepadBackendHint
+        {
+            get { return GetWindowsGamepadBackendHint(); }
+            set { SetWindowsGamepadBackendHint(value); }
+        }
 
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]

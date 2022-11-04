@@ -480,10 +480,7 @@ namespace UnityEngine.UIElements
             private set => m_Flags = value ? m_Flags | VisualElementFlags.LayoutManual : m_Flags & ~VisualElementFlags.LayoutManual;
         }
 
-        internal float scaledPixelsPerPoint
-        {
-            get { return panel == null ? GUIUtility.pixelsPerPoint : (panel as BaseVisualElementPanel).scaledPixelsPerPoint; }
-        }
+        internal float scaledPixelsPerPoint => elementPanel?.scaledPixelsPerPoint ?? GUIUtility.pixelsPerPoint;
 
         Rect m_Layout;
 

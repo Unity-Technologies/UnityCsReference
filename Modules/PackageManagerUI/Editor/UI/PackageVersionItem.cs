@@ -44,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var primary = package.versions.primary;
             var recommended = package.versions.recommended;
-            var versionInManifest = primary?.packageInfo?.projectDependenciesEntry;
+            var versionInManifest = primary?.versionInManifest;
             var stateText = string.Empty;
 
             if (version == primary)

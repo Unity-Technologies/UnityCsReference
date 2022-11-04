@@ -55,6 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private PageManager m_PageManager;
+        private UpmCache m_UpmCache;
         private PackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
@@ -62,6 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_PageManager = container.Resolve<PageManager>();
+            m_UpmCache = container.Resolve<UpmCache>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
         }
 
@@ -348,7 +350,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshRegistry()
         {
-            var registry = m_Version.registry;
+            var registry = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString)?.registry;
             var showRegistry = registry != null;
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
             if (showRegistry)

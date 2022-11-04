@@ -261,7 +261,6 @@ namespace UnityEditor.SceneTemplate
         [InitializeOnLoadMethod]
         private static void Init()
         {
-            RegisterDefines();
             RegisterSceneEventListeners();
         }
 
@@ -285,16 +284,6 @@ namespace UnityEditor.SceneTemplate
                     continue;
                 sceneTemplateInfo.sceneTemplate.UpdateDependencies();
             }
-        }
-
-        private static void RegisterDefines()
-        {
-            Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSceneTemplateModuleDefine;
-        }
-
-        private static void AddSceneTemplateModuleDefine(BuildTarget target, HashSet<string> defines)
-        {
-            defines.Add("SCENE_TEMPLATE_MODULE");
         }
 
         private static Dictionary<Object, Object> CopyCloneableDependencies(SceneTemplateAsset sceneTemplate, string newSceneOutputPath, ref Dictionary<string, string> refPathMap)

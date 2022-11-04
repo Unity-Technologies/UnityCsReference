@@ -80,6 +80,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private PackageManagerPrefs m_PackageManagerPrefs;
         [NonSerialized]
+        private UpmCache m_UpmCache;
+        [NonSerialized]
         private UpmClient m_UpmClient;
         [NonSerialized]
         private UpmRegistryClient m_UpmRegistryClient;
@@ -94,6 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UnityConnectProxy unityConnect,
             PackageFiltering packageFiltering,
             PackageManagerPrefs packageManagerPrefs,
+            UpmCache upmCache,
             UpmClient upmClient,
             UpmRegistryClient upmRegistryClient,
             AssetStoreClient assetStoreClient,
@@ -105,6 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect = unityConnect;
             m_PackageFiltering = packageFiltering;
             m_PackageManagerPrefs = packageManagerPrefs;
+            m_UpmCache = upmCache;
             m_UpmClient = upmClient;
             m_UpmRegistryClient = upmRegistryClient;
             m_AssetStoreClient = assetStoreClient;
@@ -429,9 +433,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public virtual bool IsSeeAllVersions(IPackage package)
+        {
+            return m_UpmCache.IsLoadAllVersions(package.uniqueId);
+        }
+
         public virtual void SetSeeAllVersions(IPackage package, bool value)
         {
-            GetPageFromTab().SetSeeAllVersions(package, value);
+            m_UpmCache.SetLoadAllVersions(package.uniqueId, value);
         }
 
         public virtual void SetExpanded(IPackage package, bool value)

@@ -207,117 +207,141 @@ namespace UnityEditor.UIElements
                 baseDir = Application.temporaryCachePath + "/";
             }
 
-            // Convert the factories into schemas info.
-            foreach (var factories in VisualElementFactoryRegistry.factories)
+            if (!Application.isBatchMode)
             {
-                if (factories.Value.Count == 0)
-                    continue;
-
-                // Only process the first factory, as the other factories define the same element.
-                IUxmlFactory factory = factories.Value[0];
-                if (!ProcessFactory(factory, schemas, processingData))
-                {
-                    // Could not process the factory now, because it depends on a yet unprocessed factory.
-                    // Defer its processing.
-                    deferredFactories.Add(factory);
-                }
+                EditorUtility.DisplayProgressBar("Generating UXML Schema Files", "Please wait...", 0.0f);
             }
 
-            List<IUxmlFactory> deferredFactoriesCopy;
-            do
+            try
             {
-                deferredFactoriesCopy = new List<IUxmlFactory>(deferredFactories);
-                foreach (var factory in deferredFactoriesCopy)
+                // Convert the factories into schemas info.
+                foreach (var factories in VisualElementFactoryRegistry.factories)
                 {
-                    deferredFactories.Remove(factory);
+                    if (factories.Value.Count == 0)
+                        continue;
+
+                    // Only process the first factory, as the other factories define the same element.
+                    IUxmlFactory factory = factories.Value[0];
                     if (!ProcessFactory(factory, schemas, processingData))
                     {
                         // Could not process the factory now, because it depends on a yet unprocessed factory.
-                        // Defer its processing again.
+                        // Defer its processing.
                         deferredFactories.Add(factory);
                     }
                 }
-            }
-            while (deferredFactoriesCopy.Count > deferredFactories.Count);
 
-            if (deferredFactories.Count > 0)
-            {
-                Debug.Log("Some factories could not be processed because their base type is missing.");
-            }
-
-            // Compile schemas.
-            XmlSchemaSet schemaSet = new XmlSchemaSet();
-            XmlSchema masterSchema = new XmlSchema();
-            masterSchema.ElementFormDefault = XmlSchemaForm.Qualified;
-
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(new NameTable());
-            nsmgr.AddNamespace("xs", k_XmlSchemaNamespace);
-
-            File.Delete(baseDir + k_MainSchemaFileName);
-
-            foreach (var schema in schemas)
-            {
-                if (schema.Value.schema.TargetNamespace != null)
+                List<IUxmlFactory> deferredFactoriesCopy;
+                do
                 {
-                    nsmgr.AddNamespace(schema.Value.namepacePrefix, schema.Value.schema.TargetNamespace);
-
-                    // Import schema into the master schema.
-                    XmlSchemaImport import = new XmlSchemaImport();
-                    import.Namespace = schema.Value.schema.TargetNamespace;
-                    string schemaLocation = GetFileNameForNamespace(schema.Value.schema.TargetNamespace);
-                    File.Delete(baseDir + schemaLocation);
-                    import.SchemaLocation = schemaLocation;
-                    masterSchema.Includes.Add(import);
-                }
-                else
-                {
-                    XmlSchemaInclude include = new XmlSchemaInclude();
-                    string schemaLocation = GetFileNameForNamespace(null);
-                    File.Delete(baseDir + schemaLocation);
-                    include.SchemaLocation = schemaLocation;
-                    masterSchema.Includes.Add(include);
-                }
-
-                // Import referenced schemas into this XSD
-                foreach (string ns in schema.Value.importNamespaces)
-                {
-                    if (ns != schema.Value.schema.TargetNamespace && ns != k_XmlSchemaNamespace)
+                    deferredFactoriesCopy = new List<IUxmlFactory>(deferredFactories);
+                    foreach (var factory in deferredFactoriesCopy)
                     {
-                        XmlSchemaImport import = new XmlSchemaImport();
-                        import.Namespace = ns;
-                        import.SchemaLocation = GetFileNameForNamespace(ns);
-                        schema.Value.schema.Includes.Add(import);
+                        deferredFactories.Remove(factory);
+                        if (!ProcessFactory(factory, schemas, processingData))
+                        {
+                            // Could not process the factory now, because it depends on a yet unprocessed factory.
+                            // Defer its processing again.
+                            deferredFactories.Add(factory);
+                        }
                     }
+                } while (deferredFactoriesCopy.Count > deferredFactories.Count);
+
+                if (deferredFactories.Count > 0)
+                {
+                    Debug.Log("Some factories could not be processed because their base type is missing.");
                 }
 
-                schemaSet.Add(schema.Value.schema);
+                // Compile schemas.
+                XmlSchemaSet schemaSet = new XmlSchemaSet();
+                XmlSchema masterSchema = new XmlSchema();
+                masterSchema.ElementFormDefault = XmlSchemaForm.Qualified;
+
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(new NameTable());
+                nsmgr.AddNamespace("xs", k_XmlSchemaNamespace);
+
+                File.Delete(baseDir + k_MainSchemaFileName);
+
+                foreach (var schema in schemas)
+                {
+                    if (schema.Value.schema.TargetNamespace != null)
+                    {
+                        nsmgr.AddNamespace(schema.Value.namepacePrefix, schema.Value.schema.TargetNamespace);
+
+                        // Import schema into the master schema.
+                        XmlSchemaImport import = new XmlSchemaImport();
+                        import.Namespace = schema.Value.schema.TargetNamespace;
+                        string schemaLocation = GetFileNameForNamespace(schema.Value.schema.TargetNamespace);
+                        File.Delete(baseDir + schemaLocation);
+                        import.SchemaLocation = schemaLocation;
+                        masterSchema.Includes.Add(import);
+                    }
+                    else
+                    {
+                        XmlSchemaInclude include = new XmlSchemaInclude();
+                        string schemaLocation = GetFileNameForNamespace(null);
+                        File.Delete(baseDir + schemaLocation);
+                        include.SchemaLocation = schemaLocation;
+                        masterSchema.Includes.Add(include);
+                    }
+
+                    // Import referenced schemas into this XSD
+                    foreach (string ns in schema.Value.importNamespaces)
+                    {
+                        if (ns != schema.Value.schema.TargetNamespace && ns != k_XmlSchemaNamespace)
+                        {
+                            XmlSchemaImport import = new XmlSchemaImport();
+                            import.Namespace = ns;
+                            import.SchemaLocation = GetFileNameForNamespace(ns);
+                            schema.Value.schema.Includes.Add(import);
+                        }
+                    }
+
+                    schemaSet.Add(schema.Value.schema);
+                }
+
+                schemaSet.Add(masterSchema);
+
+                try
+                {
+                    schemaSet.Compile();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    yield break;
+                }
+
+                // Now generate the schema textual data.
+                foreach (XmlSchema compiledSchema in schemaSet.Schemas())
+                {
+                    string schemaName = compiledSchema.TargetNamespace;
+
+                    // Three possible cases:
+                    // TargetNamespace == null and Items.Count == 0: the main schema, that include/import all other schema files
+                    // TargetNamespace == null and Items.Count != 0: the schema file for the global namespace
+                    // TargetNamespace != null: the schema file for TargetNamespace
+                    if (schemaName == null && compiledSchema.Items.Count == 0)
+                    {
+                        schemaName = k_MainSchemaFileName;
+                    }
+                    else
+                    {
+                        schemaName = GetFileNameForNamespace(compiledSchema.TargetNamespace);
+                    }
+
+                    yield return baseDir + schemaName;
+
+                    StringWriter strWriter = new UTF8StringWriter();
+                    compiledSchema.Write(strWriter, nsmgr);
+                    yield return strWriter.ToString();
+                }
             }
-            schemaSet.Add(masterSchema);
-            schemaSet.Compile();
-
-            // Now generate the schema textual data.
-            foreach (XmlSchema compiledSchema in schemaSet.Schemas())
+            finally
             {
-                string schemaName = compiledSchema.TargetNamespace;
-
-                // Three possible cases:
-                // TargetNamespace == null and Items.Count == 0: the main schema, that include/import all other schema files
-                // TargetNamespace == null and Items.Count != 0: the schema file for the global namespace
-                // TargetNamespace != null: the schema file for TargetNamespace
-                if (schemaName == null && compiledSchema.Items.Count == 0)
+                if (!Application.isBatchMode)
                 {
-                    schemaName = k_MainSchemaFileName;
+                    EditorUtility.ClearProgressBar();
                 }
-                else
-                {
-                    schemaName = GetFileNameForNamespace(compiledSchema.TargetNamespace);
-                }
-
-                yield return baseDir + schemaName;
-
-                StringWriter strWriter = new UTF8StringWriter();
-                compiledSchema.Write(strWriter, nsmgr);
-                yield return strWriter.ToString();
             }
         }
 
@@ -526,8 +550,7 @@ namespace UnityEditor.UIElements
             XmlSchemaSimpleType simpleType = new XmlSchemaSimpleType();
             simpleType.Name = attrTypeNameForSchema;
 
-            UxmlEnumeration enumRestriction = description.restriction as UxmlEnumeration;
-            if (enumRestriction != null)
+            if (description.restriction is UxmlEnumeration enumRestriction)
             {
                 XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
                 simpleType.Content = restriction;
@@ -542,9 +565,14 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                UxmlValueMatches regexRestriction = description.restriction as UxmlValueMatches;
-                if (regexRestriction != null)
+                if (description.restriction is UxmlValueMatches regexRestriction)
                 {
+                    if (regexRestriction.regex == null)
+                    {
+                        Debug.LogWarning($"{nameof(UxmlValueMatches)} restriction '{description.name}' has null regex value.");
+                        return null;
+                    }
+
                     XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
                     simpleType.Content = restriction;
                     restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
@@ -555,35 +583,42 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    UxmlValueBounds bounds = description.restriction as UxmlValueBounds;
-                    if (bounds != null)
+                    if (description.restriction is UxmlValueBounds bounds)
                     {
                         XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
                         simpleType.Content = restriction;
                         restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
 
-                        XmlSchemaFacet facet;
-                        if (bounds.excludeMin)
+                        if (!string.IsNullOrEmpty(bounds.min))
                         {
-                            facet = new XmlSchemaMinExclusiveFacet();
+                            XmlSchemaFacet facet;
+                            if (bounds.excludeMin)
+                            {
+                                facet = new XmlSchemaMinExclusiveFacet();
+                            }
+                            else
+                            {
+                                facet = new XmlSchemaMinInclusiveFacet();
+                            }
+                            facet.Value = bounds.min;
+                            restriction.Facets.Add(facet);
                         }
-                        else
-                        {
-                            facet = new XmlSchemaMinInclusiveFacet();
-                        }
-                        facet.Value = bounds.min;
-                        restriction.Facets.Add(facet);
 
-                        if (bounds.excludeMax)
+                        if (!string.IsNullOrEmpty(bounds.max))
                         {
-                            facet = new XmlSchemaMaxExclusiveFacet();
+                            XmlSchemaFacet facet;
+                            if (bounds.excludeMax)
+                            {
+                                facet = new XmlSchemaMaxExclusiveFacet();
+                            }
+                            else
+                            {
+                                facet = new XmlSchemaMaxInclusiveFacet();
+                            }
+
+                            facet.Value = bounds.max;
+                            restriction.Facets.Add(facet);
                         }
-                        else
-                        {
-                            facet = new XmlSchemaMaxInclusiveFacet();
-                        }
-                        facet.Value = bounds.max;
-                        restriction.Facets.Add(facet);
                     }
                     else
                     {

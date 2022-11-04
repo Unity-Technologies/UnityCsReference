@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using System.Runtime.CompilerServices;
+using Unity.Burst;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -66,6 +67,34 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             return IsBlittable(typeof(T));
         }
+
+        [ThreadSafe(ThrowsException = false)]
+        public static extern int CheckForLeaks();
+
+        [ThreadSafe(ThrowsException = false)]
+        public static extern int ForgiveLeaks();
+
+        [ThreadSafe(ThrowsException = false)]
+        [BurstAuthorizedExternalMethod]
+        public static extern NativeLeakDetectionMode GetLeakDetectionMode();
+
+        [ThreadSafe(ThrowsException = false)]
+        [BurstAuthorizedExternalMethod]
+        public static extern void SetLeakDetectionMode(NativeLeakDetectionMode value);
+   
+        [ThreadSafe(ThrowsException = false)]
+        [BurstAuthorizedExternalMethod]
+        unsafe internal static extern int LeakRecord(IntPtr handle, LeakCategory category, int callstacksToSkip);
+
+        [ThreadSafe(ThrowsException = false)]
+        [BurstAuthorizedExternalMethod]
+        unsafe internal static extern int LeakErase(IntPtr handle, LeakCategory category);
+
+        [ThreadSafe(ThrowsException = true)]
+        unsafe public static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip);
+
+        [ThreadSafe(ThrowsException = true)]
+        unsafe public static extern void FreeTracked(void* memory, Allocator allocator);
 
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void* Malloc(long size, int alignment, Allocator allocator);

@@ -473,6 +473,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     FilterVersions(package, showPreRelease);
                 }
+                UnloadVersionsIfNeeded(package);
                 UpdateExtraPackageInfos(package.name, package.versions);
             }
 
@@ -527,6 +528,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     FilterVersions(package, showPreRelease);
                 }
+                UnloadVersionsIfNeeded(package);
                 UpdateExtraPackageInfos(package.name, package.versions);
             }
 
@@ -535,6 +537,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var package in updatedProductPackages)
                 onProductPackageChanged?.Invoke(m_UpmCache.GetProductId(package.name), package);
+        }
+
+        private void OnLoadAllVersionsChanged(string packageUniqueId, bool value)
+        {
+            var productId = m_UpmCache.GetProductId(packageUniqueId);
+            var installedInfo = m_UpmCache.GetInstalledPackageInfo(packageUniqueId);
+            var searchInfo = string.IsNullOrEmpty(productId) ? m_UpmCache.GetSearchPackageInfo(packageUniqueId) : m_UpmCache.GetProductPackageInfo(packageUniqueId);
+            var package = CreateUpmPackage(searchInfo, installedInfo);
+
+            var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
+            var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
+            // only filter on Lifecycle tags if is a Unity package
+            if (!seeAllVersions && (package.versions.primary as UpmPackageVersion)?.isUnityPackage == true)
+            {
+                FilterVersions(package, showPreRelease);
+            }
+            UnloadVersionsIfNeeded(package);
+            UpdateExtraPackageInfos(package.name, package.versions);
+
+            if (string.IsNullOrEmpty(productId))
+                onPackagesChanged?.Invoke(new IPackage[] { package });
+            else
+                onProductPackageChanged?.Invoke(productId, package);
         }
 
         private UpmPackage CreateUpmPackage(PackageInfo searchInfo, PackageInfo installedInfo, string packageName = null)
@@ -546,9 +571,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (searchInfo == null)
             {
                 result = new UpmPackage(installedInfo, true, false, IsUnityPackage(installedInfo));
-
-                var registryInfo = installedInfo.registry;
-                var compatibleVersions = installedInfo.versions?.compatible;
             }
             else
             {
@@ -557,7 +579,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (installedInfo != null)
                     result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
             }
-
             return result;
         }
 
@@ -596,18 +617,32 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static void FilterVersions(UpmPackage package, bool showPreRelease)
         {
             var versions = (UpmVersionList)package.versions;
-            var packageTagsToKeep = PackageTag.Release | PackageTag.ReleaseCandidate;
+            var packageTagsToExclude = PackageTag.PreRelease | PackageTag.Experimental;
 
             if (showPreRelease || package.versions.installed?.HasTag(PackageTag.PreRelease | PackageTag.Experimental) == true)
-                packageTagsToKeep |= PackageTag.PreRelease;
+                packageTagsToExclude &= ~PackageTag.PreRelease;
 
             // should see updates to the installed experimental packages, if they exist
             if (package.versions.installed?.HasTag(PackageTag.Experimental) == true)
-                packageTagsToKeep |= PackageTag.Experimental;
+                packageTagsToExclude &= ~PackageTag.Experimental;
 
-            var filteredVersions = versions.Where(v => v.isInstalled || v.HasTag(packageTagsToKeep)).ToList();
+            var filteredVersions = versions.Where(v => v.isInstalled || !v.HasTag(packageTagsToExclude)).ToList();
 
-            package.UpdateVersions(filteredVersions.Cast<UpmPackageVersion>());
+            package.UpdateVersions(filteredVersions.Cast<UpmPackageVersion>(), 0);
+        }
+
+        private void UnloadVersionsIfNeeded(UpmPackage package)
+        {
+            if (!package.versions.Any())
+                return;
+            var loadAllVersions = m_UpmCache.IsLoadAllVersions(package.uniqueId);
+            if (!loadAllVersions)
+            {
+                var keyVersions = package.versions.key.Cast<UpmPackageVersion>().ToArray();
+                var numVersionsToUnload = package.versions.Count() - keyVersions.Length;
+                if (numVersionsToUnload > 0)
+                    package.UpdateVersions(keyVersions, numVersionsToUnload);
+            }
         }
 
         // Restore operations that's interrupted by domain reloads
@@ -634,6 +669,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
+            m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
 
             RestoreInProgressOperations();
         }
@@ -643,6 +679,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesesOrSeeAllVersionsChanged;
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
+            m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
         }
 
         public virtual void ClearCache()
