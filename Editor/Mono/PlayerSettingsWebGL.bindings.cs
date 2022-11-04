@@ -45,6 +45,13 @@ namespace UnityEditor
         Embedded = 2
     }
 
+    public enum WebGLPowerPreference
+    {
+        Default = 0,
+        LowPower = 1,
+        HighPerformance = 2
+    }
+
     public sealed partial class PlayerSettings : UnityEngine.Object
     {
         [NativeHeader("Editor/Mono/PlayerSettingsWebGL.bindings.h")]
@@ -172,6 +179,13 @@ namespace UnityEditor
 
             [NativeProperty("webGLWasmArithmeticExceptions", TargetType.Field)]
             public extern static WebGLWasmArithmeticExceptions wasmArithmeticExceptions
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+            }
+
+            [NativeProperty("webGLPowerPreference", TargetType.Field)]
+            public extern static WebGLPowerPreference powerPreference
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;

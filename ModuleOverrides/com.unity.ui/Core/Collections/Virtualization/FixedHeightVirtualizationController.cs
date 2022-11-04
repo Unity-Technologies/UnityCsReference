@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
             // Add only extra items if the list is actually visible.
-            var itemCountFromHeight = (int)(size.y / pixelAlignedItemHeight);
+            var itemCountFromHeight = (int)(m_ListView.ResolveItemHeight(size.y) / pixelAlignedItemHeight);
             if (itemCountFromHeight > 0)
                 itemCountFromHeight += k_ExtraVisibleItems;
 

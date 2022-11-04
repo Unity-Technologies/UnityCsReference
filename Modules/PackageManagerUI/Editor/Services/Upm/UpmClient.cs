@@ -617,16 +617,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static void FilterVersions(UpmPackage package, bool showPreRelease)
         {
             var versions = (UpmVersionList)package.versions;
-            var packageTagsToKeep = PackageTag.Release | PackageTag.ReleaseCandidate;
+            var packageTagsToExclude = PackageTag.PreRelease | PackageTag.Experimental;
 
             if (showPreRelease || package.versions.installed?.HasTag(PackageTag.PreRelease | PackageTag.Experimental) == true)
-                packageTagsToKeep |= PackageTag.PreRelease;
+                packageTagsToExclude &= ~PackageTag.PreRelease;
 
             // should see updates to the installed experimental packages, if they exist
             if (package.versions.installed?.HasTag(PackageTag.Experimental) == true)
-                packageTagsToKeep |= PackageTag.Experimental;
+                packageTagsToExclude &= ~PackageTag.Experimental;
 
-            var filteredVersions = versions.Where(v => v.isInstalled || v.HasTag(packageTagsToKeep)).ToList();
+            var filteredVersions = versions.Where(v => v.isInstalled || !v.HasTag(packageTagsToExclude)).ToList();
 
             package.UpdateVersions(filteredVersions.Cast<UpmPackageVersion>(), 0);
         }

@@ -46,6 +46,8 @@ namespace UnityEditor.Search
 
     class PropertyDatabaseLock : IDisposable
     {
+        static Dictionary<string, SharedCounter> s_DatabaseFiles = new Dictionary<string, SharedCounter>();
+
         class SharedCounter
         {
             public int value;
@@ -57,25 +59,25 @@ namespace UnityEditor.Search
         }
 
         string m_Path;
-        SharedCounter m_Counter;
-        FileStream m_Fs;
         bool m_Disposed;
-
-        const string k_TempFolderPath = "Temp/";
 
         PropertyDatabaseLock(string propertyDatabasePath, SharedCounter counter)
         {
-            m_Path = $"{k_TempFolderPath}PropertyDatabase_{propertyDatabasePath.GetHashCode()}";
-            m_Fs = File.Open(m_Path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            m_Counter = counter;
+            m_Path = propertyDatabasePath;
+            lock (s_DatabaseFiles)
+            {
+                if (s_DatabaseFiles.TryGetValue(propertyDatabasePath, out var _))
+                {
+                    throw new Exception($"PropertyDatase {propertyDatabasePath} is in use.");
+                }
+                s_DatabaseFiles.Add(propertyDatabasePath, counter);
+            }
         }
 
         PropertyDatabaseLock(PropertyDatabaseLock other)
         {
             this.m_Path = other.m_Path;
-            this.m_Counter = other.m_Counter;
             this.m_Disposed = other.m_Disposed;
-            this.m_Fs = other.m_Fs;
         }
 
         public static bool TryOpen(string propertyDatabasePath, out PropertyDatabaseLock pdbl)
@@ -86,7 +88,7 @@ namespace UnityEditor.Search
                 pdbl = new PropertyDatabaseLock(propertyDatabasePath, new SharedCounter(1));
                 return true;
             }
-            catch (IOException)
+            catch (Exception)
             {
                 pdbl = null;
                 return false;
@@ -95,11 +97,13 @@ namespace UnityEditor.Search
 
         public PropertyDatabaseLock Share()
         {
-            lock (m_Counter)
+            lock(s_DatabaseFiles)
             {
                 if (m_Disposed)
                     throw new ObjectDisposedException(m_Path, "Trying to share a lock that has already been disposed.");
-                ++m_Counter.value;
+
+                s_DatabaseFiles.TryGetValue(m_Path, out var counter);
+                ++counter.value;
                 return new PropertyDatabaseLock(this);
             }
         }
@@ -117,18 +121,17 @@ namespace UnityEditor.Search
 
         void Dispose(bool disposed)
         {
-            lock (m_Counter)
+            lock (s_DatabaseFiles)
             {
                 if (m_Disposed)
                     return;
-                --m_Counter.value;
-                if (m_Counter.value == 0)
+
+                s_DatabaseFiles.TryGetValue(m_Path, out var counter);
+                --counter.value;
+                if (counter.value == 0)
                 {
-                    m_Fs.Dispose();
-                    m_Fs = null;
                     m_Disposed = true;
-                    if (File.Exists(m_Path))
-                        File.Delete(m_Path);
+                    s_DatabaseFiles.Remove(m_Path);
                 }
             }
         }

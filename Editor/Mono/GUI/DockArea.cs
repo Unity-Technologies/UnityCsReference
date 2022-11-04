@@ -244,7 +244,6 @@ namespace UnityEditor
             pane.m_Parent = null;
             if (killIfEmpty)
                 KillIfEmpty();
-            RegisterSelectedPane(sendEvents: true);
         }
 
         private static void UpdateWindowTitle(EditorWindow w)
