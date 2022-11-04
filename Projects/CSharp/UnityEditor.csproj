@@ -836,6 +836,9 @@
     <Compile Include="..\..\Editor\Mono\ConsoleWindow.cs">
       <Link>Editor\Mono\ConsoleWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ConsoleWindowUtility.cs">
+      <Link>Editor\Mono\ConsoleWindowUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ContainerWindow.bindings.cs">
       <Link>Editor\Mono\ContainerWindow.bindings.cs</Link>
     </Compile>
@@ -2752,6 +2755,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs">
       <Link>Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PreferencesWindow\CollectionsPreferences.cs">
+      <Link>Editor\Mono\PreferencesWindow\CollectionsPreferences.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\PreferencesItem.cs">
       <Link>Editor\Mono\PreferencesWindow\PreferencesItem.cs</Link>
@@ -7817,20 +7823,11 @@
     <Compile Include="..\..\Modules\PresetsEditor\AddPresetTypeWindow\PresetTypeDropdownItem.cs">
       <Link>Modules\PresetsEditor\AddPresetTypeWindow\PresetTypeDropdownItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PresetsEditor\DefaultPresetReorderableList.cs">
-      <Link>Modules\PresetsEditor\DefaultPresetReorderableList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PresetsEditor\PresetContextMenu.cs">
-      <Link>Modules\PresetsEditor\PresetContextMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PresetsEditor\PresetManagerEditor.cs">
-      <Link>Modules\PresetsEditor\PresetManagerEditor.cs</Link>
+    <Compile Include="..\..\Modules\PresetsEditor\PresetEditorHelper.cs">
+      <Link>Modules\PresetsEditor\PresetEditorHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\PresetManagerPostProcessor.cs">
       <Link>Modules\PresetsEditor\PresetManagerPostProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PresetsEditor\PresetSelector.cs">
-      <Link>Modules\PresetsEditor\PresetSelector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\Public\Preset.bindings.cs">
       <Link>Modules\PresetsEditor\Public\Preset.bindings.cs</Link>
@@ -7841,8 +7838,20 @@
     <Compile Include="..\..\Modules\PresetsEditor\Public\PresetType.bindings.cs">
       <Link>Modules\PresetsEditor\Public\PresetType.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PresetsUIEditor\DefaultPresetReorderableList.cs">
+      <Link>Modules\PresetsUIEditor\DefaultPresetReorderableList.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PresetsUIEditor\PresetEditor.cs">
       <Link>Modules\PresetsUIEditor\PresetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsUIEditor\PresetManagerEditor.cs">
+      <Link>Modules\PresetsUIEditor\PresetManagerEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsUIEditor\PresetSearchProvider.cs">
+      <Link>Modules\PresetsUIEditor\PresetSearchProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsUIEditor\PresetSelector.cs">
+      <Link>Modules\PresetsUIEditor\PresetSelector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\ArrayEntries.cs">
       <Link>Modules\ProfilerEditor\MemoryProfiler\ArrayEntries.cs</Link>
@@ -8816,8 +8825,11 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Block.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\Block.binding.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockInstance.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\BlockInstance.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.binding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockVariable.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\BlockVariable.binding.cs</Link>
@@ -8825,11 +8837,14 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CommandDescriptor.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\CommandDescriptor.binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CopyRule.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\CopyRule.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPoint.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPoint.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPointInstance.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPointInstance.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs</Link>
@@ -8873,6 +8888,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassIdentifier.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PassIdentifier.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassStageType.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\PassStageType.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.binding.cs</Link>
     </Compile>
@@ -8897,6 +8915,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderType.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderType.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\StageDescription.binding.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\StageDescription.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\StructField.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\StructField.bindings.cs</Link>
     </Compile>
@@ -8912,8 +8933,8 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplatePass.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\TemplatePass.binding.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplatePassStageElement.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\TemplatePassStageElement.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Utilities.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\Utilities.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\BindingValidator.cs">
       <Link>Modules\ShortcutManagerEditor\BindingValidator.cs</Link>

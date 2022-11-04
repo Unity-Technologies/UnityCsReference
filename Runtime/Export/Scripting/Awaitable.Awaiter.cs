@@ -9,15 +9,15 @@ using UnityEngine.Internal;
 
 namespace UnityEngine
 {
-    public partial class AwaitableCoroutine
+    public partial class Awaitable
     {
         [ExcludeFromDocs]
         public Awaiter GetAwaiter() => new Awaiter(this);
         [ExcludeFromDocs]
         public struct Awaiter : INotifyCompletion
         {
-            private readonly AwaitableCoroutine _awaited;
-            internal Awaiter(AwaitableCoroutine awaited) => _awaited = awaited;
+            private readonly Awaitable _awaited;
+            internal Awaiter(Awaitable awaited) => _awaited = awaited;
 
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

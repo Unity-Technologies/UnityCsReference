@@ -30,6 +30,9 @@ namespace UnityEngine.UIElements
             UxmlBoolAttributeDescription m_HidePlaceholderOnFocus = new UxmlBoolAttributeDescription { name = "hide-placeholder-on-focus" };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
             UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
+            UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
+            UxmlEnumAttributeDescription<TouchScreenKeyboardType> m_KeyboardType = new UxmlEnumAttributeDescription<TouchScreenKeyboardType> { name = "keyboard-type" };
+            UxmlBoolAttributeDescription m_AutoCorrection = new UxmlBoolAttributeDescription { name = "auto-correction" };
 
             /// <summary>
             /// Initialize the traits for this field.
@@ -46,13 +49,13 @@ namespace UnityEngine.UIElements
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
+                field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
+                field.keyboardType = m_KeyboardType.GetValueFromBag(bag, cc);
+                field.autoCorrection = m_AutoCorrection.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
+                field.maskChar = (string.IsNullOrEmpty(maskCharacter)) ? kMaskCharDefault : maskCharacter[0];
                 field.placeholderText = m_PlaceholderText.GetValueFromBag(bag, cc);
                 field.hidePlaceholderOnFocus = m_HidePlaceholderOnFocus.GetValueFromBag(bag, cc);
-                if (!string.IsNullOrEmpty(maskCharacter))
-                {
-                    field.maskChar = maskCharacter[0];
-                }
             }
         }
 
@@ -148,6 +151,41 @@ namespace UnityEngine.UIElements
                 m_TextInputBase.isPasswordField = value;
                 m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
             }
+        }
+
+        /// <summary>
+        /// Determines if the touch screen keyboard auto correction is turned on or off.
+        /// </summary>
+        public bool autoCorrection
+        {
+            get => textEdition.autoCorrection;
+            set => textEdition.autoCorrection = value;
+        }
+
+        /// <summary>
+        /// Hides or shows the mobile input field.
+        /// </summary>
+        public bool hideMobileInput
+        {
+            get => textEdition.hideMobileInput;
+            set => textEdition.hideMobileInput = value;
+        }
+
+        /// <summary>
+        /// The type of mobile keyboard that will be used.
+        /// </summary>
+        public TouchScreenKeyboardType keyboardType
+        {
+            get => textEdition.keyboardType;
+            set => textEdition.keyboardType = value;
+        }
+
+        /// <summary>
+        /// The active touch keyboard being displayed.
+        /// </summary>
+        public TouchScreenKeyboard touchScreenKeyboard
+        {
+            get => textEdition.touchScreenKeyboard;
         }
 
         /// <summary>
@@ -695,6 +733,8 @@ namespace UnityEngine.UIElements
                 textElement = new TextElement();
                 textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
+                textEdition.keyboardType = TouchScreenKeyboardType.Default;
+                textEdition.autoCorrection = false;
                 textSelection.isSelectable = true;
                 textElement.enableRichText = false;
                 textSelection.selectAllOnFocus = true;

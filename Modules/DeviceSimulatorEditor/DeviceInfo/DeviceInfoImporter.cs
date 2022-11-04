@@ -249,6 +249,8 @@ namespace UnityEditor.DeviceSimulation
                 "supportsGraphicsFence",
                 "supportsAsyncGPUReadback",
                 "supportsRayTracing",
+                "supportsRayTracingShaders",
+                "supportsInlineRayTracing",
                 "supportsSetConstantBuffer",
                 "hasMipMaxLevel",
                 "supportsMipStreaming",

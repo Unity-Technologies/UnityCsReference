@@ -225,7 +225,6 @@ namespace UnityEditor
             public static readonly GUIContent scriptCompilationTitle = EditorGUIUtility.TrTextContent("Script Compilation");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
-            public static readonly GUIContent enableRoslynAnalyzers = EditorGUIUtility.TrTextContent("Enable Roslyn Analyzers", "User-written scripts will be compiled with Roslyn analyzer DLLs that are present in the project.");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
@@ -443,7 +442,6 @@ namespace UnityEditor
         // Scripting
         SerializedProperty m_UseDeterministicCompilation;
         SerializedProperty m_ScriptingBackend;
-        SerializedProperty m_EnableRoslynAnalyzers;
         SerializedProperty m_APICompatibilityLevel;
         SerializedProperty m_DefaultAPICompatibilityLevel;
         SerializedProperty m_Il2CppCompilerConfiguration;
@@ -587,7 +585,6 @@ namespace UnityEditor
             m_GCIncremental                 = FindPropertyAssert("gcIncremental");
             m_UseDeterministicCompilation   = FindPropertyAssert("useDeterministicCompilation");
             m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
-            m_EnableRoslynAnalyzers         = FindPropertyAssert("enableRoslynAnalyzers");
             m_APICompatibilityLevel         = FindPropertyAssert("apiCompatibilityLevelPerPlatform");
             m_DefaultAPICompatibilityLevel  = FindPropertyAssert("apiCompatibilityLevel");
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
@@ -787,8 +784,7 @@ namespace UnityEditor
             if (isPreset)
                 return;
 
-            var selectors = Resources.FindObjectsOfTypeAll<PresetSelector>();
-            var isOpen = selectors != null && selectors.Length > 0;
+            bool isOpen = PresetEditorHelper.presetEditorOpen;
             hasPresetWindowClosed = (isPresetWindowOpen && !isOpen);
             isPresetWindowOpen = isOpen;
 
@@ -2904,6 +2900,9 @@ namespace UnityEditor
 
                         var GUIState = GUI.enabled;
 
+
+                        GUI.enabled = serializedScriptingDefines.Count() > 0;
+
                         if (GUILayout.Button(SettingsContent.scriptingDefineSymbolsCopyDefines, EditorStyles.miniButton))
                         {
                             EditorGUIUtility.systemCopyBuffer = PlayerSettings.GetScriptingDefineSymbols(platform.namedBuildTarget);
@@ -3007,8 +3006,6 @@ namespace UnityEditor
                 serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
                 SetReason(RecompileReason.useDeterministicCompilationModified);
             }
-
-            EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);
         }
 
         void DrawTextField(Rect rect, int index)

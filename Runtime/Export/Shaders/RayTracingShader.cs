@@ -25,6 +25,7 @@ namespace UnityEngine.Rendering
         public void SetTexture(string name, Texture texture) { SetTexture(Shader.PropertyToID(name), texture); }
         public void SetBuffer(string name, ComputeBuffer buffer) { SetBuffer(Shader.PropertyToID(name), buffer); }
         public void SetBuffer(string name, GraphicsBuffer buffer) { SetBuffer(Shader.PropertyToID(name), buffer); }
+        public void SetBuffer(string name, GraphicsBufferHandle bufferHandle) { SetBuffer(Shader.PropertyToID(name), bufferHandle); }
         public void SetConstantBuffer(int nameID, ComputeBuffer buffer, int offset, int size) { SetConstantComputeBuffer(nameID, buffer, offset, size); }
         public void SetConstantBuffer(string name, ComputeBuffer buffer, int offset, int size) { SetConstantComputeBuffer(Shader.PropertyToID(name), buffer, offset, size); }
         public void SetConstantBuffer(int nameID, GraphicsBuffer buffer, int offset, int size) { SetConstantGraphicsBuffer(nameID, buffer, offset, size); }

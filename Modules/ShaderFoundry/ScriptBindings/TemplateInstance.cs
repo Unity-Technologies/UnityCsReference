@@ -14,7 +14,7 @@ namespace UnityEditor.ShaderFoundry
     internal struct TemplateInstanceInternal
     {
         internal FoundryHandle m_TemplateHandle;
-        internal FoundryHandle m_CustomizationPointListHandle;
+        internal FoundryHandle m_CustomizationPointImplementationListHandle;
         internal FoundryHandle m_TagDescriptorListHandle;
 
         internal extern static TemplateInstanceInternal Invalid();
@@ -42,15 +42,7 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        public IEnumerable<CustomizationPointInstance> CustomizationPointInstances
-        {
-            get
-            {
-                var localContainer = Container;
-                var blockHandles = new FixedHandleListInternal(templateInstance.m_CustomizationPointListHandle);
-                return blockHandles.Select(localContainer, (handle) => (new CustomizationPointInstance(localContainer, handle)));
-            }
-        }
+        public IEnumerable<CustomizationPointImplementation> CustomizationPointImplementations => templateInstance.m_CustomizationPointImplementationListHandle.AsListEnumerable<CustomizationPointImplementation>(container, (container, handle) => (new CustomizationPointImplementation(container, handle)));
 
         public IEnumerable<TagDescriptor> TagDescriptors
         {
@@ -83,7 +75,7 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             Template template = Template.Invalid;
-            public List<CustomizationPointInstance> customizationPointInstances = new List<CustomizationPointInstance>();
+            public List<CustomizationPointImplementation> customizationPointImplementations;
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
             public ShaderContainer Container => container;
 
@@ -93,9 +85,9 @@ namespace UnityEditor.ShaderFoundry
                 this.template = template;
             }
 
-            public void AddCustomizationPointInstance(CustomizationPointInstance customizationPointInstance)
+            public void AddCustomizationPointImplementation(CustomizationPointImplementation customizationPointImplementation)
             {
-                customizationPointInstances.Add(customizationPointInstance);
+                Utilities.AddToList(ref customizationPointImplementations, customizationPointImplementation);
             }
 
             public void AddTagDescriptor(TagDescriptor tagDescriptor)
@@ -107,7 +99,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var templateInstanceInternal = new TemplateInstanceInternal();
                 templateInstanceInternal.m_TemplateHandle = template.handle;
-                templateInstanceInternal.m_CustomizationPointListHandle = FixedHandleListInternal.Build(container, customizationPointInstances, (o) => (o.handle));
+                templateInstanceInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, customizationPointImplementations, (o) => (o.handle));
                 templateInstanceInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
 
                 var returnTypeHandle = container.AddTemplateInstanceInternal(templateInstanceInternal);

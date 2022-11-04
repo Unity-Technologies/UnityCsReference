@@ -7,118 +7,262 @@ namespace UnityEngine.UIElements
     internal class TouchScreenTextEditorEventHandler : TextEditorEventHandler
     {
         private IVisualElementScheduledItem m_TouchKeyboardPoller = null;
-        private VisualElement m_LastPointerDownTarget;
-
-        internal TouchScreenKeyboard keyboardOnScreen = null;
+        private bool m_TouchKeyboardAllowsInPlaceEditing = false;
+        private bool m_IsClicking = false;
 
         public TouchScreenTextEditorEventHandler(TextElement textElement, TextEditingUtilities editingUtilities)
             : base(textElement, editingUtilities) {}
 
         void PollTouchScreenKeyboard()
         {
-            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
+            m_TouchKeyboardAllowsInPlaceEditing = TouchScreenKeyboard.isInPlaceEditingAllowed;
+
+            if (TouchScreenKeyboard.isSupported && !m_TouchKeyboardAllowsInPlaceEditing)
             {
                 if (m_TouchKeyboardPoller == null)
-                {
                     m_TouchKeyboardPoller = textElement?.schedule.Execute(DoPollTouchScreenKeyboard).Every(100);
-                }
                 else
-                {
                     m_TouchKeyboardPoller.Resume();
-                }
             }
         }
 
         void DoPollTouchScreenKeyboard()
         {
-            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
+            if (editingUtilities.TouchScreenKeyboardShouldBeUsed())
             {
-                if (keyboardOnScreen != null)
-                {
-                    var edition = textElement.edition;
-                    edition.UpdateText(keyboardOnScreen.text);
+                if (textElement.m_TouchScreenKeyboard == null)
+                    return;
 
-                    if (!edition.isDelayed)
+                var edition = textElement.edition;
+                var touchKeyboard = textElement.m_TouchScreenKeyboard;
+                var touchKeyboardText = touchKeyboard.text;
+
+                if (touchKeyboard.status != TouchScreenKeyboard.Status.Visible)
+                {
+                    if (touchKeyboard.status == TouchScreenKeyboard.Status.Canceled)
+                        edition.RestoreValueAndText();
+
+                    CloseTouchScreenKeyboard();
+
+                    if (edition.isDelayed)
                         edition.UpdateValueFromText?.Invoke();
 
-                    if (keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
+                    edition.UpdateTextFromValue?.Invoke();
+                    textElement.Blur();
+
+                    return;
+                }
+
+                // Stop processing if nothing has changed - UpdateText affects performance, even if we have not
+                // modified the string therefore we try to use it sparingly
+                if (editingUtilities.text == touchKeyboardText)
+                    return;
+
+                // When we are utilizing our own input field, we need to do some extra work such as making
+                // sure the caret is at the right position, characters being entered are valid, any extra
+                // validation should be in place, etc.
+                if (edition.hideMobileInput)
+                {
+                    if (editingUtilities.text != touchKeyboardText)
                     {
-                        CloseTouchScreenKeyboard();
-                        m_TouchKeyboardPoller.Pause();
+                        var changed = false;
+                        editingUtilities.text = "";
 
-                        if (edition.isDelayed)
-                            edition.UpdateValueFromText?.Invoke();
-                        edition.UpdateTextFromValue?.Invoke();
+                        foreach (var character in touchKeyboardText)
+                        {
+                            if (!edition.AcceptCharacter(character))
+                                return;
 
-                        textElement.edition.MoveFocusToCompositeRoot?.Invoke();
+                            if (character != 0)
+                            {
+                                editingUtilities.text += character;
+                                changed = true;
+                            }
+                        }
+
+                        if (changed)
+                        {
+                            UpdateStringPositionFromKeyboard();
+                        }
+
+                        edition.UpdateText(editingUtilities.text);
+                        // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
+                        textElement.uitkTextHandle.Update();
+                    }
+                    else if (!m_IsClicking && touchKeyboard != null && touchKeyboard.canGetSelection)
+                    {
+                        UpdateStringPositionFromKeyboard();
                     }
                 }
+                // When using the native OS's input field to update the input field value, we just want to sync the
+                // soft keyboard's value with our text value.
+                else {
+                    edition.UpdateText(touchKeyboardText);
+
+                    // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
+                    textElement.uitkTextHandle.Update();
+                }
+
+                if (!edition.isDelayed)
+                    edition.UpdateValueFromText?.Invoke();
+
+                textElement.edition.UpdateScrollOffset?.Invoke(false);
             }
             else
             {
                 // TouchScreenKeyboard should no longer be used, presumably because a hardware keyboard is now available.
                 CloseTouchScreenKeyboard();
-
-                m_TouchKeyboardPoller.Pause();
             }
+        }
+
+        private void UpdateStringPositionFromKeyboard()
+        {
+            if (textElement.m_TouchScreenKeyboard == null)
+                return;
+
+            var selectionRange = textElement.m_TouchScreenKeyboard.selection;
+            var selectionStart = selectionRange.start;
+            var selectionEnd = selectionRange.end;
+
+            if (textElement.selection.selectIndex != selectionStart)
+                textElement.selection.selectIndex = selectionStart;
+
+            if (textElement.selection.cursorIndex != selectionEnd)
+                textElement.selection.cursorIndex = selectionEnd;
         }
 
         private void CloseTouchScreenKeyboard()
         {
-            if (keyboardOnScreen != null)
+            if (textElement.m_TouchScreenKeyboard != null)
             {
-                keyboardOnScreen.active = false;
-                keyboardOnScreen = null;
+                textElement.m_TouchScreenKeyboard.active = false;
+                textElement.m_TouchScreenKeyboard = null;
+                m_TouchKeyboardPoller.Pause();
             }
         }
 
         private void OpenTouchScreenKeyboard()
         {
-            keyboardOnScreen = TouchScreenKeyboard.Open(textElement.text,
-                TouchScreenKeyboardType.Default,
-                true, // autocorrection
-                textElement.edition.multiline,
-                textElement.edition.isPassword);
+            var edition = textElement.edition;
+            TouchScreenKeyboard.hideInput = edition.hideMobileInput;
 
+            textElement.m_TouchScreenKeyboard = TouchScreenKeyboard.Open(
+                textElement.text,
+                edition.keyboardType,
+                !edition.isPassword && edition.autoCorrection,
+                edition.multiline,
+                edition.isPassword
+            );
+
+            // Highlights the soft keyboard's text (if applicable) when using inPlaceEditing mode
+            if (edition.hideMobileInput)
+            {
+                var selectIndex = textElement.selection.selectIndex;
+                var cursorIndex = textElement.selection.cursorIndex;
+                var length = selectIndex < cursorIndex ? cursorIndex - selectIndex : selectIndex - cursorIndex;
+                var start = selectIndex < cursorIndex ? selectIndex : cursorIndex;
+                textElement.m_TouchScreenKeyboard.selection = new RangeInt(start, length);
+            }
+            // Otherwise place the cursor at the end of the string
+            else
+            {
+                textElement.m_TouchScreenKeyboard.selection = new RangeInt(textElement.m_TouchScreenKeyboard.text?.Length ?? 0, 0);
+            }
         }
 
         public override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if (keyboardOnScreen != null)
+            if (!editingUtilities.TouchScreenKeyboardShouldBeUsed() || textElement.edition.isReadOnly)
                 return;
 
-            var edition = textElement.edition;
-            if (!edition.isReadOnly && evt.eventTypeId == PointerDownEvent.TypeId())
+            switch (evt)
             {
-                // CaptureMouse is preventing WebGL from processing pointerDown event in
-                // TextInputFieldBase during the Javascript event handler, preventing the
-                // keyboard from being displayed. Disable the capture behavior for WebGL.
-                textElement.CaptureMouse();
-                m_LastPointerDownTarget = evt.elementTarget;
-            }
-            else if (!edition.isReadOnly && evt.eventTypeId == PointerUpEvent.TypeId())
-            {
-                textElement.ReleaseMouse();
-                if (m_LastPointerDownTarget == null || !m_LastPointerDownTarget.worldBound.Contains(((PointerUpEvent)evt).position))
-                    return;
-
-                m_LastPointerDownTarget = null;
-
-                edition.UpdateText(editingUtilities.text);
-
-                OpenTouchScreenKeyboard();
-
-                if (keyboardOnScreen != null)
-                {
-                    PollTouchScreenKeyboard();
-                }
-
-                // Scroll offset might need to be updated
-                edition.UpdateScrollOffset?.Invoke(false);
-                evt.StopPropagation();
+                case PointerDownEvent:
+                    OnPointerDownEvent();
+                    break;
+                case PointerUpEvent pue:
+                    OnPointerUpEvent(pue);
+                    break;
+                case FocusInEvent:
+                    OnFocusInEvent();
+                    break;
+                case FocusOutEvent foe:
+                    OnFocusOutEvent(foe);
+                    break;
             }
         }
+
+        private void OnPointerDownEvent()
+        {
+            m_IsClicking = true;
+
+            // Update the soft keyboard's input field's cursor with the selection's cursor;
+            if (textElement.m_TouchScreenKeyboard != null && textElement.edition.hideMobileInput)
+            {
+                var selectionStart = textElement.selection.cursorIndex;
+                var softKeyboardStringLength = textElement.m_TouchScreenKeyboard.text?.Length ?? 0;
+
+                if (selectionStart < 0)
+                    selectionStart = 0;
+
+                if (selectionStart > softKeyboardStringLength)
+                    selectionStart = softKeyboardStringLength;
+
+                textElement.m_TouchScreenKeyboard.selection = new RangeInt(selectionStart, 0);
+            }
+        }
+
+        private void OnPointerUpEvent(PointerUpEvent evt)
+        {
+            m_IsClicking = false;
+            evt.StopPropagation();
+        }
+
+        private void OnFocusInEvent()
+        {
+            if (textElement.m_TouchScreenKeyboard != null)
+                return;
+
+            OpenTouchScreenKeyboard();
+
+            if (textElement.m_TouchScreenKeyboard != null)
+                PollTouchScreenKeyboard();
+
+            textElement.edition.SaveValueAndText();
+            textElement.edition.UpdateScrollOffset?.Invoke(false);
+        }
+
+        private void OnFocusOutEvent(FocusOutEvent evt)
+        {
+            var currentFocusedTextElement = (TextElement)evt.target;
+            var pendingFocusedTextElement = (TextElement)currentFocusedTextElement.focusController.m_LastPendingFocusedElement; // Expected to be NULL when losing focus
+
+            // Adds the ability to keep the soft keyboard open when clicking into another input field only if,
+            // the keyboard type, multiline or hide mobile input are not the same - otherwise we need to
+            // re-instantiate the keyboard (by closing and reopening it), if not, it's going to start behaving
+            // as it never changed.
+            if (pendingFocusedTextElement == currentFocusedTextElement ||
+                pendingFocusedTextElement == null ||
+                pendingFocusedTextElement.edition.keyboardType != currentFocusedTextElement.edition.keyboardType ||
+                pendingFocusedTextElement.edition.multiline != currentFocusedTextElement.edition.multiline ||
+                pendingFocusedTextElement.edition.hideMobileInput != currentFocusedTextElement.edition.hideMobileInput)
+            {
+                CloseTouchScreenKeyboard();
+            }
+            else
+            {
+                // Partially dismiss the keyboard
+                textElement.m_TouchScreenKeyboard = null;
+                m_TouchKeyboardPoller.Pause();
+            }
+
+            if (textElement.edition.isDelayed)
+                textElement.edition.UpdateValueFromText?.Invoke();
+
+            textElement.edition.UpdateTextFromValue?.Invoke();
+        }
+
     }
 }

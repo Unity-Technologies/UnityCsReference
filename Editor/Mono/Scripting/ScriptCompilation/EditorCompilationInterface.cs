@@ -291,8 +291,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (PlayerSettings.UseDeterministicCompilation)
                 options |= EditorScriptCompilationOptions.BuildingUseDeterministicCompilation;
 
-            options |= EditorScriptCompilationOptions.BuildingWithRoslynAnalysis;
-
             return options;
         }
     }

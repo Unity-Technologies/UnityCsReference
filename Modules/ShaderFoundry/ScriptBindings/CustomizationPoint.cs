@@ -16,7 +16,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_InputListHandle;
         internal FoundryHandle m_OutputListHandle;
-        internal FoundryHandle m_DefaultBlockInstanceList;
+        internal FoundryHandle m_DefaultBlockSequenceElementListHandle;
 
         internal extern static CustomizationPointInternal Invalid();
         internal extern bool IsValid();
@@ -36,13 +36,13 @@ namespace UnityEditor.ShaderFoundry
         public string Name => container?.GetString(customizationPoint.m_NameHandle) ?? string.Empty;
         public IEnumerable<BlockVariable> Inputs => GetVariableEnumerable(customizationPoint.m_InputListHandle);
         public IEnumerable<BlockVariable> Outputs => GetVariableEnumerable(customizationPoint.m_OutputListHandle);
-        public IEnumerable<BlockInstance> DefaultBlockInstances
+        // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
+        internal IEnumerable<BlockSequenceElement> DefaultBlockSequenceElements
         {
             get
             {
-                var localContainer = Container;
-                var list = new FixedHandleListInternal(customizationPoint.m_DefaultBlockInstanceList);
-                return list.Select<BlockInstance>(localContainer, (handle) => (new BlockInstance(localContainer, handle)));
+                return customizationPoint.m_DefaultBlockSequenceElementListHandle.AsListEnumerable(container,
+                    (container, handle) => new BlockSequenceElement(container, handle));
             }
         }
 
@@ -77,7 +77,7 @@ namespace UnityEditor.ShaderFoundry
             public List<BlockVariable> inputs { get; set; } = new List<BlockVariable>();
             public List<BlockVariable> outputs { get; set; } = new List<BlockVariable>();
             public List<BlockVariable> properties { get; set; } = new List<BlockVariable>();
-            public List<BlockInstance> defaultBlockInstances { get; set; } = new List<BlockInstance>();
+            public List<BlockSequenceElement> defaultBlockSequenceElements;
             public ShaderContainer Container => container;
 
             public Builder(ShaderContainer container, string name)
@@ -88,7 +88,8 @@ namespace UnityEditor.ShaderFoundry
 
             public void AddInput(BlockVariable input) { inputs.Add(input); }
             public void AddOutput(BlockVariable output) { outputs.Add(output); }
-            public void AddDefaultBlockInstance(BlockInstance blockInstance) { defaultBlockInstances.Add(blockInstance); }
+            // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
+            internal void AddDefaultBlockSequenceElement(BlockSequenceElement blockSequenceElement) => Utilities.AddToList(ref defaultBlockSequenceElements, blockSequenceElement);
 
             public CustomizationPoint Build()
             {
@@ -99,7 +100,7 @@ namespace UnityEditor.ShaderFoundry
 
                 customizationPointInternal.m_InputListHandle = FixedHandleListInternal.Build(container, inputs, (v) => (v.handle));
                 customizationPointInternal.m_OutputListHandle = FixedHandleListInternal.Build(container, outputs, (v) => (v.handle));
-                customizationPointInternal.m_DefaultBlockInstanceList = FixedHandleListInternal.Build(container, defaultBlockInstances, (v) => (v.handle));
+                customizationPointInternal.m_DefaultBlockSequenceElementListHandle = FixedHandleListInternal.Build(container, defaultBlockSequenceElements, (v) => (v.handle));
 
                 var returnTypeHandle = container.AddCustomizationPointInternal(customizationPointInternal);
                 return new CustomizationPoint(container, returnTypeHandle);

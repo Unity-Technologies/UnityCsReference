@@ -518,7 +518,7 @@ namespace UnityEngine
             m_TextSelectingUtility.ClearCursorPos();
         }
 
-        /// Replacted the selection with /c/
+        /// Replaced the selection with /c/
         public void Insert(char c)
         {
             ReplaceSelection(c.ToString());
@@ -584,6 +584,21 @@ namespace UnityEngine
         {
             revealCursor = false;
             m_TextSelectingUtility.SelectNone();
+        }
+
+        // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
+        // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
+        internal bool TouchScreenKeyboardShouldBeUsed()
+        {
+            RuntimePlatform platform = Application.platform;
+            switch (platform)
+            {
+                case RuntimePlatform.Android:
+                case RuntimePlatform.WebGLPlayer:
+                    return !TouchScreenKeyboard.isInPlaceEditingAllowed;
+                default:
+                    return TouchScreenKeyboard.isSupported;
+            }
         }
     }
 }

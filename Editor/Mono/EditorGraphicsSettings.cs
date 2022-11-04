@@ -27,6 +27,13 @@ namespace UnityEditor.Rendering
         public float  maxLuminance;
     }
 
+    public enum BatchRendererGroupStrippingMode
+    {
+        KeepIfEntitiesGraphics = 0,
+        StripAll,
+        KeepAll
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct TierSettings
     {

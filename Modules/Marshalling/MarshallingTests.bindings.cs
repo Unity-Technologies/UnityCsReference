@@ -319,6 +319,8 @@ namespace UnityEngine
     {
         [NativeThrows] public static extern void ParameterUnityObject(MarshallingTestObject param);
 
+        [NativeThrows] public static extern void ParameterUnityObjectByRef(ref MarshallingTestObject param);
+
         [NativeThrows] public static extern void ParameterUnityObjectPPtr(MarshallingTestObject param);
 
         [NativeThrows] public static extern void ParameterStructUnityObject(StructUnityObject param);

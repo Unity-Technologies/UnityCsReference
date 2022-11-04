@@ -468,10 +468,7 @@ namespace UnityEngine.UIElements
             private set => m_Flags = value ? m_Flags | VisualElementFlags.LayoutManual : m_Flags & ~VisualElementFlags.LayoutManual;
         }
 
-        internal float scaledPixelsPerPoint
-        {
-            get { return panel == null ? GUIUtility.pixelsPerPoint : (panel as BaseVisualElementPanel).scaledPixelsPerPoint; }
-        }
+        internal float scaledPixelsPerPoint => elementPanel?.scaledPixelsPerPoint ?? GUIUtility.pixelsPerPoint;
 
         [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
         StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => resolvedStyle.unityBackgroundScaleMode;
@@ -788,13 +785,13 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    var mat = pivotedMatrixWithLayout;
+                    GetPivotedMatrixWithLayout(out var mat);
                     MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
                 }
             }
             else
             {
-                m_WorldTransformCache = pivotedMatrixWithLayout;
+                GetPivotedMatrixWithLayout(out m_WorldTransformCache);
             }
 
             isWorldTransformInverseDirty = true;

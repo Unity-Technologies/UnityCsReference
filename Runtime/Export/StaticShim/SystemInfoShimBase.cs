@@ -192,7 +192,12 @@ namespace UnityEngine
         public virtual bool supportsGraphicsFence => UnityEngine.SystemInfo.supportsGraphicsFence;
 
         public virtual bool supportsAsyncGPUReadback => UnityEngine.SystemInfo.supportsAsyncGPUReadback;
+
         public virtual bool supportsRayTracing => UnityEngine.SystemInfo.supportsRayTracing;
+
+        public virtual bool supportsRayTracingShaders => UnityEngine.SystemInfo.supportsRayTracingShaders;
+
+        public virtual bool supportsInlineRayTracing => UnityEngine.SystemInfo.supportsInlineRayTracing;
 
         public virtual bool supportsSetConstantBuffer => UnityEngine.SystemInfo.supportsSetConstantBuffer;
 

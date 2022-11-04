@@ -293,7 +293,6 @@ namespace UnityEditor.SceneTemplate
         [InitializeOnLoadMethod]
         private static void Init()
         {
-            RegisterDefines();
             RegisterSceneEventListeners();
             RegisterApplicationEvent();
         }
@@ -332,11 +331,6 @@ namespace UnityEditor.SceneTemplate
                     continue;
                 sceneTemplateInfo.sceneTemplate.UpdateDependencies();
             }
-        }
-
-        private static void RegisterDefines()
-        {
-            Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSceneTemplateModuleDefine;
         }
 
         private static void RegisterSceneEventListeners()
@@ -421,11 +415,6 @@ namespace UnityEditor.SceneTemplate
 
                 ClearInMemorySceneState();
             }
-        }
-
-        private static void AddSceneTemplateModuleDefine(BuildTarget target, HashSet<string> defines)
-        {
-            defines.Add("SCENE_TEMPLATE_MODULE");
         }
 
         private static bool CopyCloneableDependencies(SceneTemplateAsset sceneTemplate, string newSceneOutputPath, out Dictionary<string, string> refPathMap, out List<Object> clonedAssets)

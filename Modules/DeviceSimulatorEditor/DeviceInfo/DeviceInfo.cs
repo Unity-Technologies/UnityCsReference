@@ -152,6 +152,8 @@ namespace UnityEditor.DeviceSimulation
         public bool supportsGraphicsFence;
         public bool supportsAsyncGPUReadback;
         public bool supportsRayTracing;
+        public bool supportsRayTracingShaders;
+        public bool supportsInlineRayTracing;
         public bool supportsSetConstantBuffer;
         public bool hasMipMaxLevel;
         public bool supportsMipStreaming;

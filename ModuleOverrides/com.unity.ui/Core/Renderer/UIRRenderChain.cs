@@ -977,6 +977,7 @@ namespace UnityEngine.UIElements.UIR
         internal bool isInChain;
         internal bool isHierarchyHidden;
         internal bool localFlipsWinding;
+        internal bool localTransformScaleZero;
         internal bool worldFlipsWinding;
 
         internal ClipMethod clipMethod; // Self

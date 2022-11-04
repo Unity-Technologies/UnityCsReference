@@ -373,14 +373,16 @@ namespace UnityEngine.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::ClearInstances", HasExplicitThis = true)]
         extern public void ClearInstances();
 
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CullInstances", HasExplicitThis = true)]
-        extern public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig);
-
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
         extern private int AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstance", HasExplicitThis = true, ThrowsException = true)]
         extern unsafe private int AddMeshInstance(RayTracingMeshInstanceConfig config, Matrix4x4 matrix, Matrix4x4* prevMatrix, uint id = 0xFFFFFFFF);
+
+        public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig) => Internal_CullInstances(in cullingConfig);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CullInstances", HasExplicitThis = true)]
+        extern private RayTracingInstanceCullingResults Internal_CullInstances(in RayTracingInstanceCullingConfig cullingConfig);
 
 
         // Obsolete methods. To be removed in the future.

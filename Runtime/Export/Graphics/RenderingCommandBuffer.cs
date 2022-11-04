@@ -67,6 +67,7 @@ namespace UnityEngine.Rendering
         public GraphicsFence CreateGraphicsFence(GraphicsFenceType fenceType, SynchronisationStageFlags stage)
         {
             GraphicsFence newFence = new GraphicsFence();
+            newFence.m_FenceType = fenceType;
             newFence.m_Ptr = CreateGPUFence_Internal(fenceType, stage);
             newFence.InitPostAllocation();
             newFence.Validate();
@@ -284,6 +285,16 @@ namespace UnityEngine.Rendering
             Internal_SetRayTracingAccelerationStructure(rayTracingShader, nameID, rayTracingAccelerationStructure);
         }
 
+        public void SetRayTracingAccelerationStructure(ComputeShader computeShader, int kernelIndex, string name, RayTracingAccelerationStructure rayTracingAccelerationStructure)
+        {
+            Internal_SetComputeRayTracingAccelerationStructure(computeShader, kernelIndex, Shader.PropertyToID(name), rayTracingAccelerationStructure);
+        }
+
+        public void SetRayTracingAccelerationStructure(ComputeShader computeShader, int kernelIndex, int nameID, RayTracingAccelerationStructure rayTracingAccelerationStructure)
+        {
+            Internal_SetComputeRayTracingAccelerationStructure(computeShader, kernelIndex, nameID, rayTracingAccelerationStructure);
+        }
+
         public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, string name, ComputeBuffer buffer)
         {
             Internal_SetRayTracingComputeBufferParam(rayTracingShader, Shader.PropertyToID(name), buffer);
@@ -303,6 +314,16 @@ namespace UnityEngine.Rendering
         {
             Internal_SetRayTracingGraphicsBufferParam(rayTracingShader, nameID, buffer);
         }
+
+        public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, string name, GraphicsBufferHandle bufferHandle)
+        {
+            Internal_SetRayTracingGraphicsBufferHandleParam(rayTracingShader, Shader.PropertyToID(name), bufferHandle);
+        }
+
+        public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, int nameID, GraphicsBufferHandle bufferHandle)
+        {
+            Internal_SetRayTracingGraphicsBufferHandleParam(rayTracingShader, nameID, bufferHandle);
+        }     
 
         public void SetRayTracingConstantBufferParam(RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer, int offset, int size)
         {

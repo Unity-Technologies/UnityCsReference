@@ -10,29 +10,29 @@ using UnityEngine.Internal;
 
 namespace UnityEngine
 {
-    [AsyncMethodBuilder(typeof(AwaitableCoroutineAsyncMethodBuilder<>))]
-    public class AwaitableCoroutine<T>
+    [AsyncMethodBuilder(typeof(Awaitable.AwaitableAsyncMethodBuilder<>))]
+    public class Awaitable<T>
     {
-        static ThreadSafeObjectPool<AwaitableCoroutine<T>> _pool = new (()=>new ());
-        private AwaitableCoroutine _coroutine;
+        static Awaitable.ThreadSafeObjectPool<Awaitable<T>> _pool = new (()=>new ());
+        private Awaitable _awaitable;
         T _result;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ContinueWith(Action continuation)
         {
-            _coroutine.SetContinuation(continuation);
+            _awaitable.SetContinuation(continuation);
         }
         private T GetResult()
         {
             try
             {
-                _coroutine.PropagateExceptionAndRelease();
+                _awaitable.PropagateExceptionAndRelease();
                 return _result;
             }
             finally
             {
-                _coroutine = null;
+                _awaitable = null;
                 _result = default;
                 _pool.Release(this);
             }
@@ -41,26 +41,26 @@ namespace UnityEngine
         internal void SetResultAndRaiseContinuation(T result)
         {
             _result = result;
-            _coroutine.RaiseManagedCompletion(null);
+            _awaitable.RaiseManagedCompletion(null);
         }
 
         internal void SetExceptionAndRaiseContinuation(Exception exception)
         {
-            _coroutine.RaiseManagedCompletion(exception);
+            _awaitable.RaiseManagedCompletion(exception);
         }
 
         public void Cancel()
         {
-            _coroutine.Cancel();
+            _awaitable.Cancel();
         }
 
-        private AwaitableCoroutine() { }
+        private Awaitable() { }
 
-        internal static AwaitableCoroutine<T> GetManaged()
+        internal static Awaitable<T> GetManaged()
         {
-            var innerCoroutine = AwaitableCoroutine.NewManagedCoroutine();
+            var innerCoroutine = Awaitable.NewManagedAwaitable();
             var result = _pool.Get();
-            result._coroutine = innerCoroutine;
+            result._awaitable = innerCoroutine;
             return result;
         }
 
@@ -72,9 +72,9 @@ namespace UnityEngine
         [ExcludeFromDocs]
         public struct Awaiter : INotifyCompletion
         {
-            private readonly AwaitableCoroutine<T> _coroutine;
+            private readonly Awaitable<T> _coroutine;
 
-            public Awaiter(AwaitableCoroutine<T> coroutine)
+            public Awaiter(Awaitable<T> coroutine)
             {
                 _coroutine = coroutine;
             }
@@ -85,7 +85,7 @@ namespace UnityEngine
                 _coroutine.ContinueWith(continuation);
             }
 
-            public bool IsCompleted => _coroutine._coroutine.IsCompleted;
+            public bool IsCompleted => _coroutine._awaitable.IsCompleted;
             public T GetResult() => _coroutine.GetResult();
         }
     }

@@ -1433,46 +1433,30 @@ namespace UnityEditor
 
         public static void DrawOutline(int[] parentRenderers, int[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
+            if(Event.current.type != EventType.Repaint)
+                return;
             Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
-        public static void DrawOutline(int[] renderers, Color color, float fillOpacity = 0)
-        {
-            Internal_DrawOutline(color, color, 0, renderers, null, OutlineDrawMode.SelectionOutline, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
-        }
+        public static void DrawOutline(int[] renderers, Color color, float fillOpacity = 0) =>
+            DrawOutline(renderers, null, color, color, fillOpacity);
 
         public static void DrawOutline(Renderer[] renderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
             HandleUtility.FilterRendererIDs(renderers, out parentRenderers, out childRenderers);
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
+            DrawOutline(parentRenderers, childRenderers, parentNodeColor, childNodeColor, fillOpacity);
         }
 
-        public static void DrawOutline(Renderer[] renderers, Color color, float fillOpacity = 0)
-        {
-            var index = 0;
-            var ids = new int[renderers.Length];
-            foreach (var renderer in renderers)
-                    ids[index++] = renderer.GetInstanceID();
-
-            Internal_DrawOutline(color, color, 0, ids, null, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
-        }
+        public static void DrawOutline(Renderer[] renderers, Color color, float fillOpacity = 0) =>
+            DrawOutline(renderers, color, color, fillOpacity);
 
         public static void DrawOutline(GameObject[] objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
             HandleUtility.FilterInstanceIDs(objects, out parentRenderers, out childRenderers);
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
+            DrawOutline(parentRenderers, childRenderers, parentNodeColor, childNodeColor, fillOpacity);
         }
 
         public static void DrawOutline(GameObject[] objects, Color color, float fillOpacity = 0)
@@ -1480,23 +1464,16 @@ namespace UnityEditor
             var index = 0;
             var ids = new int[objects.Length];
             foreach (var go in objects)
-            {
                 if (go.TryGetComponent(out Renderer renderer))
                     ids[index++] = renderer.GetInstanceID();
-            }
-
-            Internal_DrawOutline(color, color, 0, ids, null, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
+            DrawOutline(ids, null, color, color, fillOpacity);
         }
 
         public static void DrawOutline(List<GameObject> objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             int[] parentRenderers, childRenderers;
             HandleUtility.FilterInstanceIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers);
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
+            DrawOutline(parentRenderers, childRenderers, parentNodeColor, childNodeColor, fillOpacity);
         }
 
         public static void DrawOutline(List<GameObject> objects, Color color, float fillOpacity = 0)
@@ -1508,10 +1485,7 @@ namespace UnityEditor
                 if (go.TryGetComponent(out Renderer renderer))
                     ids[index++] = renderer.GetInstanceID();
             }
-
-            Internal_DrawOutline(color, color, 0, ids, null, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
-
-            Internal_FinishDrawingCamera(Camera.current, true);
+            DrawOutline(ids, null, color, color, fillOpacity);
         }
 
         internal static void DrawOutlineOrWireframeInternal(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int[] parentRenderers, int[] childRenderers, OutlineDrawMode outlineMode)

@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
     internal interface IGlobalPanelDebugger
     {
         bool InterceptMouseEvent(IPanel panel, IMouseEvent ev);
-        void OnPostMouseEvent(IPanel panel, IMouseEvent ev);
+        void OnContextClick(IPanel panel, ContextClickEvent ev);
     }
 
     internal interface IPanelDebugger
@@ -301,6 +301,7 @@ namespace UnityEngine.UIElements
         }
 
         public abstract void Repaint(Event e);
+        public abstract void ValidateFocus();
         public abstract void ValidateLayout();
         public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
@@ -565,11 +566,10 @@ namespace UnityEngine.UIElements
             scheduler.UpdateScheduledEvents();
             // This call is already on UIElementsUtility.UpdateSchedulers() but it's also necessary here for Runtime UI
             UpdateAssetTrackers();
+            ValidateFocus();
             ValidateLayout();
             UpdateAnimations();
             UpdateBindings();
-
-            focusController.ValidateInternalState(this);
         }
     }
 
@@ -681,14 +681,29 @@ namespace UnityEngine.UIElements
             return obj;
         }
 
+        private bool m_JustReceivedFocus;
         internal void Focus()
         {
-            focusController?.SetFocusToLastFocusedElement();
+            // Case 1345260: wait for the next editor update to set focus back to the element that had it before the
+            // panel last lost the focus. This delay avoids setting the focus and immediately setting it again when the
+            // panel is selected through clicking it.
+            m_JustReceivedFocus = true;
         }
 
         internal void Blur()
         {
             focusController?.BlurLastFocusedElement();
+        }
+
+        public override void ValidateFocus()
+        {
+            if (m_JustReceivedFocus)
+            {
+                m_JustReceivedFocus = false;
+                focusController?.SetFocusToLastFocusedElement();
+            }
+
+            focusController?.ValidateInternalState(this);
         }
 
         internal string name
@@ -824,21 +839,21 @@ namespace UnityEngine.UIElements
             return PickAll(root, point);
         }
 
-        private static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
+        private static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
             s_MarkerPickAll.Begin();
-            var result = PerformPick(root, point, picked);
+            var result = PerformPick(root, point, picked, includeIgnoredElement);
             s_MarkerPickAll.End();
             return result;
         }
 
-        private static VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null)
+        private static VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
             // Skip picking for elements with display: none
             if (root.resolvedStyle.display == DisplayStyle.None)
                 return null;
 
-            if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0)
+            if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0 && !includeIgnoredElement)
             {
                 return null;
             }
@@ -868,7 +883,7 @@ namespace UnityEngine.UIElements
             for (int i = cCount - 1; i >= 0; i--)
             {
                 var child = root.hierarchy[i];
-                var result = PerformPick(child, point, picked);
+                var result = PerformPick(child, point, picked, includeIgnoredElement);
                 if (returnedChild == null && result != null)
                 {
                     if (picked == null)
@@ -880,7 +895,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (root.visible && root.pickingMode == PickingMode.Position && containsPoint)
+            if (root.visible && (root.pickingMode == PickingMode.Position || includeIgnoredElement) && containsPoint)
             {
                 picked?.Add(root);
                 if (returnedChild == null)

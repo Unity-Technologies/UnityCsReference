@@ -22,6 +22,7 @@ namespace UnityEditor.ShaderFoundry
 
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_TypeHandle;
+        internal FoundryHandle m_AttributeListHandle;
         internal UInt32 m_Flags;
 
         // TODO no need to make this extern, can duplicate it here
@@ -45,6 +46,7 @@ namespace UnityEditor.ShaderFoundry
         public bool IsValid => (container != null) && handle.IsValid && (param.IsValid);
         public string Name => container?.GetString(param.m_NameHandle) ?? string.Empty;
         public ShaderType Type => new ShaderType(container, param.m_TypeHandle);
+        public IEnumerable<ShaderAttribute> Attributes => param.m_AttributeListHandle.AsListEnumerable<ShaderAttribute>(container, (container, handle) => (new ShaderAttribute(container, handle)));
         public bool IsInput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsInput) != 0);
         public bool IsOutput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsOutput) != 0);
         internal UInt32 Flags => param.m_Flags;
@@ -76,6 +78,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             internal string name;
             internal ShaderType type;
+            internal List<ShaderAttribute> attributes;
             internal UInt32 flags;
             public ShaderContainer Container => container;
 
@@ -95,11 +98,19 @@ namespace UnityEditor.ShaderFoundry
                 this.flags = flags;
             }
 
+            public void AddAttribute(ShaderAttribute attribute)
+            {
+                if (attributes == null)
+                    attributes = new List<ShaderAttribute>();
+                attributes.Add(attribute);
+            }
+
             public FunctionParameter Build()
             {
                 var functionParamInternal = new FunctionParameterInternal();
                 functionParamInternal.m_NameHandle = container.AddString(name);
                 functionParamInternal.m_TypeHandle = type.handle;
+                functionParamInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
                 functionParamInternal.m_Flags = flags;
                 FoundryHandle returnHandle = container.AddFunctionParameter(functionParamInternal);
                 return new FunctionParameter(Container, returnHandle);

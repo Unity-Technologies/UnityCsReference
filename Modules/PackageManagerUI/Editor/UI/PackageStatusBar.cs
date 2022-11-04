@@ -65,10 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             refreshButton.iconTooltip = L10n.Tr("Refresh list");
             refreshButton.clicked += () =>
             {
-                if (!EditorApplication.isPlaying)
-                {
-                    m_PageRefreshHandler.Refresh(m_PackageManagerPrefs.currentFilterTab);
-                }
+                m_PageRefreshHandler.Refresh(m_PackageManagerPrefs.currentFilterTab);
             };
             refreshButton.SetEnabled(true);
 

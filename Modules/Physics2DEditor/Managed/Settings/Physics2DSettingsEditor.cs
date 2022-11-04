@@ -14,6 +14,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent kMultithreadingLabel = EditorGUIUtility.TrTextContent("Multithreading", "Allows the configuration of multi-threaded physics using the job system.");
             public static readonly GUIContent kGizmosLabel = EditorGUIUtility.TrTextContent("Gizmos", "Allows the configuration of 2D physics gizmos shown in the Editor.");
+            public static readonly GUIContent kSimulationModeLabel = EditorGUIUtility.TrTextContent("Simulation Mode", "Controls when and how the physics simulation will be run.");
             public static readonly GUIContent kLayerCollisionMatrixLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.");
             public static readonly GUIContent kReuseCollisionCallbacksLabel = EditorGUIUtility.TrTextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.");
             public static readonly GUIContent kAutoSyncTransformsLabel = EditorGUIUtility.TrTextContent("This option is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.");
@@ -31,17 +32,27 @@ namespace UnityEditor
         const string UniqueSettingsKey = "UnityEditor.U2D.Physics/";
         const string GeneralSettingsSelectedKey = UniqueSettingsKey + "GeneralSettingsSelected";
 
-
         SerializedProperty m_ReuseCollisionCallbacks;
         SerializedProperty m_AutoSyncTransforms;
         SerializedProperty m_Multithreading;
         SerializedProperty m_GizmoOptions;
 
+        SerializedProperty m_SimulationMode;
+        SerializedProperty m_UseSubStepping;
+        SerializedProperty m_UseSubStepContacts;
+        SerializedProperty m_MinSubStepFPS;
+        SerializedProperty m_MaxSubStepCount;
+        
         public void OnEnable()
         {
             m_ReuseCollisionCallbacks = serializedObject.FindProperty("m_ReuseCollisionCallbacks");
             m_AutoSyncTransforms = serializedObject.FindProperty("m_AutoSyncTransforms");
             m_Multithreading = serializedObject.FindProperty("m_JobOptions");
+            m_SimulationMode = serializedObject.FindProperty("m_SimulationMode");
+            m_UseSubStepping = serializedObject.FindProperty("m_UseSubStepping");
+            m_UseSubStepContacts = serializedObject.FindProperty("m_UseSubStepContacts");
+            m_MaxSubStepCount = serializedObject.FindProperty("m_MaxSubStepCount");
+            m_MinSubStepFPS = serializedObject.FindProperty("m_MinSubStepFPS");
             m_GizmoOptions = serializedObject.FindProperty("m_GizmoOptions");
         }
 
@@ -105,7 +116,17 @@ namespace UnityEditor
                 // Draw standard property settings.
                 EditorGUILayout.Space();
                 EditorGUILayout.Space();
-                DrawPropertiesExcluding(serializedObject, "m_JobOptions", "m_ReuseCollisionCallbacks", "m_AutoSyncTransforms", "m_GizmoOptions");
+                DrawPropertiesExcluding(
+                    serializedObject,
+                    m_ReuseCollisionCallbacks.name,
+                    m_AutoSyncTransforms.name,
+                    m_SimulationMode.name,
+                    m_UseSubStepping.name,
+                    m_UseSubStepContacts.name,
+                    m_MaxSubStepCount.name,
+                    m_MinSubStepFPS.name,
+                    m_GizmoOptions.name,
+                    m_Multithreading.name);
 
                 // Reuse Collision Callbacks.
                 EditorGUILayout.PropertyField(m_ReuseCollisionCallbacks);
@@ -121,6 +142,26 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(Content.kAutoSyncTransformsLabel.ToString(), MessageType.Warning, false);
                     EditorGUILayout.Space();
+                }
+
+                // Draw the Simulation Mode options.
+                var simulationMode = (SimulationMode2D)EditorGUILayout.EnumPopup(Content.kSimulationModeLabel, (SimulationMode2D)m_SimulationMode.enumValueIndex);
+                m_SimulationMode.enumValueIndex = (int)simulationMode;
+
+                // If the simulation mode is "Update" or "Script" then present the sub-stepping options.
+                if (simulationMode == SimulationMode2D.Update || simulationMode == SimulationMode2D.Script)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_UseSubStepping);
+                    EditorGUILayout.PropertyField(m_UseSubStepContacts);                    
+                    EditorGUILayout.PropertyField(m_MaxSubStepCount);
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.PropertyField(m_MinSubStepFPS);
+                    EditorGUILayout.LabelField(string.Format($"{(1f / m_MinSubStepFPS.floatValue).ToString("0.00000 seconds")} (delta time)"));
+                    GUILayout.EndHorizontal();
+
+                    EditorGUI.indentLevel--;
                 }
 
                 // Draw the Gizmo options.

@@ -23,27 +23,6 @@ namespace UnityEditor.Presets
             }
         }
 
-        class PresetChanged : PresetSelectorReceiver
-        {
-            public SerializedProperty property;
-            public int undoGroup;
-
-            public override void OnSelectionChanged(Preset selection)
-            {
-                property.objectReferenceValue = selection;
-                property.serializedObject.ApplyModifiedProperties();
-            }
-
-            public override void OnSelectionClosed(Preset selection)
-            {
-                Undo.RevertAllDownToGroup(undoGroup);
-                property.objectReferenceValue = selection;
-                property.serializedObject.ApplyModifiedProperties();
-                Undo.CollapseUndoOperations(undoGroup);
-                DestroyImmediate(this);
-            }
-        }
-
         public string className { get; }
         public string fullClassName { get; }
 
@@ -162,10 +141,7 @@ namespace UnityEditor.Presets
                 case EventType.MouseDown:
                     if (buttonRect.Contains(Event.current.mousePosition))
                     {
-                        var changed = ScriptableObject.CreateInstance<PresetChanged>();
-                        changed.property = presetProperty;
-                        changed.undoGroup = Undo.GetCurrentGroup();
-                        PresetSelector.ShowSelector(keyType, presetObject, false, changed);
+                        PresetSelector.ShowSelector(keyType, presetObject, presetProperty, false);
                         Event.current.Use();
                     }
 

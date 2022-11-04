@@ -34,7 +34,9 @@ namespace UnityEditor.Overlays
 
                 m_Overlay = value;
                 name = overlay.rootVisualElement.name;
-                m_Title.text = overlay.displayName;
+                m_Title.text = string.IsNullOrEmpty(overlay.displayName)
+                    ? m_Overlay.GetType().Name
+                    : overlay.displayName;
 
                 UpdateIconVisibilityState();
 

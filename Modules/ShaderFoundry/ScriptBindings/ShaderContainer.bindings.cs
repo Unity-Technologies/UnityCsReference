@@ -160,10 +160,26 @@ namespace UnityEditor.ShaderFoundry
         [NativeMethod("Get<ShaderFoundry::Block>")]
         internal extern BlockInternal GetBlock(FoundryHandle blockHandle);
 
-        [NativeMethod("Add<ShaderFoundry::BlockInstance>")]
-        internal extern FoundryHandle AddBlockInstanceInternal(BlockInstanceInternal blockInstance);
-        [NativeMethod("Get<ShaderFoundry::BlockInstance>")]
-        internal extern BlockInstanceInternal GetBlockInstance(FoundryHandle blockInstanceHandle);
+
+        [NativeMethod("Add<ShaderFoundry::BlockSequenceElement>")]
+        internal extern FoundryHandle AddBlockSequenceElementInternal(BlockSequenceElementInternal blockSequenceElement);
+        [NativeMethod("Get<ShaderFoundry::BlockSequenceElement>")]
+        internal extern BlockSequenceElementInternal GetBlockSequenceElement(FoundryHandle blockSequenceElementHandle);
+
+        [NativeMethod("Add<ShaderFoundry::BlockLinkOverride::LinkAccessor>")]
+        internal extern FoundryHandle AddLinkAccessorInternal(BlockLinkOverrideInternal.LinkAccessorInternal linkAccessor);
+        [NativeMethod("Get<ShaderFoundry::BlockLinkOverride::LinkAccessor>")]
+        internal extern BlockLinkOverrideInternal.LinkAccessorInternal GetLinkAccessor(FoundryHandle linkAccessorHandle);
+
+        [NativeMethod("Add<ShaderFoundry::BlockLinkOverride::LinkElement>")]
+        internal extern FoundryHandle AddLinkElementInternal(BlockLinkOverrideInternal.LinkElementInternal linkElement);
+        [NativeMethod("Get<ShaderFoundry::BlockLinkOverride::LinkElement>")]
+        internal extern BlockLinkOverrideInternal.LinkElementInternal GetLinkElement(FoundryHandle linkElementHandle);
+
+        [NativeMethod("Add<ShaderFoundry::BlockLinkOverride>")]
+        internal extern FoundryHandle AddBlockLinkOverrideInternal(BlockLinkOverrideInternal linkOverride);
+        [NativeMethod("Get<ShaderFoundry::BlockLinkOverride>")]
+        internal extern BlockLinkOverrideInternal GetBlockLinkOverride(FoundryHandle linkOverrideHandle);
 
         internal extern FoundryHandle AddPassIdentifier(uint subShaderIndex, uint passIndex);
         [NativeMethod("Get<PassIdentifier>")]
@@ -174,20 +190,25 @@ namespace UnityEditor.ShaderFoundry
         [NativeMethod("Get<ShaderFoundry::CustomizationPoint>")]
         internal extern CustomizationPointInternal GetCustomizationPoint(FoundryHandle customizationPointHandle);
 
-        [NativeMethod("Add<ShaderFoundry::CustomizationPointInstance>")]
-        internal extern FoundryHandle AddCustomizationPointInstanceInternal(CustomizationPointInstanceInternal customizationPointInstance);
-        [NativeMethod("Get<ShaderFoundry::CustomizationPointInstance>")]
-        internal extern CustomizationPointInstanceInternal GetCustomizationPointInstance(FoundryHandle customizationPointInstanceHandle);
+        [NativeMethod("Add<ShaderFoundry::CustomizationPointImplementation>")]
+        internal extern FoundryHandle AddCustomizationPointImplementationInternal(CustomizationPointImplementationInternal customizationPointImplementation);
+        [NativeMethod("Get<ShaderFoundry::CustomizationPointImplementation>")]
+        internal extern CustomizationPointImplementationInternal GetCustomizationPointImplementation(FoundryHandle customizationPointImplementationHandle);
 
         [NativeMethod("Add<ShaderFoundry::PackageRequirement>")]
         internal extern FoundryHandle AddPackageRequirementInternal(PackageRequirementInternal packageRequirement);
         [NativeMethod("Get<ShaderFoundry::PackageRequirement>")]
         internal extern PackageRequirementInternal GetPackageRequirement(FoundryHandle packageRequirementHandle);
 
-        [NativeMethod("Add<ShaderFoundry::TemplatePassStageElement>")]
-        internal extern FoundryHandle AddTemplatePassStageElementInternal(TemplatePassStageElementInternal templatePassStageElement);
-        [NativeMethod("Get<ShaderFoundry::TemplatePassStageElement>")]
-        internal extern TemplatePassStageElementInternal GetTemplatePassStageElement(FoundryHandle templatePassStageElementHandle);
+        [NativeMethod("Add<ShaderFoundry::CopyRule>")]
+        internal extern FoundryHandle AddCopyRuleInternal(CopyRuleInternal copyRule);
+        [NativeMethod("Get<ShaderFoundry::CopyRule>")]
+        internal extern CopyRuleInternal GetCopyRule(FoundryHandle copyRuleHandle);
+
+        [NativeMethod("Add<ShaderFoundry::StageDescription>")]
+        internal extern FoundryHandle AddStageDescriptionInternal(StageDescriptionInternal stageDescription);
+        [NativeMethod("Get<ShaderFoundry::StageDescription>")]
+        internal extern StageDescriptionInternal GetStageDescription(FoundryHandle stageDescriptionHandle);
 
         [NativeMethod("Add<ShaderFoundry::TemplatePass>")]
         internal extern FoundryHandle AddTemplatePassInternal(TemplatePassInternal templatePass);

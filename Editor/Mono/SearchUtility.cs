@@ -89,17 +89,20 @@ namespace UnityEditor
             return parsed;
         }
 
+        private static bool HasFilter(string searchString, string filter)
+        {
+            // All filters are already tokenized. SO matching with startsWith instead of indexOf will help with comparison.
+            return searchString.StartsWith($"{filter}:") || searchString.StartsWith($"{filter}=");
+        }
+
         internal static bool CheckForKeyWords(string searchString, SearchFilter filter, int quote1, int quote2)
         {
             bool parsed = false;
 
             // Support: 't:type' syntax (e.g 't:Texture2D' will show Texture2D objects)
-            int index = searchString.IndexOf("t:");
-            if (index == -1)
-                index = searchString.IndexOf("t=");
-            if (index == 0)
+            if (HasFilter(searchString, "t"))
             {
-                string type = searchString.Substring(index + 2);
+                string type = searchString.Substring(2);
                 List<string> tmp = new List<string>(filter.classNames);
                 tmp.Add(type);
                 filter.classNames = tmp.ToArray();
@@ -107,12 +110,9 @@ namespace UnityEditor
             }
 
             // Support: 'l:assetlabel' syntax (e.g 'l:architecture' will show assets with AssetLabel 'architecture')
-            index = searchString.IndexOf("l:");
-            if (index == -1)
-                index = searchString.IndexOf("l=");
-            if (index == 0)
+            if (HasFilter(searchString, "l"))
             {
-                string label = searchString.Substring(index + 2);
+                string label = searchString.Substring(2);
                 List<string> tmp = new List<string>(filter.assetLabels);
                 tmp.Add(label);
                 filter.assetLabels = tmp.ToArray();
@@ -120,10 +120,9 @@ namespace UnityEditor
             }
 
             // Support: 'v:versionState' syntax
-            index = searchString.IndexOf("v:");
-            if (index >= 0)
+            if (HasFilter(searchString, "v"))
             {
-                string versionStateString = searchString.Substring(index + 2);
+                string versionStateString = searchString.Substring(2);
                 List<string> tmp = new List<string>(filter.versionControlStates);
                 tmp.Add(versionStateString);
                 filter.versionControlStates = tmp.ToArray();
@@ -131,21 +130,18 @@ namespace UnityEditor
             }
 
             // Support: 's:softLockState' syntax
-            index = searchString.IndexOf("s:");
-            if (index >= 0)
+            if (HasFilter(searchString, "s"))
             {
-                string softLockStateString = searchString.Substring(index + 2);
+                string softLockStateString = searchString.Substring(2);
                 List<string> tmp = new List<string>(filter.softLockControlStates);
                 tmp.Add(softLockStateString);
                 filter.softLockControlStates = tmp.ToArray();
                 parsed = true;
             }
-
             // Support: 'a:area' syntax
-            index = searchString.IndexOf("a:");
-            if (index >= 0)
+            if (HasFilter(searchString, "a"))
             {
-                string areaString = searchString.Substring(index + 2);
+                string areaString = searchString.Substring(2);
                 if (string.Compare(areaString, "all", true) == 0)
                 {
                     filter.searchArea = SearchFilter.SearchArea.AllAssets;
@@ -164,10 +160,9 @@ namespace UnityEditor
             }
 
             // Support: 'b:assetBundleName' syntax (e.g 'b:materialAssetBundle' will show assets within assetBundle 'materialAssetBundle')
-            index = searchString.IndexOf("b:");
-            if (index == 0)
+            if (HasFilter(searchString, "b"))
             {
-                string assetBundleName = searchString.Substring(index + 2);
+                string assetBundleName = searchString.Substring(2);
                 List<string> tmp = new List<string>(filter.assetBundleNames);
                 tmp.Add(assetBundleName);
                 filter.assetBundleNames = tmp.ToArray();
@@ -175,16 +170,14 @@ namespace UnityEditor
             }
 
             // Support: 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with instanceID 1234)
-            index = searchString.IndexOf("ref:");
-            if (index == 0)
+            if (HasFilter(searchString, "ref"))
             {
                 int instanceID = 0;
-
-                int firstColon = index + 3;
+                int firstColon = 3;
                 int secondColon = searchString.IndexOf(':', firstColon + 1);
                 if (secondColon >= 0)
                 {
-                    // Instead of resolving a passed-in pathname to an instance-id, use a supplied one.
+                    // Instead of resolving a path passed-in pathname to an instance-id, use a supplied one.
                     // The pathname is effectively just a UI hint of whose references we're filtering out.
                     string refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
                     int id;
@@ -226,8 +219,7 @@ namespace UnityEditor
             }
 
             // Support: 'glob:path' syntax (e.g 'glob:Assets/**/*.{png|PNG}' will show objects in any subfolder with name ending by .png or .PNG)
-            index = searchString.IndexOf("glob:");
-            if (index == 0)
+            if (HasFilter(searchString, "glob"))
             {
                 string globValue = searchString.Substring(5);
                 if (quote1 >= 0 && quote2 >= 0)
@@ -238,17 +230,16 @@ namespace UnityEditor
                         count = searchString.Length - startIndex;
                     globValue = searchString.Substring(startIndex, count);
                 }
+
                 var globs = new List<string>(filter.globs);
                 globs.Add(globValue);
                 filter.globs = globs.ToArray();
                 parsed = true;
             }
 
-            var importSearchToken = $"{ImportLog.Filters.SearchToken}:";
-            index = searchString.IndexOf(importSearchToken);
-            if (index == 0)
+            if (HasFilter(searchString, ImportLog.Filters.SearchToken))
             {
-                var label = searchString.Substring(importSearchToken.Length);
+                var label = searchString.Substring(ImportLog.Filters.SearchToken.Length + 1);
                 if (label == ImportLog.Filters.AllIssuesStr)
                 {
                     filter.importLogFlags = ImportLogFlags.Error | ImportLogFlags.Warning;

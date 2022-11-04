@@ -260,6 +260,7 @@ namespace UnityEditor.Search
             PrefabStage.prefabStageClosing += _ => InvalidateCurrentScene();
 
             ObjectChangeEvents.changesPublished += OnObjectChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             s_Initialize = true;
         }
@@ -329,6 +330,23 @@ namespace UnityEditor.Search
             return new SearchMonitorView(propertyDatabase, propertyAliases, delayedSync);
         }
 
+
+        static void OnPlayModeChanged(PlayModeStateChange playMode)
+        {
+            if (playMode == PlayModeStateChange.EnteredPlayMode)
+            {
+                EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            }
+            else
+            {
+                EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            }
+        }
+
+        static void OnHierarchyChanged()
+        {
+            InvalidateCurrentScene();
+        }
 
         static void DisableContentRefresh()
         {

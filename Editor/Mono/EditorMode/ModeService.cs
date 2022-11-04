@@ -39,6 +39,7 @@ namespace UnityEditor
         SafeMode,
         Remember,
         AllowAssetCreation,
+        StaticTabs,
         SearchPopupButton
     }
 

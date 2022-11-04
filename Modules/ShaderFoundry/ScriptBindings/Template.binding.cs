@@ -19,6 +19,11 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_TagDescriptorListHandle;           // List<FoundryHandle>
         internal FoundryHandle m_LODHandle;                         // string
         internal FoundryHandle m_PackageRequirementListHandle;      // List<PackageRequirements>
+        internal FoundryHandle m_CustomizationPointListHandle;      // List<CustomizationPoint>
+        internal FoundryHandle m_ExtendedTemplateListHandle;        // List<Template>
+        internal FoundryHandle m_PassCopyRuleListHandle;            // List<CopyRule>
+        internal FoundryHandle m_CustomizationPointCopyRuleListHandle; // List<CopyRule>
+        internal FoundryHandle m_CustomizationPointImplementationListHandle; // List<CustomizationPointImplementation>
         internal FoundryHandle m_AdditionalShaderIDStringHandle;    // string
         internal FoundryHandle m_LinkerHandle;                      // ILinker (in C# container only)
 
@@ -58,6 +63,11 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<TagDescriptor> TagDescriptors => template.m_TagDescriptorListHandle.AsListEnumerable<TagDescriptor>(container, (container, handle) => (new TagDescriptor(container, handle)));
         public string LOD => container?.GetString(template.m_LODHandle) ?? string.Empty;
         public IEnumerable<PackageRequirement> PackageRequirements => template.m_PackageRequirementListHandle.AsListEnumerable<PackageRequirement>(container, (container, handle) => (new PackageRequirement(container, handle)));
+        public IEnumerable<CustomizationPoint> CustomizationPoints => template.m_CustomizationPointListHandle.AsListEnumerable<CustomizationPoint>(Container, (container, handle) => (new CustomizationPoint(container, handle)));
+        public IEnumerable<Template> ExtendedTemplates => template.m_ExtendedTemplateListHandle.AsListEnumerable<Template>(container, (container, handle) => (new Template(container, handle)));
+        public IEnumerable<CopyRule> PassCopyRules => template.m_PassCopyRuleListHandle.AsListEnumerable<CopyRule>(container, (container, handle) => (new CopyRule(container, handle)));
+        public IEnumerable<CopyRule> CustomizationPointCopyRules => template.m_CustomizationPointCopyRuleListHandle.AsListEnumerable<CopyRule>(container, (container, handle) => (new CopyRule(container, handle)));
+        public IEnumerable<CustomizationPointImplementation> CustomizationPointImplementations => template.m_CustomizationPointImplementationListHandle.AsListEnumerable<CustomizationPointImplementation>(container, (container, handle) => (new CustomizationPointImplementation(container, handle)));
         public IEnumerable<ShaderDependency> ShaderDependencies => template.m_ShaderDependencyListHandle.AsListEnumerable(container, (container, handle) => new ShaderDependency(container, handle));
         public ShaderCustomEditor CustomEditor => new ShaderCustomEditor(container, template.m_ShaderCustomEditorHandle);
 
@@ -90,6 +100,11 @@ namespace UnityEditor.ShaderFoundry
             List<TagDescriptor> tagDescriptors;
             public string LOD;
             List<PackageRequirement> packageRequirements;
+            List<CustomizationPoint> customizationPoints;
+            List<Template> extendedTemplates;
+            List<CopyRule> passCopyRules;
+            List<CopyRule> customizationPointCopyRules;
+            List<CustomizationPointImplementation> customizationPointImplementations;
             List<ShaderDependency> shaderDependencies;
             public ShaderCustomEditor CustomEditor { get; set; } = ShaderCustomEditor.Invalid;
             public string ShaderFallback { get; set; }
@@ -137,6 +152,21 @@ namespace UnityEditor.ShaderFoundry
                 }
             }
 
+            public void AddCustomizationPoint(CustomizationPoint customizationPoint)
+            {
+                if (customizationPoint.IsValid)
+                {
+                    if (customizationPoints == null)
+                        customizationPoints = new List<CustomizationPoint>();
+                    customizationPoints.Add(customizationPoint);
+                }
+            }
+
+            public void AddTemplateExtension(Template template) => Utilities.AddToList(ref extendedTemplates, template);
+            public void AddPassCopyRule(CopyRule rule) => Utilities.AddToList(ref passCopyRules, rule);
+            public void AddCustomizationPointCopyRule(CopyRule rule) => Utilities.AddToList(ref customizationPointCopyRules, rule);
+            public void AddCustomizationPointImplementation(CustomizationPointImplementation customizationPointImplementation) => Utilities.AddToList(ref customizationPointImplementations, customizationPointImplementation);
+
             public void AddUsePass(string usePassName)
             {
                 if (!string.IsNullOrEmpty(usePassName))
@@ -179,6 +209,11 @@ namespace UnityEditor.ShaderFoundry
                 templateInternal.m_PassListHandle = FixedHandleListInternal.Build(container, passes, (p) => (p.handle));
                 templateInternal.m_LODHandle =  container.AddString(LOD);
                 templateInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
+                templateInternal.m_CustomizationPointListHandle = FixedHandleListInternal.Build(container, customizationPoints, (c) => c.handle);
+                templateInternal.m_ExtendedTemplateListHandle = FixedHandleListInternal.Build(container, extendedTemplates, (t) => (t.handle));
+                templateInternal.m_PassCopyRuleListHandle = FixedHandleListInternal.Build(container, passCopyRules, (r) => (r.handle));
+                templateInternal.m_CustomizationPointCopyRuleListHandle = FixedHandleListInternal.Build(container, customizationPointCopyRules, (r) => (r.handle));
+                templateInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, customizationPointImplementations, (c) => (c.handle));
                 templateInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (t) => (t.handle));
                 templateInternal.m_ShaderDependencyListHandle = FixedHandleListInternal.Build(container, shaderDependencies, (sd) => sd.handle);
                 templateInternal.m_ShaderCustomEditorHandle = CustomEditor.IsValid ? CustomEditor.handle : FoundryHandle.Invalid();

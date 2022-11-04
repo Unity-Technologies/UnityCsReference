@@ -11,15 +11,7 @@ namespace UnityEngine.UIElements
         internal TextEditingUtilities editingUtilities;
 
         private bool m_TouchScreenTextFieldInitialized;
-        private bool touchScreenTextFieldChanged
-        {
-            get { return m_TouchScreenTextFieldInitialized != touchScreenTextField; }
-        }
-        internal bool touchScreenTextField
-        {
-            get { return TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed; }
-        }
-
+        private bool touchScreenTextFieldChanged => m_TouchScreenTextFieldInitialized != editingUtilities?.TouchScreenKeyboardShouldBeUsed();
         private IVisualElementScheduledItem m_HardwareKeyboardPoller = null;
 
         public TextEditingManipulator(TextElement textElement)
@@ -31,7 +23,7 @@ namespace UnityEngine.UIElements
 
         private void InitTextEditorEventHandler()
         {
-            m_TouchScreenTextFieldInitialized = touchScreenTextField;
+            m_TouchScreenTextFieldInitialized = editingUtilities?.TouchScreenKeyboardShouldBeUsed() ?? false;
             if (m_TouchScreenTextFieldInitialized)
             {
                 editingEventHandler = new TouchScreenTextEditorEventHandler(m_TextElement, editingUtilities);
@@ -60,7 +52,7 @@ namespace UnityEngine.UIElements
             editingEventHandler?.ExecuteDefaultActionAtTarget(evt);
         }
 
-        void OnFocusInEvent(FocusInEvent evt)
+        void OnFocusInEvent(FocusInEvent _)
         {
             m_TextElement.edition.SaveValueAndText();
             // Update the selectedTextElement when an InputField takes focus.
@@ -90,10 +82,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void OnFocusOutEvent(FocusOutEvent evt)
+        void OnFocusOutEvent(FocusOutEvent _)
         {
             m_HardwareKeyboardPoller?.Pause();
-
             editingUtilities.OnBlur();
         }
     }

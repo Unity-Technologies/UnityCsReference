@@ -420,198 +420,198 @@ namespace UnityEngine.Rendering
 
 
         // Await Support
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(ComputeBuffer src)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(ComputeBuffer src)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(ComputeBuffer src, int size, int offset)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(ComputeBuffer src, int size, int offset)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, size, offset, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(GraphicsBuffer src)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(GraphicsBuffer src)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(GraphicsBuffer src, int size, int offset)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(GraphicsBuffer src, int size, int offset)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, size, offset, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex = 0)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex = 0)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, mipIndex, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, TextureFormat dstFormat)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, TextureFormat dstFormat)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, mipIndex, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, GraphicsFormat dstFormat)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, GraphicsFormat dstFormat)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, mipIndex, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, mipIndex, x, width, y, height, z, depth, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, mipIndex, x, width, y, height, z, depth, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat)
+        static public Awaitable<AsyncGPUReadbackRequest> RequestAsync(Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat)
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             Request(src, mipIndex, x, width, y, height, z, depth, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, ComputeBuffer src) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, ComputeBuffer src) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, ComputeBuffer src) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, ComputeBuffer src) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, ComputeBuffer src, int size, int offset) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, ComputeBuffer src, int size, int offset) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, size, offset, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, ComputeBuffer src, int size, int offset) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, ComputeBuffer src, int size, int offset) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, size, offset, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, GraphicsBuffer src) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, GraphicsBuffer src) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, GraphicsBuffer src) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, GraphicsBuffer src) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, GraphicsBuffer src, int size, int offset) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, GraphicsBuffer src, int size, int offset) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, size, offset, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, GraphicsBuffer src, int size, int offset) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, GraphicsBuffer src, int size, int offset) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, size, offset, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex = 0) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex = 0) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, mipIndex, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex = 0) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex = 0) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, mipIndex, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, TextureFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, TextureFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, mipIndex, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, TextureFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, TextureFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, mipIndex, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, GraphicsFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, GraphicsFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, mipIndex, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, GraphicsFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, GraphicsFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, mipIndex, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, mipIndex, x, width, y, height, z, depth, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, TextureFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, mipIndex, x, width, y, height, z, depth, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeArrayAsync<T>(ref NativeArray<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeArray(ref output, src, mipIndex, x, width, y, height, z, depth, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }
 
-        static public AwaitableCoroutine<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat) where T : struct
+        static public Awaitable<AsyncGPUReadbackRequest> RequestIntoNativeSliceAsync<T>(ref NativeSlice<T> output, Texture src, int mipIndex, int x, int width, int y, int height, int z, int depth, GraphicsFormat dstFormat) where T : struct
         {
-            var coroutine = AwaitableCoroutine<AsyncGPUReadbackRequest>.GetManaged();
+            var coroutine = Awaitable<AsyncGPUReadbackRequest>.GetManaged();
             RequestIntoNativeSlice(ref output, src, mipIndex, x, width, y, height, z, depth, dstFormat, coroutine.SetResultAndRaiseContinuation);
             return coroutine;
         }

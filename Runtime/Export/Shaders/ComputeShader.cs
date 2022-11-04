@@ -68,6 +68,11 @@ namespace UnityEngine
             SetBuffer(kernelIndex, Shader.PropertyToID(name), buffer);
         }
 
+        public void SetRayTracingAccelerationStructure(int kernelIndex, string name, Rendering.RayTracingAccelerationStructure accelerationStructure)
+        {
+            SetRayTracingAccelerationStructure(kernelIndex, Shader.PropertyToID(name), accelerationStructure);
+        }
+
         public void SetConstantBuffer(int nameID, ComputeBuffer buffer, int offset, int size)
         {
             SetConstantComputeBuffer(nameID, buffer, offset, size);

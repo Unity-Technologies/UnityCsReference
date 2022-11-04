@@ -160,6 +160,11 @@ namespace UnityEditor
                 {
                     return nameof(SceneAsset);
                 }
+
+                if (obj is LightingDataAsset)
+                {
+                    return nameof(LightingDataAsset);
+                }
             }
             else
             {
@@ -343,6 +348,11 @@ namespace UnityEditor
             if (obj is SceneAsset)
             {
                 return "CreatingScenes";
+            }
+
+            if (obj is LightingDataAsset)
+            {
+                return "LightmapSnapshot";
             }
 
             if (obj is DefaultAsset)

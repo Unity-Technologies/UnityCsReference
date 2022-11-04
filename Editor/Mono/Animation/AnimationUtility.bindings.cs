@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -385,8 +386,23 @@ namespace UnityEditor
             return GetEditorCurve(clip, EditorCurveBinding.FloatCurve(relativePath, type, propertyName));
         }
 
-        extern public static AnimationEvent[] GetAnimationEvents([NotNull] AnimationClip clip);
-        [NativeThrows] extern public static void SetAnimationEvents([NotNull] AnimationClip clip, [NotNull] AnimationEvent[] events);
+        public static AnimationEvent[] GetAnimationEvents(AnimationClip clip)
+        {
+            var blittableEvents = GetAnimationEventsInternal(clip);
+            var animationEvents = blittableEvents.Select(AnimationEventBlittable.ToAnimationEvent).ToArray();
+            foreach (var blittableEvent in blittableEvents)
+                blittableEvent.Dispose();
+            return animationEvents;
+        }
+        extern internal static AnimationEventBlittable[] GetAnimationEventsInternal([NotNull] AnimationClip clip);
+        public static void SetAnimationEvents(AnimationClip clip, AnimationEvent[] events)
+        {
+            var blittableEvents = events.Select(AnimationEventBlittable.FromAnimationEvent).ToArray();
+            SetAnimationEventsInternal(clip, blittableEvents);
+            foreach (var blittableEvent in blittableEvents)
+                blittableEvent.Dispose();
+        }
+        extern internal static void SetAnimationEventsInternal([NotNull] AnimationClip clip, [NotNull] AnimationEventBlittable[] events);
 
         extern public static string CalculateTransformPath([NotNull] Transform targetTransform, Transform root);
 

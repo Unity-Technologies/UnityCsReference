@@ -155,7 +155,7 @@ namespace UnityEditor.Search
         /// </summary>
         public static void RefreshWindows()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !SearchSettings.refreshSearchWindowsInPlayMode)
                 return;
 
             var windows = Resources.FindObjectsOfTypeAll<SearchWindow>();

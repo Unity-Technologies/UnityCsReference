@@ -113,7 +113,7 @@ namespace UnityEditor.Overlays
 
                 if (overlay == null)
                 {
-                    Debug.LogWarning("Overlay of type {type} can not be instantiated. Make sure this type contains a " +
+                    Debug.LogWarning($"Overlay of type {type} can not be instantiated. Make sure this type contains a " +
                         "parameter-less constructor and inherits the Overlay type.");
                     return null;
                 }
@@ -154,6 +154,8 @@ namespace UnityEditor.Overlays
 
         internal static bool EnsureValidId(IEnumerable<Overlay> existing, Overlay overlay)
         {
+            if (overlay == null)
+                return false;
             var id = string.IsNullOrEmpty(overlay.id) ? $"{overlay.GetType()}" : overlay.id;
             var ret = EnsureUniqueId(existing.Select(x => x.id), id);
             if (string.IsNullOrEmpty(ret))

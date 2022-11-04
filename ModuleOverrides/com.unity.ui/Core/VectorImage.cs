@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
     ///
     /// </remarks>
     [Serializable]
-    public class VectorImage : ScriptableObject
+    public sealed class VectorImage : ScriptableObject
     {
         [SerializeField] internal int version = 0; // For future upgrades using ISerializationCallbackReceiver
         [SerializeField] internal Texture2D atlas = null;

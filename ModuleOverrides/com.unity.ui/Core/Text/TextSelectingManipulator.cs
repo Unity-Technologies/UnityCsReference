@@ -25,10 +25,6 @@ namespace UnityEngine.UIElements
             {
                 if (m_IsClicking == value) return;
                 m_IsClicking = value;
-                if (m_IsClicking)
-                    m_TextElement.CaptureMouse();
-                else
-                    m_TextElement.ReleaseMouse();
             }
         }
 
@@ -101,15 +97,14 @@ namespace UnityEngine.UIElements
                 case BlurEvent be:
                     OnBlurEvent(be);
                     break;
-                // TODO change to pointerup
-                case MouseDownEvent mde:
-                    OnMouseDownEvent(mde);
+                case PointerDownEvent pde:
+                    OnPointerDownEvent(pde);
                     break;
-                case MouseMoveEvent mme:
-                    OnMouseMoveEvent(mme);
+                case PointerMoveEvent pme:
+                    OnPointerMoveEvent(pme);
                     break;
-                case MouseUpEvent mue:
-                    OnMouseUpEvent(mue);
+                case PointerUpEvent pue:
+                    OnPointerUpEvent(pue);
                     break;
                 case ValidateCommandEvent vce:
                     OnValidateCommandEvent(vce);
@@ -139,12 +134,12 @@ namespace UnityEngine.UIElements
 
         //Changed to not rely on evt.clickCount to fix https://fogbugz.unity3d.com/f/cases/1409098/
         //This is necessary because default event system doesn't support triple click
-        void OnMouseDownEvent(MouseDownEvent evt)
+        void OnPointerDownEvent(PointerDownEvent evt)
         {
-            var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
+            var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                //only move cursor to position if it wasnt a double or triple click.
+                //only move cursor to position if it wasn't a double or triple click.
                 if (evt.timestamp - m_LastMouseDownTimeStamp < Event.GetDoubleClickTime())
                     m_ConsecutiveMouseDownCount++;
                 else
@@ -156,28 +151,28 @@ namespace UnityEngine.UIElements
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else
                 {
-                    m_SelectingUtilities.MoveCursorToPosition_Internal(mousePosition, evt.shiftKey);
+                    m_SelectingUtilities.MoveCursorToPosition_Internal(pointerPosition, evt.shiftKey);
                     m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
                 }
 
                 m_LastMouseDownTimeStamp = evt.timestamp;
                 isClicking = true;
-                m_ClickStartPosition = mousePosition;
+                m_TextElement.CapturePointer(evt.pointerId);
+                m_ClickStartPosition = pointerPosition;
                 evt.StopPropagation();
             }
         }
 
-        void OnMouseMoveEvent(MouseMoveEvent evt)
+        void OnPointerMoveEvent(PointerMoveEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse || !isClicking)
+            if (!isClicking)
                 return;
 
-            var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
-
-            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, mousePosition);
+            var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
+            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, pointerPosition);
             if (m_Dragged)
             {
-                m_SelectingUtilities.SelectToPosition(mousePosition);
+                m_SelectingUtilities.SelectToPosition(pointerPosition);
                 m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
 
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp && !m_SelectingUtilities.hasSelection;
@@ -186,7 +181,7 @@ namespace UnityEngine.UIElements
             evt.StopPropagation();
         }
 
-        void OnMouseUpEvent(MouseUpEvent evt)
+        void OnPointerUpEvent(PointerUpEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse || !isClicking)
                 return;
@@ -197,6 +192,7 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = false;
             m_Dragged = false;
             isClicking = false;
+            m_TextElement.ReleasePointer(evt.pointerId);
             evt.StopPropagation();
         }
 

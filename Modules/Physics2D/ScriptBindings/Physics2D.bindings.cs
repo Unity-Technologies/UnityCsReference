@@ -59,6 +59,18 @@ namespace UnityEngine
         [NativeMethod("IsPhysicsWorldEmpty")]
         extern private static bool IsEmpty_Internal(PhysicsScene2D physicsScene);
 
+        public int subStepCount { get { return SubStepCount_Internal(this); } }
+
+        [StaticAccessor("GetPhysicsManager2D()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetSubStepCount")]
+        extern private static int SubStepCount_Internal(PhysicsScene2D physicsScene);
+
+        public float subStepLostTime { get { return SubStepLostTime_Internal(this); } }
+
+        [StaticAccessor("GetPhysicsManager2D()", StaticAccessorType.Arrow)]
+        [NativeMethod("GetSubStepLostTime")]
+        extern private static float SubStepLostTime_Internal(PhysicsScene2D physicsScene);
+
         // Perform a manual simulation step.
         public bool Simulate(float step)
         {
@@ -625,6 +637,18 @@ namespace UnityEngine
 
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static SimulationMode2D simulationMode { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static bool useSubStepping { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static bool useSubStepContacts { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static float minSubStepFPS { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static int maxSubStepCount { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static PhysicsJobOptions2D jobOptions { get; set; }

@@ -53,8 +53,7 @@ namespace UnityEditor.UIElements
                 field.label = m_Label.GetValueFromBag(bag, cc);
 
                 string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
-                if (!string.IsNullOrEmpty(propPath))
-                    field.bindingPath = propPath;
+                field.bindingPath = (string.IsNullOrEmpty(propPath)) ? string.Empty : propPath;
             }
         }
 

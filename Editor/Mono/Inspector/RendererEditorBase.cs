@@ -544,7 +544,7 @@ namespace UnityEditor
 
         protected void RayTracingSettingsGUI()
         {
-            if (SystemInfo.supportsRayTracing)
+            if (SystemInfo.supportsRayTracingShaders || SystemInfo.supportsInlineRayTracing)
             {
                 m_ShowRayTracingSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowRayTracingSettings.value, "Ray Tracing");
                 if (m_ShowRayTracingSettings.value)

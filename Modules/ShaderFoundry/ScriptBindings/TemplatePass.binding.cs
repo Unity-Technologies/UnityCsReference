@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Bindings;
 using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
 
@@ -16,8 +17,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_DisplayNameHandle;
         internal FoundryHandle m_ReferenceNameHandle;
         internal FoundryHandle m_PassIdentifierHandle;
-        internal FoundryHandle m_VertexStageElementListHandle;
-        internal FoundryHandle m_FragmentStageElementListHandle;
+        internal FoundryHandle m_StageDescriptionListHandle;
         internal FoundryHandle m_CommandDescriptorListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
         internal FoundryHandle m_TagDescriptorListHandle;
@@ -48,15 +48,14 @@ namespace UnityEditor.ShaderFoundry
         // TODO SHADER: The else case should return invalid pass identifier once it's possible to construct this in managed.
         public PassIdentifier PassIdentifier => container?.GetPassIdentifier(templatePass.m_PassIdentifierHandle) ?? new PassIdentifier();
 
-        public IEnumerable<TemplatePassStageElement> VertexStageElements => GetStageElements(templatePass.m_VertexStageElementListHandle);
-        public IEnumerable<TemplatePassStageElement> FragmentStageElements => GetStageElements(templatePass.m_FragmentStageElementListHandle);
-
-        IEnumerable<TemplatePassStageElement> GetStageElements(FoundryHandle stageElementListHandle)
+        public StageDescription GetStageDescription(PassStageType stageType)
         {
-            var localContainer = Container;
-            var list = new FixedHandleListInternal(stageElementListHandle);
-            return list.Select(localContainer, (handle) => (new TemplatePassStageElement(localContainer, handle)));
+            var list = new FixedHandleListInternal(templatePass.m_StageDescriptionListHandle);
+            var handle = list.GetElement(container, (uint)stageType);
+            return new StageDescription(container, handle);
         }
+
+        public IEnumerable<StageDescription> StageDescriptions => templatePass.m_StageDescriptionListHandle.AsListEnumerable<StageDescription>(container, (container, handle) => (new StageDescription(container, handle))).Where((s) => (s.IsValid));
 
         public IEnumerable<CommandDescriptor> CommandDescriptors
         {
@@ -130,8 +129,6 @@ namespace UnityEditor.ShaderFoundry
                     m_DisplayNameHandle = invalid,
                     m_ReferenceNameHandle = invalid,
                     m_PassIdentifierHandle = invalid,
-                    m_VertexStageElementListHandle = invalid,
-                    m_FragmentStageElementListHandle = invalid,
                     m_TagDescriptorListHandle = invalid,
                     m_PackageRequirementListHandle = invalid,
                     m_EnableDebugging = false
@@ -144,16 +141,9 @@ namespace UnityEditor.ShaderFoundry
 
         public class Builder
         {
-            internal class StageElement
-            {
-                internal BlockInstance BlockInstance = BlockInstance.Invalid;
-                internal CustomizationPoint CustomizationPoint = CustomizationPoint.Invalid;
-            }
-
             ShaderContainer container;
             PassIdentifierInternal passIdentifier = new PassIdentifierInternal(uint.MaxValue, uint.MaxValue);
-            List<StageElement> vertexStageElements = new List<StageElement>();
-            List<StageElement> fragmentStageElements = new List<StageElement>();
+            List<StageDescription> stageDescriptions;
             List<CommandDescriptor> commandDescriptors;
             List<PragmaDescriptor> pragmaDescriptors;
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
@@ -167,6 +157,9 @@ namespace UnityEditor.ShaderFoundry
             public Builder(ShaderContainer container)
             {
                 this.container = container;
+                stageDescriptions = new List<StageDescription>();
+                for (var i = 0; i < (int)PassStageType.Count; ++i)
+                    stageDescriptions.Add(StageDescription.Invalid);
             }
 
             public void SetPassIdentifier(uint subShaderIndex, uint passIndex)
@@ -203,36 +196,12 @@ namespace UnityEditor.ShaderFoundry
                 }
             }
 
-            public void AppendBlockInstance(BlockInstance blockInstance, Rendering.ShaderType stageType)
+            public void SetStageDescription(StageDescription stageDescription)
             {
-                List<StageElement> stageElements = GetElementsForStage(stageType);
-                if (stageElements == null)
-                    throw new Exception($"Stage {stageType} is not valid.");
-
-                stageElements.Add(new StageElement { BlockInstance = blockInstance });
-            }
-
-            public void AppendCustomizationPoint(CustomizationPoint customizationPoint, Rendering.ShaderType stageType)
-            {
-                List<StageElement> stageElements = GetElementsForStage(stageType);
-                if (stageElements == null)
-                    throw new Exception($"Stage {stageType} is not valid.");
-
-                // Make sure the customization point hasn't been added multiple times.
-                var element = stageElements.Find((e) => (e.CustomizationPoint == customizationPoint));
-                if (element != null)
-                    throw new Exception($"Customization point {customizationPoint.Name} cannot be added to a stage multiple times.");
-
-                stageElements.Add(new StageElement { CustomizationPoint = customizationPoint });
-            }
-
-            List<StageElement> GetElementsForStage(Rendering.ShaderType stageType)
-            {
-                if (stageType == Rendering.ShaderType.Vertex)
-                    return vertexStageElements;
-                else if (stageType == Rendering.ShaderType.Fragment)
-                    return fragmentStageElements;
-                return null;
+                var stageTypeIndex = (int)stageDescription.StageType;
+                if (stageTypeIndex < 0 || stageDescriptions.Count <= stageTypeIndex)
+                    throw new Exception($"Invalid StageDescription. StageType {stageDescription.StageType} is not valid");
+                stageDescriptions[stageTypeIndex] = stageDescription;
             }
 
             public TemplatePass Build()
@@ -246,8 +215,7 @@ namespace UnityEditor.ShaderFoundry
                 };
 
                 templatePassInternal.m_PassIdentifierHandle = container.AddPassIdentifier(passIdentifier.SubShaderIndex, passIdentifier.PassIndex);
-                templatePassInternal.m_VertexStageElementListHandle = FixedHandleListInternal.Build(container, vertexStageElements, (e) => BuildStageElement(e));
-                templatePassInternal.m_FragmentStageElementListHandle = FixedHandleListInternal.Build(container, fragmentStageElements, (e) => BuildStageElement(e));
+                templatePassInternal.m_StageDescriptionListHandle = FixedHandleListInternal.Build(container, stageDescriptions, (s) => (s.handle));
                 templatePassInternal.m_CommandDescriptorListHandle = FixedHandleListInternal.Build(container, commandDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PragmaDescriptorListHandle = FixedHandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
                 templatePassInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
@@ -255,18 +223,6 @@ namespace UnityEditor.ShaderFoundry
 
                 var returnTypeHandle = container.AddTemplatePassInternal(templatePassInternal);
                 return new TemplatePass(container, returnTypeHandle);
-            }
-
-            FoundryHandle BuildStageElement(StageElement stageElement)
-            {
-                var blockInstanceHandle = stageElement.BlockInstance;
-                var customizationPointHandle = stageElement.CustomizationPoint;
-                var stageElementInternal = new TemplatePassStageElementInternal()
-                {
-                    m_BlockInstanceHandle = blockInstanceHandle.handle,
-                    m_CustomizationPointHandle = customizationPointHandle.handle,
-                };
-                return container.AddTemplatePassStageElementInternal(stageElementInternal);
             }
         }
     }

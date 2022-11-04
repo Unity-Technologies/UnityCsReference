@@ -871,41 +871,40 @@ namespace UnityEditor
         {
             Vector2 screenpos = WorldToGUIPoint(position);
             Vector2 size = style.CalcSize(content);
-            Rect r = new Rect(screenpos.x, screenpos.y, size.x, size.y);
+            Rect rect = new Rect(screenpos.x, screenpos.y, size.x, size.y);
             switch (style.alignment)
             {
-                case TextAnchor.UpperLeft:
-                    break;
                 case TextAnchor.UpperCenter:
-                    r.xMin -= r.width * .5f;
+                    rect.x -= rect.width * 0.5f;
                     break;
                 case TextAnchor.UpperRight:
-                    r.xMin -= r.width;
+                    rect.x -= rect.width;
                     break;
                 case TextAnchor.MiddleLeft:
-                    r.yMin -= r.height * .5f;
+                    rect.y -= rect.height * 0.5f;
                     break;
                 case TextAnchor.MiddleCenter:
-                    r.xMin -= r.width * .5f;
-                    r.yMin -= r.height * .5f;
+                    rect.x -= rect.width * 0.5f;
+                    rect.y -= rect.height * 0.5f;
                     break;
                 case TextAnchor.MiddleRight:
-                    r.xMin -= r.width;
-                    r.yMin -= r.height * .5f;
+                    rect.x -= rect.width;
+                    rect.y -= rect.height * 0.5f;
                     break;
                 case TextAnchor.LowerLeft:
-                    r.yMin -= r.height * .5f;
+                    rect.y -= rect.height;
                     break;
                 case TextAnchor.LowerCenter:
-                    r.xMin -= r.width * .5f;
-                    r.yMin -= r.height;
+                    rect.x -= rect.width * 0.5f;
+                    rect.y -= rect.height;
                     break;
                 case TextAnchor.LowerRight:
-                    r.xMin -= r.width;
-                    r.yMin -= r.height;
+                    rect.x -= rect.width;
+                    rect.y -= rect.height;
                     break;
             }
-            return style.padding.Add(r);
+
+            return style.padding.Add(rect);
         }
 
         // Pick game object in specified rectangle

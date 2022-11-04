@@ -12,53 +12,53 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Mono/DelayedCallCoroutine.h")]
-    public partial class AwaitableCoroutine
+    [NativeHeader("Runtime/Mono/DelayedCallAwaitable.h")]
+    public partial class Awaitable
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AwaitableCoroutine NextFrameAsync(CancellationToken cancellationToken = default)
+        public static Awaitable NextFrameAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             EnsureDelayedCallWiredUp();
-            var coroutine = AwaitableCoroutine.NewManagedCoroutine();
-            _nextFrameCoroutines.Add(coroutine);
+            var awaitable = Awaitable.NewManagedAwaitable();
+            _nextFrameAwaitables.Add(awaitable);
             if (cancellationToken.CanBeCanceled)
             {
-                WireupCancellation(coroutine, cancellationToken);
+                WireupCancellation(awaitable, cancellationToken);
             }
-            return coroutine;
+            return awaitable;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AwaitableCoroutine WaitForSecondsAsync(float seconds, CancellationToken cancellationToken = default)
+        public static Awaitable WaitForSecondsAsync(float seconds, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var ptr = WaitForScondsInternal(seconds);
-            return FromNativeCoroutineHandle(ptr, cancellationToken);
+            return FromNativeAwaitableHandle(ptr, cancellationToken);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AwaitableCoroutine FixedUpdateAsync(CancellationToken cancellationToken = default)
+        public static Awaitable FixedUpdateAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var ptr = FixedUpdateInternal();
-            return FromNativeCoroutineHandle(ptr, cancellationToken);
+            return FromNativeAwaitableHandle(ptr, cancellationToken);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AwaitableCoroutine EndOfFrameAsync(CancellationToken cancellationToken = default)
+        public static Awaitable EndOfFrameAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             EnsureDelayedCallWiredUp();
-            var coroutine = AwaitableCoroutine.NewManagedCoroutine();
-            _endOfFrameCoroutines.Add(coroutine);
+            var awaitable = Awaitable.NewManagedAwaitable();
+            _endOfFrameAwaitables.Add(awaitable);
             if (cancellationToken.CanBeCanceled)
             {
-                WireupCancellation(coroutine, cancellationToken);
+                WireupCancellation(awaitable, cancellationToken);
             }
-            return coroutine;
+            return awaitable;
         }
 
 
@@ -79,22 +79,22 @@ namespace UnityEngine
         static void OnDelayedCallManagerCleared()
         {
             _nextFrameAndEndOfFrameWiredUp = false;
-            _nextFrameCoroutines.Clear();
-            _endOfFrameCoroutines.Clear();
+            _nextFrameAwaitables.Clear();
+            _endOfFrameAwaitables.Clear();
         }
 
-        private static readonly DoubleBufferedAwaitableList _nextFrameCoroutines = new();
-        private static readonly DoubleBufferedAwaitableList _endOfFrameCoroutines = new();
+        private static readonly DoubleBufferedAwaitableList _nextFrameAwaitables = new();
+        private static readonly DoubleBufferedAwaitableList _endOfFrameAwaitables = new();
 
         class DoubleBufferedAwaitableList
         {
-            private List<AwaitableCoroutine> _coroutines = new();
-            private List<AwaitableCoroutine> _scratch = new();
+            private List<Awaitable> _awaitables = new();
+            private List<Awaitable> _scratch = new();
             public void SwapAndComplete()
             {
                 var oldScratch = _scratch;
-                var toIterate = _coroutines;
-                _coroutines = oldScratch;
+                var toIterate = _awaitables;
+                _awaitables = oldScratch;
                 _scratch = toIterate;
                 try
                 {
@@ -110,37 +110,37 @@ namespace UnityEngine
                 }
             }
 
-            public void Add(AwaitableCoroutine item)
+            public void Add(Awaitable item)
             {
-                _coroutines.Add(item);
+                _awaitables.Add(item);
             }
             public void Clear()
             {
-                _coroutines.Clear();
+                _awaitables.Clear();
             }
         }
 
         [RequiredByNativeCode]
         private static void OnUpdate()
         {
-            _nextFrameCoroutines.SwapAndComplete();
+            _nextFrameAwaitables.SwapAndComplete();
         }
 
         [RequiredByNativeCode]
         private static void OnEndOfFrame()
         {
-            _endOfFrameCoroutines.SwapAndComplete();
+            _endOfFrameAwaitables.SwapAndComplete();
         }
 
-        [FreeFunction("Scripting::AwaitableCoroutines::NextFrameCoroutine")]
+        [FreeFunction("Scripting::Awaitables::NextFrameAwaitable")]
         private static extern IntPtr NextFrameInternal();
-        [FreeFunction("Scripting::AwaitableCoroutines::WaitForSecondsCoroutine")]
+        [FreeFunction("Scripting::Awaitables::WaitForSecondsAwaitable")]
         private static extern IntPtr WaitForScondsInternal(float seconds);
-        [FreeFunction("Scripting::AwaitableCoroutines::FixedUpdateCoroutine")]
+        [FreeFunction("Scripting::Awaitables::FixedUpdateAwaitable")]
         private static extern IntPtr FixedUpdateInternal();
-        [FreeFunction("Scripting::AwaitableCoroutines::EndOfFrameCoroutine")]
+        [FreeFunction("Scripting::Awaitables::EndOfFrameAwaitable")]
         private static extern IntPtr EndOfFrameInternal();
-        [FreeFunction("Scripting::AwaitableCoroutines::WireupNextFrameAndEndOfFrameCallbacks")]
+        [FreeFunction("Scripting::Awaitables::WireupNextFrameAndEndOfFrameCallbacks")]
         private static extern void WireupNextFrameAndEndOfFrameCallbacks();
     }
 }

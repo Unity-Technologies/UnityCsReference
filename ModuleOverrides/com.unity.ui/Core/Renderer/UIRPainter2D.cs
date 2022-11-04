@@ -488,6 +488,8 @@ namespace UnityEngine.UIElements
                 for (int i = 0; i < vs.Length; ++i)
                 {
                     var v = vs[i];
+                    if (float.IsNaN(v.position.x) || float.IsNaN(v.position.y))
+                        continue;
                     bboxMin = Vector2.Min(bboxMin, v.position);
                     bboxMax = Vector2.Max(bboxMax, v.position);
                 }

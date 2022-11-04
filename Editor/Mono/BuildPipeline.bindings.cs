@@ -235,6 +235,18 @@ namespace UnityEditor
         PlayerListens
     }
 
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BuildAssetBundlesParameters
+    {
+        public string outputPath { get; set; }
+        public AssetBundleBuild[] bundleDefinitions { get; set; }
+        public BuildAssetBundleOptions options { get; set; }
+        public BuildTarget targetPlatform { get; set; }
+        public int subtarget { get; set; }
+        public string[] extraScriptingDefines { get; set; }
+    }
+
     // Lets you programmatically build players or AssetBundles which can be loaded from the web.
     [NativeHeader("Editor/Mono/BuildPipeline.bindings.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
@@ -540,7 +552,7 @@ namespace UnityEditor
             return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
         }
 
-        // Builds an AssetBundle.
+        // Builds an AssetBundle (Obsolete)
         internal static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
         {
             crc = 0;
@@ -571,7 +583,7 @@ namespace UnityEditor
             return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
         }
 
-        // Builds an AssetBundle, with custom names for the assets.
+        // Builds an AssetBundle, with custom names for the assets (Obsolete)
         internal static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
         {
             crc = 0;
@@ -588,51 +600,63 @@ namespace UnityEditor
 
 #pragma warning restore 618
 
+        //Obsolete
         private static extern bool BuildAssetBundleInternal(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget, out uint crc);
 
         public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundles(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
+            BuildAssetBundlesParameters input = new BuildAssetBundlesParameters
+            {
+                outputPath = outputPath,
+                bundleDefinitions = null, // Bundle assignment will be read from AssetDatabase
+                options = assetBundleOptions,
+                targetPlatform = targetPlatform,
+                subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform),
+            };
+
+            return BuildAssetBundles(input);
         }
-
-        internal static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
-        {
-            if (isBuildingPlayer)
-                throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
-
-            if (!System.IO.Directory.Exists(outputPath))
-                throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
-
-            return BuildAssetBundlesInternal(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
-        }
-
-        [NativeThrows]
-        private static extern AssetBundleManifest BuildAssetBundlesInternal(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget);
 
         public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            int subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform);
-            return BuildAssetBundles(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
+            if (builds == null)
+                // This signature is specifically meant for specifying the bundle definition array, so it is not optional
+                throw new ArgumentException("AssetBundleBuild cannot be null.");
+
+            BuildAssetBundlesParameters input = new BuildAssetBundlesParameters
+            {
+                outputPath = outputPath,
+                bundleDefinitions = builds,
+                options = assetBundleOptions,
+                targetPlatform = targetPlatform,
+                subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform),
+            };
+
+            return BuildAssetBundles(input);
         }
 
-        internal static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
+        public static AssetBundleManifest BuildAssetBundles(BuildAssetBundlesParameters buildParameters)
         {
+            if (buildParameters.targetPlatform == 0 || buildParameters.targetPlatform == BuildTarget.NoTarget)
+            {
+                buildParameters.targetPlatform = EditorUserBuildSettings.activeBuildTarget;
+
+                // Note: subtarget is associated with multiple enums, and 0 may have a specific meaning,
+                // so we only auto-set it when the target is also coming from the build settings
+                buildParameters.subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildParameters.targetPlatform);
+            }
+
             if (isBuildingPlayer)
                 throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
 
-            if (!System.IO.Directory.Exists(outputPath))
-                throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
+            if (!System.IO.Directory.Exists(buildParameters.outputPath))
+                throw new ArgumentException("The output path \"" + buildParameters.outputPath + "\" doesn't exist");
 
-            if (builds == null)
-                throw new ArgumentException("AssetBundleBuild cannot be null.");
-
-            return BuildAssetBundlesWithInfoInternal(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget);
+            return BuildAssetBundlesInternal(buildParameters);
         }
 
         [NativeThrows]
-        private static extern AssetBundleManifest BuildAssetBundlesWithInfoInternal(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget);
+        private static extern AssetBundleManifest BuildAssetBundlesInternal(BuildAssetBundlesParameters buildParameters);
 
         [FreeFunction("GetPlayerDataSessionId")]
         internal static extern string GetSessionIdForBuildTarget(BuildTarget target, int subtarget);

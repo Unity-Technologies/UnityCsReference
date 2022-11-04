@@ -41,5 +41,7 @@ namespace UnityEditor.Rendering
             get { return GetAlbedoSwatches(); }
             set { SetAlbedoSwatches(value); }
         }
+
+        extern public static BatchRendererGroupStrippingMode batchRendererGroupShaderStrippingMode { get; }
     }
 }

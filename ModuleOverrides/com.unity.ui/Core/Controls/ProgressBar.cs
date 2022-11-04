@@ -52,10 +52,7 @@ namespace UnityEngine.UIElements
                 bar.lowValue = m_LowValue.GetValueFromBag(bag, cc);
                 bar.highValue = m_HighValue.GetValueFromBag(bag, cc);
                 var title = m_Title.GetValueFromBag(bag, cc);
-                if (!string.IsNullOrEmpty(title))
-                {
-                    bar.title = title;
-                }
+                bar.title = (string.IsNullOrEmpty(title)) ? string.Empty : title;
             }
         }
 

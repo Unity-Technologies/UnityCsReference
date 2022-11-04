@@ -353,5 +353,37 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 return 10;
             }
         }
+
+        internal static void SpliceText(ref string text, int maxWidth)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxWidth)
+                return;
+
+            StringBuilder sb = new StringBuilder(text.Length * 2);
+            while (text.Length > 0)
+            {
+                if (text.Length <= maxWidth)
+                {
+                    sb.Append(text);
+                    break;
+                }
+
+                string chunk = text.Substring(0, maxWidth);
+                if (char.IsWhiteSpace(text[maxWidth]))
+                {
+                    sb.AppendLine(chunk);
+                    text = text.Substring(chunk.Length + 1);
+                }
+                else
+                {
+                    int splitIndex = chunk.LastIndexOf(' ');
+                    if (splitIndex != -1)
+                        chunk = chunk.Substring(0, splitIndex);
+                    text = text.Substring(chunk.Length + (splitIndex == -1 ? 0 : 1));
+                    sb.AppendLine(chunk);
+                }
+            }
+            text = sb.ToString();
+        }
     }
 }

@@ -15,6 +15,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
+    [NativeHeader("Runtime/Shaders/RayTracingAccelerationStructure.h")]
     public sealed partial class ComputeShader : Object
     {
         // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins
@@ -56,6 +57,13 @@ namespace UnityEngine
         extern private void Internal_SetBuffer(int kernelIndex, int nameID, [NotNull] ComputeBuffer buffer);
         [FreeFunction(Name = "ComputeShaderScripting::SetBuffer", HasExplicitThis = true)]
         extern private void Internal_SetGraphicsBuffer(int kernelIndex, int nameID, [NotNull] GraphicsBuffer buffer);
+
+        [FreeFunction(Name = "ComputeShaderScripting::SetRayTracingAccelerationStructure", HasExplicitThis = true)]
+        extern private void Internal_SetRayTracingAccelerationStructure(int kernelIndex, int nameID, [NotNull] RayTracingAccelerationStructure accelerationStructure);
+        public void SetRayTracingAccelerationStructure(int kernelIndex, int nameID, RayTracingAccelerationStructure accelerationStructure)
+        {
+            Internal_SetRayTracingAccelerationStructure(kernelIndex, nameID, accelerationStructure);
+        }
 
         public void SetBuffer(int kernelIndex, int nameID, ComputeBuffer buffer)
         {

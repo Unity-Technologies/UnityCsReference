@@ -1235,15 +1235,6 @@ namespace UnityEditor
             set {}
         }
 
-        internal static extern bool EnableRoslynAnalyzers
-        {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-            get;
-
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-            set;
-        }
-
         internal static extern bool gcWBarrierValidation
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

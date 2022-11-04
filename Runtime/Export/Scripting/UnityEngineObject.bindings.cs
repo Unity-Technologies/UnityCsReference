@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -49,6 +51,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
     public partial class Object
     {
+        private const int kInstanceID_None = 0;
+
 #pragma warning disable 649
         IntPtr   m_CachedPtr;
 
@@ -428,12 +432,153 @@ namespace UnityEngine
         [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]
         internal extern static Object FindObjectFromInstanceID(int instanceID);
 
+        [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
+        private extern static IntPtr GetPtrFromInstanceID(int instanceID, out bool isMonoBehaviour);
+
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
         internal extern static Object ForceLoadFromInstanceID(int instanceID);
         internal static Object CreateMissingReferenceObject(int instanceID)
         {
             return new Object { m_InstanceID = instanceID };
+        }
+
+        [VisibleToOtherModules]
+        internal static class MarshalledUnityObject
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static IntPtr Marshal(Object obj)
+            {
+                // Do not to an == null or .Equals(null) check in here or anything that would make an icall
+                // This may be called during AppDomain shutdown and there is code called during shutdown
+                // that relies on the SCRIPTINGAPI_THREAD_AND_SERIALIZATION_CHECK throwing on shutdown
+                // So this code can't call any icalls marked as ThreadSafe (e.g. DoesObjectWithInstanceIDExist)
+                if (ReferenceEquals(obj, null))
+                    return IntPtr.Zero;
+                return MarshalAssumeNotNull(obj);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static IntPtr MarshalNullCheck(Object obj)
+            {
+                // We want a NullReferenceExcption to be thrown if obj is null, so we can let the runtime generate that for us
+                var cachedPtr = MarshalAssumeNotNull(obj);
+                if (cachedPtr == IntPtr.Zero)
+                    ThrowNullExceptionObjectImpl(obj);
+                return cachedPtr;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static IntPtr MarshalNullCheck<TException>(Object obj, string parameterName) where TException: Exception
+            {
+                if (ReferenceEquals(obj, null))
+                    ThrowException<TException>(parameterName);
+                var cachedPtr = MarshalAssumeNotNull(obj);
+                if (cachedPtr == IntPtr.Zero)
+                    ThrowException<TException>(parameterName);
+                return cachedPtr;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static IntPtr MarshalAssumeNotNull(Object obj)
+            {
+                if (obj.m_CachedPtr != IntPtr.Zero)
+                    return obj.m_CachedPtr;
+                return MarshalFromInstanceId(obj);
+            }
+
+            private static IntPtr MarshalFromInstanceId(Object obj)
+            {
+                if (obj.m_InstanceID == kInstanceID_None)
+                    return IntPtr.Zero;
+
+                var retPtr = GetPtrFromInstanceID(obj.m_InstanceID, out var isNativeInstanceMonoBehaviour);
+                if (retPtr == IntPtr.Zero)
+                    return IntPtr.Zero;
+
+                if (!isNativeInstanceMonoBehaviour)
+                    return retPtr;
+
+                if(IsMonoBehaviourOrScriptableObjectOrParentClass(obj))
+                    return retPtr;
+
+                return IntPtr.Zero;
+            }
+
+            static bool IsMonoBehaviourOrScriptableObjectOrParentClass(Object obj)
+            {
+                // There might be multiple C# objects pointing to the same C++ object. This is not safe for
+                // MonoBehaviour/ScriptableObject _derived_ classes that might have additional state in their C# objects,
+                // as the C# objects would get out of sync.
+                // However, it is safe for multiple MonoBehaviour/ScriptableObject (and parent classes) C# objects to point to
+                // the same C++ object, because all the state reachable from a C# reference with such a type is stored in the C++ object
+                // and they will therefore always be in sync.
+
+                var objClass = obj.GetType();
+
+                if (objClass == typeof(Object) || objClass == typeof(MonoBehaviour) || objClass == typeof(ScriptableObject))
+                    return true;
+
+                return Array.IndexOf(m_MonoBehaviorBaseClasses, objClass) >= 0;
+            }
+
+            private static readonly Type[] m_MonoBehaviorBaseClasses;
+
+            static MarshalledUnityObject()
+            {
+                var baseClassList = new List<Type>();
+                var baseClass = typeof(MonoBehaviour).BaseType;
+                while (baseClass != typeof(Object))
+                {
+                    baseClassList.Add(baseClass);
+                    baseClass = baseClass.BaseType;
+                }
+                baseClass = typeof(ScriptableObject).BaseType;
+                while (baseClass != typeof(Object))
+                {
+                    baseClassList.Add(baseClass);
+                    baseClass = baseClass.BaseType;
+                }
+                m_MonoBehaviorBaseClasses = baseClassList.ToArray();
+            }
+
+
+            private static void ThrowException<TException>(string message) where TException:Exception
+            {
+                throw (TException)Activator.CreateInstance(typeof(TException), message);
+            }
+
+            public static void ThrowNullExceptionObjectImpl(object obj)
+            {
+                if (obj is Object unityObj)
+                {
+                    string error = unityObj.m_UnityRuntimeErrorString ?? "";
+                    if (unityObj.m_InstanceID != kInstanceID_None && !IsMissingReferenceException(error))
+                    {
+                        error = $"The object of type '{unityObj.GetType().FullName}' has been destroyed but you are still trying to access it.\n" +
+                            "Your script should either check if it is null or you should not destroy the object.";
+
+                        throw new MissingReferenceException(error);
+                    }
+
+                    var splitIndex = error?.IndexOf(':') ?? -1;
+                    if (splitIndex > 0)
+                    {
+                        var exceptionTypeString = error.Substring(0, splitIndex);
+                        error = error.Substring(splitIndex + 1);
+                        var exceptionType = Type.GetType($"UnityEngine.{exceptionTypeString}", false);
+                        if (exceptionType != null)
+                            throw (Exception)Activator.CreateInstance(exceptionType, error);
+                    }
+                }
+
+                throw new NullReferenceException();
+            }
+
+            static bool IsMissingReferenceException(string error)
+            {
+                return error.StartsWith("MissingReferenceException:");
+            }
         }
     }
 }

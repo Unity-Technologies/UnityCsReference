@@ -127,7 +127,9 @@ namespace UnityEditor.DeviceSimulation
         public override bool supportsAsyncCompute  =>  m_GraphicsSystemInfoFields.Contains("supportsAsyncCompute") ? m_GraphicsSystemInfo.supportsAsyncCompute : base.supportsAsyncCompute;
         public override bool supportsGraphicsFence  =>  m_GraphicsSystemInfoFields.Contains("supportsGraphicsFence") ? m_GraphicsSystemInfo.supportsGraphicsFence : base.supportsGraphicsFence;
         public override bool supportsAsyncGPUReadback  =>  m_GraphicsSystemInfoFields.Contains("supportsAsyncGPUReadback") ? m_GraphicsSystemInfo.supportsAsyncGPUReadback : base.supportsAsyncGPUReadback;
-        public override bool supportsRayTracing  =>  m_GraphicsSystemInfoFields.Contains("supportsRayTracing") ? m_GraphicsSystemInfo.supportsRayTracing : base.supportsRayTracing;
+        public override bool supportsRayTracing => m_GraphicsSystemInfoFields.Contains("supportsRayTracing") ? m_GraphicsSystemInfo.supportsRayTracing : base.supportsRayTracing;
+        public override bool supportsRayTracingShaders => m_GraphicsSystemInfoFields.Contains("supportsRayTracingShaders") ? m_GraphicsSystemInfo.supportsRayTracingShaders : base.supportsRayTracingShaders;
+        public override bool supportsInlineRayTracing => m_GraphicsSystemInfoFields.Contains("supportsInlineRayTracing") ? m_GraphicsSystemInfo.supportsInlineRayTracing : base.supportsInlineRayTracing;
         public override bool supportsSetConstantBuffer  =>  m_GraphicsSystemInfoFields.Contains("supportsSetConstantBuffer") ? m_GraphicsSystemInfo.supportsSetConstantBuffer : base.supportsSetConstantBuffer;
         public override bool hasMipMaxLevel  =>  m_GraphicsSystemInfoFields.Contains("hasMipMaxLevel") ? m_GraphicsSystemInfo.hasMipMaxLevel : base.hasMipMaxLevel;
         public override bool supportsMipStreaming  =>  m_GraphicsSystemInfoFields.Contains("supportsMipStreaming") ? m_GraphicsSystemInfo.supportsMipStreaming : base.supportsMipStreaming;

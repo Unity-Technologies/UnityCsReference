@@ -11,20 +11,20 @@ using UnityEngine.Internal;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Mono/AsyncOperationCoroutine.h")]
-    public partial class AwaitableCoroutine
+    [NativeHeader("Runtime/Mono/AsyncOperationAwaitable.h")]
+    public partial class Awaitable
     {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AwaitableCoroutine FromAsyncOperation(AsyncOperation op, CancellationToken cancellationToken = default)
+        public static Awaitable FromAsyncOperation(AsyncOperation op, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var ptr = FromAsyncOperationInternal(op.m_Ptr);
-            return FromNativeCoroutineHandle(ptr, cancellationToken);
+            return FromNativeAwaitableHandle(ptr, cancellationToken);
         }
 
 
-        [FreeFunction("Scripting::AwaitableCoroutines::FromAsyncOperation", ThrowsException = true)]
+        [FreeFunction("Scripting::Awaitables::FromAsyncOperation", ThrowsException = true)]
         private static extern IntPtr FromAsyncOperationInternal(IntPtr asyncOperation);
     }
 
@@ -32,9 +32,9 @@ namespace UnityEngine
     {
         [ExcludeFromDocs]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AwaitableCoroutine.Awaiter GetAwaiter(this AsyncOperation op)
+        public static Awaitable.Awaiter GetAwaiter(this AsyncOperation op)
         {
-            return AwaitableCoroutine.FromAsyncOperation(op).GetAwaiter();
+            return Awaitable.FromAsyncOperation(op).GetAwaiter();
         }
     }
 }

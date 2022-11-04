@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -179,10 +180,12 @@ namespace UnityEngine
         extern public AnimationUpdateMode updateMode { get; set; }
 
         [System.Obsolete("Use cullingType instead")]
-        public extern  bool animateOnlyIfVisible
+        public extern bool animateOnlyIfVisible
         {
-            [FreeFunction("AnimationBindings::GetAnimateOnlyIfVisible", HasExplicitThis = true)] get;
-            [FreeFunction("AnimationBindings::SetAnimateOnlyIfVisible", HasExplicitThis = true)] set;
+            [FreeFunction("AnimationBindings::GetAnimateOnlyIfVisible", HasExplicitThis = true)]
+            get;
+            [FreeFunction("AnimationBindings::SetAnimateOnlyIfVisible", HasExplicitThis = true)]
+            set;
         }
 
         extern public AnimationCullingType cullingType { get; set; }
@@ -215,20 +218,154 @@ namespace UnityEngine
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
+    internal struct AnimationEventBlittable : IDisposable
+    {
+        internal float m_Time;
+        internal IntPtr m_FunctionName;
+        internal IntPtr m_StringParameter;
+        internal IntPtr m_ObjectReferenceParameter;
+        internal float m_FloatParameter;
+        internal int m_IntParameter;
+
+        internal int m_MessageOptions;
+        internal AnimationEventSource m_Source;
+        internal IntPtr m_StateSender;
+        internal AnimatorStateInfo m_AnimatorStateInfo;
+        internal AnimatorClipInfo m_AnimatorClipInfo;
+
+        internal static AnimationEventBlittable FromAnimationEvent(AnimationEvent animationEvent)
+        {
+            if (s_handlePool == null)
+                s_handlePool = new GCHandlePool();
+            var handlePool = s_handlePool;
+            var animationEventBlittable = new AnimationEventBlittable
+            {
+                m_Time = animationEvent.m_Time,
+                m_FunctionName = handlePool.AllocHandleIfNotNull(animationEvent.m_FunctionName),
+                m_StringParameter = handlePool.AllocHandleIfNotNull(animationEvent.m_StringParameter),
+                m_ObjectReferenceParameter = handlePool.AllocHandleIfNotNull(animationEvent.m_ObjectReferenceParameter),
+                m_FloatParameter = animationEvent.m_FloatParameter,
+                m_IntParameter = animationEvent.m_IntParameter,
+                m_MessageOptions = animationEvent.m_MessageOptions,
+                m_Source = animationEvent.m_Source,
+                m_StateSender = handlePool.AllocHandleIfNotNull(animationEvent.m_StateSender),
+                m_AnimatorStateInfo = animationEvent.m_AnimatorStateInfo,
+                m_AnimatorClipInfo = animationEvent.m_AnimatorClipInfo
+            };
+
+            return animationEventBlittable;
+        }
+
+        internal unsafe static void FromAnimationEvents(AnimationEvent[] animationEvents, AnimationEventBlittable* animationEventBlittables)
+        {
+            if (s_handlePool == null)
+                s_handlePool = new GCHandlePool();
+            var handlePool = s_handlePool;
+
+            var animationEventBlittable = animationEventBlittables;
+            for (var i = 0; i < animationEvents.Length; ++i)
+            {
+                var animationEvent = animationEvents[i];
+                animationEventBlittable->m_Time = animationEvent.m_Time;
+                animationEventBlittable->m_FunctionName = handlePool.AllocHandleIfNotNull(animationEvent.m_FunctionName);
+                animationEventBlittable->m_StringParameter = handlePool.AllocHandleIfNotNull(animationEvent.m_StringParameter);
+                animationEventBlittable->m_ObjectReferenceParameter = handlePool.AllocHandleIfNotNull(animationEvent.m_ObjectReferenceParameter);
+                animationEventBlittable->m_FloatParameter = animationEvent.m_FloatParameter;
+                animationEventBlittable->m_IntParameter = animationEvent.m_IntParameter;
+                animationEventBlittable->m_MessageOptions = animationEvent.m_MessageOptions;
+                animationEventBlittable->m_Source = animationEvent.m_Source;
+                animationEventBlittable->m_StateSender = handlePool.AllocHandleIfNotNull(animationEvent.m_StateSender);
+                animationEventBlittable->m_AnimatorStateInfo = animationEvent.m_AnimatorStateInfo;
+                animationEventBlittable->m_AnimatorClipInfo = animationEvent.m_AnimatorClipInfo;
+
+                animationEventBlittable++;
+            }
+        }
+
+        [RequiredByNativeCode]
+        internal unsafe static AnimationEvent PointerToAnimationEvent(IntPtr animationEventBlittable)
+        {
+            return ToAnimationEvent(*(AnimationEventBlittable*)animationEventBlittable);
+        }
+
+        internal unsafe static AnimationEvent[] PointerToAnimationEvents(IntPtr animationEventBlittableArray, int size)
+        {
+            var animationEvents = new AnimationEvent[size];
+            var animationEventsBlittable = (AnimationEventBlittable*)animationEventBlittableArray;
+            for (int i = 0; i < size; i++)
+            {
+                animationEvents[i] = PointerToAnimationEvent((IntPtr)(animationEventsBlittable + i));
+            }
+
+            return animationEvents;
+        }
+
+        internal unsafe static void DisposeEvents(IntPtr animationEventBlittableArray, int size)
+        {
+            var animationEventsBlittable = (AnimationEventBlittable*)animationEventBlittableArray;
+            for (int i = 0; i < size; i++)
+            {
+                animationEventsBlittable[i].Dispose();
+            }
+        }
+
+        [ThreadStatic]
+        static GCHandlePool s_handlePool;
+
+        internal static AnimationEvent ToAnimationEvent(AnimationEventBlittable animationEventBlittable)
+        {
+            var animationEvent = new AnimationEvent();
+            animationEvent.m_Time = animationEventBlittable.m_Time;
+            if (animationEventBlittable.m_FunctionName != IntPtr.Zero)
+                animationEvent.m_FunctionName = (string)UnsafeUtility.As<IntPtr, GCHandle>(ref animationEventBlittable.m_FunctionName).Target;
+            if (animationEventBlittable.m_StringParameter != IntPtr.Zero)
+                animationEvent.m_StringParameter = (string)UnsafeUtility.As<IntPtr, GCHandle>(ref animationEventBlittable.m_StringParameter).Target;
+            if (animationEventBlittable.m_ObjectReferenceParameter != IntPtr.Zero)
+                animationEvent.m_ObjectReferenceParameter = (Object)UnsafeUtility.As<IntPtr, GCHandle>(ref animationEventBlittable.m_ObjectReferenceParameter).Target;
+            animationEvent.m_FloatParameter = animationEventBlittable.m_FloatParameter;
+            animationEvent.m_IntParameter = animationEventBlittable.m_IntParameter;
+            animationEvent.m_MessageOptions = animationEventBlittable.m_MessageOptions;
+            animationEvent.m_Source = animationEventBlittable.m_Source;
+            if (animationEventBlittable.m_StateSender != IntPtr.Zero)
+                animationEvent.m_StateSender = (AnimationState)UnsafeUtility.As<IntPtr, GCHandle>(ref animationEventBlittable.m_StateSender).Target;
+            animationEvent.m_AnimatorStateInfo = animationEventBlittable.m_AnimatorStateInfo;
+            animationEvent.m_AnimatorClipInfo = animationEventBlittable.m_AnimatorClipInfo;
+
+            return animationEvent;
+        }
+
+        public void Dispose()
+        {
+            if (s_handlePool == null)
+                s_handlePool = new GCHandlePool();
+            var handlePool = s_handlePool;
+            if (m_FunctionName != IntPtr.Zero)
+                handlePool.Free(UnsafeUtility.As<IntPtr, GCHandle>(ref m_FunctionName));
+            if (m_StringParameter != IntPtr.Zero)
+                handlePool.Free(UnsafeUtility.As<IntPtr, GCHandle>(ref m_StringParameter));
+            if (m_ObjectReferenceParameter != IntPtr.Zero)
+                handlePool.Free(UnsafeUtility.As<IntPtr, GCHandle>(ref m_ObjectReferenceParameter));
+            if (m_StateSender != IntPtr.Zero)
+                handlePool.Free(UnsafeUtility.As<IntPtr, GCHandle>(ref m_StateSender));
+        }
+    }
+
+    [System.Serializable]
+    [RequiredByNativeCode]
     public sealed class AnimationEvent
     {
-        internal float                  m_Time;
-        internal string                 m_FunctionName;
-        internal string                 m_StringParameter;
-        internal Object                 m_ObjectReferenceParameter;
-        internal float                  m_FloatParameter;
-        internal int                    m_IntParameter;
+        internal float m_Time;
+        internal string m_FunctionName;
+        internal string m_StringParameter;
+        internal Object m_ObjectReferenceParameter;
+        internal float m_FloatParameter;
+        internal int m_IntParameter;
 
-        internal int                    m_MessageOptions;
-        internal AnimationEventSource   m_Source;
-        internal AnimationState         m_StateSender;
-        internal AnimatorStateInfo      m_AnimatorStateInfo;
-        internal AnimatorClipInfo       m_AnimatorClipInfo;
+        internal int m_MessageOptions;
+        internal AnimationEventSource m_Source;
+        internal AnimationState m_StateSender;
+        internal AnimatorStateInfo m_AnimatorStateInfo;
+        internal AnimatorClipInfo m_AnimatorClipInfo;
 
         public AnimationEvent()
         {
@@ -254,7 +391,7 @@ namespace UnityEngine
         public float time { get { return m_Time; } set { m_Time = value; } }
         public SendMessageOptions messageOptions { get { return (SendMessageOptions)m_MessageOptions; } set { m_MessageOptions = (int)value; } }
 
-        public bool isFiredByLegacy  { get { return m_Source == AnimationEventSource.Legacy; } }
+        public bool isFiredByLegacy { get { return m_Source == AnimationEventSource.Legacy; } }
         public bool isFiredByAnimator { get { return m_Source == AnimationEventSource.Animator; } }
 
         public AnimationState animationState

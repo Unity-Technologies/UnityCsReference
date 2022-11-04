@@ -48,6 +48,9 @@ namespace UnityEngine.Rendering
         [NativeMethod(Name = "RayTracingShaderScripting::SetBuffer", HasExplicitThis = true, IsFreeFunction = true)]
         extern private void SetGraphicsBuffer(int nameID, [NotNull] GraphicsBuffer buffer);
 
+        [NativeMethod(Name = "RayTracingShaderScripting::SetBuffer", HasExplicitThis = true, IsFreeFunction = true)]
+        extern private void SetGraphicsBufferHandle(int nameID, GraphicsBufferHandle bufferHandle);
+
         [FreeFunction(Name = "RayTracingShaderScripting::SetConstantBuffer", HasExplicitThis = true)]
         extern private void SetConstantComputeBuffer(int nameID, [NotNull] ComputeBuffer buffer, int offset, int size);
 
@@ -67,6 +70,11 @@ namespace UnityEngine.Rendering
         public void SetBuffer(int nameID, GraphicsBuffer buffer)
         {
             SetGraphicsBuffer(nameID, buffer);
+        }
+
+        public void SetBuffer(int nameID, GraphicsBufferHandle bufferHandle)
+        {
+            SetGraphicsBufferHandle(nameID, bufferHandle);
         }
     }
 }

@@ -248,8 +248,6 @@ namespace UnityEditor
         SerializedProperty m_EnableTextureStreamingInEditMode;
         SerializedProperty m_EnableEditorAsyncCPUTextureLoading;
 
-        SerializedProperty m_EnableRoslynAnalyzers;
-
         SerializedProperty m_GameObjectNamingDigits;
         SerializedProperty m_GameObjectNamingScheme;
         SerializedProperty m_AssetNamingUsesSpace;
@@ -298,8 +296,6 @@ namespace UnityEditor
             m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
             m_EnableTextureStreamingInEditMode = serializedObject.FindProperty("m_EnableTextureStreamingInEditMode");
             m_EnableEditorAsyncCPUTextureLoading = serializedObject.FindProperty("m_EnableEditorAsyncCPUTextureLoading");
-
-            m_EnableRoslynAnalyzers = serializedObject.FindProperty("m_EnableRoslynAnalyzers");
 
             m_GameObjectNamingDigits = serializedObject.FindProperty("m_GameObjectNamingDigits");
             m_GameObjectNamingScheme = serializedObject.FindProperty("m_GameObjectNamingScheme");

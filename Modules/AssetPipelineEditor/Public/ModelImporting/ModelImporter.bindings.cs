@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -82,7 +83,7 @@ namespace UnityEditor
         AvatarMask m_MaskSource;
 
         int[] m_BodyMask;
-        AnimationEvent[] m_AnimationEvents;
+        AnimationEventBlittable[] m_AnimationEventsBlittable;
         ClipAnimationInfoCurve[] m_AdditionnalCurves;
         TransformMaskElement[] m_TransformMask;
 
@@ -129,7 +130,7 @@ namespace UnityEditor
 
         public AvatarMask maskSource { get { return m_MaskSource; } set { m_MaskSource = value; } }
 
-        public AnimationEvent[] events { get { return m_AnimationEvents; } set { m_AnimationEvents = value; } }
+        public AnimationEvent[] events { get { return m_AnimationEventsBlittable.Select(AnimationEventBlittable.ToAnimationEvent).ToArray(); } set { m_AnimationEventsBlittable = value.Select(AnimationEventBlittable.FromAnimationEvent).ToArray(); } }
         public ClipAnimationInfoCurve[] curves { get { return m_AdditionnalCurves; } set { m_AdditionnalCurves = value; } }
 
         public bool maskNeedsUpdating { get { return m_MaskNeedsUpdating; } }

@@ -581,6 +581,11 @@ namespace UnityEngine.UIElements.UIR
             if (transformChanged && UpdateLocalFlipsWinding(ve))
                 renderChain.UIEOnVisualsChanged(ve, true);
 
+            if (transformChanged)
+            {
+                UpdateZeroScaling(ve);
+            }
+
             bool dirtyHasBeenResolved = true;
             if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
             {
@@ -774,7 +779,9 @@ namespace UnityEngine.UIElements.UIR
             Vector3 scale = ve.transform.scale;
             float winding = scale.x * scale.y;
             if (Math.Abs(winding) < 0.001f)
+            {
                 return false; // Close to zero, preserve the current value
+            }
 
             bool newFlipsWinding = winding < 0;
             if (oldFlipsWinding != newFlipsWinding)
@@ -796,6 +803,11 @@ namespace UnityEngine.UIElements.UIR
                 parentFlipsWinding = parent.renderChainData.worldFlipsWinding;
 
             ve.renderChainData.worldFlipsWinding = parentFlipsWinding ^ flipsWinding;
+        }
+
+        static void UpdateZeroScaling(VisualElement ve)
+        {
+            ve.renderChainData.localTransformScaleZero = Math.Abs(ve.transform.scale.x * ve.transform.scale.y) < 0.001f;
         }
 
         static bool NeedsTransformID(VisualElement ve)

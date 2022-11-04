@@ -21,7 +21,7 @@ namespace Unity.Collections
         // For performance reasons no assignment operator (static initializer cost in il2cpp)
         // and flipped enabled / disabled enum value
         static int s_NativeLeakDetectionMode;
-        const string kNativeLeakDetectionModePrefsString = "Unity.Colletions.NativeLeakDetection.Mode";
+        const string kNativeLeakDetectionModePrefsString = "Unity.Collections.NativeLeakDetection.Mode";
 
         // Initialize leak detection on startup/domain reload to avoid NativeLeakDetection.Mode
         // access on a job to trigger the initialization.
@@ -144,7 +144,9 @@ namespace Unity.Collections.LowLevel.Unsafe
                 }
                 else
                 {
-                    var err = "A Native Collection has not been disposed, resulting in a memory leak. Enable Full StackTraces to get more details.";
+                    var err = "A Native Collection has not been disposed, resulting in a memory leak. " +
+                        "Enable Full StackTraces to get more details. Leak tracking may be enabled via `Unity.Collections.NativeLeakDetection.Mode` " +
+                        "or from the editor preferences menu Edit > Preferences > Jobs > Leak Detection Level.";
                     UnsafeUtility.LogError(err, fileName, lineNb);
                 }
 

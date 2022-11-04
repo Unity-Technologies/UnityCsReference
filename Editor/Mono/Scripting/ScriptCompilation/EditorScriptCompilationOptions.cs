@@ -20,7 +20,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingPredefinedAssembliesAllowUnsafeCode = 1 << 6,
         BuildingForHeadlessPlayer = 1 << 7,
         BuildingUseDeterministicCompilation = 1 << 9,
-        BuildingWithRoslynAnalysis = 1 << 10,
         BuildingWithoutScriptUpdater = 1 << 11,
         BuildingExtractTypeDB = 1 << 12,
         BuildingSkipCompile = 1 << 13,

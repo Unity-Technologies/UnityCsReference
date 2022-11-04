@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_RefreshTimestamps[RefreshOptions.Purchased] = 0;
             }
             else if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore &&
-                m_Application.isInternetReachable && !EditorApplication.isPlaying &&
+                m_Application.isInternetReachable &&
                 !EditorApplication.isCompiling &&
                 !IsRefreshInProgress(RefreshOptions.Purchased))
                 Refresh(RefreshOptions.Purchased);

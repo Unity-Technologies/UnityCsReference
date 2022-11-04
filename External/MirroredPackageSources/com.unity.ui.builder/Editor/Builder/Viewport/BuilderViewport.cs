@@ -272,7 +272,7 @@ namespace Unity.UI.Builder
         public VisualElement PickElement(Vector2 mousePosition, List<VisualElement> pickedElements = null)
         {
             var pickAllFunc = typeof(Panel).GetMethod("PickAll", BindingFlags.Static | BindingFlags.NonPublic);
-            var pickedElement = pickAllFunc.Invoke(obj: null, parameters: new object[] { m_DocumentRootElement, mousePosition, pickedElements }) as VisualElement;
+            var pickedElement = pickAllFunc.Invoke(obj: null, parameters: new object[] { m_DocumentRootElement, mousePosition, pickedElements, true }) as VisualElement;
 
             if (pickedElement == null)
                 return null;

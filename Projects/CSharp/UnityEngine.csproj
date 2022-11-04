@@ -3500,35 +3500,44 @@
     <Compile Include="..\..\Runtime\Export\Scripting\Attributes.cs">
       <Link>Runtime\Export\Scripting\Attributes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutine.AsyncOperation.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutine.AsyncOperation.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.AsyncMethodBuilder.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.AsyncMethodBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutine.Awaiter.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutine.Awaiter.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.AsyncMethodBuilderT.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.AsyncMethodBuilderT.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutine.Bindings.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutine.Bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.AsyncOperation.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.AsyncOperation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutine.DelayedCall.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutine.DelayedCall.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.Awaiter.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.Awaiter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutine.UnityEvents.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutine.UnityEvents.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.Bindings.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.Bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutine.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutine.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.DelayedCall.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.DelayedCall.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutineAsyncMethodBuilder.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutineAsyncMethodBuilder.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.Synchronization.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.Synchronization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutineAsyncMethodBuilderT.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutineAsyncMethodBuilderT.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.ThreadSafeObjectPool.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.ThreadSafeObjectPool.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCoroutineT.cs">
-      <Link>Runtime\Export\Scripting\AwaitableCoroutineT.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.UnityEvents.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.UnityEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableT.cs">
+      <Link>Runtime\Export\Scripting\AwaitableT.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Behaviour.bindings.cs">
       <Link>Runtime\Export\Scripting\Behaviour.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\BindingsHelpers.cs">
+      <Link>Runtime\Export\Scripting\BindingsHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\CastHelper.cs">
       <Link>Runtime\Export\Scripting\CastHelper.cs</Link>
@@ -3640,9 +3649,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\TextAsset.cs">
       <Link>Runtime\Export\Scripting\TextAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Scripting\ThreadSafeObjectPool.cs">
-      <Link>Runtime\Export\Scripting\ThreadSafeObjectPool.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\TrackedReference.cs">
       <Link>Runtime\Export\Scripting\TrackedReference.cs</Link>

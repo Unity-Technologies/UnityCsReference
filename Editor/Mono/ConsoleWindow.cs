@@ -314,6 +314,7 @@ namespace UnityEditor
             if (!ms_ConsoleWindow)
                 return;
             ms_ConsoleWindow.Repaint();
+            ConsoleWindowUtility.Internal_CallLogsHaveChanged();
         }
 
         public ConsoleWindow()

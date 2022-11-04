@@ -1602,14 +1602,14 @@ namespace UnityEditor
             }
         }
 
-        public static void AddOverlayToActiveView<T>(T overlay) where T : Overlay, ITransientOverlay
+        public static void AddOverlayToActiveView<T>(T overlay) where T : Overlay
         {
             s_ActiveViewOverlays.Add(overlay);
             if(lastActiveSceneView != null)
                 lastActiveSceneView.overlayCanvas.Add(overlay);
         }
 
-        public static void RemoveOverlayFromActiveView<T>(T overlay) where T : Overlay, ITransientOverlay
+        public static void RemoveOverlayFromActiveView<T>(T overlay) where T : Overlay
         {
             if (!s_ActiveViewOverlays.Remove(overlay))
                 return;
@@ -1642,7 +1642,7 @@ namespace UnityEditor
             int alreadyInPlaceCounter = 0;
             foreach (Transform transform in transforms)
             {
-                if (transform == null || transform.parent == null || PrefabUtility.IsPartOfNonAssetPrefabInstance(transform))
+                if (transform == null || transform.parent == null || PrefabUtility.IsPartOfNonAssetPrefabInstance(transform.parent))
                 {
                     return false;
                 }

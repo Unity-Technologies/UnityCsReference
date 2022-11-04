@@ -6,18 +6,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.AssetImporters;
-using UnityEditorInternal;
+using UnityEditor.Search;
 using UnityEngine;
+using UnityEngine.Search;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Presets
 {
+    [Obsolete("The PresetSelectorReceiver is deprecated. Please use PresetSelector.ShowSelector(Object[], Preset, bool) instead.", false)]
     public abstract class PresetSelectorReceiver : ScriptableObject
     {
         public virtual void OnSelectionChanged(Preset selection) {}
         public virtual void OnSelectionClosed(Preset selection) {}
     }
 
+    [Obsolete("The DefaultPresetSelectorReceiver is deprecated. Please use PresetSelector.ShowSelector(Object[], Preset, bool) instead.", false)]
     public class DefaultPresetSelectorReceiver : PresetSelectorReceiver
     {
         Object[] m_Targets;
@@ -55,7 +58,7 @@ namespace UnityEditor.Presets
             DestroyImmediate(this);
         }
     }
-
+#pragma warning disable 618
     class PresetListArea : ObjectListArea
     {
         public PresetListArea(ObjectListAreaState state, PresetSelector owner)
@@ -69,6 +72,7 @@ namespace UnityEditor.Presets
 
         LocalGroup.ExtraItem noneItem => m_LocalAssets?.NoneList != null && m_LocalAssets.NoneList.Length > 0 ? m_LocalAssets.NoneList[0] : null;
     }
+#pragma warning restore 618
 
     public class PresetSelector : EditorWindow
     {
@@ -79,8 +83,6 @@ namespace UnityEditor.Presets
             public static GUIContent presetIcon = EditorGUIUtility.IconContent("Preset.Context");
             public static GUIStyle selectedPathLabel = "Label";
         }
-
-        internal static Object[] InspectedObjects { get; set; }
 
         // Filter
         string m_SearchField;
@@ -104,7 +106,9 @@ namespace UnityEditor.Presets
 
         // get an existing ObjectSelector or create one
         static PresetSelector s_SharedPresetSelector = null;
+#pragma warning disable 618
         PresetSelectorReceiver m_EventObject;
+#pragma warning restore 618
 
         string m_SelectedPath;
         GUIContent m_SelectedPathContent = new GUIContent();
@@ -137,31 +141,31 @@ namespace UnityEditor.Presets
                 (target.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
 
-            if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive,
-                EditorStyles.iconButton))
+            if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive, EditorStyles.iconButton))
             {
-                PresetContextMenu.CreateAndShow(targets);
+                var presetContext = new PresetContext(targets, true);
+                ShowSelector(presetContext);
             }
             return true;
         }
 
         public static void ShowSelector(Object[] targets, Preset currentSelection, bool createNewAllowed)
         {
-            var eventHolder = CreateInstance<DefaultPresetSelectorReceiver>();
-            eventHolder.Init(targets);
-            ShowSelector(targets[0], currentSelection, createNewAllowed, eventHolder);
+            ShowSelector(new PresetContext(targets, currentSelection, createNewAllowed));
         }
 
+        [Obsolete("The PresetSelectorReceiver is deprecated. Please use ShowSelector(Object[], Preset, bool).", false)]
         public static void ShowSelector(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
             get.Init(target, currentSelection, createNewAllowed, eventReceiver);
         }
 
+        [Obsolete("The PresetSelectorReceiver is deprecated. Please use ShowSelector(Object[], Preset, bool).", false)]
         public static void ShowSelector(PresetType presetType, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
             get.Init(presetType, currentSelection, createNewAllowed, eventReceiver);
         }
-
+#pragma warning disable 618
         void Init(PresetType presetType, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
@@ -203,23 +207,189 @@ namespace UnityEditor.Presets
 
             SetSelectedPath(GetCurrentSelection());
         }
+#pragma warning restore 618
+
+        public static ISearchView ShowSelector(PresetType presetType, Preset currentSelection, SerializedProperty presetProperty, bool createNewAllowed)
+        {
+            var presetContext = new PresetContext(presetType, currentSelection, presetProperty, createNewAllowed);
+            return ShowSelector(presetContext);
+        }
+
+        internal static ISearchView ShowSelector(PresetContext presetContext)
+        {
+            var provider = PresetSearchProvider.CreateProvider(presetContext);
+            var searchContext = UnityEditor.Search.SearchService.CreateContext(provider, string.Empty);
+            var viewState = new SearchViewState(searchContext,
+                SearchViewFlags.CompactView |
+                SearchViewFlags.OpenInBuilderMode |
+                SearchViewFlags.DisableSavedSearchQuery)
+            {
+                windowTitle = new GUIContent("Preset Selector"),
+                title = "Preset",
+                filterHandler = item => OnPresetFilter(presetContext, provider, item),
+                selectHandler = (item, canceled) =>
+                {
+                    if (item?.id == PresetSearchProvider.CreateItemID)
+                        CreatePreset(presetContext.Target);
+                    else
+                        OnPresetSelected(presetContext, item?.ToObject<Preset>(), canceled);
+
+                    PresetEditorHelper.presetEditorOpen = false;
+                },
+
+                trackingHandler = item => OnPresetSelected(in presetContext, item?.ToObject<Preset>(), false),
+                selectedIds = presetContext.CurrentSelection != null ? new []{ presetContext.CurrentSelection.GetInstanceID() } : null
+            };
+            PresetEditorHelper.presetEditorOpen = true;
+            return UnityEditor.Search.SearchService.ShowPicker(viewState);
+        }
+
+        static bool OnPresetFilter(in PresetContext presetContext, SearchProvider provider, SearchItem item)
+        {
+            // include the clear option
+            if (item?.id == SearchItem.clear.id)
+                return true;
+
+            // include the Create New... item
+            if (item?.provider == provider)
+                return true;
+
+            Preset inspectedPreset = null;
+            if (PresetEditorHelper.InspectedObjects != null &&
+                PresetEditorHelper.InspectedObjects.Length == 1 &&
+                PresetEditorHelper.InspectedObjects[0] is Preset p)
+                inspectedPreset = p;
+
+            if (item?.ToObject() is Preset preset)
+            {
+                return preset.GetPresetType() == presetContext.PresetType && preset != inspectedPreset;
+            }
+
+            return false;
+        }
+
+        static void OnPresetSelected(in PresetContext presetContext, Preset selection, bool canceled)
+        {
+            if (canceled || (selection == null && presetContext.RevertOnNullSelection))
+            {
+                RevertValues(presetContext);
+            }
+            else
+            {
+                ApplyValues(presetContext, selection);
+            }
+            InspectorWindow.RepaintAllInspectors();
+            SettingsService.RepaintAllSettingsWindow();
+        }
+
+        static void RevertValues(in PresetContext presetContext)
+        {
+            if (presetContext.Targets.Length != 0)
+            {
+                Undo.RecordObjects(presetContext.Targets, "Cancel Preset");
+                for (int i = 0; i < presetContext.Targets.Length; i++)
+                {
+                    presetContext.Presets[i].ApplyTo(presetContext.Targets[i]);
+                }
+            }
+            else if (presetContext.PresetProperty != null)
+            {
+                presetContext.PresetProperty.objectReferenceValue = presetContext.CurrentSelection;
+                presetContext.PresetProperty.serializedObject.ApplyModifiedProperties();
+            }
+        }
+
+        static void ApplyValues(in PresetContext presetContext, Preset selection)
+        {
+            if (presetContext.Targets.Length != 0)
+            {
+                Undo.RecordObjects(presetContext.Targets, "Apply Preset " + selection.name);
+                foreach (var target in presetContext.Targets)
+                {
+                    selection.ApplyTo(target);
+                }
+            }
+            else if (presetContext.PresetProperty != null)
+            {
+                presetContext.PresetProperty.objectReferenceValue = selection;
+                presetContext.PresetProperty.serializedObject.ApplyModifiedProperties();
+            }
+        }
+
+        static string CreatePresetDialog(ref Preset preset, Object target)
+        {
+            if (target is AssetImporter && ApplyImportSettingsBeforeSavingPreset(ref preset, target))
+                return null;
+
+            return EditorUtility.SaveFilePanelInProject("New Preset",
+                preset.GetTargetTypeName(),
+                "preset",
+                "",
+                ProjectWindowUtil.GetActiveFolderPath());
+        }
+
+        static void CreatePreset(Object target)
+        {
+            // The preset picker will apply the selection when the window is disposed.
+            // However, when creating a new preset, the preset window is closed as the save file dialog opens.
+            // This triggers a second selection callback invocation, which we do not want.
+            if (PresetEditorHelper.presetEditorOpen == false)
+                return;
+
+            // Set the preset popup closed before triggering the save file dialog
+            PresetEditorHelper.presetEditorOpen = false;
+
+            var preset = new Preset(target);
+            var path = CreatePresetDialog(ref preset, target);
+            if (!string.IsNullOrEmpty(path))
+            {
+                // If the asset already exist, we need to make sure we keep the same PPtr valid in memory.
+                // To ensure that, we use CopySerialized on the Asset instance instead of erasing the asset with CreateAsset.
+                var oldPreset = AssetDatabase.LoadAssetAtPath<Preset>(path);
+                if (oldPreset != null)
+                {
+                    EditorUtility.CopySerialized(preset, oldPreset);
+
+                    // replace name because it was erased by the CopySerialized
+                    oldPreset.name = System.IO.Path.GetFileNameWithoutExtension(path);
+
+                    AssetDatabase.SaveAssetIfDirty(oldPreset);
+
+                    // If the preset is opened in any inspectors/property windows, rebuild them since the preset has been overwritten
+                    var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>().Where(pe =>
+                    {
+                        var editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(pe.tracker.activeEditors);
+                        return editor != null && editor.targets.Any(o => o == oldPreset);
+                    });
+                    foreach (var pe in propertyEditors)
+                        pe.tracker.ForceRebuild();
+                }
+                else
+                {
+                    AssetDatabase.CreateAsset(preset, path);
+                }
+            }
+            GUIUtility.ExitGUI();
+        }
 
         void OnBeforeAssemblyReload()
         {
             Close();
         }
 
+#pragma warning disable 618
         void Init(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
             m_MainTarget = target;
             Init(new PresetType(target), currentSelection, createNewAllowed, eventReceiver);
         }
+#pragma warning restore 618
 
         static IEnumerable<Preset> FindAllPresetsOfType(PresetType presetType)
         {
             // If a preset is currently inspected, it doesn't make sense for it to be applied on itself so we filter it from the list.
             Preset inspectedPreset = null;
-            if (InspectedObjects != null && InspectedObjects.Length == 1 && InspectedObjects[0] is Preset preset)
+            if (PresetEditorHelper.InspectedObjects != null && PresetEditorHelper.InspectedObjects.Length == 1 && PresetEditorHelper.InspectedObjects[0] is Preset preset)
                 inspectedPreset = preset;
 
             return AssetDatabase.FindAssets("t:Preset")
@@ -439,53 +609,6 @@ namespace UnityEditor.Presets
                 }
             }
             return false;
-        }
-
-        string CreatePresetDialog(ref Preset preset, Object target)
-        {
-            if (target is AssetImporter && ApplyImportSettingsBeforeSavingPreset(ref preset, target))
-                return null;
-
-            return EditorUtility.SaveFilePanelInProject("New Preset",
-                !string.IsNullOrWhiteSpace(m_SearchField) ? m_SearchField : preset.GetTargetTypeName(),
-                "preset",
-                "",
-                ProjectWindowUtil.GetActiveFolderPath());
-        }
-
-        void CreatePreset(Object target)
-        {
-            var preset = new Preset(target);
-            var path = CreatePresetDialog(ref preset, target);
-            if (!string.IsNullOrEmpty(path))
-            {
-                // If the asset already exist, we need to make sure we keep the same PPtr valid in memory.
-                // To ensure that, we use CopySerialized on the Asset instance instead of erasing the asset with CreateAsset.
-                var oldPreset = AssetDatabase.LoadAssetAtPath<Preset>(path);
-                if (oldPreset != null)
-                {
-                    EditorUtility.CopySerialized(preset, oldPreset);
-
-                    // replace name because it was erased by the CopySerialized
-                    oldPreset.name = System.IO.Path.GetFileNameWithoutExtension(path);
-
-                    AssetDatabase.SaveAssetIfDirty(oldPreset);
-
-                    // If the preset is opened in any inspectors/property windows, rebuild them since the preset has been overwritten
-                    var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>().Where(pe =>
-                    {
-                        var editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(pe.tracker.activeEditors);
-                        return editor != null && editor.targets.Any(o => o == oldPreset);
-                    });
-                    foreach (var pe in propertyEditors)
-                        pe.tracker.ForceRebuild();
-                }
-                else
-                {
-                    AssetDatabase.CreateAsset(preset, path);
-                }
-            }
-            GUIUtility.ExitGUI();
         }
     }
 }

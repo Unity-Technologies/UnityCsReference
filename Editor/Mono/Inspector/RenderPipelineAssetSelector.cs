@@ -50,6 +50,9 @@ namespace UnityEditor
             }
         }
 
+        private static bool s_ObjectSelectorClosed = false;
+        private static Object s_LastPickedObject = null;
+
         /// <summary>
         /// Draws the object field and, if the user attempts to change the value, asks the user for confirmation.
         /// </summary>
@@ -77,11 +80,17 @@ namespace UnityEditor
                 style: EditorStyles.objectField,
                 onObjectSelectorClosed: obj =>
                 {
-                    if (!ObjectSelector.SelectionCanceled())
-                        PromptConfirmation(serializedObject, serializedProperty, obj);
+                    if (ObjectSelector.SelectionCanceled()) return;
+                    s_ObjectSelectorClosed = true;
+                    s_LastPickedObject = obj;
                 });
 
-            if (!ObjectSelector.isVisible)
+            if (s_ObjectSelectorClosed)
+            {
+                s_ObjectSelectorClosed = false;
+                PromptConfirmation(serializedObject, serializedProperty, s_LastPickedObject);
+            }
+            else if (!ObjectSelector.isVisible) // Drag and drop
             {
                 PromptConfirmation(serializedObject, serializedProperty, selectedRenderPipelineAsset);
             }

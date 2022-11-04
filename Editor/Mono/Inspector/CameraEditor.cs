@@ -12,6 +12,7 @@ using UnityEngine.XR;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using UnityEditor.Overlays;
 using UnityEditorInternal.VR;
 using Object = UnityEngine.Object;
 
@@ -510,7 +511,6 @@ namespace UnityEditor
             }
         }
 
-
         private static bool IsDeferredRenderingPath(RenderingPath rp) { return rp == RenderingPath.DeferredShading; }
 
         private bool wantDeferredRendering
@@ -552,6 +552,8 @@ namespace UnityEditor
             get { return settings.targetEye.intValue; }
         }
 
+        Overlay m_PreviewOverlay;
+
         static List<XRDisplaySubsystemDescriptor> displayDescriptors = new List<XRDisplaySubsystemDescriptor>();
 
         static void OnReloadSubsystemsComplete()
@@ -574,6 +576,9 @@ namespace UnityEditor
 
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
             SubsystemManager.afterReloadSubsystems += OnReloadSubsystemsComplete;
+
+            if(!SceneViewCameraOverlay.forceDisable)
+                SceneView.AddOverlayToActiveView(m_PreviewOverlay = CreatePreviewOverlay(c));
         }
 
         public void OnDestroy()
@@ -584,6 +589,7 @@ namespace UnityEditor
 
         public void OnDisable()
         {
+            SceneView.RemoveOverlayFromActiveView(m_PreviewOverlay);
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
             m_ShowTargetEyeOption.valueChanged.RemoveListener(Repaint);
@@ -762,11 +768,13 @@ namespace UnityEditor
         }
 
         // marked obsolete @karlh 2021/02/13
-        [Obsolete("OnOverlayGUI is obsolete, use Overlay to create a preview.")]
+        [Obsolete("OnOverlayGUI is obsolete. Override CreatePreviewOverlay to create a preview.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void OnOverlayGUI(Object target, SceneView sceneView)
         {
         }
+
+        public virtual Overlay CreatePreviewOverlay(Camera cam) => new SceneViewCameraOverlay(cam);
 
         [RequiredByNativeCode]
         internal static float GetGameViewAspectRatio()

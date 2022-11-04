@@ -592,9 +592,19 @@ namespace UnityEngine
         {
             get { return SupportsAsyncGPUReadback(); }
         }
+        public static bool supportsRayTracingShaders
+        {
+            get { return SupportsRayTracingShaders(); }
+
+        }
         public static bool supportsRayTracing
         {
             get { return SupportsRayTracing(); }
+        }
+
+        public static bool supportsInlineRayTracing
+        {
+            get { return SupportsInlineRayTracing(); }
         }
 
         public static bool supportsSetConstantBuffer
@@ -938,6 +948,12 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsRayTracing")]
         static extern bool SupportsRayTracing();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsRayTracingShaders")]
+        static extern bool SupportsRayTracingShaders();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsInlineRayTracing")]
+        static extern bool SupportsInlineRayTracing();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsSetConstantBuffer")]
         static extern bool SupportsSetConstantBuffer();
