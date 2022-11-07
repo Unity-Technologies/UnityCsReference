@@ -304,7 +304,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0)
+            if (assemblies.RoslynAnalyzerDllPaths != null)
                 RoslynAnalyzers.SetAnalyzers(scriptAssemblies, assemblies.CustomTargetAssemblies.Values.ToArray(), assemblies.RoslynAnalyzerDllPaths, false);
 
             return scriptAssemblies;

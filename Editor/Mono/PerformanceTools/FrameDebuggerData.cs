@@ -153,7 +153,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public int m_ShaderPassIndex;
         public string shaderKeywords;
         public int m_ComponentInstanceID;
-        public Mesh mesh;
+        public Mesh m_Mesh;
         public int m_MeshInstanceID;
         public int m_MeshSubset;
         public int[] m_MeshInstanceIDs;
@@ -161,7 +161,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         // state for compute shader dispatches
         public int m_ComputeShaderInstanceID;
         public string m_ComputeShaderName;
-        public string csKernel;
+        public string m_ComputeShaderKernelName;
         public int m_ComputeShaderThreadGroupsX;
         public int m_ComputeShaderThreadGroupsY;
         public int m_ComputeShaderThreadGroupsZ;

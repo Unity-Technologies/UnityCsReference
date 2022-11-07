@@ -3647,7 +3647,7 @@ namespace UnityEditor
             }
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
-            var i = Array.IndexOf(enumData.values, selected);
+            var i = showMixedValue ? -1 : Array.IndexOf(enumData.values, selected);
             var options = EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, enumData);
 
             s_CurrentCheckEnumEnabled = checkEnabled;
@@ -3665,7 +3665,7 @@ namespace UnityEditor
             }
 
             var enumData = EnumDataUtility.GetCachedEnumData(enumType, !includeObsolete);
-            var i = Array.IndexOf(enumData.flagValues, flagValue);
+            var i = showMixedValue ? -1 : Array.IndexOf(enumData.flagValues, flagValue);
             var options = EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, enumData);
 
             s_CurrentCheckEnumEnabled = checkEnabled;
@@ -3679,7 +3679,11 @@ namespace UnityEditor
         {
             // value --> index
             int i;
-            if (optionValues != null)
+            if (showMixedValue)
+            {
+                i = -1;
+            }
+            else if (optionValues != null)
             {
                 for (i = 0; (i < optionValues.Length) && (selectedValue != optionValues[i]); ++i)
                 {
@@ -3715,9 +3719,7 @@ namespace UnityEditor
             BeginChangeCheck();
             int newValue = IntPopupInternal(position, label, property.intValue, displayedOptions, optionValues, EditorStyles.popup);
             if (EndChangeCheck())
-            {
                 property.intValue = newValue;
-            }
 
             EndProperty();
         }
@@ -8536,7 +8538,7 @@ namespace UnityEditor
             else
             {
                 BeginChangeCheck();
-                int idx = Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EnumNamesCache.GetEnumLocalizedGUIContents(property));
+                int idx = Popup(position, label, property.enumValueIndex, EnumNamesCache.GetEnumLocalizedGUIContents(property));
                 if (EndChangeCheck())
                 {
                     property.enumValueIndex = idx;

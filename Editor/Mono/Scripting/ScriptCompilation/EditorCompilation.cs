@@ -122,7 +122,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BeeScriptCompilationState _currentBeeScriptCompilationState;
 
         CompilerMessage[] _currentEditorCompilationCompilerMessages = new CompilerMessage[0];
-        public bool IsRunningRoslynAnalysisSynchronously { get; private set; }
 
         public void SetProjectDirectory(string projectDirectory)
         {
@@ -696,9 +695,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             string[] extraScriptingDefines
         )
         {
-            IsRunningRoslynAnalysisSynchronously =
-                (editorScriptCompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0 && PlayerSettings.EnableRoslynAnalyzers;
-
             var scriptAssemblySettings = CreateScriptAssemblySettings(platformGroup, platform, editorScriptCompilationOptions, extraScriptingDefines);
 
             CompileStatus compilationResult;
@@ -803,10 +799,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             VersionDefinesConsoleLogs?.ClearVersionDefineErrors();
             m_UnityVersionRanges.Clear();
             m_SemVersionRanges.Clear();
-
-            IsRunningRoslynAnalysisSynchronously =
-                PlayerSettings.EnableRoslynAnalyzers &&
-                (scriptAssemblySettings.CompilationOptions & EditorScriptCompilationOptions.BuildingWithRoslynAnalysis) != 0;
 
             ScriptAssembly[] scriptAssemblies;
             if (scriptAssemblySettings.CompilationOptions.HasFlag(EditorScriptCompilationOptions.BuildingSkipCompile))
@@ -1643,8 +1635,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 options |= EditorScriptCompilationOptions.BuildingForEditor;
             }
 
-            options |= EditorScriptCompilationOptions.BuildingWithRoslynAnalysis;
-
             return options;
         }
 
@@ -1722,24 +1712,22 @@ namespace UnityEditor.Scripting.ScriptCompilation
             scriptAssembly.References = references.ToArray();
             scriptAssembly.Defines = defines.ToArray();
 
-            if (options.HasFlag(EditorScriptCompilationOptions.BuildingWithRoslynAnalysis))
-            {
-                RoslynAnalyzers.SetAnalyzers(
-                    new[] { scriptAssembly },
-                    customTargetAssemblies.Values.ToArray(),
-                    PrecompiledAssemblyProvider.GetRoslynAnalyzerPaths(),
-                    true);
+            RoslynAnalyzers.SetAnalyzers(
+                new[] { scriptAssembly },
+                customTargetAssemblies.Values.ToArray(),
+                PrecompiledAssemblyProvider.GetRoslynAnalyzerPaths(),
+                true);
 
-                // AssemblyBuilder can explicitly set analyzers and rule set
-                if (assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths != null)
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths
-                        .Concat(scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths)
-                        .Distinct()
-                        .ToArray();
+            // AssemblyBuilder can explicitly set analyzers and rule set
+            if (assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths != null)
+                scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths = assemblyBuilder.compilerOptions.RoslynAnalyzerDllPaths
+                    .Concat(scriptAssembly.CompilerOptions.RoslynAnalyzerDllPaths)
+                    .Distinct()
+                    .ToArray();
 
-                if (!string.IsNullOrEmpty(assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath))
-                    scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath;
-            }
+            if (!string.IsNullOrEmpty(assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath))
+                scriptAssembly.CompilerOptions.RoslynAnalyzerRulesetPath = assemblyBuilder.compilerOptions.RoslynAnalyzerRulesetPath;
+
 
             return scriptAssembly;
         }

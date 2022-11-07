@@ -19,6 +19,7 @@ using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using Unity.Profiling;
 using UnityEditor.AssetImporters;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor
@@ -258,24 +259,28 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray, out string[] movedFromNamespacesArray)
+        public static bool ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray, out string[] movedFromNamespacesArray)
         {
             var typesDerivedFromMonoBehaviour = TypeCache.GetTypesDerivedFrom<MonoBehaviour>();
             var typesDerivedFromScriptableObject = TypeCache.GetTypesDerivedFrom<ScriptableObject>();
             var typesDerivedFromScriptedImporter = TypeCache.GetTypesDerivedFrom<ScriptedImporter>();
 
-            var fullPath = Path.GetFullPath(path);
-            IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFullPath(x.Assembly.Location) == fullPath);
+            var fileName = Path.GetFileName(path);
+            IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFileName(x.Assembly.Location) == fileName);
             userTypes = userTypes
-                .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFullPath(x.Assembly.Location) == fullPath))
-                .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFullPath(x.Assembly.Location) == fullPath)).ToList();
+                .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFileName(x.Assembly.Location) == fileName))
+                .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFileName(x.Assembly.Location) == fileName)).ToList();
 
             List<string> classNames = new List<string>(userTypes.Count());
             List<string> nameSpaces = new List<string>(userTypes.Count());
             List<string> originalNamespaces = new List<string>(userTypes.Count());
 
+            string pathToAssembly = null;
             foreach (var userType in userTypes)
             {
+                if (string.IsNullOrEmpty(pathToAssembly))
+                    pathToAssembly = Path.GetFullPath(userType.Assembly.Location);
+
                 classNames.Add(userType.Name);
                 nameSpaces.Add(userType.Namespace);
 
@@ -286,6 +291,8 @@ namespace UnityEditor
             classNamesArray = classNames.ToArray();
             classNameSpacesArray = nameSpaces.ToArray();
             movedFromNamespacesArray = originalNamespaces.ToArray();
+
+            return !Utility.IsPathsEqual(pathToAssembly, path);
         }
 
         /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.

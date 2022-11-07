@@ -25,7 +25,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         internal void GetCopyText(ref StringBuilder sb)
         {
-
             sb.AppendLine(FrameDebuggerStyles.EventDetails.s_DashesString);
             sb.AppendLine(m_TypeName);
             sb.AppendLine(FrameDebuggerStyles.EventDetails.s_DashesString);
@@ -131,12 +130,17 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal bool m_IsComputeEvent;
         internal bool m_IsRayTracingEvent;
         internal bool m_IsConfigureFoveatedEvent;
+        internal bool m_ShouldDisplayRealAndOriginalShaders;
         internal bool m_RenderTargetIsBackBuffer;
         internal bool m_RenderTargetIsDepthOnlyRT;
         internal bool m_RenderTargetHasShowableDepth;
+        internal float m_DetailsGUIWidth;
+        internal float m_DetailsGUIHeight;
         internal string m_Title;
         internal string m_RealShaderName;
         internal string m_OriginalShaderName;
+        internal string m_RayTracingShaderName;
+        internal string m_RayTracingGenerationShaderName;
         internal Mesh[] m_Meshes;
         internal GUIContent[] m_MeshNames;
         internal RenderTexture m_RenderTargetRenderTexture;
@@ -173,10 +177,14 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 sb.AppendLine("Details");
                 sb.AppendLine(FrameDebuggerStyles.EventDetails.s_DashesString);
                 sb.AppendLine(details);
-                sb.AppendFormat(k_TwoColumnFormat, FrameDebuggerStyles.EventDetails.s_RealShaderText, m_RealShaderName);
-                sb.AppendLine();
-                sb.AppendFormat(k_TwoColumnFormat, FrameDebuggerStyles.EventDetails.s_OriginalShaderText, m_OriginalShaderName);
-                sb.AppendLine();
+
+                if (m_ShouldDisplayRealAndOriginalShaders)
+                {
+                    sb.AppendFormat(k_TwoColumnFormat, FrameDebuggerStyles.EventDetails.s_RealShaderText, m_RealShaderName);
+                    sb.AppendLine();
+                    sb.AppendFormat(k_TwoColumnFormat, FrameDebuggerStyles.EventDetails.s_OriginalShaderText, m_OriginalShaderName);
+                    sb.AppendLine();
+                }
                 return sb.ToString();
             }
         }
@@ -223,10 +231,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private const int k_ColumnSpace = 2;
         private const int k_MaxDecimalNumbers = 7;
         private const int k_MaxNaturalNumber = 10 + k_MaxDecimalNumbers + 1 + 1; // + decimal point + sign
-        private const string k_TwoColumnFormat = "{0, -22}{1, -35}";
+        private const string k_TwoColumnFormat  = "{0, -22}{1, -35}";
         private const string k_FourColumnFormat = "{0, -22}{1, -35}{2, -22}{3, -10}";
         private static string s_IntPrecision = k_MaxNaturalNumber + ":F0";
         private static string s_FloatPrecision = k_MaxNaturalNumber + ":F" + k_MaxDecimalNumbers;
+        private const string k_NotAvailableString = FrameDebuggerStyles.EventDetails.k_NotAvailable;
 
         // Structs
         private struct ShaderPropertySortingInfo : IComparable<ShaderPropertySortingInfo>
@@ -291,6 +300,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             ShaderPropertyCollection displayInfo = new ShaderPropertyCollection();
             displayInfo.m_TypeName = typeName;
             GetFormatAndHeader(propType, ref shaderInfo, ref displayInfo);
+
+            // Clear and Resolve events often have properties from the previous events
+            // tied to them. We therefore force it to skip them.
+            // TODO: Fix this properly in C++ land.
+            if (m_IsClearEvent || m_IsResolveEvent)
+                arrayLength = 0;
 
             // Check the data and create structs for valid ones...
             List<ShaderPropertySortingInfo> myList = new List<ShaderPropertySortingInfo>();
@@ -643,6 +658,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_StringBuilder.Clear();
             m_DetailsStringBuilder.Clear();
             m_Details = string.Empty;
+            m_RealShaderName = string.Empty;
+            m_RealShader = null;
+            m_OriginalShaderName = string.Empty;
+            m_OriginalShader = null;
+            m_ShouldDisplayRealAndOriginalShaders = false;
 
             if (m_ShaderProperties != null)
             {
@@ -657,7 +677,15 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         private void BuildCurEventDataStrings(FrameDebuggerEvent curEvent, FrameDebuggerEventData curEventData)
         {
-            const string notAvailableString = FrameDebuggerStyles.EventDetails.k_NotAvailable;
+            // Initialize some key settings
+            m_Index = FrameDebuggerUtility.limit - 1;
+            m_Type = curEvent.m_Type;
+
+            m_IsClearEvent = FrameDebuggerHelper.IsAClearEvent(m_Type);
+            m_IsResolveEvent = FrameDebuggerHelper.IsAResolveEvent(m_Type);
+            m_IsComputeEvent = FrameDebuggerHelper.IsAComputeEvent(m_Type);
+            m_IsRayTracingEvent = FrameDebuggerHelper.IsARayTracingEvent(m_Type);
+            m_IsConfigureFoveatedEvent = FrameDebuggerHelper.IsAConfigureFoveatedRenderingEvent(m_Type);
 
             m_RenderTargetIsBackBuffer = curEventData.m_RenderTargetIsBackBuffer;
             m_RenderTargetFormat = (GraphicsFormat)curEventData.m_RenderTargetFormat;
@@ -665,65 +693,155 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_RenderTargetHasShowableDepth = (curEventData.m_RenderTargetHasDepthTexture != 0);
             m_RenderTargetShowableRTCount = curEventData.m_RenderTargetCount;
 
-            m_Index = FrameDebuggerUtility.limit - 1;
-            m_Type = curEvent.m_Type;
-            int eventTypeInt = (int)m_Type;
-
-            // Figure out the type of event we have
-            m_IsClearEvent = FrameDebuggerHelper.IsAClearEvent(m_Type);
-            m_IsResolveEvent = FrameDebuggerHelper.IsAResolveEvent(m_Type);
-            m_IsComputeEvent = FrameDebuggerHelper.IsAComputeEvent(m_Type);
-            m_IsRayTracingEvent = FrameDebuggerHelper.IsARayTracingEvent(m_Type);
-            m_IsConfigureFoveatedEvent = FrameDebuggerHelper.IsAConfigureFoveatedRenderingEvent(m_Type);
-
-            //
-            FrameDebuggerRasterState rasterState = curEventData.m_RasterState;
-            FrameDebuggerDepthState depthState = curEventData.m_DepthState;
-            FrameDebuggerBlendState blendState = curEventData.m_BlendState;
-
             // Event title
+            int eventTypeInt = (int)m_Type;
             var eventObj = FrameDebuggerUtility.GetFrameEventObject(m_Index);
             if (eventObj)
                 m_Title = $"Event #{m_Index + 1} {FrameDebuggerStyles.s_FrameEventTypeNames[eventTypeInt]} {eventObj.name}";
             else
                 m_Title = $"Event #{m_Index + 1} {FrameDebuggerStyles.s_FrameEventTypeNames[eventTypeInt]}";
 
-            // Shader names
-            GetRealAndOriginalShaderInfo(curEventData);
+            // Collect data into a string builder based on the event type...
+            if (m_IsComputeEvent)
+                BuildComputeEventDataStrings(curEvent, curEventData);
+            else if (m_IsRayTracingEvent)
+                BuildRayTracingEventDataStrings(curEvent, curEventData);
+            else if (m_IsClearEvent)
+                BuildClearEventDataStrings(curEvent, curEventData);
+            else
+                BuildDrawCallEventDataStrings(curEvent, curEventData);
+
+            // Create a string out of the string builder
+            m_Details = m_DetailsStringBuilder.ToString();
+
+            // Calculate the width and height so the scrollbar functions correctly for the details
+            GUIContent content = new GUIContent(m_Details);
+            Vector2 guiContentSize = FrameDebuggerStyles.EventDetails.s_MonoLabelStyle.CalcSize(content);
+            m_DetailsGUIWidth = guiContentSize.x + 12; // Add small margin to the width
+            m_DetailsGUIHeight = guiContentSize.y;
+        }
+
+        private void BuildRayTracingEventDataStrings(FrameDebuggerEvent curEvent, FrameDebuggerEventData curEventData)
+        {
+            bool hasAccelerationName = curEventData.m_RayTracingShaderAccelerationStructureName.Length > 0;
+            string rayTracingMaxRecursionDepth     = $"{curEventData.m_RayTracingShaderMaxRecursionDepth}";
+            string rayTracingDispatchSize          = $"{curEventData.m_RayTracingShaderWidth} x {curEventData.m_RayTracingShaderHeight} x {curEventData.m_RayTracingShaderDepth}";
+            string rayTracingAccelerationStructure = hasAccelerationName ? curEventData.m_RayTracingShaderAccelerationStructureName : k_NotAvailableString;
+            string rayTracingMissShaderCount       = $"{curEventData.m_RayTracingShaderMissShaderCount}";
+            string rayTracingCallableShaderCount   = $"{curEventData.m_RayTracingShaderCallableShaderCount}";
+            string rayTracingPassName              = $"{curEventData.m_RayTracingShaderPassName}";
+            m_RayTracingShaderName                 = $"{curEventData.m_RayTracingShaderName}";
+            m_RayTracingGenerationShaderName       = $"{curEventData.m_RayTracingShaderRayGenShaderName}";
+
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Max Recursion Depth", rayTracingMaxRecursionDepth).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Dispatch Size", rayTracingDispatchSize).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Acceleration Structure", rayTracingAccelerationStructure).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Miss Shader Count", rayTracingMissShaderCount).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Callable Shader Count", rayTracingCallableShaderCount).AppendLine();
+            m_DetailsStringBuilder.AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", rayTracingPassName).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Ray Tracing Shader", m_RayTracingShaderName).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Ray Generation Shader", m_RayTracingGenerationShaderName).AppendLine();
+        }
+
+        private void BuildComputeEventDataStrings(FrameDebuggerEvent curEvent, FrameDebuggerEventData curEventData)
+        {
+            bool hasGroups = curEventData.m_ComputeShaderThreadGroupsX != 0 || curEventData.m_ComputeShaderThreadGroupsY != 0 || curEventData.m_ComputeShaderThreadGroupsZ != 0;
+            string computeThreadGroups    = hasGroups ? $"{curEventData.m_ComputeShaderThreadGroupsX}x{curEventData.m_ComputeShaderThreadGroupsY}x{curEventData.m_ComputeShaderThreadGroupsZ}" : "Indirect dispatch";
+            string computeThreadGroupSize = curEventData.m_ComputeShaderGroupSizeX > 0 ? $"{curEventData.m_ComputeShaderGroupSizeX}x{curEventData.m_ComputeShaderGroupSizeY}x{curEventData.m_ComputeShaderGroupSizeZ}" : k_NotAvailableString;
+            string computeShaderKernel    = curEventData.m_ComputeShaderKernelName;
+            string computeShaderName      = curEventData.m_ComputeShaderName;
+
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Thread Groups", computeThreadGroups).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Thread Group Size", computeThreadGroupSize).AppendLine();
+            m_DetailsStringBuilder.AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Kernel", computeShaderKernel).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Compute Shader", computeShaderName).AppendLine();
+        }
+
+        private void BuildClearEventDataStrings(FrameDebuggerEvent curEvent, FrameDebuggerEventData curEventData)
+        {
+            string target = curEventData.m_RenderTargetName;
+
+            int typeInt         = (int)curEvent.m_Type;
+            string clearColor   = (typeInt & 1) != 0 ? $"({curEventData.m_RenderTargetClearColorR:F2}, {curEventData.m_RenderTargetClearColorG:F2}, {curEventData.m_RenderTargetClearColorB:F2}, {curEventData.m_RenderTargetClearColorA:F2})" : k_NotAvailableString;
+            string clearDepth   = (typeInt & 2) != 0 ? curEventData.m_ClearDepth.ToString("f3") : k_NotAvailableString;
+            string clearStencil = (typeInt & 4) != 0 ? FrameDebuggerHelper.GetStencilString((int)curEventData.m_ClearStencil) : k_NotAvailableString;
+
+            string size         = $"{curEventData.m_RenderTargetWidth}x{curEventData.m_RenderTargetHeight}";
+            string format       = $"{m_RenderTargetFormat}";
+
+            bool hasColorActions = curEventData.m_RenderTargetLoadAction != -1;
+            bool hasDepthActions = curEventData.m_RenderTargetDepthLoadAction != -1;
+            string colorActions = hasColorActions ? $"{(RenderBufferLoadAction)curEventData.m_RenderTargetLoadAction} / {(RenderBufferStoreAction)curEventData.m_RenderTargetStoreAction}" : k_NotAvailableString;
+            string depthActions = hasDepthActions ? $"{(RenderBufferLoadAction)curEventData.m_RenderTargetDepthLoadAction} / {(RenderBufferStoreAction)curEventData.m_RenderTargetDepthStoreAction}" : k_NotAvailableString;
+
+            m_DetailsStringBuilder.Append(FrameDebuggerStyles.EventDetails.s_RenderTargetText).AppendLine();
+            m_DetailsStringBuilder.Append(target).AppendLine();
+            m_DetailsStringBuilder.AppendLine();
+
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Size", size).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Format", format).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Color Actions", colorActions).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Depth Actions", depthActions).AppendLine();
+            m_DetailsStringBuilder.AppendLine();
+
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Clear Color",  clearColor).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Clear Depth",  clearDepth).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Clear Stencil", clearStencil).AppendLine();
+        }
+
+        private void BuildDrawCallEventDataStrings(FrameDebuggerEvent curEvent, FrameDebuggerEventData curEventData)
+        {
+            m_ShouldDisplayRealAndOriginalShaders = true;
 
             //
-            bool computeOrRayTracing = m_IsComputeEvent || m_IsRayTracingEvent;
-            bool isClearResolveOrConfigureFov = m_IsClearEvent || m_IsResolveEvent || m_IsConfigureFoveatedEvent;
-            bool hasColorActions = !computeOrRayTracing && curEventData.m_RenderTargetLoadAction != -1;
-            bool hasDepthActions = !computeOrRayTracing && curEventData.m_RenderTargetDepthLoadAction != -1;
+            FrameDebuggerRasterState rasterState = curEventData.m_RasterState;
+            FrameDebuggerDepthState depthState = curEventData.m_DepthState;
+            FrameDebuggerBlendState blendState = curEventData.m_BlendState;
+
+            // Shader names
+            m_RealShaderName = curEventData.m_RealShaderName;
+            m_RealShader = Shader.Find(m_RealShaderName);
+            m_OriginalShaderName = curEventData.m_OriginalShaderName;
+            m_OriginalShader = Shader.Find(m_OriginalShaderName);
+
+            //
+            bool isResolveOrConfigureFov = m_IsResolveEvent || m_IsConfigureFoveatedEvent;
+            bool hasColorActions = curEventData.m_RenderTargetLoadAction != -1;
+            bool hasDepthActions = curEventData.m_RenderTargetDepthLoadAction != -1;
             bool isStencilEnabled = curEventData.m_StencilState.m_StencilEnable;
 
             // Gather the necessary strings...
-            string target = !computeOrRayTracing ? curEventData.m_RenderTargetName : notAvailableString;
+            string target = curEventData.m_RenderTargetName;
             string batchbreakCause = FrameDebuggerStyles.EventDetails.s_BatchBreakCauses[curEventData.m_BatchBreakCause];
+            FrameDebuggerHelper.SpliceText(ref batchbreakCause, 85);
 
-            string size         = !computeOrRayTracing ? $"{curEventData.m_RenderTargetWidth}x{curEventData.m_RenderTargetHeight}" : notAvailableString;
-            string format       = !computeOrRayTracing ? $"{m_RenderTargetFormat}" : notAvailableString;
-            string colorActions = hasColorActions ? $"{(RenderBufferLoadAction)curEventData.m_RenderTargetLoadAction} / {(RenderBufferStoreAction)curEventData.m_RenderTargetStoreAction}" : notAvailableString;
-            string depthActions = hasDepthActions ? $"{(RenderBufferLoadAction)curEventData.m_RenderTargetDepthLoadAction} / {(RenderBufferStoreAction)curEventData.m_RenderTargetDepthStoreAction}" : notAvailableString;
+            string size         = $"{curEventData.m_RenderTargetWidth}x{curEventData.m_RenderTargetHeight}";
+            string format       = $"{m_RenderTargetFormat}";
+            string colorActions = hasColorActions ? $"{(RenderBufferLoadAction)curEventData.m_RenderTargetLoadAction} / {(RenderBufferStoreAction)curEventData.m_RenderTargetStoreAction}" : k_NotAvailableString;
+            string depthActions = hasDepthActions ? $"{(RenderBufferLoadAction)curEventData.m_RenderTargetDepthLoadAction} / {(RenderBufferStoreAction)curEventData.m_RenderTargetDepthStoreAction}" : k_NotAvailableString;
 
-            string zClip        = !computeOrRayTracing && !isClearResolveOrConfigureFov ? rasterState.m_DepthClip.ToString() : notAvailableString;
-            string zTest        = !computeOrRayTracing && !isClearResolveOrConfigureFov ? depthState.m_DepthFunc.ToString() : notAvailableString;
-            string zWrite       = !computeOrRayTracing && !isClearResolveOrConfigureFov ? (depthState.m_DepthWrite == 0 ? "Off" : "On") : notAvailableString;
-            string cull         = !computeOrRayTracing && !isClearResolveOrConfigureFov ? rasterState.m_CullMode.ToString() : notAvailableString;
-            string conservative = !computeOrRayTracing && !isClearResolveOrConfigureFov ? rasterState.m_Conservative.ToString() : notAvailableString;
-            string offset       = !computeOrRayTracing && !isClearResolveOrConfigureFov ? $"{rasterState.m_SlopeScaledDepthBias}, {rasterState.m_DepthBias}" : notAvailableString;
-            string memoryless   = !computeOrRayTracing && !isClearResolveOrConfigureFov ? (curEventData.m_RenderTargetMemoryless != 0 ? "Yes" : "No") : notAvailableString;
-
-            int typeInt         = (int)curEvent.m_Type;
-            string clearColor   = m_IsClearEvent && (typeInt & 1) != 0 ? $"({curEventData.m_RenderTargetClearColorR:F3}, {curEventData.m_RenderTargetClearColorG:F3}, {curEventData.m_RenderTargetClearColorB:F3}, {curEventData.m_RenderTargetClearColorA:F3})" : notAvailableString;
-            string clearDepth   = m_IsClearEvent && (typeInt & 2) != 0 ? curEventData.m_ClearDepth.ToString("f3") : notAvailableString;
-            string clearStencil = m_IsClearEvent && (typeInt & 4) != 0 ? FrameDebuggerHelper.GetStencilString((int)curEventData.m_ClearStencil) : notAvailableString;
-
+            string zClip        = !isResolveOrConfigureFov ? rasterState.m_DepthClip.ToString() : k_NotAvailableString;
+            string zTest        = !isResolveOrConfigureFov ? depthState.m_DepthFunc.ToString() : k_NotAvailableString;
+            string zWrite       = !isResolveOrConfigureFov ? (depthState.m_DepthWrite == 0 ? "Off" : "On") : k_NotAvailableString;
+            string cull         = !isResolveOrConfigureFov ? rasterState.m_CullMode.ToString() : k_NotAvailableString;
+            string conservative = !isResolveOrConfigureFov ? rasterState.m_Conservative.ToString() : k_NotAvailableString;
+            string offset       = !isResolveOrConfigureFov ? $"{rasterState.m_SlopeScaledDepthBias}, {rasterState.m_DepthBias}" : k_NotAvailableString;
+            string memoryless   = !isResolveOrConfigureFov ? (curEventData.m_RenderTargetMemoryless != 0 ? "Yes" : "No") : k_NotAvailableString;
             string foveatedRendering = FrameDebuggerHelper.GetFoveatedRenderingModeString(curEventData.m_RenderTargetFoveatedRenderingMode);
 
+            bool hasGroups = curEventData.m_ComputeShaderThreadGroupsX != 0 || curEventData.m_ComputeShaderThreadGroupsY != 0 || curEventData.m_ComputeShaderThreadGroupsZ != 0;
+            string computeShaderKernel    = m_IsComputeEvent ? curEventData.m_ComputeShaderKernelName : k_NotAvailableString;
+            string computeThreadGroups    = m_IsComputeEvent && hasGroups ? $"{curEventData.m_ComputeShaderThreadGroupsX}x{curEventData.m_ComputeShaderThreadGroupsY}x{curEventData.m_ComputeShaderThreadGroupsZ}" : m_IsComputeEvent ? "Indirect dispatch" : k_NotAvailableString;
+            string computeThreadGroupSize = m_IsComputeEvent && curEventData.m_ComputeShaderGroupSizeX > 0 ? $"{curEventData.m_ComputeShaderGroupSizeX}x{curEventData.m_ComputeShaderGroupSizeY}x{curEventData.m_ComputeShaderGroupSizeZ}" : k_NotAvailableString;
+
+            string passName = $"{(string.IsNullOrEmpty(curEventData.m_PassName) ? k_NotAvailableString : curEventData.m_PassName)} ({curEventData.m_ShaderPassIndex})";
+            string lightModeName = string.IsNullOrEmpty(curEventData.m_PassLightMode) ? k_NotAvailableString : curEventData.m_PassLightMode;
+
             // Format them all together...
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, FrameDebuggerStyles.EventDetails.s_RenderTargetText, target).AppendLine();
+            m_DetailsStringBuilder.Append(FrameDebuggerStyles.EventDetails.s_RenderTargetText).AppendLine();
+            m_DetailsStringBuilder.Append(target).AppendLine();
             m_DetailsStringBuilder.AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Size", size, "ZClip", zClip).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Format", format, "ZTest", zTest).AppendLine();
@@ -731,22 +849,23 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Depth Actions", depthActions, "Cull", cull).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Memoryless", memoryless, "Conservative", conservative).AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Foveated Rendering", foveatedRendering, "Offset", offset).AppendLine();
-            m_DetailsStringBuilder.AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, string.Empty, string.Empty, string.Empty, string.Empty).AppendLine();
 
-
-            if (isClearResolveOrConfigureFov)
+            if (isResolveOrConfigureFov)
             {
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "ColorMask", notAvailableString,"Stencil", "Disabled").AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Blend Color", notAvailableString, "Stencil Ref", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Blend Alpha", notAvailableString, "Stencil ReadMask", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Color", notAvailableString, "Stencil WriteMask", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Alpha", notAvailableString, "Stencil Comp", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, string.Empty, string.Empty, "Stencil Pass", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Draw Calls", "1", "Stencil Fail", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Vertices", notAvailableString, "Stencil ZFail", notAvailableString).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Indices", notAvailableString, string.Empty, string.Empty).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "ColorMask", k_NotAvailableString, "Stencil", string.Empty).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Blend Color", k_NotAvailableString, "Stencil Ref", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Blend Alpha", k_NotAvailableString, "Stencil ReadMask", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Color", k_NotAvailableString, "Stencil WriteMask", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Alpha", k_NotAvailableString, "Stencil Comp", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, string.Empty, string.Empty, "Stencil Pass", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "DrawInstanced Calls", k_NotAvailableString, "Stencil Fail", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Instances", k_NotAvailableString, "Stencil ZFail", k_NotAvailableString).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Draw Calls", "1", string.Empty, string.Empty).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Vertices", k_NotAvailableString, string.Empty, string.Empty).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Indices", k_NotAvailableString, string.Empty, string.Empty).AppendLine();
             }
-            else if (!m_IsComputeEvent && !m_IsRayTracingEvent)
+            else
             {
                 string colorMask = FrameDebuggerHelper.GetColorMask(blendState.m_WriteMask);
                 string blendColor = $"{blendState.m_SrcBlend} / {blendState.m_DstBlend}";
@@ -754,14 +873,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 string blendOpColor = blendState.m_BlendOp.ToString();
                 string blendOpAlpha = blendState.m_BlendOpAlpha.ToString();
 
-                string stencilEnabled = isStencilEnabled ? "Enabled" : "Disabled";
-                string stencilRef = isStencilEnabled ? FrameDebuggerHelper.GetStencilString(curEventData.m_StencilRef) : notAvailableString;
-                string stencilReadMask = isStencilEnabled && curEventData.m_StencilState.m_ReadMask != 255 ? FrameDebuggerHelper.GetStencilString(curEventData.m_StencilState.m_ReadMask) : notAvailableString;
-                string stencilWriteMask = isStencilEnabled && curEventData.m_StencilState.m_WriteMask != 255 ? FrameDebuggerHelper.GetStencilString(curEventData.m_StencilState.m_WriteMask) : notAvailableString;
-                string stencilComp = notAvailableString;
-                string stencilPass = notAvailableString;
-                string stencilFail = notAvailableString;
-                string stencilZFail = notAvailableString;
+                string stencilRef = isStencilEnabled ? FrameDebuggerHelper.GetStencilString(curEventData.m_StencilRef) : k_NotAvailableString;
+                string stencilReadMask = isStencilEnabled && curEventData.m_StencilState.m_ReadMask != 255 ? FrameDebuggerHelper.GetStencilString(curEventData.m_StencilState.m_ReadMask) : k_NotAvailableString;
+                string stencilWriteMask = isStencilEnabled && curEventData.m_StencilState.m_WriteMask != 255 ? FrameDebuggerHelper.GetStencilString(curEventData.m_StencilState.m_WriteMask) : k_NotAvailableString;
+                string stencilComp = k_NotAvailableString;
+                string stencilPass = k_NotAvailableString;
+                string stencilFail = k_NotAvailableString;
+                string stencilZFail = k_NotAvailableString;
 
                 if (isStencilEnabled)
                 {
@@ -793,34 +911,25 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                     }
                 }
 
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "ColorMask", colorMask, "Stencil", stencilEnabled).AppendLine();
+                string drawInstancedCalls = curEventData.m_InstanceCount > 1 ? $"{curEventData.m_DrawCallCount}" : k_NotAvailableString;
+                string drawInstances      = curEventData.m_InstanceCount > 1 ? $"{curEventData.m_InstanceCount}" : k_NotAvailableString;
+                string drawCalls          = curEventData.m_InstanceCount > 1 ? k_NotAvailableString                : $"{curEventData.m_DrawCallCount}";
+
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "ColorMask", colorMask, "Stencil", string.Empty).AppendLine();
                 m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Blend Color", blendColor, "Stencil Ref", stencilRef).AppendLine();
                 m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Blend Alpha", blendAlpha, "Stencil ReadMask", stencilReadMask).AppendLine();
                 m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Color", blendOpColor, "Stencil WriteMask", stencilWriteMask).AppendLine();
-                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Alpha", blendOpAlpha,  "Stencil Comp", stencilComp).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "BlendOp Alpha", blendOpAlpha, "Stencil Comp", stencilComp).AppendLine();
                 m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, string.Empty, string.Empty, "Stencil Pass", stencilPass).AppendLine();
-
-                if (curEventData.m_InstanceCount > 1)
-                {
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "DrawInstanced Calls", $"{curEventData.m_DrawCallCount}",  "Stencil Fail", stencilFail).AppendLine();
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Instances", $"{curEventData.m_InstanceCount}", "Stencil ZFail", stencilZFail).AppendLine();
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Vertices", curEventData.m_VertexCount.ToString(), string.Empty, string.Empty).AppendLine();
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Indices", curEventData.m_IndexCount.ToString(), string.Empty, string.Empty).AppendLine();
-                }
-                else
-                {
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Draw Calls", $"{curEventData.m_DrawCallCount}", "Stencil Fail", stencilFail).AppendLine();
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Vertices", curEventData.m_VertexCount.ToString(), "Stencil ZFail", stencilZFail).AppendLine();
-                    m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Indices", curEventData.m_IndexCount.ToString(), string.Empty, string.Empty).AppendLine();
-                }
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "DrawInstanced Calls", drawInstancedCalls, "Stencil Fail", stencilFail).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Instances", drawInstances, "Stencil ZFail", stencilZFail).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Draw Calls", drawCalls, string.Empty, string.Empty).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Vertices", curEventData.m_VertexCount.ToString(), string.Empty, string.Empty).AppendLine();
+                m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Indices", curEventData.m_IndexCount.ToString(), string.Empty, string.Empty).AppendLine();
             }
 
-            m_DetailsStringBuilder.AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Clear Color", clearColor, string.Empty, string.Empty).AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Clear Depth", clearDepth, string.Empty, string.Empty).AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, "Clear Stencil", clearStencil, string.Empty, string.Empty).AppendLine();
-            m_DetailsStringBuilder.AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, FrameDebuggerStyles.EventDetails.s_BatchCauseText, string.Empty).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, string.Empty, string.Empty, string.Empty, string.Empty).AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, FrameDebuggerStyles.EventDetails.s_BatchCauseText, string.Empty, string.Empty, string.Empty).AppendLine();
             m_DetailsStringBuilder.Append(batchbreakCause).AppendLine();
             m_DetailsStringBuilder.AppendLine();
 
@@ -855,92 +964,29 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 {
                     m_MeshNames[i] = EditorGUIUtility.TrTextContent(m_Meshes[i].name, string.Empty);
                 }
+
             }
             else
             {
-                if (curEventData.mesh == null)
+                if (curEventData.m_Mesh == null)
                 {
-                    m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", notAvailableString).AppendLine();
+                    m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", k_NotAvailableString).AppendLine();
                     m_Meshes = null;
                     m_MeshNames = null;
                 }
                 else
                 {
-                    m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", curEventData.mesh.name).AppendLine();
-                    m_Meshes = new Mesh[] { curEventData.mesh };
+                    m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", curEventData.m_Mesh.name).AppendLine();
+                    m_Meshes = new Mesh[] { curEventData.m_Mesh };
                     m_MeshNames = new GUIContent[1];
-                    m_MeshNames[0] = EditorGUIUtility.TrTextContent(curEventData.mesh.name, string.Empty);
+                    m_MeshNames[0] = EditorGUIUtility.TrTextContent(curEventData.m_Mesh.name, string.Empty);
                 }
             }
 
             m_DetailsStringBuilder.AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", $"{(string.IsNullOrEmpty(curEventData.m_PassName) ? notAvailableString : curEventData.m_PassName)} ({curEventData.m_ShaderPassIndex})");
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "LightMode", lightModeName);
             m_DetailsStringBuilder.AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "LightMode", string.IsNullOrEmpty(curEventData.m_PassLightMode) ? notAvailableString : curEventData.m_PassLightMode);
-        }
-
-        private void GetRealAndOriginalShaderInfo(FrameDebuggerEventData curEventData)
-        {
-            const string notAvailableString = FrameDebuggerStyles.EventDetails.k_NotAvailable;
-            const string k_ComputeShaderFilter = "t:computeshader";
-            const string k_RayTracingShaderFilter = "t:raytracingshader";
-
-            // Clear or Resolve events
-            if (m_IsClearEvent || m_IsResolveEvent)
-            {
-                m_RealShader = null;
-                m_RealShaderName = notAvailableString;
-                m_OriginalShader = null;
-                m_OriginalShaderName = notAvailableString;
-                return;
-            }
-
-            // Normal shader events
-            if (!m_IsComputeEvent && !m_IsRayTracingEvent)
-            {
-                m_RealShaderName = curEventData.m_RealShaderName;
-                m_RealShader = Shader.Find(m_RealShaderName);
-                m_OriginalShaderName = curEventData.m_OriginalShaderName;
-                m_OriginalShader = Shader.Find(m_OriginalShaderName);
-                return;
-            }
-
-            // Compute or RayTracing events
-            m_RealShader = null;
-            m_RealShaderName = notAvailableString;
-            m_OriginalShader = null;
-
-            string filter;
-            if (m_IsComputeEvent)
-            {
-                m_OriginalShaderName = curEventData.m_ComputeShaderName;
-                filter = k_ComputeShaderFilter;
-            }
-            else if (m_IsRayTracingEvent)
-            {
-                m_OriginalShaderName = curEventData.m_RayTracingShaderName;
-                filter = k_RayTracingShaderFilter;
-            }
-            else
-                return;
-
-            string[] guids = AssetDatabase.FindAssets($"{m_RealShaderName}{filter}");
-            if (guids.Length > 0)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                UnityEngine.Object shader = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
-                if (shader != null)
-                    m_RealShader = shader;
-            }
-
-            guids = AssetDatabase.FindAssets($"{m_OriginalShaderName}{filter}");
-            if (guids.Length > 0)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                UnityEngine.Object shader = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
-                if (shader != null)
-                    m_OriginalShader = shader;
-            }
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", passName);
         }
 
         private void CountCharacters(ShaderPropertyType dataType, ShaderInfo shaderInfo)

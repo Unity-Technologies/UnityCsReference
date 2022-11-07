@@ -141,6 +141,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return path.Substring(indexOfSlash, indexOfDot - indexOfSlash);
         }
 
+        public static bool IsPathsEqual(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+        {
+            if (left.Length != right.Length)
+                return false;
+
+            for (var index = 0; index < left.Length; index++)
+            {
+                var leftCurrentChar = left[index];
+                var rightCurrentChar = right[index];
+
+                if (IsPathSeparator(leftCurrentChar) && IsPathSeparator(rightCurrentChar))
+                {
+                    continue;
+                }
+
+                if (leftCurrentChar != rightCurrentChar)
+                    return false;
+            }
+
+            return true;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPathSeparator(char character)
         {

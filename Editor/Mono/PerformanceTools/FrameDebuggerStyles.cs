@@ -146,6 +146,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const int k_PropertyNameMaxChars = 30;
             internal const int k_TextureFormatMaxChars = 19;
 
+            internal const int k_ShaderLabelWidth = 172;
+            internal const int k_ShaderObjectFieldWidth = 450;
+
             internal const float k_MeshBottomToolbarHeight = 21f;
             internal const float k_ArrayValuePopupBtnWidth = 2.0f;
 
@@ -179,7 +182,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             internal static readonly GUIStyle s_MonoLabelStyle = new GUIStyle(EditorStyles.label)
             {
-                wordWrap = true,
+                alignment = TextAnchor.UpperLeft
             };
 
             internal static readonly GUIStyle s_MonoLabelNoWrapStyle = new GUIStyle(EditorStyles.label)
@@ -190,20 +193,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             internal static readonly GUIStyle s_MonoLabelBoldStyle = new GUIStyle(EditorStyles.label)
             {
-                padding = new RectOffset(0, 0, 0, 0),
-                margin = new RectOffset(0, 0, 0, 0),
-            };
-
-            internal static readonly GUIStyle s_VerticalLabelStyle = new GUIStyle(EditorStyles.label)
-            {
-                fixedWidth = k_VerticalLabelWidth,
-                padding = new RectOffset(0, 0, 0, 0),
-                margin = new RectOffset(0, 0, 0, 0),
-            };
-
-            internal static readonly GUIStyle s_DetailsStyle = new GUIStyle(EditorStyles.label)
-            {
-                fixedWidth = 720,
                 padding = new RectOffset(0, 0, 0, 0),
                 margin = new RectOffset(0, 0, 0, 0),
             };
@@ -254,6 +243,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             };
             internal static readonly GUIContent s_RealShaderText = EditorGUIUtility.TrTextContent("Used Shader", "The shader used in this draw call.");
             internal static readonly GUIContent s_OriginalShaderText = EditorGUIUtility.TrTextContent("Original Shader", "The shader originally set to be used in this draw call.");
+            internal static readonly GUIContent s_RayTracingShaderText = EditorGUIUtility.TrTextContent("Ray Tracing Shader", "");
+            internal static readonly GUIContent s_RayTracingGenerationShaderText = EditorGUIUtility.TrTextContent("Ray Generation Shader", "");
+            internal static readonly GUIContent s_ComputeShaderText = EditorGUIUtility.TrTextContent("Compute Shader", "");
             internal static readonly GUIContent s_BatchCauseText = EditorGUIUtility.TrTextContent("Batch cause");
             internal static readonly GUIContent s_PassLightModeText = EditorGUIUtility.TrTextContent("Pass\nLightMode");
             internal static readonly GUIContent s_ArrayPopupButtonText = EditorGUIUtility.TrTextContent("...");

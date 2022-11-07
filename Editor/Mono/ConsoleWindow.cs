@@ -863,7 +863,7 @@ namespace UnityEditor
 
             for (int i = 0; i < lines.Length; ++i)
             {
-                string textBeforeFilePath = ") (at ";
+                string textBeforeFilePath = " (at ";
                 int filePathIndex = lines[i].IndexOf(textBeforeFilePath, StringComparison.Ordinal);
                 if (filePathIndex > 0)
                 {

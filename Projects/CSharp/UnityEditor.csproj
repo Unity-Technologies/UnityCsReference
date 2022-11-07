@@ -8350,9 +8350,9 @@
     <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_95ad/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
-    <Reference Include="../../External/Bee/BeeDriver2/Bee.BeeDriver2.dll" />
-    <Reference Include="../../External/Bee/BeeDriver2/Bee.BinLog.dll" />
-    <Reference Include="../../External/Bee/BeeTinyProfiler2/Bee.TinyProfiler2.dll" />
+    <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />
+    <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BinLog.dll" />
+    <Reference Include="../../Tools/Bee/build/Distribution/BeeTinyProfiler2/Bee.TinyProfiler2.dll" />
     <Reference Include="../../External/NetStandardExtensions/System.CodeDom.dll" />
     <ProjectReference Include="UnityEngine.csproj" />
     <ProjectReference Include="../../Tools/Unity.CecilTools/Unity.CecilTools.gen.csproj" />

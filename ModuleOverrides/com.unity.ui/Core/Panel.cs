@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
     internal interface IGlobalPanelDebugger
     {
         bool InterceptMouseEvent(IPanel panel, IMouseEvent ev);
-        void OnPostMouseEvent(IPanel panel, IMouseEvent ev);
+        void OnContextClick(IPanel panel, ContextClickEvent ev);
     }
 
     internal interface IPanelDebugger
