@@ -243,7 +243,7 @@ namespace UnityEditor
                 List<int> allowedInstanceIDs = ObjectSelector.get.allowedInstanceIDs;
 
                 var controllers = new List<AudioMixerController>();
-                foreach (var prop in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { "AudioMixerController" } }))
+                foreach (var prop in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { "AudioMixerController" }, searchArea = SearchFilter.SearchArea.AllAssets }))
                 {
                     var controller = prop.pptrValue as AudioMixerController;
                     if (ShouldShowController(controller, allowedInstanceIDs))

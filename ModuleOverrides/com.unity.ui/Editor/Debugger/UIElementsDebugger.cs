@@ -539,7 +539,7 @@ namespace UnityEditor.UIElements.Debugger
             return true;
         }
 
-        public bool InterceptMouseEvent(IPanel panel, IMouseEvent ev)
+        public bool InterceptMouseEvent(IPanel p, IMouseEvent ev)
         {
             if (!m_Context.pickElement)
                 return false;
@@ -549,10 +549,10 @@ namespace UnityEditor.UIElements.Debugger
             var target = evtBase.target as VisualElement;
 
             // Ignore events on detached elements
-            if (panel == null)
+            if (p == null)
                 return false;
 
-            if (((BaseVisualElementPanel)panel).ownerObject is HostView hostView && hostView.actualView is PlayModeView playModeView)
+            if (((BaseVisualElementPanel)p).ownerObject is HostView hostView && hostView.actualView is PlayModeView playModeView)
             {
                 // Send event to runtime panels from closest to deepest
                 var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
@@ -565,10 +565,10 @@ namespace UnityEditor.UIElements.Debugger
                 // If no RuntimePanel catches it, select GameView editor panel and let interception fall through.
                 if (evtType == MouseMoveEvent.TypeId() && m_Context.selectedElement != target)
                 {
-                    OnPickMouseOver(target, panel);
+                    OnPickMouseOver(target, p);
                 }
             }
-            else if (panel is BaseRuntimePanel)
+            else if (p is BaseRuntimePanel)
             {
                 // Ignore events not coming from the Editor event loop
                 if (evtBase.imguiEvent == null)
@@ -577,7 +577,7 @@ namespace UnityEditor.UIElements.Debugger
                 // RuntimePanel won't receive MouseOverEvent when arriving from GameView editor panel, so force it to be selected.
                 if (evtType == MouseMoveEvent.TypeId() && m_Context.selectedElement != target)
                 {
-                    OnPickMouseOver(target, panel);
+                    OnPickMouseOver(target, p);
                 }
             }
 
@@ -594,7 +594,7 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             // Ignore these events if on this debugger
-            if (panel != m_Root.panel)
+            if (p != m_Root.panel)
             {
                 if (evtType == MouseOverEvent.TypeId())
                 {
@@ -612,14 +612,13 @@ namespace UnityEditor.UIElements.Debugger
             return false;
         }
 
-        public void OnPostMouseEvent(IPanel panel, IMouseEvent ev)
+        public void OnContextClick(IPanel p, ContextClickEvent ev)
         {
-            var isRightClick = (ev as MouseUpEvent)?.button == (int)MouseButton.RightMouse;
-            if (!isRightClick || m_Context.pickElement)
+            if (m_Context.pickElement)
                 return;
 
-            // Ignore events on detached elements and on this debugger
-            if (panel == null || panel == m_Root.panel)
+            // Ignore events on detached elements and on panels that are not the selected one
+            if (p == null || p != panel)
                 return;
 
             var evtBase = ev as EventBase;
@@ -629,10 +628,10 @@ namespace UnityEditor.UIElements.Debugger
             if (target != null)
             {
                 // If right clicking on the root IMGUIContainer try to select the root container instead
-                if (targetIsImguiContainer && target == panel.visualTree[0])
+                if (targetIsImguiContainer && target == p.visualTree[0])
                 {
                     // Pick the root container
-                    var root = panel.GetRootVisualElement();
+                    var root = p.GetRootVisualElement();
                     if (root != null && root.childCount > 0 && root.worldBound.Contains(ev.mousePosition))
                     {
                         target = root;
@@ -669,12 +668,12 @@ namespace UnityEditor.UIElements.Debugger
             SelectElement(ve);
         }
 
-        private void OnPickMouseOver(VisualElement ve, IPanel panel)
+        private void OnPickMouseOver(VisualElement ve, IPanel p)
         {
             m_PickOverlay.ClearOverlay();
             m_PickOverlay.AddOverlay(ve);
 
-            SelectPanelToDebug(panel);
+            SelectPanelToDebug(p);
 
             if (panelDebug != null)
             {

@@ -42,16 +42,13 @@ namespace UnityEngine.UIElements
 
         public void PostDispatch(EventBase evt, IPanel panel)
         {
-            IMouseEvent mouseEvent = evt as IMouseEvent;
             var panelDebug = (panel as BaseVisualElementPanel)?.panelDebug;
-            if (panelDebug != null)
-            {
-                panelDebug.PostProcessEvent(evt);
-            }
-            if (s_GlobalPanelDebug != null && mouseEvent != null && evt.target != null && !evt.isDefaultPrevented && !evt.isPropagationStopped)
+            panelDebug?.PostProcessEvent(evt);
+
+            if (s_GlobalPanelDebug != null && evt.eventTypeId == ContextClickEvent.TypeId() && evt.target != null && !evt.isDefaultPrevented && !evt.isPropagationStopped)
             {
                 // Safe to handle the event (to display the right click menu)
-                s_GlobalPanelDebug.OnPostMouseEvent(panel, mouseEvent);
+                s_GlobalPanelDebug.OnContextClick(panel, evt as ContextClickEvent);
             }
         }
     }

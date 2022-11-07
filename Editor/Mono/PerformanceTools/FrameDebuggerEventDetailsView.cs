@@ -118,7 +118,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             // Make sure the window is scrollable...
             GUILayout.BeginArea(rect);
-            m_ScrollViewVector = GUILayout.BeginScrollView(m_ScrollViewVector);
+            m_ScrollViewVector = EditorGUILayout.BeginScrollView(m_ScrollViewVector);
 
             // Toolbar
             Profiler.BeginSample("DrawToolbar");
@@ -183,7 +183,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 Profiler.EndSample();
             }
 
-            GUILayout.EndScrollView();
+            EditorGUILayout.EndScrollView();
             GUILayout.EndArea();
         }
 
@@ -590,42 +590,37 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             GUIStyle style = FrameDebuggerStyles.EventDetails.s_MonoLabelStyle;
 
             // Size, Color Actions, Blending, Z, Stencil...
-            EditorGUILayout.BeginVertical(FrameDebuggerStyles.EventDetails.s_DetailsStyle);
-            EditorGUILayout.LabelField(m_CachedEventData.details, style);
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(m_CachedEventData.details, style, GUILayout.MinWidth(m_CachedEventData.m_DetailsGUIWidth), GUILayout.MinHeight(m_CachedEventData.m_DetailsGUIHeight));
+            EditorGUILayout.EndHorizontal();
 
             // Shader
-            EditorGUILayout.BeginHorizontal();
+            if (m_CachedEventData.m_ShouldDisplayRealAndOriginalShaders)
             {
-                EditorGUILayout.BeginVertical(FrameDebuggerStyles.EventDetails.s_VerticalLabelStyle);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(FrameDebuggerStyles.EventDetails.s_RealShaderText, style, GUILayout.Width(FrameDebuggerStyles.EventDetails.k_ShaderLabelWidth));
+                if (m_CachedEventData.m_RealShader == null)
+                    EditorGUILayout.LabelField(m_CachedEventData.m_RealShaderName, style);
+                else
                 {
-                    EditorGUILayout.LabelField(FrameDebuggerStyles.EventDetails.s_RealShaderText, style);
-                    EditorGUILayout.LabelField(FrameDebuggerStyles.EventDetails.s_OriginalShaderText, style);
+                    GUI.enabled = false;
+                    EditorGUILayout.ObjectField(m_CachedEventData.m_RealShader, typeof(Shader), true, GUILayout.Width(FrameDebuggerStyles.EventDetails.k_ShaderObjectFieldWidth));
+                    GUI.enabled = true;
                 }
-                EditorGUILayout.EndVertical();
-                EditorGUILayout.BeginVertical();
-                {
-                    if (m_CachedEventData.m_RealShader == null)
-                        EditorGUILayout.LabelField(m_CachedEventData.m_RealShaderName, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle);
-                    else
-                    {
-                        GUI.enabled = false;
-                        EditorGUILayout.ObjectField(m_CachedEventData.m_RealShader, typeof(Shader), true);
-                        GUI.enabled = true;
-                    }
+                EditorGUILayout.EndHorizontal();
 
-                    if (m_CachedEventData.m_OriginalShader == null)
-                        EditorGUILayout.LabelField(m_CachedEventData.m_OriginalShaderName, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle);
-                    else
-                    {
-                        GUI.enabled = false;
-                        EditorGUILayout.ObjectField(m_CachedEventData.m_OriginalShader, typeof(Shader), true);
-                        GUI.enabled = true;
-                    }
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(FrameDebuggerStyles.EventDetails.s_OriginalShaderText, GUILayout.Width(FrameDebuggerStyles.EventDetails.k_ShaderLabelWidth));
+                if (m_CachedEventData.m_OriginalShader == null)
+                    EditorGUILayout.LabelField(m_CachedEventData.m_OriginalShaderName, style);
+                else
+                {
+                    GUI.enabled = false;
+                    EditorGUILayout.ObjectField(m_CachedEventData.m_OriginalShader, typeof(Shader), true, GUILayout.Width(FrameDebuggerStyles.EventDetails.k_ShaderObjectFieldWidth));
+                    GUI.enabled = true;
                 }
-                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
             }
-            EditorGUILayout.EndHorizontal();
 
             EndFoldoutBox();
         }

@@ -94,13 +94,28 @@ namespace UnityEditor.Toolbars
             else if(!value && !isGOToolContext)
                 value = true;
 
-            //Enable button only if at least one other context beside GameObjectToolContext is available
+            // Enable button only if at least one other context beside GameObjectToolContext is available
             SetEnabled(availableContextCount > 1);
-            //Enable toggle only if at least 2 other contexts are available in addition to GameObjectToolContext
+            // Enable toggle only if at least 2 other contexts are available in addition to GameObjectToolContext
             ShowDropDown(availableContextCount > 2);
+
             var activeContextType = typeof(GameObjectToolContext);
-            if(availableContextCount > 1)
-                activeContextType = isGOToolContext ? ToolManager.GetLastContextType() : ToolManager.activeContextType;
+
+            if (availableContextCount > 1)
+            {
+                if (isGOToolContext)
+                {
+                    var lastContextType = ToolManager.GetLastContextType();
+                    // JIRA: UUM-16237. Use the content of the last context only if the current selection is associated with the same type of context.
+                    if (ToolManager.allContextsExceptGameObject.Contains(lastContextType))
+                        activeContextType = lastContextType;
+                    else
+                        activeContextType = ToolManager.allContextsExceptGameObject.FirstOrDefault();
+                }
+                else
+                    activeContextType = ToolManager.activeContextType;
+            }
+
             var content = EditorToolUtility.GetIcon(activeContextType, true);
             icon = content.image as Texture2D;
             var activeContextName = EditorToolUtility.GetToolName(ToolManager.activeContextType)
