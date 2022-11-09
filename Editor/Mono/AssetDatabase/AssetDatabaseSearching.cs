@@ -65,6 +65,7 @@ namespace UnityEditor
                 }
             }
 
+            HierarchyProperty propertyWithFilter = null;
             foreach (var folderPath in folders)
             {
                 var sanitizedFolderPath = folderPath.ConvertSeparatorsToUnity().TrimTrailingSlashes();
@@ -86,7 +87,14 @@ namespace UnityEditor
                 if (property.Find(folderInstanceID, null))
                 {
                     // Set filter after we found the folder
-                    property.SetSearchFilter(searchFilter);
+                    if (propertyWithFilter != null)
+                        propertyWithFilter.CopySearchFilterFrom(property);
+                    else
+                    {
+                        property.SetSearchFilter(searchFilter);
+                        propertyWithFilter = property;
+                    }
+
                     int folderDepth = property.depth;
                     int[] expanded = null; // enter all children of folder
                     while (property.NextWithDepthCheck(expanded, folderDepth + 1))
@@ -118,10 +126,16 @@ namespace UnityEditor
                     rootPaths.Add(package.assetPath);
                 }
             }
+
+            HierarchyProperty lastProperty = null;
             foreach (var rootPath in rootPaths)
             {
                 var property = new HierarchyProperty(rootPath);
-                property.SetSearchFilter(searchFilter);
+                if (lastProperty != null)
+                    property.CopySearchFilterFrom(lastProperty);
+                else
+                    property.SetSearchFilter(searchFilter);
+                lastProperty = property;
                 while (property.Next(null))
                 {
                     yield return selector(property);
