@@ -603,7 +603,7 @@ namespace UnityEditor.UIElements
 
         void OnFieldValueChanged(EventBase evt)
         {
-            if (evt.target == m_ChildField)
+            if (evt.target == m_ChildField && m_SerializedProperty.isValid)
             {
                 if (m_SerializedProperty.propertyType == SerializedPropertyType.ArraySize && evt is ChangeEvent<int> changeEvent)
                 {
@@ -614,7 +614,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property, Func<TField> factory)
+        private TField ConfigureField<TField, TValue>(TField field, SerializedProperty property, Func<TField> factory)
             where TField : BaseField<TValue>
         {
             if (field == null)
@@ -714,9 +714,7 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.ObjectReference:
                 {
-                    ObjectField field = originalField as ObjectField;
-                    if (field == null)
-                        field = new ObjectField();
+                    var field = ConfigureField<ObjectField, UnityEngine.Object>(originalField as ObjectField, property, () => new ObjectField());
 
                     Type requiredType = null;
 
@@ -744,7 +742,7 @@ namespace UnityEditor.UIElements
                     field.SetObjectTypeWithoutDisplayUpdate(requiredType);
                     field.UpdateDisplay();
 
-                    return ConfigureField<ObjectField, UnityEngine.Object>(field, property, () => new ObjectField());
+                    return field;
                 }
                 case SerializedPropertyType.LayerMask:
                     return ConfigureField<LayerMaskField, int>(originalField as LayerMaskField, property, () => new LayerMaskField());

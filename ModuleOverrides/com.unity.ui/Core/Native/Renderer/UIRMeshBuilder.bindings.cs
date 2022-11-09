@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
         public struct NativeRectParams
         {
             public Rect rect;
+            public Rect subRect;
             public Rect uv;
             public Rect uvRegion;
             public Color color;
@@ -60,6 +61,7 @@ namespace UnityEngine.UIElements
             public Vector2 bottomRightRadius;
             public Vector2 bottomLeftRadius;
 
+            public Vector2 contentSize;
             public Vector2 textureSize;
             public float texturePixelsPerPoint;
 

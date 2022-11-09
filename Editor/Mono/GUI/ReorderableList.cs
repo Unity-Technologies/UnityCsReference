@@ -794,7 +794,7 @@ namespace UnityEditorInternal
 
             if (m_CacheCount == 0) CacheIfNeeded();
 
-            if (m_Count <= 0 || isOverMaxMultiEditLimit)
+            if (count <= 0 || isOverMaxMultiEditLimit)
                 height = elementHeight * (isOverMaxMultiEditLimit ? 2 : 1) + listElementPadding;
             else
                 height = GetElementYOffset(m_Count - 1) + GetElementHeight(m_Count - 1) + listElementPadding;

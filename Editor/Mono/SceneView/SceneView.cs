@@ -1189,6 +1189,8 @@ namespace UnityEditor
         {
             baseRootVisualElement.Insert(0, prefabToolbar);
             rootVisualElement.Add(cameraViewVisualElement);
+            rootVisualElement.RegisterCallback<MouseEnterEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = true);
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = false);
 
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 

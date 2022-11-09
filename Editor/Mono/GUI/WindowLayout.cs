@@ -223,6 +223,7 @@ namespace UnityEditor
             try
             {
                 ContainerWindow.SetFreezeDisplay(true);
+                var loadInitialWindowGeometry = Convert.ToBoolean(layoutData["restore_layout_dimension"]);
                 if (!mainContainerWindow)
                 {
                     mainContainerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
@@ -245,14 +246,17 @@ namespace UnityEditor
                         mainWindowMaxSize.y = Convert.ToSingle(layoutData["max_height"]);
                     }
                     mainContainerWindow.SetMinMaxSizes(mainWindowMinSize, mainWindowMaxSize);
+                    loadInitialWindowGeometry = true;
                 }
 
                 var mainViewID = $"MainView_{ModeService.currentId}";
                 var hasMainViewGeometrySettings = EditorPrefs.HasKey($"{mainViewID}h");
                 mainContainerWindow.windowID = mainViewID;
-                if (hasMainViewGeometrySettings)
+                if (loadInitialWindowGeometry && hasMainViewGeometrySettings)
+                {
                     mainContainerWindow.LoadGeometry(true);
-
+                }
+                
                 var width = mainContainerWindow.position.width;
                 var height = mainContainerWindow.position.height;
 

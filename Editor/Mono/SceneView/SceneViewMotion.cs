@@ -25,6 +25,7 @@ namespace UnityEditor
         static bool s_Moving;
         static bool s_Drag;
         static AnimVector3 s_FlySpeed = new AnimVector3(Vector3.zero);
+        internal static bool s_ViewportsUnderMouse;
 
         internal static Vector3 cameraSpeed
         {
@@ -72,8 +73,12 @@ namespace UnityEditor
 
             public static bool IsActive
             {
-                get => EditorWindow.focusedWindow?.GetType() == typeof(SceneView)
-                    && SceneView.lastActiveSceneView.rootVisualElement.worldBound.Contains(Event.current.mousePosition);
+                get
+                {
+                    var sceneViewFocus = EditorWindow.focusedWindow?.GetType() == typeof(SceneView);
+
+                    return sceneViewFocus && s_ViewportsUnderMouse;
+                }
             }
         }
 

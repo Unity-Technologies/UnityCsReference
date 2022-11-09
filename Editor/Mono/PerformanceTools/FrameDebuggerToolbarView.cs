@@ -81,7 +81,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             bool wasEnabled = GUI.enabled;
             GUI.enabled = FrameDebuggerUtility.count > 1;
-            newLimit = EditorGUILayout.IntSlider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count, 1, EditorStyles.toolbarSlider);
+
+            // We need to use Slider instead of IntSlider due to a bug where the invisible label makes
+            // the mouse cursor different when hovering over the leftmost 10-20% of the slider (UUM-17184)
+            // We add 0.5 to make it switch between frames like when we use a IntSlider.
+            newLimit = (int) (0.5f + EditorGUILayout.Slider(FrameDebuggerUtility.limit, 1, FrameDebuggerUtility.count));
+
             GUI.enabled = wasEnabled;
 
             if (EditorGUI.EndChangeCheck())

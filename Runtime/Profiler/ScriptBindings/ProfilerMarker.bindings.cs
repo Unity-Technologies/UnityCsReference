@@ -104,13 +104,15 @@ namespace Unity.Profiling
             internal AutoScope(IntPtr markerPtr)
             {
                 m_Ptr = markerPtr;
-                ProfilerUnsafeUtility.BeginSample(markerPtr);
+                if (m_Ptr != IntPtr.Zero)
+                    ProfilerUnsafeUtility.BeginSample(markerPtr);
             }
 
             [MethodImpl(256)]
             public void Dispose()
             {
-                ProfilerUnsafeUtility.EndSample(m_Ptr);
+                if (m_Ptr != IntPtr.Zero)
+                    ProfilerUnsafeUtility.EndSample(m_Ptr);
             }
         }
 

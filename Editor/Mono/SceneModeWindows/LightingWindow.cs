@@ -375,14 +375,14 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
                 using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode || entitiesPackage))
                 {
+                    if (entitiesPackage)
+                        iterative = false;
+
                     iterative = GUILayout.Toggle(iterative, Styles.continuousBakeLabel);
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (entitiesPackage)
-                        iterative = false;
-
                     m_WorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
                 }
 

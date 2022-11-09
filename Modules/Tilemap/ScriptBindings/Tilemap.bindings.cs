@@ -57,8 +57,8 @@ namespace UnityEngine.Tilemaps
             get;
         }
 
-        public Vector3 GetCellCenterLocal(Vector3Int position) { return CellToLocalInterpolated(position + tileAnchor); }
-        public Vector3 GetCellCenterWorld(Vector3Int position) { return LocalToWorld(CellToLocalInterpolated(position + tileAnchor)); }
+        public Vector3 GetCellCenterLocal(Vector3Int position) { return CellToLocalInterpolated(position) + CellToLocalInterpolated(tileAnchor); }
+        public Vector3 GetCellCenterWorld(Vector3Int position) { return LocalToWorld(CellToLocalInterpolated(position) + CellToLocalInterpolated(tileAnchor)); }
 
         public BoundsInt cellBounds
         {
