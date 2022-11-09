@@ -85,6 +85,14 @@ namespace UnityEditor
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
+            public static readonly GUIContent shaderSectionTitle = EditorGUIUtility.TrTextContent("Shader Settings");
+            public static readonly GUIContent shaderVariantLoadingTitle = EditorGUIUtility.TrTextContent("Shader Variant Loading Settings");
+            public static readonly GUIContent defaultShaderChunkSize = EditorGUIUtility.TrTextContent("Default chunk size (MB)*", "Use this setting to control how much memory is used when loading shader variants.");
+            public static readonly GUIContent defaultShaderChunkCount = EditorGUIUtility.TrTextContent("Default chunk count*", "Use this setting to control how much memory is used when loading shader variants.");
+            public static readonly GUIContent overrideDefaultChunkSettings = EditorGUIUtility.TrTextContent("Override", "Override the default settings for this build target.");
+            public static readonly GUIContent platformShaderChunkSize = EditorGUIUtility.TrTextContent("Chunk size (MB)", "Use this setting to control how much memory is used when loading shader variants.");
+            public static readonly GUIContent platformShaderChunkCount = EditorGUIUtility.TrTextContent("Chunk count", "Use this setting to control how much memory is used when loading shader variants.");
+
             public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
             public static readonly GUIContent keepLoadedShadersAlive = EditorGUIUtility.TrTextContent("Keep Loaded Shaders Alive*", "Prevents shaders from being unloaded");
             public static readonly GUIContent preloadedAssets = EditorGUIUtility.TrTextContent("Preloaded Assets*", "Assets to load at start up in the player and kept alive until the player terminates");
@@ -244,6 +252,10 @@ namespace UnityEditor
             public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
             public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
             public static string changeColorSpaceString { get { return LocalizationDatabase.GetLocalizedString("Changing the color space may take a significant amount of time."); } }
+            public static string undoChangedPlatformShaderChunkSizeString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Size Platform Setting"); } }
+            public static string undoChangedPlatformShaderChunkCountString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Count Platform Setting"); } }
+            public static string undoChangedDefaultShaderChunkSizeString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Size Default Setting"); } }
+            public static string undoChangedDefaultShaderChunkCountString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Count Default Setting"); } }
         }
 
         class RecompileReason
@@ -1679,6 +1691,7 @@ namespace UnityEditor
                     OtherSectionIdentificationGUI(platform, settingsExtension);
                 }
                 OtherSectionConfigurationGUI(platform, settingsExtension);
+                OtherSectionShaderSettingsGUI(platform);
                 OtherSectionScriptCompilationGUI(platform);
                 OtherSectionOptimizationGUI(platform);
                 OtherSectionLoggingGUI();
@@ -1687,6 +1700,75 @@ namespace UnityEditor
             }
             EndSettingsBox();
         }
+
+        private void OtherSectionShaderSettingsGUI(BuildPlatform platform)
+        {
+            GUILayout.Label(SettingsContent.shaderSectionTitle, EditorStyles.boldLabel);
+
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
+            {
+                EditorGUI.BeginChangeCheck();
+
+                ShaderPrecisionModel currShaderPrecisionModel = PlayerSettings.GetShaderPrecisionModel();
+                ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
+                ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues, SettingsContent.shaderPrecisionModelOptions);
+                if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
+                {
+                    PlayerSettings.SetShaderPrecisionModel(newShaderPrecisionModel);
+                }
+            }
+
+            EditorGUILayout.PropertyField(m_StrictShaderVariantMatching, SettingsContent.strictShaderVariantMatching);
+
+            EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, SettingsContent.keepLoadedShadersAlive);
+
+            GUILayout.Label(SettingsContent.shaderVariantLoadingTitle, EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            int defaultChunkSize = PlayerSettings.GetDefaultShaderChunkSizeInMB();
+            int newDefaultChunkSize = EditorGUILayout.IntField(SettingsContent.defaultShaderChunkSize, defaultChunkSize);
+            if (EditorGUI.EndChangeCheck() && newDefaultChunkSize > 0 && newDefaultChunkSize != defaultChunkSize)
+            {
+                Undo.RecordObject(target, SettingsContent.undoChangedDefaultShaderChunkSizeString);
+                PlayerSettings.SetDefaultShaderChunkSizeInMB(newDefaultChunkSize);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            int defaultChunkCount = PlayerSettings.GetDefaultShaderChunkCount();
+            int newDefaultChunkCount = EditorGUILayout.IntField(SettingsContent.defaultShaderChunkCount, defaultChunkCount);
+            if (EditorGUI.EndChangeCheck() && newDefaultChunkCount >= 0 && newDefaultChunkCount != defaultChunkCount)
+            {
+                Undo.RecordObject(target, SettingsContent.undoChangedDefaultShaderChunkCountString);
+                PlayerSettings.SetDefaultShaderChunkCount(newDefaultChunkCount);
+            }
+
+            bool oldOverride = PlayerSettings.GetOverrideShaderChunkSettingsForPlatform(platform.defaultTarget);
+            bool newOverride = EditorGUILayout.Toggle(SettingsContent.overrideDefaultChunkSettings, oldOverride);
+            if (oldOverride != newOverride)
+                PlayerSettings.SetOverrideShaderChunkSettingsForPlatform(platform.defaultTarget, newOverride);
+
+            if (newOverride)
+            {
+                int currentChunkSize = PlayerSettings.GetShaderChunkSizeInMBForPlatform(platform.defaultTarget);
+                int newChunkSize = EditorGUILayout.IntField(SettingsContent.platformShaderChunkSize, currentChunkSize);
+                if (EditorGUI.EndChangeCheck() && newChunkSize > 0 && newChunkSize != currentChunkSize)
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedPlatformShaderChunkSizeString);
+                    PlayerSettings.SetShaderChunkSizeInMBForPlatform(platform.defaultTarget, newChunkSize);
+                }
+
+                EditorGUI.BeginChangeCheck();
+                int currentChunkCount = PlayerSettings.GetShaderChunkCountForPlatform(platform.defaultTarget);
+                int newChunkCount = EditorGUILayout.IntField(SettingsContent.platformShaderChunkCount, currentChunkCount);
+                if (EditorGUI.EndChangeCheck() && newChunkCount >= 0 && newChunkCount != currentChunkCount)
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedPlatformShaderChunkCountString);
+                    PlayerSettings.SetShaderChunkCountForPlatform(platform.defaultTarget, newChunkCount);
+                }
+            }
+        }
+
+
 
         private void OtherSectionRenderingGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
@@ -2068,6 +2150,7 @@ namespace UnityEditor
                     {
                         EditorGUI.indentLevel++;
                         streamingPriority = EditorGUILayout.DelayedIntField(SettingsContent.lightmapStreamingPriority, streamingPriority);
+                        streamingPriority = Math.Clamp(streamingPriority, Texture2D.streamingMipmapsPriorityMin, Texture2D.streamingMipmapsPriorityMax);
                         EditorGUI.indentLevel--;
                     }
                     if (EditorGUI.EndChangeCheck())
@@ -2189,19 +2272,6 @@ namespace UnityEditor
                         {
                             EditorGUILayout.HelpBox(SettingsContent.virtualTexturingUnsupportedAPI.text, MessageType.Warning);
                         }
-                    }
-                }
-
-                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
-                {
-                    EditorGUI.BeginChangeCheck();
-
-                    ShaderPrecisionModel currShaderPrecisionModel = PlayerSettings.GetShaderPrecisionModel();
-                    ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
-                    ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues, SettingsContent.shaderPrecisionModelOptions);
-                    if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
-                    {
-                        PlayerSettings.SetShaderPrecisionModel(newShaderPrecisionModel);
                     }
                 }
             }
@@ -2957,7 +3027,6 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.optimizationTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_BakeCollisionMeshes, SettingsContent.bakeCollisionMeshes);
-            EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, SettingsContent.keepLoadedShadersAlive);
 
             if (isPreset)
                 EditorGUI.indentLevel++;
@@ -3016,7 +3085,6 @@ namespace UnityEditor
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
             EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, SettingsContent.stripUnusedMeshComponents);
-            EditorGUILayout.PropertyField(m_StrictShaderVariantMatching, SettingsContent.strictShaderVariantMatching);
             EditorGUILayout.PropertyField(m_MipStripping, SettingsContent.mipStripping);
 
             EditorGUILayout.Space();

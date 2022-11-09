@@ -36,7 +36,7 @@ namespace UnityEditor.UIElements
         }
 
         [MenuItem("Assets/Create/UI Toolkit/UI Document", false, 610, false)]
-        private static void CreateUXMAsset()
+        private static void CreateUXMLAsset()
         {
             var folder = GetCurrentFolder();
             var contents = CreateUXMLTemplate(folder);
@@ -46,49 +46,37 @@ namespace UnityEditor.UIElements
 
         public static string CreateUXMLTemplate(string folder, string uxmlContent = "")
         {
-            UxmlSchemaGenerator.UpdateSchemaFiles(true);
+            if (!Directory.Exists(UxmlSchemaGenerator.k_SchemaFolder))
+                UxmlSchemaGenerator.UpdateSchemaFiles(true);
 
-            string[] pathComponents = folder.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            List<string> backDots = new List<string>();
+            var pathComponents = folder.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var backDots = new List<string>();
             foreach (var s in pathComponents)
             {
-                if (s == ".")
+                switch (s)
                 {
-                    continue;
-                }
-                if (s == ".." && backDots.Count > 0)
-                {
-                    backDots.RemoveAt(backDots.Count - 1);
-                }
-                else
-                {
-                    backDots.Add("..");
+                    case ".":
+                        continue;
+                    case ".." when backDots.Count > 0:
+                        backDots.RemoveAt(backDots.Count - 1);
+                        break;
+                    default:
+                        backDots.Add("..");
+                        break;
                 }
             }
             backDots.Add(UxmlSchemaGenerator.k_SchemaFolder);
-            string schemaDirectory = string.Join("/", backDots.ToArray());
+            var schemaDirectory = string.Join("/", backDots.ToArray());
 
-            string xmlnsList = String.Empty;
-            Dictionary<string, string> namespacePrefix = UxmlSchemaGenerator.GetNamespacePrefixDictionary();
-
-            foreach (var prefix in namespacePrefix)
-            {
-                if (prefix.Key == String.Empty)
-                    continue;
-
-                if (prefix.Value != String.Empty)
-                {
-                    xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
-                }
-            }
-
-            string uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
+            var uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <engine:{0}
     xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
-{1}    xsi:noNamespaceSchemaLocation=""{2}/UIElements.xsd""
+    xmlns:engine=""UnityEngine.UIElements""
+    xmlns:editor=""UnityEditor.UIElements""
+    xsi:noNamespaceSchemaLocation=""{1}/UIElements.xsd""
 >
-    {3}
-</engine:{0}>", UXMLImporterImpl.k_RootNode, xmlnsList, schemaDirectory, uxmlContent);
+    {2}
+</engine:{0}>", UXMLImporterImpl.k_RootNode, schemaDirectory, uxmlContent);
 
             return uxmlTemplate;
         }
