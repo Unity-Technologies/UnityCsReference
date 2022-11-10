@@ -44,6 +44,7 @@ namespace UnityEditor.Presets
         List<int> m_PresetsInstanceIds = new List<int>();
 
         Editor m_InternalEditor = null;
+        ICoupledEditor m_CoupledEditor = null;
 
         string m_PresetTypeName;
         string m_HeaderTitle;
@@ -52,6 +53,9 @@ namespace UnityEditor.Presets
 
         string m_NotSupportedEditorName = null;
         Texture2D m_UnsupportedIcon = null;
+
+        Dictionary<string, VisualElement> m_BoundElements = new Dictionary<string, VisualElement>();
+
 
         internal override void OnForceReloadInspector()
         {
@@ -135,6 +139,13 @@ namespace UnityEditor.Presets
 
                 innerRoot.Add(internalInspector);
                 internalInspector.TrackSerializedObjectValue(m_InternalEditor.serializedObject, SaveTargetChangesToPreset);
+                if (m_CoupledEditor != null)
+                {
+                    var hiddenElement = new VisualElement();
+                    hiddenElement.style.display = DisplayStyle.None;
+                    hiddenElement.TrackSerializedObjectValue(m_CoupledEditor.coupledComponent, SaveTargetChangesToPreset);
+                    innerRoot.Add(hiddenElement);
+                }
             }
             else if (!string.IsNullOrEmpty(m_NotSupportedEditorName))
             {
@@ -339,6 +350,16 @@ namespace UnityEditor.Presets
             }
 
             m_InternalEditor.firstInspectedEditor = true;
+            if(target is Preset preset && preset.IsCoupled())
+            {
+                m_CoupledEditor = m_InternalEditor as ICoupledEditor;
+                if (m_CoupledEditor == null)
+                {
+                    Debug.LogError("CoupledComponent Editors have to implement ICoupledEditor interface.");
+                    DestroyImmediate(m_InternalEditor);
+                    m_InternalEditor = null;
+                }
+            }
         }
 
         void DestroyInternalEditor()
@@ -442,8 +463,6 @@ namespace UnityEditor.Presets
             return state;
         }
 
-        Dictionary<string, VisualElement> m_BoundElements = new Dictionary<string, VisualElement>();
-
         static void UpdatePrefabOverrideBarStyle(VisualElement blueBar, VisualElement container)
         {
             var element = (VisualElement)((object[])blueBar.userData)[0];
@@ -470,7 +489,7 @@ namespace UnityEditor.Presets
 
         void UpdatePropertyStyle(VisualElement element, SerializedProperty property)
         {
-            if (m_InternalEditor == null || property.serializedObject != m_InternalEditor.serializedObject)
+            if (!IsPropertyTracked(property))
                 return;
 
             var propertyPath = property.propertyPath;
@@ -554,7 +573,7 @@ namespace UnityEditor.Presets
 
         void BeginProperty(Rect totalPosition, SerializedProperty property)
         {
-            if (m_InternalEditor == null || property.serializedObject != m_InternalEditor.serializedObject)
+            if (!IsPropertyTracked(property))
                 return;
 
             var propertyPath = property.propertyPath;
@@ -563,6 +582,14 @@ namespace UnityEditor.Presets
                 EditorGUI.DrawMarginLineForRect(totalPosition, new Color(240f / 255f, 81f / 255f, 60f / 255f));
 
             GUI.enabled &= (state & PropertyState.Included) == PropertyState.Included;
+        }
+
+        private bool IsPropertyTracked(SerializedProperty property)
+        {
+            if ((m_InternalEditor == null || property.serializedObject != m_InternalEditor.serializedObject) &&
+                (m_CoupledEditor == null || property.serializedObject != m_CoupledEditor.coupledComponent))
+                return false;
+            return true;
         }
 
         void AddExclusion(object path)
@@ -675,7 +702,7 @@ namespace UnityEditor.Presets
 
         void DisableEnableProperty(GenericMenu menu, SerializedProperty property)
         {
-            if (m_InternalEditor == null || property.serializedObject.targetObject != m_InternalEditor.serializedObject.targetObject)
+            if (!IsPropertyTracked(property))
                 return;
 
             var propertyPath = property.propertyPath;

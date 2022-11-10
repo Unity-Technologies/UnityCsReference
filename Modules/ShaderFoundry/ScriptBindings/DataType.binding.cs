@@ -48,5 +48,6 @@ namespace UnityEditor.ShaderFoundry
         CustomizationPointImplementation,
         StageDescription,
         // THIS ENUM MUST BE KEPT IN SYNC WITH THE ENUM IN DataType.h -- ALSO ADD THE TYPE MAPPING TO Initialize() BELOW
+        // ALSO ADD THE TYPE MAPPING TO DataTypeStatic.Initialize()
     };
 }

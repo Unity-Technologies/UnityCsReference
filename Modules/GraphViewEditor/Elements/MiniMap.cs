@@ -321,7 +321,8 @@ namespace UnityEditor.Experimental.GraphView
             // mode rendering at all. It should maintain its vertex/index lists and only
             // update affected vertices when their respective elements are changed. This
             // way the cost of GenerateVisualContent becomes effectively only two memcpys.
-            mgc.painter.DrawImmediate(DrawMinimapContent, true);
+            // The following call uses an internal UIToolkit API and should NOT be used here.
+            mgc.entryRecorder.DrawImmediate(DrawMinimapContent, true);
         }
 
         void DrawSolidRectangleWithOutline(ref Vector3[] cachedRect, Color faceColor, Color typeColor)

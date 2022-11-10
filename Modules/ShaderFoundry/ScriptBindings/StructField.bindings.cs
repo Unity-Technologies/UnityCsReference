@@ -11,16 +11,14 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/StructField.h")]
-    internal struct StructFieldInternal
+    internal struct StructFieldInternal : IInternalType<StructFieldInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_AttributeListHandle;
 
-        // TODO no need to make this extern, can duplicate it here
         internal static extern StructFieldInternal Invalid();
-
-        internal bool IsValid => m_NameHandle.IsValid;
+        internal extern bool IsValid { [NativeMethod("IsValid")] get; }
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
         {
@@ -29,15 +27,24 @@ namespace UnityEditor.ShaderFoundry
         }
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+
+        // IInternalType
+        StructFieldInternal IInternalType<StructFieldInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct StructField : IEquatable<StructField>
+    internal readonly struct StructField : IEquatable<StructField>, IPublicType<StructField>
     {
         // data members
         readonly ShaderContainer container;
         internal readonly FoundryHandle handle;
         readonly StructFieldInternal field;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        StructField IPublicType<StructField>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new StructField(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -51,7 +58,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.field = container?.GetStructField(handle) ?? StructFieldInternal.Invalid();
+            ShaderContainer.Get(container, handle, out field);
         }
 
         public static StructField Invalid => new StructField(null, FoundryHandle.Invalid());
@@ -95,7 +102,7 @@ namespace UnityEditor.ShaderFoundry
                 structFieldInternal.m_NameHandle = container.AddString(name);
                 structFieldInternal.m_TypeHandle = type.handle;
                 structFieldInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
-                var returnHandle = container.AddStructFieldInternal(structFieldInternal);
+                var returnHandle = container.Add(structFieldInternal);
                 return new StructField(container, returnHandle);
             }
         }

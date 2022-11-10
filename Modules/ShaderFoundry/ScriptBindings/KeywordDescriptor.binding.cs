@@ -12,7 +12,7 @@ using System.Linq;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/KeywordDescriptor.h")]
-    internal struct KeywordDescriptorInternal
+    internal struct KeywordDescriptorInternal : IInternalType<KeywordDescriptorInternal>
     {
         internal FoundryHandle m_ListHandle;
 
@@ -25,15 +25,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern string GetName(ShaderContainer container);
         internal extern int GetOpCount(ShaderContainer container);
         internal extern string GetOp(ShaderContainer container, int index);
+
+        // IInternalType
+        KeywordDescriptorInternal IInternalType<KeywordDescriptorInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct KeywordDescriptor : IEquatable<KeywordDescriptor>
+    internal readonly struct KeywordDescriptor : IEquatable<KeywordDescriptor>, IPublicType<KeywordDescriptor>
     {
         // data members
         readonly ShaderContainer container;
         readonly KeywordDescriptorInternal descriptor;
         internal readonly FoundryHandle handle;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        KeywordDescriptor IPublicType<KeywordDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new KeywordDescriptor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -59,7 +68,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.descriptor = container?.GetKeywordDescriptor(handle) ?? KeywordDescriptorInternal.Invalid();
+            ShaderContainer.Get(container, handle, out descriptor);
         }
 
         public static KeywordDescriptor Invalid => new KeywordDescriptor(null, FoundryHandle.Invalid());
@@ -96,7 +105,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new KeywordDescriptorInternal();
                 descriptor.Setup(container, definition, scope, stage, name, ops.ToArray());
-                var resultHandle = container.AddKeywordDescriptorInternal(descriptor);
+                var resultHandle = container.Add(descriptor);
                 return new KeywordDescriptor(container, resultHandle);
             }
         }

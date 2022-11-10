@@ -13,6 +13,6 @@ namespace UnityEngine.UIElements.UIR
     {
         internal extern static JobHandle ScheduleNudgeJobs(IntPtr buffer, int jobCount);
         internal extern static JobHandle ScheduleConvertMeshJobs(IntPtr buffer, int jobCount);
-        internal extern static JobHandle ScheduleCopyClosingMeshJobs(IntPtr buffer, int jobCount);
+        internal extern static JobHandle ScheduleCopyMeshJobs(IntPtr buffer, int jobCount);
     }
 }

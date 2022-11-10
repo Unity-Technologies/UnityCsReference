@@ -76,13 +76,14 @@ namespace UnityEngine.UIElements.UIR
     {
         internal VisualElement owner;
         internal RenderChainCommand prev, next;
-        internal bool closing; // Is this a closing command
+        internal bool isTail; // Is this a tail command
 
         internal CommandType type;
 
         internal State state;
         internal MeshHandle mesh;
-        internal int indexOffset, indexCount;
+        internal int indexOffset; // Offset within the mesh (remember: there might be multiple commands per mesh e.g. one sub-range for background, another for border, etc)
+        internal int indexCount;
         internal Action callback; // Immediate render command only
         private static readonly int k_ID_MainTex = Shader.PropertyToID("_MainTex");
 
@@ -92,7 +93,7 @@ namespace UnityEngine.UIElements.UIR
         {
             owner = null;
             prev = next = null;
-            closing = false;
+            isTail = false;
             type = CommandType.Draw;
             state = new State();
             mesh = null;

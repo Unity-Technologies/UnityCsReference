@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderFunction.h")]
-    internal struct ShaderFunctionInternal
+    internal struct ShaderFunctionInternal : IInternalType<ShaderFunctionInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_BodyHandle;
@@ -25,15 +25,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+
+        // IInternalType
+        ShaderFunctionInternal IInternalType<ShaderFunctionInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct ShaderFunction : IEquatable<ShaderFunction>
+    internal readonly struct ShaderFunction : IEquatable<ShaderFunction>, IPublicType<ShaderFunction>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly ShaderFunctionInternal function;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        ShaderFunction IPublicType<ShaderFunction>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderFunction(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -74,7 +83,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.function = container?.GetFunction(handle) ?? ShaderFunctionInternal.Invalid();
+            ShaderContainer.Get(container, handle, out function);
         }
 
         // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
@@ -132,7 +141,7 @@ namespace UnityEditor.ShaderFoundry
                 this.container = container;
                 this.name = name;
                 this.returnType = returnType;
-                functionHandle = container.CreateFunctionInternal();
+                functionHandle = container.Create<ShaderFunctionInternal>();
                 this.parentBlockBuilder = parentBlockBuilder;
             }
 
@@ -186,7 +195,7 @@ namespace UnityEditor.ShaderFoundry
                 shaderFunctionInternal.m_ParentBlockHandle = parentBlockHandle;
                 shaderFunctionInternal.m_IncludeListHandle = FixedHandleListInternal.Build(container, includes, (i) => (i.handle));
                 shaderFunctionInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
-                container.SetFunctionInternal(functionHandle, shaderFunctionInternal);
+                container.Set(functionHandle, shaderFunctionInternal);
                 var builtFunction = new ShaderFunction(container, functionHandle);
 
                 if (parentBlockBuilder != null)

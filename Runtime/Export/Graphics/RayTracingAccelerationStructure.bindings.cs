@@ -3,10 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 // RayTracingMode enum will be moved into UnityEngine.Rendering in the future.
 using RayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode;
@@ -275,15 +279,121 @@ namespace UnityEngine.Rendering
             return AddInstance_Procedural(aabbBuffer, aabbCount, dynamicData, matrix, material, opaqueMaterial, properties, mask, id);
         }
 
-        unsafe public int AddInstance(in RayTracingMeshInstanceConfig config, Matrix4x4 matrix, [DefaultValue("null")] Matrix4x4? prevMatrix = null, uint id = 0xFFFFFFFF)
+        public unsafe int AddInstance(in RayTracingMeshInstanceConfig config, Matrix4x4 matrix, [DefaultValue("null")] Matrix4x4? prevMatrix = null, uint id = 0xFFFFFFFF)
         {
+            if (config.mesh == null)
+                throw new ArgumentNullException("config.mesh");
+            if (config.subMeshIndex >= config.mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+            if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
+                throw new ArgumentException("config.lightProbeProxyVolume must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
             if (prevMatrix.HasValue)
             {
                 Matrix4x4 temp = prevMatrix.Value;
                 return AddMeshInstance(config, matrix, &temp, id);
             }
-            else
-                return AddMeshInstance(config, matrix, null, id);
+            return AddMeshInstance(config, matrix, null, id);
+        }
+
+        public unsafe int AddInstances<T>(in RayTracingMeshInstanceConfig config, T[] instanceData, [DefaultValue("-1")] int instanceCount = -1, [DefaultValue("0")] int startInstance = 0, uint id = 0xFFFFFFFF) where T : unmanaged
+        {
+            if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            if (config.material == null)
+                throw new ArgumentNullException("config.material");
+            if (!config.material.enableInstancing)
+                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+            if (config.mesh == null)
+                throw new ArgumentNullException("config.mesh");
+            if (config.subMeshIndex >= config.mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+            if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
+                throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+
+            instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
+            startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Length - 1));
+            instanceCount = Math.Clamp(instanceCount, 0, Math.Max(0, instanceData.Length - startInstance));
+
+            if (instanceCount > Graphics.kMaxDrawMeshInstanceCount)
+                throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));
+
+            fixed (T* data = instanceData) { return AddMeshInstances(config, (IntPtr)(data + startInstance), layout, (uint)instanceCount, id); }
+        }
+
+        public unsafe int AddInstances<T>(in RayTracingMeshInstanceConfig config, List<T> instanceData, [DefaultValue("-1")] int instanceCount = -1, [DefaultValue("0")] int startInstance = 0, uint id = 0xFFFFFFFF) where T : unmanaged
+        {
+            if (instanceData == null)
+                throw new ArgumentNullException("instanceData");
+            if (config.material == null)
+                throw new ArgumentNullException("config.material");
+            if (!config.material.enableInstancing)
+                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+            if (config.mesh == null)
+                throw new ArgumentNullException("config.mesh");
+            if (config.subMeshIndex >= config.mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+            if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
+                throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+
+            instanceCount = instanceCount == -1 ? instanceData.Count : instanceCount;
+            startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Count - 1));
+            instanceCount = Math.Clamp(instanceCount, 0, Math.Max(0, instanceData.Count - startInstance));
+
+            if (instanceCount > Graphics.kMaxDrawMeshInstanceCount)
+                throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));
+
+            fixed (T* data = NoAllocHelpers.ExtractArrayFromListT(instanceData)) { return AddMeshInstances(config, (IntPtr)(data + startInstance), layout, (uint)instanceCount, id); }
+        }
+
+        public unsafe int AddInstances<T>(in RayTracingMeshInstanceConfig config, NativeArray<T> instanceData, [DefaultValue("-1")] int instanceCount = -1, [DefaultValue("0")] int startInstance = 0, uint id = 0xFFFFFFFF) where T : unmanaged
+        {
+            if (config.material == null)
+                throw new ArgumentNullException("config.material");
+            if (!config.material.enableInstancing)
+                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+            if (config.mesh == null)
+                throw new ArgumentNullException("config.mesh");
+            if (config.subMeshIndex >= config.mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+            if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
+                throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+
+            instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
+            startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Length - 1));
+            instanceCount = Math.Clamp(instanceCount, 0, Math.Max(0, instanceData.Length - startInstance));
+
+            if (instanceCount > Graphics.kMaxDrawMeshInstanceCount)
+                throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));
+
+            return AddMeshInstances(config, (IntPtr)((T*)instanceData.GetUnsafeReadOnlyPtr() + startInstance), layout, (uint)instanceCount, id);
+        }
+
+        public unsafe int AddInstances<T>(in RayTracingMeshInstanceConfig config, NativeSlice<T> instanceData, uint id = 0xFFFFFFFF) where T : unmanaged
+        {
+            if (config.material == null)
+                throw new ArgumentNullException("config.material");
+            if (!config.material.enableInstancing)
+                throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+            if (config.mesh == null)
+                throw new ArgumentNullException("config.mesh");
+            if (config.subMeshIndex >= config.mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+            if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
+                throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+
+            if (instanceData.Length > Graphics.kMaxDrawMeshInstanceCount)
+                throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));
+
+            return AddMeshInstances(config, (IntPtr)(T*)instanceData.GetUnsafeReadOnlyPtr(), layout, (uint)instanceData.Length, id);
         }
 
         public void RemoveInstance(Renderer targetRenderer)
@@ -378,6 +488,9 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstance", HasExplicitThis = true, ThrowsException = true)]
         extern unsafe private int AddMeshInstance(RayTracingMeshInstanceConfig config, Matrix4x4 matrix, Matrix4x4* prevMatrix, uint id = 0xFFFFFFFF);
+		
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstances", HasExplicitThis = true, ThrowsException = true)]
+		extern unsafe private int AddMeshInstances(RayTracingMeshInstanceConfig config, IntPtr instancedData, RenderInstancedDataLayout layout, uint instanceCount, uint id = 0xFFFFFFFF);
 
         public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig) => Internal_CullInstances(in cullingConfig);
 

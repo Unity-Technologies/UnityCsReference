@@ -12,7 +12,7 @@ using System.Linq;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/Template.h")]
-    internal struct TemplateInternal
+    internal struct TemplateInternal : IInternalType<TemplateInternal>
     {
         internal FoundryHandle m_NameHandle;                        // string
         internal FoundryHandle m_PassListHandle;                    // List<TemplatePass>
@@ -35,15 +35,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static TemplateInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        TemplateInternal IInternalType<TemplateInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct Template : IEquatable<Template>
+    internal readonly struct Template : IEquatable<Template>, IPublicType<Template>
     {
         // data members
         readonly ShaderContainer container;
         internal readonly FoundryHandle handle;
         readonly TemplateInternal template;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        Template IPublicType<Template>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new Template(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -79,7 +88,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.template = container?.GetTemplate(handle) ?? TemplateInternal.Invalid();
+            ShaderContainer.Get(container, handle, out template);
         }
 
         public static Template Invalid => new Template(null, FoundryHandle.Invalid());
@@ -218,7 +227,7 @@ namespace UnityEditor.ShaderFoundry
                 templateInternal.m_ShaderDependencyListHandle = FixedHandleListInternal.Build(container, shaderDependencies, (sd) => sd.handle);
                 templateInternal.m_ShaderCustomEditorHandle = CustomEditor.IsValid ? CustomEditor.handle : FoundryHandle.Invalid();
 
-                var returnTypeHandle = container.AddTemplateInternal(templateInternal);
+                var returnTypeHandle = container.Add(templateInternal);
                 return new Template(container, returnTypeHandle);
             }
         }

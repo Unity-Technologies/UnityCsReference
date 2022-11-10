@@ -346,6 +346,11 @@ namespace UnityEditor
         }
     }
 
+    internal interface ICoupledEditor
+    {
+        SerializedObject coupledComponent { get; }
+    }
+
     // Base class to derive custom Editors from. Use this to create your own custom inspectors and editors for your objects.
     [ExcludeFromObjectFactory]
     public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner

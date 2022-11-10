@@ -58,8 +58,6 @@ namespace UnityEngine.UIElements
 
         internal string CullString(string s);
 
-        internal bool hasFocus { get; }
-
         /// <summary>
         /// The character used for masking when in password mode.
         /// </summary>
@@ -395,8 +393,6 @@ namespace UnityEngine.UIElements
             return s;
         }
 
-        bool ITextEdition.hasFocus => elementPanel != null && elementPanel.focusController.GetLeafFocusedElement() == this;
-
         char ITextEdition.maskChar
         {
             get => m_MaskChar;
@@ -443,7 +439,7 @@ namespace UnityEngine.UIElements
             get
             {
                 if (edition.hidePlaceholderOnFocus)
-                    return text.Length == 0 && !edition.hasFocus;
+                    return text.Length == 0 && !hasFocus;
 
                 return text.Length == 0;
             }

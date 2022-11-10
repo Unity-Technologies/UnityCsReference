@@ -39,7 +39,8 @@ namespace UnityEditor.Experimental.GraphView
 
                 var rect = new Rect(x, y, width, height);
 
-                mgc.Rectangle(MeshGenerationContextUtils.RectangleParams.MakeSolid(rect, s_SnappingLineColor, ContextType.Editor));
+                // The following is a UIToolkit internal API and should NOT be used here. Consider replacing it with Painter2D.
+                mgc.meshGenerator.DrawRectangle(UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rect, s_SnappingLineColor, ContextType.Editor));
             }
         }
     }

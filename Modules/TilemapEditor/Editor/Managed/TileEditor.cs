@@ -17,6 +17,9 @@ namespace UnityEditor
         private SerializedProperty m_Color;
         private SerializedProperty m_ColliderType;
         private SerializedProperty m_Sprite;
+        private SerializedProperty m_InstancedGameObject;
+        private SerializedProperty m_Flags;
+        private SerializedProperty m_Transform;
 
         private Tile tile
         {
@@ -29,6 +32,8 @@ namespace UnityEditor
             public static readonly GUIContent resetMatrixLabel = EditorGUIUtility.TrTextContent("Reset Matrix");
             public static readonly GUIContent previewLabel = EditorGUIUtility.TrTextContent("Preview", "Preview of tile with attributes set");
 
+            public static readonly GUIContent gameObjectToInstantiateLabel = EditorGUIUtility.TrTextContent("GameObject to Instantiate", "GameObject to instantiate when placed on Tilemap");
+
             public static readonly GUIContent spriteEditorLabel = EditorGUIUtility.TrTextContent("Sprite Editor");
             public static readonly GUIContent offsetLabel = EditorGUIUtility.TrTextContent("Offset");
             public static readonly GUIContent rotationLabel = EditorGUIUtility.TrTextContent("Rotation");
@@ -40,6 +45,9 @@ namespace UnityEditor
             m_Color = serializedObject.FindProperty("m_Color");
             m_ColliderType = serializedObject.FindProperty("m_ColliderType");
             m_Sprite = serializedObject.FindProperty("m_Sprite");
+            m_InstancedGameObject = serializedObject.FindProperty("m_InstancedGameObject");
+            m_Flags = serializedObject.FindProperty("m_Flags");
+            m_Transform = serializedObject.FindProperty("m_Transform");
         }
 
         public override void OnInspectorGUI()
@@ -64,7 +72,18 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Color);
             EditorGUILayout.PropertyField(m_ColliderType);
+            EditorGUILayout.PropertyField(m_InstancedGameObject, Styles.gameObjectToInstantiateLabel);
+            EditorGUILayout.PropertyField(m_Flags);
 
+            using (new EditorGUI.DisabledGroupScope(((int) TileFlags.LockTransform & m_Flags.enumValueFlag) == 0))
+            {
+                EditorGUI.BeginChangeCheck();
+                tile.transform = TransformMatrixOnGUI(tile.transform);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(tile);
+                }
+            }
             serializedObject.ApplyModifiedProperties();
         }
 

@@ -8,22 +8,31 @@ using UnityEngine.Bindings;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderCustomEditor.h")]
-    internal struct ShaderCustomEditorInternal
+    internal struct ShaderCustomEditorInternal : IInternalType<ShaderCustomEditorInternal>
     {
         internal FoundryHandle m_CustomEditorClassName;         // string
         internal FoundryHandle m_RenderPipelineAssetClassName;  // string
 
         internal extern static ShaderCustomEditorInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        ShaderCustomEditorInternal IInternalType<ShaderCustomEditorInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct ShaderCustomEditor : IEquatable<ShaderCustomEditor>, IComparable<ShaderCustomEditor>
+    internal readonly struct ShaderCustomEditor : IEquatable<ShaderCustomEditor>, IComparable<ShaderCustomEditor>, IPublicType<ShaderCustomEditor>
     {
         // data members
         readonly ShaderContainer container;
         internal readonly FoundryHandle handle;
         readonly ShaderCustomEditorInternal shaderCustomEditor;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        ShaderCustomEditor IPublicType<ShaderCustomEditor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderCustomEditor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -44,7 +53,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 shaderCustomEditor.m_CustomEditorClassName = customEditorClassName;
                 shaderCustomEditor.m_RenderPipelineAssetClassName = renderPipelineAssetClassName;
-                handle = container.AddShaderCustomEditor(shaderCustomEditor);
+                handle = container.Add(shaderCustomEditor);
                 this.container = handle.IsValid ? container : null;
             }
         }
@@ -56,7 +65,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.shaderCustomEditor = container?.GetShaderCustomEditor(handle) ?? ShaderCustomEditorInternal.Invalid();
+            ShaderContainer.Get(container, handle, out shaderCustomEditor);
         }
 
         public static ShaderCustomEditor Invalid => new ShaderCustomEditor(null, FoundryHandle.Invalid());
@@ -65,8 +74,8 @@ namespace UnityEditor.ShaderFoundry
         public override bool Equals(object obj) => obj is ShaderCustomEditor other && this.Equals(other);
         public bool Equals(ShaderCustomEditor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
-        public static bool operator ==(ShaderCustomEditor lhs, ShaderCustomEditor rhs) => lhs.Equals(rhs);
-        public static bool operator !=(ShaderCustomEditor lhs, ShaderCustomEditor rhs) => !lhs.Equals(rhs);
+        public static bool operator==(ShaderCustomEditor lhs, ShaderCustomEditor rhs) => lhs.Equals(rhs);
+        public static bool operator!=(ShaderCustomEditor lhs, ShaderCustomEditor rhs) => !lhs.Equals(rhs);
 
         public int CompareTo(ShaderCustomEditor other)
         {

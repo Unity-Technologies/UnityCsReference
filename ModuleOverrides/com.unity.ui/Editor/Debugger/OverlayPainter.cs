@@ -103,8 +103,8 @@ namespace UnityEditor.UIElements.Debugger
 
             color.a = alpha;
 
-            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(rect, color, mgc.visualElement.panel.contextType);
-            mgc.Rectangle(rectParams);
+            var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rect, color, mgc.visualElement.panel.contextType);
+            mgc.meshGenerator.DrawRectangle(rectParams);
         }
 
         protected void DrawBorder(MeshGenerationContext mgc, Rect rect, Color color, float alpha)
@@ -125,17 +125,17 @@ namespace UnityEditor.UIElements.Debugger
             var rightRect = new Rect(rect.xMax, rect.yMin, 1, height);
             var lefRect = new Rect(rect.xMin, rect.yMin, 1, height);
 
-            var rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(topRect, color, mgc.visualElement.panel.contextType);
-            mgc.Rectangle(rectParams);
+            var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(topRect, color, mgc.visualElement.panel.contextType);
+            mgc.meshGenerator.DrawRectangle(rectParams);
 
-            rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(bottomRect, color, mgc.visualElement.panel.contextType);
-            mgc.Rectangle(rectParams);
+            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(bottomRect, color, mgc.visualElement.panel.contextType);
+            mgc.meshGenerator.DrawRectangle(rectParams);
 
-            rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(rightRect, color, mgc.visualElement.panel.contextType);
-            mgc.Rectangle(rectParams);
+            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(rightRect, color, mgc.visualElement.panel.contextType);
+            mgc.meshGenerator.DrawRectangle(rectParams);
 
-            rectParams = MeshGenerationContextUtils.RectangleParams.MakeSolid(lefRect, color, mgc.visualElement.panel.contextType);
-            mgc.Rectangle(rectParams);
+            rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeSolid(lefRect, color, mgc.visualElement.panel.contextType);
+            mgc.meshGenerator.DrawRectangle(rectParams);
         }
     }
 
@@ -398,7 +398,7 @@ namespace UnityEditor.UIElements.Debugger
         void DrawWireframe(MeshGenerationContext mgc, VisualElement ve, Color wireColor, float alpha)
         {
             var verts = new List<Vector2>(64);
-            var cmd = ve.renderChainData.firstCommand;
+            var cmd = ve.renderChainData.firstHeadCommand;
             while (cmd != null && cmd.owner == ve)
             {
                 if (cmd.type == UnityEngine.UIElements.UIR.CommandType.Draw)

@@ -750,21 +750,38 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::ReleaseTemporaryRT", HasExplicitThis = true)]
         extern public void ReleaseTemporaryRT(int nameID);
 
-        [FreeFunction("RenderingCommandBuffer_Bindings::ClearRenderTarget", HasExplicitThis = true)]
-        extern public void ClearRenderTarget(RTClearFlags clearFlags, Color backgroundColor, float depth, uint stencil);
-
         public void ClearRenderTarget(bool clearDepth, bool clearColor, Color backgroundColor)
         {
-            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            // Legacy behaviour: this interface implicitely clears stencil when depth is cleared.
-            ClearRenderTarget((RTClearFlags)((clearColor ? RTClearFlags.Color : RTClearFlags.None) | (clearDepth ? RTClearFlags.DepthStencil : RTClearFlags.None)), backgroundColor, 1.0f, 0);
+            ClearRenderTarget(clearDepth, clearColor, backgroundColor, 1.0f, 0);
         }
 
         public void ClearRenderTarget(bool clearDepth, bool clearColor, Color backgroundColor, float depth)
         {
+            ClearRenderTarget(clearDepth, clearColor, backgroundColor, depth, 0);
+        }
+
+        public void ClearRenderTarget(bool clearDepth, bool clearColor, Color backgroundColor, float depth = 1.0f, uint stencil = 0)
+        {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             // Legacy behaviour: this interface implicitely clears stencil when depth is cleared.
-            ClearRenderTarget((RTClearFlags)((clearColor ? RTClearFlags.Color : RTClearFlags.None) | (clearDepth ? RTClearFlags.DepthStencil : RTClearFlags.None)), backgroundColor, depth, 0);
+            ClearRenderTargetSingle_Internal((RTClearFlags)((clearColor ? RTClearFlags.Color : RTClearFlags.None) | (clearDepth ? RTClearFlags.DepthStencil : RTClearFlags.None)), backgroundColor, depth, stencil);
+        }
+
+        public void ClearRenderTarget(RTClearFlags clearFlags, Color backgroundColor, float depth = 1.0f, uint stencil = 0)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            ClearRenderTargetSingle_Internal(clearFlags, backgroundColor, depth, stencil);
+        }
+
+        public void ClearRenderTarget(RTClearFlags clearFlags, Color[] backgroundColors, float depth = 1.0f, uint stencil = 0)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            if (backgroundColors.Length < 1)
+                throw new ArgumentException(string.Format("The number of clear colors must be at least 1, but is {0}", backgroundColors.Length));
+            if (backgroundColors.Length > SystemInfo.supportedRenderTargetCount)
+                throw new ArgumentException(string.Format("The number of clear colors ({0}) exceeds the maximum supported number of render targets ({1})", backgroundColors.Length, SystemInfo.supportedRenderTargetCount));
+
+            ClearRenderTargetMulti_Internal(clearFlags, backgroundColors, depth, stencil);
         }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalFloat", HasExplicitThis = true)]
@@ -1097,6 +1114,9 @@ namespace UnityEngine.Rendering
             else
                 SetRenderTargetMulti_Internal(binding.colorRenderTargets, binding.depthRenderTarget, binding.colorLoadActions, binding.colorStoreActions, binding.depthLoadAction, binding.depthStoreAction, binding.flags);
         }
+
+        extern private void ClearRenderTargetSingle_Internal(RTClearFlags clearFlags, Color color, float depth, UInt32 stencil);
+        extern private void ClearRenderTargetMulti_Internal(RTClearFlags clearFlags, Color[] colors, float depth, UInt32 stencil);
 
         extern private void SetRenderTargetSingle_Internal(RenderTargetIdentifier rt,
             RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,

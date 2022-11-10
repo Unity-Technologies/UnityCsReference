@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/FunctionParameter.h")]
-    internal struct FunctionParameterInternal
+    internal struct FunctionParameterInternal : IInternalType<FunctionParameterInternal>
     {
         // these enums must match the declarations in FunctionParameter.h
         internal enum Flags
@@ -31,15 +31,24 @@ namespace UnityEditor.ShaderFoundry
         internal bool IsValid => (m_NameHandle.IsValid && (m_Flags != 0));
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+
+        // IInternalType
+        FunctionParameterInternal IInternalType<FunctionParameterInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct FunctionParameter : IEquatable<FunctionParameter>
+    internal readonly struct FunctionParameter : IEquatable<FunctionParameter>, IPublicType<FunctionParameter>
     {
         // data members
         readonly ShaderContainer container;
         internal readonly FoundryHandle handle;
         readonly FunctionParameterInternal param;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        FunctionParameter IPublicType<FunctionParameter>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new FunctionParameter(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -56,7 +65,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.param = container?.GetFunctionParameter(handle) ?? FunctionParameterInternal.Invalid();
+            ShaderContainer.Get(container, handle, out param);
         }
 
         public static FunctionParameter Invalid => new FunctionParameter(null, FoundryHandle.Invalid());
@@ -112,7 +121,7 @@ namespace UnityEditor.ShaderFoundry
                 functionParamInternal.m_TypeHandle = type.handle;
                 functionParamInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
                 functionParamInternal.m_Flags = flags;
-                FoundryHandle returnHandle = container.AddFunctionParameter(functionParamInternal);
+                FoundryHandle returnHandle = container.Add(functionParamInternal);
                 return new FunctionParameter(Container, returnHandle);
             }
         }

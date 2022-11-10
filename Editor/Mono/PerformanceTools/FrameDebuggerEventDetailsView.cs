@@ -651,8 +651,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 ShaderPropertyDisplayInfo data = propertyDisplayInfo[i];
                 if (!data.m_IsArray)
                 {
-                    Texture tex = data.m_TextureCopy != null ? data.m_TextureCopy as Texture : data.m_Texture;
-                    if (tex == null)
+                    Texture textureToDisplay = data.m_TextureCopy != null ? data.m_TextureCopy as Texture : data.m_Texture;
+                    if (textureToDisplay == null)
                     {
                         GUILayout.BeginHorizontal(FrameDebuggerStyles.EventDetails.s_PropertiesLeftMarginStyle);
                         GUILayout.Label(data.m_PropertyString, FrameDebuggerStyles.EventDetails.s_MonoLabelNoWrapStyle);
@@ -664,8 +664,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         // Texture Preview..
                         // for 2D textures, we want to display them directly as a preview (this will make render textures display their contents) but
                         // for cube maps and other non-2D types DrawPreview does not do anything useful right now, so get their asset type icon at least
-                        bool isTex2D = tex.dimension == TextureDimension.Tex2D;
-                        Texture previewTexture = isTex2D ? tex : AssetPreview.GetMiniThumbnail(tex);
+                        bool isTex2D = textureToDisplay.dimension == TextureDimension.Tex2D;
+                        Texture previewTexture = isTex2D ? textureToDisplay : AssetPreview.GetMiniThumbnail(textureToDisplay);
                         Rect previewRect = GUILayoutUtility.GetRect(10, 10, FrameDebuggerStyles.EventDetails.s_TextureButtonStyle);
                         previewRect.width = 10;
                         previewRect.height = 10;
@@ -679,7 +679,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         {
                             PopupWindowWithoutFocus.Show(
                                 previewRect,
-                                new ObjectPreviewPopup(previewTexture),
+                                new ObjectPreviewPopup(textureToDisplay),
                                 new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
                             );
                         }

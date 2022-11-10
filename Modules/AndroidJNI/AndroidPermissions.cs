@@ -3,47 +3,67 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.InteropServices;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Android
 {
     public class PermissionCallbacks : AndroidJavaProxy
     {
+        enum Result
+        {
+            Dismissed = 0,
+            Granted = 1,
+            Denied = 2,
+            DeniedDontAskAgain = 3,
+        }
+
         public event Action<string> PermissionGranted;
         public event Action<string> PermissionDenied;
         public event Action<string> PermissionDeniedAndDontAskAgain;
+        public event Action<string> PermissionRequestDismissed;
 
         public PermissionCallbacks()
             : base("com.unity3d.player.IPermissionRequestCallbacks")
         {}
 
-        // Preserve is needed on Android, since AndroidJavaProxy accesses these methods via reflection.
-        // Thus they will get stripped, since they're not referenced directlry
-        // On other hand, this has a bad side effect on platforms like WebGL, where stripper would keep these methods
-        // And what's worse will include the whole module because of this
-        private void onPermissionGranted(string permissionName)
+        // override Invoke so we don't pay for C# reflection
+        public override IntPtr Invoke(string methodName, IntPtr javaArgs)
         {
-            PermissionGranted?.Invoke(permissionName);
-        }
-
-        private void onPermissionDenied(string permissionName)
-        {
-            PermissionDenied?.Invoke(permissionName);
-        }
-
-        private void onPermissionDeniedAndDontAskAgain(string permissionName)
-        {
-            if (PermissionDeniedAndDontAskAgain != null)
+            switch (methodName)
             {
-                PermissionDeniedAndDontAskAgain(permissionName);
+                case nameof(onPermissionResult):
+                    onPermissionResult(javaArgs);
+                    return IntPtr.Zero;
+                default:
+                    return base.Invoke(methodName, javaArgs);
             }
-            else
+        }
+
+        private void onPermissionResult(IntPtr javaArgs)
+        {
+            var names = AndroidJNISafe.GetObjectArrayElement(javaArgs, 0);
+            var grantResults = AndroidJNISafe.FromIntArray(AndroidJNISafe.GetObjectArrayElement(javaArgs, 1));
+            for (int i = 0; i < grantResults.Length; ++i)
             {
-                // Fall back to OnPermissionDeniedAction
-                PermissionDenied?.Invoke(permissionName);
+                string permission = AndroidJNISafe.GetStringChars(AndroidJNISafe.GetObjectArrayElement(names, i));
+                switch ((Result)grantResults[i])
+                {
+                    case Result.Dismissed:
+                        if (PermissionRequestDismissed == null)
+                            goto case Result.Denied;
+                        PermissionRequestDismissed.Invoke(permission);
+                        break;
+                    case Result.Granted:
+                        PermissionGranted?.Invoke(permission);
+                        break;
+                    case Result.DeniedDontAskAgain:
+                        if (PermissionDeniedAndDontAskAgain == null)
+                            goto case Result.Denied;
+                        PermissionDeniedAndDontAskAgain.Invoke(permission);
+                        break;
+                    case Result.Denied:
+                        PermissionDenied?.Invoke(permission);
+                        break;
+                }
             }
         }
     }

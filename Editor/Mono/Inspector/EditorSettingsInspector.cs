@@ -59,7 +59,7 @@ namespace UnityEditor
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
             public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
 
-            public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
+            public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Atlas");
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max SpriteAtlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart.");
 
             public static GUIContent cSharpProjectGeneration = EditorGUIUtility.TrTextContent("C# Project Generation");
@@ -590,9 +590,10 @@ namespace UnityEditor
             GUI.enabled = editorEnabled;
 
             // Legacy Packer has been deprecated.
-            EditorGUILayout.IntSlider(m_SpritePackerCacheSize, 1, 200, Content.spriteMaxCacheSize);
             index = Mathf.Clamp(m_SpritePackerMode.intValue - spritePackDeprecatedEnums, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
+            if (EditorSettings.spritePackerMode != SpritePackerMode.SpriteAtlasV2 && EditorSettings.spritePackerMode != SpritePackerMode.SpriteAtlasV2Build && EditorSettings.spritePackerMode != SpritePackerMode.Disabled)
+                EditorGUILayout.IntSlider(m_SpritePackerCacheSize, 1, 200, Content.spriteMaxCacheSize);
 
             DoProjectGenerationSettings();
             var compressorsChanged = DoTextureCompressorSettings();

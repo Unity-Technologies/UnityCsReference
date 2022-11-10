@@ -19,6 +19,29 @@ namespace UnityEngine
         public static extern void DrawLine(Vector3 from, Vector3 to);
 
         [NativeThrows]
+        internal static unsafe extern void DrawLineStrip([Span("count", isReadOnly: true)] Vector3* points, int count, bool looped);
+        public static unsafe void DrawLineStrip(ReadOnlySpan<Vector3> points, bool looped)
+        {
+            fixed (Vector3* ptr = points)
+            {
+                DrawLineStrip(ptr, points.Length, looped);
+            }
+        }
+
+        [NativeThrows]
+        internal static unsafe extern void DrawLineList([Span("count", isReadOnly: true)] Vector3* points, int count);
+        public static unsafe void DrawLineList(ReadOnlySpan<Vector3> points)
+        {
+            if ((points.Length & 1) != 0)
+                throw new UnityException("You cannot draw a line list from an odd number of points, with two points per line the number of points must be even");
+
+            fixed (Vector3* ptr = points)
+            {
+                DrawLineList(ptr, points.Length);
+            }
+        }
+
+        [NativeThrows]
         public static extern void DrawWireSphere(Vector3 center, float radius);
 
         [NativeThrows]

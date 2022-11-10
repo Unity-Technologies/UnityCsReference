@@ -12,7 +12,7 @@ using System.Linq;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/CopyRule.h")]
-    internal struct CopyRuleInternal
+    internal struct CopyRuleInternal : IInternalType<CopyRuleInternal>
     {
         internal FoundryHandle m_SourceName; // string
         internal FoundryHandle m_InclusionListHandle; // List<string>
@@ -20,15 +20,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static CopyRuleInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        CopyRuleInternal IInternalType<CopyRuleInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct CopyRule : IEquatable<CopyRule>
+    internal readonly struct CopyRule : IEquatable<CopyRule>, IPublicType<CopyRule>
     {
         // data members
         readonly ShaderContainer container;
         readonly CopyRuleInternal rule;
         internal readonly FoundryHandle handle;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        CopyRule IPublicType<CopyRule>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new CopyRule(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -42,7 +51,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.rule = container?.GetCopyRule(handle) ?? CopyRuleInternal.Invalid();
+            ShaderContainer.Get(container, handle, out rule);
         }
 
         public static CopyRule Invalid => new CopyRule(null, FoundryHandle.Invalid());
@@ -89,7 +98,7 @@ namespace UnityEditor.ShaderFoundry
                 rule.m_SourceName = container.AddString(sourceName);
                 rule.m_InclusionListHandle = FixedHandleListInternal.Build(container, inclusions, (n) => (container.AddString(n)));
                 rule.m_ExclusionListHandle = FixedHandleListInternal.Build(container, exclusions, (n) => (container.AddString(n)));
-                var resultHandle = container.AddCopyRuleInternal(rule);
+                var resultHandle = container.Add(rule);
                 return new CopyRule(container, resultHandle);
             }
         }

@@ -11,7 +11,7 @@ using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/TemplatePass.h")]
-    internal struct TemplatePassInternal
+    internal struct TemplatePassInternal : IInternalType<TemplatePassInternal>
     {
         internal FoundryHandle m_UsePassNameHandle;
         internal FoundryHandle m_DisplayNameHandle;
@@ -27,15 +27,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern static TemplatePassInternal Invalid();
         internal extern bool IsValid();
         internal extern bool IsUsePass();
+
+        // IInternalType
+        TemplatePassInternal IInternalType<TemplatePassInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct TemplatePass : IEquatable<TemplatePass>
+    internal readonly struct TemplatePass : IEquatable<TemplatePass>, IPublicType<TemplatePass>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly TemplatePassInternal templatePass;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        TemplatePass IPublicType<TemplatePass>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new TemplatePass(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -96,7 +105,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.templatePass = container?.GetTemplatePass(handle) ?? TemplatePassInternal.Invalid();
+            ShaderContainer.Get(container, handle, out templatePass);
         }
 
         public static TemplatePass Invalid => new TemplatePass(null, FoundryHandle.Invalid());
@@ -134,7 +143,7 @@ namespace UnityEditor.ShaderFoundry
                     m_EnableDebugging = false
                 };
 
-                var passHandle = container.AddTemplatePassInternal(templatePassInternal);
+                var passHandle = container.Add(templatePassInternal);
                 return new TemplatePass(container, passHandle);
             }
         }
@@ -221,7 +230,7 @@ namespace UnityEditor.ShaderFoundry
                 templatePassInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
 
-                var returnTypeHandle = container.AddTemplatePassInternal(templatePassInternal);
+                var returnTypeHandle = container.Add(templatePassInternal);
                 return new TemplatePass(container, returnTypeHandle);
             }
         }

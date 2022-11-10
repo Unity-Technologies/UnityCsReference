@@ -52,7 +52,6 @@ namespace UnityEngine.UIElements
             public Rect rect;
             public Rect subRect;
             public Rect uv;
-            public Rect uvRegion;
             public Color color;
             public ScaleMode scaleMode;
 
@@ -77,7 +76,7 @@ namespace UnityEngine.UIElements
         public static extern MeshWriteDataInterface MakeBorder(NativeBorderParams borderParams,float posZ);
         public static extern MeshWriteDataInterface MakeSolidRect(NativeRectParams rectParams,float posZ);
         public static extern MeshWriteDataInterface MakeTexturedRect(NativeRectParams rectParams,float posZ);
-        public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorPage colorPage, int settingIndexOffset, ref int finalVertexCount, ref int finalIndexCount);
-        public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorPage colorPage, int settingIndexOffset);
+        public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorPage colorPage);
+        public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorPage colorPage);
     }
 }

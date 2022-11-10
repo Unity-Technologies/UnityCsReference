@@ -233,7 +233,7 @@ namespace UnityEngine.UIElements
                 startPos += layoutOffset;
                 endPos += layoutOffset;
 
-                mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
+                mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
                 {
                     rect = new Rect(startPos.x, startPos.y - lineHeight, endPos.x - startPos.x, lineHeight),
                     color = selection.selectionColor,
@@ -274,7 +274,7 @@ namespace UnityEngine.UIElements
                     startPos += layoutOffset;
                     endPos += layoutOffset;
 
-                    mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams()
+                    mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
                     {
                         rect = new Rect(startPos.x, startPos.y - lineHeight, endPos.x - startPos.x, lineHeight),
                         color = selection.selectionColor,
@@ -294,7 +294,7 @@ namespace UnityEngine.UIElements
             var characterHeight = uitkTextHandle.GetCharacterHeightFromIndex(selection.cursorIndex);
             var width = AlignmentUtils.CeilToPixelGrid(selection.cursorWidth, scaledPixelsPerPoint);
 
-            mgc.Rectangle(new MeshGenerationContextUtils.RectangleParams
+            mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
             {
                 rect = new Rect(selection.cursorPosition.x, selection.cursorPosition.y - characterHeight, width, characterHeight),
                 color = selection.cursorColor,

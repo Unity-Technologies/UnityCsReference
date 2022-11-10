@@ -338,7 +338,7 @@ namespace Unity.UI.Builder
         public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
             base.HierarchyChanged(element, changeType);
-
+            m_ElementHierarchyView.hasUssChanges = true;
             UpdateNewSelectorFieldEnabledStateFromDocument();
             UpdateSubtitleFromActiveUSS();
         }

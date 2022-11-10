@@ -12,7 +12,7 @@ using System.Linq;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/CommandDescriptor.h")]
-    internal struct CommandDescriptorInternal
+    internal struct CommandDescriptorInternal : IInternalType<CommandDescriptorInternal>
     {
         internal FoundryHandle m_ListHandle;
 
@@ -22,15 +22,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern string GetName(ShaderContainer container);
         internal extern int GetOpCount(ShaderContainer container);
         internal extern string GetOp(ShaderContainer container, int index);
+
+        // IInternalType
+        CommandDescriptorInternal IInternalType<CommandDescriptorInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct CommandDescriptor : IEquatable<CommandDescriptor>
+    internal readonly struct CommandDescriptor : IEquatable<CommandDescriptor>, IPublicType<CommandDescriptor>
     {
         // data members
         readonly ShaderContainer container;
         readonly CommandDescriptorInternal descriptor;
         internal readonly FoundryHandle handle;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        CommandDescriptor IPublicType<CommandDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new CommandDescriptor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -53,7 +62,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.descriptor = container?.GetCommandDescriptor(handle) ?? CommandDescriptorInternal.Invalid();
+            ShaderContainer.Get(container, handle, out descriptor);
         }
 
         public static CommandDescriptor Invalid => new CommandDescriptor(null, FoundryHandle.Invalid());
@@ -84,7 +93,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new CommandDescriptorInternal();
                 descriptor.Setup(container, name, ops.ToArray());
-                var resultHandle = container.AddCommandDescriptorInternal(descriptor);
+                var resultHandle = container.Add(descriptor);
                 return new CommandDescriptor(container, resultHandle);
             }
         }

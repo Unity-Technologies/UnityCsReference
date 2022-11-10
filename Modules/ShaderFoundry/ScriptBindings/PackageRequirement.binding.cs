@@ -11,22 +11,31 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/PackageRequirement.h")]
-    internal struct PackageRequirementInternal
+    internal struct PackageRequirementInternal : IInternalType<PackageRequirementInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_VersionHandle;
 
         internal static extern PackageRequirementInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        PackageRequirementInternal IInternalType<PackageRequirementInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct PackageRequirement : IEquatable<PackageRequirement>
+    internal readonly struct PackageRequirement : IEquatable<PackageRequirement>, IPublicType<PackageRequirement>
     {
         // data members
         readonly ShaderContainer container;
         internal readonly FoundryHandle handle;
         readonly PackageRequirementInternal packageRequirement;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        PackageRequirement IPublicType<PackageRequirement>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new PackageRequirement(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -39,7 +48,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.packageRequirement = container?.GetPackageRequirement(handle) ?? PackageRequirementInternal.Invalid();
+            ShaderContainer.Get(container, handle, out packageRequirement);
         }
 
         public static PackageRequirement Invalid => new PackageRequirement(null, FoundryHandle.Invalid());
@@ -76,7 +85,7 @@ namespace UnityEditor.ShaderFoundry
                 var packageRequirementInternal = new PackageRequirementInternal();
                 packageRequirementInternal.m_NameHandle = container.AddString(name);
                 packageRequirementInternal.m_VersionHandle = container.AddString(version);
-                var returnHandle = container.AddPackageRequirementInternal(packageRequirementInternal);
+                var returnHandle = container.Add(packageRequirementInternal);
                 return new PackageRequirement(container, returnHandle);
             }
         }

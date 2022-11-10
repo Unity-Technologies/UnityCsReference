@@ -215,6 +215,10 @@ namespace UnityEditor.ShaderKeywordFilter
                 if (!f.IsPublic && !isConst && f.GetCustomAttributes(typeof(SerializeField), false).Length == 0)
                     continue;
 
+                // Drop deprecated fields
+                if (f.GetCustomAttributes(typeof(System.ObsoleteAttribute), false).Length != 0)
+                    continue;
+
                 var value = f.GetValue(containerObject);
                 if (value == null)
                     continue;

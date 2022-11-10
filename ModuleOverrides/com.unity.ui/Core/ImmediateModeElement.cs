@@ -46,7 +46,7 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            mgc.painter.DrawImmediate(CallImmediateRepaint, cullingEnabled);
+            mgc.entryRecorder.DrawImmediate(CallImmediateRepaint, cullingEnabled);
         }
 
         void CallImmediateRepaint()

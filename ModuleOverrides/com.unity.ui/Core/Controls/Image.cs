@@ -275,18 +275,18 @@ namespace UnityEngine.UIElements
 
             var alignedRect = GUIUtility.AlignRectToDevice(contentRect);
 
-            var rectParams = new MeshGenerationContextUtils.RectangleParams();
+            var rectParams = new UIR.MeshGenerator.RectangleParams();
             if (image != null)
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(alignedRect, uv, image, scaleMode, panel.contextType);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeTextured(alignedRect, uv, image, scaleMode, panel.contextType);
             else if (sprite != null)
             {
                 var slices = Vector4.zero;
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(alignedRect, sprite, scaleMode, panel.contextType, false, ref slices);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeSprite(alignedRect, sprite, scaleMode, panel.contextType, false, ref slices);
             }
             else if (vectorImage != null)
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, panel.contextType);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, panel.contextType);
             rectParams.color = tintColor;
-            mgc.Rectangle(rectParams);
+            mgc.meshGenerator.DrawRectangle(rectParams);
         }
 
         static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");

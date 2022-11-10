@@ -12,11 +12,10 @@ using Unity.Collections;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class CustomEditorAttributes
+    internal partial class CustomEditorAttributes
     {
         static CustomEditorAttributes instance => k_Instance.Value;
 
@@ -44,17 +43,7 @@ namespace UnityEditor
             Rebuild();
         }
 
-        internal static Type FindCustomEditorType(Object o, bool multiEdit)
-        {
-            return FindCustomEditorTypeByType(o.GetType(), multiEdit);
-        }
-
-        internal static Type FindCustomEditorTypeByType(Type type, bool multiEdit)
-        {
-            return instance.FindCustomEditorType(type, multiEdit);
-        }
-
-        Type FindCustomEditorType(Type type, bool multiEdit)
+        Type GetCustomEditorType(Type type, bool multiEdit)
         {
             if (type == null)
                 return null;
@@ -307,7 +296,7 @@ namespace UnityEditor
                 if (type.GetCustomAttribute<CanEditMultipleObjects>(false) != null)
                     storage.customEditorsMultiEdition.AddSorted(monoEditorType, m_SortUnityTypesFirstComparer);
 
-                if(!isItExistInCache)
+                if (!isItExistInCache)
                     m_CustomEditorCache.Add(inspectAttr.m_InspectedType, storage);
             }
 

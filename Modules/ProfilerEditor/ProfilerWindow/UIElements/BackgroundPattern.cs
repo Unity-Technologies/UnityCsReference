@@ -112,29 +112,37 @@ namespace Unity.Profiling.Editor
             var x1 = pos.x + size.x;
             var y1 = pos.y + size.y;
 
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x0, y0, Vertex.nearZ),
                 tint = color,
+#pragma warning disable CS0618
                 uv = new Vector2(0, 1) * uvSize * mesh.uvRegion.size + mesh.uvRegion.position
+#pragma warning restore CS0618
             });
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x1, y0, Vertex.nearZ),
                 tint = color,
+#pragma warning disable CS0618
                 uv = new Vector2(1, 1) * uvSize * mesh.uvRegion.size + mesh.uvRegion.position
+#pragma warning restore CS0618
             });
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x0, y1, Vertex.nearZ),
                 tint = color,
+#pragma warning disable CS0618
                 uv = new Vector2(0, uvOffset.y) * uvSize * mesh.uvRegion.size + mesh.uvRegion.position
+#pragma warning restore CS0618
             });
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x1, y1, Vertex.nearZ),
                 tint = color,
+#pragma warning disable CS0618
                 uv = new Vector2(1, uvOffset.y) * uvSize * mesh.uvRegion.size + mesh.uvRegion.position
+#pragma warning restore CS0618
             });
             for (int i = 0; i < k_Indices.Length; i++)
             {

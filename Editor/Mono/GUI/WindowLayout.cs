@@ -72,6 +72,10 @@ namespace UnityEditor
         const string verticalLayoutKey = "vertical";
         const string horizontalLayoutKey = "horizontal";
 
+        const string k_TopViewClassName = "top_view";
+        const string k_CenterViewClassName = "center_view";
+        const string k_BottomViewClassName = "bottom_view";
+
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
         private const string kDefaultLayoutName = "Default.wlt";
         internal static string layoutResourcesPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts");
@@ -106,10 +110,6 @@ namespace UnityEditor
 
         private static bool LoadModeDynamicLayout(bool keepMainWindow, JSONObject layoutData)
         {
-            const string k_TopViewClassName = "top_view";
-            const string k_CenterViewClassName = "center_view";
-            const string k_BottomViewClassName = "bottom_view";
-
             LayoutViewInfo topViewInfo = new LayoutViewInfo(k_TopViewClassName, MainView.kToolbarHeight, true);
             LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, true);
             LayoutViewInfo centerViewInfo = new LayoutViewInfo(k_CenterViewClassName, 0, true);
@@ -122,11 +122,18 @@ namespace UnityEditor
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
             GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
-            var mainWindow = GenerateLayout(keepMainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
-            if (mainWindow)
-                mainWindow.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
+            var mainWindow = FindMainWindow();
+            if (keepMainWindow && mainWindow == null)
+            {
+                Debug.LogWarning($"No main window to restore layout from while loading dynamic layout for mode {ModeService.currentId}");
+                return false;
+            }
 
-            return mainWindow != null;
+            var mainViewID = $"MainView_{ModeService.currentId}";
+            InitContainerWindow(ref mainWindow, mainViewID, layoutData);
+            GenerateLayout(mainWindow, ShowMode.MainWindow, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
+            mainWindow.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
+            return true;
         }
 
         private static View LoadLayoutView<T>(Type[] availableEditorWindowTypes, LayoutViewInfo viewInfo, float width, float height) where T : View
@@ -199,16 +206,44 @@ namespace UnityEditor
             return view;
         }
 
-        internal static ContainerWindow FindMainWindow()
+        internal static void InitContainerWindow(ref ContainerWindow window, string windowId, JSONObject layoutData)
         {
-            var containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
-            foreach (ContainerWindow window in containers)
+            if (window == null)
             {
-                if (window.showMode == ShowMode.MainWindow)
-                    return window;
+                
+                window = ScriptableObject.CreateInstance<ContainerWindow>();
+
+                var windowMinSize = new Vector2(120, 80);
+                var windowMaxSize = new Vector2(8192, 8192);
+                if (layoutData.Contains("min_width"))
+                {
+                    windowMinSize.x = Convert.ToSingle(layoutData["min_width"]);
+                }
+                if (layoutData.Contains("min_height"))
+                {
+                    windowMinSize.y = Convert.ToSingle(layoutData["min_height"]);
+                }
+                if (layoutData.Contains("max_width"))
+                {
+                    windowMaxSize.x = Convert.ToSingle(layoutData["max_width"]);
+                }
+                if (layoutData.Contains("max_height"))
+                {
+                    windowMaxSize.y = Convert.ToSingle(layoutData["max_height"]);
+                }
+                window.SetMinMaxSizes(windowMinSize, windowMaxSize);
             }
 
-            return null;
+            var hasMainViewGeometrySettings = EditorPrefs.HasKey($"{windowId}h");
+            window.windowID = windowId;
+            var loadInitialWindowGeometry = Convert.ToBoolean(layoutData["restore_layout_dimension"]);
+            if (loadInitialWindowGeometry && hasMainViewGeometrySettings)
+                window.LoadGeometry(true);
+        }
+
+        internal static ContainerWindow FindMainWindow()
+        {
+            return Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.showMode == ShowMode.MainWindow);
         }
 
         internal static ContainerWindow ShowWindowWithDynamicLayout(string windowId, string layoutDataPath)
@@ -216,7 +251,6 @@ namespace UnityEditor
             try
             {
                 ContainerWindow.SetFreezeDisplay(true);
-
                 if (!File.Exists(layoutDataPath))
                 {
                     Debug.LogError($"Failed to find layout data file at path {layoutDataPath}");
@@ -226,69 +260,31 @@ namespace UnityEditor
                 var layoutDataJson = File.ReadAllText(layoutDataPath);
                 var layoutData = SJSON.LoadString(layoutDataJson);
 
-                LayoutViewInfo viewInfo = new LayoutViewInfo("view", 0, true);
                 var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
 
-                if (!GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref viewInfo))
+                LayoutViewInfo topViewInfo = new LayoutViewInfo(k_TopViewClassName, MainView.kToolbarHeight, false);
+                LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, false);
+
+                // Supports both view and center_view.
+                var centerViewKey = "view";
+                if (!layoutData.Contains(centerViewKey))
+                {
+                    centerViewKey = "center_view";
+                }
+                LayoutViewInfo centerViewInfo = new LayoutViewInfo(centerViewKey, 0, true);
+                if (!GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref centerViewInfo))
                 {
                     Debug.LogError("Failed to load window layout; no view defined");
                     return null;
                 }
 
-                var window = Resources.FindObjectsOfTypeAll<ContainerWindow>()
-                    .FirstOrDefault(w => w.windowID == windowId);
-                if (window == null)
-                {
-                    window = ScriptableObject.CreateInstance<ContainerWindow>();
+                GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
+                GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
 
-                    var windowMinSize = new Vector2(120, 80);
-                    var windowMaxSize = new Vector2(8192, 8192);
-                    if (layoutData.Contains("min_width"))
-                    {
-                        windowMinSize.x = Convert.ToSingle(layoutData["min_width"]);
-                    }
-                    if (layoutData.Contains("min_height"))
-                    {
-                        windowMinSize.y = Convert.ToSingle(layoutData["min_height"]);
-                    }
-                    if (layoutData.Contains("max_width"))
-                    {
-                        windowMaxSize.x = Convert.ToSingle(layoutData["max_width"]);
-                    }
-                    if (layoutData.Contains("max_height"))
-                    {
-                        windowMaxSize.y = Convert.ToSingle(layoutData["max_height"]);
-                    }
+                var window = Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.windowID == windowId);
+                InitContainerWindow(ref window, windowId, layoutData);
 
-                    window.SetMinMaxSizes(windowMinSize, windowMaxSize);
-                }
-
-                var hasGeometrySettings = EditorPrefs.HasKey(windowId);
-                window.windowID = windowId;
-                if (hasGeometrySettings)
-                    window.LoadGeometry(true);
-
-                var width = window.position.width;
-                var height = window.position.height;
-
-                View view = LoadLayoutView<DockArea>(availableEditorWindowTypes, viewInfo, width, height);
-
-                var main = ScriptableObject.CreateInstance<MainView>();
-                main.useTopView = false;
-                main.useBottomView = false;
-
-                view.position = new Rect(0, 0, width, height);
-                main.AddChild(view);
-
-                if (window.rootView)
-                    ScriptableObject.DestroyImmediate(window.rootView, true);
-
-                window.rootView = main;
-                window.rootView.position = new Rect(0, 0, width, height);
-                window.m_IsForceTitleBar = true;
-                window.Show(ShowMode.Utility, true, true, true);
-                window.DisplayAllViews();
-
+                GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
                 return window;
             }
             finally
@@ -297,50 +293,14 @@ namespace UnityEditor
             }
         }
 
-        private static ContainerWindow GenerateLayout(bool keepMainWindow, Type[] availableEditorWindowTypes, LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom, JSONObject layoutData)
+        private static void GenerateLayout(ContainerWindow window, ShowMode showMode, Type[] availableEditorWindowTypes,
+            LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom, JSONObject layoutData)
         {
-            ContainerWindow mainContainerWindow = FindMainWindow();
-            if (keepMainWindow && mainContainerWindow == null)
-            {
-                Debug.LogWarning($"No main window to restore layout from while loading dynamic layout for mode {ModeService.currentId}");
-                return null;
-            }
-
             try
             {
                 ContainerWindow.SetFreezeDisplay(true);
-                if (!mainContainerWindow)
-                {
-                    mainContainerWindow = ScriptableObject.CreateInstance<ContainerWindow>();
-                    var mainWindowMinSize = new Vector2(120, 80);
-                    var mainWindowMaxSize = new Vector2(8192, 8192);
-                    if (layoutData.Contains("min_width"))
-                    {
-                        mainWindowMinSize.x = Convert.ToSingle(layoutData["min_width"]);
-                    }
-                    if (layoutData.Contains("min_height"))
-                    {
-                        mainWindowMinSize.y = Convert.ToSingle(layoutData["min_height"]);
-                    }
-                    if (layoutData.Contains("max_width"))
-                    {
-                        mainWindowMaxSize.x = Convert.ToSingle(layoutData["max_width"]);
-                    }
-                    if (layoutData.Contains("max_height"))
-                    {
-                        mainWindowMaxSize.y = Convert.ToSingle(layoutData["max_height"]);
-                    }
-                    mainContainerWindow.SetMinMaxSizes(mainWindowMinSize, mainWindowMaxSize);
-                }
-
-                var mainViewID = $"MainView_{ModeService.currentId}";
-                var hasMainViewGeometrySettings = EditorPrefs.HasKey($"{mainViewID}h");
-                mainContainerWindow.windowID = mainViewID;
-                if (hasMainViewGeometrySettings)
-                    mainContainerWindow.LoadGeometry(true);
-
-                var width = mainContainerWindow.position.width;
-                var height = mainContainerWindow.position.height;
+                var width = window.position.width;
+                var height = window.position.height;
 
                 // Create center view
                 View centerView = LoadLayoutView<DockArea>(availableEditorWindowTypes, center, width, height);
@@ -372,20 +332,18 @@ namespace UnityEditor
                     main.AddChild(bottomView);
                 }
 
-                if (mainContainerWindow.rootView)
-                    ScriptableObject.DestroyImmediate(mainContainerWindow.rootView, true);
+                if (window.rootView)
+                    ScriptableObject.DestroyImmediate(window.rootView, true);
 
-                mainContainerWindow.rootView = main;
-                mainContainerWindow.rootView.position = new Rect(0, 0, width, height);
-                mainContainerWindow.Show(ShowMode.MainWindow, true, true, true);
-                mainContainerWindow.DisplayAllViews();
+                window.rootView = main;
+                window.rootView.position = new Rect(0, 0, width, height);
+                window.Show(showMode, true, true, true);
+                window.DisplayAllViews();
             }
             finally
             {
                 ContainerWindow.SetFreezeDisplay(false);
             }
-
-            return mainContainerWindow;
         }
 
         private static bool GetLayoutViewInfo(JSONObject layoutData, Type[] availableEditorWindowTypes, ref LayoutViewInfo viewInfo)
@@ -425,6 +383,7 @@ namespace UnityEditor
                 if (viewExpandedData.Contains("size"))
                     viewInfo.defaultSize = Convert.ToSingle(viewExpandedData["size"]);
                 viewInfo.extendedData = viewExpandedData;
+                viewInfo.used = true;
             }
             else
             {

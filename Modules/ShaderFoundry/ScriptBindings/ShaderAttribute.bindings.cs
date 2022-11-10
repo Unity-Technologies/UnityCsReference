@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderAttributeParam.h")]
-    internal struct ShaderAttributeParamInternal
+    internal struct ShaderAttributeParamInternal : IInternalType<ShaderAttributeParamInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ValueHandle;
@@ -25,20 +25,29 @@ namespace UnityEditor.ShaderFoundry
         internal extern string GetValue(ShaderContainer container);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+
+        // IInternalType
+        ShaderAttributeParamInternal IInternalType<ShaderAttributeParamInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct ShaderAttributeParam : IEquatable<ShaderAttributeParam>
+    internal readonly struct ShaderAttributeParam : IEquatable<ShaderAttributeParam>, IPublicType<ShaderAttributeParam>
     {
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly ShaderAttributeParamInternal param;
 
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        ShaderAttributeParam IPublicType<ShaderAttributeParam>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderAttributeParam(container, handle);
+
         internal ShaderAttributeParam(ShaderContainer container, FoundryHandle handle)
         {
             this.container = container;
             this.handle = handle;
-            this.param = container?.GetShaderAttributeParam(handle) ?? ShaderAttributeParamInternal.Invalid();
+            ShaderContainer.Get(container, handle, out param);
         }
 
         public ShaderContainer Container => container;
@@ -79,14 +88,14 @@ namespace UnityEditor.ShaderFoundry
                 var paramInternal = new ShaderAttributeParamInternal();
                 paramInternal.Setup(container, m_Name, m_Value);
 
-                var returnHandle = container.AddShaderAttributeParamInternal(paramInternal);
+                var returnHandle = container.Add(paramInternal);
                 return new ShaderAttributeParam(container, returnHandle);
             }
         }
     }
 
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderAttribute.h")]
-    internal struct ShaderAttributeInternal
+    internal struct ShaderAttributeInternal : IInternalType<ShaderAttributeInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ParameterListHandle;
@@ -99,15 +108,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern string GetName(ShaderContainer container);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+
+        // IInternalType
+        ShaderAttributeInternal IInternalType<ShaderAttributeInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct ShaderAttribute : IEquatable<ShaderAttribute>
+    internal readonly struct ShaderAttribute : IEquatable<ShaderAttribute>, IPublicType<ShaderAttribute>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly ShaderAttributeInternal attr;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        ShaderAttribute IPublicType<ShaderAttribute>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderAttribute(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -141,7 +159,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = (container ? handle : FoundryHandle.Invalid());
-            this.attr = container?.GetShaderAttribute(handle) ?? ShaderAttributeInternal.Invalid();
+            ShaderContainer.Get(container, handle, out attr);
         }
 
         public class Builder
@@ -184,7 +202,7 @@ namespace UnityEditor.ShaderFoundry
                 var attributeInternal = new ShaderAttributeInternal();
                 attributeInternal.Setup(container, name, paramListHandle);
 
-                var returnHandle = container.AddShaderAttributeInternal(attributeInternal);
+                var returnHandle = container.Add(attributeInternal);
                 return new ShaderAttribute(container, returnHandle);
             }
         }

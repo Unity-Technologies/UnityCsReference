@@ -43,6 +43,7 @@ namespace UnityEngine.UIElements
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", defaultValue = 0 };
             UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = 100 };
+            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value", defaultValue = 0 };
             UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription() { name = "title" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
@@ -51,6 +52,7 @@ namespace UnityEngine.UIElements
                 var bar = ve as AbstractProgressBar;
                 bar.lowValue = m_LowValue.GetValueFromBag(bag, cc);
                 bar.highValue = m_HighValue.GetValueFromBag(bag, cc);
+                bar.value = m_Value.GetValueFromBag(bag, cc);
                 var title = m_Title.GetValueFromBag(bag, cc);
                 bar.title = (string.IsNullOrEmpty(title)) ? string.Empty : title;
             }

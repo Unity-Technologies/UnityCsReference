@@ -35,57 +35,55 @@ namespace UnityEditor.ShaderFoundry
         internal extern FoundryHandle AddString(string s);
         internal extern string GetString(FoundryHandle stringHandle);
 
-        [NativeMethod("Add<ShaderFoundry::ShaderAttributeParam>")]
-        internal extern FoundryHandle AddShaderAttributeParamInternal(ShaderAttributeParamInternal shaderAttributeParamInternal);
-        [NativeMethod("Get<ShaderFoundry::ShaderAttributeParam>")]
-        internal extern ShaderAttributeParamInternal GetShaderAttributeParam(FoundryHandle shaderAttributeParamHandle);
+        extern FoundryHandle AllocateStaticSized(DataType dataType, int sizeInBytes);
+        unsafe extern void* GetStaticSizedPointer(FoundryHandle handle, DataType expectedDataType);
+        internal extern DataType GetDataTypeFromHandle(FoundryHandle handle);
 
-        [NativeMethod("Add<ShaderFoundry::ShaderAttribute>")]
-        internal extern FoundryHandle AddShaderAttributeInternal(ShaderAttributeInternal shaderAttributeInternal);
-        [NativeMethod("Get<ShaderFoundry::ShaderAttribute>")]
-        internal extern ShaderAttributeInternal GetShaderAttribute(FoundryHandle shaderAttributeHandle);
+        internal FoundryHandle Create<T>() where T : struct, IInternalType<T>
+        {
+            return AllocateStaticSized(InternalTypeStatic<T>.dataType, InternalTypeStatic<T>.internalTypeSizeInBytes);
+        }
 
-        [NativeMethod("Add<ShaderFoundry::CommandDescriptor>")]
-        internal extern FoundryHandle AddCommandDescriptorInternal(CommandDescriptorInternal commandDescriptorInternal);
-        [NativeMethod("Get<ShaderFoundry::CommandDescriptor>")]
-        internal extern CommandDescriptorInternal GetCommandDescriptor(FoundryHandle commandDescriptorHandle);
+        internal T Get<T>(FoundryHandle handle) where T : unmanaged, IInternalType<T>
+        {
+            unsafe
+            {
+                void* pointer = GetStaticSizedPointer(handle, InternalTypeStatic<T>.dataType);
+                if (pointer != null)
+                {
+                    T* typedPointer = (T*)pointer;
+                    return *typedPointer;
+                }
+            }
+            return InternalTypeStatic<T>.Invalid;
+        }
 
-        [NativeMethod("Add<ShaderFoundry::DefineDescriptor>")]
-        internal extern FoundryHandle AddDefineDescriptorInternal(DefineDescriptorInternal defineDescriptorInternal);
-        [NativeMethod("Get<ShaderFoundry::DefineDescriptor>")]
-        internal extern DefineDescriptorInternal GetDefineDescriptor(FoundryHandle defineDescriptorHandle);
+        internal static void Get<T>(ShaderContainer container, FoundryHandle handle, out T result) where T : unmanaged, IInternalType<T>
+        {
+            result = container?.Get<T>(handle) ?? InternalTypeStatic<T>.Invalid;
+        }
 
-        [NativeMethod("Add<ShaderFoundry::IncludeDescriptor>")]
-        internal extern FoundryHandle AddIncludeDescriptorInternal(IncludeDescriptorInternal includeDescriptorInternal);
-        [NativeMethod("Get<ShaderFoundry::IncludeDescriptor>")]
-        internal extern IncludeDescriptorInternal GetIncludeDescriptor(FoundryHandle includeDescriptorHandle);
+        internal bool Set<T>(FoundryHandle handle, T data) where T : unmanaged, IInternalType<T>
+        {
+            unsafe
+            {
+                void* pointer = GetStaticSizedPointer(handle, InternalTypeStatic<T>.dataType);
+                if (pointer != null)
+                {
+                    T* typedPointer = (T*)pointer;
+                    *typedPointer = data;
+                    return true;
+                }
+            }
+            return false;
+        }
 
-        [NativeMethod("Add<ShaderFoundry::KeywordDescriptor>")]
-        internal extern FoundryHandle AddKeywordDescriptorInternal(KeywordDescriptorInternal keywordDescriptorInternal);
-        [NativeMethod("Get<ShaderFoundry::KeywordDescriptor>")]
-        internal extern KeywordDescriptorInternal GetKeywordDescriptor(FoundryHandle keywordDescriptorHandle);
-
-        [NativeMethod("Add<ShaderFoundry::PragmaDescriptor>")]
-        internal extern FoundryHandle AddPragmaDescriptorInternal(PragmaDescriptorInternal pragmaDescriptorInternal);
-        [NativeMethod("Get<ShaderFoundry::PragmaDescriptor>")]
-        internal extern PragmaDescriptorInternal GetPragmaDescriptor(FoundryHandle pragmaDescriptorHandle);
-
-        [NativeMethod("Add<ShaderFoundry::TagDescriptor>")]
-        internal extern FoundryHandle AddTagDescriptorInternal(TagDescriptorInternal tagDescriptorInternal);
-        [NativeMethod("Get<ShaderFoundry::TagDescriptor>")]
-        internal extern TagDescriptorInternal GetTagDescriptor(FoundryHandle tagDescriptorHandle);
-
-        [NativeMethod("Create<ShaderFoundry::ShaderFunction>")]
-        internal extern FoundryHandle CreateFunctionInternal();
-        [NativeMethod("Set<ShaderFoundry::ShaderFunction>")]
-        internal extern bool SetFunctionInternal(FoundryHandle functionHandle, ShaderFunctionInternal shaderFunctionInternal);
-        [NativeMethod("Get<ShaderFoundry::ShaderFunction>")]
-        internal extern ShaderFunctionInternal GetFunction(FoundryHandle functionHandle);
-
-        [NativeMethod("Add<ShaderFoundry::FunctionParameter>")]
-        internal extern FoundryHandle AddFunctionParameter(FunctionParameterInternal functionParameterInternal);
-        [NativeMethod("Get<ShaderFoundry::FunctionParameter>")]
-        internal extern FunctionParameterInternal GetFunctionParameter(FoundryHandle functionParameterHandle);
+        internal FoundryHandle Add<T>(T data) where T : unmanaged, IInternalType<T>
+        {
+            var handle = Create<T>();
+            Set<T>(handle, data);
+            return handle;
+        }
 
         // most types should be added via the ShaderType.* functions.
         // this function is used to ensure the shader type belongs to this container
@@ -120,12 +118,6 @@ namespace UnityEditor.ShaderFoundry
         [NativeMethod("SetArrayElement<ShaderFoundry::FoundryHandle>")]
         internal extern void SetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex, FoundryHandle handle);
 
-        [NativeMethod("Create<ShaderFoundry::ShaderType>")]
-        internal extern FoundryHandle CreateTypeInternal();
-        [NativeMethod("Set<ShaderFoundry::ShaderType>")]
-        internal extern bool SetTypeInternal(FoundryHandle typeHandle, ShaderTypeInternal type);
-        [NativeMethod("Get<ShaderFoundry::ShaderType>")]
-        internal extern ShaderTypeInternal GetType(FoundryHandle typeHandle);
         internal extern FoundryHandle GetTypeByName(string typeName, FoundryHandle blockHandle);
 
         public ShaderType GetType(string name)
@@ -143,97 +135,9 @@ namespace UnityEditor.ShaderFoundry
             return new ShaderType(this, GetTypeByName(name, builder.blockHandle));
         }
 
-        [NativeMethod("Add<ShaderFoundry::StructField>")]
-        internal extern FoundryHandle AddStructFieldInternal(StructFieldInternal structField);
-        [NativeMethod("Get<ShaderFoundry::StructField>")]
-        internal extern StructFieldInternal GetStructField(FoundryHandle structFieldHandle);
-
-        [NativeMethod("Add<ShaderFoundry::BlockVariable>")]
-        internal extern FoundryHandle AddBlockVariableInternal(BlockVariableInternal block);
-        [NativeMethod("Get<ShaderFoundry::BlockVariable>")]
-        internal extern BlockVariableInternal GetBlockVariable(FoundryHandle blockVariableHandle);
-
-        [NativeMethod("Create<ShaderFoundry::Block>")]
-        internal extern FoundryHandle CreateBlockInternal();
-        [NativeMethod("Set<ShaderFoundry::Block>")]
-        internal extern bool SetBlockInternal(FoundryHandle blockHandle, BlockInternal block);
-        [NativeMethod("Get<ShaderFoundry::Block>")]
-        internal extern BlockInternal GetBlock(FoundryHandle blockHandle);
-
-
-        [NativeMethod("Add<ShaderFoundry::BlockSequenceElement>")]
-        internal extern FoundryHandle AddBlockSequenceElementInternal(BlockSequenceElementInternal blockSequenceElement);
-        [NativeMethod("Get<ShaderFoundry::BlockSequenceElement>")]
-        internal extern BlockSequenceElementInternal GetBlockSequenceElement(FoundryHandle blockSequenceElementHandle);
-
-        [NativeMethod("Add<ShaderFoundry::BlockLinkOverride::LinkAccessor>")]
-        internal extern FoundryHandle AddLinkAccessorInternal(BlockLinkOverrideInternal.LinkAccessorInternal linkAccessor);
-        [NativeMethod("Get<ShaderFoundry::BlockLinkOverride::LinkAccessor>")]
-        internal extern BlockLinkOverrideInternal.LinkAccessorInternal GetLinkAccessor(FoundryHandle linkAccessorHandle);
-
-        [NativeMethod("Add<ShaderFoundry::BlockLinkOverride::LinkElement>")]
-        internal extern FoundryHandle AddLinkElementInternal(BlockLinkOverrideInternal.LinkElementInternal linkElement);
-        [NativeMethod("Get<ShaderFoundry::BlockLinkOverride::LinkElement>")]
-        internal extern BlockLinkOverrideInternal.LinkElementInternal GetLinkElement(FoundryHandle linkElementHandle);
-
-        [NativeMethod("Add<ShaderFoundry::BlockLinkOverride>")]
-        internal extern FoundryHandle AddBlockLinkOverrideInternal(BlockLinkOverrideInternal linkOverride);
-        [NativeMethod("Get<ShaderFoundry::BlockLinkOverride>")]
-        internal extern BlockLinkOverrideInternal GetBlockLinkOverride(FoundryHandle linkOverrideHandle);
-
         internal extern FoundryHandle AddPassIdentifier(uint subShaderIndex, uint passIndex);
         [NativeMethod("Get<PassIdentifier>")]
         internal extern PassIdentifier GetPassIdentifier(FoundryHandle passIdentifierHandle);
-
-        [NativeMethod("Add<ShaderFoundry::CustomizationPoint>")]
-        internal extern FoundryHandle AddCustomizationPointInternal(CustomizationPointInternal customizationPoint);
-        [NativeMethod("Get<ShaderFoundry::CustomizationPoint>")]
-        internal extern CustomizationPointInternal GetCustomizationPoint(FoundryHandle customizationPointHandle);
-
-        [NativeMethod("Add<ShaderFoundry::CustomizationPointImplementation>")]
-        internal extern FoundryHandle AddCustomizationPointImplementationInternal(CustomizationPointImplementationInternal customizationPointImplementation);
-        [NativeMethod("Get<ShaderFoundry::CustomizationPointImplementation>")]
-        internal extern CustomizationPointImplementationInternal GetCustomizationPointImplementation(FoundryHandle customizationPointImplementationHandle);
-
-        [NativeMethod("Add<ShaderFoundry::PackageRequirement>")]
-        internal extern FoundryHandle AddPackageRequirementInternal(PackageRequirementInternal packageRequirement);
-        [NativeMethod("Get<ShaderFoundry::PackageRequirement>")]
-        internal extern PackageRequirementInternal GetPackageRequirement(FoundryHandle packageRequirementHandle);
-
-        [NativeMethod("Add<ShaderFoundry::CopyRule>")]
-        internal extern FoundryHandle AddCopyRuleInternal(CopyRuleInternal copyRule);
-        [NativeMethod("Get<ShaderFoundry::CopyRule>")]
-        internal extern CopyRuleInternal GetCopyRule(FoundryHandle copyRuleHandle);
-
-        [NativeMethod("Add<ShaderFoundry::StageDescription>")]
-        internal extern FoundryHandle AddStageDescriptionInternal(StageDescriptionInternal stageDescription);
-        [NativeMethod("Get<ShaderFoundry::StageDescription>")]
-        internal extern StageDescriptionInternal GetStageDescription(FoundryHandle stageDescriptionHandle);
-
-        [NativeMethod("Add<ShaderFoundry::TemplatePass>")]
-        internal extern FoundryHandle AddTemplatePassInternal(TemplatePassInternal templatePass);
-        [NativeMethod("Get<ShaderFoundry::TemplatePass>")]
-        internal extern TemplatePassInternal GetTemplatePass(FoundryHandle templatePassHandle);
-
-        [NativeMethod("Add<ShaderFoundry::TemplateInstance>")]
-        internal extern FoundryHandle AddTemplateInstanceInternal(TemplateInstanceInternal templateInstance);
-        [NativeMethod("Get<ShaderFoundry::TemplateInstance>")]
-        internal extern TemplateInstanceInternal GetTemplateInstance(FoundryHandle templateInstanceHandle);
-
-        [NativeMethod("Add<ShaderFoundry::Template>")]
-        internal extern FoundryHandle AddTemplateInternal(TemplateInternal templateInternal);
-        [NativeMethod("Get<ShaderFoundry::Template>")]
-        internal extern TemplateInternal GetTemplate(FoundryHandle templateHandle);
-
-        [NativeMethod("Add<ShaderFoundry::ShaderDependency>")]
-        internal extern FoundryHandle AddShaderDependency(ShaderDependencyInternal shaderDependency);
-        [NativeMethod("Get<ShaderFoundry::ShaderDependency>")]
-        internal extern ShaderDependencyInternal GetShaderDependency(FoundryHandle shaderDependencyHandle);
-
-        [NativeMethod("Add<ShaderFoundry::ShaderCustomEditor>")]
-        internal extern FoundryHandle AddShaderCustomEditor(ShaderCustomEditorInternal shaderCustomEditor);
-        [NativeMethod("Get<ShaderFoundry::ShaderCustomEditor>")]
-        internal extern ShaderCustomEditorInternal GetShaderCustomEditor(FoundryHandle shaderCustomEditorHandle);
 
         internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)
         {

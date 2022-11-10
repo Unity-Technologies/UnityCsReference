@@ -725,8 +725,8 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasManager.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandGenerator.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandGenerator.cs</Link>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandManipulator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandManipulator.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRDetachedAllocator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRDetachedAllocator.cs</Link>
@@ -734,8 +734,23 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRDynamicAtlasPage.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRDynamicAtlasPage.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRElementBuilder.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRElementBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPreProcessor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPreProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryProcessor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryRecorder.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryRecorder.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRGradientSettingsAtlas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRImplicitPool.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRImplicitPool.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobManager.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRJobManager.cs</Link>
@@ -749,11 +764,11 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRLinkedPool.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRLinkedPool.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshBuilder.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs</Link>
@@ -779,9 +794,6 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRShaders.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRShaders.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRStylePainter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRStylePainter.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs</Link>
     </Compile>
@@ -806,6 +818,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRVectorImageManager.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRVectorImageManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRVisualChangesProcessor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRVisualChangesProcessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDevice.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRenderer\UIRenderDevice.cs</Link>
     </Compile>
@@ -826,9 +841,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StyleEnums.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StyleEnums.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePainter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\StylePainter.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\StylePropertyAnimation.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\StylePropertyAnimation.cs</Link>
@@ -2674,6 +2686,12 @@
     </Compile>
     <Compile Include="..\..\Modules\XR\Subsystems\Meshing\XRMeshSubsystemDescriptor.bindings.cs">
       <Link>Modules\XR\Subsystems\Meshing\XRMeshSubsystemDescriptor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Clipper2D.bindings.cs">
+      <Link>Runtime\2D\Common\ScriptBindings\Clipper2D.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\ClipperOffset2D.bindings.cs">
+      <Link>Runtime\2D\Common\ScriptBindings\ClipperOffset2D.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Light2DBase.cs">
       <Link>Runtime\2D\Common\ScriptBindings\Light2DBase.cs</Link>

@@ -5,13 +5,14 @@
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Presets;
 using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(ParticleSystem))]
     [CanEditMultipleObjects]
-    internal class ParticleSystemInspector : Editor, ParticleEffectUIOwner
+    internal class ParticleSystemInspector : Editor, ParticleEffectUIOwner, ICoupledEditor
     {
         ParticleEffectUI m_ParticleEffectUI;
         GUIContent m_PreviewTitle = EditorGUIUtility.TrTextContent("Particle System Curves");
@@ -197,7 +198,7 @@ namespace UnityEditor
                     // The ParticleSystemWindow also uses the Selection system which triggers a selection change, the Preset
                     // editor cleans up the temp object and the ParticleSystemWindow is now unable to edit the system.
                     // - A preset will only contain a single system, so there is no benefit to using the window. (case 1198545)
-                    if ((targetGameObject.hideFlags & HideFlags.NotEditable) != 0)
+                    if (Preset.IsEditorTargetAPreset(target))
                         return;
 
                     GUIContent text = null;
@@ -349,6 +350,15 @@ namespace UnityEditor
 
         public override void OnPreviewSettings()
         {
+        }
+
+        SerializedObject ICoupledEditor.coupledComponent
+        {
+            get
+            {
+                Init(false);
+                return m_ParticleEffectUI.m_Emitters[0].m_RendererSerializedObject;
+            }
         }
     }
 } // namespace UnityEditor

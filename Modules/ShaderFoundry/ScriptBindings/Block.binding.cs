@@ -14,7 +14,7 @@ using BlockProperty = UnityEditor.ShaderFoundry.BlockVariable;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/Block.h")]
-    internal struct BlockInternal
+    internal struct BlockInternal : IInternalType<BlockInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_DeclaredTypeListHandle;
@@ -39,15 +39,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern FoundryHandle GetPassParentHandle();
         internal extern FoundryHandle GetTemplateParentHandle();
         internal extern bool HasParent();
+
+        // IInternalType
+        BlockInternal IInternalType<BlockInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct Block : IEquatable<Block>
+    internal readonly struct Block : IEquatable<Block>, IPublicType<Block>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly BlockInternal block;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        Block IPublicType<Block>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new Block(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -169,7 +178,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.block = container?.GetBlock(handle) ?? BlockInternal.Invalid();
+            ShaderContainer.Get(container, handle, out block);
         }
 
         public static Block Invalid => new Block(null, FoundryHandle.Invalid());
@@ -214,7 +223,7 @@ namespace UnityEditor.ShaderFoundry
                 this.name = name;
                 this.passParentHandle = passParentHandle;
                 this.templateParentHandle = templateParentHandle;
-                blockHandle = container.CreateBlockInternal();
+                blockHandle = container.Create<BlockInternal>();
             }
 
             internal void AddType(ShaderType type) { types.Add(type); }
@@ -289,7 +298,7 @@ namespace UnityEditor.ShaderFoundry
                 blockInternal.m_PassParentHandle = passParentHandle;
                 blockInternal.m_TemplateParentHandle = templateParentHandle;
 
-                container.SetBlockInternal(blockHandle, blockInternal);
+                container.Set(blockHandle, blockInternal);
                 return new Block(container, blockHandle);
             }
         }

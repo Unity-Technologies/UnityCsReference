@@ -8,6 +8,7 @@ using System.Text;
 using System.IO;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 using static NiceIO.NPath;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
@@ -29,6 +30,7 @@ namespace NiceIO
     //very annoying incompatibilities if you're using two projects that happen to do this. Let's make sure the default that it will not be public,
     //and in the one or two places that we want it to be public be explicit about doing so
     [DebuggerDisplay("{" + nameof(_path) + "}")]
+    [DataContract]
     internal class NPath
         : IComparable, IEquatable<NPath>
     {
@@ -65,6 +67,7 @@ namespace NiceIO
         static readonly StringComparison PathStringComparison =
             k_IsCaseSensitiveFileSystem ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
+        [DataMember]
         private readonly string _path;
 
         static NPath Empty => new NPath("");
@@ -1765,12 +1768,21 @@ namespace NiceIO
                     {
                         foreach (var file in files)
                         {
-                            // remove read-only attribute or delete will fail
-                            var attributes = File_GetAttributes(file);
-                            if ((attributes & FileAttributes.ReadOnly) != 0)
-                                File_SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
+	                        try
+	                        {
+		                        // remove read-only attribute or delete will fail
+		                        var attributes = File_GetAttributes(file);
+		                        if ((attributes & FileAttributes.ReadOnly) != 0)
+			                        File_SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
 
-                            File_Delete(file);
+		                        File_Delete(file);
+	                        }
+		                    // Another process/thread may have deleted (or be in the process of deleting) the file since the time we listed out the directory, causing any of these exceptions.
+	                        catch (Exception e) when (e is InvalidOperationException or FileNotFoundException or UnauthorizedAccessException)
+	                        {
+		                        if (file.FileExists())
+			                        throw;
+	                        }
                         }
 
                         foreach (var dir in dirs)

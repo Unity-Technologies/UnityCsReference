@@ -3635,6 +3635,9 @@ namespace UnityEngine
         // Get/Set the Include Layers,
         extern public LayerMask includeLayers { get; set; }
 
+        // Get the local to world transform of the body.
+        extern public Matrix4x4 localToWorldMatrix { get; }
+
         // Get whether any attached collider(s) are currently touching a specific collider or not.
         extern public bool IsTouching([NotNull][Writable] Collider2D collider);
 
@@ -3878,6 +3881,9 @@ namespace UnityEngine
         // Gets the attached rigid-body if it exists.
         extern public Rigidbody2D attachedRigidbody {[NativeMethod("GetAttachedRigidbody_Binding")] get; }
 
+        // Get the local to world transform of the attached Collider body.
+        extern public Matrix4x4 localToWorldMatrix { get; }
+
         // Gets the number of shapes this collider has generated.
         extern public int shapeCount { get; }
 
@@ -3909,6 +3915,9 @@ namespace UnityEngine
 
         [NativeMethod("GetShapes_Binding")]
         extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState, int shapeIndex, int shapeCount);
+
+        [NativeMethod("GetShapeBounds_Binding")]
+        extern public Bounds GetShapeBounds(List<Bounds> bounds, bool useRadii, bool useWorldSpace);
 
         // The world space bounding volume of the collider.
         extern public Bounds bounds { get; }
@@ -4159,6 +4168,7 @@ namespace UnityEngine
         {
             return Physics2D.ClosestPoint(position, this);
         }
+
     }
 
     [NativeHeader("Modules/Physics2D/Public/CustomCollider2D.h")]
@@ -4575,9 +4585,9 @@ namespace UnityEngine
         extern private int GetPathList_Internal(int index, [NotNull] List<Vector2> points);
     }
 
-    #endregion
+#endregion
 
-    #region Joint Components
+#region Joint Components
 
     // Joint2D is the base class for all 2D joints.
     [NativeHeader("Modules/Physics2D/Joint2D.h")]
@@ -4835,9 +4845,9 @@ namespace UnityEngine
         extern public float GetMotorTorque(float timeStep);
     }
 
-    #endregion
+#endregion
 
-    #region Effector Components
+#region Effector Components
 
     // Base type for all 2D effectors.
     [NativeHeader("Modules/Physics2D/Effector2D.h")]
@@ -4992,9 +5002,9 @@ namespace UnityEngine
         extern public bool useBounce { get; set; }
     }
 
-    #endregion
+#endregion
 
-    #region Miscellaneous Components
+#region Miscellaneous Components
 
     // A base type that provides constant physics behaviour support.
     [NativeHeader("Modules/Physics2D/PhysicsUpdateBehaviour2D.h")]
@@ -5036,5 +5046,5 @@ namespace UnityEngine
         extern public float friction { get; set; }
     }
 
-    #endregion
+#endregion
 }

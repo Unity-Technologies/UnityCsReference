@@ -137,6 +137,7 @@ namespace Unity.UI.Builder
         protected void UpdateHierarchy(bool hasUnsavedChanges)
         {
             m_ElementHierarchyView.hierarchyHasChanged = true;
+            m_ElementHierarchyView.hasUnsavedChanges = hasUnsavedChanges;
             m_ElementHierarchyView.RebuildTree(m_DocumentElementRoot, m_IncludeDocumentElementRoot);
         }
 
@@ -206,7 +207,10 @@ namespace Unity.UI.Builder
         public virtual void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
         {
             if (m_ShouldRebuildHierarchyOnStyleChange && changeType == BuilderStylingChangeType.Default)
+            {
+                m_ElementHierarchyView.hasUssChanges = ((m_Selection.selectionType == BuilderSelectionType.StyleSheet) || (m_Selection.selectionType == BuilderSelectionType.StyleSelector) || (m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector));
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
+            }
             m_ShouldRebuildHierarchyOnStyleChange = !m_Selection.hasUnsavedChanges;
         }
     }

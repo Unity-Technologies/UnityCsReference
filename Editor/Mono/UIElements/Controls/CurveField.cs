@@ -543,9 +543,9 @@ namespace UnityEditor.UIElements
                 SetupStandardRepaint();
                 if (m_Texture != null)
                 {
-                    var rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(
+                    var rectParams = UnityEngine.UIElements.UIR.MeshGenerator.RectangleParams.MakeTextured(
                         new Rect(0, 0, m_Texture.width, m_Texture.height), new Rect(0, 0, 1, 1), m_Texture, ScaleMode.StretchToFill, panel.contextType);
-                    MeshGenerationContextUtils.Rectangle(mgc, rectParams);
+                    mgc.meshGenerator.DrawRectangle(rectParams);
                 }
             }
         }

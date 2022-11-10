@@ -82,30 +82,30 @@ namespace Unity.UI.Builder
             var x1 = pos.x + size.x;
             var y1 = pos.y + size.y;
 
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x0, y0, Vertex.nearZ),
                 tint = color,
-                uv = new Vector2(0,0) * mesh.uvRegion.size + mesh.uvRegion.position
+                uv = new Vector2(0,0)
             });
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x1, y0, Vertex.nearZ),
                 tint = color,
-                uv = new Vector2(1,0) * mesh.uvRegion.size + mesh.uvRegion.position
+                uv = new Vector2(1,0)
             });
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x0, y1, Vertex.nearZ),
                 tint = color,
-                uv = new Vector2(0,1) * mesh.uvRegion.size + mesh.uvRegion.position
+                uv = new Vector2(0,1)
             });
 
-            mesh.SetNextVertex(new Vertex()
+            mesh.SetNextVertex(new Vertex
             {
                 position = new Vector3(x1, y1, Vertex.nearZ),
                 tint = color,
-                uv = new Vector2(1,1) * mesh.uvRegion.size + mesh.uvRegion.position
+                uv = new Vector2(1,1)
             });
 
             mesh.SetNextIndex(0);

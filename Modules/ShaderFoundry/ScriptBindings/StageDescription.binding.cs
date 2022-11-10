@@ -11,7 +11,7 @@ using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/StageDescription.h")]
-    internal struct StageDescriptionInternal
+    internal struct StageDescriptionInternal : IInternalType<StageDescriptionInternal>
     {
         internal PassStageType m_StageType;
         internal FoundryHandle m_SetupVariablesListHandle;
@@ -19,15 +19,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static StageDescriptionInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        StageDescriptionInternal IInternalType<StageDescriptionInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct StageDescription : IEquatable<StageDescription>
+    internal readonly struct StageDescription : IEquatable<StageDescription>, IPublicType<StageDescription>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly StageDescriptionInternal stageDescription;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        StageDescription IPublicType<StageDescription>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new StageDescription(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -52,7 +61,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.stageDescription = container?.GetStageDescription(handle) ?? StageDescriptionInternal.Invalid();
+            ShaderContainer.Get(container, handle, out stageDescription);
         }
 
         public static StageDescription Invalid => new StageDescription(null, FoundryHandle.Invalid());
@@ -105,7 +114,7 @@ namespace UnityEditor.ShaderFoundry
                 stageDescriptionInternal.m_SetupVariablesListHandle = FixedHandleListInternal.Build(container, setupVariables, (e) => (e.handle));
                 stageDescriptionInternal.m_ElementListHandle = FixedHandleListInternal.Build(container, elements, (e) => (e.handle));
 
-                var returnTypeHandle = container.AddStageDescriptionInternal(stageDescriptionInternal);
+                var returnTypeHandle = container.Add(stageDescriptionInternal);
                 return new StageDescription(container, returnTypeHandle);
             }
         }

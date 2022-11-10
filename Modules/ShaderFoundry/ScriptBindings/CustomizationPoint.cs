@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/CustomizationPoint.h")]
-    internal struct CustomizationPointInternal
+    internal struct CustomizationPointInternal : IInternalType<CustomizationPointInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_InputListHandle;
@@ -20,15 +20,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static CustomizationPointInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        CustomizationPointInternal IInternalType<CustomizationPointInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct CustomizationPoint : IEquatable<CustomizationPoint>
+    internal readonly struct CustomizationPoint : IEquatable<CustomizationPoint>, IPublicType<CustomizationPoint>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly CustomizationPointInternal customizationPoint;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        CustomizationPoint IPublicType<CustomizationPoint>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new CustomizationPoint(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -58,7 +67,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.customizationPoint = container?.GetCustomizationPoint(handle) ?? CustomizationPointInternal.Invalid();
+            ShaderContainer.Get(container, handle, out customizationPoint);
         }
 
         public static CustomizationPoint Invalid => new CustomizationPoint(null, FoundryHandle.Invalid());
@@ -102,7 +111,7 @@ namespace UnityEditor.ShaderFoundry
                 customizationPointInternal.m_OutputListHandle = FixedHandleListInternal.Build(container, outputs, (v) => (v.handle));
                 customizationPointInternal.m_DefaultBlockSequenceElementListHandle = FixedHandleListInternal.Build(container, defaultBlockSequenceElements, (v) => (v.handle));
 
-                var returnTypeHandle = container.AddCustomizationPointInternal(customizationPointInternal);
+                var returnTypeHandle = container.Add(customizationPointInternal);
                 return new CustomizationPoint(container, returnTypeHandle);
             }
         }

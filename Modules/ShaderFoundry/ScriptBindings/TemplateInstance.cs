@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/TemplateInstance.h")]
-    internal struct TemplateInstanceInternal
+    internal struct TemplateInstanceInternal : IInternalType<TemplateInstanceInternal>
     {
         internal FoundryHandle m_TemplateHandle;
         internal FoundryHandle m_CustomizationPointImplementationListHandle;
@@ -19,15 +19,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static TemplateInstanceInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        TemplateInstanceInternal IInternalType<TemplateInstanceInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct TemplateInstance : IEquatable<TemplateInstance>
+    internal readonly struct TemplateInstance : IEquatable<TemplateInstance>, IPublicType<TemplateInstance>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly TemplateInstanceInternal templateInstance;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        TemplateInstance IPublicType<TemplateInstance>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new TemplateInstance(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -59,7 +68,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.templateInstance = container?.GetTemplateInstance(handle) ?? TemplateInstanceInternal.Invalid();
+            ShaderContainer.Get(container, handle, out templateInstance);
         }
 
         public static TemplateInstance Invalid => new TemplateInstance(null, FoundryHandle.Invalid());
@@ -102,7 +111,7 @@ namespace UnityEditor.ShaderFoundry
                 templateInstanceInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, customizationPointImplementations, (o) => (o.handle));
                 templateInstanceInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
 
-                var returnTypeHandle = container.AddTemplateInstanceInternal(templateInstanceInternal);
+                var returnTypeHandle = container.Add(templateInstanceInternal);
                 return new TemplateInstance(container, returnTypeHandle);
             }
         }

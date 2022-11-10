@@ -13,7 +13,7 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public static void SolidRectangle(MeshGenerationContext mgc, Rect rectParams, Color color, ContextType context)
         {
-            mgc.Rectangle(MeshGenerationContextUtils.RectangleParams.MakeSolid(rectParams, color, context));
+            mgc.meshGenerator.DrawRectangle(MeshGenerator.RectangleParams.MakeSolid(rectParams, color, context));
         }
 
         public static void Border(MeshGenerationContext mgc, Rect rectParams, Color color, float width, ContextType context)
@@ -23,7 +23,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public static void Border(MeshGenerationContext mgc, Rect rectParams, Color[] colors, float borderWidth, Vector2[] radii, ContextType context)
         {
-            var borderParams = new MeshGenerationContextUtils.BorderParams
+            var borderParams = new MeshGenerator.BorderParams
             {
                 rect = rectParams,
                 playmodeTintColor = context == ContextType.Editor
@@ -42,12 +42,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 bottomRightRadius = radii[2],
                 bottomLeftRadius = radii[3]
             };
-            mgc.Border(borderParams);
+            mgc.meshGenerator.DrawBorder(borderParams);
         }
 
         static void Border(MeshGenerationContext mgc, Rect rectParams, Color color,float borderWidth,Vector2 radius, ContextType context)
         {
-            var borderParams = new MeshGenerationContextUtils.BorderParams
+            var borderParams = new MeshGenerator.BorderParams
             {
                 rect = rectParams,
                 playmodeTintColor = context == ContextType.Editor
@@ -66,7 +66,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 bottomRightRadius = radius,
                 bottomLeftRadius = radius
             };
-            mgc.Border(borderParams);
+            mgc.meshGenerator.DrawBorder(borderParams);
         }
     }
 }

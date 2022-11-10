@@ -12,7 +12,7 @@ using System.Text;
 
 namespace UnityEngine.TextCore.Text
 {
-    internal class TextGenerationSettings
+    internal class TextGenerationSettings : IEquatable<TextGenerationSettings>
     {
         public string text;
 
@@ -79,36 +79,36 @@ namespace UnityEngine.TextCore.Text
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
 
-        protected bool Equals(TextGenerationSettings other)
+        public bool Equals(TextGenerationSettings other)
         {
-            return string.Equals(text, other.text) && screenRect.Equals(other.screenRect) &&
-                margins.Equals(other.margins) && scale.Equals(other.scale) &&
-                Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
-                Equals(spriteAsset, other.spriteAsset) && fontStyle == other.fontStyle &&
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins) &&
+                scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
+                Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet) &&
+                fontStyle == other.fontStyle && Equals(textSettings, other.textSettings) &&
                 textAlignment == other.textAlignment && overflowMode == other.overflowMode &&
                 wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio) &&
                 color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient) &&
                 Equals(fontColorGradientPreset, other.fontColorGradientPreset) && tintSprites == other.tintSprites &&
-                overrideRichTextColors == other.overrideRichTextColors && fontSize.Equals(other.fontSize) &&
-                autoSize == other.autoSize &&
-                fontSizeMin.Equals(other.fontSizeMin) && fontSizeMax.Equals(other.fontSizeMax) &&
-                enableKerning == other.enableKerning && richText == other.richText &&
-                isRightToLeft == other.isRightToLeft && extraPadding == other.extraPadding &&
-                parseControlCharacters == other.parseControlCharacters &&
+                overrideRichTextColors == other.overrideRichTextColors &&
+                shouldConvertToLinearSpace == other.shouldConvertToLinearSpace && fontSize.Equals(other.fontSize) &&
+                autoSize == other.autoSize && fontSizeMin.Equals(other.fontSizeMin) &&
+                fontSizeMax.Equals(other.fontSizeMax) && enableKerning == other.enableKerning &&
+                richText == other.richText && isRightToLeft == other.isRightToLeft &&
+                extraPadding == other.extraPadding && parseControlCharacters == other.parseControlCharacters &&
+                isOrthographic == other.isOrthographic && tagNoParsing == other.tagNoParsing &&
                 characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing) &&
-                lineSpacing.Equals(other.lineSpacing) &&
-                paragraphSpacing.Equals(other.paragraphSpacing) && lineSpacingMax.Equals(other.lineSpacingMax) &&
-                maxVisibleCharacters == other.maxVisibleCharacters &&
-                maxVisibleWords == other.maxVisibleWords && maxVisibleLines == other.maxVisibleLines &&
-                firstVisibleCharacter == other.firstVisibleCharacter &&
+                lineSpacing.Equals(other.lineSpacing) && paragraphSpacing.Equals(other.paragraphSpacing) &&
+                lineSpacingMax.Equals(other.lineSpacingMax) && textWrappingMode == other.textWrappingMode &&
+                maxVisibleCharacters == other.maxVisibleCharacters && maxVisibleWords == other.maxVisibleWords &&
+                maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter &&
                 useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight &&
-                pageToDisplay == other.pageToDisplay &&
-                horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping &&
-                uvLineOffset.Equals(other.uvLineOffset) &&
+                pageToDisplay == other.pageToDisplay && horizontalMapping == other.horizontalMapping &&
+                verticalMapping == other.verticalMapping && uvLineOffset.Equals(other.uvLineOffset) &&
                 geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
-                charWidthMaxAdj.Equals(other.charWidthMaxAdj) && textWrappingMode == other.textWrappingMode &&
-                isOrthographic.Equals(other.isOrthographic) &&
-                isPlaceholder.Equals(other.isPlaceholder);
+                charWidthMaxAdj.Equals(other.charWidthMaxAdj) && inputSource == other.inputSource &&
+                isOrthographic.Equals(other.isOrthographic) && isPlaceholder.Equals(other.isPlaceholder);
         }
 
         public override bool Equals(object obj)
@@ -121,134 +121,76 @@ namespace UnityEngine.TextCore.Text
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = (text != null ? text.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ screenRect.GetHashCode();
-                hashCode = (hashCode * 397) ^ margins.GetHashCode();
-                hashCode = (hashCode * 397) ^ scale.GetHashCode();
-                hashCode = (hashCode * 397) ^ (fontAsset != null ? fontAsset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (material != null ? material.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (spriteAsset != null ? spriteAsset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (int)fontStyle;
-                hashCode = (hashCode * 397) ^ (int)textAlignment;
-                hashCode = (hashCode * 397) ^ (int)overflowMode;
-                hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordWrappingRatio.GetHashCode();
-                hashCode = (hashCode * 397) ^ color.GetHashCode();
-                hashCode = (hashCode * 397) ^ (fontColorGradient != null ? fontColorGradient.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (fontColorGradientPreset != null ? fontColorGradientPreset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ tintSprites.GetHashCode();
-                hashCode = (hashCode * 397) ^ overrideRichTextColors.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ autoSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSizeMin.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSizeMax.GetHashCode();
-                hashCode = (hashCode * 397) ^ enableKerning.GetHashCode();
-                hashCode = (hashCode * 397) ^ richText.GetHashCode();
-                hashCode = (hashCode * 397) ^ isRightToLeft.GetHashCode();
-                hashCode = (hashCode * 397) ^ extraPadding.GetHashCode();
-                hashCode = (hashCode * 397) ^ parseControlCharacters.GetHashCode();
-                hashCode = (hashCode * 397) ^ characterSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ lineSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ paragraphSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ lineSpacingMax.GetHashCode();
-                hashCode = (hashCode * 397) ^ maxVisibleCharacters;
-                hashCode = (hashCode * 397) ^ maxVisibleWords;
-                hashCode = (hashCode * 397) ^ maxVisibleLines;
-                hashCode = (hashCode * 397) ^ firstVisibleCharacter;
-                hashCode = (hashCode * 397) ^ useMaxVisibleDescender.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)fontWeight;
-                hashCode = (hashCode * 397) ^ pageToDisplay;
-                hashCode = (hashCode * 397) ^ (int)horizontalMapping;
-                hashCode = (hashCode * 397) ^ (int)verticalMapping;
-                hashCode = (hashCode * 397) ^ uvLineOffset.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)geometrySortingOrder;
-                hashCode = (hashCode * 397) ^ inverseYAxis.GetHashCode();
-                hashCode = (hashCode * 397) ^ charWidthMaxAdj.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)textWrappingMode;
-                hashCode = (hashCode * 397) ^ isOrthographic.GetHashCode();
-                hashCode = (hashCode * 397) ^ isPlaceholder.GetHashCode();
-                return hashCode;
-            }
+            var hashCode = new HashCode();
+            hashCode.Add(text);
+            hashCode.Add(screenRect);
+            hashCode.Add(margins);
+            hashCode.Add(scale);
+            hashCode.Add(fontAsset);
+            hashCode.Add(material);
+            hashCode.Add(spriteAsset);
+            hashCode.Add(styleSheet);
+            hashCode.Add((int)fontStyle);
+            hashCode.Add(textSettings);
+            hashCode.Add((int)textAlignment);
+            hashCode.Add((int)overflowMode);
+            hashCode.Add(wordWrap);
+            hashCode.Add(wordWrappingRatio);
+            hashCode.Add(color);
+            hashCode.Add(fontColorGradient);
+            hashCode.Add(fontColorGradientPreset);
+            hashCode.Add(tintSprites);
+            hashCode.Add(overrideRichTextColors);
+            hashCode.Add(shouldConvertToLinearSpace);
+            hashCode.Add(fontSize);
+            hashCode.Add(autoSize);
+            hashCode.Add(fontSizeMin);
+            hashCode.Add(fontSizeMax);
+            hashCode.Add(enableKerning);
+            hashCode.Add(richText);
+            hashCode.Add(isRightToLeft);
+            hashCode.Add(extraPadding);
+            hashCode.Add(parseControlCharacters);
+            hashCode.Add(isOrthographic);
+            hashCode.Add(tagNoParsing);
+            hashCode.Add(characterSpacing);
+            hashCode.Add(wordSpacing);
+            hashCode.Add(lineSpacing);
+            hashCode.Add(paragraphSpacing);
+            hashCode.Add(lineSpacingMax);
+            hashCode.Add((int)textWrappingMode);
+            hashCode.Add(maxVisibleCharacters);
+            hashCode.Add(maxVisibleWords);
+            hashCode.Add(maxVisibleLines);
+            hashCode.Add(firstVisibleCharacter);
+            hashCode.Add(useMaxVisibleDescender);
+            hashCode.Add((int)fontWeight);
+            hashCode.Add(pageToDisplay);
+            hashCode.Add((int)horizontalMapping);
+            hashCode.Add((int)verticalMapping);
+            hashCode.Add(uvLineOffset);
+            hashCode.Add((int)geometrySortingOrder);
+            hashCode.Add(inverseYAxis);
+            hashCode.Add(charWidthMaxAdj);
+            hashCode.Add((int)inputSource);
+            hashCode.Add(isPlaceholder);
+            return hashCode.ToHashCode();
         }
 
-        public static bool operator==(TextGenerationSettings left, TextGenerationSettings right)
+        public static bool operator ==(TextGenerationSettings left, TextGenerationSettings right)
         {
             return Equals(left, right);
         }
 
-        public static bool operator!=(TextGenerationSettings left, TextGenerationSettings right)
+        public static bool operator !=(TextGenerationSettings left, TextGenerationSettings right)
         {
             return !Equals(left, right);
         }
 
-        public void Copy(TextGenerationSettings other)
+        public override string ToString()
         {
-            if (other == null)
-                return;
-
-            text = other.text;
-
-            screenRect = other.screenRect;
-            margins =  other.margins;
-            scale = other.scale;
-
-            fontAsset = other.fontAsset;
-            material = other.material;
-            spriteAsset = other.spriteAsset;
-            fontStyle = other.fontStyle;
-
-            textAlignment = other.textAlignment;
-            overflowMode = other.overflowMode;
-            wordWrap = other.wordWrap;
-            wordWrappingRatio = other.wordWrappingRatio;
-
-            color = other.color;
-            fontColorGradient = other.fontColorGradient;
-            fontColorGradientPreset = other.fontColorGradientPreset;
-            tintSprites = other.tintSprites;
-            overrideRichTextColors = other.overrideRichTextColors;
-
-            fontSize = other.fontSize;
-            autoSize = other.autoSize;
-            fontSizeMin = other.fontSizeMin;
-            fontSizeMax = other.fontSizeMax;
-
-            enableKerning = other.enableKerning;
-            richText = other.richText;
-            isRightToLeft = other.isRightToLeft;
-            extraPadding = other.extraPadding;
-            parseControlCharacters = other.parseControlCharacters;
-            isOrthographic = other.isOrthographic;
-            isPlaceholder = other.isPlaceholder;
-
-            characterSpacing = other.characterSpacing;
-            wordSpacing = other.wordSpacing;
-            lineSpacing = other.lineSpacing;
-            paragraphSpacing = other.paragraphSpacing;
-            lineSpacingMax = other.lineSpacingMax;
-            textWrappingMode = other.textWrappingMode;
-
-            maxVisibleCharacters = other.maxVisibleCharacters;
-            maxVisibleWords = other.maxVisibleWords;
-            maxVisibleLines = other.maxVisibleLines;
-            firstVisibleCharacter = other.firstVisibleCharacter;
-            useMaxVisibleDescender = other.useMaxVisibleDescender;
-
-            fontWeight = other.fontWeight;
-            pageToDisplay = other.pageToDisplay;
-
-            horizontalMapping = other.horizontalMapping;
-            verticalMapping = other.verticalMapping;
-            uvLineOffset = other.uvLineOffset;
-            geometrySortingOrder = other.geometrySortingOrder;
-            inverseYAxis = other.inverseYAxis;
-
-            charWidthMaxAdj = other.charWidthMaxAdj;
+            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(scale)}: {scale}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(wordWrap)}: {wordWrap}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(enableKerning)}: {enableKerning}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";        }
         }
-    }
 
     internal class TextGenerator
     {

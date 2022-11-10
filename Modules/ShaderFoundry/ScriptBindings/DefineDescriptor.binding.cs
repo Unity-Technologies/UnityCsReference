@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/DefineDescriptor.h")]
-    internal struct DefineDescriptorInternal
+    internal struct DefineDescriptorInternal : IInternalType<DefineDescriptorInternal>
     {
         internal FoundryHandle m_ListHandle;
 
@@ -22,15 +22,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern bool IsValid();
         internal extern string GetName(ShaderContainer container);
         internal extern string GetValue(ShaderContainer container);
+
+        // IInternalType
+        DefineDescriptorInternal IInternalType<DefineDescriptorInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct DefineDescriptor : IEquatable<DefineDescriptor>
+    internal readonly struct DefineDescriptor : IEquatable<DefineDescriptor>, IPublicType<DefineDescriptor>
     {
         // data members
         readonly ShaderContainer container;
         readonly DefineDescriptorInternal descriptor;
         internal readonly FoundryHandle handle;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        DefineDescriptor IPublicType<DefineDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new DefineDescriptor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -44,7 +53,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.descriptor = container?.GetDefineDescriptor(handle) ?? DefineDescriptorInternal.Invalid();
+            ShaderContainer.Get(container, handle, out descriptor);
         }
 
         public static DefineDescriptor Invalid => new DefineDescriptor(null, FoundryHandle.Invalid());
@@ -75,7 +84,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new DefineDescriptorInternal();
                 descriptor.Setup(container, name, value);
-                var resultHandle = container.AddDefineDescriptorInternal(descriptor);
+                var resultHandle = container.Add(descriptor);
                 return new DefineDescriptor(container, resultHandle);
             }
         }

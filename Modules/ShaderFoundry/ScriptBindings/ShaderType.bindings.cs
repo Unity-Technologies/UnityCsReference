@@ -12,7 +12,7 @@ using System.Linq;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderType.h")]
-    internal struct ShaderTypeInternal
+    internal struct ShaderTypeInternal : IInternalType<ShaderTypeInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal UInt32 m_Kind; // Enum declaration in ShaderType.h
@@ -78,15 +78,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern static FoundryHandle Struct(ShaderContainer container, FoundryHandle typeHandle, string name, FoundryHandle fieldListHandle, FoundryHandle attributeListHandle, FoundryHandle includeListHandle,  FoundryHandle parentBlockHandle, bool declaredExternally);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+
+        // IInternalType
+        ShaderTypeInternal IInternalType<ShaderTypeInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct ShaderType : IEquatable<ShaderType>
+    internal readonly struct ShaderType : IEquatable<ShaderType>, IPublicType<ShaderType>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly ShaderTypeInternal type;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        ShaderType IPublicType<ShaderType>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderType(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -143,7 +152,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = (container ? handle : FoundryHandle.Invalid());
-            this.type = container?.GetType(handle) ?? ShaderTypeInternal.Invalid();
+            ShaderContainer.Get(container, handle, out type);
         }
 
         public static ShaderType Void(ShaderContainer container)
@@ -285,7 +294,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 this.container = container;
                 this.name = name;
-                this.typeHandle = container.CreateTypeInternal();
+                this.typeHandle = container.Create<ShaderTypeInternal>();
                 this.parentBlock = blockBuilder;
             }
 

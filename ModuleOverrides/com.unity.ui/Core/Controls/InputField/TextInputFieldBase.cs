@@ -363,7 +363,7 @@ namespace UnityEngine.UIElements
             return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, textToMeasure, width, widthMode, height, heightMode);
         }
 
-        internal bool hasFocus => textEdition.hasFocus;
+        internal bool hasFocus => textInputBase.textElement.hasFocus;
 
         /// <summary>
         /// Converts a value of the specified generic type from the subclass to a string representation.

@@ -214,7 +214,7 @@ namespace UnityEngine.UIElements
             if (TextUtilities.IsFontAssigned(this))
             {
                 TextCore.Text.TextInfo textInfo = uitkTextHandle.Update();
-                mgc.Text(textInfo, contentRect.min);
+                mgc.meshGenerator.DrawText(textInfo, contentRect.min);
             }
         }
 
@@ -346,6 +346,7 @@ namespace UnityEngine.UIElements
             return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden;
         }
 
+        internal bool hasFocus => elementPanel != null && elementPanel.focusController?.GetLeafFocusedElement() == this;
         /// <summary>
         /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
         /// </summary>

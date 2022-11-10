@@ -73,13 +73,13 @@ namespace UnityEngine.UIElements
 
         void OnKeyDown(KeyDownEvent evt)
         {
-            if (!textElement.edition.hasFocus)
+            if (!textElement.hasFocus)
                 return;
 
             m_Changed = false;
 
             evt.GetEquivalentImguiEvent(m_ImguiEvent);
-            if (editingUtilities.HandleKeyEvent(m_ImguiEvent, false))
+            if (editingUtilities.HandleKeyEvent(m_ImguiEvent))
             {
                 if (textElement.text != editingUtilities.text)
                     m_Changed = true;
@@ -198,7 +198,7 @@ namespace UnityEngine.UIElements
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)
         {
-            if (!textElement.edition.hasFocus)
+            if (!textElement.hasFocus)
                 return;
 
             switch (evt.commandName)
@@ -227,7 +227,7 @@ namespace UnityEngine.UIElements
 
         void OnExecuteCommandEvent(ExecuteCommandEvent evt)
         {
-            if (!textElement.edition.hasFocus)
+            if (!textElement.hasFocus)
                 return;
 
 

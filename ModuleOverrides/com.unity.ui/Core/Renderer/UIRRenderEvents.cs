@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -17,6 +20,8 @@ namespace UnityEngine.UIElements.UIR
 
     internal static class RenderEvents
     {
+        static readonly ProfilerMarker k_NudgeVerticesMarker = new ("UIR.NudgeVertices");
+
         private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 
         internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -45,18 +50,6 @@ namespace UnityEngine.UIElements.UIR
         {
             stats.recursiveTransformUpdates++;
             DepthFirstOnTransformOrSizeChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, renderChain.device, false, false, ref stats);
-        }
-
-        internal static void ProcessOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
-        {
-            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
-            if (hierarchical)
-                stats.recursiveVisualUpdates++;
-            else stats.nonRecursiveVisualUpdates++;
-            var parent = ve.hierarchy.parent;
-            var parentHierarchyHidden = parent != null &&
-                (parent.renderChainData.isHierarchyHidden || IsElementHierarchyHidden(parent));
-            DepthFirstOnVisualsChanged(renderChain, ve, dirtyID, parentHierarchyHidden, hierarchical, ref stats);
         }
 
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
@@ -198,7 +191,7 @@ namespace UnityEngine.UIElements.UIR
             if (ve.renderChainData.isInChain)
             {
                 renderChain.ChildWillBeRemoved(ve);
-                CommandGenerator.ResetCommands(renderChain, ve);
+                CommandManipulator.ResetCommands(renderChain, ve);
                 renderChain.ResetTextures(ve);
                 ve.renderChainData.isInChain = false;
                 ve.renderChainData.clipMethod = ClipMethod.Undetermined;
@@ -264,15 +257,15 @@ namespace UnityEngine.UIElements.UIR
                     ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
                 }
                 ve.renderChainData.boneTransformAncestor = ve.renderChainData.groupTransformAncestor = null;
-                if (ve.renderChainData.closingData != null)
+                if (ve.renderChainData.tailMesh != null)
                 {
-                    renderChain.device.Free(ve.renderChainData.closingData);
-                    ve.renderChainData.closingData = null;
+                    renderChain.device.Free(ve.renderChainData.tailMesh);
+                    ve.renderChainData.tailMesh = null;
                 }
-                if (ve.renderChainData.data != null)
+                if (ve.renderChainData.headMesh != null)
                 {
-                    renderChain.device.Free(ve.renderChainData.data);
-                    ve.renderChainData.data = null;
+                    renderChain.device.Free(ve.renderChainData.headMesh);
+                    ve.renderChainData.headMesh = null;
                 }
             }
 
@@ -519,7 +512,7 @@ namespace UnityEngine.UIElements.UIR
                 // A parent already called UIEOnVisualsChanged with hierarchical=true
             }
             else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0) &&
-                     (ve.renderChainData.data != null || ve.renderChainData.closingData != null))
+                     (ve.renderChainData.headMesh != null || ve.renderChainData.tailMesh != null))
             {
                 renderChain.UIEOnOpacityIdChanged(ve); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
             }
@@ -608,10 +601,11 @@ namespace UnityEngine.UIElements.UIR
                 dirtyHasBeenResolved = false; // We just skipped processing, if another later transform change is queued on this element this pass then we should still process it
                 stats.skipTransformed++;
             }
-            else if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 && (ve.renderChainData.data != null))
+            else if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 &&
+                     (ve.renderChainData.headMesh != null || ve.renderChainData.tailMesh != null))
             {
                 // If a visual update will happen, then skip work here as the visual update will incorporate the transformed vertices
-                if (!ve.renderChainData.disableNudging && CommandGenerator.NudgeVerticesToNewSpace(ve, renderChain, device))
+                if (NudgeVerticesToNewSpace(ve, renderChain, device))
                     stats.nudgeTransformed++;
                 else
                 {
@@ -636,55 +630,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static void DepthFirstOnVisualsChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, bool parentHierarchyHidden, bool hierarchical, ref ChainBuilderStats stats)
-        {
-            if (dirtyID == ve.renderChainData.dirtyID)
-                return;
-            ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
-
-            if (hierarchical)
-                stats.recursiveVisualUpdatesExpanded++;
-
-            bool wasHierarchyHidden = ve.renderChainData.isHierarchyHidden;
-            ve.renderChainData.isHierarchyHidden = parentHierarchyHidden || IsElementHierarchyHidden(ve);
-            if (wasHierarchyHidden != ve.renderChainData.isHierarchyHidden)
-                hierarchical = true;
-
-            if (!hierarchical && (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == RenderDataDirtyTypes.VisualsOpacityId)
-            {
-                stats.opacityIdUpdates++;
-                CommandGenerator.UpdateOpacityId(ve, renderChain);
-                return;
-            }
-
-            UpdateWorldFlipsWinding(ve);
-
-            Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
-
-            if (ve is TextElement)
-                RenderEvents.UpdateTextCoreSettings(renderChain, ve);
-
-            if ((ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor)
-                SetColorValues(renderChain, ve);
-
-            UIRStylePainter.ClosingInfo closingInfo = CommandGenerator.PaintElement(renderChain, ve, ref stats);
-
-            if (hierarchical)
-            {
-                // Recurse on children
-                int childrenCount = ve.hierarchy.childCount;
-                for (int i = 0; i < childrenCount; i++)
-                    DepthFirstOnVisualsChanged(renderChain, ve.hierarchy[i], dirtyID, ve.renderChainData.isHierarchyHidden, true, ref stats);
-            }
-
-            // By closing the element after its children, we can ensure closing data is allocated
-            // at a time that would maintain continuity in the index buffer
-            if (closingInfo.needsClosing)
-                CommandGenerator.ClosePaintElement(ve, closingInfo, renderChain, ref stats);
-        }
-
-        static bool UpdateTextCoreSettings(RenderChain renderChain, VisualElement ve)
+        public static bool UpdateTextCoreSettings(RenderChain renderChain, VisualElement ve)
         {
             if (ve == null || !TextUtilities.IsFontAssigned(ve))
                 return false;
@@ -713,7 +659,71 @@ namespace UnityEngine.UIElements.UIR
             return true;
         }
 
-        static bool IsElementHierarchyHidden(VisualElement ve)
+        static bool NudgeVerticesToNewSpace(VisualElement ve, RenderChain renderChain, UIRenderDevice device)
+        {
+            k_NudgeVerticesMarker.Begin();
+
+            Matrix4x4 newTransform;
+            UIRUtility.GetVerticesTransformInfo(ve, out newTransform);
+            Matrix4x4 nudgeTransform = newTransform * ve.renderChainData.verticesSpace.inverse;
+
+            // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
+            // considerably, then we assume that the vertices have become degenerate beyond restoration.
+            // In this case we refuse to nudge, and ask for this element to be fully repainted to regenerate
+            // the vertices without error.
+            const float kMaxAllowedDeviation = 0.0001f;
+            Matrix4x4 reconstructedNewTransform = nudgeTransform * ve.renderChainData.verticesSpace;
+            float error;
+            error = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
+            error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
+            error += Mathf.Abs(newTransform.m02 - reconstructedNewTransform.m02);
+            error += Mathf.Abs(newTransform.m03 - reconstructedNewTransform.m03);
+            error += Mathf.Abs(newTransform.m10 - reconstructedNewTransform.m10);
+            error += Mathf.Abs(newTransform.m11 - reconstructedNewTransform.m11);
+            error += Mathf.Abs(newTransform.m12 - reconstructedNewTransform.m12);
+            error += Mathf.Abs(newTransform.m13 - reconstructedNewTransform.m13);
+            error += Mathf.Abs(newTransform.m20 - reconstructedNewTransform.m20);
+            error += Mathf.Abs(newTransform.m21 - reconstructedNewTransform.m21);
+            error += Mathf.Abs(newTransform.m22 - reconstructedNewTransform.m22);
+            error += Mathf.Abs(newTransform.m23 - reconstructedNewTransform.m23);
+            if (error > kMaxAllowedDeviation)
+            {
+                k_NudgeVerticesMarker.End();
+                return false;
+            }
+
+            ve.renderChainData.verticesSpace = newTransform; // This is the new space of the vertices
+
+            var job = new NudgeJobData
+            {
+                transform = nudgeTransform
+            };
+
+            if (ve.renderChainData.headMesh != null)
+                PrepareNudgeVertices(ve, device, ve.renderChainData.headMesh, out job.headSrc, out job.headDst, out job.headCount);
+
+            if (ve.renderChainData.tailMesh != null)
+                PrepareNudgeVertices(ve, device, ve.renderChainData.tailMesh, out job.tailSrc, out job.tailDst, out job.tailCount);
+
+            renderChain.jobManager.Add(ref job);
+
+            k_NudgeVerticesMarker.End();
+            return true;
+        }
+
+        static unsafe void PrepareNudgeVertices(VisualElement ve, UIRenderDevice device, MeshHandle mesh, out IntPtr src, out IntPtr dst, out int count)
+        {
+            int vertCount = (int)mesh.allocVerts.size;
+            NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
+            NativeSlice<Vertex> newVerts;
+            device.Update(mesh, (uint)vertCount, out newVerts);
+
+            src = (IntPtr)oldVerts.GetUnsafePtr();
+            dst = (IntPtr)newVerts.GetUnsafePtr();
+            count = vertCount;
+        }
+
+        public static bool IsElementHierarchyHidden(VisualElement ve)
         {
             return ve.resolvedStyle.display == DisplayStyle.None;
         }
@@ -756,7 +766,7 @@ namespace UnityEngine.UIElements.UIR
             bool preferScissors = (ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0;
             ClipMethod rectClipMethod = preferScissors ? ClipMethod.Scissor : ClipMethod.ShaderDiscard;
 
-            if (!UIRUtility.IsRoundRect(ve) && !UIRUtility.IsVectorImageBackground(ve))
+            if (!renderChain.elementBuilder.RequiresStencilMask(ve))
                 return rectClipMethod;
 
             int inheritedMaskDepth = 0;
@@ -791,18 +801,6 @@ namespace UnityEngine.UIElements.UIR
             }
 
             return false;
-        }
-
-        // This can only be called when the element local and the parent world states are clean.
-        static void UpdateWorldFlipsWinding(VisualElement ve)
-        {
-            bool flipsWinding = ve.renderChainData.localFlipsWinding;
-            bool parentFlipsWinding = false;
-            VisualElement parent = ve.hierarchy.parent;
-            if (parent != null)
-                parentFlipsWinding = parent.renderChainData.worldFlipsWinding;
-
-            ve.renderChainData.worldFlipsWinding = parentFlipsWinding ^ flipsWinding;
         }
 
         static void UpdateZeroScaling(VisualElement ve)
@@ -897,7 +895,7 @@ namespace UnityEngine.UIElements.UIR
             ve.renderChainData.tintColorID = BMPAlloc.Invalid;
         }
 
-        static void SetColorValues(RenderChain renderChain, VisualElement ve)
+        public static void SetColorValues(RenderChain renderChain, VisualElement ve)
         {
             var style = ve.resolvedStyle;
             if (ve.renderChainData.colorID.IsValid())

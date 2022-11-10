@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/BlockVariable.h")]
-    internal struct BlockVariableInternal
+    internal struct BlockVariableInternal : IInternalType<BlockVariableInternal>
     {
         internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_NameHandle;
@@ -19,15 +19,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal static extern BlockVariableInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        BlockVariableInternal IInternalType<BlockVariableInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct BlockVariable : IEquatable<BlockVariable>
+    internal readonly struct BlockVariable : IEquatable<BlockVariable>, IPublicType<BlockVariable>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly BlockVariableInternal variable;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        BlockVariable IPublicType<BlockVariable>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new BlockVariable(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -52,7 +61,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.variable = container?.GetBlockVariable(handle) ?? BlockVariableInternal.Invalid();
+            ShaderContainer.Get(container, handle, out variable);
         }
 
         public static BlockVariable Invalid => new BlockVariable(null, FoundryHandle.Invalid());
@@ -93,7 +102,7 @@ namespace UnityEditor.ShaderFoundry
                 for (int i = 0; i < Attributes.Count; ++i)
                     container.SetHandleBlobElement(blockVariableInternal.m_AttributeListHandle, (uint)i, Attributes[i].handle);
 
-                var returnTypeHandle = container.AddBlockVariableInternal(blockVariableInternal);
+                var returnTypeHandle = container.Add(blockVariableInternal);
                 return new BlockVariable(container, returnTypeHandle);
             }
         }

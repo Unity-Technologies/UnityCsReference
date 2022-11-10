@@ -13,9 +13,9 @@ namespace UnityEditor.ShaderFoundry
     using LinkAccessorKind = BlockLinkOverrideInternal.LinkAccessorInternal.Kind;
 
     [NativeHeader("Modules/ShaderFoundry/Public/BlockLinkOverride.h")]
-    internal struct BlockLinkOverrideInternal
+    internal struct BlockLinkOverrideInternal : IInternalType<BlockLinkOverrideInternal>
     {
-        internal struct LinkAccessorInternal
+        internal struct LinkAccessorInternal : IInternalType<LinkAccessorInternal>
         {
             internal enum Kind : ushort
             {
@@ -32,9 +32,12 @@ namespace UnityEditor.ShaderFoundry
             internal extern bool IsValid();
 
             internal extern FoundryHandle GetAccessorHandle();
+
+            // IInternalType
+            LinkAccessorInternal IInternalType<LinkAccessorInternal>.ConstructInvalid() => Invalid();
         }
 
-        internal struct LinkElementInternal
+        internal struct LinkElementInternal : IInternalType<LinkElementInternal>
         {
             internal FoundryHandle m_TypeHandle; // ShaderType
             internal FoundryHandle m_CastTypeHandle; // ShaderType
@@ -45,6 +48,9 @@ namespace UnityEditor.ShaderFoundry
 
             internal extern static LinkElementInternal Invalid();
             internal extern bool IsValid();
+
+            // IInternalType
+            LinkElementInternal IInternalType<LinkElementInternal>.ConstructInvalid() => Invalid();
         }
 
         internal FoundryHandle m_SourceHandle;
@@ -52,25 +58,40 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static BlockLinkOverrideInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        BlockLinkOverrideInternal IInternalType<BlockLinkOverrideInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct BlockLinkOverride : IEquatable<BlockLinkOverride>
+    internal readonly struct BlockLinkOverride : IEquatable<BlockLinkOverride>, IPublicType<BlockLinkOverride>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly BlockLinkOverrideInternal linkOverride;
 
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        BlockLinkOverride IPublicType<BlockLinkOverride>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new BlockLinkOverride(container, handle);
+
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid && linkOverride.IsValid());
 
-        internal readonly struct LinkAccessor : IEquatable<LinkAccessor>
+        internal readonly struct LinkAccessor : IEquatable<LinkAccessor>, IPublicType<LinkAccessor>
         {
             // data members
             readonly ShaderContainer container;
             readonly internal FoundryHandle handle;
             readonly BlockLinkOverrideInternal.LinkAccessorInternal accessor;
+
+            // IPublicType
+            ShaderContainer IPublicType.Container => Container;
+            bool IPublicType.IsValid => IsValid;
+            FoundryHandle IPublicType.Handle => handle;
+            LinkAccessor IPublicType<LinkAccessor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new LinkAccessor(container, handle);
 
             public ShaderContainer Container => container;
             public bool IsValid => (container != null && handle.IsValid && accessor.IsValid());
@@ -97,7 +118,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 this.container = container;
                 this.handle = handle;
-                this.accessor = container?.GetLinkAccessor(handle) ?? BlockLinkOverrideInternal.LinkAccessorInternal.Invalid();
+                ShaderContainer.Get(container, handle, out accessor);
             }
 
             public static LinkAccessor Invalid => new LinkAccessor(null, FoundryHandle.Invalid());
@@ -114,7 +135,7 @@ namespace UnityEditor.ShaderFoundry
                 var linkAccessorInternal = new BlockLinkOverrideInternal.LinkAccessorInternal();
                 linkAccessorInternal.m_Kind = kind;
                 linkAccessorInternal.m_AccessorHandle = accessorHandle;
-                var returnTypeHandle = container.AddLinkAccessorInternal(linkAccessorInternal);
+                var returnTypeHandle = container.Add(linkAccessorInternal);
                 return new LinkAccessor(container, returnTypeHandle);
             }
 
@@ -151,12 +172,18 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        internal readonly struct LinkElement : IEquatable<LinkElement>
+        internal readonly struct LinkElement : IEquatable<LinkElement>, IPublicType<LinkElement>
         {
             // data members
             readonly ShaderContainer container;
             readonly internal FoundryHandle handle;
             readonly BlockLinkOverrideInternal.LinkElementInternal element;
+
+            // IPublicType
+            ShaderContainer IPublicType.Container => Container;
+            bool IPublicType.IsValid => IsValid;
+            FoundryHandle IPublicType.Handle => handle;
+            LinkElement IPublicType<LinkElement>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new LinkElement(container, handle);
 
             public ShaderContainer Container => container;
             public bool IsValid => (container != null && handle.IsValid && element.IsValid());
@@ -173,7 +200,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 this.container = container;
                 this.handle = handle;
-                this.element = container?.GetLinkElement(handle) ?? BlockLinkOverrideInternal.LinkElementInternal.Invalid();
+                ShaderContainer.Get(container, handle, out element);
             }
 
             public static LinkElement Invalid => new LinkElement(null, FoundryHandle.Invalid());
@@ -217,7 +244,7 @@ namespace UnityEditor.ShaderFoundry
                     linkElementInternal.m_NamespaceHandle = container.AddString(namespaceName);
                     linkElementInternal.m_NameHandle = container.AddString(name);
                     linkElementInternal.m_AccessorListHandle = FixedHandleListInternal.Build(container, m_Accessors, (a) => (a.handle));
-                    var returnTypeHandle = container.AddLinkElementInternal(linkElementInternal);
+                    var returnTypeHandle = container.Add(linkElementInternal);
                     return new LinkElement(container, returnTypeHandle);
                 }
             }
@@ -239,7 +266,7 @@ namespace UnityEditor.ShaderFoundry
                 {
                     var linkElementInternal = new BlockLinkOverrideInternal.LinkElementInternal();
                     linkElementInternal.m_ConstantExpressionHandle = container.AddString(constantExpression);
-                    var returnTypeHandle = container.AddLinkElementInternal(linkElementInternal);
+                    var returnTypeHandle = container.Add(linkElementInternal);
                     return new LinkElement(container, returnTypeHandle);
                 }
             }
@@ -253,7 +280,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.linkOverride = container?.GetBlockLinkOverride(handle) ?? BlockLinkOverrideInternal.Invalid();
+            ShaderContainer.Get(container, handle, out linkOverride);
         }
 
         public static BlockLinkOverride Invalid => new BlockLinkOverride(null, FoundryHandle.Invalid());
@@ -285,7 +312,7 @@ namespace UnityEditor.ShaderFoundry
                 var linkOverrideInternal = new BlockLinkOverrideInternal();
                 linkOverrideInternal.m_SourceHandle = source.handle;
                 linkOverrideInternal.m_DestinationHandle = destination.handle;
-                var returnTypeHandle = container.AddBlockLinkOverrideInternal(linkOverrideInternal);
+                var returnTypeHandle = container.Add(linkOverrideInternal);
                 return new BlockLinkOverride(container, returnTypeHandle);
             }
         }

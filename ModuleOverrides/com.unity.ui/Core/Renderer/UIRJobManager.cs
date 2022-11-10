@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements.UIR
     {
         NativePagedList<NudgeJobData> m_NudgeJobs = new NativePagedList<NudgeJobData>(64);
         NativePagedList<ConvertMeshJobData> m_ConvertMeshJobs = new NativePagedList<ConvertMeshJobData>(64);
-        NativePagedList<CopyClosingMeshJobData> m_CopyClosingMeshJobs = new NativePagedList<CopyClosingMeshJobData>(64);
+        NativePagedList<CopyMeshJobData> m_CopyMeshJobs = new NativePagedList<CopyMeshJobData>(64);
 
         JobMerger m_JobMerger = new JobMerger(128);
 
@@ -27,9 +27,9 @@ namespace UnityEngine.UIElements.UIR
             m_ConvertMeshJobs.Add(ref job);
         }
 
-        public void Add(ref CopyClosingMeshJobData job)
+        public void Add(ref CopyMeshJobData job)
         {
-            m_CopyClosingMeshJobs.Add(ref job);
+            m_CopyMeshJobs.Add(ref job);
         }
 
         public unsafe void CompleteNudgeJobs()
@@ -48,12 +48,12 @@ namespace UnityEngine.UIElements.UIR
             m_ConvertMeshJobs.Reset();
         }
 
-        public unsafe void CompleteClosingMeshJobs()
+        public unsafe void CompleteCopyMeshJobs()
         {
-            foreach (NativeSlice<CopyClosingMeshJobData> page in m_CopyClosingMeshJobs.GetPages())
-                m_JobMerger.Add(JobProcessor.ScheduleCopyClosingMeshJobs((IntPtr)page.GetUnsafePtr(), page.Length));
+            foreach (NativeSlice<CopyMeshJobData> page in m_CopyMeshJobs.GetPages())
+                m_JobMerger.Add(JobProcessor.ScheduleCopyMeshJobs((IntPtr)page.GetUnsafePtr(), page.Length));
             m_JobMerger.MergeAndReset().Complete();
-            m_CopyClosingMeshJobs.Reset();
+            m_CopyMeshJobs.Reset();
         }
 
         #region Dispose Pattern
@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_NudgeJobs.Dispose();
                 m_ConvertMeshJobs.Dispose();
-                m_CopyClosingMeshJobs.Dispose();
+                m_CopyMeshJobs.Dispose();
 
                 m_JobMerger.Dispose();
             }
@@ -92,13 +92,13 @@ namespace UnityEngine.UIElements.UIR
     [StructLayout(LayoutKind.Sequential)]
     struct NudgeJobData
     {
-        public IntPtr src;
-        public IntPtr dst;
-        public int count;
+        public IntPtr headSrc;
+        public IntPtr headDst;
+        public int headCount;
 
-        public IntPtr closingSrc;
-        public IntPtr closingDst;
-        public int closingCount;
+        public IntPtr tailSrc;
+        public IntPtr tailDst;
+        public int tailCount;
 
         public Matrix4x4 transform;
     }
@@ -115,18 +115,24 @@ namespace UnityEngine.UIElements.UIR
         public Color32 addFlags;
         public Color32 opacityPage;
         public Color32 textCoreSettingsPage;
-        public int isText;
+        public int isSdfText;
         public float textureId;
+        public int gradientSettingsIndexOffset;
 
         public IntPtr indexSrc;
         public IntPtr indexDst;
         public int indexCount;
         public int indexOffset;
+
         public int flipIndices;
+        public float positionZ;
+
+        public int remapUVs;
+        public Rect atlasRect;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct CopyClosingMeshJobData
+    struct CopyMeshJobData
     {
         public IntPtr vertSrc;
         public IntPtr vertDst;

@@ -26,7 +26,30 @@ namespace UnityEngine.UIElements.UIR
         public uint immedateRenderersActive;
     }
 
-    internal class RenderChain : IDisposable
+    // We want to pool MeshWriteData instances, but unlike usual pooling, we don't explicitly return them to a pool. So instead,
+    // here we'll simply keep track of them so they can be reused, but we can only reuse them when a Reset has been performed.
+    class MeshWriteDataPool : ImplicitPool<MeshWriteData>
+    {
+        static readonly Func<MeshWriteData> k_CreateAction = () => new MeshWriteData();
+
+        public MeshWriteDataPool()
+            : base(k_CreateAction, null, 100, 1000) { }
+    }
+
+    class EntryPool : ImplicitPool<Entry>
+    {
+        static readonly Func<Entry> k_CreateAction = () => new Entry();
+        static readonly Action<Entry> k_ResetAction = e =>
+        {
+            e.firstChild = null;
+            e.nextSibling = null;
+        };
+
+        public EntryPool(int maxCapacity = 1000)
+            : base(k_CreateAction, k_ResetAction, 100, maxCapacity) { }
+    }
+
+    partial class RenderChain : IDisposable
     {
         struct DepthOrderedDirtyTracking // Depth then register-time order
         {
@@ -151,6 +174,7 @@ namespace UnityEngine.UIElements.UIR
 
         RenderChainCommand m_FirstCommand;
         DepthOrderedDirtyTracking m_DirtyTracker;
+        VisualChangesProcessor m_VisualChangesProcessor;
         LinkedPool<RenderChainCommand> m_CommandPool = new LinkedPool<RenderChainCommand>(() => new RenderChainCommand(), cmd => {});
         BasicNodePool<TextureEntry> m_TexturePool = new BasicNodePool<TextureEntry>();
         List<RenderNodeData> m_RenderNodesData = new List<RenderNodeData>();
@@ -159,7 +183,7 @@ namespace UnityEngine.UIElements.UIR
         bool m_BlockDirtyRegistration;
         int m_StaticIndex = -1;
         int m_ActiveRenderNodes = 0;
-        int m_CustomMaterialCommands = 0;
+        int m_CustomMaterialCommands = 0; // TODO: Get rid of this
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
 
@@ -168,14 +192,15 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand firstCommand { get { return m_FirstCommand; } }
         public OpacityIdAccelerator opacityIdAccelerator { get; private set; }
 
+        static EntryPool s_SharedEntryPool = new(10000);
+
         // Profiling
-        static ProfilerMarker s_MarkerProcess = new ProfilerMarker("RenderChain.Process");
-        static ProfilerMarker s_MarkerClipProcessing = new ProfilerMarker("RenderChain.UpdateClips");
-        static ProfilerMarker s_MarkerOpacityProcessing = new ProfilerMarker("RenderChain.UpdateOpacity");
-        static ProfilerMarker s_MarkerColorsProcessing = new ProfilerMarker("RenderChain.UpdateColors");
-        static ProfilerMarker s_MarkerTransformProcessing = new ProfilerMarker("RenderChain.UpdateTransforms");
-        static ProfilerMarker s_MarkerVisualsProcessing = new ProfilerMarker("RenderChain.UpdateVisuals");
-        static ProfilerMarker s_MarkerTextRegen = new ProfilerMarker("RenderChain.RegenText");
+        static readonly ProfilerMarker k_MarkerProcess = new("RenderChain.Process");
+        static readonly ProfilerMarker k_MarkerClipProcessing = new("RenderChain.UpdateClips");
+        static readonly ProfilerMarker k_MarkerOpacityProcessing = new("RenderChain.UpdateOpacity");
+        static readonly ProfilerMarker k_MarkerColorsProcessing = new("RenderChain.UpdateColors");
+        static readonly ProfilerMarker k_MarkerTransformProcessing = new("RenderChain.UpdateTransforms");
+        static readonly ProfilerMarker k_MarkerVisualsProcessing = new("RenderChain.UpdateVisuals");
 
         static RenderChain()
         {
@@ -183,21 +208,12 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.RenderNodeExecute += OnRenderNodeExecute;
         }
 
-        public RenderChain(BaseVisualElementPanel panel)
+        public RenderChain(BaseVisualElementPanel panel) : this(panel, new UIRenderDevice(panel.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas))
         {
-            Constructor(panel, new UIRenderDevice(panel.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas));
         }
 
         protected RenderChain(BaseVisualElementPanel panel, UIRenderDevice device, AtlasBase atlas, VectorImageManager vectorImageManager)
         {
-            Constructor(panel, device, atlas, vectorImageManager);
-        }
-
-        void Constructor(BaseVisualElementPanel panelObj, UIRenderDevice deviceObj, AtlasBase atlas, VectorImageManager vectorImageMan)
-        {
-            if (disposed)
-                DisposeHelper.NotifyDisposedUsed(this);
-
             // A reasonable starting depth level suggested here
             m_DirtyTracker.heads = new List<VisualElement>(8);
             m_DirtyTracker.tails = new List<VisualElement>(8);
@@ -208,20 +224,20 @@ namespace UnityEngine.UIElements.UIR
             if (m_RenderNodesData.Count < 1)
                 m_RenderNodesData.Add(new RenderNodeData() { matPropBlock = new MaterialPropertyBlock() });
 
-            this.panel = panelObj;
-            this.device = deviceObj;
+            this.panel = panel;
+            this.device = device;
             this.atlas = atlas;
-            this.vectorImageManager = vectorImageMan;
+            this.vectorImageManager = vectorImageManager;
 
             // TODO: Share these across all panels
-            vertsPool = new TempAllocator<Vertex>(8192, 2048, 64 * 1024);
-            indicesPool = new TempAllocator<UInt16>(8192 << 1, 2048 << 1, (64 * 1024) << 1);
+            vertexPool = new TempAllocator<Vertex>(8192, 2048, 64 * 1024);
+            indexPool = new TempAllocator<UInt16>(8192 << 1, 2048 << 1, (64 * 1024) << 1);
             jobManager = new JobManager();
 
             this.shaderInfoAllocator.Construct();
             this.opacityIdAccelerator = new OpacityIdAccelerator();
 
-            painter = new UIRStylePainter(this);
+            m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
             var rp = panel as BaseRuntimePanel;
             if (rp != null && rp.drawToCameras)
@@ -229,49 +245,6 @@ namespace UnityEngine.UIElements.UIR
                 drawInCameras = true;
                 m_StaticIndex = RenderChainStaticIndexAllocator.AllocateIndex(this);
             }
-        }
-
-        void Destructor()
-        {
-            if (m_StaticIndex >= 0)
-                RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
-            m_StaticIndex = -1;
-
-            var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
-            while (ve != null)
-            {
-                ResetTextures(ve);
-                ve = ve.renderChainData.next;
-            }
-
-            UIRUtility.Destroy(m_DefaultMat);
-            UIRUtility.Destroy(m_DefaultWorldSpaceMat);
-            m_DefaultMat = m_DefaultWorldSpaceMat = null;
-
-            vertsPool.Dispose();
-            indicesPool.Dispose();
-            jobManager.Dispose();
-            vectorImageManager?.Dispose();
-            shaderInfoAllocator.Dispose();
-            device?.Dispose();
-            opacityIdAccelerator?.Dispose();
-
-            if (painter != null)
-            {
-                // todo: move painter2d to the render chain instead of the mgc
-                if (painter.meshGenerationContext.hasPainter2D)
-                {
-                    painter.meshGenerationContext.painter2D.Dispose();
-                }
-                painter = null;
-            }
-
-            atlas = null;
-            shaderInfoAllocator = new UIRVEShaderInfoAllocator();
-            device = null;
-
-            m_ActiveRenderNodes = 0;
-            m_RenderNodesData.Clear();
         }
 
         #region Dispose Pattern
@@ -291,7 +264,38 @@ namespace UnityEngine.UIElements.UIR
                 return;
 
             if (disposing)
-                Destructor();
+            {
+                if (m_StaticIndex >= 0)
+                    RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
+                m_StaticIndex = -1;
+
+                var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
+                while (ve != null)
+                {
+                    ResetTextures(ve);
+                    ve = ve.renderChainData.next;
+                }
+
+                UIRUtility.Destroy(m_DefaultMat);
+                UIRUtility.Destroy(m_DefaultWorldSpaceMat);
+                m_DefaultMat = m_DefaultWorldSpaceMat = null;
+
+                vertexPool.Dispose();
+                indexPool.Dispose();
+                jobManager.Dispose();
+                vectorImageManager?.Dispose();
+                shaderInfoAllocator.Dispose();
+                device?.Dispose();
+                opacityIdAccelerator?.Dispose();
+                m_VisualChangesProcessor?.Dispose();
+
+                atlas = null;
+                shaderInfoAllocator = new UIRVEShaderInfoAllocator();
+                device = null;
+
+                m_ActiveRenderNodes = 0;
+                m_RenderNodesData.Clear();
+            }
             else DisposeHelper.NotifyMissingDispose(this);
 
             disposed = true;
@@ -301,11 +305,9 @@ namespace UnityEngine.UIElements.UIR
 
         internal ChainBuilderStats stats { get { return m_Stats; } }
 
-        internal static Action OnPreRender = null;
-
         public void ProcessChanges()
         {
-            s_MarkerProcess.Begin();
+            k_MarkerProcess.Begin();
             m_Stats = new ChainBuilderStats();
             m_Stats.elementsAdded += m_StatsElementsAdded;
             m_Stats.elementsRemoved += m_StatsElementsRemoved;
@@ -320,7 +322,7 @@ namespace UnityEngine.UIElements.UIR
             dirtyClass = (int)RenderDataDirtyTypeClasses.Clipping;
             dirtyFlags = RenderDataDirtyTypes.Clipping | RenderDataDirtyTypes.ClippingHierarchy;
             clearDirty = ~dirtyFlags;
-            s_MarkerClipProcessing.Begin();
+            k_MarkerClipProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -338,13 +340,13 @@ namespace UnityEngine.UIElements.UIR
                     m_Stats.dirtyProcessed++;
                 }
             }
-            s_MarkerClipProcessing.End();
+            k_MarkerClipProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Opacity;
             dirtyFlags = RenderDataDirtyTypes.Opacity | RenderDataDirtyTypes.OpacityHierarchy;
             clearDirty = ~dirtyFlags;
-            s_MarkerOpacityProcessing.Begin();
+            k_MarkerOpacityProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -361,13 +363,13 @@ namespace UnityEngine.UIElements.UIR
                     m_Stats.dirtyProcessed++;
                 }
             }
-            s_MarkerOpacityProcessing.End();
+            k_MarkerOpacityProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.Color;
             dirtyFlags = RenderDataDirtyTypes.Color;
             clearDirty = ~dirtyFlags;
-            s_MarkerColorsProcessing.Begin();
+            k_MarkerColorsProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -384,13 +386,13 @@ namespace UnityEngine.UIElements.UIR
                     m_Stats.dirtyProcessed++;
                 }
             }
-            s_MarkerColorsProcessing.End();
+            k_MarkerColorsProcessing.End();
 
             m_DirtyTracker.dirtyID++;
             dirtyClass = (int)RenderDataDirtyTypeClasses.TransformSize;
             dirtyFlags = RenderDataDirtyTypes.Transform | RenderDataDirtyTypes.ClipRectSize;
             clearDirty = ~dirtyFlags;
-            s_MarkerTransformProcessing.Begin();
+            k_MarkerTransformProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -407,7 +409,7 @@ namespace UnityEngine.UIElements.UIR
                     m_Stats.dirtyProcessed++;
                 }
             }
-            s_MarkerTransformProcessing.End();
+            k_MarkerTransformProcessing.End();
 
             jobManager.CompleteNudgeJobs();
 
@@ -416,7 +418,7 @@ namespace UnityEngine.UIElements.UIR
             dirtyClass = (int)RenderDataDirtyTypeClasses.Visuals;
             dirtyFlags = RenderDataDirtyTypes.AllVisuals;
             clearDirty = ~dirtyFlags;
-            s_MarkerVisualsProcessing.Begin();
+            k_MarkerVisualsProcessing.Begin();
             for (int depth = m_DirtyTracker.minDepths[dirtyClass]; depth <= m_DirtyTracker.maxDepths[dirtyClass]; depth++)
             {
                 VisualElement ve = m_DirtyTracker.heads[depth];
@@ -426,7 +428,7 @@ namespace UnityEngine.UIElements.UIR
                     if ((ve.renderChainData.dirtiedValues & dirtyFlags) != 0)
                     {
                         if (ve.renderChainData.isInChain && ve.renderChainData.dirtyID != m_DirtyTracker.dirtyID)
-                            RenderEvents.ProcessOnVisualsChanged(this, ve, m_DirtyTracker.dirtyID, ref m_Stats);
+                            m_VisualChangesProcessor.ProcessOnVisualsChanged(ve, m_DirtyTracker.dirtyID, ref m_Stats);
                         m_DirtyTracker.ClearDirty(ve, clearDirty);
                     }
                     ve = veNext;
@@ -434,15 +436,19 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
+            m_VisualChangesProcessor.ConvertEntriesToCommands(ref m_Stats);
+
             jobManager.CompleteConvertMeshJobs();
-            jobManager.CompleteClosingMeshJobs();
+            jobManager.CompleteCopyMeshJobs();
 
             opacityIdAccelerator.CompleteJobs();
-            s_MarkerVisualsProcessing.End();
+            k_MarkerVisualsProcessing.End();
             m_BlockDirtyRegistration = false;
 
-            vertsPool.Reset();
-            indicesPool.Reset();
+            vertexPool.Reset();
+            indexPool.Reset();
+            meshWriteDataPool.ReturnAll();
+            entryPool.ReturnAll();
 
             // Done with all dirtied elements
             m_DirtyTracker.Reset();
@@ -455,7 +461,7 @@ namespace UnityEngine.UIElements.UIR
 
             device?.OnFrameRenderingBegin();
 
-            s_MarkerProcess.End();
+            k_MarkerProcess.End();
         }
 
         public void Render()
@@ -631,13 +637,15 @@ namespace UnityEngine.UIElements.UIR
 
         internal BaseVisualElementPanel panel { get; private set; }
         internal UIRenderDevice device { get; private set; }
+        public BaseElementBuilder elementBuilder => m_VisualChangesProcessor.elementBuilder;
         internal AtlasBase atlas { get; private set; }
         internal VectorImageManager vectorImageManager { get; private set; }
-        internal TempAllocator<Vertex> vertsPool { get; private set; }
-        internal TempAllocator<UInt16> indicesPool { get; private set; }
+        internal TempAllocator<Vertex> vertexPool { get; private set; }
+        internal TempAllocator<UInt16> indexPool { get; private set; }
+        internal MeshWriteDataPool meshWriteDataPool { get; } = new();
+        internal EntryPool entryPool => s_SharedEntryPool;
         internal JobManager jobManager { get; private set; }
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
-        internal UIRStylePainter painter { get; private set; }
         internal bool drawStats { get; set; }
         internal bool drawInCameras { get; private set; }
 
@@ -972,8 +980,8 @@ namespace UnityEngine.UIElements.UIR
         internal int hierarchyDepth; // 0 is for the root
         internal RenderDataDirtyTypes dirtiedValues;
         internal uint dirtyID;
-        internal RenderChainCommand firstCommand, lastCommand; // Sequential for the same owner
-        internal RenderChainCommand firstClosingCommand, lastClosingCommand; // Optional, sequential for the same owner, the presence of closing commands requires starting commands too, otherwise certain optimizations will become invalid
+        internal RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
+        internal RenderChainCommand firstTailCommand, lastTailCommand; // Sequential for the same owner
         internal bool isInChain;
         internal bool isHierarchyHidden;
         internal bool localFlipsWinding;
@@ -984,8 +992,7 @@ namespace UnityEngine.UIElements.UIR
         internal int childrenStencilRef;
         internal int childrenMaskDepth;
 
-        internal bool disableNudging;
-        internal MeshHandle data, closingData;
+        internal MeshHandle headMesh, tailMesh;
         internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
         internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
         internal BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
@@ -994,7 +1001,7 @@ namespace UnityEngine.UIElements.UIR
 
         internal BasicNode<TextureEntry> textures;
 
-        internal RenderChainCommand lastClosingOrLastCommand { get { return lastClosingCommand ?? lastCommand; } }
+        internal RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
         static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
         static internal bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
     }

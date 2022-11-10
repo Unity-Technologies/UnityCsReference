@@ -23,8 +23,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         UnityModule = (1 << 8),
         NoEngineReferences = (1 << 9),
         SuppressCompilerWarnings = (1 << 10),
-        UserOverride = (1 << 11),
-        UserOverrideCandidate = (1 << 12),
         ValidateAssembly = (1 << 13),
     }
 }

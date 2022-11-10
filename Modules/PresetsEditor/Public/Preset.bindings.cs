@@ -65,6 +65,8 @@ namespace UnityEditor.Presets
 
         public extern bool IsValid();
 
+        internal extern bool IsCoupled();
+
         public extern bool CanBeAppliedTo(Object target);
 
         // Components returned by this method will have their GameObject hideFlags set with DontAllowDestruction.

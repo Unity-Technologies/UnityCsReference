@@ -45,7 +45,12 @@ namespace UnityEditor
 
             m_ParticleEffectUI = owner;
             m_ParticleSystems = systems;
-            m_ParticleSystemSerializedObject = new SerializedObject(m_ParticleSystems);
+            // keep the same serializedObject here as it is already created and the PresetEditor will expect it to be the same.
+            // When the full editor is opened, customEditor is null and we need to create our own serialized object.
+            // No presets are involved in that case so it is safe to do so.
+            m_ParticleSystemSerializedObject = owner.m_Owner.customEditor == null
+                ? new SerializedObject(m_ParticleSystems)
+                : owner.m_Owner.customEditor.serializedObject;
             m_RendererSerializedObject = null;
 
             m_SupportsCullingText = null;

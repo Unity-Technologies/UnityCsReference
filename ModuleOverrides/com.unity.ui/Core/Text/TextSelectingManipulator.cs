@@ -97,6 +97,9 @@ namespace UnityEngine.UIElements
                 case BlurEvent be:
                     OnBlurEvent(be);
                     break;
+                case KeyDownEvent kde:
+                    OnKeyDown(kde);
+                    break;
                 case PointerDownEvent pde:
                     OnPointerDownEvent(pde);
                     break;
@@ -130,6 +133,17 @@ namespace UnityEngine.UIElements
         void OnBlurEvent(BlurEvent evt)
         {
             selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
+        }
+
+        readonly Event m_ImguiEvent = new Event();
+        void OnKeyDown(KeyDownEvent evt)
+        {
+            if (!m_TextElement.hasFocus)
+                return;
+
+            evt.GetEquivalentImguiEvent(m_ImguiEvent);
+            if (m_SelectingUtilities.HandleKeyEvent(m_ImguiEvent))
+                evt.StopPropagation();
         }
 
         //Changed to not rely on evt.clickCount to fix https://fogbugz.unity3d.com/f/cases/1409098/
@@ -198,7 +212,7 @@ namespace UnityEngine.UIElements
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)
         {
-            if (!m_TextElement.edition.hasFocus)
+            if (!m_TextElement.hasFocus)
                 return;
 
             switch (evt.commandName)
@@ -220,7 +234,7 @@ namespace UnityEngine.UIElements
 
         void OnExecuteCommandEvent(ExecuteCommandEvent evt)
         {
-            if (!m_TextElement.edition.hasFocus)
+            if (!m_TextElement.hasFocus)
                 return;
 
             switch (evt.commandName)

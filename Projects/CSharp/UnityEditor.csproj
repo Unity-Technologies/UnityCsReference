@@ -845,6 +845,9 @@
     <Compile Include="..\..\Editor\Mono\ContainerWindow.cs">
       <Link>Editor\Mono\ContainerWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\CustomEditorAttributes.bindings.cs">
+      <Link>Editor\Mono\CustomEditorAttributes.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\CustomEditorAttributes.cs">
       <Link>Editor\Mono\CustomEditorAttributes.cs</Link>
     </Compile>
@@ -8849,6 +8852,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataTypeStatic.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\DataTypeStatic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DefaultContainer.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DefaultContainer.cs</Link>
     </Compile>
@@ -8879,6 +8885,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\InternalType.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\InternalType.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.binding.cs</Link>
     </Compile>
@@ -8893,6 +8902,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PublicType.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\PublicType.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderAttribute.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderAttribute.bindings.cs</Link>
@@ -9707,7 +9719,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_95ad/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_f3f3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

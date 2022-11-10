@@ -346,10 +346,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // Add predefined custom target references in a hash-set for fast lookup
                 var predefinedCustomTargetRefs = new HashSet<string>(predefinedCustomTargetReferences.Select(x => x.Filename));
                 unityReferences = GetUnityReferences(scriptAssembly, targetAssembly, assemblies.UnityAssemblies, predefinedCustomTargetRefs, settings.CompilationOptions, UnityReferencesOptions.None);
-                references.AddRange(unityReferences
-                    .Where(r => !r.Flags.HasFlag(AssemblyFlags.UserOverride))
-                    .Select(r => r.Path)
-                );
+                references.AddRange(unityReferences.Select(r => r.Path));
             }
 
             AddTestRunnerCustomReferences(ref targetAssembly, assemblies.CustomTargetAssemblies);
@@ -385,16 +382,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (targetToScriptAssembly.TryGetValue(customTargetAssembly, out scriptAssemblyReference))
                         scriptAssemblyReferences.Add(scriptAssemblyReference);
                 }
-            }
-
-            var unityReferencesGenerated = unityReferences
-                .Where(r => r.Flags.HasFlag(AssemblyFlags.UserOverride))
-                .Select(r => Path.GetFileName(r.Path));
-            foreach (var assembly in unityReferencesGenerated)
-            {
-                var scriptAssemblyReference = targetToScriptAssembly.FirstOrDefault(kvp => kvp.Key.Filename == assembly);
-                if (scriptAssemblyReference.Value != null)
-                    scriptAssemblyReferences.Add(scriptAssemblyReference.Value);
             }
 
             // Add pre-compiled assemblies as references
@@ -478,7 +465,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             bool excludeUnityModules = unityReferencesOptions == UnityReferencesOptions.ExcludeModules;
-            bool isOverridingUnityAssembly = false;
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
             if (unityAssemblies == null)
@@ -486,30 +472,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var unityAssembly in unityAssemblies)
             {
-                if ((unityAssembly.Flags & (AssemblyFlags.UserOverride | AssemblyFlags.UserOverrideCandidate)) != AssemblyFlags.None)
-                {
-                    var unityAssemblyFileName = AssetPath.GetFileName(unityAssembly.Path);
-
-                    // This scriptAssembly is overriding this unityAssembly so it should probably not depend on itself.
-                    if (unityAssemblyFileName == scriptAssembly.Filename)
-                    {
-                        isOverridingUnityAssembly = true;
-                        continue;
-                    }
-
-                    // Custom targets may override Unity references, do not add them to avoid duplicated references.
-                    if (predefinedCustomTargetReferences != null && predefinedCustomTargetReferences.Contains(unityAssemblyFileName))
-                        continue;
-
-                    // If this scriptAssembly/targetAssembly explicitly references another
-                    // scriptAssembly that has actually overridden this unityAssembly, we should
-                    // not add the unityAssembly to the references as well. It's possible
-                    // that this scriptAssembly is using new APIs that don't exist in the shipped
-                    // copy of the unityAssembly.
-                    if (targetAssembly != null && targetAssembly.References.Any(ta => ta.Filename == unityAssemblyFileName))
-                        continue;
-                }
-
                 var isUnityModule = (unityAssembly.Flags & AssemblyFlags.UnityModule) == AssemblyFlags.UnityModule;
 
                 if (isUnityModule && excludeUnityModules)
@@ -535,10 +497,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
                 }
             }
-
-            // UserOverride assemblies should not have a dependency on Editor assemblies.
-            if (isOverridingUnityAssembly && !assemblyEditorOnly)
-                return references.Where(assembly => !Path.GetFileName(assembly.Path).Contains("UnityEditor")).ToArray();
 
             return references.ToArray();
         }

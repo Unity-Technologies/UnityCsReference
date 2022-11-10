@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/BlockSequenceElement.h")]
-    internal struct BlockSequenceElementInternal
+    internal struct BlockSequenceElementInternal : IInternalType<BlockSequenceElementInternal>
     {
         internal FoundryHandle m_BlockHandle;
         internal FoundryHandle m_CustomizationPointHandle;
@@ -21,15 +21,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static BlockSequenceElementInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        BlockSequenceElementInternal IInternalType<BlockSequenceElementInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct BlockSequenceElement : IEquatable<BlockSequenceElement>
+    internal readonly struct BlockSequenceElement : IEquatable<BlockSequenceElement>, IPublicType<BlockSequenceElement>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly BlockSequenceElementInternal element;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        BlockSequenceElement IPublicType<BlockSequenceElement>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new BlockSequenceElement(container, handle);
 
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
@@ -45,7 +54,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.element = container?.GetBlockSequenceElement(handle) ?? BlockSequenceElementInternal.Invalid();
+            ShaderContainer.Get(container, handle, out element);
         }
 
         public static BlockSequenceElement Invalid => new BlockSequenceElement(null, FoundryHandle.Invalid());
@@ -104,7 +113,7 @@ namespace UnityEditor.ShaderFoundry
                 internalResult.m_InstanceNameHandle = container.AddString(instanceName);
                 internalResult.m_InputLinkOverridesListHandle = FixedHandleListInternal.Build(container, inputOverrides, (o) => (o.handle));
                 internalResult.m_OutputLinkOverridesListHandle = FixedHandleListInternal.Build(container, outputOverrides, (o) => (o.handle));
-                var returnTypeHandle = container.AddBlockSequenceElementInternal(internalResult);
+                var returnTypeHandle = container.Add(internalResult);
                 return new BlockSequenceElement(container, returnTypeHandle);
             }
         }

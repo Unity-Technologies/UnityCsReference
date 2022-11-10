@@ -792,10 +792,11 @@ namespace Unity.UI.Builder
         void SetCanvasTitle()
         {
             var newFileName = document.uxmlFileName;
+            bool hasUSSChanges = ((m_Selection.selectionType == BuilderSelectionType.StyleSheet) || (m_Selection.selectionType == BuilderSelectionType.StyleSelector) || (m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector));
 
             if (string.IsNullOrEmpty(newFileName))
                 newFileName = BuilderConstants.ToolbarUnsavedFileDisplayMessage;
-            else if (document.hasUnsavedChanges)
+            else if (document.hasUnsavedChanges && !hasUSSChanges)
                 newFileName = newFileName + BuilderConstants.ToolbarUnsavedFileSuffix;
 
             m_Viewport.canvas.titleLabel.text = newFileName;

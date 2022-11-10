@@ -11,22 +11,31 @@ using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/CustomizationPointImplementation.h")]
-    internal struct CustomizationPointImplementationInternal
+    internal struct CustomizationPointImplementationInternal : IInternalType<CustomizationPointImplementationInternal>
     {
         internal FoundryHandle m_CustomizationPointHandle;
         internal FoundryHandle m_BlockSequenceElementListHandle;
 
         internal extern static CustomizationPointImplementationInternal Invalid();
         internal extern bool IsValid();
+
+        // IInternalType
+        CustomizationPointImplementationInternal IInternalType<CustomizationPointImplementationInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct CustomizationPointImplementation : IEquatable<CustomizationPointImplementation>
+    internal readonly struct CustomizationPointImplementation : IEquatable<CustomizationPointImplementation>, IPublicType<CustomizationPointImplementation>
     {
         // data members
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
         readonly CustomizationPointImplementationInternal customizationPointImplementation;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        CustomizationPointImplementation IPublicType<CustomizationPointImplementation>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new CustomizationPointImplementation(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -47,7 +56,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.customizationPointImplementation = container?.GetCustomizationPointImplementation(handle) ?? CustomizationPointImplementationInternal.Invalid();
+            ShaderContainer.Get(container, handle, out customizationPointImplementation);
         }
 
         public static CustomizationPointImplementation Invalid => new CustomizationPointImplementation(null, FoundryHandle.Invalid());
@@ -88,7 +97,7 @@ namespace UnityEditor.ShaderFoundry
 
                 customizationPointImplementationInternal.m_BlockSequenceElementListHandle = FixedHandleListInternal.Build(container, blockSequenceElements, (e) => (e.handle));
 
-                var returnTypeHandle = container.AddCustomizationPointImplementationInternal(customizationPointImplementationInternal);
+                var returnTypeHandle = container.Add(customizationPointImplementationInternal);
                 return new CustomizationPointImplementation(container, returnTypeHandle);
             }
         }

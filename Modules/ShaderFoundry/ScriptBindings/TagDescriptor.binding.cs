@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/TagDescriptor.h")]
-    internal struct TagDescriptorInternal
+    internal struct TagDescriptorInternal : IInternalType<TagDescriptorInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ValueHandle;
@@ -22,15 +22,24 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern FoundryHandle GetNameHandle();
         internal extern FoundryHandle GetValueHandle();
+
+        // IInternalType
+        TagDescriptorInternal IInternalType<TagDescriptorInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct TagDescriptor : IEquatable<TagDescriptor>
+    internal readonly struct TagDescriptor : IEquatable<TagDescriptor>, IPublicType<TagDescriptor>
     {
         // data members
         readonly ShaderContainer container;
         readonly TagDescriptorInternal descriptor;
         internal readonly FoundryHandle handle;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        TagDescriptor IPublicType<TagDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new TagDescriptor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -44,7 +53,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.descriptor = container?.GetTagDescriptor(handle) ?? TagDescriptorInternal.Invalid();
+            ShaderContainer.Get(container, handle, out descriptor);
         }
 
         public static TagDescriptor Invalid => new TagDescriptor(null, FoundryHandle.Invalid());
@@ -76,7 +85,7 @@ namespace UnityEditor.ShaderFoundry
                 var descriptor = new TagDescriptorInternal();
                 descriptor.m_NameHandle = container.AddString(name);
                 descriptor.m_ValueHandle = container.AddString(value);
-                var resultHandle = container.AddTagDescriptorInternal(descriptor);
+                var resultHandle = container.Add(descriptor);
                 return new TagDescriptor(container, resultHandle);
             }
         }

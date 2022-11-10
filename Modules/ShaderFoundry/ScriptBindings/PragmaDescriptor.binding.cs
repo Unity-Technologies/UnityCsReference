@@ -12,7 +12,7 @@ using System.Linq;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/PragmaDescriptor.h")]
-    internal struct PragmaDescriptorInternal
+    internal struct PragmaDescriptorInternal : IInternalType<PragmaDescriptorInternal>
     {
         internal FoundryHandle m_ListHandle;
 
@@ -23,15 +23,24 @@ namespace UnityEditor.ShaderFoundry
         internal extern string GetName(ShaderContainer container);
         internal extern int GetOpCount(ShaderContainer container);
         internal extern string GetOp(ShaderContainer container, int index);
+
+        // IInternalType
+        PragmaDescriptorInternal IInternalType<PragmaDescriptorInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct PragmaDescriptor : IEquatable<PragmaDescriptor>
+    internal readonly struct PragmaDescriptor : IEquatable<PragmaDescriptor>, IPublicType<PragmaDescriptor>
     {
         // data members
         readonly ShaderContainer container;
         readonly PragmaDescriptorInternal descriptor;
         internal readonly FoundryHandle handle;
+
+        // IPublicType
+        ShaderContainer IPublicType.Container => Container;
+        bool IPublicType.IsValid => IsValid;
+        FoundryHandle IPublicType.Handle => handle;
+        PragmaDescriptor IPublicType<PragmaDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new PragmaDescriptor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
@@ -54,7 +63,7 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
             this.handle = handle;
-            this.descriptor = container?.GetPragmaDescriptor(handle) ?? PragmaDescriptorInternal.Invalid();
+            ShaderContainer.Get(container, handle, out descriptor);
         }
 
         public static PragmaDescriptor Invalid => new PragmaDescriptor(null, FoundryHandle.Invalid());
@@ -85,7 +94,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new PragmaDescriptorInternal();
                 descriptor.Setup(container, name, ops.ToArray());
-                var resultHandle = container.AddPragmaDescriptorInternal(descriptor);
+                var resultHandle = container.Add(descriptor);
                 return new PragmaDescriptor(container, resultHandle);
             }
         }

@@ -116,7 +116,7 @@ namespace UnityEngine.UIElements.UIR
         const string k_ShaderModelIs35Tag = "UIE_ShaderModelIs35";
         const string k_ShaderModelIs35True = "1";
 
-        internal uint maxVerticesPerPage { get; } = 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
+        internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
 
         internal bool breakBatches { get; set; }
 
@@ -159,9 +159,6 @@ namespace UnityEngine.UIElements.UIR
                 m_Updates.Add(new List<AllocToUpdate>());
             }
         }
-
-        // TODO: Remove this. Unused.
-        static internal Func<Shader> getEditorShader = null;
 
         #region Default system resources
         static private Texture2D s_DefaultShaderInfoTexFloat, s_DefaultShaderInfoTexARGB8;
