@@ -101,7 +101,10 @@ namespace UnityEditor.AnimatedValues
         void Update()
         {
             if (!m_Animating)
+            {
+                EditorApplication.update -= Update;
                 return;
+            }
 
             // update the lerpPosition
             UpdateLerpPosition();

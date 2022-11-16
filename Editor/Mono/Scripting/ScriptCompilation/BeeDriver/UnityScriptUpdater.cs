@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -112,10 +113,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var runningScriptUpdater = _scriptUpdaterProgram.Start(ProjectRoot.ToString(), args);
 
-            return AwaitScriptUpdaterResults(runningScriptUpdater, updateTxtFile, updaterMessagesToConsoleFile, containsUpdatableCompilerMessage, nodeFinishedMessage.Node.OutputFile);
+            return AwaitScriptUpdaterResults(runningScriptUpdater, updateTxtFile, updaterMessagesToConsoleFile, containsUpdatableCompilerMessage, nodeFinishedMessage.Node.OutputFile, assemblyInfo);
         }
 
-        async Task<Results> AwaitScriptUpdaterResults(RunningProgram runningScriptUpdater, NPath updateTxtFile, NPath updaterMessagesToConsoleFile, CanUpdateAny containsUpdatableCompilerMessage, string nodeOutputFile)
+        async Task<Results> AwaitScriptUpdaterResults(RunningProgram runningScriptUpdater, NPath updateTxtFile, NPath updaterMessagesToConsoleFile, CanUpdateAny containsUpdatableCompilerMessage, string nodeOutputFile, AssemblyData_Out assemblyInfo)
         {
             //when the user asks us to cancel a build, we do not want to leave stray unity script updaters laying around. we will
             //just wait for them to finish.
@@ -131,13 +132,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return ErrorResult($"Script updater for {nodeOutputFile} failed with exitcode {scriptUpdaterResult.ExitCode} and stdout: {scriptUpdaterResult.Output}");
 
             if (!updateTxtFile.FileExists())
-                return ErrorResult($"Script updater for {nodeOutputFile} failed to produce updates.txt file");
+            {
+                return WarningResult($"Script updater for {nodeOutputFile} failed to produce updates.txt file (response file: {assemblyInfo.ScriptUpdaterRsp}, MovedFromCache: {assemblyInfo.MovedFromExtractorFile}");
+            }
 
             return CollectResultsIfAny(messages, nodeOutputFile, updateTxtFile, containsUpdatableCompilerMessage);
 
             static Results ErrorResult(string message) => new()
             {
                 Messages = new[] {new BeeDriverResult.Message(message, BeeDriverResult.MessageKind.Error)},
+                ProducedUpdates = Array.Empty<Update>()
+            };
+
+            static Results WarningResult(string message) => new()
+            {
+                Messages = new[] {new BeeDriverResult.Message(message, BeeDriverResult.MessageKind.Warning)},
                 ProducedUpdates = Array.Empty<Update>()
             };
 

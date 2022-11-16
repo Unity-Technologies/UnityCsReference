@@ -312,6 +312,9 @@ namespace UnityEngine.UIElements
             public Rect uv;
             public Color color;
 
+            // Normalized visible sub-region
+            public Rect subRect;
+
             // Allow support of background-properties
             public BackgroundPosition backgroundPositionX;
             public BackgroundPosition backgroundPositionY;
@@ -329,6 +332,9 @@ namespace UnityEngine.UIElements
             public Vector2 topRightRadius;
             public Vector2 bottomRightRadius;
             public Vector2 bottomLeftRadius;
+
+            public Vector2 contentSize;
+            public Vector2 textureSize;
 
             public int leftSlice;
             public int topSlice;
@@ -512,7 +518,7 @@ namespace UnityEngine.UIElements
                 uvOut = uv;
             }
 
-            static Rect RectIntersection(Rect a, Rect b)
+            internal static Rect RectIntersection(Rect a, Rect b)
             {
                 var r = Rect.zero;
                 r.min = Vector2.Max(a.min, b.min);
@@ -586,12 +592,17 @@ namespace UnityEngine.UIElements
 
                 AdjustUVsForScaleMode(rect, uv, texture, scaleMode, out rect, out uv);
 
+                var textureSize = new Vector2(texture.width, texture.height);
+
                 var rp = new RectangleParams
                 {
                     rect = rect,
+                    subRect = new Rect(0,0,1,1),
                     uv = uv,
                     color = Color.white,
                     texture = texture,
+                    contentSize = textureSize,
+                    textureSize = textureSize,
                     scaleMode = scaleMode,
                     playmodeTintColor = playmodeTintColor
                 };
@@ -600,6 +611,9 @@ namespace UnityEngine.UIElements
 
             public static RectangleParams MakeSprite(Rect rect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices, bool useForRepeat = false)
             {
+                if (sprite == null || sprite.bounds.size.x < UIRUtility.k_Epsilon || sprite.bounds.size.y < UIRUtility.k_Epsilon)
+                    return new RectangleParams();
+
                 if (sprite.texture == null)
                 {
                     Debug.LogWarning($"Ignoring textureless sprite named \"{sprite.name}\", please import as a VectorImage instead");
@@ -625,13 +639,23 @@ namespace UnityEngine.UIElements
 
                 AdjustSpriteUVsForScaleMode(rect, uv, geomRect, sprite.texture, sprite, scaleMode, out rect, out uv);
 
+                // Compute normalized subRect
+                var subRect = geomRect;
+                subRect.size /= (Vector2)sprite.bounds.size;
+                subRect.position -= (Vector2)sprite.bounds.min;
+                subRect.position /= (Vector2)sprite.bounds.size;
+                subRect.position = new Vector2(subRect.position.x, 1.0f - (subRect.position.y + subRect.height)); // Y-down for UIR
+
                 var rp = new RectangleParams
                 {
                     rect = rect,
                     uv = uv,
+                    subRect = subRect,
                     color = Color.white,
                     texture = useTexturedQuad ? sprite.texture : (Texture2D)null,
                     sprite = useTexturedQuad ? (Sprite)null : sprite,
+                    contentSize = sprite.rect.size,
+                    textureSize = new Vector2(sprite.texture.width, sprite.texture.height),
                     spriteGeomRect = geomRect,
                     scaleMode = scaleMode,
                     playmodeTintColor = playmodeTintColor,
@@ -659,9 +683,11 @@ namespace UnityEngine.UIElements
                 var rp = new RectangleParams
                 {
                     rect = rect,
+                    subRect = new Rect(0,0,1,1),
                     uv = uv,
                     color = Color.white,
                     vectorImage = vectorImage,
+                    contentSize = new Vector2(vectorImage.width, vectorImage.height),
                     scaleMode = scaleMode,
                     playmodeTintColor = playmodeTintColor
                 };
@@ -676,11 +702,16 @@ namespace UnityEngine.UIElements
                     ((bottomLeftRadius.x > epsilon) && (bottomLeftRadius.y > epsilon));
             }
 
+            internal bool HasSlices(float epsilon)
+            {
+                return (leftSlice > epsilon) || (topSlice > epsilon) || (rightSlice > epsilon) || (bottomSlice > epsilon);
+            }
+
             internal MeshBuilderNative.NativeRectParams ToNativeParams(Rect uvRegion)
             {
-
                 return new MeshBuilderNative.NativeRectParams() {
                     rect = rect,
+                    subRect = subRect,
                     uv = uv,
                     uvRegion = uvRegion,
                     color = color,
@@ -689,7 +720,8 @@ namespace UnityEngine.UIElements
                     topRightRadius = topRightRadius,
                     bottomRightRadius = bottomRightRadius,
                     bottomLeftRadius = bottomLeftRadius,
-                    textureSize = texture != null ? new Vector2(texture.width, texture.height) : Vector2.zero,
+                    contentSize = contentSize,
+                    textureSize = textureSize,
                     texturePixelsPerPoint = texture is Texture2D ? (texture as Texture2D).pixelsPerPoint : 1.0f,
                     leftSlice = leftSlice,
                     topSlice = topSlice,

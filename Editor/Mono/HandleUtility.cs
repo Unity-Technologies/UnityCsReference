@@ -1197,10 +1197,13 @@ namespace UnityEditor
                 if (objects[i] == null)
                     continue;
 
+                // If the object is represented by entities, they take priority
+                if (GetEntitiesForAuthoringObject(objects[i].target, ent) > 0)
+                    continue;
+
+                // Otherwise, use the Renderer component, if any
                 if (objects[i].target is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
                     ren.Add(renderer.GetInstanceID());
-                else
-                    GetEntitiesForAuthoringObject(objects[i].target, ent);
             }
         }
 
@@ -1214,10 +1217,13 @@ namespace UnityEditor
                 if (objects[i] == null)
                     continue;
 
+                // If the object is represented by entities, they take priority
+                if (GetEntitiesForAuthoringObject(objects[i], ent) > 0)
+                    continue;
+
+                // Otherwise, use the Renderer component, if any
                 if (objects[i] is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
                     ren.Add(renderer.GetInstanceID());
-                else
-                    GetEntitiesForAuthoringObject(objects[i], ent);
             }
         }
 
@@ -1242,16 +1248,24 @@ namespace UnityEditor
             return null;
         }
 
-        static void GetEntitiesForAuthoringObject(UnityEngine.Object authoring, List<int> entities)
+        static int GetEntitiesForAuthoringObject(UnityEngine.Object authoring, List<int> entities)
         {
+            int numEntities = 0;
             var delegates = getEntitiesForAuthoringObject?.GetInvocationList();
 
             if (delegates == null)
-                return;
+                return 0;
 
             foreach (var del in delegates)
+            {
                 foreach (var ent in ((Func<UnityEngine.Object, IEnumerable<int>>)del)(authoring))
+                {
                     entities.Add(ent);
+                    ++numEntities;
+                }
+            }
+
+            return numEntities;
         }
 
         // Get the selection base object, taking into account user enabled picking filter

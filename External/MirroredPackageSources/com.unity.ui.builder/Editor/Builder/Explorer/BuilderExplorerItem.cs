@@ -29,7 +29,8 @@ namespace Unity.UI.Builder
             m_ReorderZoneAbove.userData = this;
             m_ReorderZoneBelow.userData = this;
 
-            this.RegisterCallback<MouseDownEvent>(e => OnMouseDownEventForRename(e));
+            // Register on TrickleDown to receive the event before the BuilderClassDragger because it stops propagation
+            this.RegisterCallback<MouseDownEvent>(e => OnMouseDownEventForRename(e), TrickleDown.TrickleDown);
         }
 
         void OnMouseDownEventForRename(MouseDownEvent e)

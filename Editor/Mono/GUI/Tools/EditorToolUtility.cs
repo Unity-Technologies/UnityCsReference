@@ -212,8 +212,10 @@ namespace UnityEditor.EditorTools
             if(GetEnumWithEditorTool(tool) == Tool.Custom)
             {
                 var type = tool.GetType();
-                return !IsComponentTool(type)
-                    && EditorToolManager.additionalContextToolTypesCache.All(t => t != type);
+                return !IsComponentTool(type)   // Component tool?
+                    && !IsManipulationTool(GetEnumWithEditorTool(tool, EditorToolManager.GetSingleton<GameObjectToolContext>())) // Built-in tool?
+                    && !IsBuiltinOverride(tool) // Built-in tool override?
+                    && EditorToolManager.additionalContextToolTypesCache.All(t => t != type); // Additional/Extra tool?
             }
 
             return false;
