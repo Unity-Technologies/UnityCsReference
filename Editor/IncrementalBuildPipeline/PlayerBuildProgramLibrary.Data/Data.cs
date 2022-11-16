@@ -74,9 +74,13 @@ namespace PlayerBuildProgramLibrary.Data
 
         public string[] AdditionalCppFiles = new string[0];
         public string[] AdditionalArgs = new string[0];
+        public string CompilerFlags;
+        public string LinkerFlags;
         public string ExtraTypes;
         public bool CreateSymbolFiles;
         public bool AllowDebugging;
+        public string SysRootPath;
+        public string ToolChainPath;
     }
 
     public class Services
