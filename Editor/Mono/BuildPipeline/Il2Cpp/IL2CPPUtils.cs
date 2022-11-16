@@ -34,6 +34,10 @@ namespace UnityEditor
         public abstract string TargetPlatform { get; }
         public abstract string TargetArch { get; }
         public abstract IEnumerable<string> GetIl2CppArguments();
+        public abstract string GetSysrootPath();
+        public abstract string GetToolchainPath();
+        public abstract string GetIl2CppCompilerFlags();
+        public abstract string GetIl2CppLinkerFlags();
     }
 }
 

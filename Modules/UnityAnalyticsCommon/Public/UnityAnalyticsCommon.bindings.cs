@@ -15,9 +15,9 @@ namespace UnityEngine.Analytics
         [StaticAccessor("GetUnityAnalyticsCommon()", StaticAccessorType.Dot)]
         private extern static bool ugsAnalyticsEnabledInternal
         {
-            [NativeMethod("GetUGSAnalyticsEnabled")]
+            [NativeMethod("UGSAnalyticsUserOptStatus")]
             get;
-            [NativeMethod("SetUGSAnalyticsEnabled")]
+            [NativeMethod("SetUGSAnalyticsUserOptStatus")]
             set;
         }
     }

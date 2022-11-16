@@ -13,7 +13,7 @@ namespace UnityEngine.Pool
     /// <typeparam name="T">Type of the object pool.</typeparam>
     public class ObjectPool<T> : IDisposable, IObjectPool<T> where T : class
     {
-        internal readonly Stack<T> m_Stack;
+        internal readonly List<T> m_List;
         readonly Func<T> m_CreateFunc;
         readonly Action<T> m_ActionOnGet;
         readonly Action<T> m_ActionOnRelease;
@@ -34,7 +34,7 @@ namespace UnityEngine.Pool
         /// <summary>
         /// Number of objects that are currently available in the pool.
         /// </summary>
-        public int CountInactive { get { return m_Stack.Count; } }
+        public int CountInactive { get { return m_List.Count; } }
 
         /// <summary>
         /// Creates a new ObjectPool.
@@ -54,7 +54,7 @@ namespace UnityEngine.Pool
             if (maxSize <= 0)
                 throw new ArgumentException("Max Size must be greater than 0", nameof(maxSize));
 
-            m_Stack = new Stack<T>(defaultCapacity);
+            m_List = new List<T>(defaultCapacity);
             m_CreateFunc = createFunc;
             m_MaxSize = maxSize;
             m_ActionOnGet = actionOnGet;
@@ -70,14 +70,16 @@ namespace UnityEngine.Pool
         public T Get()
         {
             T element;
-            if (m_Stack.Count == 0)
+            if (m_List.Count == 0)
             {
                 element = m_CreateFunc();
                 CountAll++;
             }
             else
             {
-                element = m_Stack.Pop();
+                var idx = m_List.Count - 1;
+                element = m_List[idx];
+                m_List.RemoveAt(idx);
             }
             m_ActionOnGet?.Invoke(element);
             return element;
@@ -96,17 +98,20 @@ namespace UnityEngine.Pool
         /// <param name="element">Object to release.</param>
         public void Release(T element)
         {
-            if (m_CollectionCheck && m_Stack.Count > 0)
+            if (m_CollectionCheck && m_List.Count > 0)
             {
-                if (m_Stack.Contains(element))
-                    throw new InvalidOperationException("Trying to release an object that has already been released to the pool.");
+                for (int i = 0; i < m_List.Count; i++)
+                {
+                    if (ReferenceEquals(element, m_List[i]))
+                        throw new InvalidOperationException("Trying to release an object that has already been released to the pool.");
+                }
             }
 
             m_ActionOnRelease?.Invoke(element);
 
             if (CountInactive < m_MaxSize)
             {
-                m_Stack.Push(element);
+                m_List.Add(element);
             }
             else
             {
@@ -121,13 +126,13 @@ namespace UnityEngine.Pool
         {
             if (m_ActionOnDestroy != null)
             {
-                foreach (var item in m_Stack)
+                foreach (var item in m_List)
                 {
                     m_ActionOnDestroy(item);
                 }
             }
 
-            m_Stack.Clear();
+            m_List.Clear();
             CountAll = 0;
         }
 

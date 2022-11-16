@@ -214,6 +214,26 @@ namespace UnityEditor.Modules
                 yield return args.Substring(startIndex, i - startIndex);
         }
 
+        protected virtual string Il2CppSysrootPathFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
+        protected virtual string Il2CppToolchainPathFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
+        protected virtual string Il2CppCompilerFlagsFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
+        protected virtual string Il2CppLinkerFlagsFor(BuildPostProcessArgs args)
+        {
+            return null;
+        }
+
         Il2CppConfig Il2CppConfigFor(BuildPostProcessArgs args)
         {
             if (!GetUseIl2Cpp(args))
@@ -228,6 +248,11 @@ namespace UnityEditor.Modules
             var playerSettingsArgs = PlayerSettings.GetAdditionalIl2CppArgs();
             if (!string.IsNullOrEmpty(playerSettingsArgs))
                 additionalArgs.AddRange(SplitArgs(playerSettingsArgs));
+
+            var sysrootPath = Il2CppSysrootPathFor(args);
+            var toolchainPath = Il2CppToolchainPathFor(args);
+            var compilerFlags = Il2CppCompilerFlagsFor(args);
+            var linkerFlags = Il2CppLinkerFlagsFor(args);
 
             if (CrashReportingSettings.enabled)
                 additionalArgs.Add("--emit-source-mapping");
@@ -260,6 +285,10 @@ namespace UnityEditor.Modules
                     .ToArray(),
                 AdditionalArgs = additionalArgs.ToArray(),
                 AllowDebugging = allowDebugging,
+                CompilerFlags = compilerFlags,
+                LinkerFlags = linkerFlags,
+                SysRootPath = sysrootPath,
+                ToolChainPath = toolchainPath,
             };
         }
 

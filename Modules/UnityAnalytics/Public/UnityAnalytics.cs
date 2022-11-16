@@ -143,42 +143,30 @@ namespace UnityEngine.Analytics
             return FlushArchivedEvents() ? AnalyticsResult.Ok : AnalyticsResult.NotInitialized;
         }
 
-        [Serializable]
-        private struct UserInfo
-        {
-            public string custom_userid;
-            public string sex;
-        }
-
+        [Obsolete("SetUserId is no longer supported", true)]
         public static AnalyticsResult SetUserId(string userId)
         {
             if (string.IsNullOrEmpty(userId))
                 throw new ArgumentException("Cannot set userId to an empty or null string");
-            return SendUserInfoEvent(new UserInfo() { custom_userid = userId });
+            return AnalyticsResult.InvalidData;;
         }
 
+        [Obsolete("SetUserGender is no longer supported", true)]
         public static AnalyticsResult SetUserGender(Gender gender)
         {
-            return SendUserInfoEvent(new UserInfo() { sex = gender == Gender.Male ? "M" : gender == Gender.Female ? "F" : "U" });
+            return AnalyticsResult.InvalidData;;
         }
 
-        [Serializable]
-        private struct UserInfoBirthYear
-        {
-            public int birth_year;
-        }
-
+        [Obsolete("SetUserBirthYear is no longer supported", true)]
         public static AnalyticsResult SetUserBirthYear(int birthYear)
         {
-            return SendUserInfoEvent(new UserInfoBirthYear() { birth_year = birthYear });
+            return AnalyticsResult.InvalidData;
         }
 
+        [Obsolete("SendUserInfoEvent is no longer supported", true)]
         private static AnalyticsResult SendUserInfoEvent(object param)
         {
-            if (!IsInitialized())
-                return AnalyticsResult.NotInitialized;
-            QueueEvent("userInfo", param, 1, String.Empty);
-            return AnalyticsResult.Ok;
+            return AnalyticsResult.InvalidData;
         }
 
         public static AnalyticsResult Transaction(string productId, decimal amount, string currency)
