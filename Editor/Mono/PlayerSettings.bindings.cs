@@ -248,6 +248,20 @@ namespace UnityEditor
         DXT5nm = 1
     }
 
+    // Windows platform input APIs
+    // Keep in sync with WindowsGamepadBackendHint enum from PlayerSettings.h
+    public enum WindowsGamepadBackendHint
+    {
+        // Backend selected automatically based on platform support
+        WindowsGamepadBackendHintDefault = 0,
+
+        // XInput
+        WindowsGamepadBackendHintXInput = 1,
+
+        // GameInput
+        WindowsGamepadBackendHintWindowsGamingInput = 2
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     [NativeClass(null)]
     [NativeHeader("Editor/Mono/PlayerSettings.bindings.h")]
@@ -1340,6 +1354,19 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().GetDisableOldInputManagerSupport")]
         internal static extern bool GetDisableOldInputManagerSupport();
+
+        [FreeFunction("GetPlayerSettings().GetWindowsGamepadBackendHint")]
+        internal static extern WindowsGamepadBackendHint GetWindowsGamepadBackendHint();
+
+        [FreeFunction("GetPlayerSettings().SetWindowsGamepadBackendHint")]
+        internal static extern void SetWindowsGamepadBackendHint(WindowsGamepadBackendHint value);
+
+        // The input API backend used on Windows platforms
+        public static WindowsGamepadBackendHint windowsGamepadBackendHint
+        {
+            get { return GetWindowsGamepadBackendHint(); }
+            set { SetWindowsGamepadBackendHint(value); }
+        }
 
         [StaticAccessor("GetPlayerSettings()")]
         [NativeMethod("GetVirtualTexturingSupportEnabled")]

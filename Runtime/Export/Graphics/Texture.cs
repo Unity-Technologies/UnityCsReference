@@ -505,9 +505,33 @@ namespace UnityEngine
 
     public partial class Texture2D : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
+            if (ValidateFormat(format, width, height))
                 Internal_Create(this, width, height, mipCount, format, flags, nativeTex);
         }
 
@@ -531,7 +555,7 @@ namespace UnityEngine
 
         internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width, height))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
@@ -808,6 +832,30 @@ namespace UnityEngine
 
     public sealed partial class Cubemap : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !Mathf.IsPowerOfTwo(width))
+                    throw new UnityException(String.Format("'{0}' demands texture to have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !Mathf.IsPowerOfTwo(width))
+                    throw new UnityException(String.Format("'{0}' demands texture to have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         [uei.ExcludeFromDocs]
         public Cubemap(int width, DefaultFormat format, TextureCreationFlags flags)
             : this(width, SystemInfo.GetGraphicsFormat(format), flags)
@@ -818,7 +866,7 @@ namespace UnityEngine
         [RequiredByNativeCode] // used to create builtin textures
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (ValidateFormat(format, FormatUsage.Sample))
+            if (ValidateFormat(format, width))
                 Internal_Create(this, width, Texture.GenerateAllMips, format, flags, IntPtr.Zero);
         }
 
@@ -830,7 +878,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, width))
                 return;
 
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
@@ -840,7 +888,7 @@ namespace UnityEngine
 
         internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
@@ -1106,6 +1154,30 @@ namespace UnityEngine
 
     public sealed partial class Texture2DArray : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags)
             : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags)
@@ -1122,7 +1194,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, width, height))
                 return;
             ValidateIsNotCrunched(flags);
             Internal_Create(this, width, height, depth, mipCount, format, flags);
@@ -1130,7 +1202,7 @@ namespace UnityEngine
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width, height))
                 return;
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
@@ -1307,6 +1379,30 @@ namespace UnityEngine
 
     public sealed partial class SparseTexture : Texture
     {
+        internal bool ValidateFormat(TextureFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format);
+            if (isValid)
+            {
+                bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
+        internal bool ValidateFormat(GraphicsFormat format, int width, int height)
+        {
+            bool isValid = ValidateFormat(format, FormatUsage.Sparse);
+            if (isValid)
+            {
+                bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
+                if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
+                    throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
+            }
+            return isValid;
+        }
+
         internal bool ValidateSize(int width, int height, GraphicsFormat format)
         {
             if (GraphicsFormatUtility.GetBlockSize(format) * (width / GraphicsFormatUtility.GetBlockWidth(format)) * (height / GraphicsFormatUtility.GetBlockHeight(format)) < 65536)
@@ -1332,7 +1428,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public SparseTexture(int width, int height, GraphicsFormat format, int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sparse))
+            if (!ValidateFormat(format, width, height))
                 return;
 
             if (!ValidateSize(width, height, format))
@@ -1349,12 +1445,29 @@ namespace UnityEngine
 
         public SparseTexture(int width, int height, TextureFormat textureFormat, int mipCount, [uei.DefaultValue("false")] bool linear)
         {
-            if (!ValidateFormat(textureFormat))
+            if (!ValidateFormat(textureFormat, width, height))
                 return;
 
             ValidateIsNotCrunched(textureFormat);
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
+            if (!SystemInfo.IsFormatSupported(format, FormatUsage.Sparse))
+            {
+                // Special case: SystemInfo.SupportsTextureFormat(textureFormat) tells us whether we
+                // can use the format for a more "regular" texture type, but not necessarily whether
+                // we can use that same format for a SparseTexture. This is because the function
+                // checks the Sample FormatUsage, hence the extra FormatUsage.Sparse check here
+                // to prevent various crashes, errors, ...
+                Debug.LogError($"Creation of a SparseTexture with '{textureFormat}' is not supported on this platform.");
+                // Note about the usage of LogError above (versus an exception): according to
+                // https://confluence.unity3d.com/pages/viewpage.action?spaceKey=DEV&title=Error+Handling
+                // : exceptions should only be thrown if the user invokes a method with bad data (example: null)
+                // or when the program is not in a valid state anymore. (example: disk failure/disconnected)
+                // Additionally, according to the scripting team: throwing an exception for an unsupported
+                // format sounds wrong in general.
+                return;
+            }
+
             if (!ValidateSize(width, height, format))
                 return;
 

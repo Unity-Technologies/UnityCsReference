@@ -67,7 +67,7 @@ namespace UnityEditor.AddComponent
             {
                 SendUsabilityAnalyticsEvent(new AnalyticsEventData
                 {
-                    name = name,
+                    name = item.name,
                     filter = searchString,
                     isNewScript = false
                 });

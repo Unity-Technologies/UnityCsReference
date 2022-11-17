@@ -93,14 +93,14 @@ namespace UnityEditor.PackageManager.UI
 
                 var comparer = new UpmRegistryClient.RegistryInfoComparer();
 
-                return !comparer.Equals(original, new RegistryInfo(original.id, m_Name, m_Url, m_Scopes.ToArray(), original.isDefault, original.capabilities));
+                return !comparer.Equals(original, new RegistryInfo(original.id, m_Name, m_Url, m_Scopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
             }
         }
 
         public bool isUrlOrScopesUpdated
         {
             get => m_Modified && original != null &&
-            !new UpmRegistryClient.RegistryInfoComparer().Equals(original, new RegistryInfo(original.id, original.name, m_Url, m_Scopes.ToArray(), original.isDefault, original.capabilities));
+            !new UpmRegistryClient.RegistryInfoComparer().Equals(original, new RegistryInfo(original.id, original.name, m_Url, m_Scopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
         }
 
         public RegistryInfoDraft()

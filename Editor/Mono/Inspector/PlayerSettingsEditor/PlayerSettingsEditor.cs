@@ -1955,6 +1955,8 @@ namespace UnityEditor
                 {
                     EditorGUI.indentLevel++;
                     streamingPriority = EditorGUILayout.DelayedIntField(SettingsContent.lightmapStreamingPriority, streamingPriority);
+                    if (streamingPriority < Texture2D.streamingMipmapsPriorityMin) streamingPriority = Texture2D.streamingMipmapsPriorityMin;
+                    else if (Texture2D.streamingMipmapsPriorityMax < streamingPriority) streamingPriority = Texture2D.streamingMipmapsPriorityMax;
                     EditorGUI.indentLevel--;
                 }
                 if (EditorGUI.EndChangeCheck())

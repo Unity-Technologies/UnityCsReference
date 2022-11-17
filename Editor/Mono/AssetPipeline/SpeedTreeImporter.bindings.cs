@@ -233,4 +233,56 @@ namespace UnityEditor
             return changedMappings;
         }
     }
+
+    class SpeedTreePostProcessor : AssetPostprocessor
+    {
+        private static void FixExtraTexture_sRGB(IEnumerable<UnityEngine.Object> subAssets)
+        {
+            AssetDatabase.StartAssetEditing();
+
+            foreach (var subAsset in subAssets)
+            {
+                if (subAsset is Material)
+                {
+                    Material m = subAsset as Material;
+                    Texture tex = m.GetTexture("_ExtraTex");
+                    if (tex)
+                    {
+                        string texturePath = AssetDatabase.GetAssetOrScenePath(tex);
+                        TextureImporter texImporter = AssetImporter.GetAtPath(texturePath) as TextureImporter;
+                        if(texImporter)
+                        {
+                            // Multiple materials may be referencing the same ExtraTexture, therefore
+                            // we'll need to check the importer's setting and only queue a single reimport
+                            // for a given texture.
+                            if (texImporter.sRGBTexture)
+                            {
+                                texImporter.sRGBTexture = false; // extra texture does not contain color data, hence shouldn't be sRGB.
+                                texImporter.SaveAndReimport();
+                            }
+                        }
+                    }
+                }
+            }
+            AssetDatabase.StopAssetEditing();
+        }
+
+        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            foreach (var asset in importedAssets)
+            {
+                bool st8 = asset.EndsWith(".st", StringComparison.InvariantCultureIgnoreCase);
+                if(st8)
+                {
+                    // Check the external materials in case the user has extracted
+                    Dictionary<AssetImporter.SourceAssetIdentifier, UnityEngine.Object> externalAssets = (AssetImporter.GetAtPath(asset) as SpeedTreeImporter).GetExternalObjectMap();
+                    FixExtraTexture_sRGB(externalAssets.Values);
+
+                    // Check the object subassets -- updates the materials if they're embedded in the SpeedTree asset
+                    UnityEngine.Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(asset);
+                    FixExtraTexture_sRGB(subAssets);
+                }
+            }
+        }
+    }
 }

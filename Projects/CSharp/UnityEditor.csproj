@@ -4777,6 +4777,9 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs">
       <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ConfigSource.cs">
+      <Link>Modules\PackageManager\Editor\Managed\ConfigSource.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DependencyInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\DependencyInfo.cs</Link>
     </Compile>
