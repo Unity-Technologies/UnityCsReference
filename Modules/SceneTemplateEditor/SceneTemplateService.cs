@@ -227,17 +227,6 @@ namespace UnityEditor.SceneTemplate
             return true;
         }
 
-        [InitializeOnLoadMethod]
-        private static void RegisterDefines()
-        {
-            Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSceneTemplateModuleDefine;
-        }
-
-        private static void AddSceneTemplateModuleDefine(BuildTarget target, HashSet<string> defines)
-        {
-            defines.Add("SCENE_TEMPLATE_MODULE");
-        }
-
         private static Dictionary<Object, Object> CopyCloneableDependencies(SceneTemplateAsset sceneTemplate, string newSceneOutputPath, ref Dictionary<string, string> refPathMap)
         {
             var refMap = new Dictionary<Object, Object>();

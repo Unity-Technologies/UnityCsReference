@@ -238,6 +238,10 @@ namespace UnityEngine
         extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);
         extern internal bool isPreProcessed { get; }
 
+        // Must be kept in sync with their C++ counterparts. See Texture2D::s_StreamingMipmapsPriority[Min|Max].
+        internal const int streamingMipmapsPriorityMin = SByte.MinValue;
+        internal const int streamingMipmapsPriorityMax = SByte.MaxValue;
+
         extern public bool streamingMipmaps { get; }
         extern public int streamingMipmapsPriority { get; }
 

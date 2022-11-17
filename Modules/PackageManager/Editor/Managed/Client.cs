@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager
         public static AddRequest Add(string identifier)
         {
             if (string.IsNullOrEmpty(identifier?.Trim()))
-                throw new ArgumentException(nameof(identifier), "Package identifier cannot be null, empty or whitespace");
+                throw new ArgumentException("Package identifier cannot be null, empty or whitespace", nameof(identifier));
 
             long operationId;
             var status = Add(out operationId, identifier);
@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager
         internal static AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes)
         {
             if (string.IsNullOrEmpty(registryName?.Trim()))
-                throw new ArgumentException(nameof(registryName), "Registry name cannot be null, empty or whitespace");
+                throw new ArgumentException("Registry name cannot be null, empty or whitespace", nameof(registryName));
 
             long operationId;
             var status = AddScopedRegistry(out operationId, registryName, url, scopes);
@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager
         public static EmbedRequest Embed(string packageName)
         {
             if (string.IsNullOrEmpty(packageName?.Trim()))
-                throw new ArgumentException(nameof(packageName), "Package name cannot be null, empty or whitespace");
+                throw new ArgumentException("Package name cannot be null, empty or whitespace", nameof(packageName));
 
             var packageInfo = PackageInfo.GetAll().FirstOrDefault(p => p.name == packageName);
             if (packageInfo == null)
@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager
         internal static GetCachedPackagesRequest GetCachedPackages(string registryId)
         {
             if (string.IsNullOrEmpty(registryId?.Trim()))
-                throw new ArgumentException(nameof(registryId), "Registry id cannot be null, empty or whitespace");
+                throw new ArgumentException("Registry id cannot be null, empty or whitespace", nameof(registryId));
 
             long operationId;
             var status = GetCachedPackages(out operationId, registryId);
@@ -91,30 +91,27 @@ namespace UnityEditor.PackageManager
         public static RemoveRequest Remove(string packageName)
         {
             if (string.IsNullOrEmpty(packageName?.Trim()))
-                throw new ArgumentException(nameof(packageName), "Package name cannot be null, empty or whitespace");
+                throw new ArgumentException("Package name cannot be null, empty or whitespace", nameof(packageName));
 
             long operationId;
             var status = Remove(out operationId, packageName);
             return new RemoveRequest(operationId, status, packageName);
         }
 
-        internal static RemoveScopedRegistryRequest RemoveScopedRegistry(string registryName)
+        internal static RemoveScopedRegistryRequest RemoveScopedRegistry(string registryId)
         {
-            if (string.IsNullOrEmpty(registryName?.Trim()))
-                throw new ArgumentException(nameof(registryName), "Registry name cannot be null, empty or whitespace");
+            if (string.IsNullOrEmpty(registryId?.Trim()))
+                throw new ArgumentException("Registry id cannot be null, empty or whitespace", nameof(registryId));
 
             long operationId;
-            var status = RemoveScopedRegistry(out operationId, registryName);
+            var status = RemoveScopedRegistry(out operationId, registryId);
             return new RemoveScopedRegistryRequest(operationId, status);
         }
 
         public static SearchRequest Search(string packageIdOrName, bool offlineMode)
         {
             if (string.IsNullOrEmpty(packageIdOrName?.Trim()))
-                throw new ArgumentException(nameof(packageIdOrName), "Package id or name cannot be null, empty or whitespace");
-
-            if (string.IsNullOrEmpty(packageIdOrName?.Trim()))
-                throw new ArgumentNullException(nameof(packageIdOrName));
+                throw new ArgumentException("Package id or name cannot be null, empty or whitespace", nameof(packageIdOrName));
 
             long operationId;
             var status = GetPackageInfo(out operationId, packageIdOrName, offlineMode);
@@ -155,23 +152,23 @@ namespace UnityEditor.PackageManager
         public static PackRequest Pack(string packageFolder, string targetFolder)
         {
             if (string.IsNullOrEmpty(packageFolder?.Trim()))
-                throw new ArgumentException(nameof(packageFolder), "Package folder cannot be null, empty or whitespace");
+                throw new ArgumentException("Package folder cannot be null, empty or whitespace", nameof(packageFolder));
 
             if (string.IsNullOrEmpty(targetFolder?.Trim()))
-                throw new ArgumentException(nameof(targetFolder), "Target folder cannot be null, empty or whitespace");
+                throw new ArgumentException("Target folder cannot be null, empty or whitespace", nameof(targetFolder));
 
             long operationId;
             var status = Pack(out operationId, packageFolder, targetFolder);
             return new PackRequest(operationId, status);
         }
 
-        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options)
+        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryId, UpdateScopedRegistryOptions options)
         {
-            if (string.IsNullOrEmpty(registryName?.Trim()))
-                throw new ArgumentException(nameof(registryName), "Registry name cannot be null, empty or whitespace");
+            if (string.IsNullOrEmpty(registryId?.Trim()))
+                throw new ArgumentException("Registry id cannot be null, empty or whitespace", nameof(registryId));
 
             long operationId;
-            var status = UpdateScopedRegistry(out operationId, registryName, options);
+            var status = UpdateScopedRegistry(out operationId, registryId, options);
             return new UpdateScopedRegistryRequest(operationId, status);
         }
     }
