@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace Unity.IntegerTime
@@ -15,10 +16,10 @@ namespace Unity.IntegerTime
     [NativeHeader("Runtime/Input/RationalTime.h")]
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    public readonly struct RationalTime
+    public struct RationalTime
     {
-        [UsedImplicitly] readonly long m_Count;
-        [UsedImplicitly] readonly TicksPerSecond m_TicksPerSecond;
+        [SerializeField] long m_Count;
+        [SerializeField] TicksPerSecond m_TicksPerSecond;
 
         /// <summary>
         /// Constructor that build a Rational time from a count and a rational number.
@@ -46,11 +47,11 @@ namespace Unity.IntegerTime
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         [Serializable]
-        public readonly struct TicksPerSecond : IEquatable<TicksPerSecond>
+        public struct TicksPerSecond : IEquatable<TicksPerSecond>
         {
             const uint k_DefaultTicksPerSecond = 141120000;
-            readonly uint m_Numerator;
-            readonly uint m_Denominator;
+            [SerializeField] uint m_Numerator;
+            [SerializeField] uint m_Denominator;
 
             /// <summary>
             /// The default ticks per second is 141120000 which was chosen since it can represent most frame rates in a lossless way.
@@ -118,24 +119,24 @@ namespace Unity.IntegerTime
             /// <summary>
             /// Returns the numerator.
             /// </summary>
-            public uint Numerator => m_Numerator;
+            public readonly uint Numerator => m_Numerator;
 
             /// <summary>
             /// Returns the denominator.
             /// </summary>
-            public uint Denominator => m_Denominator;
+            public readonly uint Denominator => m_Denominator;
 
             /// <summary>
             /// Returns if the rate is valid. An invalid rate has a 0 denominator.
             /// </summary>
-            public bool Valid => IsValid(this);
+            public readonly bool Valid => IsValid(this);
 
             /// <summary>
             /// Equality comparison.
             /// </summary>
             /// <param name="rhs">The right hand side.</param>
             /// <returns>true if the 2 values are equal and false otherwise.</returns>
-            public bool Equals(TicksPerSecond rhs)
+            public readonly bool Equals(TicksPerSecond rhs)
             {
                 return m_Numerator == rhs.m_Numerator && m_Denominator == rhs.m_Denominator;
             }
@@ -145,7 +146,7 @@ namespace Unity.IntegerTime
             /// </summary>
             /// <param name="rhs">The right hand side.</param>
             /// <returns>true if the 2 values are equal and false otherwise.</returns>
-            public override bool Equals(object rhs)
+            public readonly override bool Equals(object rhs)
             {
                 return rhs is TicksPerSecond other && Equals(other);
             }
@@ -154,7 +155,7 @@ namespace Unity.IntegerTime
             /// Used by the equality comparison.
             /// </summary>
             /// <returns>The hash code.</returns>
-            public override int GetHashCode()
+            public readonly override int GetHashCode()
             {
                 return HashCode.Combine(m_Numerator, m_Denominator);
             }

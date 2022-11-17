@@ -23,6 +23,9 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         string m_Tooltip;
 
+        internal static string titleFieldName_Internal = nameof(m_Title);
+        internal static string positionFieldName_Internal = nameof(m_Position);
+
         /// <summary>
         /// Does the node allow to be connected to itself.
         /// </summary>

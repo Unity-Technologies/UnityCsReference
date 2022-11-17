@@ -47,10 +47,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return PackageState.Error;
                 }
 
-                if (numErrors > 0 && numWarnings == numErrors)
+                var primary = versions.primary;
+                if (primary.HasTag(PackageTag.Deprecated) && primary.isInstalled)
+                    return PackageState.Error;
+
+                if (numErrors > 0 && numWarnings == numErrors || isDeprecated)
                     return PackageState.Warning;
 
-                var primary = versions.primary;
                 var recommended = versions.recommended;
                 var latestKeyVersion = versions.key.LastOrDefault();
                 if (primary.HasTag(PackageTag.Custom))
@@ -78,6 +81,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PackageProgress m_Progress;
         public virtual PackageProgress progress => m_Progress;
+
+        [SerializeField]
+        private string m_DeprecationMessage;
+        public virtual string deprecationMessage => m_DeprecationMessage;
+
+        [SerializeField]
+        private bool m_IsDeprecated;
+        public virtual bool isDeprecated => m_IsDeprecated;
 
         // errors on the package level (not just about a particular version)
         [SerializeField]
@@ -137,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             LinkPackageAndVersions();
         }
 
-        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true)
+        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
         {
             m_Name = name;
             m_VersionList = versionList;
@@ -148,6 +159,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDiscoverable = isDiscoverable;
             m_Errors = new List<UIError>();
             m_Progress = PackageProgress.None;
+
+            m_IsDeprecated = isDeprecated;
+            m_DeprecationMessage = deprecationMessage;
 
             LinkPackageAndVersions();
         }
@@ -177,9 +191,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // package modifications that's not caught by the package change events.
         internal class Factory
         {
-            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true)
+            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
             {
-                return new Package(name, versionList, product, isDiscoverable);
+                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage);
             }
 
             public void AddError(Package package, UIError error)

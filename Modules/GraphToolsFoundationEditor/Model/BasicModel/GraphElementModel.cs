@@ -77,6 +77,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual bool HasUserColor => m_HasUserColor;
 
         /// <summary>
+        /// If true, the color picker used to set the color should show the alpha editing controls.
+        /// </summary>
+        public virtual bool UseColorAlpha => true;
+
+        /// <summary>
         /// The container for this graph element.
         /// </summary>
         public virtual IGraphElementContainer Container => GraphModel;

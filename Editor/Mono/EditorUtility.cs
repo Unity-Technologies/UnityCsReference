@@ -580,6 +580,27 @@ namespace UnityEditor
                         );
                     }
                 }
+
+                bool isComponentAddedInNestedPrefab = false;
+
+                Object source = PrefabUtility.GetCorrespondingObjectFromSource(targetObject);
+                while (source)
+                {
+                    if (PrefabUtility.IsAddedComponentOverride(source))
+                    {
+                        isComponentAddedInNestedPrefab = true;
+                        break;
+                    }
+
+                    source = PrefabUtility.GetCorrespondingObjectFromSource(source);
+                }    
+
+                if (isComponentAddedInNestedPrefab)
+                {
+                    pm.AddItem(new GUIContent("Go to Added Component in '" + PrefabUtility.GetPrefabAssetRootGameObject(source).name + "'"), false,
+                    () => PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(source), PrefabUtility.GetGameObject(targetObject), PrefabStage.Mode.InIsolation));
+                }
+
             }
             else if (context != null && context.Length == 1 && context[0] is Material)
             {

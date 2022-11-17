@@ -9,9 +9,11 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.TerrainTools
 {
-    internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
+    internal class SmoothHeightTool : TerrainPaintToolWithOverlays<SmoothHeightTool>
     {
-        const string toolName = "Smooth Height";
+        const string k_ToolName = "Smooth Height";
+        public override string OnIcon => "TerrainOverlays/Smooth_On.png";
+        public override string OffIcon => "TerrainOverlays/Smooth.png";
 
         [SerializeField]
         public float m_direction = 0.0f;     // -1 to 1
@@ -37,12 +39,22 @@ namespace UnityEditor.TerrainTools
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
-            context.SelectPaintTool<SmoothHeightTool>();
+            context.SelectPaintToolWithOverlays<SmoothHeightTool>();
+        }
+
+        public override int IconIndex
+        {
+            get { return (int) SculptIndex.Smooth; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Sculpt; }
         }
 
         public override string GetName()
         {
-            return toolName;
+            return k_ToolName;
         }
 
         public override string GetDescription()
@@ -50,17 +62,29 @@ namespace UnityEditor.TerrainTools
             return GetStyles().description.text;
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override bool HasToolSettings => true;
+        public override bool HasBrushMask => true;
+        public override bool HasBrushAttributes => true;
+
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             Styles styles = GetStyles();
-            EditorGUI.BeginChangeCheck();
             m_direction = EditorGUILayout.Slider(styles.direction, m_direction, -1.0f, 1.0f);
-            if (EditorGUI.EndChangeCheck())
-                Save(true);
+        }
 
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
             int textureRez = terrain.terrainData.heightmapResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
+
+            OnToolSettingsGUI(terrain, editContext, overlays);
         }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
+        }
+
 
         private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
         {

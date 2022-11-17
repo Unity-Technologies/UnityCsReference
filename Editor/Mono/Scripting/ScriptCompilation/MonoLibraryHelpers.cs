@@ -21,6 +21,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetCachedSystemLibraryReferences(apiCompatibilityLevel);
         }
 
+        public static IEnumerable<string> GetEditorExtensionsReferences(ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+            if(apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard)
+            {
+                return Directory.GetFiles(NetStandardFinder.GetNetStandardEditorExtensionsDirectory(), "*.dll");
+            }
+            return Enumerable.Empty<string>();
+        }
+
 
         static string[] FindReferencesInDirectories(this IEnumerable<string> references, string[] directories)
         {
@@ -90,6 +99,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 systemReferenceDirectories.Add(NetStandardFinder.GetReferenceDirectory());
                 systemReferenceDirectories.Add(NetStandardFinder.GetNetStandardCompatShimsDirectory());
                 systemReferenceDirectories.Add(NetStandardFinder.GetNetStandardExtensionsDirectory());
+                systemReferenceDirectories.Add(NetStandardFinder.GetNetStandardEditorExtensionsDirectory());
                 systemReferenceDirectories.Add(NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory());
                 return systemReferenceDirectories.ToArray();
             }

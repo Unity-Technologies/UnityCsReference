@@ -20,13 +20,34 @@ namespace Unity.GraphToolsFoundation.Editor
         DeclarationModel m_DeclarationModel;
 
         [SerializeField]
+        SerializableGUID m_DeclarationModelGuid;
+
+        [SerializeField]
         TypeHandle m_TypeHandle;
 
         /// <inheritdoc />
         public DeclarationModel DeclarationModel
         {
-            get => m_DeclarationModel;
-            set => m_DeclarationModel = value;
+            get
+            {
+                if (m_DeclarationModel == null && GraphModel.TryGetModelFromGuid(m_DeclarationModelGuid, out var model) && model is PortalDeclarationPlaceholder missingDeclarationModel)
+                {
+                    this.SetCapability(Editor.Capabilities.Movable, false);
+                    this.SetCapability(Editor.Capabilities.Copiable, false);
+                    this.SetCapability(Editor.Capabilities.Droppable, false);
+
+                    return missingDeclarationModel;
+                }
+                this.SetCapability(Editor.Capabilities.Movable, true);
+                this.SetCapability(Editor.Capabilities.Copiable, true);
+                this.SetCapability(Editor.Capabilities.Droppable, true);
+                return m_DeclarationModel;
+            }
+            set
+            {
+                m_DeclarationModel = value;
+                m_DeclarationModelGuid = m_DeclarationModel.Guid;
+            }
         }
 
         /// <summary>
@@ -36,6 +57,9 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             get
             {
+                if (m_DeclarationModel == null && GraphModel.TryGetModelFromGuid(m_DeclarationModelGuid, out var model) && model is PortalDeclarationPlaceholder)
+                    return TypeHandle.MissingPort;
+
                 // Type's identification of portals' ports are empty strings in the compatibility tests.
                 if (m_TypeHandle.Identification == null)
                     m_TypeHandle = TypeHandle.Create_Internal("");

@@ -22,30 +22,74 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         protected internal static readonly Vector2 k_DefaultCollapsedSize_Internal = new Vector2(200, 42);
+
+        /// <summary>
+        /// The offset added when computing if a <see cref="GraphElement"/> is in the placemat.
+        /// </summary>
         protected static readonly int k_SelectRectOffset = 3;
 
+        /// <summary>
+        /// The uss class name added to <see cref="Placemat"/>.
+        /// </summary>
         public new static readonly string ussClassName = "ge-placemat";
+
+        /// <summary>
+        /// The uss class name of a <see cref="Placemat"/> when collapsed.
+        /// </summary>
         public static readonly string collapsedModifierUssClassName = ussClassName.WithUssModifier("collapsed");
+
+        /// <summary>
+        /// The name of the <see cref="SelectionBorder"/>.
+        /// </summary>
         public static readonly string selectionBorderElementName = "selection-border";
+
+        /// <summary>
+        /// The name of the <see cref="VisualElement"/> for the title container.
+        /// </summary>
         public static readonly string titleContainerPartName = "title-container";
+
+        /// <summary>
+        /// The name of the <see cref="Button"/> for collapsing the <see cref="Placemat"/>.
+        /// </summary>
         public static readonly string collapseButtonPartName = "collapse-button";
+
+        /// <summary>
+        /// The name for the <see cref="ResizableElement"/>
+        /// </summary>
         public static readonly string resizerPartName = "resizer";
 
         protected internal static readonly float k_Bounds_Internal = 9.0f;
-        protected internal static readonly float k_BoundTop_Internal = 29.0f; // Current height of Title
+        protected internal static readonly float k_BoundTop_Internal = 44.0f; // Current height of Title
 
         // The next two values need to be the same as USS... however, we can't get the values from there as we need them in a static
         // methods used to create new placemats
         protected static readonly float k_MinWidth = 200;
         protected static readonly float k_MinHeight = 100;
 
+        /// <summary>
+        /// The container for the content of the <see cref="Placemat"/>.
+        /// </summary>
         protected VisualElement m_ContentContainer;
 
+        /// <summary>
+        /// The elements that are collapsed within the element, if the <see cref="Placemat"/> is collapsed.
+        /// </summary>
         protected HashSet<GraphElement> m_CollapsedElements = new HashSet<GraphElement>();
 
+        /// <summary>
+        /// The model that this <see cref="Placemat"/> displays.
+        /// </summary>
         public PlacematModel PlacematModel => Model as PlacematModel;
 
+        /// <summary>
+        /// The container for the content of the <see cref="Placemat"/>.
+        /// </summary>
         public override VisualElement contentContainer => m_ContentContainer ?? this;
+
+        /// <summary>
+        /// The container for the title of the <see cref="Placemat"/>.
+        /// </summary>
+        public VisualElement TitleContainer { get; private set; }
 
         /// <summary>
         /// The size of the placemat in its uncollapsed state.
@@ -67,6 +111,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// The area where the <see cref="Placemat"/> acts, that is its uncollapsed area even if the <see cref="Placemat"/> is collapsed.
+        /// </summary>
         protected Rect EffectArea => PlacematModel.Collapsed ? new Rect(layout.position, UncollapsedSize) : layout;
 
         /// <summary>
@@ -95,6 +142,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// Creates an instance of the <see cref="Placemat"/> class.
+        /// </summary>
         public Placemat()
         {
             focusable = true;
@@ -102,15 +152,17 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
+        /// <inheritdoc />
         protected override void BuildPartList()
         {
-            var editableTitlePart = EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName, false, true, false);
+            var editableTitlePart = PlacematTitlePart.Create(titleContainerPartName, Model, this, ussClassName, false, true, false);
             PartList.AppendPart(editableTitlePart);
             var collapseButtonPart = CollapseButtonPart.Create(collapseButtonPartName, Model, this, ussClassName);
             editableTitlePart.PartList.AppendPart(collapseButtonPart);
             PartList.AppendPart(FourWayResizerPart.Create(resizerPartName, Model, this, ussClassName));
         }
 
+        /// <inheritdoc />
         protected override void BuildElementUI()
         {
             var selectionBorder = new SelectionBorder { name = selectionBorderElementName };
@@ -124,6 +176,28 @@ namespace Unity.GraphToolsFoundation.Editor
             AddToClassList(ussClassName);
         }
 
+        /// <inheritdoc />
+        public override bool ContainsPoint(Vector2 localPoint)
+        {
+            if (TitleContainer != null)
+                return TitleContainer.rect.Contains(this.ChangeCoordinatesTo(TitleContainer, localPoint));
+
+            return base.ContainsPoint(localPoint);
+        }
+
+        /// <inheritdoc />
+        public override bool Overlaps(Rect rectangle)
+        {
+            if (TitleContainer != null)
+            {
+                Rect localRect = TitleContainer.ChangeCoordinatesTo(this, TitleContainer.rect);
+                return localRect.Overlaps(rectangle, true);
+            }
+
+            return base.Overlaps(rectangle);
+        }
+
+        /// <inheritdoc />
         protected override void PostBuildUI()
         {
             base.PostBuildUI();
@@ -131,14 +205,19 @@ namespace Unity.GraphToolsFoundation.Editor
             var collapseButton = this.SafeQ(collapseButtonPartName);
             collapseButton?.RegisterCallback<ChangeEvent<bool>>(OnCollapseChangeEvent);
 
+            TitleContainer = PartList.GetPart(titleContainerPartName)?.Root;
+
             this.AddStylesheet_Internal("Placemat.uss");
         }
 
+        /// <inheritdoc />
         protected override void UpdateElementFromModel()
         {
             base.UpdateElementFromModel();
 
-            style.backgroundColor = PlacematModel.Color;
+            Color color = PlacematModel.Color;
+            color.a = 0.25f;
+            style.backgroundColor = color;
 
             SetPositionAndSize(PlacematModel.PositionAndSize);
 
@@ -216,6 +295,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         static readonly List<ModelView> k_AddForwardDependenciesAllUIs = new List<ModelView>();
+
         /// <inheritdoc/>
         public override void AddForwardDependencies()
         {
@@ -239,6 +319,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// Called when the collapsed button changes value.
+        /// </summary>
+        /// <param name="evt"></param>
         protected void OnCollapseChangeEvent(ChangeEvent<bool> evt)
         {
             this.CollapsePlacemat(evt.newValue);
@@ -261,6 +345,11 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// Recursively finds all the elements actually collapsed within this <see cref="Placemat"/>.
+        /// </summary>
+        /// <param name="collapsedElements">The directly collapsed elements.</param>
+        /// <returns>The elements actually collapsed within this <see cref="Placemat"/>.</returns>
         protected static IEnumerable<GraphElement> AllCollapsedElements(IEnumerable<GraphElement> collapsedElements)
         {
             if (collapsedElements != null)
@@ -288,6 +377,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// Gathers all the wires that are collapsed by this <see cref="Placemat"/>. That is the wires that starts and ends in nodes collapsed by this <see cref="Placemat"/>.
+        /// </summary>
+        /// <param name="collapsedElements"></param>
         protected void GatherCollapsedWires(ICollection<GraphElement> collapsedElements)
         {
             var allCollapsedNodes = AllCollapsedElements(collapsedElements)
@@ -308,6 +401,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         static readonly List<ModelView> k_GatherCollapsedElementsAllUIs = new List<ModelView>();
+
         protected internal List<GraphElementModel> GatherCollapsedElements_Internal()
         {
             List<GraphElement> collapsedElements = new List<GraphElement>();
@@ -364,7 +458,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        protected static bool AnyNodeIsConnectedToPort(IEnumerable<AbstractNodeModel> nodes, PortModel port)
+        static bool AnyNodeIsConnectedToPort(IEnumerable<AbstractNodeModel> nodes, PortModel port)
         {
             if (port.NodeModel == null)
             {
@@ -380,6 +474,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return false;
         }
 
+        /// <inheritdoc />
         [EventInterest(typeof(PointerDownEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
@@ -397,6 +492,11 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         static readonly List<ModelView> k_ActOnGraphElementsOverAllUIs = new List<ModelView>();
+
+        /// <summary>
+        /// Executes an <see cref="Action"/> on each <see cref="GraphElement"/> within this <see cref="Placemat"/>.
+        /// </summary>
+        /// <param name="act">The action that will be executed.</param>
         protected void ActOnGraphElementsOver(Action<GraphElement> act)
         {
             GraphView.GraphModel.GraphElementModels
@@ -416,7 +516,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected internal bool ActOnGraphElementsOver_Internal(Func<GraphElement, bool> act, bool includePlacemats)
         {
             GraphView.GraphModel.GraphElementModels
-                .Where(ge => ge.IsSelectable() && !(ge is WireModel))
+                .Where(ge => ge.IsSelectable() && !(ge is WireModel) && ge is not IPlaceholder)
                 .GetAllViewsInList_Internal(GraphView, e => e.parent is GraphView.Layer, k_ActOnGraphElementsOver2AllUIs);
 
             var retVal = RecurseActOnGraphElementsOver(this);
@@ -566,51 +666,23 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <inheritdoc />
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
             base.BuildContextualMenu(evt);
 
             if (!(evt.currentTarget is Placemat placemat))
                 return;
+            evt.menu.AppendSeparator();
 
-            if (evt.menu.MenuItems().Count > 0)
-                evt.menu.AppendSeparator();
+            var selectedPlacemats = GraphView.GetSelection().OfType<PlacematModel>().ToList();
 
-            evt.menu.AppendAction(placemat.PlacematModel.Collapsed ? "Expand Placemat" : "Collapse Placemat",
-                _ => placemat.CollapsePlacemat(!placemat.PlacematModel.Collapsed));
-
-            // Gather nodes here so that we don't recycle this code in the resize functions.
-            List<GraphElement> hoveringNodes = placemat.GetNodesOverThisPlacemat();
-
-            evt.menu.AppendAction("Resize Placemat/Grow to Fit Nodes",
-                _ =>
-                {
-                    var newRect = placemat.ComputeGrowToFitElementsRect_Internal();
-                    if (newRect != Rect.zero)
-                        GraphView.Dispatch(new ChangeElementLayoutCommand(PlacematModel, newRect));
-                },
-                hoveringNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            evt.menu.AppendAction("Resize Placemat/Shrink to Fit Nodes",
-                _ =>
-                {
-                    var newRect = placemat.ComputeShrinkToFitElementsRect_Internal();
-                    if (newRect != Rect.zero)
-                        GraphView.Dispatch(new ChangeElementLayoutCommand(PlacematModel, newRect));
-                },
-                hoveringNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            evt.menu.AppendAction("Resize Placemat/Grow to Fit Selected Nodes",
-                _ =>
-                {
-                    var newRect = placemat.ComputeResizeToIncludeSelectedNodesRect();
-                    GraphView.Dispatch(new ChangeElementLayoutCommand(PlacematModel, newRect));
-                },
-                _ =>
-                {
-                    var selectedNodes = placemat.GraphView.GetSelection().Where(e => e is AbstractNodeModel);
-                    return selectedNodes.Any() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
-                });
+            if (!selectedPlacemats.Skip(1).Any()) // If there is only one placemat selected
+            {
+                evt.menu.AppendAction("Select Placemat Contents",
+                    _ => GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, GatherCollapsedElements_Internal()))
+                );
+            }
 
             var placemats = GraphView.GraphModel.PlacematModels;
 
@@ -619,22 +691,42 @@ namespace Unity.GraphToolsFoundation.Editor
             var placematIsBottom = placemats.First() == placemat.PlacematModel;
             var canBeReordered = placemats.Count > 1;
 
-            var selectedPlacemats = GraphView.GetSelection().OfType<PlacematModel>().ToList();
 
-            evt.menu.AppendAction("Reorder Placemats/Bring to Front",
+            evt.menu.AppendSeparator();
+            evt.menu.AppendAction("Bring to Front",
                 _ => GraphView.Dispatch(new ChangePlacematOrderCommand(ZOrderMove.ToFront, selectedPlacemats)),
                 canBeReordered && !placematIsTop ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction("Reorder Placemats/Bring Forward",
+            evt.menu.AppendAction("Bring Forward",
                 _ => GraphView.Dispatch(new ChangePlacematOrderCommand(ZOrderMove.Forward, selectedPlacemats)),
                 canBeReordered && !placematIsTop ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction("Reorder Placemats/Send Backward",
+            evt.menu.AppendAction("Send Backward",
                 _ => GraphView.Dispatch(new ChangePlacematOrderCommand(ZOrderMove.Backward, selectedPlacemats)),
                 canBeReordered && !placematIsBottom ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction("Reorder Placemats/Send to Back",
+            evt.menu.AppendAction("Send to Back",
                 _ => GraphView.Dispatch(new ChangePlacematOrderCommand(ZOrderMove.ToBack, selectedPlacemats)),
                 canBeReordered && !placematIsBottom ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+            evt.menu.AppendSeparator();
+            // Gather nodes here so that we don't recycle this code in the resize functions.
+            List<GraphElement> hoveringNodes = placemat.GetNodesOverThisPlacemat();
+
+            if (selectedPlacemats.Count == 1)
+            {
+                evt.menu.AppendAction("Smart Resize",
+                    _ =>
+                    {
+                        var newRect = placemat.ComputeShrinkToFitElementsRect_Internal();
+                        if (newRect != Rect.zero)
+                            GraphView.Dispatch(new ChangeElementLayoutCommand(PlacematModel, newRect));
+                    },
+                    hoveringNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
         }
 
+        /// <summary>
+        /// Gets the list of <see cref="Node"/>s that are within this <see cref="Placemat"/>.
+        /// </summary>
+        /// <returns>The list of <see cref="Node"/>s that are within this <see cref="Placemat"/>.</returns>
         protected List<GraphElement> GetNodesOverThisPlacemat()
         {
             var potentialElements = new List<ModelView>();
@@ -643,7 +735,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return potentialElements.OfType<GraphElement>().Where(e => e.Model is AbstractNodeModel).ToList();
         }
 
-        protected void OnDetachFromPanel(DetachFromPanelEvent evt)
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             CollapsedElements = null;
         }
@@ -669,16 +761,16 @@ namespace Unity.GraphToolsFoundation.Editor
 
         // Helper method that calculates how big a Placemat should be to fit the nodes on top of it currently.
         // Returns false if bounds could not be computed.
-        protected internal static bool ComputeElementBounds_Internal(ref Rect pos, List<GraphElement> elements)
+        protected internal static bool ComputeElementBounds_Internal(ref Rect pos, IEnumerable<GraphElement> elements)
         {
             return ComputeElementBounds(ref pos, elements, MinSizePolicy.EnsureMinSize);
         }
 
         // Helper method that calculates how big a Placemat should be to fit the nodes on top of it currently.
         // Returns false if bounds could not be computed.
-        static bool ComputeElementBounds(ref Rect pos, List<GraphElement> elements, MinSizePolicy ensureMinSize)
+        static bool ComputeElementBounds(ref Rect pos, IEnumerable<GraphElement> elements, MinSizePolicy ensureMinSize)
         {
-            if (elements == null || elements.Count == 0)
+            if (elements == null || !elements.Any())
                 return false;
 
             float minX = Mathf.Infinity;
@@ -725,6 +817,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 r.height = k_MinHeight;
         }
 
+        /// <inheritdoc />
         public override void ActivateRename()
         {
             (PartList.GetPart(titleContainerPartName) as EditableTitlePart)?.BeginEditing();

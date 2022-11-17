@@ -32,8 +32,10 @@ namespace UnityEngine.UIElements
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlBoolAttributeDescription m_EnableRichText = new UxmlBoolAttributeDescription { name = "enable-rich-text", defaultValue = true };
-            UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences", defaultValue = false };
-
+            UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences" };
+            UxmlBoolAttributeDescription m_Selectable = new UxmlBoolAttributeDescription { name = "selectable" };
+            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click" };
+            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "select-line-by-triple-click" };
             UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
 
             /// <summary>
@@ -57,10 +59,46 @@ namespace UnityEngine.UIElements
                 var textElement = (TextElement)ve;
                 textElement.text = m_Text.GetValueFromBag(bag, cc);
                 textElement.enableRichText = m_EnableRichText.GetValueFromBag(bag, cc);
+                textElement.selectable = m_Selectable.GetValueFromBag(bag, cc);
                 textElement.parseEscapeSequences = m_ParseEscapeSequences.GetValueFromBag(bag, cc);
+                textElement.selection.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
+                textElement.selection.tripleClickSelectsLine = m_SelectLineByTripleClick.GetValueFromBag(bag, cc);
                 textElement.displayTooltipWhenElided = m_DisplayTooltipWhenElided.GetValueFromBag(bag, cc);
             }
         }
+
+        #region Properties for UI Builder
+        // The UI Builder needs the property to be named exactly the same as the UXML attribute in order for
+        // serialization to work properly.
+
+        /// <summary>
+        /// DO NOT USE doubleClickSelectsWord, use selection.doubleClickSelectsWord instead. This property was added to make sure it is picked up by the UI Builder.
+        /// </summary>
+        internal bool selectWordByDoubleClick
+        {
+            get => selection.doubleClickSelectsWord;
+            set => selection.doubleClickSelectsWord = value;
+        }
+
+        /// <summary>
+        /// DO NOT USE tripleClickSelectsLine, use selection.tripleClickSelectsLine instead. This property was added to make sure it is picked up by the UI Builder.
+        /// </summary>
+        internal bool selectLineByTripleClick
+        {
+            get => selection.tripleClickSelectsLine;
+            set => selection.tripleClickSelectsLine = value;
+        }
+
+        /// <summary>
+        /// DO NOT USE selectable, use selection.isSelectable instead. This property was added to rename the property in the UI Builder.
+        /// </summary>
+        internal bool selectable
+        {
+            get => selection.isSelectable;
+            set => selection.isSelectable = value;
+        }
+
+        #endregion
 
         /// <summary>
         /// USS class name of elements of this type.

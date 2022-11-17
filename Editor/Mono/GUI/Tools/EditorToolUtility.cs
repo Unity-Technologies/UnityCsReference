@@ -265,5 +265,9 @@ namespace UnityEditor.EditorTools
 
             return res;
         }
+
+        internal static EditorTypeAssociation GetMetaData(Type toolType) => s_ToolCache.GetMetaData(toolType);
+
+        internal static List<EditorTypeAssociation> GetEditorsForVariant(EditorTypeAssociation type) => s_ToolCache.GetEditorsForVariant(type);
     }
 }

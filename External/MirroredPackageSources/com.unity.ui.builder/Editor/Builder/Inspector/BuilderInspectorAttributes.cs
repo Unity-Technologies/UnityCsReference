@@ -9,6 +9,7 @@ using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
@@ -235,8 +236,7 @@ namespace Unity.UI.Builder
                 uiField.RegisterValueChangedCallback(OnAttributeValueChange);
                 fieldElement = uiField;
             }
-            else if (attributeType.IsGenericType &&
-                attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>))
+            else if (attributeType.IsGenericType && attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>))
             {
                 var assetType = attributeType.GetGenericArguments()[0];
                 var uiField = new ObjectField(fieldLabel) { objectType = assetType };
@@ -249,7 +249,7 @@ namespace Unity.UI.Builder
             {
                 var desiredType = attributeType.GetGenericArguments()[0];
 
-                var uiField = new TextField(fieldLabel) {isDelayed = true};
+                var uiField = new TextField(fieldLabel) { isDelayed = true };
 
                 var completer = new FieldSearchCompleter<TypeInfo>(uiField);
                 uiField.RegisterCallback<AttachToPanelEvent, FieldSearchCompleter<TypeInfo>>((evt, c) =>
@@ -415,6 +415,10 @@ namespace Unity.UI.Builder
                 veValueAbstract = fieldInfo.GetValue(currentVisualElement, null);
             }
 
+            var attributeType = attribute.GetType();
+            var vea = currentVisualElement.GetVisualElementAsset();
+            var isAssetAttribute = attributeType.IsGenericType && attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>);
+
             if (veValueAbstract == null)
             {
                 if (currentVisualElement is EnumField defaultEnumField &&
@@ -430,7 +434,6 @@ namespace Unity.UI.Builder
                         fieldElement.SetEnabled(true);
                     }
                 }
-
                 else if (currentVisualElement is EnumFlagsField defaultEnumFlagsField &&
                     attribute.name == "value")
                 {
@@ -444,12 +447,21 @@ namespace Unity.UI.Builder
                         fieldElement.SetEnabled(true);
                     }
                 }
+                else if (isAssetAttribute && fieldElement is ObjectField objectField)
+                {
+                    if (vea != null && attribute.TryGetValueFromBagAsString(vea, CreationContext.Default, out var value))
+                    {
+                        // Asset wasn't loaded correctly, most likely due to an invalid path. Show the missing reference.
+                        var asset = m_Inspector.visualTreeAsset.GetAsset(value, objectField.objectType);
+                        objectField.SetValueWithoutNotify(asset);
+
+                        styleRow.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, true);
+                        m_Inspector.UpdateFieldStatus(fieldElement, null);
+                    }
+                }
 
                 return;
             }
-
-            var attributeType = attribute.GetType();
-            var vea = currentVisualElement.GetVisualElementAsset();
 
             if (attribute is UxmlStringAttributeDescription &&
                 attribute.name == "value" &&
@@ -496,61 +508,57 @@ namespace Unity.UI.Builder
                     inputEnumFlagsField.SetValueWithoutNotify(null);
                 inputEnumFlagsField.SetEnabled(hasValue);
             }
-            else if (attribute is UxmlStringAttributeDescription && fieldElement is TextField)
+            else if (attribute is UxmlStringAttributeDescription && fieldElement is TextField textField)
             {
-                (fieldElement as TextField).SetValueWithoutNotify(GetAttributeStringValue(veValueAbstract));
+                textField.SetValueWithoutNotify(GetAttributeStringValue(veValueAbstract));
             }
-            else if (attribute is UxmlFloatAttributeDescription && fieldElement is FloatField)
+            else if (attribute is UxmlFloatAttributeDescription && fieldElement is FloatField floatField)
             {
-                (fieldElement as FloatField).SetValueWithoutNotify((float) veValueAbstract);
+                floatField.SetValueWithoutNotify((float) veValueAbstract);
             }
-            else if (attribute is UxmlDoubleAttributeDescription && fieldElement is DoubleField)
+            else if (attribute is UxmlDoubleAttributeDescription && fieldElement is DoubleField doubleField)
             {
-                (fieldElement as DoubleField).SetValueWithoutNotify((double) veValueAbstract);
+                doubleField.SetValueWithoutNotify((double) veValueAbstract);
             }
-            else if (attribute is UxmlIntAttributeDescription && fieldElement is IntegerField)
+            else if (attribute is UxmlIntAttributeDescription && fieldElement is IntegerField integerField)
             {
                 if (veValueAbstract is int)
-                    (fieldElement as IntegerField).SetValueWithoutNotify((int) veValueAbstract);
+                    integerField.SetValueWithoutNotify((int) veValueAbstract);
                 else if (veValueAbstract is float)
-                    (fieldElement as IntegerField).SetValueWithoutNotify(Convert.ToInt32(veValueAbstract));
+                    integerField.SetValueWithoutNotify(Convert.ToInt32(veValueAbstract));
             }
-            else if (attribute is UxmlLongAttributeDescription && fieldElement is LongField)
+            else if (attribute is UxmlLongAttributeDescription && fieldElement is LongField longField)
             {
-                (fieldElement as LongField).SetValueWithoutNotify((long) veValueAbstract);
+                longField.SetValueWithoutNotify((long) veValueAbstract);
             }
-            else if (attribute is UxmlBoolAttributeDescription && fieldElement is Toggle)
+            else if (attribute is UxmlBoolAttributeDescription && fieldElement is Toggle toggle)
             {
-                (fieldElement as Toggle).SetValueWithoutNotify((bool) veValueAbstract);
+                toggle.SetValueWithoutNotify((bool) veValueAbstract);
             }
-            else if (attribute is UxmlColorAttributeDescription && fieldElement is ColorField)
+            else if (attribute is UxmlColorAttributeDescription && fieldElement is ColorField colorField)
             {
-                (fieldElement as ColorField).SetValueWithoutNotify((Color) veValueAbstract);
+                colorField.SetValueWithoutNotify((Color) veValueAbstract);
             }
-            else if (attributeType.IsGenericType &&
-                attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>) &&
-                fieldElement is ObjectField)
+            else if (isAssetAttribute && fieldElement is ObjectField objectField)
             {
-                (fieldElement as ObjectField).SetValueWithoutNotify((UnityEngine.Object)veValueAbstract);
+                objectField.SetValueWithoutNotify((Object)veValueAbstract);
             }
             else if (attributeType.IsGenericType &&
                      !attributeType.GetGenericArguments()[0].IsEnum &&
                      attributeType.GetGenericArguments()[0] is Type &&
-                     fieldElement is TextField textField &&
+                     fieldElement is TextField typeTextField &&
                      veValueAbstract is Type veTypeValue)
             {
                 var fullTypeName = veTypeValue.AssemblyQualifiedName;
                 var fullTypeNameSplit = fullTypeName.Split(',');
-                textField.SetValueWithoutNotify($"{fullTypeNameSplit[0]},{fullTypeNameSplit[1]}");
+                typeTextField.SetValueWithoutNotify($"{fullTypeNameSplit[0]},{fullTypeNameSplit[1]}");
             }
             else if (attributeType.IsGenericType &&
                      attributeType.GetGenericArguments()[0].IsEnum &&
-                     fieldElement is BaseField<Enum>)
+                     fieldElement is BaseField<Enum> baseEnumField)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
                 var defaultEnumValue = propInfo.GetValue(attribute, null) as Enum;
-
-                var uiField = fieldElement as BaseField<Enum>;
 
                 string enumAttributeValueStr;
                 if (m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance)
@@ -581,31 +589,28 @@ namespace Unity.UI.Builder
                     try
                     {
                         var parsedValue = Enum.Parse(defaultEnumValue.GetType(), enumAttributeValueStr, true) as Enum;
-                        uiField.SetValueWithoutNotify(parsedValue);
+                        baseEnumField.SetValueWithoutNotify(parsedValue);
                     }
                     catch (ArgumentException exception)
                     {
                         Debug.LogException(exception);
                         // use default if anything went wrong
-                        uiField.SetValueWithoutNotify(defaultEnumValue);
+                        baseEnumField.SetValueWithoutNotify(defaultEnumValue);
                     }
                     catch (OverflowException exception)
                     {
                         Debug.LogException(exception);
                         // use default if anything went wrong
-                        uiField.SetValueWithoutNotify(defaultEnumValue);
+                        baseEnumField.SetValueWithoutNotify(defaultEnumValue);
                     }
                 }
             }
-            else if (fieldElement is TextField)
+            else if (fieldElement is TextField defaultTextField)
             {
-                (fieldElement as TextField).SetValueWithoutNotify(veValueAbstract.ToString());
+                defaultTextField.SetValueWithoutNotify(veValueAbstract.ToString());
             }
 
-            styleRow.RemoveFromClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-            if (IsAttributeOverriden(attribute))
-                styleRow.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-
+            styleRow.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, IsAttributeOverriden(attribute));
             m_Inspector.UpdateFieldStatus(fieldElement, null);
         }
 
@@ -667,94 +672,79 @@ namespace Unity.UI.Builder
                     UxmlAttributeDescription;
 
             var attributeType = attribute.GetType();
-            var vea = currentVisualElement.GetVisualElementAsset();
 
-            if (attribute is UxmlStringAttributeDescription && fieldElement is TextField)
+            if (attribute is UxmlStringAttributeDescription stringAttribute && fieldElement is TextField textField)
             {
-                var a = attribute as UxmlStringAttributeDescription;
-                var f = fieldElement as TextField;
-                f.SetValueWithoutNotify(a.defaultValue);
+                textField.SetValueWithoutNotify(stringAttribute.defaultValue);
             }
-            else if (attribute is UxmlStringAttributeDescription && fieldElement is EnumField &&
+            else if (attribute is UxmlStringAttributeDescription && fieldElement is EnumField enumField &&
                      currentVisualElement is EnumField)
             {
-                var a = attribute as UxmlStringAttributeDescription;
-                var f = fieldElement as EnumField;
-                if (null == f.type)
-                    f.SetValueWithoutNotify(null);
+                if (null == enumField.type)
+                    enumField.SetValueWithoutNotify(null);
                 else
-                    f.SetValueWithoutNotify((Enum)Enum.ToObject(f.type, 0));
+                    enumField.SetValueWithoutNotify((Enum)Enum.ToObject(enumField.type, 0));
             }
-            else if (attribute is UxmlStringAttributeDescription && fieldElement is EnumFlagsField &&
+            else if (attribute is UxmlStringAttributeDescription && fieldElement is EnumFlagsField enumFlagsField &&
                      currentVisualElement is EnumFlagsField)
             {
-                var f = fieldElement as EnumFlagsField;
-                if (null == f.type)
-                    f.SetValueWithoutNotify(null);
+                if (null == enumFlagsField.type)
+                    enumFlagsField.SetValueWithoutNotify(null);
                 else
-                    f.SetValueWithoutNotify((Enum)Enum.ToObject(f.type, 0));
+                    enumFlagsField.SetValueWithoutNotify((Enum)Enum.ToObject(enumFlagsField.type, 0));
             }
-            else if (attribute is UxmlFloatAttributeDescription && fieldElement is FloatField)
+            else if (attribute is UxmlFloatAttributeDescription floatAttribute && fieldElement is FloatField floatField)
             {
-                var a = attribute as UxmlFloatAttributeDescription;
-                var f = fieldElement as FloatField;
-                f.SetValueWithoutNotify(a.defaultValue);
+                floatField.SetValueWithoutNotify(floatAttribute.defaultValue);
             }
-            else if (attribute is UxmlDoubleAttributeDescription && fieldElement is DoubleField)
+            else if (attribute is UxmlDoubleAttributeDescription doubleAttribute && fieldElement is DoubleField doubleField)
             {
-                var a = attribute as UxmlDoubleAttributeDescription;
-                var f = fieldElement as DoubleField;
-                f.SetValueWithoutNotify(a.defaultValue);
+                doubleField.SetValueWithoutNotify(doubleAttribute.defaultValue);
             }
-            else if (attribute is UxmlIntAttributeDescription && fieldElement is IntegerField)
+            else if (attribute is UxmlIntAttributeDescription intAttribute && fieldElement is IntegerField intField)
             {
-                var a = attribute as UxmlIntAttributeDescription;
-                var f = fieldElement as IntegerField;
-                f.SetValueWithoutNotify(a.defaultValue);
+                intField.SetValueWithoutNotify(intAttribute.defaultValue);
             }
-            else if (attribute is UxmlLongAttributeDescription && fieldElement is LongField)
+            else if (attribute is UxmlLongAttributeDescription longAttribute && fieldElement is LongField longField)
             {
-                var a = attribute as UxmlLongAttributeDescription;
-                var f = fieldElement as LongField;
-                f.SetValueWithoutNotify(a.defaultValue);
+                longField.SetValueWithoutNotify(longAttribute.defaultValue);
             }
-            else if (attribute is UxmlBoolAttributeDescription && fieldElement is Toggle)
+            else if (attribute is UxmlBoolAttributeDescription boolAttribute && fieldElement is Toggle toggle)
             {
-                var a = attribute as UxmlBoolAttributeDescription;
-                var f = fieldElement as Toggle;
-                f.SetValueWithoutNotify(a.defaultValue);
+                toggle.SetValueWithoutNotify(boolAttribute.defaultValue);
             }
-            else if (attribute is UxmlColorAttributeDescription && fieldElement is ColorField)
+            else if (attribute is UxmlColorAttributeDescription colorAttribute && fieldElement is ColorField colorField)
             {
-                var a = attribute as UxmlColorAttributeDescription;
-                var f = fieldElement as ColorField;
-                f.SetValueWithoutNotify(a.defaultValue);
+                colorField.SetValueWithoutNotify(colorAttribute.defaultValue);
+            }
+            else if (attributeType.IsGenericType && attributeType.GetGenericTypeDefinition() == typeof(UxmlAssetAttributeDescription<>) &&
+                     fieldElement is ObjectField objectField)
+            {
+                objectField.SetValueWithoutNotify(default);
             }
             else if (attributeType.IsGenericType &&
                      !attributeType.GetGenericArguments()[0].IsEnum &&
                      attributeType.GetGenericArguments()[0] is Type &&
-                     fieldElement is TextField)
+                     fieldElement is TextField typeTextField)
             {
                 var a = attribute as TypedUxmlAttributeDescription<Type>;
-                var f = fieldElement as TextField;
                 if (a.defaultValue == null)
-                    f.SetValueWithoutNotify(string.Empty);
+                    typeTextField.SetValueWithoutNotify(string.Empty);
                 else
-                    f.SetValueWithoutNotify(a.defaultValue.ToString());
+                    typeTextField.SetValueWithoutNotify(a.defaultValue.ToString());
             }
             else if (attributeType.IsGenericType &&
                      attributeType.GetGenericArguments()[0].IsEnum &&
-                     fieldElement is BaseField<Enum>)
+                     fieldElement is BaseField<Enum> baseEnumField)
             {
                 var propInfo = attributeType.GetProperty("defaultValue");
                 var defaultEnumValue = propInfo.GetValue(attribute, null) as Enum;
 
-                var uiField = fieldElement as BaseField<Enum>;
-                uiField.SetValueWithoutNotify(defaultEnumValue);
+                baseEnumField.SetValueWithoutNotify(defaultEnumValue);
             }
-            else if (fieldElement is TextField)
+            else if (fieldElement is TextField defaultTextField)
             {
-                (fieldElement as TextField).SetValueWithoutNotify(string.Empty);
+                defaultTextField.SetValueWithoutNotify(string.Empty);
             }
 
             // Clear override.
@@ -919,7 +909,6 @@ namespace Unity.UI.Builder
             // Unset value in asset.
             var vea = currentVisualElement.GetVisualElementAsset();
 
-
             if (m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance)
             {
                 var templateContainer = BuilderAssetUtilities.GetVisualElementRootTemplate(currentVisualElement);
@@ -1079,7 +1068,7 @@ namespace Unity.UI.Builder
             PostAttributeValueChange(field, "#" + ColorUtility.ToHtmlStringRGBA(evt.newValue));
         }
 
-        void OnAssetAttributeValueChange(ChangeEvent<UnityEngine.Object> evt)
+        void OnAssetAttributeValueChange(ChangeEvent<Object> evt)
         {
             var field = evt.target as ObjectField;
 
@@ -1097,7 +1086,9 @@ namespace Unity.UI.Builder
             var uri = URIHelpers.MakeAssetUri(evt.newValue);
 
             if (!string.IsNullOrEmpty(uri) && !vta.AssetEntryExists(uri, field.objectType))
+            {
                 vta.RegisterAssetEntry(uri, field.objectType, evt.newValue);
+            }
 
             PostAttributeValueChange(field, uri);
         }

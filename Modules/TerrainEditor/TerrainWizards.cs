@@ -391,6 +391,9 @@ namespace UnityEditor
         {
             if (terrainData == null)
                 return;
+
+            var paintTrees = (PaintTreesTool)EditorTools.EditorToolManager.GetSingleton(typeof(PaintTreesTool));
+
             TreePrototype[] trees = terrain.terrainData.treePrototypes;
             if (m_PrototypeIndex == -1)
             {
@@ -403,7 +406,7 @@ namespace UnityEditor
                 newTrees[trees.Length].navMeshLod = m_NavMeshLod;
                 m_PrototypeIndex = trees.Length;
                 terrain.terrainData.treePrototypes = newTrees;
-                PaintTreesTool.instance.selectedTree = m_PrototypeIndex;
+                paintTrees.selectedTree = m_PrototypeIndex;
             }
             else
             {
@@ -932,6 +935,7 @@ namespace UnityEditor
 
         void OnWizardCreate()
         {
+            var paintTrees = (PaintTreesTool)EditorTools.EditorToolManager.GetSingleton(typeof(PaintTreesTool));
             if (numberOfTrees > kMaxNumberOfTrees)
             {
                 isValid = false;
@@ -939,7 +943,7 @@ namespace UnityEditor
                 Debug.LogError(errorString);
                 return;
             }
-            PaintTreesTool.instance.MassPlaceTrees(terrain.terrainData, numberOfTrees, true, keepExistingTrees);
+            paintTrees.MassPlaceTrees(terrain.terrainData, numberOfTrees, true, keepExistingTrees);
             terrain.Flush();
         }
     }

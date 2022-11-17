@@ -164,7 +164,7 @@ namespace Unity.GraphToolsFoundation.Editor
         static PortModel ReuseOrCreatePortModel(PortModel model, IReadOnlyDictionary<string, PortModel> previousPorts, OrderedPorts newPorts)
         {
             // reuse existing ports when ids match, otherwise add port
-            if (previousPorts.TryGetValue(model.UniqueName, out var portModelToAdd))
+            if (previousPorts != null && previousPorts.TryGetValue(model.UniqueName, out var portModelToAdd))
             {
                 if (portModelToAdd is IHasTitle toAddHasTitle && model is IHasTitle hasTitle)
                 {

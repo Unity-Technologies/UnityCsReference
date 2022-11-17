@@ -58,31 +58,28 @@ namespace UnityEngine.UIElements
 
                 TemplateContainer templateContainer = ((TemplateContainer)ve);
                 templateContainer.templateId = m_Template.GetValueFromBag(bag, cc);
-                VisualTreeAsset vea = cc.visualTreeAsset?.ResolveTemplate(templateContainer.templateId);
+                VisualTreeAsset vta = cc.visualTreeAsset?.ResolveTemplate(templateContainer.templateId);
 
-                if (vea == null)
+                if (vta == null)
                     templateContainer.Add(new Label(string.Format("Unknown Template: '{0}'", templateContainer.templateId)));
                 else
                 {
                     var bagOverrides = (bag as TemplateAsset)?.attributeOverrides;
                     var contextOverrides = cc.attributeOverrides;
 
-                    List<TemplateAsset.AttributeOverride> attributeOverrides = null;
-                    if (bagOverrides != null || contextOverrides != null)
+                    if (bagOverrides != null)
                     {
-                        // We want to add contextOverrides first here, then bagOverrides, as we
+                        if (contextOverrides == null)
+                            contextOverrides = new();
+                        // We want to add new overrides at the end of the list, as we
                         // want parent instances to always override child instances.
-                        attributeOverrides = new List<TemplateAsset.AttributeOverride>();
-                        if (contextOverrides != null)
-                            attributeOverrides.AddRange(contextOverrides);
-                        if (bagOverrides != null)
-                            attributeOverrides.AddRange(bagOverrides);
+                        contextOverrides.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, bagOverrides));
                     }
 
-                    vea.CloneTree(ve, cc.slotInsertionPoints, attributeOverrides);
+                    vta.CloneTree(ve, cc.slotInsertionPoints, contextOverrides);
                 }
 
-                if (vea == null)
+                if (vta == null)
                     Debug.LogErrorFormat("Could not resolve template with name '{0}'", templateContainer.templateId);
             }
         }

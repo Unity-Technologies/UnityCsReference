@@ -116,7 +116,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation~");
                     if (!IOProxy.DirectoryExists(docsFolder))
                         docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation");
-                    if (IOProxy.DirectoryExists(docsFolder))
+                    if (!IOProxy.DirectoryExists(docsFolder))
+                    {
+                        var readMeFile = IOProxy.PathsCombine(packageInfo.resolvedPath, "README.md");
+                        return IOProxy.FileExists(readMeFile) ? readMeFile : string.Empty;
+                    }
+                    else
                     {
                         var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
                         var docsMd = mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "index.md")

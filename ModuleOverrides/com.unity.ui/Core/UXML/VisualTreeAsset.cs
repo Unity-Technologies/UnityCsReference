@@ -121,20 +121,35 @@ namespace UnityEngine.UIElements
         [Serializable]
         struct AssetEntry
         {
-            [SerializeField] public string path;
-            [SerializeField] public string typeFullName;
-            [SerializeField] public Object asset;
+            [SerializeField] string m_Path;
+            [SerializeField] string m_TypeFullName;
+            [SerializeField] LazyLoadReference<Object> m_AssetReference;
+            [SerializeField] int m_InstanceID;
 
             Type m_CachedType;
-            public Type type => m_CachedType ??= Type.GetType(typeFullName);
+            public Type type => m_CachedType ??= Type.GetType(m_TypeFullName);
+            public string path => m_Path;
+
+            public Object asset
+            {
+                get
+                {
+                    if (m_AssetReference.isSet)
+                    {
+                        return m_AssetReference.asset;
+                    }
+
+                    return m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : null;
+                }
+            }
 
             public AssetEntry(string path, Type type, Object asset)
             {
-                this.path = path;
-                this.typeFullName = type.AssemblyQualifiedName;
-                this.asset = asset;
-
+                m_Path = path;
+                m_TypeFullName = type.AssemblyQualifiedName;
                 m_CachedType = type;
+                m_AssetReference = asset;
+                m_InstanceID = asset is Object ? asset.GetInstanceID() : 0;
             }
         }
 
@@ -318,10 +333,27 @@ namespace UnityEngine.UIElements
 
         internal T GetAsset<T>(string path) where T : Object
         {
+            if (m_AssetEntries == null)
+                return null;
+
             foreach (var entry in m_AssetEntries)
             {
-                if (entry.path.Equals(path) && entry.type == typeof(T))
-                    return entry.asset as T;
+                if (entry.path.Equals(path) && entry.asset is T asset)
+                    return asset;
+            }
+
+            return null;
+        }
+
+        internal Object GetAsset(string path, Type type)
+        {
+            if (m_AssetEntries == null)
+                return null;
+
+            foreach (var entry in m_AssetEntries)
+            {
+                if (entry.path.Equals(path) && entry.type == type)
+                    return entry.asset;
             }
 
             return null;
@@ -345,7 +377,7 @@ namespace UnityEngine.UIElements
 
         IBaseUxmlObjectFactory GetUxmlObjectFactory(UxmlObjectAsset uxmlObjectAsset)
         {
-            if (!UxmlObjectFactoryRegistry.TryGetFactories(uxmlObjectAsset.fullTypeName, out var factories))
+            if (!UxmlObjectFactoryRegistry.factories.TryGetValue(uxmlObjectAsset.fullTypeName, out var factories))
             {
                 Debug.LogErrorFormat("Element '{0}' has no registered factory method.", uxmlObjectAsset.fullTypeName);
                 return null;
@@ -476,7 +508,7 @@ namespace UnityEngine.UIElements
         }
 
         internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints,
-            List<TemplateAsset.AttributeOverride> attributeOverrides)
+            List<CreationContext.AttributeOverrideRange> attributeOverrides)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -684,6 +716,44 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        internal bool TemplateIsAssetReference(TemplateAsset templateAsset)
+        {
+            if (TryGetUsingEntry(templateAsset.templateAlias, out UsingEntry usingEntry))
+            {
+                return usingEntry.asset != null;
+            }
+            throw new ArgumentException($"Template {templateAsset.templateAlias} isn't registered in this VisualTreeAsset ");
+        }
+
+        internal void FindElementsByNameInTemplate(TemplateAsset templateAsset, string visualElementName, List<VisualElementAsset> results)
+        {
+            if (TryGetUsingEntry(templateAsset.templateAlias, out UsingEntry usingEntry))
+            {
+                if (usingEntry.asset)
+                {
+                    usingEntry.asset.FindElementsByName(visualElementName, results);
+                }
+            }
+        }
+
+        void FindElementsByName(string visualElementName, List<VisualElementAsset> results)
+        {
+            foreach (var visualElementAsset in visualElementAssets)
+            {
+                if (visualElementAsset.TryGetAttributeValue("name", out string value))
+                {
+                    if (value == visualElementName)
+                    {
+                        results.Add(visualElementAsset);
+                    }
+                }
+            }
+
+            foreach (var templateAsset in templateAssets)
+            {
+                FindElementsByNameInTemplate(templateAsset, visualElementName, results);
+            }
+        }
 
         internal bool TryGetSlotInsertionPoint(int insertionPointId, out string slotName)
         {
@@ -707,18 +777,29 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        internal VisualTreeAsset ResolveTemplate(string templateName)
+        internal bool TryGetUsingEntry(string templateName, out UsingEntry entry)
         {
+            entry = default;
+
             if (m_Usings == null || m_Usings.Count == 0)
-                return null;
+                return false;
             int index = m_Usings.BinarySearch(new UsingEntry(templateName, string.Empty), UsingEntry.comparer);
             if (index < 0)
+                return false;
+
+            entry = m_Usings[index];
+            return true;
+        }
+
+        internal VisualTreeAsset ResolveTemplate(string templateName)
+        {
+            if (!TryGetUsingEntry(templateName, out UsingEntry entry))
                 return null;
 
-            if (m_Usings[index].asset)
-                return m_Usings[index].asset;
+            if (entry.asset)
+                return entry.asset;
 
-            string path = m_Usings[index].path;
+            string path = entry.path;
             return Panel.LoadResource(path, typeof(VisualTreeAsset), GUIUtility.pixelsPerPoint) as VisualTreeAsset;
         }
 
@@ -877,6 +958,18 @@ namespace UnityEngine.UIElements
     /// </summary>
     public struct CreationContext : IEquatable<CreationContext>
     {
+        internal struct AttributeOverrideRange
+        {
+            internal readonly VisualTreeAsset sourceAsset;
+            internal readonly List<TemplateAsset.AttributeOverride> attributeOverrides;
+
+            public AttributeOverrideRange(VisualTreeAsset sourceAsset, List<TemplateAsset.AttributeOverride> attributeOverrides)
+            {
+                this.sourceAsset = sourceAsset;
+                this.attributeOverrides = attributeOverrides;
+            }
+        }
+
         /// <undoc/>
         // TODO why is this public? It's not used internally and could be obtained by default(CreationContext)
         public static readonly CreationContext Default = new CreationContext();
@@ -897,7 +990,7 @@ namespace UnityEngine.UIElements
         // TODO This feature leaks in the API but isn't usable
         public Dictionary<string, VisualElement> slotInsertionPoints { get; private set; }
 
-        internal List<TemplateAsset.AttributeOverride> attributeOverrides { get; private set; }
+        internal List<AttributeOverrideRange> attributeOverrides { get; private set; }
 
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
@@ -907,7 +1000,7 @@ namespace UnityEngine.UIElements
 
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
-            List<TemplateAsset.AttributeOverride> attributeOverrides,
+            List<CreationContext.AttributeOverrideRange> attributeOverrides,
             VisualTreeAsset vta, VisualElement target)
         {
             this.target = target;

@@ -60,6 +60,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             set => PackageManagerProjectSettings.instance.oneTimeWarningShown = value;
         }
 
+        public virtual bool oneTimeDeprecatedPopUpShown
+        {
+            get => PackageManagerProjectSettings.instance.oneTimeDeprecatedPopUpShown;
+            set => PackageManagerProjectSettings.instance.oneTimeDeprecatedPopUpShown = value;
+        }
+
         public virtual bool isUserAddingNewScopedRegistry
         {
             get => PackageManagerProjectSettings.instance.isUserAddingNewScopedRegistry;

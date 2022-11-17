@@ -40,20 +40,27 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void RegisterCallbacksOnTarget()
         {
+            target.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            target.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            target.RegisterCallback<KeyUpEvent>(OnKeyUp);
             target.RegisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
+            target.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         /// <inheritdoc />
         protected override void UnregisterCallbacksFromTarget()
         {
+            target.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
+            target.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            target.UnregisterCallback<KeyUpEvent>(OnKeyUp);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
+            target.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         protected virtual void OnMouseDown(MouseDownEvent e)
@@ -75,6 +82,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
             }
 
+            // Check if the mouse is over the port hitbox.
+            if (!Port.GetPortHitBoxBounds(port, true).Contains(e.mousePosition))
+            {
+                return;
+            }
+
             m_MouseDownPosition = e.localMousePosition;
 
             WireDragHelper.CreateWireCandidate(port.PortModel.GraphModel);
@@ -92,15 +105,25 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        void OnMouseLeave(MouseLeaveEvent e)
+        {
+            SetHoveringOnPortHitBox(e.mousePosition, true);
+        }
+
+        void OnMouseEnter(MouseEnterEvent e)
+        {
+            SetHoveringOnPortHitBox(e.mousePosition);
+        }
+
         void OnCaptureOut(MouseCaptureOutEvent e)
         {
-            m_Active = false;
-            if (WireDragHelper.WireCandidateModel != null)
-                Abort();
+            StopManipulation(true);
         }
 
         protected virtual void OnMouseMove(MouseMoveEvent e)
         {
+            SetHoveringOnPortHitBox(e.mousePosition);
+
             if (!m_Active) return;
             WireDragHelper.HandleMouseMove(e);
             e.StopPropagation();
@@ -108,8 +131,16 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected virtual void OnMouseUp(MouseUpEvent e)
         {
-            if (!m_Active || !CanStopManipulation(e))
+            if (!m_Active)
                 return;
+
+            if (!CanStopManipulation(e))
+            {
+                // The right mouse button was pressed, we stop dragging the wire.
+                StopManipulation(true);
+                e.StopPropagation();
+                return;
+            }
 
             try
             {
@@ -120,21 +151,17 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             finally
             {
-                m_Active = false;
-                target.ReleaseMouse();
+                StopManipulation(false);
                 e.StopPropagation();
             }
         }
 
-        void OnKeyDown(KeyDownEvent e)
+        void OnKeyUp(KeyUpEvent e)
         {
-            if (e.keyCode != KeyCode.Escape || !m_Active)
+            if (e.keyCode != KeyCode.Escape && e.keyCode != KeyCode.Menu || !m_Active)
                 return;
 
-            Abort();
-
-            m_Active = false;
-            target.ReleaseMouse();
+            StopManipulation(true);
             e.StopPropagation();
         }
 
@@ -146,6 +173,32 @@ namespace Unity.GraphToolsFoundation.Editor
         bool CanPerformConnection(Vector2 mousePosition)
         {
             return Vector2.Distance(m_MouseDownPosition, mousePosition) > connectionDistanceThreshold_Internal;
+        }
+
+        void SetHoveringOnPortHitBox(Vector2 mousePosition, bool endHover = false)
+        {
+            var port = target.GetFirstAncestorOfType<Port>();
+            if (port == null || port.PortModel.Capacity == PortCapacity.None)
+                return;
+
+            port.GetPortConnectorPart().Hovering = !endHover && Port.GetPortHitBoxBounds(port, true).Contains(mousePosition);
+        }
+
+        void StopManipulation(bool abort)
+        {
+            if (!m_Active)
+                return;
+
+            if (abort)
+                Abort();
+
+            m_Active = false;
+            target.ReleaseMouse();
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            StopManipulation(true);
         }
     }
 }

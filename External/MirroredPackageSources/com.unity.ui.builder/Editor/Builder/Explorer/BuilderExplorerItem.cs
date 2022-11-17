@@ -70,7 +70,7 @@ namespace Unity.UI.Builder
                 // Since renameTextfield isn't attached to a panel yet, we are using DoFocusChange() to bypass canGrabFocus.
                 baseInput.focusController.DoFocusChange(baseInput);
 
-            renameTextfield.SelectAll();
+            renameTextfield.textSelection.SelectAll();
         }
 
         public TextField CreateRenamingTextField(VisualElement documentElement, Label nameLabel, BuilderSelection selection)

@@ -152,7 +152,7 @@ namespace UnityEngine.UIElements
         }
 
         internal TouchScreenKeyboard m_TouchScreenKeyboard;
-
+        internal Action<bool> onIsReadOnlyChanged;
         TouchScreenKeyboard ITextEdition.touchScreenKeyboard
         {
             get => m_TouchScreenKeyboard;
@@ -211,6 +211,7 @@ namespace UnityEngine.UIElements
 
                 editingManipulator = value ? null : new TextEditingManipulator(this);
                 m_IsReadOnly = value;
+                onIsReadOnlyChanged?.Invoke(value);
             }
         }
 

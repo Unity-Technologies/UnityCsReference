@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -54,6 +52,14 @@ namespace UnityEditor.UIElements
                 var factory = (IUxmlFactory)Activator.CreateInstance(type);
                 RegisterFactory(factory);
             }
+
+            foreach (var factoryList in factories.Values)
+            {
+                foreach (var factory in factoryList)
+                {
+                    UxmlCodeDependencies.instance.RegisterAssetAttributeDependencies(factory);
+                }
+            }
         }
     }
 
@@ -81,6 +87,14 @@ namespace UnityEditor.UIElements
                     continue;
                 var factory = (IBaseUxmlObjectFactory)Activator.CreateInstance(type);
                 RegisterFactory(factory);
+            }
+
+            foreach (var factoryList in factories.Values)
+            {
+                foreach (var factory in factoryList)
+                {
+                    UxmlCodeDependencies.instance.RegisterAssetAttributeDependencies(factory);
+                }
             }
         }
     }

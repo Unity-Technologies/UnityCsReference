@@ -10,23 +10,33 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    // Placeholder type for global editors to register as keys
+    struct NullTargetKey {}
+
     [Serializable]
     struct EditorTypeAssociation : ISerializationCallbackReceiver
     {
         [SerializeField]
-        string m_TargetContext, m_TargetBehaviour, m_EditorType;
+        string m_TargetContext, m_TargetBehaviour, m_EditorType, m_VariantGroup;
 
         // Context and behaviour types can be null, and should be treated as universally applicable.
         public Type targetContext { get; private set; }
         public Type targetBehaviour { get; private set; }
         public Type editor { get; private set; }
+        public Type variantGroup { get; private set; }
+        public int priority { get; private set; }
+        public int variantPriority { get; private set; }
 
-        public EditorTypeAssociation(Type editor, Type targetBehaviour, Type targetContext)
+        public EditorTypeAssociation(Type editor, Type attributeType)
         {
-            this.targetContext = targetContext;
-            this.targetBehaviour = targetBehaviour;
             this.editor = editor;
-            m_EditorType = m_TargetBehaviour = m_TargetContext = null;
+            var attrib = editor.GetCustomAttributes(attributeType, false).FirstOrDefault() as ToolAttribute;
+            targetBehaviour = attrib?.targetType ?? typeof(NullTargetKey);
+            targetContext = attrib?.targetContext;
+            variantGroup = attrib?.variantGroup;
+            priority = attrib?.toolPriority ?? ToolAttribute.defaultPriority;
+            variantPriority = attrib?.variantPriority ?? ToolAttribute.defaultPriority;
+            m_TargetContext = m_TargetBehaviour = m_EditorType = m_VariantGroup = null;
         }
 
         public void OnBeforeSerialize()
@@ -34,6 +44,7 @@ namespace UnityEditor.EditorTools
             m_TargetContext = targetContext?.AssemblyQualifiedName;
             m_TargetBehaviour = targetBehaviour?.AssemblyQualifiedName;
             m_EditorType = editor?.AssemblyQualifiedName;
+            m_VariantGroup = variantGroup?.AssemblyQualifiedName;
         }
 
         public void OnAfterDeserialize()
@@ -44,7 +55,8 @@ namespace UnityEditor.EditorTools
                 targetBehaviour = Type.GetType(m_TargetBehaviour);
             if (!string.IsNullOrEmpty(m_EditorType))
                 editor = Type.GetType(m_EditorType);
-            m_TargetContext = m_TargetBehaviour = m_EditorType = null;
+            if (!string.IsNullOrEmpty(m_VariantGroup))
+                variantGroup = Type.GetType(m_VariantGroup);
         }
     }
 
@@ -152,11 +164,12 @@ namespace UnityEditor.EditorTools
     // target types are treated as "global" editors.
     class EditorToolCache
     {
-        // Placeholder type for global editors to register as keys
-        struct NullTargetKey {}
 
         Type m_AttributeType;
+        // Cache of the available tools as defined by EditorToolAttribute
         EditorTypeAssociation[] s_AvailableEditorTypeAssociations = null;
+        // Type association data for all loaded tools, regardless of whether they are registered with an EditorToolAttribute.
+        Dictionary<Type, EditorTypeAssociation> m_ToolMetaData = new Dictionary<Type, EditorTypeAssociation>();
         Dictionary<Type, List<EditorTypeAssociation>> s_EditorTargetCache = new Dictionary<Type, List<EditorTypeAssociation>>();
 
         // Static fields in generic classes result in multiple static field instances. In this case that's fine.
@@ -195,20 +208,19 @@ namespace UnityEditor.EditorTools
                     s_AvailableEditorTypeAssociations = new EditorTypeAssociation[len];
 
                     for (int i = 0; i < len; i++)
-                    {
-                        var customToolAttribute = editorTools[i].GetCustomAttributes(m_AttributeType, false)
-                            .FirstOrDefault() as ToolAttribute;
+                        s_AvailableEditorTypeAssociations[i] = new EditorTypeAssociation(editorTools[i], m_AttributeType);
 
-                        if (customToolAttribute == null)
-                            continue;
-
-                        s_AvailableEditorTypeAssociations[i] = new EditorTypeAssociation(
-                            editorTools[i], customToolAttribute.targetType ?? typeof(NullTargetKey), customToolAttribute.targetContext);
-                    }
                 }
 
                 return s_AvailableEditorTypeAssociations;
             }
+        }
+
+        public EditorTypeAssociation GetMetaData(Type toolType)
+        {
+            if (!m_ToolMetaData.TryGetValue(toolType, out var data))
+                m_ToolMetaData.Add(toolType, data = new EditorTypeAssociation(toolType, m_AttributeType));
+            return data;
         }
 
         public Type GetTargetType(Type editorType)
@@ -304,6 +316,17 @@ namespace UnityEditor.EditorTools
 
             foreach (var editor in editors)
                 editor.InstantiateEditor();
+        }
+
+        public List<EditorTypeAssociation> GetEditorsForVariant(EditorTypeAssociation type)
+        {
+            var tools = new List<EditorTypeAssociation>();
+            foreach(var association in availableEditorTypeAssociations)
+                if (association.variantGroup == type.variantGroup
+                    && association.targetBehaviour == type.targetBehaviour
+                    && association.targetContext == type.targetContext)
+                    tools.Add(association);
+            return tools;
         }
     }
 }

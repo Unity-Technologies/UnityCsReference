@@ -33,7 +33,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
         List<GraphElementModel> m_CachedHiddenElementModels;
 
-        public override Color DefaultColor => new Color(0.15f, 0.19f, 0.19f);
+        public override Color DefaultColor => new Color(74.0f/255.0f, 88.0f/255.0f, 91.0f / 255.0f);
+
+        /// <inheritdoc />
+        public override bool UseColorAlpha => false;
 
         /// <inheritdoc />
         public virtual string Title
@@ -158,7 +161,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             foreach (var node in GraphModel.NodeModels)
                             {
-                                if (node.Guid.ToString() == elementModelGuid)
+                                if (node != null && node.Guid.ToString() == elementModelGuid)
                                 {
                                     m_CachedHiddenElementModels.Add(node);
                                 }

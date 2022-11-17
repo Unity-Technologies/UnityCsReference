@@ -210,6 +210,10 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     if (element is ContextNode context)
                     {
+                        // Blocks cannot be dropped into a context node placeholder.
+                        if (context.ContextNodeModel is IPlaceholder)
+                            continue;
+
                         Vector2 posInContext = context.WorldToLocal(e.mousePosition);
                         if (SelectedBlockModels.All(t => t.IsCompatibleWith(HoveredContext.ContextNodeModel)))
                         {

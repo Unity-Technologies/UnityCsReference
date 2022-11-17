@@ -40,7 +40,7 @@ namespace UnityEditor
 
         CustomEditorAttributes()
         {
-            Rebuild();
+            Initialize();
         }
 
         Type GetCustomEditorType(Type type, bool multiEdit)
@@ -148,7 +148,12 @@ namespace UnityEditor
             return isFallbackPass == editor.isFallback;
         }
 
-        void Rebuild()
+        internal static void Rebuild()
+        {
+            instance.Initialize();
+        }
+
+        void Initialize()
         {
             m_Cache.Clear();
             var types = TypeCache.GetTypesWithAttribute<CustomEditor>();

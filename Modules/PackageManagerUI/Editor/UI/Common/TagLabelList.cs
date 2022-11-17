@@ -46,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_TagsList.Clear();
             foreach (var tagName in tagNames)
-                m_TagsList.Add(new PackageTagLabel { text = tagName });
+                m_TagsList.Add(new Label { text = tagName, classList = { PackageBaseTagLabel.ussClassName } });
 
             if (tagNames.Count() < 5)
                 return;
@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTagsList(bool showMore)
         {
-            var tagLabelEnumerable = m_TagsList.Children().OfType<PackageTagLabel>();
+            var tagLabelEnumerable = m_TagsList.Children().OfType<Label>();
             foreach (var (tagLabel, i) in tagLabelEnumerable.Select((tagLabel, i) => ( tagLabel, i )))
             {
                 // We skip the first 3 because we want them to be always visible.

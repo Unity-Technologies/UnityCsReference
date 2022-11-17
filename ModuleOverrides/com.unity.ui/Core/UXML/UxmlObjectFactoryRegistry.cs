@@ -42,13 +42,8 @@ namespace UnityEngine.UIElements
             else
             {
                 factoryList = new List<IBaseUxmlObjectFactory> { factory };
-                factories.Add(factory.uxmlQualifiedName, factoryList);
+                s_Factories.Add(factory.uxmlQualifiedName, factoryList);
             }
-        }
-
-        internal static bool TryGetFactories(string fullTypeName, out List<IBaseUxmlObjectFactory> factoryList)
-        {
-            return factories.TryGetValue(fullTypeName, out factoryList);
         }
 
         // Core UI Toolkit uxml objects must be registered manually for both Editor and Player use cases.
@@ -58,10 +53,10 @@ namespace UnityEngine.UIElements
         {
             IBaseUxmlObjectFactory[] objectFactories =
             {
-                new Columns.UxmlObjectFactory<Columns>(),
-                new Column.UxmlObjectFactory<Column>(),
-                new SortColumnDescriptions.UxmlObjectFactory<SortColumnDescriptions>(),
-                new SortColumnDescription.UxmlObjectFactory<SortColumnDescription>(),
+                new Columns.UxmlObjectFactory(),
+                new Column.UxmlObjectFactory(),
+                new SortColumnDescriptions.UxmlObjectFactory(),
+                new SortColumnDescription.UxmlObjectFactory(),
             };
 
             foreach (var factory in objectFactories)

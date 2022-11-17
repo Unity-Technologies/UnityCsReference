@@ -16,12 +16,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the field is selectable.
         /// </summary>
-        bool isSelectable { get; set; }
+        public bool isSelectable { get; set; }
 
         /// <summary>
         /// Color of the cursor.
         /// </summary>
         public Color cursorColor { get; set; }
+
+        /// <summary>
+        /// Background color of selected text.
+        /// </summary>
+        public Color selectionColor { get; set; }
 
         /// <summary>
         /// This is the cursor index in the text presented.
@@ -37,11 +42,6 @@ namespace UnityEngine.UIElements
         /// This is the selection index in the text presented.
         /// </summary>
         public int selectIndex { get; set; }
-
-        /// <summary>
-        /// Background color of selected text.
-        /// </summary>
-        public Color selectionColor { get; set; }
 
         ///// <summary>
         ///// Controls whether triple clicking selects the entire line under the mouse pointer or not.
@@ -73,12 +73,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Controls whether the element's content is selected upon receiving focus.
         /// </summary>
-        internal bool selectAllOnFocus { get; set; }
+        public bool selectAllOnFocus { get; set; }
 
         /// <summary>
         /// Controls whether the element's content is selected when you mouse up for the first time.
         /// </summary>
-        internal bool selectAllOnMouseUp { get; set; }
+        public bool selectAllOnMouseUp { get; set; }
 
         /// <summary>
         /// The position of the text cursor inside the element.
@@ -109,9 +109,6 @@ namespace UnityEngine.UIElements
             get => m_IsSelectable && focusable;
             set
             {
-                if (value == m_IsSelectable)
-                    return;
-
                 focusable = value;
                 m_IsSelectable = value;
             }
@@ -177,7 +174,6 @@ namespace UnityEngine.UIElements
         /// Controls whether the element's content is selected when you mouse up for the first time.
         /// </summary>
         bool ITextSelection.selectAllOnMouseUp { get; set; } = false;
-
 
         Vector2 ITextSelection.cursorPosition => uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
 

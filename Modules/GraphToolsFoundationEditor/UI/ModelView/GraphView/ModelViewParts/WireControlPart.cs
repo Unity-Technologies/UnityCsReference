@@ -81,6 +81,10 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_WireControl.ResetColor();
             }
+            else if (parent?.WireModel is IPlaceholder)
+            {
+                m_WireControl.SetColor(Color.red, Color.red);
+            }
             else
             {
                 var wireModel = m_Model as WireModel;

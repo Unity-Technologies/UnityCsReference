@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Unity.CommandStateObserver;
 using UnityEditor;
 using UnityEngine;
@@ -644,274 +645,285 @@ namespace Unity.GraphToolsFoundation.Editor
             if (evt.menu.MenuItems().Count > 0)
                 evt.menu.AppendSeparator();
 
-            evt.menu.AppendAction("Create Node", menuAction =>
-            {
-                Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
-                ShowItemLibrary(mousePosition);
-            });
-
-            evt.menu.AppendAction("Create Placemat", menuAction =>
-            {
-                Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
-                Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
-
-                Dispatch(new CreatePlacematCommand(new Rect(graphPosition.x, graphPosition.y, 200, 200)));
-            });
-
             var selection = GetSelection().ToList();
-            if (selection.Any())
+            if (!selection.Any(e => e is IPlaceholder || e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder))
             {
+                evt.menu.AppendAction("Create Node", menuAction =>
+                {
+                    Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
+                    ShowItemLibrary(mousePosition);
+                });
                 var nodesAndNotes = selection.
                     Where(e => e is AbstractNodeModel || e is StickyNoteModel).
                     Select(m => m.GetView<GraphElement>(this)).ToList();
 
                 bool hasNodeOnGraph = nodesAndNotes.Any(t => !t.GraphElementModel.NeedsContainer());
 
-                evt.menu.AppendAction("Create Placemat Under Selection", _ =>
+                evt.menu.AppendAction("Create Placemat", menuAction =>
                 {
-                    Rect bounds = new Rect();
-                    if (Placemat.ComputeElementBounds_Internal(ref bounds, nodesAndNotes))
+                    Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
+                    Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
+
+                    if (hasNodeOnGraph)
                     {
-                        Dispatch(new CreatePlacematCommand(bounds));
-                    }
-                }, hasNodeOnGraph ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-                /* Actions on selection */
-
-                evt.menu.AppendSeparator();
-
-                if (hasNodeOnGraph)
-                {
-                    // TODO OYT (GTF-804): For V1, access to the Align Items and Align Hierarchy features was removed as they are confusing to users. To be improved before making them accessible again.
-                    // var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Align Elements/Align Items", GraphTool.Name, ShortcutAlignNodesEvent.id);
-                    // evt.menu.AppendAction(itemName, _ =>
-                    // {
-                    //     Dispatch(new AlignNodesCommand(this, false, GetSelection()));
-                    // });
-                    //
-                    // itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Align Elements/Align Hierarchy", GraphTool.Name, ShortcutAlignNodeHierarchiesEvent.id);
-                    // evt.menu.AppendAction(itemName, _ =>
-                    // {
-                    //     Dispatch(new AlignNodesCommand(this, true, GetSelection()));
-                    // });
-
-                    var selectionUI = selection.Select(m => m.GetView<GraphElement>(this));
-                    if (selectionUI.Count(elem => elem != null && !(elem.Model is WireModel) && elem.visible) > 1)
-                    {
-                        evt.menu.AppendAction("Align Elements/Top",
-                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Top));
-
-                        evt.menu.AppendAction("Align Elements/Bottom",
-                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Bottom));
-
-                        evt.menu.AppendAction("Align Elements/Left",
-                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Left));
-
-                        evt.menu.AppendAction("Align Elements/Right",
-                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Right));
-
-                        evt.menu.AppendAction("Align Elements/Horizontal Center",
-                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
-                                .HorizontalCenter));
-
-                        evt.menu.AppendAction("Align Elements/Vertical Center",
-                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
-                                .VerticalCenter));
-
-                        evt.menu.AppendAction("Distribute Elements/Horizontal",
-                            _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Horizontal));
-
-                        evt.menu.AppendAction("Distribute Elements/Vertical",
-                            _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Vertical));
-                    }
-                }
-
-                var nodes = selection.OfType<AbstractNodeModel>().ToList();
-                if (nodes.Count > 0)
-                {
-                    var connectedNodes = nodes
-                        .Where(m => m.GetConnectedWires().Any())
-                        .ToList();
-
-                    evt.menu.AppendAction("Disconnect Nodes", _ =>
-                    {
-                        Dispatch(new DisconnectNodeCommand(connectedNodes));
-                    }, connectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
-
-                    var ioConnectedNodes = connectedNodes
-                        .OfType<InputOutputPortsNodeModel>()
-                        .Where(x => x.InputsByDisplayOrder.Any(y => y.IsConnected()) &&
-                            x.OutputsByDisplayOrder.Any(y => y.IsConnected())).ToList();
-
-                    evt.menu.AppendAction("Bypass Nodes", _ =>
-                    {
-                        Dispatch(new BypassNodesCommand(ioConnectedNodes, nodes));
-                    }, ioConnectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
-
-                    var willDisable = nodes.Any(n => n.State == ModelState.Enabled);
-                    evt.menu.AppendAction(willDisable ? "Disable Nodes" : "Enable Nodes", _ =>
-                    {
-                        Dispatch(new ChangeNodeStateCommand(willDisable ? ModelState.Disabled : ModelState.Enabled, nodes));
-                    });
-                }
-
-                if (selection.Count == 2)
-                {
-                    // PF: FIXME check conditions correctly for this actions (exclude single port nodes, check if already connected).
-                    if (selection.FirstOrDefault(x => x is WireModel) is WireModel wireModel &&
-                        selection.FirstOrDefault(x => x is InputOutputPortsNodeModel) is InputOutputPortsNodeModel nodeModel)
-                    {
-                        evt.menu.AppendAction("Insert Node on Wire", _ => Dispatch(new SplitWireAndInsertExistingNodeCommand(wireModel, nodeModel)),
-                            _ => DropdownMenuAction.Status.Normal);
-                    }
-                }
-
-                var variableNodes = nodes.OfType<VariableNodeModel>().ToList();
-                var constants = nodes.OfType<ConstantNodeModel>().ToList();
-                if (variableNodes.Count > 0)
-                {
-                    // TODO JOCE We might want to bring the concept of Get/Set variable from VS down to GTF
-                    var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Variable/Convert", GraphTool.Name, ShortcutConvertConstantAndVariableEvent.id);
-                    evt.menu.AppendAction(itemName,
-                        _ => Dispatch(new ConvertConstantNodesAndVariableNodesCommand(null, variableNodes)),
-                        variableNodes.Any(v => v.OutputsByDisplayOrder.Any(o => o.PortType == PortType.Data)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-                    evt.menu.AppendAction("Variable/Itemize",
-                        _ => Dispatch(new ItemizeNodeCommand(variableNodes.OfType<ISingleOutputPortNodeModel>().ToList())),
-                        variableNodes.Any(v => v.OutputsByDisplayOrder.Any(o => o.PortType == PortType.Data && o.GetConnectedPorts().Count() > 1)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-                }
-
-                if (constants.Count > 0)
-                {
-                    var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Constant/Convert", GraphTool.Name, ShortcutConvertConstantAndVariableEvent.id);
-                    evt.menu.AppendAction(itemName,
-                        _ => Dispatch(new ConvertConstantNodesAndVariableNodesCommand(constants, null)), _ => DropdownMenuAction.Status.Normal);
-
-                    evt.menu.AppendAction("Constant/Itemize",
-                        _ => Dispatch(new ItemizeNodeCommand(constants.OfType<ISingleOutputPortNodeModel>().ToList())),
-                        constants.Any(v => v.OutputsByDisplayOrder.Any(o => o.PortType == PortType.Data && o.GetConnectedPorts().Count() > 1)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-                    evt.menu.AppendAction("Constant/Lock",
-                        _ => Dispatch(new LockConstantNodeCommand(constants, true)),
-                        _ =>
-                            constants.Any(e => !e.IsLocked) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
-                    );
-
-                    evt.menu.AppendAction("Constant/Unlock",
-                        _ => Dispatch(new LockConstantNodeCommand(constants, false)),
-                        _ =>
-                            constants.Any(e => e.IsLocked) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
-                    );
-                }
-
-                var portals = nodes.OfType<WirePortalModel>().ToList();
-                if (portals.Count > 0)
-                {
-                    var canCreate = portals.Where(p => p.CanCreateOppositePortal()).ToList();
-                    evt.menu.AppendAction("Create Opposite Portal",
-                        _ =>
+                        Rect bounds = new Rect();
+                        if (Placemat.ComputeElementBounds_Internal(ref bounds, nodesAndNotes.Where(t => !t.GraphElementModel.NeedsContainer())))
                         {
-                            Dispatch(new CreateOppositePortalCommand(canCreate));
-                        }, canCreate.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-                }
-
-                var colorables = selection.Where(s => s.IsColorable()).ToList();
-                if (colorables.Any())
-                {
-                    evt.menu.AppendAction("Color/Change...", _ =>
-                    {
-                        void ChangeNodesColor(Color pickedColor)
-                        {
-                            Dispatch(new ChangeElementColorCommand(pickedColor, colorables));
+                            Dispatch(new CreatePlacematCommand(bounds));
                         }
-
-                        var defaultColor = new Color(0.5f, 0.5f, 0.5f);
-                        if (colorables.Count == 1 && colorables[0].HasUserColor)
+                        else
                         {
-                            defaultColor = colorables[0].Color;
+                            Dispatch(new CreatePlacematCommand(new Rect(graphPosition.x, graphPosition.y, 200, 200)));
                         }
-
-                        ColorPicker.Show(ChangeNodesColor, defaultColor);
-                    });
-
-                    evt.menu.AppendAction("Color/Reset", _ =>
+                    }
+                    else
                     {
-                        Dispatch(new ResetElementColorCommand(colorables));
-                    });
-                }
-                else
-                {
-                    evt.menu.AppendAction("Color", _ => {}, _ => DropdownMenuAction.Status.Disabled);
-                }
+                        Dispatch(new CreatePlacematCommand(new Rect(graphPosition.x, graphPosition.y, 200, 200)));
+                    }
+                });
 
-                var wires = selection.OfType<WireModel>().ToList();
-                if (wires.Count > 0)
+                if (selection.Any())
                 {
+
+                    /* Actions on selection */
+
                     evt.menu.AppendSeparator();
 
-                    var wireData = wires.Select(
-                        wireModel =>
-                        {
-                            var outputPort = wireModel.FromPort.GetView<Port>(this);
-                            var inputPort = wireModel.ToPort.GetView<Port>(this);
-                            var outputNode = wireModel.FromPort.NodeModel.GetView<Node>(this);
-                            var inputNode = wireModel.ToPort.NodeModel.GetView<Node>(this);
-
-                            if (outputNode == null || inputNode == null || outputPort == null || inputPort == null)
-                                return (null, Vector2.zero, Vector2.zero);
-
-                            return (wireModel,
-                                outputPort.ChangeCoordinatesTo(contentContainer, outputPort.layout.center),
-                                inputPort.ChangeCoordinatesTo(contentContainer, inputPort.layout.center));
-                        }
-                    ).Where(tuple => tuple.Item1 != null).ToList();
-
-                    evt.menu.AppendAction("Add Portals", _ =>
+                    if (hasNodeOnGraph)
                     {
-                        Dispatch(new ConvertWiresToPortalsCommand(wireData));
-                    });
-                }
+                        // TODO OYT (GTF-804): For V1, access to the Align Items and Align Hierarchy features was removed as they are confusing to users. To be improved before making them accessible again.
+                        // var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Align Elements/Align Items", GraphTool.Name, ShortcutAlignNodesEvent.id);
+                        // evt.menu.AppendAction(itemName, _ =>
+                        // {
+                        //     Dispatch(new AlignNodesCommand(this, false, GetSelection()));
+                        // });
+                        //
+                        // itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Align Elements/Align Hierarchy", GraphTool.Name, ShortcutAlignNodeHierarchiesEvent.id);
+                        // evt.menu.AppendAction(itemName, _ =>
+                        // {
+                        //     Dispatch(new AlignNodesCommand(this, true, GetSelection()));
+                        // });
 
-                var stickyNotes = selection.OfType<StickyNoteModel>().ToList();
-
-                if (stickyNotes.Count > 0)
-                {
-                    evt.menu.AppendSeparator();
-
-                    DropdownMenuAction.Status GetThemeStatus(DropdownMenuAction a)
-                    {
-                        if (stickyNotes.Any(noteModel => noteModel.Theme != stickyNotes.First().Theme))
+                        var selectionUI = selection.Select(m => m.GetView<GraphElement>(this));
+                        if (selectionUI.Count(elem => elem != null && !(elem.Model is WireModel) && elem.visible) > 1)
                         {
-                            // Values are not all the same.
-                            return DropdownMenuAction.Status.Normal;
-                        }
+                            evt.menu.AppendAction("Align Elements/Top",
+                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Top));
 
-                        return stickyNotes.First().Theme == (a.userData as string) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+                            evt.menu.AppendAction("Align Elements/Bottom",
+                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Bottom));
+
+                            evt.menu.AppendAction("Align Elements/Left",
+                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Left));
+
+                            evt.menu.AppendAction("Align Elements/Right",
+                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Right));
+
+                            evt.menu.AppendAction("Align Elements/Horizontal Center",
+                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
+                                    .HorizontalCenter));
+
+                            evt.menu.AppendAction("Align Elements/Vertical Center",
+                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
+                                    .VerticalCenter));
+
+                            evt.menu.AppendAction("Distribute Elements/Horizontal",
+                                _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Horizontal));
+
+                            evt.menu.AppendAction("Distribute Elements/Vertical",
+                                _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Vertical));
+                        }
                     }
 
-                    DropdownMenuAction.Status GetSizeStatus(DropdownMenuAction a)
+                    var nodes = selection.OfType<AbstractNodeModel>().ToList();
+                    if (nodes.Count > 0)
                     {
-                        if (stickyNotes.Any(noteModel => noteModel.TextSize != stickyNotes.First().TextSize))
+                        var connectedNodes = nodes
+                            .Where(m => m.GetConnectedWires().Any())
+                            .ToList();
+
+                        evt.menu.AppendAction("Disconnect Nodes", _ =>
                         {
-                            // Values are not all the same.
-                            return DropdownMenuAction.Status.Normal;
+                            Dispatch(new DisconnectNodeCommand(connectedNodes));
+                        }, connectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+
+                        var ioConnectedNodes = connectedNodes
+                            .OfType<InputOutputPortsNodeModel>()
+                            .Where(x => x.InputsByDisplayOrder.Any(y => y.IsConnected()) &&
+                                x.OutputsByDisplayOrder.Any(y => y.IsConnected())).ToList();
+
+                        evt.menu.AppendAction("Bypass Nodes", _ =>
+                        {
+                            Dispatch(new BypassNodesCommand(ioConnectedNodes, nodes));
+                        }, ioConnectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+
+                        var willDisable = nodes.Any(n => n.State == ModelState.Enabled);
+                        evt.menu.AppendAction(willDisable ? "Disable Nodes" : "Enable Nodes", _ =>
+                        {
+                            Dispatch(new ChangeNodeStateCommand(willDisable ? ModelState.Disabled : ModelState.Enabled, nodes));
+                        });
+                    }
+
+                    if (selection.Count == 2)
+                    {
+                        // PF: FIXME check conditions correctly for this actions (exclude single port nodes, check if already connected).
+                        if (selection.FirstOrDefault(x => x is WireModel) is WireModel wireModel &&
+                            selection.FirstOrDefault(x => x is InputOutputPortsNodeModel) is InputOutputPortsNodeModel nodeModel)
+                        {
+                            evt.menu.AppendAction("Insert Node on Wire", _ => Dispatch(new SplitWireAndInsertExistingNodeCommand(wireModel, nodeModel)),
+                                _ => DropdownMenuAction.Status.Normal);
+                        }
+                    }
+
+                    var variableNodes = nodes.OfType<VariableNodeModel>().ToList();
+                    var constants = nodes.OfType<ConstantNodeModel>().ToList();
+                    if (variableNodes.Count > 0)
+                    {
+                        // TODO JOCE We might want to bring the concept of Get/Set variable from VS down to GTF
+                        var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Variable/Convert", GraphTool.Name, ShortcutConvertConstantAndVariableEvent.id);
+                        evt.menu.AppendAction(itemName,
+                            _ => Dispatch(new ConvertConstantNodesAndVariableNodesCommand(null, variableNodes)),
+                            variableNodes.Any(v => v.OutputsByDisplayOrder.Any(o => o.PortType == PortType.Data)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+                        evt.menu.AppendAction("Variable/Itemize",
+                            _ => Dispatch(new ItemizeNodeCommand(variableNodes.OfType<ISingleOutputPortNodeModel>().ToList())),
+                            variableNodes.Any(v => v.OutputsByDisplayOrder.Any(o => o.PortType == PortType.Data && o.GetConnectedPorts().Count() > 1)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                    }
+
+                    if (constants.Count > 0)
+                    {
+                        var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Constant/Convert", GraphTool.Name, ShortcutConvertConstantAndVariableEvent.id);
+                        evt.menu.AppendAction(itemName,
+                            _ => Dispatch(new ConvertConstantNodesAndVariableNodesCommand(constants, null)), _ => DropdownMenuAction.Status.Normal);
+
+                        evt.menu.AppendAction("Constant/Itemize",
+                            _ => Dispatch(new ItemizeNodeCommand(constants.OfType<ISingleOutputPortNodeModel>().ToList())),
+                            constants.Any(v => v.OutputsByDisplayOrder.Any(o => o.PortType == PortType.Data && o.GetConnectedPorts().Count() > 1)) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+                        evt.menu.AppendAction("Constant/Lock",
+                            _ => Dispatch(new LockConstantNodeCommand(constants, true)),
+                            _ =>
+                                constants.Any(e => !e.IsLocked) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
+                        );
+
+                        evt.menu.AppendAction("Constant/Unlock",
+                            _ => Dispatch(new LockConstantNodeCommand(constants, false)),
+                            _ =>
+                                constants.Any(e => e.IsLocked) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled
+                        );
+                    }
+
+                    var portals = nodes.OfType<WirePortalModel>().ToList();
+                    if (portals.Count > 0)
+                    {
+                        var canCreate = portals.Where(p => p.CanCreateOppositePortal()).ToList();
+                        evt.menu.AppendAction("Create Opposite Portal",
+                            _ =>
+                            {
+                                Dispatch(new CreateOppositePortalCommand(canCreate));
+                            }, canCreate.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                    }
+
+                    var colorables = selection.Where(s => s.IsColorable()).ToList();
+                    if (colorables.Any())
+                    {
+                        evt.menu.AppendAction("Color/Change...", _ =>
+                        {
+                            void ChangeNodesColor(Color pickedColor)
+                            {
+                                Dispatch(new ChangeElementColorCommand(pickedColor, colorables));
+                            }
+
+                            var defaultColor = new Color(0.5f, 0.5f, 0.5f);
+                            if (colorables.Count == 1 && colorables[0].HasUserColor)
+                            {
+                                defaultColor = colorables[0].Color;
+                            }
+
+                            bool showAlpha = colorables.All(t => t.UseColorAlpha);
+
+                            ColorPicker.Show(ChangeNodesColor, defaultColor, showAlpha);
+                        });
+
+                        evt.menu.AppendAction("Color/Reset", _ =>
+                        {
+                            Dispatch(new ResetElementColorCommand(colorables));
+                        });
+                    }
+                    else
+                    {
+                        evt.menu.AppendAction("Color", _ => {}, _ => DropdownMenuAction.Status.Disabled);
+                    }
+
+                    var wires = selection.OfType<WireModel>().ToList();
+                    if (wires.Count > 0)
+                    {
+                        evt.menu.AppendSeparator();
+
+                        var wireData = wires.Select(
+                            wireModel =>
+                            {
+                                var outputPort = wireModel.FromPort.GetView<Port>(this);
+                                var inputPort = wireModel.ToPort.GetView<Port>(this);
+                                var outputNode = wireModel.FromPort.NodeModel.GetView<Node>(this);
+                                var inputNode = wireModel.ToPort.NodeModel.GetView<Node>(this);
+
+                                if (outputNode == null || inputNode == null || outputPort == null || inputPort == null)
+                                    return (null, Vector2.zero, Vector2.zero);
+
+                                return (wireModel,
+                                    outputPort.ChangeCoordinatesTo(contentContainer, outputPort.layout.center),
+                                    inputPort.ChangeCoordinatesTo(contentContainer, inputPort.layout.center));
+                            }
+                        ).Where(tuple => tuple.Item1 != null).ToList();
+
+                        evt.menu.AppendAction("Add Portals", _ =>
+                        {
+                            Dispatch(new ConvertWiresToPortalsCommand(wireData));
+                        });
+                    }
+
+                    var stickyNotes = selection.OfType<StickyNoteModel>().ToList();
+
+                    if (stickyNotes.Count > 0)
+                    {
+                        evt.menu.AppendSeparator();
+
+                        DropdownMenuAction.Status GetThemeStatus(DropdownMenuAction a)
+                        {
+                            if (stickyNotes.Any(noteModel => noteModel.Theme != stickyNotes.First().Theme))
+                            {
+                                // Values are not all the same.
+                                return DropdownMenuAction.Status.Normal;
+                            }
+
+                            return stickyNotes.First().Theme == (a.userData as string) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
                         }
 
-                        return stickyNotes.First().TextSize == (a.userData as string) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-                    }
+                        DropdownMenuAction.Status GetSizeStatus(DropdownMenuAction a)
+                        {
+                            if (stickyNotes.Any(noteModel => noteModel.TextSize != stickyNotes.First().TextSize))
+                            {
+                                // Values are not all the same.
+                                return DropdownMenuAction.Status.Normal;
+                            }
 
-                    foreach (var value in StickyNote.GetThemes())
-                    {
-                        evt.menu.AppendAction("Sticky Note Theme/" + value,
-                            menuAction => Dispatch(new UpdateStickyNoteThemeCommand(menuAction.userData as string, stickyNotes)),
-                            GetThemeStatus, value);
-                    }
+                            return stickyNotes.First().TextSize == (a.userData as string) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+                        }
 
-                    foreach (var value in StickyNote.GetSizes())
-                    {
-                        evt.menu.AppendAction("Sticky Note Text Size/" + value,
-                            menuAction => Dispatch(new UpdateStickyNoteTextSizeCommand(menuAction.userData as string, stickyNotes)),
-                            GetSizeStatus, value);
+                        foreach (var value in StickyNote.GetThemes())
+                        {
+                            evt.menu.AppendAction("Sticky Note Theme/" + value,
+                                menuAction => Dispatch(new UpdateStickyNoteThemeCommand(menuAction.userData as string, stickyNotes)),
+                                GetThemeStatus, value);
+                        }
+
+                        foreach (var value in StickyNote.GetSizes())
+                        {
+                            evt.menu.AppendAction("Sticky Note Text Size/" + value,
+                                menuAction => Dispatch(new UpdateStickyNoteTextSizeCommand(menuAction.userData as string, stickyNotes)),
+                                GetSizeStatus, value);
+                        }
                     }
                 }
             }
@@ -965,7 +977,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             ItemLibraryService.ShowGraphNodes(stencil, this, position, item =>
             {
-                Dispatch(CreateNodeCommand.OnGraph(item, graphPosition));
+                if (item is GraphNodeModelLibraryItem nodeItem)
+                    Dispatch(CreateNodeCommand.OnGraph(nodeItem, graphPosition));
             });
         }
 
@@ -1646,7 +1659,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 var changeset = GraphTool.HighlighterState.GetAggregatedChangeset(highlighterObservation.LastObservedVersion);
                 changedModels.UnionWith(changeset.ChangedModels.SelectMany(guid =>
                 {
-                    var declarationModel = GraphModel.VariableDeclarations.FirstOrDefault(d => d.Guid == guid);
+                    var variableDeclarationPlaceholders = GraphModel.Placeholders.OfType<VariableDeclarationModel>();
+                    var declarationModel = GraphModel.VariableDeclarations.Union(variableDeclarationPlaceholders).FirstOrDefault(d => d != null && d.Guid == guid);
                     return declarationModel != null ? GraphModel.FindReferencesInGraph(declarationModel) : Enumerable.Empty<IHasDeclarationModel>();
                 }).OfType<AbstractNodeModel>().Select(m => m.Guid));
             }
@@ -1899,6 +1913,32 @@ namespace Unity.GraphToolsFoundation.Editor
             if (graphModel == null)
                 return;
 
+            foreach (var placeholderModel in graphModel.Placeholders)
+            {
+                GraphElement placeholder = null;
+
+                switch (placeholderModel)
+                {
+                    case DeclarationModel:
+                        continue;
+                    case WirePlaceholder wirePlaceholder:
+                        CreateWireUI_Internal(wirePlaceholder);
+                        continue;
+                    case NodePlaceholder nodePlaceholder:
+                        placeholder = ModelViewFactory.CreateUI<GraphElement>(this, nodePlaceholder);
+                        break;
+                    case BlockNodePlaceholder blockNodePlaceholder:
+                        placeholder = ModelViewFactory.CreateUI<GraphElement>(this, blockNodePlaceholder);
+                        break;
+                    case ContextNodePlaceholder contextNodePlaceholder:
+                        placeholder = ModelViewFactory.CreateUI<GraphElement>(this, contextNodePlaceholder);
+                        break;
+                }
+
+                if (placeholder != null)
+                    AddElement(placeholder);
+            }
+
             foreach (var nodeModel in graphModel.NodeModels)
             {
                 var node = ModelViewFactory.CreateUI<GraphElement>(this, nodeModel);
@@ -1960,6 +2000,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         internal bool CreateWireUI_Internal(WireModel wire)
         {
+            if (wire == null)
+                return false;
+
             if (wire.ToPort != null && wire.FromPort != null)
             {
                 AddWireUI(wire);
@@ -1997,6 +2040,40 @@ namespace Unity.GraphToolsFoundation.Editor
             AddPositionDependency(wireModel);
         }
 
+        bool CheckIntegrity(out string message)
+        {
+            message = "";
+
+            if (GraphModel == null)
+                return true;
+
+            var invalidNodeCount = GraphModel.NodeModels.Count(n => n == null);
+            var invalidWireCount = GraphModel.WireModels.Count(n => n == null);
+            var invalidStickyCount = GraphModel.StickyNoteModels.Count(n => n == null);
+            var invalidVariableCount = GraphModel.VariableDeclarations.Count(v => v == null);
+            var invalidBadgeCount = GraphModel.BadgeModels.Count(b => b == null);
+            var invalidPlacematCount = GraphModel.PlacematModels.Count(p => p == null);
+            var invalidPortalCount = GraphModel.PortalDeclarations.Count(p => p == null);
+            var invalidSectionCount = GraphModel.SectionModels.Count(s => s == null);
+
+            var countMessage = new StringBuilder();
+            countMessage.Append(invalidNodeCount == 0 ? string.Empty : $"{invalidNodeCount} invalid node(s) found.\n");
+            countMessage.Append(invalidWireCount == 0 ? string.Empty : $"{invalidWireCount} invalid wire(s) found.\n");
+            countMessage.Append(invalidStickyCount == 0 ? string.Empty : $"{invalidStickyCount} invalid sticky note(s) found.\n");
+            countMessage.Append(invalidVariableCount == 0 ? string.Empty : $"{invalidVariableCount} invalid variable declaration(s) found.\n");
+            countMessage.Append(invalidBadgeCount == 0 ? string.Empty : $"{invalidBadgeCount} invalid badge(s) found.\n");
+            countMessage.Append(invalidPlacematCount == 0 ? string.Empty : $"{invalidPlacematCount} invalid placemat(s) found.\n");
+            countMessage.Append(invalidPortalCount == 0 ? string.Empty : $"{invalidPortalCount} invalid portal(s) found.\n");
+            countMessage.Append(invalidSectionCount == 0 ? string.Empty : $"{invalidSectionCount} invalid section(s) found.\n");
+
+            if (countMessage.ToString() != string.Empty)
+                message = countMessage.ToString();
+            else
+                return false;
+
+            return true;
+        }
+
         /// <summary>
         /// Populates the option menu.
         /// </summary>
@@ -2009,6 +2086,23 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 if (Unsupported.IsDeveloperMode())
                 {
+                    if (CheckIntegrity(out var countMessage))
+                        menu.AddItem(new GUIContent("Clean Up Graph"), false, () =>
+                        {
+                            if (EditorUtility.DisplayDialog("Invalid graph",
+                                $"Invalid elements found:\n{countMessage}\n" +
+                                $"Click the Clean button to remove all the invalid elements from the graph.",
+                                "Clean",
+                                "Cancel"))
+                            {
+                                GraphModel.Repair();
+                                using (var updater = GraphViewModel.GraphModelState.UpdateScope)
+                                {
+                                    updater.ForceCompleteUpdate();
+                                }
+                            }
+                        });
+
                     menu.AddItem(new GUIContent("Leave Item Library open on focus lost"),
                         prefs.GetBool(BoolPref.ItemLibraryStaysOpenOnBlur),
                         () =>

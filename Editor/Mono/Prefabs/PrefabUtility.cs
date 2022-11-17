@@ -131,6 +131,27 @@ namespace UnityEditor
         MergedAsMissingWithSceneBackup   // Prefab source was missing, but Prefab data was found in the scene file - no merging was done
     }
 
+    internal struct PropertyValueOriginInfo
+    {
+        public GameObject asset { get; private set; }
+        public string contextMenuText { get; private set; }
+        public string info { get; private set; }
+
+        public PropertyValueOriginInfo(GameObject asset, string contextMenuText, string info)
+        {
+            this.asset = asset;
+            this.contextMenuText = contextMenuText;
+            this.info = info;
+        }
+
+        public PropertyValueOriginInfo(string info)
+        {
+            asset = null;
+            contextMenuText = null;
+            this.info = info;
+        }
+    }
+
     internal delegate void AddApplyMenuItemDelegate(GUIContent menuItem, Object sourceObject, Object instanceOrAssetObject);
 
     public sealed partial class PrefabUtility
@@ -599,6 +620,73 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+        
+        internal static PropertyValueOriginInfo GetPropertyValueOriginInfo(SerializedProperty property)
+        {            
+            if (property == null)
+                return new PropertyValueOriginInfo("The property is null");            
+
+            if (property.prefabOverride)
+                return new PropertyValueOriginInfo("The property value is overriden in the currently open object");
+
+            if (IsDefaultOverridePropertyPath(property.propertyPath))
+                return new PropertyValueOriginInfo("The property is a default override property");
+
+            Object targetObject = property.serializedObject.targetObject;
+
+            if (targetObject == null)
+                return new PropertyValueOriginInfo("The targetObject of the property is null");
+
+            // When there are multiple targetObjects (multi-selection), check if they are instances of the same asset
+            if (property.serializedObject.targetObjectsCount > 1)
+            {
+                Object previousTargetObj = null;
+                foreach (Object targetObj in property.serializedObject.targetObjects)
+                {
+                    if (targetObj == null)
+                        return new PropertyValueOriginInfo("The targetObject of the property is null");
+
+                    if (GetCorrespondingObjectFromSource(targetObj) == null)
+                        return new PropertyValueOriginInfo("The targetObject does not have a source");
+
+                    if (previousTargetObj != null && (AssetDatabase.GetAssetPath(GetCorrespondingObjectFromSource(targetObj)) != AssetDatabase.GetAssetPath(GetCorrespondingObjectFromSource(previousTargetObj))))
+                        return new PropertyValueOriginInfo("The targetObjects are instances of different assets");
+
+                    previousTargetObj = targetObj;
+                }
+            }
+
+            Object source = GetCorrespondingObjectFromSource(targetObject);
+
+            if (source != null && IsPartOfModelPrefab(source))
+                source = null;
+
+            SerializedProperty propertyInSource = (source == null) ? null : new SerializedObject(source).FindProperty(property.propertyPath);
+
+            // Loop through sources to find the origin of the property value
+            while (propertyInSource != null)
+            {
+                // Check if the property is a prefab override in the current source
+                if (propertyInSource.prefabOverride)
+                    return new PropertyValueOriginInfo(GetPrefabAssetRootGameObject(source), "Value Override", "The returned asset has overriden the original property value");
+
+                Object nextSource = GetCorrespondingObjectFromSource(source);
+
+                if (nextSource != null && IsPartOfModelPrefab(nextSource))
+                    nextSource = null;
+
+                SerializedProperty propertyInNextSource = (nextSource == null) ? null : new SerializedObject(nextSource).FindProperty(property.propertyPath);
+
+                // If the property does not exist in the the next source, the current source is the property origin
+                if (propertyInNextSource == null)
+                    return new PropertyValueOriginInfo(GetPrefabAssetRootGameObject(source), "Original Value", "The returned asset is the origin of the property and its current value");
+
+                source = nextSource;
+                propertyInSource = propertyInNextSource;
+            }
+
+            return new PropertyValueOriginInfo("The property does not have a source");
         }
 
         static void SaveChangesToPrefabFileIfPersistent(SerializedObject serializedObject)

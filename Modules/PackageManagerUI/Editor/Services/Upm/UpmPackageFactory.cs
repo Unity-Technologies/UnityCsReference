@@ -154,6 +154,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
                 var installedInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
                 var searchInfo = m_UpmCache.GetSearchPackageInfo(packageName);
+                var isDeprecated = searchInfo?.unityLifecycle?.isDeprecated ?? installedInfo?.unityLifecycle?.isDeprecated ?? false;
+                var deprecationMessage = isDeprecated ?
+                    searchInfo?.unityLifecycle?.deprecationMessage ?? installedInfo?.unityLifecycle?.deprecationMessage
+                    : null;
                 if (installedInfo == null && searchInfo == null)
                     packagesToRemove.Add(packageName);
                 else
@@ -169,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         continue;
                     }
 
-                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null);
+                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null, isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     updatedPackages.Add(package);
 
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
@@ -302,6 +306,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var installedPackageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
                 var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
 
+                var isDeprecated = productSearchInfo?.unityLifecycle?.isDeprecated ?? installedPackageInfo?.unityLifecycle?.isDeprecated ?? false;
+                var deprecationMessage = isDeprecated ?
+                    productSearchInfo?.unityLifecycle?.deprecationMessage ?? installedPackageInfo?.unityLifecycle?.deprecationMessage
+                    : null;
+
                 Package package = null;
                 if (productSearchInfo != null || installedPackageInfo != null)
                 {
@@ -319,7 +328,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var isUnityPackage = m_UpmClient.IsUnityPackage(productSearchInfo ?? installedPackageInfo);
                     var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, isUnityPackage, extraVersions);
                     versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
-                    package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo));
+                    package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     if (productInfoFetchError != null)
                         AddError(package, productInfoFetchError.error);
                     else if (productInfo == null && fetchStatus.IsFetchInProgress(FetchType.ProductInfo))
@@ -331,12 +340,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (productSearchInfoFetchError != null)
                     {
                         var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat, productSearchInfoFetchError.error);
-                        package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo));
+                        package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     }
                     else if (fetchStatus.IsFetchInProgress(FetchType.ProductSearchInfo))
                     {
                         var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.UpmFormat);
-                        package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo));
+                        package = CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                         SetProgress(package, PackageProgress.Refreshing);
                     }
                     else

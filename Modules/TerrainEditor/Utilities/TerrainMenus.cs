@@ -165,7 +165,9 @@ namespace UnityEditor
         [MenuItem("CONTEXT/TerrainEngineTrees/Edit Tree", true)]
         static internal bool EditTreeCheck(MenuCommand item)
         {
-            return PaintTreesTool.instance.selectedTree >= 0;
+            var paintTrees = EditorTools.EditorToolManager.GetActiveTool() as PaintTreesTool;
+            Debug.Assert(paintTrees != null, "Attempting to render PaintTreesTools context menu content but the active tool is not the PaintTreesTool");
+            return paintTrees.selectedTree >= 0;
         }
 
         [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree")]
@@ -178,7 +180,9 @@ namespace UnityEditor
         [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree", true)]
         static internal bool RemoveTreeCheck(MenuCommand item)
         {
-            return PaintTreesTool.instance.selectedTree >= 0;
+            var paintTrees = EditorTools.EditorToolManager.GetActiveTool() as PaintTreesTool;
+            Debug.Assert(paintTrees != null, "Attempting to render PaintTreesTools context menu content but the active tool is not the PaintTreesTool");
+            return paintTrees.selectedTree >= 0;
         }
     }
 

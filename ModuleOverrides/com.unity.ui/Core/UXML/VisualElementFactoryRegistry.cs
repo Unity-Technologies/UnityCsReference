@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
             var fullOldName = namespaceName + "." + typeName;
             return fullOldName;
         }
+
         internal static Dictionary<string, List<IUxmlFactory>> factories
         {
             get
@@ -59,12 +60,12 @@ namespace UnityEngine.UIElements
             {
                 factoryList = new List<IUxmlFactory>();
                 factoryList.Add(factory);
-                factories.Add(factory.uxmlQualifiedName, factoryList);
-                Type uxmlType = factory.uxmlType;
+                s_Factories.Add(factory.uxmlQualifiedName, factoryList);
+                var uxmlType = factory.uxmlType;
                 var attr = uxmlType?.GetCustomAttribute<MovedFromAttribute>(false);
                 if (attr != null && typeof(VisualElement).IsAssignableFrom(uxmlType))
                 {
-                    string movedTypeName = GetMovedUIControlTypeName(uxmlType, attr);
+                    var movedTypeName = GetMovedUIControlTypeName(uxmlType, attr);
                     if (string.IsNullOrEmpty(movedTypeName) == false)
                         s_MovedTypesFactories.Add(movedTypeName, factoryList);
                 }
@@ -73,7 +74,7 @@ namespace UnityEngine.UIElements
 
         internal static bool TryGetValue(string fullTypeName, out List<IUxmlFactory> factoryList)
         {
-            bool ret = factories.TryGetValue(fullTypeName, out factoryList);
+            var ret = factories.TryGetValue(fullTypeName, out factoryList);
             if (ret == false)
                 ret = s_MovedTypesFactories.TryGetValue(fullTypeName, out factoryList);
             return ret;

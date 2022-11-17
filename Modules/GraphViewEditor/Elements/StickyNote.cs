@@ -375,7 +375,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_Title.RegisterCallback<GeometryChangedEvent>(OnTitleRelayout);
 
                 m_TitleField.Q(TextField.textInputUssName).Focus();
-                m_TitleField.SelectAll();
+                m_TitleField.textSelection.SelectAll();
 
                 e.StopPropagation();
                 e.PreventDefault();

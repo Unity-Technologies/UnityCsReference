@@ -40,7 +40,8 @@ namespace Unity.GraphToolsFoundation.Editor
             button.clicked += () =>
             {
                 var graphAsset = GraphAssetCreationHelpers.PromptToCreateGraphAsset(typeof(T), template, promptTitle, prompt);
-                commandTarget.Dispatch(new LoadGraphCommand(graphAsset.GraphModel));
+                if (graphAsset != null)
+                    commandTarget.Dispatch(new LoadGraphCommand(graphAsset.GraphModel));
             };
             container.Add(button);
 

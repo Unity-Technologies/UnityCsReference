@@ -80,6 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual IEnumerable<PackageSizeInfo> sizes => Enumerable.Empty<PackageSizeInfo>();
         public virtual IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
         public virtual SemVersion? supportedVersion => null;
+        public virtual string deprecationMessage => null;
 
         public abstract string uniqueId { get; }
         public abstract string packageId { get; }

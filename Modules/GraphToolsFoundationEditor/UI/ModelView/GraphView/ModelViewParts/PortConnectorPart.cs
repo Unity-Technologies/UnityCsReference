@@ -51,6 +51,16 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public VisualElement Connector => m_ConnectorBox;
 
+        public bool Hovering
+        {
+            get => m_Hovering;
+            set
+            {
+                m_Hovering = value;
+                ShowCap();
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PortConnectorPart"/> class.
         /// </summary>
@@ -86,9 +96,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Root.Add(m_ConnectorLabel);
             }
 
-            m_Root.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
-            m_Root.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
-
             container.Add(m_Root);
         }
 
@@ -108,23 +115,11 @@ namespace Unity.GraphToolsFoundation.Editor
             ShowCap();
         }
 
-        protected void OnMouseEnter(MouseEnterEvent evt)
-        {
-            m_Hovering = true;
-            ShowCap();
-        }
-
-        protected void OnMouseLeave(MouseLeaveEvent evt)
-        {
-            m_Hovering = false;
-            ShowCap();
-        }
-
         protected void ShowCap()
         {
             if (m_ConnectorBoxCap != null)
             {
-                bool showCap = m_Hovering || (m_OwnerElement?.ClassListContains(Port.willConnectModifierUssClassName) ?? false);
+                bool showCap = Hovering || (m_OwnerElement?.ClassListContains(Port.willConnectModifierUssClassName) ?? false);
 
                 if ((m_Model is PortModel portModel && portModel.IsConnected()) || showCap)
                 {

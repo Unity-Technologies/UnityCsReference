@@ -284,7 +284,7 @@ namespace UnityEditor.PackageManager.UI
             if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
             {
                 var upmClient = servicesContainer.Resolve<UpmClient>();
-                EntitlementsErrorChecker.ManagePackageManagerEntitlementError(upmClient);
+                EntitlementsErrorAndDeprecationChecker.ManagePackageManagerEntitlementErrorAndDeprecation(upmClient);
                 upmClient.List();
             }
         }

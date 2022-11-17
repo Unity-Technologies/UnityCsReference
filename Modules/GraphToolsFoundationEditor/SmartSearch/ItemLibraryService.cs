@@ -47,7 +47,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="usage">The usage string used to identify the <see cref="ItemLibraryLibrary_Internal"/> use.</param>
         internal static ItemLibraryWindow ShowDatabases_Internal(GraphView view,
             Vector2 position,
-            Action<GraphNodeModelLibraryItem> callback,
+            Action<ItemLibraryItem> callback,
             IEnumerable<ItemLibraryDatabaseBase> dbs,
             ItemLibraryFilter filter,
             IItemLibraryAdapter adapter,
@@ -62,10 +62,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             void OnItemSelectFunc(ItemLibraryItem item)
             {
-                if (item is GraphNodeModelLibraryItem dataProvider)
-                {
-                    callback?.Invoke(dataProvider);
-                }
+                callback?.Invoke(item);
             }
 
             var library = new ItemLibraryLibrary_Internal(dbs, adapter, filter, usage);
@@ -101,7 +98,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         public static void ShowInputToGraphNodes(Stencil stencil, GraphView view,
-            IReadOnlyList<PortModel> portModels, Vector2 worldPosition, Action<GraphNodeModelLibraryItem> callback)
+            IReadOnlyList<PortModel> portModels, Vector2 worldPosition, Action<ItemLibraryItem> callback)
         {
             var graphModel = view.GraphModel;
             var toolName = view.GraphTool.Name;
@@ -121,7 +118,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         public static void ShowOutputToGraphNodes(Stencil stencil, GraphView view,
-            IReadOnlyList<PortModel> portModels, Vector2 worldPosition, Action<GraphNodeModelLibraryItem> callback)
+            IReadOnlyList<PortModel> portModels, Vector2 worldPosition, Action<ItemLibraryItem> callback)
         {
             var graphModel = view.GraphModel;
             var toolName = view.GraphTool.Name;
@@ -138,7 +135,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         public static void ShowNodesForWire(Stencil stencil, GraphView view,
-            WireModel wireModel, Vector2 worldPosition, Action<GraphNodeModelLibraryItem> callback)
+            WireModel wireModel, Vector2 worldPosition, Action<ItemLibraryItem> callback)
         {
             var graphModel = view.GraphModel;
             var toolName = view.GraphTool.Name;
@@ -153,7 +150,7 @@ namespace Unity.GraphToolsFoundation.Editor
             ShowDatabases_Internal(view, worldPosition, callback, dbs, filter, adapter, Usage.CreateNode);
         }
 
-        public static void ShowGraphNodes(Stencil stencil, GraphView view, Vector2 worldPosition, Action<GraphNodeModelLibraryItem> callback)
+        public static void ShowGraphNodes(Stencil stencil, GraphView view, Vector2 worldPosition, Action<ItemLibraryItem> callback)
         {
             var graphModel = view.GraphModel;
             var toolName = view.GraphTool.Name;

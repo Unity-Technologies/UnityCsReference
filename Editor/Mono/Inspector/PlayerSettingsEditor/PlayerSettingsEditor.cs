@@ -105,7 +105,7 @@ namespace UnityEditor
             public static readonly GUIContent strictShaderVariantMatching = EditorGUIUtility.TrTextContent("Strict shader variant matching*", "When enabled, if a shader variant is missing, Unity uses the error shader and displays an error in the Console.");
             public static readonly GUIContent mipStripping = EditorGUIUtility.TrTextContent("Texture MipMap Stripping*", "Remove unused texture levels from package builds, reducing package size on disk. Limits the texture quality settings to the highest mip that was included during the build.");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
-            public static readonly GUIContent enableOpenGLProfilerGPURecorders = EditorGUIUtility.TrTextContent("OpenGL: Profiler GPU Recorders","Enable Profiler Recorders when rendering with OpenGL. Always enabled with other rendering APIs. Optional on OpenGL due to potential incompatibility with Frame Timing Stats and the GPU Profiler.");
+            public static readonly GUIContent enableOpenGLProfilerGPURecorders = EditorGUIUtility.TrTextContent("OpenGL: Profiler GPU Recorders", "Enable Profiler Recorders when rendering with OpenGL. Always enabled with other rendering APIs. Optional on OpenGL due to potential incompatibility with Frame Timing Stats and the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
@@ -205,7 +205,7 @@ namespace UnityEditor
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
-            public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Faster runtime"), EditorGUIUtility.TrTextContent("Faster (smaller) builds") };
+            public static readonly GUIContent[] il2cppCodeGenerationNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Faster runtime"), EditorGUIUtility.TrTextContent("Faster (smaller) builds") };
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR");
@@ -222,6 +222,10 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_FW_Unity = EditorGUIUtility.TrTextContent(".NET Framework");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard = EditorGUIUtility.TrTextContent(".NET Standard 2.1");
+            public static readonly GUIContent editorAssembliesCompatibilityLevel = EditorGUIUtility.TrTextContent("Editor Assemblies Compatibility Level*");
+            public static readonly GUIContent editorAssembliesCompatibilityLevel_Default = EditorGUIUtility.TrTextContent("Default (.NET Framework)");
+            public static readonly GUIContent editorAssembliesCompatibilityLevel_NET_Framework = EditorGUIUtility.TrTextContent(".NET Framework");
+            public static readonly GUIContent editorAssembliesCompatibilityLevel_NET_Standard = EditorGUIUtility.TrTextContent(".NET Standard");
             public static readonly GUIContent scriptCompilationTitle = EditorGUIUtility.TrTextContent("Script Compilation");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
@@ -270,6 +274,7 @@ namespace UnityEditor
             public static readonly string suppressCommonWarningsModified = "Suppress common warnings setting modified";
             public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
             public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
+            public static readonly string editorAssembliesCompatibilityLevelModified = "Editor Assemblies Compatibility level modified";
             public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
             public static readonly string additionalCompilerArgumentsModified = "Additional compiler arguments modified";
             public static readonly string activeBuildTargetGroupModified = "Active build target group modified";
@@ -444,6 +449,7 @@ namespace UnityEditor
         SerializedProperty m_ScriptingBackend;
         SerializedProperty m_APICompatibilityLevel;
         SerializedProperty m_DefaultAPICompatibilityLevel;
+        SerializedProperty m_EditorAssembliesCompatibilityLevel;
         SerializedProperty m_Il2CppCompilerConfiguration;
         SerializedProperty m_Il2CppCodeGeneration;
         SerializedProperty m_ScriptingDefines;
@@ -587,6 +593,7 @@ namespace UnityEditor
             m_ScriptingBackend              = FindPropertyAssert("scriptingBackend");
             m_APICompatibilityLevel         = FindPropertyAssert("apiCompatibilityLevelPerPlatform");
             m_DefaultAPICompatibilityLevel  = FindPropertyAssert("apiCompatibilityLevel");
+            m_EditorAssembliesCompatibilityLevel = FindPropertyAssert("editorAssembliesCompatibilityLevel");
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
             m_Il2CppCodeGeneration          = FindPropertyAssert("il2cppCodeGeneration");
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
@@ -704,7 +711,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void HandlePendingChangesBeforeEnterPlaymode()
         {
-            foreach(var editor in s_activeEditors)
+            foreach (var editor in s_activeEditors)
             {
                 editor.HandlePendingChangesRequiringRecompilation();
             }
@@ -2206,7 +2213,7 @@ namespace UnityEditor
                             EditorGUILayout.HelpBox(SettingsContent.frameTimingStatsWebGLWarning.text, MessageType.Warning);
                         }
                     }
-                    if(PlayerSettings.enableFrameTimingStats)
+                    if (PlayerSettings.enableFrameTimingStats)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOnGPURecordersOffInfo.text, MessageType.Info);
                     }
@@ -2335,13 +2342,13 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
                 debugModeEnabled = EditorGUILayout.Toggle(SettingsContent.loadStoreDebugModeCheckbox, debugModeEnabled);
-                if(debugModeEnabled)
+                if (debugModeEnabled)
                 {
                     EditorGUI.indentLevel++;
                     debugModeEditorOnly = EditorGUILayout.Toggle(SettingsContent.loadStoreDebugModeEditorOnlyCheckbox, debugModeEditorOnly);
                     EditorGUI.indentLevel--;
                 }
-                if(EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck())
                 {
                     PlayerSettings.SetLoadStoreDebugModeEnabledForPlatformGroup(target, debugModeEnabled);
                     PlayerSettings.SetLoadStoreDebugModeEditorOnlyForPlatformGroup(target, debugModeEditorOnly);
@@ -2453,7 +2460,8 @@ namespace UnityEditor
             {
                 var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
 
-                if (currentIdentifier != oldIdentifier) {
+                if (currentIdentifier != oldIdentifier)
+                {
                     if (!overrideDefaultID && !PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
                         Debug.LogError(errorMessage);
                     else if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
@@ -2570,15 +2578,25 @@ namespace UnityEditor
                 return (ApiCompatibilityLevel)m_DefaultAPICompatibilityLevel.intValue;
         }
 
-        private void SetApiCompatibilityLevelForTarget(
-            string targetGroup,
-            ApiCompatibilityLevel apiCompatibilityLevel)
+        private void SetApiCompatibilityLevelForTarget(string targetGroup, ApiCompatibilityLevel apiCompatibilityLevel)
         {
             if (m_APICompatibilityLevel.TryGetMapEntry(targetGroup, out _))
                 m_APICompatibilityLevel.SetMapValue(targetGroup, (int)apiCompatibilityLevel);
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
                 m_DefaultAPICompatibilityLevel.intValue = (int)apiCompatibilityLevel;
+        }
+
+        private EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevel()
+        {
+            return (EditorAssembliesCompatibilityLevel)m_EditorAssembliesCompatibilityLevel.intValue;
+        }
+
+        private void SetEditorAssembliesCompatibilityLevel(EditorAssembliesCompatibilityLevel editorAssembliesCompatibilityLevel)
+        {
+            // We won't allow switching back to the "Default" value.
+            if (editorAssembliesCompatibilityLevel != EditorAssembliesCompatibilityLevel.Default)
+                m_EditorAssembliesCompatibilityLevel.intValue = (int)editorAssembliesCompatibilityLevel;
         }
 
         private void OtherSectionConfigurationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
@@ -2641,6 +2659,7 @@ namespace UnityEditor
                         {
                             var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
                             var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard };
+
                             var newAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
                                 currentAPICompatibilityLevel,
@@ -2661,6 +2680,43 @@ namespace UnityEditor
                     }
                 }
 
+                // Editor Assemblies Compatibility level
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                {
+                    using (var horizontal = new EditorGUILayout.HorizontalScope())
+                    {
+                        using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_EditorAssembliesCompatibilityLevel))
+                        {
+                            var currentEditorAssembliesCompatibilityLevel = GetEditorAssembliesCompatibilityLevel();
+
+                            List<EditorAssembliesCompatibilityLevel> availableEditorAssemblyCompatibilityLevels = new List<EditorAssembliesCompatibilityLevel>(3);
+                            if (currentEditorAssembliesCompatibilityLevel == EditorAssembliesCompatibilityLevel.Default)
+                            {
+                                availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.Default);
+                            }
+
+                            availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET_Unity_4_8);
+                            availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET_Standard);
+
+                            var newEditorAssembliesCompatibilityLevel = BuildEnumPopup(
+                               SettingsContent.editorAssembliesCompatibilityLevel,
+                               currentEditorAssembliesCompatibilityLevel,
+                               availableEditorAssemblyCompatibilityLevels.ToArray(),
+                               GetNiceEditorAssembliesCompatibilityLevelNames(availableEditorAssemblyCompatibilityLevels.ToArray())
+                           );
+                            if (newEditorAssembliesCompatibilityLevel != currentEditorAssembliesCompatibilityLevel)
+                            {
+                                SetEditorAssembliesCompatibilityLevel(newEditorAssembliesCompatibilityLevel);
+
+                                if (platform.IsActive())
+                                {
+                                    SetReason(RecompileReason.editorAssembliesCompatibilityLevelModified);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Il2cpp Code Generation
                 using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
                 {
@@ -2670,9 +2726,9 @@ namespace UnityEditor
                         {
                             using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP))
                             {
-                               var currentCodeGeneration = GetCurrentIl2CppCodeGenerationForTarget(platform.namedBuildTarget);
+                                var currentCodeGeneration = GetCurrentIl2CppCodeGenerationForTarget(platform.namedBuildTarget);
 
-                                var codeGenerationValues = new [] { Il2CppCodeGeneration.OptimizeSpeed, Il2CppCodeGeneration.OptimizeSize };
+                                var codeGenerationValues = new[] { Il2CppCodeGeneration.OptimizeSpeed, Il2CppCodeGeneration.OptimizeSize };
                                 var newCodeGeneration = BuildEnumPopup(SettingsContent.il2cppCodeGeneration, currentCodeGeneration, codeGenerationValues, SettingsContent.il2cppCodeGenerationNames);
 
                                 if (currentCodeGeneration != newCodeGeneration)
@@ -3267,6 +3323,7 @@ namespace UnityEditor
         }
 
         private static Dictionary<ApiCompatibilityLevel, GUIContent> m_NiceApiCompatibilityLevelNames;
+        private static Dictionary<EditorAssembliesCompatibilityLevel, GUIContent> m_NiceEditorAssembliesCompatibilityLevelNames;
         private static Dictionary<ManagedStrippingLevel, GUIContent> m_NiceManagedStrippingLevelNames;
 
         private static GUIContent[] GetGUIContentsForValues<T>(Dictionary<T, GUIContent> contents, T[] values)
@@ -3296,7 +3353,7 @@ namespace UnityEditor
                     return SettingsContent.scriptingMono2x;
                 case ScriptingImplementation.IL2CPP:
                     return SettingsContent.scriptingIL2CPP;
-                #pragma warning disable 618
+#pragma warning disable 618
                 case ScriptingImplementation.CoreCLR:
                     return SettingsContent.scriptingCoreCLR;
                 default:
@@ -3318,6 +3375,21 @@ namespace UnityEditor
             }
 
             return GetGUIContentsForValues(m_NiceApiCompatibilityLevelNames, apiCompatibilityLevels);
+        }
+
+        private static GUIContent[] GetNiceEditorAssembliesCompatibilityLevelNames(EditorAssembliesCompatibilityLevel[] editorAssembliesCompatibilityLevels)
+        {
+            if (m_NiceEditorAssembliesCompatibilityLevelNames == null)
+            {
+                m_NiceEditorAssembliesCompatibilityLevelNames = new Dictionary<EditorAssembliesCompatibilityLevel, GUIContent>
+                {
+                    { EditorAssembliesCompatibilityLevel.Default, SettingsContent.editorAssembliesCompatibilityLevel_Default },
+                    { EditorAssembliesCompatibilityLevel.NET_Unity_4_8, SettingsContent.editorAssembliesCompatibilityLevel_NET_Framework },
+                    { EditorAssembliesCompatibilityLevel.NET_Standard, SettingsContent.editorAssembliesCompatibilityLevel_NET_Standard },
+                };
+            }
+
+            return GetGUIContentsForValues(m_NiceEditorAssembliesCompatibilityLevelNames, editorAssembliesCompatibilityLevels);
         }
 
         private static GUIContent[] GetNiceManagedStrippingLevelNames(ManagedStrippingLevel[] managedStrippingLevels)

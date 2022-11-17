@@ -1275,6 +1275,16 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Root"), false, SelectPrefabRoot);
             }
 
+            GameObject sourceRoot = GetSourceRootWhereGameObjectIsAddedAsOverride(go);
+            if (sourceRoot != null)
+            {
+                var s = PrefabUtility.GetOriginalSourceRootWhereGameObjectIsAdded(go);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Go to Added GameObject in '" + sourceRoot.name + "'"), false, () =>
+                {
+                    PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(sourceRoot), PrefabUtility.GetNearestPrefabInstanceRoot(go), PrefabStage.Mode.InIsolation);
+                });
+            }
+
             GameObject[] selectedGOs = Selection.gameObjects;
 
             if (selectedGOs.Any() && PrefabUtility.IsAllAddedGameObjectOverrides(selectedGOs))
@@ -2122,6 +2132,24 @@ namespace UnityEditor
             var newSelection = instanceIDs.Distinct().ToArray();
             treeView.SetSelection(newSelection, true);
             TreeViewSelectionChanged(newSelection);
+        }
+
+        static internal GameObject GetSourceRootWhereGameObjectIsAddedAsOverride(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+            var source = PrefabUtility.GetCorrespondingObjectFromSource(go);
+
+            while (source != null)
+            {
+                if (PrefabUtility.IsAddedGameObjectOverride(source))
+                    return PrefabUtility.GetPrefabAssetRootGameObject(source);
+
+                source = PrefabUtility.GetCorrespondingObjectFromSource(source);
+            }
+
+            return null;
         }
 
         public void CollapseAll()

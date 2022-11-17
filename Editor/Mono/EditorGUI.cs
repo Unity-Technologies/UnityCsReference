@@ -2992,6 +2992,14 @@ namespace UnityEditor
 
                 Object targetObject = property.serializedObject.targetObject;
 
+                PropertyValueOriginInfo propertyOrigin = PrefabUtility.GetPropertyValueOriginInfo(property);
+
+                if (propertyOrigin.asset != null)
+                {
+                    pm.AddItem(new GUIContent("Go to " + propertyOrigin.contextMenuText + " in '" + propertyOrigin.asset.name + "'"), false,
+                        () => GoToPrefab(AssetDatabase.GetAssetPath(propertyOrigin.asset), PrefabUtility.GetGameObject(targetObject)));
+                }
+
                 bool shouldDisplayPrefabContextMenuItems = property.prefabOverride || (linkedProperty?.prefabOverride ?? false);
 
                 // Only display the custom apply/revert menu for GameObjects/Components that are not part of a Prefab instance & variant.
@@ -3259,6 +3267,16 @@ namespace UnityEditor
             EditorGUIUtility.ContextualPropertyMenuCallback(pm, property);
 
             return pm;
+        }
+
+        internal static void GoToPrefab(string assetPath, GameObject openedFromInstance)
+        {
+            // When this function is called from a Property Context Menu on the Overrides pop-up window, we need to make ensure that the correct GameObject
+            // (i.e. the GameObject that the property belongs to) is selected when opening Prefab Mode by explicitly setting it as the active GameObject.
+            if (EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.None)
+                Selection.activeGameObject = openedFromInstance;
+
+            PrefabStageUtility.OpenPrefab(assetPath, openedFromInstance, PrefabStage.Mode.InIsolation);
         }
 
         internal static void DoPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)

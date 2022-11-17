@@ -13,7 +13,6 @@ using UnityEngine.SceneManagement;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
-
 namespace UnityEngine
 {
     #region Scene
@@ -72,10 +71,16 @@ namespace UnityEngine
         extern private static float SubStepLostTime_Internal(PhysicsScene2D physicsScene);
 
         // Perform a manual simulation step.
-        public bool Simulate(float step)
+        [ExcludeFromDocs]
+        public bool Simulate(float deltaTime)
+        {
+            return Simulate(deltaTime, Physics2D.AllLayers);
+        }
+
+        public bool Simulate(float deltaTime, [DefaultValue("Physics2D.AllLayers")] int simulationLayers = Physics2D.AllLayers)
         {
             if (IsValid())
-                return Physics2D.Simulate_Internal(this, step);
+                return Physics2D.Simulate_Internal(this, deltaTime, simulationLayers);
 
             throw new InvalidOperationException("Cannot simulate the physics scene as it is invalid.");
         }
@@ -93,10 +98,6 @@ namespace UnityEngine
             return Linecast_Internal(this, start, end, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("Linecast_Binding")]
-        extern private static RaycastHit2D Linecast_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter);
-
         public int Linecast(Vector2 start, Vector2 end, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -108,18 +109,22 @@ namespace UnityEngine
             return LinecastArray_Internal(this, start, end, contactFilter, results);
         }
 
+        public int Linecast(Vector2 start, Vector2 end, ContactFilter2D contactFilter, List<RaycastHit2D> results)
+        {
+            return LinecastList_Internal(this, start, end, contactFilter, results);
+        }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("Linecast_Binding")]
+        extern private static RaycastHit2D Linecast_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter);
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("LinecastArray_Binding")]
         extern private static int LinecastArray_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
-        public int Linecast(Vector2 start, Vector2 end, ContactFilter2D contactFilter, List<RaycastHit2D> results)
-        {
-            return LinecastNonAllocList_Internal(this, start, end, contactFilter, results);
-        }
-
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("LinecastList_Binding")]
-        extern private static int LinecastNonAllocList_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+        extern private static int LinecastList_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
         #endregion
 
@@ -136,10 +141,6 @@ namespace UnityEngine
             return Raycast_Internal(this, origin, direction, distance, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("Raycast_Binding")]
-        extern private static RaycastHit2D Raycast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter);
-
         public int Raycast(Vector2 origin, Vector2 direction, float distance, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -151,14 +152,18 @@ namespace UnityEngine
             return RaycastArray_Internal(this, origin, direction, distance, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("RaycastArray_Binding")]
-        extern private static int RaycastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
-
         public int Raycast(Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter, List<RaycastHit2D> results)
         {
             return RaycastList_Internal(this, origin, direction, distance, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("Raycast_Binding")]
+        extern private static RaycastHit2D Raycast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("RaycastArray_Binding")]
+        extern private static int RaycastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("RaycastList_Binding")]
@@ -179,10 +184,6 @@ namespace UnityEngine
             return CircleCast_Internal(this, origin, radius, direction, distance, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("CircleCast_Binding")]
-        extern private static RaycastHit2D CircleCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter);
-
         public int CircleCast(Vector2 origin, float radius, Vector2 direction, float distance, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -194,14 +195,18 @@ namespace UnityEngine
             return CircleCastArray_Internal(this, origin, radius, direction, distance, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("CircleCastArray_Binding")]
-        extern private static int CircleCastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
-
         public int CircleCast(Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter, List<RaycastHit2D> results)
         {
             return CircleCastList_Internal(this, origin, radius, direction, distance, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("CircleCast_Binding")]
+        extern private static RaycastHit2D CircleCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("CircleCastArray_Binding")]
+        extern private static int CircleCastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("CircleCastList_Binding")]
@@ -222,10 +227,6 @@ namespace UnityEngine
             return BoxCast_Internal(this, origin, size, angle, direction, distance, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("BoxCast_Binding")]
-        extern private static RaycastHit2D BoxCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
-
         public int BoxCast(Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -237,14 +238,18 @@ namespace UnityEngine
             return BoxCastArray_Internal(this, origin, size, angle, direction, distance, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("BoxCastArray_Binding")]
-        extern private static int BoxCastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
-
         public int BoxCast(Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, List<RaycastHit2D> results)
         {
             return BoxCastList_Internal(this, origin, size, angle, direction, distance, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("BoxCast_Binding")]
+        extern private static RaycastHit2D BoxCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("BoxCastArray_Binding")]
+        extern private static int BoxCastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("BoxCastList_Binding")]
@@ -265,10 +270,6 @@ namespace UnityEngine
             return CapsuleCast_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("CapsuleCast_Binding")]
-        extern private static RaycastHit2D CapsuleCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
-
         public int CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -280,14 +281,18 @@ namespace UnityEngine
             return CapsuleCastArray_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("CapsuleCastArray_Binding")]
-        extern private static int CapsuleCastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
-
         public int CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, List<RaycastHit2D> results)
         {
             return CapsuleCastList_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("CapsuleCast_Binding")]
+        extern private static RaycastHit2D CapsuleCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("CapsuleCastArray_Binding")]
+        extern private static int CapsuleCastArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("CapsuleCastList_Binding")]
@@ -302,14 +307,19 @@ namespace UnityEngine
             return GetRayIntersection_Internal(this, ray.origin, ray.direction, distance, layerMask);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("GetRayIntersection_Binding")]
-        extern private static RaycastHit2D GetRayIntersection_Internal(PhysicsScene2D physicsScene, Vector3 origin, Vector3 direction, float distance, int layerMask);
-
         public int GetRayIntersection(Ray ray, float distance, RaycastHit2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return GetRayIntersectionArray_Internal(this, ray.origin, ray.direction, distance, layerMask, results);
         }
+
+        public int GetRayIntersection(Ray ray, float distance, List<RaycastHit2D> results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
+        {
+            return GetRayIntersectionList_Internal(this, ray.origin, ray.direction, distance, layerMask, results);
+        }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("GetRayIntersection_Binding")]
+        extern private static RaycastHit2D GetRayIntersection_Internal(PhysicsScene2D physicsScene, Vector3 origin, Vector3 direction, float distance, int layerMask);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetRayIntersectionArray_Binding")]
@@ -334,10 +344,6 @@ namespace UnityEngine
             return OverlapPoint_Internal(this, point, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapPoint_Binding")]
-        extern private static Collider2D OverlapPoint_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter);
-
         public int OverlapPoint(Vector2 point, Collider2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -349,14 +355,18 @@ namespace UnityEngine
             return OverlapPointArray_Internal(this, point, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapPointArray_Binding")]
-        extern private static int OverlapPointArray_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
-
         public int OverlapPoint(Vector2 point, ContactFilter2D contactFilter, List<Collider2D> results)
         {
             return OverlapPointList_Internal(this, point, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapPoint_Binding")]
+        extern private static Collider2D OverlapPoint_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapPointArray_Binding")]
+        extern private static int OverlapPointArray_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapPointList_Binding")]
@@ -377,10 +387,6 @@ namespace UnityEngine
             return OverlapCircle_Internal(this, point, radius, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapCircle_Binding")]
-        extern private static Collider2D OverlapCircle_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter);
-
         public int OverlapCircle(Vector2 point, float radius, Collider2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity,  Mathf.Infinity);
@@ -392,14 +398,18 @@ namespace UnityEngine
             return OverlapCircleArray_Internal(this, point, radius, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapCircleArray_Binding")]
-        extern private static int OverlapCircleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
-
         public int OverlapCircle(Vector2 point, float radius, ContactFilter2D contactFilter, List<Collider2D> results)
         {
             return OverlapCircleList_Internal(this, point, radius, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapCircle_Binding")]
+        extern private static Collider2D OverlapCircle_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapCircleArray_Binding")]
+        extern private static int OverlapCircleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCircleList_Binding")]
@@ -420,10 +430,6 @@ namespace UnityEngine
             return OverlapBox_Internal(this, point, size, angle, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapBox_Binding")]
-        extern private static Collider2D OverlapBox_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter);
-
         public int OverlapBox(Vector2 point, Vector2 size, float angle, Collider2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -435,14 +441,18 @@ namespace UnityEngine
             return OverlapBoxArray_Internal(this, point, size, angle, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapBoxArray_Binding")]
-        extern private static int OverlapBoxArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
-
         public int OverlapBox(Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter, List<Collider2D> results)
         {
             return OverlapBoxList_Internal(this, point, size, angle, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapBox_Binding")]
+        extern private static Collider2D OverlapBox_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapBoxArray_Binding")]
+        extern private static int OverlapBoxArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapBoxList_Binding")]
@@ -515,10 +525,6 @@ namespace UnityEngine
             return OverlapCapsule_Internal(this, point, size, direction, angle, contactFilter);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapCapsule_Binding")]
-        extern private static Collider2D OverlapCapsule_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter);
-
         public int OverlapCapsule(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -530,14 +536,18 @@ namespace UnityEngine
             return OverlapCapsuleArray_Internal(this, point, size, direction, angle, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapCapsuleArray_Binding")]
-        extern private static int OverlapCapsuleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
-
         public int OverlapCapsule(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter, List<Collider2D> results)
         {
             return OverlapCapsuleList_Internal(this, point, size, direction, angle, contactFilter, results);
         }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapCapsule_Binding")]
+        extern private static Collider2D OverlapCapsule_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapCapsuleArray_Binding")]
+        extern private static int OverlapCapsuleArray_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCapsuleList_Binding")]
@@ -549,26 +559,59 @@ namespace UnityEngine
         public static int OverlapCollider(Collider2D collider, Collider2D[] results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return OverlapColliderArray_Internal(collider, contactFilter, results);
+            return OverlapColliderFilteredArray_Internal(collider, contactFilter, results);
         }
 
         public static int OverlapCollider(Collider2D collider, ContactFilter2D contactFilter, Collider2D[] results)
         {
-            return OverlapColliderArray_Internal(collider, contactFilter, results);
+            return OverlapColliderFilteredArray_Internal(collider, contactFilter, results);
         }
 
-        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        [NativeMethod("OverlapColliderArray_Binding")]
-        extern private static int OverlapColliderArray_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+        public static int OverlapCollider(Collider2D collider, List<Collider2D> results)
+        {
+            return OverlapColliderList_Internal(collider, results);
+        }
 
         public static int OverlapCollider(Collider2D collider, ContactFilter2D contactFilter, List<Collider2D> results)
         {
-            return OverlapColliderList_Internal(collider, contactFilter, results);
+            return OverlapColliderFilteredList_Internal(collider, contactFilter, results);
+        }
+
+        public static int OverlapCollider(Vector2 position, float angle, Collider2D collider, List<Collider2D> results)
+        {
+            if (collider.attachedRigidbody)
+                return OverlapColliderFromList_Internal(position, angle, collider, results);
+
+            throw new InvalidOperationException("Cannot perform a Collider Overlap at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+        }
+
+        public static int OverlapCollider(Vector2 position, float angle, Collider2D collider, ContactFilter2D contactFilter, List<Collider2D> results)
+        {
+            if (collider.attachedRigidbody)
+                return OverlapColliderFromFilteredList_Internal(position, angle, collider, contactFilter, results);
+
+            throw new InvalidOperationException("Cannot perform a Collider Overlap at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapColliderFilteredArray_Binding")]
+        extern private static int OverlapColliderFilteredArray_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapColliderList_Binding")]
-        extern private static int OverlapColliderList_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] List<Collider2D> results);
+        extern private static int OverlapColliderList_Internal([NotNull] Collider2D collider, [NotNull] List<Collider2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapColliderFilteredList_Binding")]
+        extern private static int OverlapColliderFilteredList_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] List<Collider2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapColliderFromList_Binding")]
+        extern private static int OverlapColliderFromList_Internal(Vector2 position, float angle, [NotNull] Collider2D collider, [NotNull] List<Collider2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OverlapColliderFromFilteredList_Binding")]
+        extern private static int OverlapColliderFromFilteredList_Internal(Vector2 position, float angle, [NotNull] Collider2D collider, ContactFilter2D contactFilter, [NotNull] List<Collider2D> results);
 
         #endregion
     }
@@ -639,6 +682,9 @@ namespace UnityEngine
         extern public static SimulationMode2D simulationMode { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static LayerMask simulationLayers { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
         extern public static bool useSubStepping { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
@@ -654,7 +700,7 @@ namespace UnityEngine
         extern public static PhysicsJobOptions2D jobOptions { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static float velocityThreshold { get; set; }
+        extern public static float bounceThreshold { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static float maxLinearCorrection { get; set; }
@@ -703,13 +749,19 @@ namespace UnityEngine
         #region Simulation
 
         // Perform a manual simulation step.
-        public static bool Simulate(float step)
+        [ExcludeFromDocs]
+        public static bool Simulate(float deltaTime)
         {
-            return Simulate_Internal(defaultPhysicsScene, step);
+            return Simulate_Internal(defaultPhysicsScene, deltaTime, Physics2D.AllLayers);
+        }
+
+        public static bool Simulate(float deltaTime, [DefaultValue("Physics2D.AllLayers")] int simulationLayers = Physics2D.AllLayers)
+        {
+            return Simulate_Internal(defaultPhysicsScene, deltaTime, simulationLayers);
         }
 
         [NativeMethod("Simulate_Binding")]
-        extern internal static bool Simulate_Internal(PhysicsScene2D physicsScene, float step);
+        extern internal static bool Simulate_Internal(PhysicsScene2D physicsScene, float deltaTime, int simulationLayers);
 
         // Sync transform changes.
         extern public static void SyncTransforms();
@@ -827,23 +879,41 @@ namespace UnityEngine
         #region Distance
 
         // Get the shortest distance and the respective points between two colliders.
-        public static ColliderDistance2D Distance([Writable] Collider2D colliderA, [Writable] Collider2D colliderB)
+        public static ColliderDistance2D Distance(
+            [Writable] Collider2D colliderA,
+            [Writable] Collider2D colliderB)
         {
-            if (colliderA == null)
-                throw new ArgumentNullException("ColliderA cannot be NULL.");
-
-            if (colliderB == null)
-                throw new ArgumentNullException("ColliderB cannot be NULL.");
-
             if (colliderA == colliderB)
                 throw new ArgumentException("Cannot calculate the distance between the same collider.");
 
             return Distance_Internal(colliderA, colliderB);
         }
 
+        // Get the shortest distance and the respective points between two colliders at specific poses.
+        public static ColliderDistance2D Distance(
+            [Writable] Collider2D colliderA, Vector2 positionA, float angleA,
+            [Writable] Collider2D colliderB, Vector2 positionB, float angleB)
+        {
+            if (colliderA == colliderB)
+                throw new ArgumentException("Cannot calculate the distance between the same collider.");
+
+            if (!colliderA.attachedRigidbody || !colliderB.attachedRigidbody)
+                throw new InvalidOperationException("Cannot perform a Collider Distance at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+
+            return DistanceFrom_Internal(
+                colliderA, positionA, angleA,
+                colliderB, positionB, angleB);
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("Distance")]
         extern private static ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D colliderA, [NotNull][Writable] Collider2D colliderB);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("DistanceFrom")]
+        extern private static ColliderDistance2D DistanceFrom_Internal(
+            [NotNull][Writable] Collider2D colliderA, Vector2 positionA, float angleA,
+            [NotNull][Writable] Collider2D colliderB, Vector2 positionB, float angleB);
 
         // Get the closest point to position on the specified collider.
         public static Vector2 ClosestPoint(Vector2 position, Collider2D collider)
@@ -945,36 +1015,17 @@ namespace UnityEngine
         [NativeMethod("LinecastAll_Binding")]
         extern private static RaycastHit2D[] LinecastAll_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter);
 
-        // Returns all hits along the line (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.Linecast(start, end, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.Linecast(start, end, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.Linecast(start, end, contactFilter, results);
-        }
-
-        public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.Linecast(start, end, contactFilter, results);
-        }
-
         #endregion
 
         #region Ray Cast
+
+        // NOTE: This cannot be made obsolete right now as it's used in the "com.unity.xr.interationtoolkit:TrackedDeviceGraphicRaycaster".
+        [ExcludeFromDocs]
+        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
+        {
+            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
+            return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, results);
+        }
 
         [ExcludeFromDocs]
         public static RaycastHit2D Raycast(Vector2 origin, Vector2 direction)
@@ -1023,39 +1074,6 @@ namespace UnityEngine
 
         public static int Raycast(Vector2 origin, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, results);
-        }
-
-        // Returns all hits along the ray (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.Raycast(origin, direction, Mathf.Infinity, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.Raycast(origin, direction, distance, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, results);
-        }
-
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
             return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, results);
         }
 
@@ -1191,39 +1209,6 @@ namespace UnityEngine
         [NativeMethod("CircleCastAll_Binding")]
         extern private static RaycastHit2D[] CircleCastAll_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter);
 
-        // Returns all hits when casting the circle (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, Mathf.Infinity, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, contactFilter, results);
-        }
-
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, contactFilter, results);
-        }
-
         #endregion
 
         #region Box Cast
@@ -1316,39 +1301,6 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("BoxCastAll_Binding")]
         extern private static RaycastHit2D[] BoxCastAll_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
-
-        // Returns all hits when casting the box (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, Mathf.Infinity, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, contactFilter, results);
-        }
-
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, contactFilter, results);
-        }
 
         #endregion
 
@@ -1443,39 +1395,6 @@ namespace UnityEngine
             return CapsuleCastAll_Internal(defaultPhysicsScene, origin, size, capsuleDirection, angle, direction, distance, contactFilter);
         }
 
-        // Returns all hits when casting the capsule (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, Mathf.Infinity, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
-        }
-
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
-        }
-
         #endregion
 
         #region Ray Intersection
@@ -1496,6 +1415,11 @@ namespace UnityEngine
         public static RaycastHit2D GetRayIntersection(Ray ray, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
         {
             return defaultPhysicsScene.GetRayIntersection(ray, distance, layerMask);
+        }
+
+        public static int GetRayIntersection(Ray ray, float distance, List<RaycastHit2D> results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
+        {
+            return defaultPhysicsScene.GetRayIntersection(ray, distance, results);
         }
 
         [ExcludeFromDocs]
@@ -1521,19 +1445,6 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetRayIntersectionAll_Binding")]
         extern static RaycastHit2D[] GetRayIntersectionAll_Internal(PhysicsScene2D physicsScene, Vector3 origin, Vector3 direction, float distance, int layerMask);
-
-        // Returns all hits intersecting the 3D ray (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.GetRayIntersection(ray, Mathf.Infinity, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.GetRayIntersection(ray, distance, results);
-        }
 
         // Needs the [RequiredByNativeCode] attribute as it is called by reflection
         // from GraphicsRaycaster.cs, to avoid a hard dependency to this module.
@@ -1617,33 +1528,6 @@ namespace UnityEngine
         [NativeMethod("OverlapPointAll_Binding")]
         extern private static Collider2D[] OverlapPointAll_Internal(PhysicsScene2D physicsScene, Vector2 point, ContactFilter2D contactFilter);
 
-        // Returns all colliders overlapping the point (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapPoint(point, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapPoint(point, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapPoint(point, contactFilter, results);
-        }
-
-        public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.OverlapPoint(point, contactFilter, results);
-        }
-
         #endregion
 
         #region Overlap Circle
@@ -1717,33 +1601,6 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("OverlapCircleAll_Binding")]
         extern private static Collider2D[] OverlapCircleAll_Internal(PhysicsScene2D physicsScene, Vector2 point, float radius, ContactFilter2D contactFilter);
-
-        // Returns all colliders overlapping the circle (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapCircle(point, radius, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity,  Mathf.Infinity);
-            return defaultPhysicsScene.OverlapCircle(point, radius, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth,  Mathf.Infinity);
-            return defaultPhysicsScene.OverlapCircle(point, radius, contactFilter, results);
-        }
-
-        public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.OverlapCircle(point, radius, contactFilter, results);
-        }
 
         #endregion
 
@@ -1819,33 +1676,6 @@ namespace UnityEngine
         [NativeMethod("OverlapBoxAll_Binding")]
         extern private static Collider2D[] OverlapBoxAll_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, float angle, ContactFilter2D contactFilter);
 
-        // Returns all colliders overlapping the box (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapBox(point, size, angle, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapBox(point, size, angle, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapBox(point, size, angle, contactFilter, results);
-        }
-
-        public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.OverlapBox(point, size, angle, contactFilter, results);
-        }
-
         #endregion
 
         #region Overlap Area
@@ -1917,33 +1747,6 @@ namespace UnityEngine
             Vector2 point = (pointA + pointB) * 0.5f;
             Vector2 size = new Vector2(Mathf.Abs(pointA.x - pointB.x), Math.Abs(pointA.y - pointB.y));
             return OverlapBoxAll(point, size, 0.0f, layerMask, minDepth, maxDepth);
-        }
-
-        // Returns all colliders overlapping the area (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapArea(pointA, pointB, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapArea(pointA, pointB, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapArea(pointA, pointB, contactFilter, results);
-        }
-
-        public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.OverlapArea(pointA, pointB, contactFilter, results);
         }
 
         #endregion
@@ -2020,33 +1823,6 @@ namespace UnityEngine
         [NativeMethod("OverlapCapsuleAll_Binding")]
         extern private static Collider2D[] OverlapCapsuleAll_Internal(PhysicsScene2D physicsScene, Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, ContactFilter2D contactFilter);
 
-        // Returns all colliders overlapping the capsule (limited by the size of the array).  This does not produce any garbage.
-        [ExcludeFromDocs]
-        public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapCapsule(point, size, direction, angle, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, int layerMask)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapCapsule(point, size, direction, angle, contactFilter, results);
-        }
-
-        [ExcludeFromDocs]
-        public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, int layerMask, float minDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
-            return defaultPhysicsScene.OverlapCapsule(point, size, direction, angle, contactFilter, results);
-        }
-
-        public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
-        {
-            var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
-            return defaultPhysicsScene.OverlapCapsule(point, size, direction, angle, contactFilter, results);
-        }
-
         #endregion
 
         #region Overlap Collider
@@ -2060,6 +1836,11 @@ namespace UnityEngine
         public static int OverlapCollider(Collider2D collider, ContactFilter2D contactFilter, List<Collider2D> results)
         {
             return PhysicsScene2D.OverlapCollider(collider, contactFilter, results);
+        }
+
+        public static int OverlapCollider(Collider2D collider, List<Collider2D> results)
+        {
+            return PhysicsScene2D.OverlapCollider(collider, results);
         }
 
         #endregion
@@ -3527,8 +3308,125 @@ namespace UnityEngine
         [NativeMethod("MoveRotation")]
         extern private void MoveRotation_Quaternion(Quaternion rotation);
 
+        [NativeMethod("MovePositionAndRotation")]
+        extern public void MovePositionAndRotation(Vector2 position, float angle);
+
+        public void MovePositionAndRotation(Vector2 position, Quaternion rotation)
+        {
+            MovePositionAndRotation_Quaternion(position, rotation);
+        }
+
+        [NativeMethod("MovePositionAndRotation")]
+        extern private void MovePositionAndRotation_Quaternion(Vector2 position, Quaternion rotation);
+
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeHeader(Header = "Modules/Physics2D/Public/Rigidbody2D.h")]
+        public struct SlideMovement
+        {
+            public SlideMovement()
+            {
+                maxIterations = 3;
+                surfaceSlideAngle = 90f;
+                gravitySlipAngle = 90f;
+                surfaceUp = Vector2.up;
+                surfaceAnchor = Vector2.down;
+                gravity = new Vector2(0f, -9.81f);
+                startPosition = Vector2.zero;
+                selectedCollider = default;
+                useStartPosition = default;
+                useNoMove = default;
+                useSimulationMove = default;
+                useAttachedTriggers = default;
+                useLayerMask = default;
+                layerMask = Physics2D.AllLayers;
+            }
+            
+            [field: SerializeField] public int maxIterations { get; set; }
+            [field: SerializeField] public float surfaceSlideAngle { get; set; }
+            [field: SerializeField] public float gravitySlipAngle { get; set; }
+            [field: SerializeField] public Vector2 surfaceUp { get; set; }
+            [field: SerializeField] public Vector2 surfaceAnchor { get; set; }
+            [field: SerializeField] public Vector2 gravity { get; set; }
+            [field: SerializeField] public Vector2 startPosition { get; set; }
+            [field: SerializeField] public Collider2D selectedCollider { get; set; }
+            [field: SerializeField] public LayerMask layerMask { get; set; }
+            [field: SerializeField] public bool useLayerMask { get; set; }
+            [field: SerializeField] public bool useStartPosition { get; set; }
+            [field: SerializeField] public bool useNoMove { get; set; }
+            [field: SerializeField] public bool useSimulationMove { get; set; }
+            [field: SerializeField] public bool useAttachedTriggers { get; set; }
+
+            // Helpers.
+            public void SetLayerMask(LayerMask mask) { layerMask = mask; useLayerMask = true; }
+            public void SetStartPosition(Vector2 position) { startPosition = position; useStartPosition = true; }
+        }
+
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        [NativeHeader(Header = "Modules/Physics2D/Public/Rigidbody2D.h")]
+        public struct SlideResults
+        {
+            [field: SerializeField] public Vector2 remainingVelocity { get; set; }
+            [field: SerializeField] public Vector2 position { get; set; }
+            [field: SerializeField] public int iterationsUsed { get; set; }
+            [field: SerializeField] public RaycastHit2D slideHit { get; set; }
+            [field: SerializeField] public RaycastHit2D surfaceHit { get; set; }
+        }
+
+        public SlideResults Slide(Vector2 velocity, float deltaTime, SlideMovement slideMovement)
+        {
+            if (deltaTime < 0.0f)
+                throw new ArgumentException($"Time cannot be negative. It is {deltaTime}.", "deltaTime");
+
+            // Simply return if the time is zero.
+            if (Mathf.Approximately(deltaTime, 0f))
+                return new SlideResults() { position = slideMovement.useStartPosition ? slideMovement.startPosition : position, remainingVelocity = velocity };
+
+            if (slideMovement.useSimulationMove && bodyType == RigidbodyType2D.Static)
+                throw new ArgumentException($"Cannot use simulation move when the body type is Static. It is {slideMovement.useSimulationMove}.", "SlideMovement.useSimulationMove");
+
+            if (slideMovement.useNoMove && slideMovement.useSimulationMove)
+                throw new ArgumentException($"Cannot use no move and simulation move at the same time; the two are conflicting options. It is {slideMovement.useNoMove}.", "SlideMovement.useNoMove");
+
+            if (slideMovement.maxIterations < 1)
+                throw new ArgumentException($"Maximum Iterations must be greater than zero. It is {slideMovement.maxIterations}.", "SlideMovement.maxIterations");
+
+            if (!float.IsFinite(slideMovement.surfaceSlideAngle) || slideMovement.surfaceSlideAngle < 0f || slideMovement.surfaceSlideAngle > 90f)
+                throw new ArgumentException($"Surface Slide Angle must be in the range of 0 to 90 degrees. It is {slideMovement.surfaceSlideAngle}.", "SlideMovement.surfaceSlideAngle");
+
+            if (!float.IsFinite(slideMovement.gravitySlipAngle) || slideMovement.gravitySlipAngle < 0f || slideMovement.gravitySlipAngle > 90f)
+                throw new ArgumentException($"Gravity Slip Angle must be in the range of 0 to 90 degrees. It is {slideMovement.gravitySlipAngle}.", "SlideMovement.gravitySlipAngle");
+
+            if (!float.IsFinite(slideMovement.surfaceUp.x) || !float.IsFinite(slideMovement.surfaceUp.y) || slideMovement.surfaceUp.sqrMagnitude < Mathf.Epsilon)
+                throw new ArgumentException($"Surface Up is invalid and must be non-zero magnitude. It is {slideMovement.surfaceUp}.", "SlideMovement.surfaceUp");
+
+            if (!float.IsFinite(slideMovement.surfaceAnchor.x) || !float.IsFinite(slideMovement.surfaceAnchor.y))
+                throw new ArgumentException($"Surface Anchor is invalid. It is {slideMovement.surfaceAnchor}.", "SlideMovement.surfaceAnchor");
+
+            if (!float.IsFinite(slideMovement.gravity.x) || !float.IsFinite(slideMovement.gravity.y))
+                throw new ArgumentException($"Gravity is invalid. It is {slideMovement.gravity}.", "SlideMovement.gravity");
+
+            if (!float.IsFinite(slideMovement.startPosition.x) || !float.IsFinite(slideMovement.startPosition.y))
+                throw new ArgumentException($"Start Position is invalid. It is {slideMovement.gravity}.", "SlideMovement.startPosition");
+
+            if (slideMovement.selectedCollider && slideMovement.selectedCollider.attachedRigidbody != this)
+                throw new ArgumentException($"Selected Collider must be attached to the Slide Rigidbody2D. It is {slideMovement.selectedCollider}.", "SlideMovement.selectedCollider");
+
+            return Slide_Internal(velocity, deltaTime, slideMovement);
+        }
+
+        [NativeMethod("Slide")]
+        extern private SlideResults Slide_Internal(Vector2 velocity, float deltaTime, SlideMovement slideMovement);
+
         // The linear velocity vector of the object.
         extern public Vector2 velocity { get; set; }
+
+        // The linear velocity X-component vector of the object.
+        extern public float velocityX { get; set; }
+
+        // The linear velocity Y-component vector of the object.
+        extern public float velocityY { get; set; }
 
         // The angular velocity vector of the object in degrees/sec.
         extern public float angularVelocity { get; set; }
@@ -3578,12 +3476,7 @@ namespace UnityEngine
         // This property is obsolete but will be deprecated at a later date as it's commonly used.
         // The end-user should use bodyType instead.
         public bool isKinematic { get { return bodyType == RigidbodyType2D.Kinematic; } set { bodyType = value ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic; } }
-
-        //OBSOLETE warning
-        [Obsolete("'fixedAngle' is no longer supported. Use constraints instead.", false)]
-        [NativeMethod("FreezeRotation")]
-        extern public bool fixedAngle { get; set; }
-
+        
         // Controls whether physics will change the rotation of the object.
         extern public bool freezeRotation { get; set; }
 
@@ -3621,7 +3514,9 @@ namespace UnityEngine
         extern public CollisionDetectionMode2D collisionDetectionMode { get; set; }
 
         // Gets a count of the colliders attached to this rigidbody.
-        extern public int attachedColliderCount { get; }
+        public int attachedColliderCount { get { return GetAttachedColliderCount_Internal(true); } }
+        [NativeMethod("GetAttachedColliderCount")]
+        extern private int GetAttachedColliderCount_Internal(bool findTriggers);
 
         // Gets/Sets the total user-applied force added to this body since the last simulation step.
         extern public Vector2 totalForce { get; set; }
@@ -3654,7 +3549,14 @@ namespace UnityEngine
         // Get whether any attached collider(s) are touching the specific layer(s).
         [ExcludeFromDocs]
         public bool IsTouchingLayers() { return IsTouchingLayers(Physics2D.AllLayers); }
-        extern public bool IsTouchingLayers([DefaultValue("Physics2D.AllLayers")] int layerMask);
+        public bool IsTouchingLayers([DefaultValue("Physics2D.AllLayers")] int layerMask = Physics2D.AllLayers)
+        {
+            ContactFilter2D contactFilter = new ContactFilter2D();
+            contactFilter.SetLayerMask(layerMask);
+            contactFilter.useTriggers = Physics2D.queriesHitTriggers;
+
+            return IsTouching(contactFilter);
+        }
 
         // Checks whether the specified point overlaps all the rigidbody collider(s) or not.
         extern public bool OverlapPoint(Vector2 point);
@@ -3671,8 +3573,26 @@ namespace UnityEngine
             return Distance_Internal(collider);
         }
 
+        // Get the shortest distance and the respective points between two colliders at specific poses.
+        public ColliderDistance2D Distance(
+            Vector2 thisPosition, float thisAngle,
+            [Writable] Collider2D collider, Vector2 position, float angle)
+        {
+            if (!collider.attachedRigidbody)
+                throw new InvalidOperationException("Cannot perform a Collider Distance at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+
+            return DistanceFrom_Internal(
+                thisPosition, thisAngle,
+                collider, position, angle);
+        }
+
         [NativeMethod("Distance")]
         extern private ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D collider);
+
+        [NativeMethod("DistanceFrom")]
+        extern private ColliderDistance2D DistanceFrom_Internal(
+            Vector2 thisPosition, float thisAngle,
+            [NotNull][Writable] Collider2D collider, Vector2 position, float angle);
 
         // Get the closest point to position on this rigidbody.
         public Vector2 ClosestPoint(Vector2 position)
@@ -3682,13 +3602,23 @@ namespace UnityEngine
 
         // Adds /force/ (defined in global space) to the rigidbody center-of-mass.  No torque is therefore generated.
         [ExcludeFromDocs]
-        public void AddForce(Vector2 force) { AddForce(force, ForceMode2D.Force); }
-        extern public void AddForce(Vector2 force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode);
+        public void AddForce(Vector2 force) { AddForce_Internal(force, ForceMode2D.Force); }
+        public void AddForce(Vector2 force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode = ForceMode2D.Force) { AddForce_Internal(force, mode); }
+        public void AddForceX(float force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode = ForceMode2D.Force) { AddForce_Internal(new Vector2(force, 0f), mode); }
+        public void AddForceY(float force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode = ForceMode2D.Force) { AddForce_Internal(new Vector2(0f, force), mode); }
+
+        [NativeMethod("AddForce")]
+        extern private void AddForce_Internal(Vector2 force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode);
 
         // Adds /relativeForce/ (defined relative in local space) to the rigidbody center-of-mass.  No torque is therefore generated.
         [ExcludeFromDocs]
-        public void AddRelativeForce(Vector2 relativeForce) { AddRelativeForce(relativeForce, ForceMode2D.Force); }
-        extern public void AddRelativeForce(Vector2 relativeForce, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode);
+        public void AddRelativeForce(Vector2 relativeForce) { AddRelativeForce_Internal(relativeForce, ForceMode2D.Force); }
+        public void AddRelativeForce(Vector2 relativeForce, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode = ForceMode2D.Force) { AddRelativeForce_Internal(relativeForce, mode); }
+        public void AddRelativeForceX(float force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode = ForceMode2D.Force) { AddRelativeForce_Internal(new Vector2(force, 0f), mode); }
+        public void AddRelativeForceY(float force, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode = ForceMode2D.Force) { AddRelativeForce_Internal(new Vector2(0f, force), mode); }
+
+        [NativeMethod("AddRelativeForce")]
+        extern private void AddRelativeForce_Internal(Vector2 relativeForce, [DefaultValue("ForceMode2D.Force")] ForceMode2D mode);
 
         // Applies /force/ at /position/ (both defined in global space) to the rigidbody.  Torque therefore can be generated.
         [ExcludeFromDocs]
@@ -3717,23 +3647,6 @@ namespace UnityEngine
 
         // The velocity relative to the rigidbody at the point /relativePoint/.
         extern public Vector2 GetRelativePointVelocity(Vector2 relativePoint);
-
-        // Returns all colliders overlapping the colliders attached to this rigidbody (limited by the size of the array) but filters using ContactFilter2D.  This does not produce any garbage.
-        public int OverlapCollider(ContactFilter2D contactFilter, [Out] Collider2D[] results)
-        {
-            return OverlapColliderArray_Internal(contactFilter, results);
-        }
-
-        [NativeMethod("OverlapColliderArray_Binding")]
-        extern private int OverlapColliderArray_Internal(ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
-
-        public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results)
-        {
-            return OverlapColliderList_Internal(contactFilter, results);
-        }
-
-        [NativeMethod("OverlapColliderList_Binding")]
-        extern private int OverlapColliderList_Internal(ContactFilter2D contactFilter, [NotNull] List<Collider2D> results);
 
         // Get all contacts for this rigidbody.
         public int GetContacts(ContactPoint2D[] contacts)
@@ -3780,21 +3693,31 @@ namespace UnityEngine
         }
 
         // Get all colliders attached to this rigidbody.
+        [ExcludeFromDocs]
         public int GetAttachedColliders([Out] Collider2D[] results)
         {
-            return GetAttachedCollidersArray_Internal(results);
+            return GetAttachedCollidersArray_Internal(results, true);
         }
-
-        [NativeMethod("GetAttachedCollidersArray_Binding")]
-        extern private int GetAttachedCollidersArray_Internal([NotNull] Collider2D[] results);
-
+        [ExcludeFromDocs]
         public int GetAttachedColliders(List<Collider2D> results)
         {
-            return GetAttachedCollidersList_Internal(results);
+            return GetAttachedCollidersList_Internal(results, true);
         }
 
-        [NativeMethod("GetAttachedCollidersList_Binding")]
-        extern private int GetAttachedCollidersList_Internal([NotNull] List<Collider2D> results);
+        public int GetAttachedColliders([Out] Collider2D[] results, [DefaultValue("true")] bool findTriggers = true)
+        {
+            return GetAttachedCollidersArray_Internal(results, findTriggers);
+        }
+
+        public int GetAttachedColliders(List<Collider2D> results, [DefaultValue("true")] bool findTriggers = true)
+        {
+            return GetAttachedCollidersList_Internal(results, findTriggers);
+        }
+
+        public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup)
+        {
+            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState);
+        }
 
         // Returns the hits from casting all the rigidbody collider(s) along a ray.
         [ExcludeFromDocs]
@@ -3808,16 +3731,10 @@ namespace UnityEngine
             return CastArray_Internal(direction, distance, results);
         }
 
-        [NativeMethod("CastArray_Binding")]
-        extern private int CastArray_Internal(Vector2 direction, float distance, [NotNull] RaycastHit2D[] results);
-
         public int Cast(Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
             return CastList_Internal(direction, distance, results);
         }
-
-        [NativeMethod("CastList_Binding")]
-        extern private int CastList_Internal(Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
 
         // Returns the hits from casting all the rigidbody collider(s) along a ray (filtered by the contact filter).
         [ExcludeFromDocs]
@@ -3826,29 +3743,92 @@ namespace UnityEngine
             return CastFilteredArray_Internal(direction, Mathf.Infinity, contactFilter, results);
         }
 
-        public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance)
+        public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
             return CastFilteredArray_Internal(direction, distance, contactFilter, results);
         }
 
-        [NativeMethod("CastFilteredArray_Binding")]
-        extern private int CastFilteredArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
-
-        public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance)
+        public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
             return CastFilteredList_Internal(direction, distance, contactFilter, results);
         }
 
-        [NativeMethod("CastFilteredList_Binding")]
-        extern private int CastFilteredList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
-
-        public int GetShapes(PhysicsShapeGroup2D physicsShapeGroup)
+        public int Cast(Vector2 position, float angle, Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return GetShapes_Internal(ref physicsShapeGroup.m_GroupState);
+            return CastFrom_Internal(position, angle, direction, distance, results);
         }
+
+        public int Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
+        {
+            return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, results);
+        }
+
+        public int Overlap(ContactFilter2D contactFilter, [Out] Collider2D[] results)
+        {
+            return OverlapArray_Internal(contactFilter, results);
+        }
+
+        public int Overlap(List<Collider2D> results)
+        {
+            return OverlapList_Internal(results);
+        }
+
+        public int Overlap(ContactFilter2D contactFilter, List<Collider2D> results)
+        {
+            return OverlapFilteredList_Internal(contactFilter, results);
+        }
+
+        public int Overlap(Vector2 position, float angle, List<Collider2D> results)
+        {
+            return OverlapFromList_Internal(position, angle, results);
+        }
+
+        public int Overlap(Vector2 position, float angle, ContactFilter2D contactFilter, List<Collider2D> results)
+        {
+            return OverlapFromFilteredList_Internal(position, angle, contactFilter, results);
+        }
+
+        [NativeMethod("GetAttachedCollidersArray_Binding")]
+        extern private int GetAttachedCollidersArray_Internal([NotNull] Collider2D[] results, bool findTriggers);
+
+        [NativeMethod("GetAttachedCollidersList_Binding")]
+        extern private int GetAttachedCollidersList_Internal([NotNull] List<Collider2D> results, bool findTriggers);
 
         [NativeMethod("GetShapes_Binding")]
         extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState);
+
+        [NativeMethod("CastArray_Binding")]
+        extern private int CastArray_Internal(Vector2 direction, float distance, [NotNull] RaycastHit2D[] results);
+
+        [NativeMethod("CastList_Binding")]
+        extern private int CastList_Internal(Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFilteredArray_Binding")]
+        extern private int CastFilteredArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
+
+        [NativeMethod("CastFilteredList_Binding")]
+        extern private int CastFilteredList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFrom_Binding")]
+        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFromFiltered_Binding")]
+        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("OverlapArray_Binding")]
+        extern private int OverlapArray_Internal(ContactFilter2D contactFilter, [NotNull] Collider2D[] results);
+
+        [NativeMethod("OverlapList_Binding")]
+        extern private int OverlapList_Internal([NotNull] List<Collider2D> results);
+
+        [NativeMethod("OverlapFilteredList_Binding")]
+        extern private int OverlapFilteredList_Internal(ContactFilter2D contactFilter, [NotNull] List<Collider2D> results);
+
+        [NativeMethod("OverlapFromList_Binding")]
+        extern private int OverlapFromList_Internal(Vector2 position, float angle, [NotNull] List<Collider2D> results);
+
+        [NativeMethod("OverlapFromFilteredList_Binding")]
+        extern private int OverlapFromFilteredList_Internal(Vector2 position, float angle, ContactFilter2D contactFilter, [NotNull] List<Collider2D> results);
     }
 
     #endregion
@@ -3888,8 +3868,14 @@ namespace UnityEngine
         extern public int shapeCount { get; }
 
         // Gets a mesh for the specified collider.
+        [ExcludeFromDocs]
+        public Mesh CreateMesh(bool useBodyPosition, bool useBodyRotation)
+        {
+            return CreateMesh(useBodyPosition, useBodyRotation, true);
+        }
+
         [NativeMethod("CreateMesh_Binding")]
-        extern public Mesh CreateMesh(bool useBodyPosition, bool useBodyRotation);
+        extern public Mesh CreateMesh(bool useBodyPosition, bool useBodyRotation, [DefaultValue("true")] bool useDelaunay = true);
 
         [NativeMethod("GetShapeHash_Binding")]
         extern public UInt32 GetShapeHash();
@@ -3985,65 +3971,36 @@ namespace UnityEngine
         // Checks whether the specified point overlaps the collider or not.
         extern public bool OverlapPoint(Vector2 point);
 
-        // Get the shortest distance and the respective points between this collider and another.
-        public ColliderDistance2D Distance([Writable] Collider2D collider)
-        {
-            return Physics2D.Distance(this, collider);
-        }
-
         // Returns all colliders overlapping this collider (limited by the size of the array) but filters using ContactFilter2D.  This does not produce any garbage.
-        public int OverlapCollider(ContactFilter2D contactFilter, Collider2D[] results)
+        public int Overlap(ContactFilter2D contactFilter, Collider2D[] results)
         {
             return PhysicsScene2D.OverlapCollider(this, contactFilter, results);
         }
 
-        public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results)
+        public int Overlap(List<Collider2D> results)
+        {
+            return PhysicsScene2D.OverlapCollider(this, results);
+        }
+
+        public int Overlap(ContactFilter2D contactFilter, List<Collider2D> results)
         {
             return PhysicsScene2D.OverlapCollider(this, contactFilter, results);
         }
 
-        // Get all contacts for this collider.
-        public int GetContacts(ContactPoint2D[] contacts)
+        public int Overlap(Vector2 position, float angle, List<Collider2D> results)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+            if (attachedRigidbody)
+                return PhysicsScene2D.OverlapCollider(position, angle, this, results);
+
+            throw new InvalidOperationException("Cannot perform a Collider Overlap at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
 
-        public int GetContacts(List<ContactPoint2D> contacts)
+        public int Overlap(Vector2 position, float angle, ContactFilter2D contactFilter, List<Collider2D> results)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
-        }
+            if (attachedRigidbody)
+                return PhysicsScene2D.OverlapCollider(position, angle, this, contactFilter, results);
 
-        // Get filtered contacts for this collider.
-        public int GetContacts(ContactFilter2D contactFilter, ContactPoint2D[] contacts)
-        {
-            return Physics2D.GetContacts(this, contactFilter, contacts);
-        }
-
-        public int GetContacts(ContactFilter2D contactFilter, List<ContactPoint2D> contacts)
-        {
-            return Physics2D.GetContacts(this, contactFilter, contacts);
-        }
-
-        // Get all contacts for this collider.
-        public int GetContacts(Collider2D[] colliders)
-        {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
-        }
-
-        public int GetContacts(List<Collider2D> colliders)
-        {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
-        }
-
-        // Get filtered contacts for this collider.
-        public int GetContacts(ContactFilter2D contactFilter, Collider2D[] colliders)
-        {
-            return Physics2D.GetContacts(this, contactFilter, colliders);
-        }
-
-        public int GetContacts(ContactFilter2D contactFilter, List<Collider2D> colliders)
-        {
-            return Physics2D.GetContacts(this, contactFilter, colliders);
+            throw new InvalidOperationException("Cannot perform a Collider Overlap at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
 
         // Returns the hits from casting the collider along a ray.
@@ -4094,16 +4051,46 @@ namespace UnityEngine
             return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
         }
 
-        [NativeMethod("CastArray_Binding")]
-        extern private int CastArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] RaycastHit2D[] results);
+        public int Cast(Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
+        {
+            return CastList_Internal(direction, distance, ignoreSiblingColliders, results);
+        }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
-            return CastList_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            return CastListFiltered_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
         }
 
+        public int Cast(Vector2 position, float angle, Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
+        {
+            if (attachedRigidbody)
+                return CastFrom_Internal(position, angle, direction, distance, ignoreSiblingColliders, results);
+
+            throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+        }
+
+        public int Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
+        {
+            if (attachedRigidbody)
+                return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, ignoreSiblingColliders, results);
+
+            throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+        }
+
+        [NativeMethod("CastArray_Binding")]
+        extern private int CastArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] RaycastHit2D[] results);
+
         [NativeMethod("CastList_Binding")]
-        extern private int CastList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastList_Internal(Vector2 direction, float distance, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastListFiltered_Binding")]
+        extern private int CastListFiltered_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFrom_Binding")]
+        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFromFiltered_Binding")]
+        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
 
         // Returns all hits along the ray (limited by the size of the array) excluding this collider.  This does not produce any garbage.
         [ExcludeFromDocs]
@@ -4163,12 +4150,71 @@ namespace UnityEngine
         [NativeMethod("RaycastList_Binding")]
         extern private int RaycastList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
+        // Get the shortest distance and the respective points between this collider and another.
+        public ColliderDistance2D Distance([Writable] Collider2D collider)
+        {
+            return Physics2D.Distance(this, collider);
+        }
+
+        // Get the shortest distance and the respective points between two colliders at specific poses.
+        public ColliderDistance2D Distance(
+            Vector2 thisPosition, float thisAngle,
+            [Writable] Collider2D collider, Vector2 position, float angle)
+        {
+            return Physics2D.Distance(
+                this, thisPosition, thisAngle,
+                collider, position, angle);
+        }
+
         // Get the closest point to position on this collider.
         public Vector2 ClosestPoint(Vector2 position)
         {
             return Physics2D.ClosestPoint(position, this);
         }
 
+        // Get all contacts for this collider.
+        public int GetContacts(ContactPoint2D[] contacts)
+        {
+            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+        }
+
+        public int GetContacts(List<ContactPoint2D> contacts)
+        {
+            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+        }
+
+        // Get filtered contacts for this collider.
+        public int GetContacts(ContactFilter2D contactFilter, ContactPoint2D[] contacts)
+        {
+            return Physics2D.GetContacts(this, contactFilter, contacts);
+        }
+
+        public int GetContacts(ContactFilter2D contactFilter, List<ContactPoint2D> contacts)
+        {
+            return Physics2D.GetContacts(this, contactFilter, contacts);
+        }
+
+        // Get all contacts for this collider.
+        public int GetContacts(Collider2D[] colliders)
+        {
+            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
+        }
+
+        public int GetContacts(List<Collider2D> colliders)
+        {
+            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
+        }
+
+        // Get filtered contacts for this collider.
+        public int GetContacts(ContactFilter2D contactFilter, Collider2D[] colliders)
+        {
+            return Physics2D.GetContacts(this, contactFilter, colliders);
+        }
+
+        public int GetContacts(ContactFilter2D contactFilter, List<Collider2D> colliders)
+        {
+            return Physics2D.GetContacts(this, contactFilter, colliders);
+        }
     }
 
     [NativeHeader("Modules/Physics2D/Public/CustomCollider2D.h")]
@@ -4692,6 +4738,9 @@ namespace UnityEngine
 
         // Enables the joint's limits.
         extern public bool useLimits { get; set; }
+
+        // Enables the joint's connected anchor.
+        extern public bool useConnectedAnchor { get; set; }
 
         // The motor will apply a force up to a maximum torque to achieve the target velocity in degrees per second.
         extern public JointMotor2D motor { get; set; }

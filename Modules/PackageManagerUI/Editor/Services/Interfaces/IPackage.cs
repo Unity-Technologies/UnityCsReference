@@ -40,6 +40,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool hasEntitlementsError { get; }
 
+        string deprecationMessage { get; }
+
+        bool isDeprecated { get; }
+
         bool IsInTab(PackageFilterTab tab);
     }
 }

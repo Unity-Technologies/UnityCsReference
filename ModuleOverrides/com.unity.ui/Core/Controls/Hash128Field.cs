@@ -127,7 +127,7 @@ namespace UnityEngine.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt == null || textEdition.isReadOnly)
+            if (evt == null || isReadOnly)
                 return;
 
             if (evt.eventTypeId == BlurEvent.TypeId())

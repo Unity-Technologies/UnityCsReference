@@ -410,6 +410,9 @@ namespace UnityEditor
         [NativeMethod("PrefabUtilityBindings::IsDefaultOverride", IsFreeFunction = true)]
         extern public static bool IsDefaultOverride(PropertyModification modification);
 
+        [NativeMethod("PrefabUtilityBindings::IsDefaultOverridePropertyPath", IsFreeFunction = true)]
+        extern internal static bool IsDefaultOverridePropertyPath(string propertyPath);
+
         [FreeFunction]
         extern internal static bool CheckIfAddingPrefabWouldResultInCyclicNesting(Object prefabAssetThatIsAddedTo, Object prefabAssetThatWillBeAdded);
 

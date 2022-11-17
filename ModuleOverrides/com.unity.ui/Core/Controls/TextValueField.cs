@@ -286,7 +286,7 @@ namespace UnityEngine.UIElements
             public void StartDragging()
             {
                 isDragging = true;
-                SelectNone();
+                textSelection.SelectNone();
                 MarkDirtyRepaint();
             }
 
@@ -300,7 +300,7 @@ namespace UnityEngine.UIElements
                     UpdateValueFromText();
                 }
                 isDragging = false;
-                SelectAll();
+                textSelection.SelectAll();
                 MarkDirtyRepaint();
             }
 

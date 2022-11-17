@@ -18,6 +18,8 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeReference]
         ContextNodeModel m_ContextNodeModel;
 
+        internal static string contextNodeModelFieldName_Internal = nameof(m_ContextNodeModel);
+
         /// <summary>
         /// The context the node belongs to
         /// </summary>

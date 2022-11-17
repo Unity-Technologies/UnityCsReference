@@ -8,7 +8,10 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling;
+using Unity.Profiling.Editor;
 using Unity.Profiling.LowLevel;
+using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -95,6 +98,7 @@ namespace UnityEditor.Profiling
             get;
         }
 
+
         public extern int threadIndex
         {
             [ThreadSafe]
@@ -172,6 +176,13 @@ namespace UnityEditor.Profiling
             [ThreadSafe]
             get;
         }
+
+        // the current runtime (Editor or Player) session id. This is different from the  
+        internal extern uint runtimeSessionId
+        {
+            [ThreadSafe]
+            get;
+        } 
 
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
@@ -280,6 +291,26 @@ namespace UnityEditor.Profiling
         [ThreadSafe]
         extern int GetSessionMetaDataCount(byte[] statsId, int tag);
 
+        internal T GetProfilingSessionMetaData<T>(ProfilingSessionMetaDataEntry entry) where T : unmanaged
+        {
+            using (var ret = GetSessionMetaData<T>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry))
+            {
+                Debug.Assert(ret.Length > 0, $"A ProfilingSessionMetaDataEntry {entry} of type {typeof(T)} does not exist for this session.");
+                return ret[ret.Length-1];
+            }
+        }
+        internal string GetProfilingSessionMetaDataString(ProfilingSessionMetaDataEntry entry)
+        {
+            using (var ret = GetSessionMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry))
+            {
+                Debug.Assert(ret.Length > 0, $"A ProfilingSessionMetaDataEntry {entry} of type string does not exist for this session.");
+                unsafe
+                {
+                    return System.Text.Encoding.UTF8.GetString((byte*)ret.GetUnsafePtr(), ret.Length);
+                }
+            }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
         public struct MethodInfo
@@ -367,5 +398,6 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(IsThreadSafe = true)]
         public extern bool GetGfxResourceInfo(ulong gfxResourceId, out GfxResourceInfo info);
+
     }
 }

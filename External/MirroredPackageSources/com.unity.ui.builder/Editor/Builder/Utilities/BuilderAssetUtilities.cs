@@ -503,10 +503,10 @@ namespace Unity.UI.Builder
             return templateAsset?.attributeOverrides.Count(x => x.m_ElementName == visualElement.name && x.m_AttributeName == attributeName) > 0;
         }
 
-        public static List<TemplateAsset.AttributeOverride> GetAccumulatedAttributeOverrides(VisualElement visualElement)
+        public static List<CreationContext.AttributeOverrideRange> GetAccumulatedAttributeOverrides(VisualElement visualElement)
         {
             VisualElement parent = visualElement.parent;
-            List<TemplateAsset.AttributeOverride> attributeOverrides = new List<TemplateAsset.AttributeOverride>();
+            List<CreationContext.AttributeOverrideRange> attributeOverrideRanges = new ();
 
             while (parent != null)
             {
@@ -524,7 +524,11 @@ namespace Unity.UI.Builder
 
                     if (templateAsset != null)
                     {
-                        attributeOverrides.AddRange(templateAsset.attributeOverrides);
+                        VisualTreeAsset visualTreeAsset = parent.GetVisualTreeAsset();
+                        if (visualTreeAsset != null)
+                        {
+                            attributeOverrideRanges.Add(new CreationContext.AttributeOverrideRange(visualTreeAsset, templateAsset.attributeOverrides));   
+                        }
                     }
 
                     // We reached the root template
@@ -538,9 +542,9 @@ namespace Unity.UI.Builder
             }
 
             // Parent attribute overrides have higher priority
-            attributeOverrides.Reverse();
+            attributeOverrideRanges.Reverse();
 
-            return attributeOverrides;
+            return attributeOverrideRanges;
         }
 
         static public bool WriteTextFileToDisk(string path, string content)

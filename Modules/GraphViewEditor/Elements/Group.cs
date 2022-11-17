@@ -155,7 +155,7 @@ namespace UnityEditor.Experimental.GraphView
             m_TitleEditor.SetValueWithoutNotify(title);
             m_TitleEditor.style.display = DisplayStyle.Flex;
             m_TitleItem.visible = false;
-            m_TitleEditor.SelectAll();
+            m_TitleEditor.textSelection.SelectAll();
             m_TitleEditor.Q(TextField.textInputUssName).Focus();
         }
 

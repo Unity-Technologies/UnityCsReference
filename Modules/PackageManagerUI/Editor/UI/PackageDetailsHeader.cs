@@ -13,19 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal new class UxmlFactory : UxmlFactory<PackageDetailsHeader> {}
 
-        internal static readonly PackageTag[] k_VisibleTags =
-        {
-            PackageTag.Release,
-            PackageTag.Custom,
-            PackageTag.Local,
-            PackageTag.Git,
-            PackageTag.Deprecated,
-            PackageTag.Disabled,
-            PackageTag.PreRelease,
-            PackageTag.Experimental,
-            PackageTag.ReleaseCandidate
-        };
-
         internal enum InfoBoxState
         {
             PreRelease,
@@ -79,10 +66,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
+            CreateTags();
+
             m_PageManager.onVisualStateChange += OnVisualStateChange;
             detailAuthorLink.clickable.clicked += AuthorClick;
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
             quickStart.clickable.clicked += ViewQuickStartClick;
+        }
+
+        private void CreateTags()
+        {
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Git, L10n.Tr("git")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Local, L10n.Tr("local")));
+            versionContainer.Add(new PackageAssetStoreTagLabel());
+            versionContainer.Add(new PackageDeprecatedTagLabel());
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("disabled")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Custom, L10n.Tr("custom")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.PreRelease, L10n.Tr("Pre-Release")));
+            versionContainer.Add(new PackageReleaseTagLabel(m_PackageDatabase));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.ReleaseCandidate, L10n.Tr("Release Candidate")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Experimental, L10n.Tr("Experimental")));
+            versionContainer.Add(new PackageScopedRegistryTagLabel());
         }
 
         public void Refresh(IPackage package, IPackageVersion version)
@@ -104,6 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshVersionInfoIcon();
             RefreshRegistry();
             RefreshEntitlement();
+            RefreshDeprecationHelpBox();
             RefreshEmbeddedFeatureSetWarningBox();
             RefreshHiddenAssetInfo();
         }
@@ -285,29 +290,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTags()
         {
-            foreach (var tag in k_VisibleTags)
-            {
-                if (tag == PackageTag.Release && m_Version.HasTag(PackageTag.Feature) &&
-                    (m_Version.dependencies == null || m_Version.dependencies.Any(dependency => m_PackageDatabase.GetPackageInFeatureVersion(dependency.name)?.HasTag(PackageTag.Release) != true)))
-                    UIUtils.SetElementDisplay(GetTagLabel(PackageTag.Release.ToString()), false);
-                else
-                    UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), m_Version.HasTag(tag));
-            }
-
-            var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
-            if ((m_Version as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(m_Version.version?.Prerelease))
-            {
-                scopedRegistryTagLabel.tooltip = m_Version.version?.Prerelease;
-                scopedRegistryTagLabel.text = m_Version.version?.Prerelease;
-                UIUtils.SetElementDisplay(scopedRegistryTagLabel, true);
-            }
-            else
-            {
-                UIUtils.SetElementDisplay(scopedRegistryTagLabel, false);
-            }
-
-            var assetStoreTagLabel = GetTagLabel("AssetStore");
-            UIUtils.SetElementDisplay(assetStoreTagLabel, m_Version.package.product != null);
+            foreach (var tag in versionContainer.Children().OfType<PackageBaseTagLabel>())
+                tag.Refresh(m_Version);
         }
 
         private void AuthorClick()
@@ -326,6 +310,26 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(detailEntitlement, showEntitlement);
             detailEntitlement.text = showEntitlement ? "E" : string.Empty;
             detailEntitlement.tooltip = showEntitlement ? L10n.Tr("This is an Entitlement package.") : string.Empty;
+        }
+
+        private void RefreshDeprecationHelpBox()
+        {
+            var versionDeprecationMessage = m_Package.versions.primary.deprecationMessage;
+            var showVersionDeprecation = !string.IsNullOrEmpty(versionDeprecationMessage) && m_Version.isInstalled;
+            var showPackageDeprecation = m_Package.isDeprecated;
+
+            UIUtils.SetElementDisplay(deprecatedWarningInfoBox, showPackageDeprecation);
+            if (showPackageDeprecation)
+            {
+                if (string.IsNullOrEmpty(m_Package.deprecationMessage))
+                    deprecatedWarningInfoBox.text = L10n.Tr("This package is no longer supported.");
+                else
+                    deprecatedWarningInfoBox.text = L10n.Tr(m_Package.deprecationMessage);
+            }
+
+            UIUtils.SetElementDisplay(deprecatedErrorInfoBox, showVersionDeprecation);
+            if (showVersionDeprecation)
+                deprecatedErrorInfoBox.text = L10n.Tr("This installed version of the package is deprecated. ") + L10n.Tr(versionDeprecationMessage);
         }
 
         private void RefreshVersionLabel()
@@ -470,10 +474,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
 
-        internal PackageTagLabel GetTagLabel(string tag) => cache.Get<PackageTagLabel>("tag" + tag);
+        private VisualElement versionContainer => cache.Get<VisualElement>("versionContainer");
 
         private Label detailRegistry => cache.Get<Label>("detailRegistry");
         private HelpBox scopedRegistryInfoBox => cache.Get<HelpBox>("scopedRegistryInfoBox");
+        private HelpBox deprecatedWarningInfoBox => cache.Get<HelpBox>("deprecatedWarningInfoBox");
+        private HelpBox deprecatedErrorInfoBox => cache.Get<HelpBox>("deprecatedErrorInfoBox");
         private Button quickStart => cache.Get<Button>("quickStart");
 
         private VisualElement usedInFeatureSetMessageContainer => cache.Get<VisualElement>("usedInFeatureSetMessageContainer");

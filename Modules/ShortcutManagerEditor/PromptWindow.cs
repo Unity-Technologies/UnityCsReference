@@ -38,7 +38,7 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.m_Validator = validator;
             promptWindow.m_Action = action;
 
-            promptWindow.m_TextField.SelectAll();
+            promptWindow.m_TextField.textSelection.SelectAll();
             promptWindow.m_TextField.Focus();
             promptWindow.UpdateValidation();
 

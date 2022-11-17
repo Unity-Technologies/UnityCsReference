@@ -134,7 +134,7 @@ namespace UnityEditor.Experimental.GraphView
             m_TextField.style.display = DisplayStyle.Flex;
             m_ContentItem.visible = false;
             m_TextField.Q(TextField.textInputUssName).Focus();
-            m_TextField.SelectAll();
+            m_TextField.textSelection.SelectAll();
         }
 
         protected virtual void BuildFieldContextualMenu(ContextualMenuPopulateEvent evt)

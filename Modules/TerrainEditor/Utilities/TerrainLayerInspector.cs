@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using DefaultFormat = UnityEngine.Experimental.Rendering.DefaultFormat;
 
 namespace UnityEditor
@@ -229,7 +230,27 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Specular);
             EditorGUILayout.Slider(m_Metallic, 0.0f, 1.0f);
-            EditorGUILayout.Slider(m_Smoothness, 0.0f, 1.0f);
+
+            var terrainLayer = target as TerrainLayer;
+            if (diffuseTexture != null && TextureHasAlpha(ref diffuseTexture))
+            {
+                terrainLayer.smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(EditorGUIUtility.TrTextContent("Smoothness Source"), terrainLayer.smoothnessSource);
+                if (terrainLayer.smoothnessSource == TerrainLayerSmoothnessSource.DiffuseAlphaChannel)
+                {
+                    // See also: TerrainLitGUI in HDRP, TerrainLitShaderGUI in URP
+                    GUIStyle warnStyle = new GUIStyle(GUI.skin.label);
+                    warnStyle.wordWrap = true;
+                    GUILayout.Label("Smoothness is controlled by diffuse alpha channel", warnStyle);
+                }
+                else
+                {
+                    EditorGUILayout.Slider(m_Smoothness, 0.0f, 1.0f);
+                }
+            }
+            else
+            {
+                EditorGUILayout.Slider(m_Smoothness, 0.0f, 1.0f);
+            }
 
             EditorGUILayout.Space();
             TerrainLayerUtility.TilingSettingsUI(m_TileSize, m_TileOffset);
@@ -290,6 +311,11 @@ namespace UnityEditor
             tempRT = null;
             RenderTexture.active = oldRT;
             return previewTexture;
+        }
+
+        private bool TextureHasAlpha(ref Texture2D inTex)
+        {
+            return GraphicsFormatUtility.HasAlphaChannel(GraphicsFormatUtility.GetGraphicsFormat(inTex.format, true));
         }
     }
 }

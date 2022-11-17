@@ -97,6 +97,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool isFromScopedRegistry { get; }
 
+        string deprecationMessage { get; }
+
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 
         bool MatchesSearchText(string searchText);

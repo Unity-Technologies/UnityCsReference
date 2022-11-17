@@ -102,6 +102,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override long versionId => 0;
 
+        [SerializeField]
+        private string m_DeprecationMessage;
+        public override string deprecationMessage => m_DeprecationMessage;
+
 
         public UpmPackageVersion(PackageInfo packageInfo, bool isInstalled, SemVersion? version, string displayName, bool isUnityPackage)
         {
@@ -156,6 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ResolvedDependencies = packageInfo.resolvedDependencies;
                 m_Entitlements = packageInfo.entitlements;
                 m_ResolvedPath = packageInfo.resolvedPath;
+                m_DeprecationMessage = packageInfo.deprecationMessage;
 
                 if (HasTag(PackageTag.BuiltIn))
                     m_Description = UpmPackageDocs.FetchBuiltinDescription(packageInfo);
@@ -238,14 +243,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Tag |= PackageTag.MainNotUnity;
             }
 
-            if (!isUnityPackage)
-                return;
+            // We use the logic below instead packageInfo.isDeprecated, since we don't do an extra fetch when we want to tag deprecated version in version history
+            // We want to know if a version is deprecated before we do the extra fetch
+            var isDeprecated = packageInfo.versions.deprecated.Contains(m_VersionString);
+            if (isDeprecated)
+                m_Tag |= PackageTag.Deprecated;
 
-            m_Tag |= PackageTag.Unity;
+            if (isUnityPackage)
+                m_Tag |= PackageTag.Unity;
+
+            if (!isUnityPackage || isDeprecated)
+                return;
 
             const string previewTagString = "Preview";
             SemVersion? lifecycleVersionParsed;
             var isLifecycleVersionValid = SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out lifecycleVersionParsed);
+
             if (m_Version?.HasPreReleaseVersionTag() == true)
             {
                 // must match exactly to be release candidate
@@ -300,7 +313,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_HasErrorWithEntitlementMessage = info.errors.Any(error
                 => error.errorCode == ErrorCode.Forbidden
-                || error.message.IndexOf(EntitlementsErrorChecker.k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
+                || error.message.IndexOf(EntitlementsErrorAndDeprecationChecker.k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
 
             m_Errors.Clear();
 
@@ -309,9 +322,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var error in info.errors)
             {
-                if (error.message.Contains(EntitlementsErrorChecker.k_NotAcquiredUpmErrorMessage))
+                if (error.message.Contains(EntitlementsErrorAndDeprecationChecker.k_NotAcquiredUpmErrorMessage))
                     m_Errors.Add(new UIError(UIErrorCode.UpmError_NotAcquired, error.message));
-                else if (error.message.Contains(EntitlementsErrorChecker.k_NotSignedInUpmErrorMessage))
+                else if (error.message.Contains(EntitlementsErrorAndDeprecationChecker.k_NotSignedInUpmErrorMessage))
                     m_Errors.Add(new UIError(UIErrorCode.UpmError_NotSignedIn, error.message));
                 else
                     m_Errors.Add(new UIError(error));

@@ -33,6 +33,11 @@ namespace UnityEditor.Utils
             var prefix = GetNetStandardInstallation();
             return Path.Combine(prefix, Path.Combine("Extensions", "2.0.0"));
         }
+        public static string GetNetStandardEditorExtensionsDirectory()
+        {
+            var prefix = GetNetStandardInstallation();
+            return Path.Combine(prefix, Path.Combine("EditorExtensions"));
+        }
 
         public static string GetDotNetFrameworkCompatShimsDirectory()
         {

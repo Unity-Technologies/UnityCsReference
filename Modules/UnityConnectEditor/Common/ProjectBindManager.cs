@@ -270,6 +270,7 @@ namespace UnityEditor.Connect
                     {
                         var projectIdField = m_ReuseProjectIdBlock.Q<PopupField<string>>(k_ProjectIdFieldName);
                         LoadProjectField(organizationPopupField.value, projectIdField);
+                        projectIdField.value = L10n.Tr(k_SelectProjectText);
                     }
                 }
             });
@@ -280,16 +281,14 @@ namespace UnityEditor.Connect
 
             projectIdPopupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
             {
-                if (evt.newValue != m_LastReuseBlockOrganization)
+                m_LastReuseBlockProject.LastProjectName = evt.newValue;
+                if (m_LastReuseBlockOrganization == L10n.Tr(k_SelectOrganizationText))
                 {
-                    m_LastReuseBlockProject.LastProjectName = evt.newValue;
-                    if (m_LastReuseBlockOrganization == L10n.Tr(k_SelectOrganizationText))
-                    {
-                        return;
-                    }
-                    m_ReuseProjectIdBlock.Q<Button>(k_LinkBtnName)
-                        .SetEnabled(m_LastReuseBlockProject.LastProjectName != L10n.Tr(k_SelectProjectText));
+                    return;
                 }
+
+                m_ReuseProjectIdBlock.Q<Button>(k_LinkBtnName)
+                    .SetEnabled(m_LastReuseBlockProject.LastProjectName != L10n.Tr(k_SelectProjectText));
             });
             projectIdPopupField.choices.Add(L10n.Tr(k_SelectProjectText));
             projectIdPopupField.value = L10n.Tr(k_SelectProjectText);

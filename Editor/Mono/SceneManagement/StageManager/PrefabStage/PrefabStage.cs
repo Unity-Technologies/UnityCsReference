@@ -1135,8 +1135,10 @@ namespace UnityEditor.SceneManagement
                 EditorApplication.update -= DelayedFraming;
                 m_DelayCounter = 0;
 
+                if(!IsPartOfPrefabContents(Selection.activeGameObject))
+                    Selection.activeGameObject = prefabContentsRoot;
+
                 // Frame the Prefab
-                Selection.activeGameObject = prefabContentsRoot;
                 foreach (SceneView sceneView in SceneView.sceneViews)
                     sceneView.FrameSelected(false, true);
             }

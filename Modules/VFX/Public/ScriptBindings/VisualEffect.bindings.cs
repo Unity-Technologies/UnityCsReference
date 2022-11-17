@@ -43,6 +43,7 @@ namespace UnityEngine.VFX
 
         static internal extern uint currentRuntimeDataVersion { get; }
         [FreeFunction(Name = "VisualEffectAssetBindings::GetTextureDimension", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
+        [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedSpace", HasExplicitThis = true)] extern public VFXSpace GetExposedSpace(int nameID);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull] List<VFXExposedProperty> exposedProperties);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetEvents", HasExplicitThis = true)] extern public void GetEvents([NotNull] List<string> names);
         [FreeFunction(Name = "VisualEffectAssetBindings::HasSystemFromScript", HasExplicitThis = true)] extern internal bool HasSystem(int nameID);
@@ -54,6 +55,11 @@ namespace UnityEngine.VFX
         public UnityEngine.Rendering.TextureDimension GetTextureDimension(string name)
         {
             return GetTextureDimension(Shader.PropertyToID(name));
+        }
+
+        public VFXSpace GetExposedSpace(string name)
+        {
+            return GetExposedSpace(Shader.PropertyToID(name));
         }
     }
 

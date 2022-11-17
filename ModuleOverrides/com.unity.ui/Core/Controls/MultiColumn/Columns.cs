@@ -63,6 +63,11 @@ namespace UnityEngine.UIElements
         internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : Columns, new() {}
 
         /// <summary>
+        /// Instantiates a <see cref="Columns"/> using the data read from a UXML file.
+        /// </summary>
+        internal class UxmlObjectFactory : UxmlObjectFactory<Columns> {}
+
+        /// <summary>
         /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="Columns"/>.
         /// </summary>
         internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : Columns

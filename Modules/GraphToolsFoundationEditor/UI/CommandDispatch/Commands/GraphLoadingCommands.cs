@@ -113,9 +113,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     return;
                 }
 
-                if (!CheckGraphIntegrity(graph))
-                    return;
-
                 toolStateUpdater.LoadGraph(graph, command.BoundObject);
 
                 var graphModel = toolState.GraphModel;
@@ -132,43 +129,6 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 graphProcessingStateUpdater.Clear();
             }
-        }
-
-        static bool CheckGraphIntegrity(GraphModel graphModel)
-        {
-            if (graphModel == null)
-                return true;
-
-            var invalidNodeCount = graphModel.NodeModels.Count(n => n == null);
-            var invalidWireCount = graphModel.WireModels.Count(n => n == null);
-            var invalidStickyCount = graphModel.StickyNoteModels.Count(n => n == null);
-            var invalidVariableCount = graphModel.VariableDeclarations.Count(v => v == null);
-            var invalidBadgeCount = graphModel.BadgeModels.Count(b => b == null);
-            var invalidPlacematCount = graphModel.PlacematModels.Count(p => p == null);
-            var invalidPortalCount = graphModel.PortalDeclarations.Count(p => p == null);
-            var invalidSectionCount = graphModel.SectionModels.Count(s => s == null);
-
-            var countMessage = new StringBuilder();
-            countMessage.Append(invalidNodeCount == 0 ? string.Empty : $"{invalidNodeCount} invalid node(s) found.\n");
-            countMessage.Append(invalidWireCount == 0 ? string.Empty : $"{invalidWireCount} invalid wire(s) found.\n");
-            countMessage.Append(invalidStickyCount == 0 ? string.Empty : $"{invalidStickyCount} invalid sticky note(s) found.\n");
-            countMessage.Append(invalidVariableCount == 0 ? string.Empty : $"{invalidVariableCount} invalid variable declaration(s) found.\n");
-            countMessage.Append(invalidBadgeCount == 0 ? string.Empty : $"{invalidBadgeCount} invalid badge(s) found.\n");
-            countMessage.Append(invalidPlacematCount == 0 ? string.Empty : $"{invalidPlacematCount} invalid placemat(s) found.\n");
-            countMessage.Append(invalidPortalCount == 0 ? string.Empty : $"{invalidPortalCount} invalid portal(s) found.\n");
-            countMessage.Append(invalidSectionCount == 0 ? string.Empty : $"{invalidSectionCount} invalid section(s) found.\n");
-
-            if (countMessage.ToString() != string.Empty)
-                if (EditorUtility.DisplayDialog("Invalid graph",
-                        $"Invalid elements found:\n{countMessage}\n" +
-                        $"Click the Clean button to remove all the invalid elements from the graph.",
-                        "Clean",
-                        "Cancel"))
-                    graphModel.Repair();
-                else
-                    return false;
-
-            return true;
         }
     }
 

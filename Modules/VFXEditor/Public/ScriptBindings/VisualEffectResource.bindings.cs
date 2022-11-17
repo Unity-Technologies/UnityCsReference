@@ -241,12 +241,18 @@ namespace UnityEditor.VFX
         public VFXLayoutOffset offset;
     }
 
+    internal struct VFXExposedMapping
+    {
+        public VFXMapping mapping;
+        public VFXSpace space;
+    }
+
     internal struct VFXExpressionSheet
     {
         public VFXExpressionDesc[] expressions;
         public VFXExpressionDesc[] expressionsPerSpawnEventAttribute;
         public VFXExpressionValueContainerDesc[] values;
-        public VFXMapping[] exposed;
+        public VFXExposedMapping[] exposed;
     }
 
     [UsedByNativeCode]
@@ -287,7 +293,7 @@ namespace UnityEditor.VFX
         public VFXExpressionDesc[] expressions;
         public VFXExpressionDesc[] expressionsPerSpawnEventAttribute;
         public VFXExpressionValuesSheetInternal values;
-        public VFXMapping[] exposed;
+        public VFXExposedMapping[] exposed;
     }
 
 
@@ -461,27 +467,10 @@ namespace UnityEditor.VFX
             var internalSheet = new VFXExpressionSheetInternal();
             internalSheet.expressions = sheet.expressions;
             internalSheet.expressionsPerSpawnEventAttribute = sheet.expressionsPerSpawnEventAttribute;
-            internalSheet.values = CreateValueSheet(sheet.values);
             internalSheet.exposed = sheet.exposed;
+            internalSheet.values = CreateValueSheet(sheet.values);
 
             SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, instancingDisabledReason, version);
-        }
-
-        //This version is for backward compatibility
-        public void SetRuntimeData(VFXExpressionSheet sheet,
-            VFXEditorSystemDesc[] systemDesc,
-            VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] gpuBufferDesc,
-            VFXCPUBufferDesc[] cpuBufferDesc,
-            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc)
-        {
-            var internalSheet = new VFXExpressionSheetInternal();
-            internalSheet.expressions = sheet.expressions;
-            internalSheet.expressionsPerSpawnEventAttribute = sheet.expressionsPerSpawnEventAttribute;
-            internalSheet.values = CreateValueSheet(sheet.values);
-            internalSheet.exposed = sheet.exposed;
-
-            SetRuntimeDataDeprecated(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, this.shaderSources, defaultVersion);
         }
 
 
@@ -498,17 +487,6 @@ namespace UnityEditor.VFX
             VFXInstancingDisabledReason instancingDisabledReason,
             uint version);
 
-
-        //This version is for backward compatilibity
-        [NativeThrows]
-        extern private void SetRuntimeDataDeprecated(VFXExpressionSheetInternal sheet,
-            VFXEditorSystemDesc[] systemDesc,
-            VFXEventDesc[] eventDesc,
-            VFXGPUBufferDesc[] gpuBufferDesc,
-            VFXTemporaryGPUBufferDesc[] temporaryBufferDesc,
-            VFXCPUBufferDesc[] cpuBufferDesc,
-            VFXShaderSourceDesc[] shaderSourceDesc,
-            uint version);
         extern public VFXRendererSettings rendererSettings { get; set; }
         extern public VFXUpdateMode updateMode { get; set; }
         extern public float preWarmDeltaTime { get; set; }

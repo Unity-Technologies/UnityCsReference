@@ -24,6 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly ApplicationProxy m_ApplicationProxy;
         private readonly IOProxy m_IOProxy;
 
+        private PackageDynamicTagLabel m_VersionHistoryItemTag;
+
         public event Action<bool> onToggleChanged = delegate {};
 
         public PackageDetailsVersionHistoryItem(ResourceLoader resourceLoader,
@@ -48,6 +50,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var root = resourceLoader.GetTemplate("PackageDetailsVersionHistoryItem.uxml");
             Add(root);
             m_Cache = new VisualElementCache(root);
+
+            m_VersionHistoryItemTag = new PackageDynamicTagLabel(true);
+            versionHistoryItemToggleLeftContainer.Insert(0, m_VersionHistoryItemTag);
 
             SetExpanded(expanded);
             versionHistoryItemToggle.RegisterValueChangedCallback(evt =>
@@ -93,8 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshHeader(bool multipleVersionsVisible, bool isLatestVersion)
         {
             versionHistoryItemToggle.text = m_Version?.version?.ToString() ?? m_Version?.versionString;
-            versionHistoryItemTag.Refresh(m_Version, true);
-            UIUtils.SetElementDisplay(versionHistoryItemTag, versionHistoryItemTag.tag != PackageTag.None);
+            m_VersionHistoryItemTag.Refresh(m_Version);
 
             RefreshState(multipleVersionsVisible, isLatestVersion);
         }
@@ -149,10 +153,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
+            RefreshDeprecatedVersionErrorInfoBox();
             RefreshReleaseDate();
             RefreshChangeLog();
             RefreshDependencies();
             RefreshMetaDataChanges();
+        }
+
+        private void RefreshDeprecatedVersionErrorInfoBox()
+        {
+            var showVersionDeprecation = m_Version.HasTag(PackageTag.Deprecated);
+            UIUtils.SetElementDisplay(deprecatedVersionErrorInfoBox, showVersionDeprecation);
+            if (showVersionDeprecation)
+                deprecatedVersionErrorInfoBox.text = L10n.Tr("This version is deprecated. ") + L10n.Tr(m_Version.deprecationMessage);
         }
 
         private void RefreshReleaseDate()
@@ -306,9 +319,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly VisualElementCache m_Cache;
 
         private Toggle versionHistoryItemToggle => m_Cache.Get<Toggle>("versionHistoryItemToggle");
-        private PackageTagLabel versionHistoryItemTag => m_Cache.Get<PackageTagLabel>("versionHistoryItemTag");
+        private VisualElement versionHistoryItemToggleLeftContainer => m_Cache.Get<VisualElement>("versionHistoryItemToggleLeftContainer");
         private SelectableLabel versionHistoryItemState => m_Cache.Get<SelectableLabel>("versionHistoryItemState");
         private VisualElement versionHistoryItemToggleRightContainer => m_Cache.Get<VisualElement>("versionHistoryItemToggleRightContainer");
+        private HelpBox deprecatedVersionErrorInfoBox => m_Cache.Get<HelpBox>("deprecatedVersionErrorInfoBox");
         private VisualElement versionHistoryItemContainer => m_Cache.Get<VisualElement>("versionHistoryItemContainer");
         private VisualElement versionHistoryItemReleaseContainer => m_Cache.Get<VisualElement>("versionHistoryItemReleaseContainer");
         private SelectableLabel versionHistoryItemReleaseDate => m_Cache.Get<SelectableLabel>("versionHistoryItemReleaseDate");

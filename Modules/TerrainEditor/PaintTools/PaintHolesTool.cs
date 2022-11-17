@@ -9,18 +9,34 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.TerrainTools
 {
-    internal class PaintHolesTool : TerrainPaintTool<PaintHolesTool>
+    internal class PaintHolesTool : TerrainPaintToolWithOverlays<PaintHolesTool>
     {
+        const string k_ToolName = "Paint Holes";
+        public override string OnIcon => "TerrainOverlays/Holes_On.png";
+        public override string OffIcon => "TerrainOverlays/Holes.png";
         [Shortcut("Terrain/Paint Holes", typeof(TerrainToolShortcutContext), KeyCode.F8)]
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
-            context.SelectPaintTool<PaintHolesTool>();
+            context.SelectPaintToolWithOverlays<PaintHolesTool>();
         }
+        public override int IconIndex
+        {
+            get { return (int) SculptIndex.Holes; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Sculpt; }
+        }
+
+        public override bool HasBrushMask => true;
+
+        public override bool HasBrushAttributes => true;
 
         public override string GetName()
         {
-            return "Paint Holes";
+            return k_ToolName;
         }
 
         public override string GetDescription()
@@ -28,10 +44,15 @@ namespace UnityEditor.TerrainTools
             return "Left click to paint a hole.\n\nHold shift and left click to erase it.";
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             int textureRez = terrain.terrainData.holesResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)

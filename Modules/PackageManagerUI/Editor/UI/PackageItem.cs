@@ -84,6 +84,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LockedIcon = new Label { name = "lockedIcon" };
             m_LeftContainer.Add(m_LockedIcon);
 
+            m_DeprecationIcon = new Label { name = "deprecatedIcon" };
+            m_DeprecationIcon.tooltip = L10n.Tr("Deprecated");
+            m_LeftContainer.Add(m_DeprecationIcon);
+
             m_ExpanderHidden = new Label {name = "expanderHidden", classList = {"expanderHidden"}};
             m_LeftContainer.Add(m_ExpanderHidden);
 
@@ -113,8 +117,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RightContainer = new VisualElement {name = "rightContainer", classList = {"right"}};
             m_MainItem.Add(m_RightContainer);
 
-            m_TagContainer = new VisualElement {name = "tagContainer"};
-            m_RightContainer.Add(m_TagContainer);
+            var tagContainer = new VisualElement { name = "tagContainer" };
+            m_TagLabel = new PackageDynamicTagLabel();
+            tagContainer.Add(m_TagLabel);
+            m_RightContainer.Add(tagContainer);
 
             m_Spinner = null;
 
@@ -141,7 +147,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Refresh(VisualState newVisualState = null)
         {
-            var previousVisualState = visualState?.Clone() ?? new VisualState(package?.uniqueId, string.Empty, false);
             visualState = newVisualState?.Clone() ?? visualState ?? new VisualState(package?.uniqueId, string.Empty, false);
 
             EnableInClassList("invisible", !visualState.visible);
@@ -151,20 +156,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_NumPackagesInFeature != null)
                 m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
 
-            UIUtils.SetElementDisplay(m_ExpanderHidden, !visualState.isLocked);
-
             var showVersionLabel = !package.versions.primary.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
             UIUtils.SetElementDisplay(m_VersionLabel, showVersionLabel);
 
-            UIUtils.SetElementDisplay(m_LockedIcon, false);
-            UIUtils.SetElementDisplay(m_DependencyIcon, false);
+            m_TagLabel.Refresh(package.versions.primary);
 
-            UpdateLockedUI(visualState.isLocked);
-            UpdateDependencyUI(visualState.isLocked);
-
-            RefreshState();
+            RefreshLeftStateIcons();
+            RefreshRightStateIcons();
             RefreshSelection();
-            RefreshTags();
             RefreshEntitlement();
         }
 
@@ -174,37 +173,63 @@ namespace UnityEditor.PackageManager.UI.Internal
             name = package?.displayName ?? package?.uniqueId ?? string.Empty;
         }
 
-        public void RefreshState()
+        private void RefreshLeftStateIcons()
         {
-            var state = package?.state ?? PackageState.None;
-            var progress = package?.progress ?? PackageProgress.None;
-            if (state != PackageState.InProgress || progress == PackageProgress.None)
-            {
-                var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
-                if (!string.IsNullOrEmpty(m_CurrentStateClass))
-                    m_StateIcon.RemoveFromClassList(m_CurrentStateClass);
-                if (!string.IsNullOrEmpty(stateClass))
-                    m_StateIcon.AddToClassList(stateClass);
-                m_CurrentStateClass = stateClass;
+            var showLockIcon = visualState.isLocked;
+            var showDeprecationIcon = package.isDeprecated;
 
-                m_StateIcon.tooltip = GetTooltipByState(state);
-                StopSpinner();
+            var targetVersion = this.targetVersion;
+            var showDependencyIcon = targetVersion != null &&
+                                     !showLockIcon &&
+                                     targetVersion.isInstalled &&
+                                     !targetVersion.isDirectDependency &&
+                                     !targetVersion.HasTag(PackageTag.Feature);
 
-                if (package.versions.primary.HasTag(PackageTag.Feature) && state == PackageState.Installed)
-                    GetState();
-            }
-            else
-            {
-                StartSpinner();
-            }
+            var showExpanderHidden = !showLockIcon && !showDeprecationIcon && !showDependencyIcon;
+
+            UIUtils.SetElementDisplay(m_LockedIcon, showLockIcon);
+            UIUtils.SetElementDisplay(m_DeprecationIcon, showDeprecationIcon);
+            UIUtils.SetElementDisplay(m_DependencyIcon, showDependencyIcon);
+            UIUtils.SetElementDisplay(m_ExpanderHidden, showExpanderHidden);
         }
 
-        private void GetState()
+        public void RefreshRightStateIcons()
+        {
+            if (RefreshSpinner())
+                return;
+
+            var state = package?.state ?? PackageState.None;
+            var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
+            if (!string.IsNullOrEmpty(m_CurrentStateClass))
+                m_StateIcon.RemoveFromClassList(m_CurrentStateClass);
+            if (!string.IsNullOrEmpty(stateClass))
+                m_StateIcon.AddToClassList(stateClass);
+            m_CurrentStateClass = stateClass;
+
+            m_StateIcon.tooltip = GetTooltipByState(state);
+
+            if (state == PackageState.Installed && package.versions.primary.HasTag(PackageTag.Feature))
+                RefreshFeatureState();
+        }
+
+        // Returns true if package is in progress and spinner is visible
+        private bool RefreshSpinner()
+        {
+            var progress = package?.progress ?? PackageProgress.None;
+            var isInProgress = progress != PackageProgress.None && package?.state == PackageState.InProgress;
+            if (isInProgress)
+                StartSpinner();
+            else
+                StopSpinner();
+            return isInProgress;
+        }
+
+        private void RefreshFeatureState()
         {
             var featureState = FeatureState.None;
             foreach (var dependency in targetVersion.dependencies)
             {
-                var packageVersion = m_PackageDatabase.GetPackageInFeatureVersion(dependency.name);
+                var packageVersion = m_PackageDatabase.GetLifecycleOrPrimaryVersion(dependency.name);
                 if (packageVersion == null)
                     continue;
 
@@ -239,19 +264,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_MainItem.EnableInClassList(k_SelectedClassName, enable);
         }
 
-        private void RefreshTags()
-        {
-            m_TagContainer.Clear();
-            var version = package.versions.primary;
-            var showTags = package.product == null && !version.HasTag(PackageTag.BuiltIn);
-            if (showTags)
-            {
-                var tagLabel = PackageTagLabel.CreateTagLabel(targetVersion);
-                if (tagLabel != null)
-                    m_TagContainer.Add(tagLabel);
-            }
-        }
-
         private void RefreshEntitlement()
         {
             var showEntitlement = package.hasEntitlements;
@@ -268,26 +280,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ToggleSelectMainItem()
         {
             m_PageManager.GetPage().ToggleSelection(package?.uniqueId, true);
-        }
-
-        internal void UpdateLockedUI(bool showLock)
-        {
-            UIUtils.SetElementDisplay(m_LockedIcon, showLock);
-        }
-
-        internal void UpdateDependencyUI(bool showLock)
-        {
-            if (targetVersion == null)
-                return;
-
-            var showDependencyIcon = targetVersion.isInstalled &&
-                                     !targetVersion.isDirectDependency &&
-                                     !targetVersion.HasTag(PackageTag.Feature) &&
-                                     !showLock;
-
-            UIUtils.SetElementDisplay(m_DependencyIcon, showDependencyIcon);
-            if (showDependencyIcon)
-                UIUtils.SetElementDisplay(m_ExpanderHidden, false);
         }
 
         private void StartSpinner()
@@ -310,7 +302,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private Label m_NameLabel;
-        private VisualElement m_TagContainer;
+        private PackageDynamicTagLabel m_TagLabel;
         private VisualElement m_MainItem;
         private VisualElement m_StateIcon;
         private VisualElement m_InfoStateIcon;
@@ -319,6 +311,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label m_VersionLabel;
         private LoadingSpinner m_Spinner;
         private Label m_LockedIcon;
+        private Label m_DeprecationIcon;
         private Label m_DependencyIcon;
         private Label m_ExpanderHidden;
         private VisualElement m_LeftContainer;
@@ -336,8 +329,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("This {0} is in development."),
             L10n.Tr("A newer version of this {0} is available."),
             "",
-            L10n.Tr("There are errors with this {0}. Please read the {0} details for further guidance."),
-            L10n.Tr("There are warnings with this {0}. Please read the {0} details for further guidance.")
+            L10n.Tr("There are errors with this {0}. Read the {0} details for further guidance."),
+            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance.")
         };
 
         public string GetTooltipByState(PackageState state)

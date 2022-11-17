@@ -257,12 +257,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 scriptAssembly.CompilerOptions.AdditionalCompilerArguments = settings.AdditionalCompilerArguments;
 
-                var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
-
-                if (editorOnlyTargetAssembly)
-                    scriptAssembly.CompilerOptions.ApiCompatibilityLevel = ApiCompatibilityLevel.NET_Unity_4_8;
-                else
-                    scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
+                scriptAssembly.CompilerOptions.ApiCompatibilityLevel = settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel;
 
                 if ((settings.CompilationOptions & EditorScriptCompilationOptions.BuildingUseDeterministicCompilation) == EditorScriptCompilationOptions.BuildingUseDeterministicCompilation)
                     scriptAssembly.CompilerOptions.UseDeterministicCompilation = true;
@@ -426,7 +421,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
-            references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel));
+            var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            if (editorOnlyTargetAssembly)
+            {
+                var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
+                references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(editorApiCompatibility));
+                references.AddRange(MonoLibraryHelpers.GetEditorExtensionsReferences(editorApiCompatibility));
+            }
+            else
+            {
+                references.AddRange(MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.CompilerOptions.ApiCompatibilityLevel));
+            }
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();

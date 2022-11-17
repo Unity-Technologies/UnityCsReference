@@ -18,10 +18,13 @@ using UnityEngine.TerrainTools;
 using UnityEditor.TerrainTools;
 using UnityEditor.Rendering;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEditor.EditorTools;
 
 namespace UnityEditor
 {
     // must match Terrain.cpp TerrainTools
+    // NOTE: TerrainTool does not seem like an appropriate name for this enum. This dictates what category is selected in
+    // the terrain inspector. A more appropriate name for this may be TerrainCategory or ToolCategory.
     internal enum TerrainTool
     {
         None = -1,
@@ -50,7 +53,12 @@ namespace UnityEditor
 
             public void SelectPaintTool<T>() where T : TerrainPaintTool<T>
             {
-                terrainEditor.SelectPaintTool(typeof(T));
+                terrainEditor.SelectToolByType(typeof(T));
+            }
+
+            public void SelectPaintToolWithOverlays<T>() where T : TerrainPaintToolWithOverlays<T>
+            {
+                terrainEditor.SelectToolByType(typeof(T));
             }
 
             internal TerrainInspector terrainEditor { get; }
@@ -290,11 +298,28 @@ namespace UnityEditor
         Terrain m_Terrain;
         TerrainCollider m_TerrainCollider;
 
-        float m_Strength;
+        internal float brushStrength
+        {
+            get;
+            set;
+        }
 
         public float brushSize
         {
             get; set;
+        }
+
+        // storing the previous values to update the BrushAttributesOverlay
+        internal float prevBrushSize
+        {
+            get;
+            set;
+        }
+
+        internal float prevBrushStrength
+        {
+            get;
+            set;
         }
 
         private static readonly float kOldMinBrushSize = 0.1f;
@@ -308,7 +333,7 @@ namespace UnityEditor
         }
 
         int lastTextureResolutionPerTile = 0;
-        void GetBrushSizeLimits(
+        internal void GetBrushSizeLimits(
             out float minBrushSize, out float maxBrushSize,
             int textureResolutionPerTile = 0)
         {
@@ -354,38 +379,36 @@ namespace UnityEditor
 
         BrushList m_BrushList;
 
-        BrushList brushList {  get { if (m_BrushList == null) { m_BrushList = new BrushList(); } return m_BrushList; } }
+        internal BrushList brushList {  get { if (m_BrushList == null) { m_BrushList = new BrushList(); } return m_BrushList; } }
 
 
         internal int m_ActivePaintToolIndex = 0;
         static internal string[] m_PaintToolNames = null;
         static internal Dictionary<string, ITerrainPaintTool> m_ToolsMap;
+        static internal Dictionary<string, Type> m_ToolNameToType = null;
+        static internal Dictionary<Type, string> m_TypeToToolName = null;
         static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
         static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f, 0);
 
-        ITerrainPaintTool GetActiveTool()
+        internal static bool s_ActiveTerrainToolIsEditorTool = true;
+        private static ITerrainPaintTool m_ActiveTerrainTool = null; // NOT EDITOR TOOL
+        public static ITerrainPaintTool GetActiveTerrainTool()
         {
-            if (selectedTool == TerrainTool.PlaceTree)
+            if (s_ActiveTerrainToolIsEditorTool)
             {
-                return m_ToolsMap[PaintTreesTool.kToolName];
+                var tool = EditorToolManager.GetActiveTool();
+                if (tool is ITerrainPaintTool) return (ITerrainPaintTool)tool;
             }
-            else if (selectedTool == TerrainTool.PaintDetail)
+            else
             {
-                return m_ToolsMap[PaintDetailsTool.kToolName];
-            }
-            else if (selectedTool == TerrainTool.CreateNeighbor)
-            {
-                return m_ToolsMap[CreateTerrainTool.kToolName];
+                return m_ActiveTerrainTool;
             }
 
-            if (m_ActivePaintToolIndex >= m_PaintToolNames.Length)
-                m_ActivePaintToolIndex = 0;
-
-            return m_ToolsMap[m_PaintToolNames[m_ActivePaintToolIndex]];
+            return null;
         }
 
-        static int s_TerrainEditorHash = "TerrainEditor".GetHashCode();
+        internal static int s_TerrainEditorHash = "TerrainEditor".GetHashCode();
 
         // The instance ID of the active inspector.
         // It's defined as the last inspector that had one of its terrain tools selected.
@@ -414,72 +437,107 @@ namespace UnityEditor
             editor.Repaint();
         }
 
+        // legacy method -- leaving in for compatibility but
+        // now just forwards call to internal function
         public void SelectPaintTool(Type toolType)
         {
-            if (toolType.IsAbstract ||
-                !typeof(ITerrainPaintTool).IsAssignableFrom(toolType))
-            {
-                Debug.LogError("SelectPaintTool: tool must be a subclass of TerrainPaintTool");
-            }
-            else if (toolType == typeof(PaintTreesTool) ||
-                     toolType == typeof(PaintDetailsTool))
-            {
-                var toolName = toolType == typeof(PaintDetailsTool) ? PaintDetailsTool.kToolName : PaintTreesTool.kToolName;
-                SetCurrentPaintToolInactive();
-                lastTextureResolutionPerTile = 0;
-                selectedTool = toolType == typeof(PaintDetailsTool) ? TerrainTool.PaintDetail : TerrainTool.PlaceTree;
-                SetCurrentPaintToolActive();
-                Repaint();
-            }
-            else
-            {
-                var instanceProperty = toolType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                var mi = instanceProperty.GetGetMethod();
-                var tool = (ITerrainPaintTool)mi.Invoke(null, null);
-                SelectPaintTool(tool.GetName());
-            }
+            SelectToolByType(toolType);
         }
 
-        /// <summary>
-        /// Use the PaintTool instance GetName value to select the paint tool
-        /// </summary>
-        /// <param name="toolName"></param>
-        private void SelectPaintTool(string toolName)
+        internal void SelectToolByType(Type toolType)
+        {
+            if(!m_TypeToToolName.ContainsKey(toolType))
+            {
+                Debug.LogError($"Terrain Tool of type {toolType} does not exist");
+                return;
+            }
+
+            if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(toolType) && typeof(ITerrainPaintTool).IsAssignableFrom(toolType))
+            {
+                // case: terrain tool with overlays
+                SelectOverlaysTool(m_TypeToToolName[toolType]);
+                return;
+            }
+
+            // case: else its an old terrain tool
+            SelectToolByName(m_TypeToToolName[toolType]);
+
+        }
+
+        internal void SelectToolByName(string toolName)
+        {
+            // check if old terrain tool or new overlays terrain tool
+            if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(m_ToolNameToType[toolName]) &&
+                typeof(ITerrainPaintTool).IsAssignableFrom(m_ToolNameToType[toolName]))
+            {
+                // case: terrain tool with overlays
+                SelectOverlaysTool(toolName);
+                return;
+            }
+
+            // else its an old terrain tool
+            var instanceProperty = m_ToolNameToType[toolName].GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+            var mi = instanceProperty.GetGetMethod();
+            ITerrainPaintTool tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
+
+            Debug.Assert(!string.IsNullOrEmpty(toolName) && m_ToolNameToType.ContainsKey(toolName),
+                $"Cannot select tool with invalid tool name: {toolName}. Make sure the tool name is correct and that the tool is loaded.");
+
+            SetCurrentPaintToolInactive();
+            selectedCategory = GetCategory(toolName);
+            lastTextureResolutionPerTile = 0;
+            if (IsPaintTool(toolName))
+            {
+                m_ActivePaintToolIndex = GetPaintToolIndex(toolName);
+            }
+            SetCurrentPaintToolActive(tool);
+            Repaint();
+        }
+
+        internal void SelectOverlaysTool(string toolName)
+        {
+            // can select tool using GetSingleton bc its an editor tool (this function is not called for old terrain tools)
+            var tool = (ITerrainPaintTool)EditorToolManager.GetSingleton(m_ToolNameToType[toolName]);
+            Debug.Assert(!string.IsNullOrEmpty(toolName) && m_ToolNameToType.ContainsKey(toolName),
+                $"Cannot select tool with invalid tool name: {toolName}. Make sure the tool name is correct and that the tool is loaded.");
+            selectedCategory = GetCategory(toolName);
+            lastTextureResolutionPerTile = 0;
+            SetCurrentPaintToolInactive();
+            SetCurrentPaintToolActive(tool);
+            if (IsPaintTool(toolName))
+            {
+                m_ActivePaintToolIndex = GetPaintToolIndex(toolName);
+            }
+            Repaint();
+        }
+
+        internal int GetPaintToolIndex(string toolName)
         {
             for (int index = 0; index < m_PaintToolNames.Length; index++)
             {
                 if (m_PaintToolNames[index] == toolName)
                 {
                     // found it!
-                    SelectPaintTool(index);
-                    return;
+                    return index;
                 }
             }
-            Debug.LogError("SelectPaintTool: Cannot find tool '" + toolName + "'");
+            Debug.LogError("GetPaintToolIndex: Cannot find tool '" + toolName + "'");
+            return -1;
         }
 
-        private void SelectPaintTool(int index)
-        {
-            SetCurrentPaintToolInactive();
-            lastTextureResolutionPerTile = 0;       // reset texture resolution, new tool may use different resolution
-            selectedTool = TerrainTool.Paint;
-            m_ActivePaintToolIndex = index;
-            SetCurrentPaintToolActive();
-            Repaint();
-        }
 
         [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
         [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext), KeyCode.F5)]
         static void SelectPlaceTreeTool(ShortcutArguments args)
         {
-            ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
+            ChangeTool(args, editor => editor.selectedCategory = TerrainTool.PlaceTree);
         }
 
         [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
         [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext), KeyCode.F6)]
         static void SelectPaintDetailTool(ShortcutArguments args)
         {
-            ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);
+            ChangeTool(args, editor => editor.selectedCategory = TerrainTool.PaintDetail);
         }
 
         [FormerlyPrefKeyAs("Terrain/Previous Brush", ",")]
@@ -646,8 +704,8 @@ namespace UnityEditor
 
                 changeAmount *= deltaTime;
 
-                m_Strength = shrink ? m_Strength - changeAmount : m_Strength + changeAmount;
-                m_Strength = Mathf.Clamp(m_Strength, kMinBrushStrength, kMaxBrushStrength);
+                brushStrength = shrink ? brushStrength - changeAmount : brushStrength + changeAmount;
+                brushStrength = Mathf.Clamp(brushStrength, kMinBrushStrength, kMaxBrushStrength);
 
                 hotkeyTime += deltaTime;
             }
@@ -666,7 +724,7 @@ namespace UnityEditor
         }
 
         double m_LastHotkeyApplyTime = 0.0;
-        void HotkeyApply(float distance)
+        internal void HotkeyApply(float distance)
         {
             double currentTime = EditorApplication.timeSinceStartup;
             float deltaTime = (float)(currentTime - m_LastHotkeyApplyTime);
@@ -682,21 +740,23 @@ namespace UnityEditor
         {
             if (delta != 0)
             {
-                switch (selectedTool)
+                switch (selectedCategory)
                 {
                     case TerrainTool.PaintDetail:
-                        PaintDetailsTool.instance.selectedDetail = (int)Mathf.Repeat(PaintDetailsTool.instance.selectedDetail + delta, m_Terrain.terrainData.detailPrototypes.Length);
+                        var detailsTool = (PaintDetailsTool)((ITerrainPaintTool)EditorToolManager.GetSingleton(typeof(PaintDetailsTool)));
+                        detailsTool.selectedDetail = (int)Mathf.Repeat(detailsTool.selectedDetail + delta, m_Terrain.terrainData.detailPrototypes.Length);
                         Event.current.Use();
                         Repaint();
                         break;
                     case TerrainTool.PlaceTree:
                         var protos = m_Terrain.terrainData.treePrototypes;
-                        if (PaintTreesTool.instance.selectedTree >= 0)
-                            PaintTreesTool.instance.selectedTree = (int)Mathf.Repeat(PaintTreesTool.instance.selectedTree + delta, protos.Length);
+                        var treesTool = (PaintTreesTool)EditorTools.EditorToolManager.GetSingleton(typeof(PaintTreesTool));
+                        if (treesTool.selectedTree >= 0)
+                            treesTool.selectedTree = (int)Mathf.Repeat(treesTool.selectedTree + delta, protos.Length);
                         else if (delta == -1 && protos.Length > 0)
-                            PaintTreesTool.instance.selectedTree = protos.Length - 1;
+                            treesTool.selectedTree = protos.Length - 1;
                         else if (delta == 1 && protos.Length > 0)
-                            PaintTreesTool.instance.selectedTree = 0;
+                            treesTool.selectedTree = 0;
                         Event.current.Use();
                         Repaint();
                         break;
@@ -704,32 +764,71 @@ namespace UnityEditor
             }
         }
 
-        bool IsPaintTool(string toolName)
+        internal static bool IsPaintTool(string toolName)
         {
-            return toolName != CreateTerrainTool.kToolName &&
-                   toolName != PaintTreesTool.kToolName &&
-                   toolName != PaintDetailsTool.kToolName;
+            return toolName != CreateTerrainTool.k_ToolName &&
+                   toolName != PaintTreesTool.k_ToolName &&
+                   toolName != PaintDetailsTool.k_ToolName;
         }
 
-        void LoadTools()
+        static bool IsTerrainPartOfPrefabOrAsset(Terrain terrain)
         {
-            if (m_ToolsMap != null) return;
+            return EditorUtility.IsPersistent(terrain) || PrefabUtility.IsPartOfPrefabAsset(terrain);
+        }
+
+        public void LoadTools()
+        {
+            if ((m_ToolNameToType != null && m_TypeToToolName != null && m_ToolsMap != null) || IsTerrainPartOfPrefabOrAsset(target as Terrain)) return;
 
             m_ToolsMap = new Dictionary<string, ITerrainPaintTool>();
+            m_ToolNameToType = new Dictionary<string, Type>();
+            m_TypeToToolName = new Dictionary<Type, string>();
+            m_PaintToolNames = null;
 
             var paintToolNames = new List<string>();
-            foreach (var klass in TypeCache.GetTypesDerivedFrom(typeof(TerrainPaintTool<>)))
+
+            foreach (var klass in TypeCache.GetTypesDerivedFrom(typeof(ITerrainPaintTool)))
             {
                 if (klass.IsAbstract) continue;
 
-                var instanceProperty = klass.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                var mi = instanceProperty.GetGetMethod();
-                var tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
-                string toolName = tool.GetName();
+                ITerrainPaintTool tool = null;
+                string toolName = "";
+                if (!typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(klass) && typeof(ITerrainPaintTool).IsAssignableFrom(klass))
+                {
+                    // case: old terrain tools
+                    var instanceProperty = klass.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                    var mi = instanceProperty.GetGetMethod();
+                    tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
+                    toolName = tool.GetName();
+                } else if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(klass) && typeof(ITerrainPaintTool).IsAssignableFrom(klass))
+                {
+                    // case: overlays terrain tools
+                    tool = (ITerrainPaintTool)EditorToolManager.GetSingleton(klass);
+                    toolName = tool.GetName();
+                }
+
+                if (tool == null || toolName == "")
+                {
+                    Debug.LogWarning("tool is inheriting from neither ITerrainPaintTool nor ITerrainPaintToolWithOverlays");
+                }
+
+                // if a tool with the given tool name already exists
+                if (m_ToolNameToType.TryGetValue(toolName, out var existingToolType))
+                {
+                    // if this tool is a builtin tool
+                    if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any())
+                        continue;
+                    // if existing tool is an override
+                    if (existingToolType.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
+                    {
+                        Debug.LogWarning($"A TerrainTool override already exists for ${toolName}. Check to make sure there are not multiple tools that return the same tool name in your project. Skipping tool loading for now.");
+                        continue;
+                    }
+                }
 
                 if(m_ToolsMap.TryGetValue(toolName, out var existingTool))
                 {
-                    if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length > 0) continue;
+                    if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any()) continue;
 
                     if(existingTool.GetType().Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
                     {
@@ -737,10 +836,12 @@ namespace UnityEditor
                         continue;
                     }
                 }
-
                 m_ToolsMap[toolName] = tool;
+                m_ToolNameToType[toolName] = klass;
+                m_TypeToToolName[klass] = toolName;
 
-                if(IsPaintTool(toolName) && !paintToolNames.Contains(toolName))
+                // need to track paint category tools for the dropdown selection
+                if (IsPaintTool(toolName) && !paintToolNames.Contains(toolName))
                 {
                     paintToolNames.Add(toolName);
                 }
@@ -749,46 +850,113 @@ namespace UnityEditor
             m_PaintToolNames = paintToolNames.ToArray();
         }
 
+
         void Initialize()
         {
             m_Terrain = target as Terrain;
-            CheckToolActivation();
+            ActivateTerrainRenderFlags();
         }
+
 
         void LoadInspectorSettings()
         {
-            m_Strength = EditorPrefs.GetFloat("TerrainBrushStrength", 0.5f);
-            brushSize = EditorPrefs.GetFloat("TerrainBrushSize", 25.0f);
-            int selected = EditorPrefs.GetInt("TerrainSelectedBrush", 0);
+            TerrainTool cat = TerrainTool.None;
+            var activeTool = GetActiveTerrainTool();
 
-            m_ActivePaintToolIndex = 0;
-            var toolName = EditorPrefs.GetString("TerrainActivePaintToolName", "");
-
-            if (!string.IsNullOrEmpty(toolName))
+            if (activeTool != null)
             {
-                for (int i = 0; i < m_PaintToolNames.Length; ++i)
+                // don't load from editorprefs. just get the tool and category info from the active tool
+                var toolName = activeTool.GetName();
+                if(IsPaintTool(toolName))
                 {
-                    if (m_PaintToolNames[i] == toolName)
-                    {
-                        m_ActivePaintToolIndex = i;
-                        break;
-                    }
+                    m_ActivePaintToolIndex = GetPaintToolIndex(toolName);
                 }
+                else
+                {
+                    string activePaintToolName = EditorPrefs.GetString("TerrainActivePaintToolName", PaintHeightTool.k_ToolName);
+                    m_ActivePaintToolIndex = GetPaintToolIndex(activePaintToolName);
+                }
+
+                cat = GetCategory(toolName);
+            }
+            else
+            {
+                // load from editorprefs
+                string activePaintToolName = EditorPrefs.GetString("TerrainActivePaintToolName", PaintHeightTool.k_ToolName);
+                m_ActivePaintToolIndex = GetPaintToolIndex(activePaintToolName);
+                // loading category from EditorPrefs instead of using GetCategory(activePaintToolName)
+                // this is because activePaintToolName only stores the name of TerrainCategory.Paint tools
+                // if the category is different (tree/details/neighbors) it will be loaded in the SelectCategory(cat) which is called below
+                cat = (TerrainTool)EditorPrefs.GetInt("TerrainActiveToolCategory", (int)TerrainTool.Paint);
             }
 
-            brushList.UpdateSelection(selected);
+            if (m_ActivePaintToolIndex < 0)
+            {
+                // default to paint height tool in case previously active tool no longer exists after domain reload
+                m_ActivePaintToolIndex = GetPaintToolIndex(PaintHeightTool.k_ToolName);
+            }
+
+            Debug.Assert(IsPaintTool(m_PaintToolNames[m_ActivePaintToolIndex]), "The loaded value for the active paint tool name is not actually a Paint tool: " + m_PaintToolNames[m_ActivePaintToolIndex]);
+
+            SelectCategory(cat); // if cat != paint, then this should help select the correct tool
+
+            brushList.UpdateSelection(EditorPrefs.GetInt("TerrainSelectedBrush", 0));
+            brushStrength = EditorPrefs.GetFloat("TerrainBrushStrength", 0.5f);
+            brushSize = EditorPrefs.GetFloat("TerrainBrushSize", 25.0f);
+
+            prevBrushStrength = brushStrength;
+            prevBrushSize = brushSize;
+
         }
 
         void SaveInspectorSettings()
         {
+            EditorPrefs.SetInt("TerrainActiveToolCategory", (int)selectedCategory); // we save the category to use in LoadInspectorSettings()
             EditorPrefs.SetInt("TerrainSelectedBrush", brushList.selectedIndex);
-
             EditorPrefs.SetFloat("TerrainBrushSize", brushSize);
-            EditorPrefs.SetFloat("TerrainBrushStrength", m_Strength);
-
-            EditorPrefs.SetString("TerrainActivePaintToolName", m_PaintToolNames[m_ActivePaintToolIndex]);
+            EditorPrefs.SetFloat("TerrainBrushStrength", brushStrength);
+            if (m_PaintToolNames != null) // check prevents null reference exception on domain reload.
+            {
+                EditorPrefs.SetString("TerrainActivePaintToolName", m_PaintToolNames[m_ActivePaintToolIndex]);
+            }
         }
 
+        void SelectCategory(TerrainTool category, bool selectTool = true)
+        {
+            selectedCategory = category;
+
+            if(selectTool && !IsTerrainPartOfPrefabOrAsset(target as Terrain))
+            {
+                switch (selectedCategory)
+                {
+                    case TerrainTool.Paint:
+                        Debug.Assert(IsPaintTool(m_PaintToolNames[m_ActivePaintToolIndex]), $"m_ActivePaintToolName ({m_PaintToolNames[m_ActivePaintToolIndex]}) is not a Paint tool");
+                        SelectToolByName(m_PaintToolNames[m_ActivePaintToolIndex]);
+                        break;
+                    case TerrainTool.CreateNeighbor:
+                        SelectToolByName(CreateTerrainTool.k_ToolName);
+                        break;
+                    case TerrainTool.PaintDetail:
+                        SelectToolByName(PaintDetailsTool.k_ToolName);
+                        break;
+                    case TerrainTool.PlaceTree:
+                        SelectToolByName(PaintTreesTool.k_ToolName);
+                        break;
+                    case TerrainTool.TerrainSettings:
+                        if (GetActiveTerrainTool() != null)
+                        {
+                            EditorTools.ToolManager.SetActiveTool<NoneTool>();
+                        }
+                        break;
+                    case TerrainTool.None:
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            Repaint();
+        }
         static bool ShouldShowCreateMaterialButton(Material material, UnityEngine.Object target)
         {
             return (material == null
@@ -799,8 +967,78 @@ namespace UnityEditor
                 && !Presets.Preset.IsEditorTargetAPreset(target);
         }
 
+        // this function serves to update m_SelectedCategory when the tool is changed
+        // this will update the inspector category when the tool is changed
+        void OnActiveToolChanged(EditorTool prev, EditorTool curr)
+        {
+            if (!IsEditorActive(this)) return;
+
+            var prevIsTerrainTool = prev is ITerrainPaintTool;
+            var currIsTerrainTool = curr is ITerrainPaintTool;
+
+            // this can happen if the user has a locked editor window with a terrain inspector
+            // that is set to be the active terrain inspector instance but doesn't
+            // actually have a terrain object selected
+            if (!prevIsTerrainTool && !currIsTerrainTool) return;
+
+            if (prevIsTerrainTool && !currIsTerrainTool)
+            {
+                if (selectedCategory != TerrainTool.TerrainSettings)
+                {
+                    SelectCategory(TerrainTool.None, false);
+                }
+            }
+            else if (currIsTerrainTool)
+            {
+                SelectCategory(GetCategory(((ITerrainPaintTool)curr).GetName()), false);
+            }
+        }
+
+        public static bool IsEditorActive(TerrainInspector editor)
+        {
+            return s_activeTerrainInspectorInstance == editor;
+        }
+
+        static PropertyEditor GetPropertyEditorFor(TerrainInspector editor)
+        {
+            var propertyEditors = Resources.FindObjectsOfTypeAll(typeof(PropertyEditor));
+            foreach (var p in propertyEditors)
+            {
+                foreach (var e in ((PropertyEditor)p).tracker.activeEditors)
+                {
+                    if (e == editor) return ((PropertyEditor)p);
+                }
+            }
+
+            return null;
+        }
+
+        static void SetActiveEditor(TerrainInspector editor)
+        {
+            if (editor == s_activeTerrainInspectorInstance) return;
+
+            s_activeTerrainInspectorInstance?.SaveInspectorSettings();
+            s_activeTerrainInspectorInstance = editor; // set active instance here before loading settings
+            s_activeTerrainInspectorInstance?.LoadInspectorSettings();
+
+            // repaint all property editors
+            var propertyEditors = Resources.FindObjectsOfTypeAll(typeof(PropertyEditor));
+            foreach (var p in propertyEditors)
+            {
+                ((PropertyEditor)p).Repaint();
+            }
+        }
+
         public void OnEnable()
         {
+            var terrain = target as Terrain;
+            if (terrain == null || terrain.terrainData == null)
+            {
+                return;
+            }
+
+            // if onEnable is called but there is no active editor, that means we are in full screen mode
+            bool fullScreenMode = true;
             if (s_activeTerrainInspector == 0 || s_activeTerrainInspectorInstance == null)
             {
                 var inspectors = InspectorWindow.GetInspectors();
@@ -814,12 +1052,19 @@ namespace UnityEditor
                             // Acquire active inspector ownership if there is no other inspector active.
                             s_activeTerrainInspector = GetInstanceID();
                             s_activeTerrainInspectorInstance = this;
+                            fullScreenMode = false;
+
                         }
                     }
                 }
             }
 
-            var terrain = target as Terrain;
+            // we want to set the active terrain inspector anyways for Overlays
+            if (fullScreenMode)
+            {
+                s_activeTerrainInspector = GetInstanceID();
+                s_activeTerrainInspectorInstance = this;
+            }
 
             EditorApplication.update += ForceRepaintOnHotkeys;
             m_ShowReflectionProbesGUI.valueChanged.AddListener(Repaint);
@@ -830,7 +1075,7 @@ namespace UnityEditor
 
             LoadInspectorSettings();
 
-            CheckToolActivation();
+            ActivateTerrainRenderFlags();
 
             m_Lighting = new RendererLightingSettings(serializedObject);
             m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
@@ -843,6 +1088,7 @@ namespace UnityEditor
 
             SceneView.duringSceneGui += OnSceneGUICallback;
             Lightmapping.lightingDataUpdated += LightingDataUpdatedRepaint;
+            EditorToolManager.activeToolChanged += OnActiveToolChanged;
 
             s_LastActiveTerrain = terrain;
         }
@@ -853,10 +1099,11 @@ namespace UnityEditor
             PaintContext.ApplyDelayedActions();
             SceneView.duringSceneGui -= OnSceneGUICallback;
             Lightmapping.lightingDataUpdated -= LightingDataUpdatedRepaint;
-
-            SetCurrentPaintToolInactive();
+            EditorToolManager.activeToolChanged -= OnActiveToolChanged;
 
             SaveInspectorSettings();
+            SetCurrentPaintToolInactive();
+
 
             EditorApplication.update -= ForceRepaintOnHotkeys;
 
@@ -872,89 +1119,113 @@ namespace UnityEditor
                 s_LastActiveTerrain = null;
         }
 
-        SavedInt m_SelectedTool = new SavedInt("TerrainSelectedTool", (int)TerrainTool.Paint);
         TerrainToolShortcutContext m_TerrainToolContext;
 
-        TerrainTool selectedTool
+        TerrainTool m_SelectedCategory;
+
+        private TerrainTool selectedCategory
         {
-            get
-            {
-                if (Tools.current == Tool.None && GetInstanceID() == s_activeTerrainInspector)
-                    return (TerrainTool)m_SelectedTool.value;
-                return TerrainTool.None;
-            }
+            get => m_SelectedCategory;
+
             set
             {
-                if (value != TerrainTool.None)
-                    Tools.current = Tool.None;
-                m_SelectedTool.value = (int)value;
+                m_SelectedCategory = value;
                 s_activeTerrainInspector = GetInstanceID();
-                CheckToolActivation();
+                ActivateTerrainRenderFlags();
+            }
+        }
+
+        internal TerrainTool GetCategory(string toolName)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(toolName), "Trying to select TerrainCategory for an empty or null tool name");
+            Debug.Assert(m_ToolNameToType.ContainsKey(toolName), "Trying to select a TerrainCategory for a tool name that does not exist");
+
+            if (toolName == PaintTreesTool.k_ToolName)
+            {
+                return TerrainTool.PlaceTree;
+            }
+            else if (toolName == PaintDetailsTool.k_ToolName)
+            {
+                return TerrainTool.PaintDetail;
+            }
+            else if (toolName == CreateTerrainTool.k_ToolName)
+            {
+                return TerrainTool.CreateNeighbor;
+            }
+            else if(IsPaintTool(toolName))
+            {
+                return TerrainTool.Paint;
+            }
+
+            throw new Exception($"No Terrain Tool Category was found for the provided tool name: {toolName}. Make sure the tool name is valid and that the tool is actually loaded.");
+        }
+
+        // this function used to be called in CheckToolActivation function
+        // now it should be called when the selected tool is changed
+        private void ActivateTerrainRenderFlags()
+        {
+            if (m_Terrain != null)
+            {
+                // When switching tool reactivate all renderflags
+                m_Terrain.editorRenderFlags = TerrainRenderFlags.All;
             }
         }
 
         // this is a bunch of tracking to ensure we don't mess up the tool mode callbacks
-        private bool m_PaintToolActive = false;
-        private void SetCurrentPaintToolActive()
+        private void SetCurrentPaintToolActive(ITerrainPaintTool paintTool)
         {
-            if (!m_PaintToolActive)
+            if (GetActiveTerrainTool() == null)
             {
-                ITerrainPaintTool paintTool = GetActiveTool();
                 if (paintTool != null)
                 {
                     paintTool.OnEnterToolMode();
-                    m_PaintToolActive = true;
+
+                    // is editor tool?
+                    if (paintTool is ITerrainPaintToolWithOverlays)
+                    {
+                        // deactivate the editor tool
+                        ToolManager.SetActiveTool((EditorTool)paintTool);
+
+                        s_ActiveTerrainToolIsEditorTool = true;
+
+                        // set it active in the overlay as well
+                        TerrainTransientToolbarOverlay.SetEditorToolActive((ITerrainPaintToolWithOverlays) paintTool);
+                    }
+                    else
+                    {
+                        // else it is a regular terrain paint tool that we are activating
+                        m_ActiveTerrainTool = paintTool;
+                        s_ActiveTerrainToolIsEditorTool = false;
+
+                    }
                 }
             }
         }
 
         private void SetCurrentPaintToolInactive()
         {
-            if (m_PaintToolActive)
+            if (GetActiveTerrainTool() != null)
             {
-                ITerrainPaintTool paintTool = GetActiveTool();
+                ITerrainPaintTool paintTool = GetActiveTerrainTool();
                 if (paintTool != null)
                 {
                     paintTool.OnExitToolMode();
-                    m_PaintToolActive = false;
+
+                    // is editor tool?
+                    if (paintTool is ITerrainPaintToolWithOverlays)
+                    {
+                        // deactivate the editor tool
+                        ToolManager.SetActiveTool<NoneTool>();
+                        s_ActiveTerrainToolIsEditorTool = false;
+                    }
+                    else
+                    {
+                        // else it is a regular terrain paint tool that we are deactivating
+                        m_ActiveTerrainTool = null;
+                    }
                 }
             }
-        }
 
-        // Ideally we would be notified when the active tool changes, but I can see no way to do that
-        // So instead we will call this function everywhere, which checks for it changing and does the proper notification callbacks
-        private TerrainTool m_PreviousSelectedTool = TerrainTool.None;
-        private void CheckToolActivation()
-        {
-            TerrainTool currentTool = selectedTool;
-            if (currentTool != m_PreviousSelectedTool)
-            {
-                // inactivate previous tool, if necessary
-                if (m_PreviousSelectedTool == TerrainTool.Paint ||
-                    m_PreviousSelectedTool == TerrainTool.CreateNeighbor ||
-                    m_PreviousSelectedTool == TerrainTool.PaintDetail ||
-                    m_PreviousSelectedTool == TerrainTool.PlaceTree)
-                {
-                    SetCurrentPaintToolInactive();
-                }
-
-                m_PreviousSelectedTool = currentTool;
-
-                // activate new tool, if necessary
-                if (currentTool == TerrainTool.Paint ||
-                    currentTool == TerrainTool.CreateNeighbor ||
-                    currentTool == TerrainTool.PaintDetail ||
-                    currentTool == TerrainTool.PlaceTree)
-                {
-                    SetCurrentPaintToolActive();
-                }
-
-                if (m_Terrain != null)
-                {
-                    // When switching tool reactivate all renderflags
-                    m_Terrain.editorRenderFlags = TerrainRenderFlags.All;
-                }
-            }
         }
 
         public static void MenuButton(GUIContent title, string menuName, Terrain terrain, int userData)
@@ -1442,6 +1713,8 @@ namespace UnityEditor
             }
         }
 
+        internal static event Action BrushSizeChanged;
+        internal static event Action BrushStrengthChanged;
         public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength, int textureResolutionPerTile)
         {
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
@@ -1456,10 +1729,22 @@ namespace UnityEditor
                 float minBrushSize, maxBrushSize;
                 GetBrushSizeLimits(out minBrushSize, out maxBrushSize, textureResolutionPerTile);
                 brushSize = TerrainInspectorUtility.PowerSlider(styles.brushSize, brushSize, minBrushSize, maxBrushSize, 4.0f);
+                if (!Mathf.Approximately(brushSize, prevBrushSize))
+                {
+                    if (GetActiveTerrainTool() is ITerrainPaintToolWithOverlays && BrushSizeChanged != null) BrushSizeChanged();
+                    prevBrushSize = brushSize;
+                }
             }
 
             if (showBrushStrength)
-                m_Strength = TerrainInspectorUtility.ScaledSliderWithRounding(styles.opacity, m_Strength, kMinBrushStrength, kMaxBrushStrength, 100.0f, 0.1f);
+            {
+                brushStrength = TerrainInspectorUtility.ScaledSliderWithRounding(styles.opacity, brushStrength, kMinBrushStrength, kMaxBrushStrength, 100.0f, 0.1f);
+                if (!Mathf.Approximately(brushStrength, prevBrushStrength))
+                {
+                    if (GetActiveTerrainTool() is ITerrainPaintToolWithOverlays && BrushStrengthChanged != null) BrushStrengthChanged();
+                    prevBrushStrength = brushStrength;
+                }
+            }
 
             if (showBrushEditor)
             {
@@ -1889,15 +2174,16 @@ namespace UnityEditor
                 return;
             }
 
-            if (s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this)
+            var isAsset = IsTerrainPartOfPrefabOrAsset(target as Terrain);
+            var isEditorActive = IsEditorActive(this) && !isAsset;
+
+            if (!isEditorActive && !isAsset)
             {
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(styles.duplicateTab, EditorStyles.boldLabel);
                 if (GUILayout.Button(styles.makeMeActive))
                 {
-                    // Acquire active inspector ownership
-                    s_activeTerrainInspector = GetInstanceID();
-                    s_activeTerrainInspectorInstance = this;
+                    SetActiveEditor(this);
                 }
                 GUILayout.EndVertical();
             }
@@ -1921,7 +2207,7 @@ namespace UnityEditor
 
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
-            int tool = (int)selectedTool;
+            int tool = (int)selectedCategory;
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
             {
                 EditorGUILayout.HelpBox(styles.gles2NotSupported);
@@ -1937,9 +2223,7 @@ namespace UnityEditor
 
                 if (newlySelectedTool != tool)
                 {
-                    SetCurrentPaintToolInactive();
-                    selectedTool = (TerrainTool)newlySelectedTool;
-                    SetCurrentPaintToolActive();
+                    SelectCategory((TerrainTool) newlySelectedTool);
 
                     // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
                     InspectorWindow.RepaintAllInspectors();
@@ -1960,24 +2244,27 @@ namespace UnityEditor
                 case TerrainTool.CreateNeighbor:
                 case TerrainTool.PlaceTree:
                 case TerrainTool.PaintDetail:
-                    var activeTool = GetActiveTool();
-                    if (selectedTool == TerrainTool.Paint && m_PaintToolNames != null && m_PaintToolNames.Length > 0)
+                    var activeTool = GetActiveTerrainTool();
+                    if (activeTool != null)
                     {
-                        EditorGUI.BeginChangeCheck();
-                        int index = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_PaintToolNames);
-                        if (EditorGUI.EndChangeCheck() && index != m_ActivePaintToolIndex)
+                        if (selectedCategory == TerrainTool.Paint && m_PaintToolNames != null && m_PaintToolNames.Length > 0)
                         {
-                            SelectPaintTool(index);
+                            EditorGUI.BeginChangeCheck();
+                            int index = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_PaintToolNames);
+                            if (EditorGUI.EndChangeCheck() && index != m_ActivePaintToolIndex)
+                            {
+                                SelectToolByName(m_PaintToolNames[index]);
+                            }
                         }
-                    }
 
-                    GUILayout.BeginVertical(EditorStyles.helpBox);
-                    if (selectedTool != TerrainTool.Paint)
-                        GUILayout.Label(activeTool.GetName(), EditorStyles.boldLabel);
-                    GUILayout.Label(activeTool.GetDescription(), EditorStyles.wordWrappedMiniLabel);
-                    GUILayout.EndVertical();
-                    EditorGUILayout.Space();
-                    activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
+                        GUILayout.BeginVertical(EditorStyles.helpBox);
+                        if (selectedCategory != TerrainTool.Paint)
+                            GUILayout.Label(activeTool.GetName(), EditorStyles.boldLabel);
+                        GUILayout.Label(activeTool.GetDescription(), EditorStyles.wordWrappedMiniLabel);
+                        GUILayout.EndVertical();
+                        EditorGUILayout.Space();
+                        activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
+                    }
                     break;
                 case TerrainTool.TerrainSettings:
                     ShowSettings();
@@ -2031,18 +2318,21 @@ namespace UnityEditor
 
                 // Use height editing tool for calculating the bounds by default
                 Bounds bounds = new Bounds();
-                float brushSize = selectedTool == TerrainTool.PlaceTree ? PaintTreesTool.instance.brushSize : this.brushSize;
+                var activeTool = GetActiveTerrainTool();
+                float frameSize = activeTool != null
+                    ? (activeTool is PaintTreesTool ? ((PaintTreesTool)activeTool).brushSize : brushSize)
+                    : Mathf.Max(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z);
                 Vector3 size;
-                size.x = brushSize / m_Terrain.terrainData.heightmapResolution * m_Terrain.terrainData.size.x;
-                size.z = brushSize / m_Terrain.terrainData.heightmapResolution * m_Terrain.terrainData.size.z;
+                size.x = frameSize / m_Terrain.terrainData.heightmapResolution * m_Terrain.terrainData.size.x;
+                size.z = frameSize / m_Terrain.terrainData.heightmapResolution * m_Terrain.terrainData.size.z;
                 size.y = (size.x + size.z) * 0.5F;
                 bounds.center = pos;
                 bounds.size = size;
                 // detail painting needs to be much closer
-                if (selectedTool == TerrainTool.PaintDetail && m_Terrain.terrainData.detailWidth != 0)
+                if (selectedCategory == TerrainTool.PaintDetail && m_Terrain.terrainData.detailWidth != 0)
                 {
-                    size.x = brushSize / m_Terrain.terrainData.detailWidth * m_Terrain.terrainData.size.x;
-                    size.z = brushSize / m_Terrain.terrainData.detailHeight * m_Terrain.terrainData.size.z;
+                    size.x = frameSize / m_Terrain.terrainData.detailWidth * m_Terrain.terrainData.size.x;
+                    size.z = frameSize / m_Terrain.terrainData.detailHeight * m_Terrain.terrainData.size.z;
                     size.y = 0;
                     bounds.size = size;
                 }
@@ -2083,7 +2373,7 @@ namespace UnityEditor
         {
             if (!m_Terrain)
                 return false;
-            TerrainTool st = selectedTool;
+            TerrainTool st = selectedCategory;
             if (st == TerrainTool.TerrainSettings)
                 return false;
             if ((int)st < 0 || st >= TerrainTool.TerrainToolCount)
@@ -2099,7 +2389,7 @@ namespace UnityEditor
             return (overTerrain != null);
         }
 
-        private Ray GUIPointToWorldRayPrecise(Vector2 guiPoint, float startZ = float.NegativeInfinity)
+        private static Ray GUIPointToWorldRayPrecise(Vector2 guiPoint, float startZ = float.NegativeInfinity)
         {
             Camera camera = Camera.current;
             if (!camera)
@@ -2169,7 +2459,7 @@ namespace UnityEditor
             return new Ray(rayOriginWorldSpace, rayDirectionWorldSpace);
         }
 
-        private bool RaycastAllTerrains(out Terrain hitTerrain, out RaycastHit raycastHit)
+        internal static bool RaycastAllTerrains(out Terrain hitTerrain, out RaycastHit raycastHit)
         {
             Ray mouseRay = GUIPointToWorldRayPrecise(Event.current.mousePosition);
 
@@ -2197,7 +2487,7 @@ namespace UnityEditor
 
         public void OnSceneGUICallback(SceneView sceneView)
         {
-            if (selectedTool == TerrainTool.None && m_PreviousSelectedTool != TerrainTool.None)
+            if (selectedCategory == TerrainTool.None)
             {
                 // if we switch the active scene tool while painting we still need to update the terrains. ( case 1394295 )
                 PaintContext.ApplyDelayedActions();
@@ -2205,12 +2495,12 @@ namespace UnityEditor
 
             Initialize();
 
-            if (selectedTool == TerrainTool.None)
+            if (selectedCategory == TerrainTool.None || GetActiveTerrainTool() == null)
             {
                 return;
             }
 
-            ITerrainPaintTool activeTool = GetActiveTool();
+            ITerrainPaintTool activeTool = GetActiveTerrainTool();
 
             Event e = Event.current;
 
@@ -2222,14 +2512,14 @@ namespace UnityEditor
             if (s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this)
                 return;
 
-            if (selectedTool == TerrainTool.Paint       ||
-                selectedTool == TerrainTool.PaintDetail ||
-                selectedTool == TerrainTool.PlaceTree)
+            if (selectedCategory == TerrainTool.Paint       ||
+                selectedCategory == TerrainTool.PaintDetail ||
+                selectedCategory == TerrainTool.PlaceTree)
             {
                 RaycastAllTerrains(out hitTerrain, out raycastHit);
             }
 
-            Texture brushTexture = selectedTool == TerrainTool.PlaceTree ? brushList.GetCircleBrush().texture : brushList.GetActiveBrush().texture;
+            Texture brushTexture = selectedCategory == TerrainTool.PlaceTree ? brushList.GetCircleBrush().texture : brushList.GetActiveBrush().texture;
 
             Vector2 uv = raycastHit.textureCoord;
 
@@ -2243,7 +2533,7 @@ namespace UnityEditor
             Terrain lastActiveTerrain = hitValidTerrain ? hitTerrain : s_LastActiveTerrain;
             if (lastActiveTerrain)
             {
-                activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, hitValidTerrain, raycastHit, brushTexture, m_Strength, brushSize, id));
+                activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, hitValidTerrain, raycastHit, brushTexture, brushStrength, brushSize, id));
 
                 var mousePos = Event.current.mousePosition;
                 var cameraRect = sceneView.cameraViewport;
@@ -2311,9 +2601,9 @@ namespace UnityEditor
                     if (e.type == EventType.MouseDown)
                         EditorGUIUtility.hotControl = id;
 
-                    if (activeTool.OnPaint(hitTerrain, onPaintEditContext.Set(hitValidTerrain, raycastHit, brushTexture, uv, m_Strength, brushSize)))
+                    if (activeTool.OnPaint(hitTerrain, onPaintEditContext.Set(hitValidTerrain, raycastHit, brushTexture, uv, brushStrength, brushSize)))
                     {
-                        if (selectedTool == TerrainTool.Paint)
+                        if (selectedCategory == TerrainTool.Paint)
                         {
                             // height map modification modes
                             hitTerrain.editorRenderFlags = TerrainRenderFlags.Heightmap;

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -19,6 +20,16 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         [SerializeReference]
         List<BlockNodeModel> m_Blocks = new();
+
+        [SerializeField]
+        List<SerializableGUID> m_BlockGuids = new List<SerializableGUID>();
+
+        internal static string blocksFieldName_Internal = nameof(m_Blocks);
+
+        List<BlockNodePlaceholder> m_BlockPlaceholders = new List<BlockNodePlaceholder>();
+
+        public IReadOnlyList<BlockNodeModel> BlockPlaceholders => m_BlockPlaceholders;
+        public IReadOnlyList<SerializableGUID> BlockGuids => m_BlockGuids;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContextNodeModel"/> class.
@@ -36,21 +47,33 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         public void InsertBlock(BlockNodeModel blockModel, int index = -1, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
-            if (blockModel.ContextNodeModel != null)
-                blockModel.ContextNodeModel.RemoveElements(new[] { blockModel });
-
-            if (index > m_Blocks.Count)
-                throw new ArgumentException(nameof(index));
-            if (!blockModel.IsCompatibleWith(this) && GetType() != typeof(ContextNodeModel)) // Blocks have to be compatible with the base ContextNodeModel because of the item library's "Dummy Context".
-                throw new ArgumentException(nameof(blockModel));
-
-            if ((spawnFlags & SpawnFlags.Orphan) == 0)
-                GraphModel.RegisterElement(blockModel);
-
-            if (index < 0 || index == m_Blocks.Count)
-                m_Blocks.Add(blockModel);
+            if (blockModel is BlockNodePlaceholder placeholder)
+                m_BlockPlaceholders.Add(placeholder);
             else
-                m_Blocks.Insert(index, blockModel);
+            {
+                if ((spawnFlags & SpawnFlags.Orphan) == 0)
+                    GraphModel.RegisterElement(blockModel);
+
+                if (blockModel.ContextNodeModel != null)
+                    blockModel.ContextNodeModel.RemoveElements(new[] { blockModel });
+
+                if (index > m_Blocks.Count)
+                    throw new ArgumentException(nameof(index));
+
+                if (!blockModel.IsCompatibleWith(this) && GetType() != typeof(ContextNodeModel)) // Blocks have to be compatible with the base ContextNodeModel because of the item library's "Dummy Context".
+                    throw new ArgumentException(nameof(blockModel));
+
+                if (index < 0 || index == m_Blocks.Count)
+                {
+                    m_Blocks.Add(blockModel);
+                    m_BlockGuids.Add(blockModel.Guid);
+                }
+                else
+                {
+                    m_Blocks.Insert(index, blockModel);
+                    m_BlockGuids.Insert(index, blockModel.Guid);
+                }
+            }
 
             blockModel.GraphModel = GraphModel;
             blockModel.ContextNodeModel = this;
@@ -107,26 +130,106 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             foreach (var blockNodeModel in elementModels.OfType<BlockNodeModel>())
             {
-                GraphModel.UnregisterElement(blockNodeModel);
-                if (!m_Blocks.Remove(blockNodeModel))
+                GraphModel?.UnregisterElement(blockNodeModel);
+                if (!RemoveBlock(blockNodeModel))
+                {
                     throw new ArgumentException(nameof(blockNodeModel));
+                }
                 blockNodeModel.ContextNodeModel = null;
             }
+
+            if (!m_BlockPlaceholders.Any())
+                this.SetCapability(Editor.Capabilities.Copiable, true);
         }
 
         /// <inheritdoc/>
         protected override void OnDefineNode()
         {
-            foreach (var block in GraphElementModels)
+            for (var i = 0; i < GraphElementModels.Count(); ++i)
             {
-                (block as BlockNodeModel)?.DefineNode();
+                var block = GraphElementModels.ElementAt(i);
+                if (block is BlockNodeModel blockNodeModel)
+                {
+                    blockNodeModel.ContextNodeModel = this;
+                    blockNodeModel.DefineNode();
+                }
             }
+
+            if (m_BlockPlaceholders.Any())
+                this.SetCapability(Editor.Capabilities.Copiable, false);
         }
 
         /// <inheritdoc />
         public void Repair()
         {
-            m_Blocks.RemoveAll(t => t == null);
+            for (var i = m_Blocks.Count - 1; i >= 0; i--)
+            {
+                if (m_Blocks[i] == null)
+                {
+                    if (i < m_Blocks.Count)
+                        m_Blocks.RemoveAt(i);
+                    if (i < m_BlockGuids.Count)
+                        m_BlockGuids.RemoveAt(i);
+                }
+            }
+            m_BlockPlaceholders.Clear();
+        }
+
+        bool RemoveBlock(BlockNodeModel blockNodeModel)
+        {
+            int indexToRemove;
+
+            if (blockNodeModel is BlockNodePlaceholder blockNodePlaceholder)
+            {
+                // When removing a placeholder block, we also remove the corresponding null block.
+                indexToRemove = m_BlockGuids.IndexOf(blockNodePlaceholder.Guid);
+                if (indexToRemove != -1)
+                {
+                    m_Blocks.RemoveAt(indexToRemove);
+                    m_BlockGuids.RemoveAt(indexToRemove);
+                    SerializationUtility.ClearManagedReferenceWithMissingType(GraphModel.Asset, blockNodePlaceholder.ReferenceId);
+                }
+
+                return m_BlockPlaceholders.Remove(blockNodePlaceholder);
+            }
+
+            indexToRemove = m_Blocks.IndexOf(blockNodeModel);
+            if (indexToRemove != -1)
+            {
+                m_Blocks.RemoveAt(indexToRemove);
+                m_BlockGuids.RemoveAt(indexToRemove);
+                return true;
+            }
+
+            return false;
+        }
+
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+            // Remove outdated placeholders
+            for (var i = m_BlockPlaceholders.Count - 1; i >= 0; i--)
+            {
+                if (m_Blocks.Any(b => b?.Guid == m_BlockPlaceholders[i].Guid))
+                    m_BlockPlaceholders.RemoveAt(i);
+            }
+
+            // For compatibility with old version or corruption
+            if (m_BlockGuids == null || m_BlockGuids.Count < m_Blocks.Count)
+            {
+                if (m_BlockGuids == null)
+                    m_BlockGuids = new List<SerializableGUID>();
+
+                m_BlockGuids.Clear();
+
+                m_Blocks = m_Blocks.Where(t=>t != null).ToList();
+
+                for (int i = 0; i < m_Blocks.Count; ++i)
+                {
+                    m_BlockGuids.Add(m_Blocks[i].Guid);
+                }
+            }
         }
     }
 }

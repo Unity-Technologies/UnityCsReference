@@ -46,7 +46,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (model == null)
             {
-                Debug.LogError("GraphElementFactory could not create element because model is null.");
+                Debug.LogWarning("GraphElementFactory could not create element because model is null.");
                 return null;
             }
 

@@ -5,13 +5,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TerrainTools;
+using System;
 using UnityEngine.Rendering;
 
 namespace UnityEditor.TerrainTools
 {
-    internal class PaintDetailsTool : TerrainPaintTool<PaintDetailsTool>
+    internal class PaintDetailsTool : TerrainPaintToolWithOverlays<PaintDetailsTool>
     {
-        internal const string kToolName = "Paint Details";
+        internal const string k_ToolName = "Paint Details";
+        public override string OnIcon => "TerrainOverlays/PaintDetails_On.png";
+        public override string OffIcon => "TerrainOverlays/PaintDetails.png";
 
         private class Styles
         {
@@ -34,7 +37,6 @@ namespace UnityEditor.TerrainTools
         private float m_DetailsStrength = 0.8f;
         private int m_MouseOnPatchIndex = -1;
 
-        public float detailOpacity { get; set; }
         public float detailStrength
         {
             get
@@ -48,6 +50,14 @@ namespace UnityEditor.TerrainTools
                     Mathf.Clamp01(Mathf.Round(value * m_TargetTerrain.terrainData.maxDetailScatterPerRes) / m_TargetTerrain.terrainData.maxDetailScatterPerRes);
 
             }
+        }
+        internal static event Action BrushTargetStrengthChanged;
+
+        // storing the previous detailStrength to trigger a strengthChanged Action
+        internal float prevBrushDetailStrength
+        {
+            get;
+            set;
         }
 
         public int selectedDetail { get; set; }
@@ -114,10 +124,10 @@ namespace UnityEditor.TerrainTools
                             for (int x = 0; x < brushBounds.bounds.width; x++)
                             {
                                 Vector2Int brushOffset = brushBounds.GetBrushOffset(x, y);
-                                float opa = detailOpacity * m_BrushRep.GetStrength(brushOffset.x, brushOffset.y);
+                                float opa =  editContext.brushSize * m_BrushRep.GetStrength(brushOffset.x, brushOffset.y);
 
                                 float targetValue = Mathf.Lerp(alphamap[y, x], targetStrength * terrainData.maxDetailScatterPerRes, opa);
-                                alphamap[y, x] = Mathf.Min(Mathf.RoundToInt(targetValue - .5f + Random.value), terrainData.maxDetailScatterPerRes);
+                                alphamap[y, x] = Mathf.Min(Mathf.RoundToInt(targetValue - .5f + UnityEngine.Random.value), terrainData.maxDetailScatterPerRes);
                             }
                         }
 
@@ -131,8 +141,8 @@ namespace UnityEditor.TerrainTools
 
         public override void OnEnterToolMode()
         {
-            detailOpacity = EditorPrefs.GetFloat("TerrainDetailOpacity", 1.0f);
             detailStrength = EditorPrefs.GetFloat("TerrainDetailStrength", 0.8f);
+            prevBrushDetailStrength = detailStrength;
             selectedDetail = EditorPrefs.GetInt("TerrainSelectedDetail", 0);
 
             m_TargetTerrain = null;
@@ -175,18 +185,31 @@ namespace UnityEditor.TerrainTools
 
             EditorPrefs.SetInt("TerrainSelectedDetail", selectedDetail);
             EditorPrefs.SetFloat("TerrainDetailStrength", detailStrength);
-            EditorPrefs.SetFloat("TerrainDetailOpacity", detailOpacity);
+        }
+
+        public override int IconIndex
+        {
+            get { return (int) FoliageIndex.PaintDetails; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Foliage; }
         }
 
         public override string GetName()
         {
-            return kToolName;
+            return k_ToolName;
         }
 
         public override string GetDescription()
         {
             return "Click to paint details.\n\nHold shift and click to erase details.\n\nHold Ctrl and click to erase only details of the selected type.";
         }
+
+        public override bool HasToolSettings => true;
+        public override bool HasBrushMask => true;
+        public override bool HasBrushAttributes => true;
 
         private void ShowDetailPrototypeMessages(DetailPrototype detailPrototype, Terrain terrain)
         {
@@ -206,7 +229,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -269,18 +292,39 @@ namespace UnityEditor.TerrainTools
             terrainInspector.ShowDetailStats();
             EditorGUILayout.Space();
 
-            // Brush selector
-            editContext.ShowBrushesGUI(0, BrushGUIEditFlags.Select, 0);
+        }
 
-            // Brush size
-            terrainInspector.brushSize = EditorGUILayout.PowerSlider(s_Styles.brushSize, Mathf.Clamp(terrainInspector.brushSize, 1, 100), 1, 100, 4);
-            detailOpacity = EditorGUILayout.Slider(s_Styles.opacity, detailOpacity, 0, 1);
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
+            if (s_Styles == null)
+                s_Styles = new Styles();
+
+            int textureRez = terrain.terrainData.heightmapResolution;
+
+            // show just size and opacity (not the inspect until the end of this function)
+            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.Select | BrushGUIEditFlags.Size | BrushGUIEditFlags.Opacity, textureRez);
 
             // Strength
             detailStrength = EditorGUILayout.Slider(s_Styles.detailTargetStrength, detailStrength, 0, 1);
 
+            // check for detail strength changing, and invoke appropriate action
+            if (!Mathf.Approximately(detailStrength, prevBrushDetailStrength))
+            {
+                if (BrushTargetStrengthChanged != null) BrushTargetStrengthChanged();
+                prevBrushDetailStrength = detailStrength;
+            }
+
             // Brush editor
             editContext.ShowBrushesGUI((int)EditorGUIUtility.singleLineHeight, BrushGUIEditFlags.Inspect);
+
+            OnToolSettingsGUI(terrain, editContext, overlays);
+
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
 
         private void ShowTextureFallbackWarning(ref Terrain terrain)

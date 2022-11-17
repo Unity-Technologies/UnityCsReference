@@ -557,6 +557,10 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidUseSwappy")]
                 set;
             }
+
+            // Google Play App Dependencies info.
+            [NativeProperty("AndroidReportGooglePlayAppDependencies", TargetType.Function)]
+            public static extern bool reportGooglePlayAppDependencies { get; set; }
         }
     }
 }

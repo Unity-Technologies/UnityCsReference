@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="maxLength">The maximum number of characters this textfield can hold. If 0, there is no limit.</param>
         /// <param name="multiline">Set this to true to allow multiple lines in the textfield and false if otherwise.</param>
-        /// <param name="isPasswordField">Set this to true to mask the characters and false if otherwise.</param>
+        /// <param name="isPassword">Set this to true to mask the characters and false if otherwise.</param>
         /// <param name="maskChar">The character used for masking in a password field.</param>
         public TextField(string label, int maxLength, bool multiline, bool isPasswordField, char maskChar)
             : base(label, maxLength, maskChar, new TextInput())
@@ -119,7 +119,7 @@ namespace UnityEngine.UIElements
             pickingMode = PickingMode.Ignore;
             SetValueWithoutNotify("");
             this.multiline = multiline;
-            this.isPasswordField = isPasswordField;
+            textEdition.isPassword = isPasswordField;
         }
 
         /// <summary>
@@ -195,11 +195,12 @@ namespace UnityEngine.UIElements
             }
 
             // Password field (indirectly lossy behaviour when activated via multiline)
+            [Obsolete("isPasswordField is deprecated. Use textEdition.isPassword instead.")]
             public override bool isPasswordField
             {
                 set
                 {
-                    base.isPasswordField = value;
+                    textEdition.isPassword = value;
                     if (value)
                         multiline = false;
                 }

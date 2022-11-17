@@ -9,7 +9,7 @@ using UnityEditor.ShortcutManagement;
 namespace UnityEditor.TerrainTools
 {
     [FilePath("Library/TerrainTools/SetHeight", FilePathAttribute.Location.ProjectFolder)]
-    internal class SetHeightTool : TerrainPaintTool<SetHeightTool>
+    internal class SetHeightTool : TerrainPaintToolWithOverlays<SetHeightTool>
     {
         private enum HeightSpace
         {
@@ -17,7 +17,9 @@ namespace UnityEditor.TerrainTools
             Local
         }
 
-        const string toolName = "Set Height";
+        const string k_ToolName = "Set Height";
+        public override string OnIcon => "TerrainOverlays/SetHeight_On.png";
+        public override string OffIcon => "TerrainOverlays/SetHeight.png";
 
         [SerializeField] HeightSpace m_HeightSpace;
         [SerializeField] float m_TargetHeight;
@@ -27,7 +29,7 @@ namespace UnityEditor.TerrainTools
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
-            context.SelectPaintTool<SetHeightTool>();
+            context.SelectPaintToolWithOverlays<SetHeightTool>();
         }
 
         class Styles
@@ -49,15 +51,30 @@ namespace UnityEditor.TerrainTools
             return m_styles;
         }
 
+        public override int IconIndex
+        {
+            get { return (int) SculptIndex.SetHeight; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Sculpt; }
+        }
+
+
         public override string GetName()
         {
-            return toolName;
+            return k_ToolName;
         }
 
         public override string GetDescription()
         {
             return GetStyles().description.text;
         }
+
+        public override bool HasToolSettings => true;
+        public override bool HasBrushMask => true;
+        public override bool HasBrushAttributes => true;
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
         {
@@ -147,14 +164,14 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             Styles styles = GetStyles();
 
             EditorGUI.BeginChangeCheck();
-
-            EditorGUI.BeginChangeCheck();
-            m_HeightSpace = (HeightSpace)EditorGUILayout.EnumPopup(styles.space, m_HeightSpace);
+            {
+                m_HeightSpace = (HeightSpace)EditorGUILayout.EnumPopup(styles.space, m_HeightSpace);
+            }
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_HeightSpace == HeightSpace.Local)
@@ -165,8 +182,6 @@ namespace UnityEditor.TerrainTools
                 m_TargetHeight = EditorGUILayout.Slider(styles.height, m_TargetHeight - terrain.GetPosition().y, 0, terrain.terrainData.size.y) + terrain.GetPosition().y;
             else
                 m_TargetHeight = EditorGUILayout.FloatField(styles.height, m_TargetHeight);
-            if (EditorGUI.EndChangeCheck())
-                Save(true);
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
@@ -176,10 +191,20 @@ namespace UnityEditor.TerrainTools
                 FlattenAll();
             GUILayout.EndHorizontal();
 
+        }
 
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
             // show built-in brushes
             int textureRez = terrain.terrainData.heightmapResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
+
+            OnToolSettingsGUI(terrain, editContext, overlays);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
     }
 }

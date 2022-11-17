@@ -26,7 +26,7 @@ namespace UnityEditor.Toolbars
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            EditorToolManager.availableComponentToolsChanged += UpdateContents;
+            EditorToolManager.availableToolsChanged += UpdateContents;
             ToolManager.activeToolChanged += UpdateContents;
             SceneViewMotion.viewToolActiveChanged += UpdateState;
         }
@@ -35,7 +35,7 @@ namespace UnityEditor.Toolbars
         {
             ToolManager.activeToolChanged -= UpdateContents;
             SceneViewMotion.viewToolActiveChanged -= UpdateState;
-            EditorToolManager.availableComponentToolsChanged -= UpdateContents;
+            EditorToolManager.availableToolsChanged -= UpdateContents;
         }
 
         void ToggleEnabled(ChangeEvent<bool> evt)

@@ -112,7 +112,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var mousePosition = evt.mousePosition;
 
-            if (draggedPort == null || WireCandidateModel == null)
+            if (draggedPort == null || WireCandidateModel == null || draggedPort.PortType == PortType.MissingPort || draggedPort.DataTypeHandle == TypeHandle.MissingPort)
             {
                 return false;
             }
@@ -298,26 +298,24 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_GhostWire = null;
             }
 
-            m_WireCandidate.SetEnabled(true);
-
             ClearWillConnect(WireCandidateModel);
 
-            // If it is an existing valid wire then delete and notify the model (using DeleteElements()).
-            if (WireCandidateModel?.ToPort == null || WireCandidateModel?.FromPort == null)
-            {
-                GraphView.RemoveElement(m_WireCandidate);
-            }
+            var removeWireCandidate = WireCandidateModel?.ToPort == null || WireCandidateModel?.FromPort == null;
 
             var endPort = GetEndPort(mousePosition);
-
-            if (WireCandidateModel != null && endPort != null)
+            if (endPort != null)
             {
-                if (endPort.PortModel.Direction == PortDirection.Output)
-                    WireCandidateModel.FromPort = endPort.PortModel;
-                else
-                    WireCandidateModel.ToPort = endPort.PortModel;
-            }
+                m_WireCandidate.SetEnabled(true);
 
+                if (WireCandidateModel != null)
+                {
+                    if (endPort.PortModel.Direction == PortDirection.Output)
+                        WireCandidateModel.FromPort = endPort.PortModel;
+                    else
+                        WireCandidateModel.ToPort = endPort.PortModel;
+                }
+            }
+            
             // Let the first wire handle the batch command for all wires
             if (isFirstWire)
             {
@@ -335,11 +333,23 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
                 else
                 {
+                    removeWireCandidate = false;
+
                     if (OriginalWire == null)
+                    {
                         DropWiresOutside(Enumerable.Repeat(m_WireCandidate, 1), Enumerable.Repeat(draggedPort, 1), mousePosition);
+                    }
                     else
-                        DropWiresOutside(affectedWires, Enumerable.Repeat(draggedPort, 1).Concat(otherPorts), mousePosition);
+                    {
+                        DropWiresOutside(affectedWires.Append(m_WireCandidate), Enumerable.Repeat(draggedPort, 1).Concat(otherPorts), mousePosition);
+                    }
                 }
+            }
+
+            if (removeWireCandidate)
+            {
+                // If it is an existing valid wire then delete and notify the model (using DeleteElements()).
+                GraphView.RemoveElement(m_WireCandidate);
             }
 
             m_WireCandidate?.ResetLayer();
@@ -363,7 +373,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 .Select(e => (e.wire.WireModel, e.port.Direction == PortDirection.Input ? WireSide.From : WireSide.To))
                 .ToList();
 
-            stencil.CreateNodesFromWires(GraphView, wiresToConnect, worldPosition);
+            var wiresToDelete = wires.Where(w => w.IsGhostWire).Select(w => w.WireModel);
+
+            stencil.CreateNodesFromWires(GraphView, wiresToConnect, worldPosition, wiresToDelete);
         }
 
         protected virtual void MoveWires(IEnumerable<Wire> wires, Port newPort)
@@ -387,47 +399,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (compatiblePortUI == null || compatiblePortUI.resolvedStyle.visibility != Visibility.Visible)
                     continue;
 
-                var bounds = compatiblePortUI.worldBound;
-                var hitboxExtraPadding = bounds.height;
-
-                if (compatiblePort.Orientation == PortOrientation.Horizontal)
+                // Check if the mouse is over the port hitbox.
+                if (Port.GetPortHitBoxBounds(compatiblePortUI).Contains(mousePosition))
                 {
-                    // Add extra padding for mouse check to the left of input port or right of output port.
-                    if (compatiblePort.Direction == PortDirection.Input)
-                    {
-                        // Move bounds to the left by hitboxExtraPadding and increase width
-                        // by hitboxExtraPadding.
-                        bounds.x -= hitboxExtraPadding;
-                        bounds.width += hitboxExtraPadding;
-                    }
-                    else if (compatiblePort.Direction == PortDirection.Output)
-                    {
-                        // Just add hitboxExtraPadding to the width.
-                        bounds.width += hitboxExtraPadding;
-                    }
+                    compatiblePortUI.GetPortConnectorPart().Hovering = true;
+                    endPort = compatiblePortUI;
                 }
                 else
                 {
-                    // Add extra padding for mouse check to the top of input port.
-                    if (compatiblePort.Direction == PortDirection.Input)
-                    {
-                        // Move bounds to the top by hitboxExtraPadding and increase height
-                        // by hitboxExtraPadding.
-                        bounds.y -= hitboxExtraPadding;
-                        bounds.height += hitboxExtraPadding;
-                    }
-                    else if (compatiblePort.Direction == PortDirection.Output)
-                    {
-                        // Just add hitboxExtraPadding to the height.
-                        bounds.height += hitboxExtraPadding;
-                    }
-                }
-
-                // Check if mouse is over port.
-                if (bounds.Contains(mousePosition))
-                {
-                    endPort = compatiblePortUI;
-                    break;
+                    compatiblePortUI.GetPortConnectorPart().Hovering = false;
                 }
             }
 

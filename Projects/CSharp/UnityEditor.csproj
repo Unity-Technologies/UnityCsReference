@@ -1469,11 +1469,17 @@
     <Compile Include="..\..\Editor\Mono\GUI\Tools\IEditor.cs">
       <Link>Editor\Mono\GUI\Tools\IEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolEntry.cs">
+      <Link>Editor\Mono\GUI\Tools\ToolEntry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolManager.cs">
       <Link>Editor\Mono\GUI\Tools\ToolManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolShortcutContext.cs">
       <Link>Editor\Mono\GUI\Tools\ToolShortcutContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GUI\Tools\ToolVariantPrefs.cs">
+      <Link>Editor\Mono\GUI\Tools\ToolVariantPrefs.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\Tools\Tools.cs">
       <Link>Editor\Mono\GUI\Tools\Tools.cs</Link>
@@ -4619,6 +4625,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UIToolkitSettingsProvider.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UIToolkitSettingsProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLAssetAttributeCache.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXMLAssetAttributeCache.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UXMLEditorFactories.cs</Link>
     </Compile>
@@ -4627,6 +4636,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UxmlCodeDependencies.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UxmlCodeDependencies.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetChangeTrackerUpdater.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\VisualTreeAssetChangeTrackerUpdater.cs</Link>
@@ -5003,9 +5015,6 @@
     <Compile Include="..\..\Modules\DiagnosticsEditor\DiagnosticsPreferences.cs">
       <Link>Modules\DiagnosticsEditor\DiagnosticsPreferences.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\EditorToolbar\Controls\ComponentToolButton.cs">
-      <Link>Modules\EditorToolbar\Controls\ComponentToolButton.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\Controls\ComponentToolContextButton.cs">
       <Link>Modules\EditorToolbar\Controls\ComponentToolContextButton.cs</Link>
     </Compile>
@@ -5036,14 +5045,11 @@
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\BuiltinToolSettings.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\BuiltinToolSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\BuiltinTools.cs">
-      <Link>Modules\EditorToolbar\ToolbarElements\BuiltinTools.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\CloudButton.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\CloudButton.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\ComponentTools.cs">
-      <Link>Modules\EditorToolbar\ToolbarElements\ComponentTools.cs</Link>
+    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\EditorToolsToolbar.cs">
+      <Link>Modules\EditorToolbar\ToolbarElements\EditorToolsToolbar.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\LayersDropdown.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\LayersDropdown.cs</Link>
@@ -5333,6 +5339,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ExecutionWirePortalExitModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ExecutionWirePortalExitModel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphElementMetaData.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphElementMetaData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphElementModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\GraphElementModel.cs</Link>
     </Compile>
@@ -5356,6 +5365,30 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\OrderedPorts.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\OrderedPorts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderData.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\BlockNodePlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\BlockNodePlaceholder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\ContextNodePlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\ContextNodePlaceholder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\ManagedMissingTypeModelCategory.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\ManagedMissingTypeModelCategory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\NodePlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\NodePlaceholder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\PortalDeclarationPlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\PortalDeclarationPlaceholder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\VariableDeclarationPlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\VariableDeclarationPlaceholder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\WirePlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlaceholderModels\WirePlaceholder.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\PlacematModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\PlacematModel.cs</Link>
@@ -5453,6 +5486,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\IHasInspectorSurrogate.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\IHasInspectorSurrogate.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\IPlaceholder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\IPlaceholder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Interfaces\ISingleInputPortNodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\Interfaces\ISingleInputPortNodeModel.cs</Link>
     </Compile>
@@ -5467,6 +5503,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ModelState.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\ModelState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\PlaceholderModelHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\PlaceholderModelHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\PortDirection.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\PortDirection.cs</Link>
@@ -5512,6 +5551,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\TypeSerializerHelper_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\TypeSerializerHelper_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\YamlParsingHelper.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\YamlParsingHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ZOrderMove.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\ZOrderMove.cs</Link>
@@ -5884,6 +5926,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeLodCachePart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeLodCachePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PlacematTitlePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PlacematTitlePart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConnectorPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConnectorPart.cs</Link>
@@ -6785,8 +6830,8 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\VisualElementExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\EntitlementsErrorChecker.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\EntitlementsErrorChecker.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\EntitlementsErrorAndDeprecationChecker.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\EntitlementsErrorAndDeprecationChecker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Interfaces\IOperation.cs</Link>
@@ -7241,8 +7286,26 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageSubPageFilterBar.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageSubPageFilterBar.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageAssetStoreTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageAssetStoreTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageBaseTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageBaseTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageDeprecatedTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageDeprecatedTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageDynamicTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageDynamicTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageReleaseTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageReleaseTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageScopedRegistryTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageScopedRegistryTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageSimpleTagLabel.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageSimpleTagLabel.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs</Link>
@@ -8131,6 +8194,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilingSessionMetaData.bindings.cs">
+      <Link>Modules\ProfilerEditor\Public\ProfilingSessionMetaData.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs</Link>
@@ -9109,6 +9175,21 @@
     </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\HeightmapFilters.cs">
       <Link>Modules\TerrainEditor\HeightmapFilters.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Overlays\BrushAttributes.cs">
+      <Link>Modules\TerrainEditor\Overlays\BrushAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Overlays\BrushesOverlay.cs">
+      <Link>Modules\TerrainEditor\Overlays\BrushesOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Overlays\CondensedSlider.cs">
+      <Link>Modules\TerrainEditor\Overlays\CondensedSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Overlays\TerrainTransientToolbarOverlay.cs">
+      <Link>Modules\TerrainEditor\Overlays\TerrainTransientToolbarOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\Overlays\ToolEditors.cs">
+      <Link>Modules\TerrainEditor\Overlays\ToolEditors.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\PaintTools\CreateTerrainTool.cs">
       <Link>Modules\TerrainEditor\PaintTools\CreateTerrainTool.cs</Link>

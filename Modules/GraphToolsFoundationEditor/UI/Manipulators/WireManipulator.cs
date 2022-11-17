@@ -44,6 +44,7 @@ namespace Unity.GraphToolsFoundation.Editor
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuPopulate, TrickleDown.TrickleDown);
         }
 
         /// <inheritdoc />
@@ -53,6 +54,7 @@ namespace Unity.GraphToolsFoundation.Editor
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            target.UnregisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuPopulate);
         }
 
         void Reset()
@@ -69,7 +71,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (m_Active)
             {
-                StopDragging();
                 evt.StopImmediatePropagation();
                 return;
             }
@@ -80,6 +81,8 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             m_Wire = (evt.target as VisualElement)?.GetFirstOfType<Wire>();
+            if (m_Wire != null && m_Wire.WireModel is IPlaceholder)
+                return;
 
             m_PressPos = evt.mousePosition;
             target.CaptureMouse();
@@ -252,6 +255,15 @@ namespace Unity.GraphToolsFoundation.Editor
                     StopDragging();
                     evt.StopPropagation();
                 }
+            }
+        }
+
+        void OnContextualMenuPopulate(ContextualMenuPopulateEvent evt)
+        {
+            if (m_Active)
+            {
+                StopDragging();
+                evt.StopPropagation();
             }
         }
 

@@ -381,9 +381,9 @@ namespace Unity.UI.Builder
             "If you {0} the file, the UI Builder document will close the current document, and discard any unsaved changes.";
         public static readonly string InvalidUXMLOrUSSAssetNameSuffix = "[UNSUPPORTED_IN_UI_BUILDER]";
         public static readonly string InvalidUSSDialogTitle = "UI Builder - Unable to parse USS file.";
-        public static readonly string InvalidUSSDialogMessage = "UI Builder Failed to open {0}.uss asset. This may be due to invalid USS syntax or USS syntax the UI Builder does not yet support (ie. Variables). Check console for details.";
+        public static readonly string InvalidUSSDialogMessage = "UI Builder Failed to open {0} asset. This may be due to invalid USS syntax or USS syntax the UI Builder does not yet support (ie. Variables). Check console for details.";
         public static readonly string InvalidUXMLDialogTitle = "UI Builder - Unable to parse UXML file.";
-        public static readonly string InvalidUXMLDialogMessage = "UI Builder Failed to open {0}.uxml asset. This may be due to invalid UXML syntax or UXML syntax the UI Builder does not yet support. Check console for details.";
+        public static readonly string InvalidUXMLDialogMessage = "UI Builder Failed to open {0} asset. This may be due to invalid UXML syntax or UXML syntax the UI Builder does not yet support. Check console for details.";
         public static readonly string InvalidCreateTemplatePathTitle = "UI Builder - Invalid Path";
         public static readonly string InvalidCreateTemplatePathMessage = "The currently open document cannot be replaced.";
 

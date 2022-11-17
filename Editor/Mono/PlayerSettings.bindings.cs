@@ -175,6 +175,16 @@ namespace UnityEditor
         NET_Unity_4_8 = NET_4_6,
     }
 
+
+    // Editor Assembly compatibility level
+    public enum EditorAssembliesCompatibilityLevel
+    {
+        // For now it will be the same as #2. In future updates, the default will be the same as #3.
+        Default = 1,
+        NET_Unity_4_8 = 2,
+        NET_Standard = 3,
+    }
+
     public enum ManagedStrippingLevel
     {
         Disabled = 0,
@@ -1141,6 +1151,39 @@ namespace UnityEditor
         private static extern void SetApiCompatibilityLevelInternal(string buildTargetName, ApiCompatibilityLevel value);
         public static void SetApiCompatibilityLevel(NamedBuildTarget buildTarget, ApiCompatibilityLevel value) =>
             SetApiCompatibilityLevelInternal(buildTarget.TargetName, value);
+
+        internal static extern bool defaultEditorAssembliesCompatibilityLevel
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+        }
+
+        internal static ApiCompatibilityLevel EditorAssemblyCompatibilityToApiCompatibility(EditorAssembliesCompatibilityLevel level)
+        {
+            switch (level)
+            {
+                case EditorAssembliesCompatibilityLevel.NET_Standard:
+                    {
+                        return ApiCompatibilityLevel.NET_Standard_2_0;
+                    }
+                default:
+                    {
+                        return ApiCompatibilityLevel.NET_Unity_4_8;
+                    }
+            }
+        }
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetEditorAssembliesCompatibilityLevel")]
+        private static extern EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevelInternal();
+        public static EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevel() => GetEditorAssembliesCompatibilityLevelInternal();
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetEditorAssembliesCompatibilityLevel")]
+        private static extern void SetEditorAssembliesCompatibilityLevelInternal(EditorAssembliesCompatibilityLevel value);
+        public static void SetEditorAssembliesCompatibilityLevel(EditorAssembliesCompatibilityLevel value) => SetEditorAssembliesCompatibilityLevelInternal(value);
 
         [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

@@ -240,10 +240,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packagesChanged.Add(placeholderPackage);
                     continue;
                 }
+                var isDeprecated = productInfo.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase);
                 var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
                 var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
                 var versionList = new AssetStoreVersionList(m_IOProxy, productInfo, localInfo, updateInfo);
-                var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo));
+                var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
                 if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
                     SetProgress(package, PackageProgress.Downloading);
                 packagesChanged.Add(package);

@@ -1422,14 +1422,12 @@ namespace UnityEditor.ShortcutManagement
         const int maxChordLength = 1;
         HashSet<KeyCode> m_KeyDown = new HashSet<KeyCode>();
 
-        private class ShortcutInput : TextInputBase
-        {
-            public override bool isPasswordField => false;
-        }
+        class ShortcutInput : TextInputBase { }
 
         public ShortcutTextField() : base(kMaxLengthNone, char.MinValue, new ShortcutInput())
         {
             rawValue = new List<KeyCombination>();
+            isPasswordField = false;
 
             RegisterEvents(visualInput);
         }

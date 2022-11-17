@@ -94,6 +94,9 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Etch.AddToClassList(EtchClassName);
             m_Root.Add(m_Etch);
 
+            if (ContextNodeModel is ContextNodePlaceholder)
+                return;
+
             m_AddBlock = new Button();
             m_AddBlock.AddToClassList(AddBlockNameClassName);
             m_AddBlock.clickable.clicked += MouseUpOnAddBlock;
@@ -121,7 +124,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc/>
         protected override void UpdatePartFromModel()
         {
-            Dictionary<int, BlockNodeModel> blockModels = ContextNodeModel.GraphElementModels.Cast<BlockNodeModel>().Select((t, i) => new { index = i, value = t }).ToDictionary(t => t.index, t => t.value);
+            Dictionary<int, BlockNodeModel> blockModels = ContextNodeModel.GraphElementModels.Cast<BlockNodeModel>()
+                .Where(t => t != null && t is not IPlaceholder).Select((t, i) => new { index = i, value = t })
+                .ToDictionary(t => t.index, t => t.value);
 
             List<ModelView> blocks = Root.Children().OfType<ModelView>().ToList();
             // Delete blocks that are no longer in the model
@@ -136,11 +141,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             var orderBlockModels = new List<KeyValuePair<int, BlockNodeModel>>(blockModels.Count);
-            var exisitingModels = new HashSet<Model>(blocks.Select(u => u.Model));
+            var existingModels = new HashSet<Model>(blocks.Select(u => u.Model));
 
             foreach (var blockModel in blockModels)
             {
-                if (exisitingModels.Contains(blockModel.Value))
+                if (existingModels.Contains(blockModel.Value))
                     continue;
                 orderBlockModels.Add(blockModel);
             }
@@ -160,6 +165,9 @@ namespace Unity.GraphToolsFoundation.Editor
                         Root.Insert(index, newBlockNode);
                     else
                         Root.Add(newBlockNode);
+
+                    if (newBlockNode is GraphElement ge)
+                        ge.SetLevelOfDetail(ge.GraphView.ViewTransform.scale.x, GraphViewZoomMode.Normal, GraphViewZoomMode.Unknown);
                 }
             }
 
@@ -179,6 +187,9 @@ namespace Unity.GraphToolsFoundation.Editor
             ModelView prevBlockNode = firstBlockNode;
             for (int i = 1; i < blockModels.Count; ++i)
             {
+                if (blockModels[i] == null || blocks[blockModels.Count - 1 - i] == null)
+                    continue;
+
                 ModelView currentBlockNode = blocks.First(t => ReferenceEquals(t.Model, blockModels[i]));
                 if (blocks[blockModels.Count - 1 - i] != currentBlockNode)
                 {

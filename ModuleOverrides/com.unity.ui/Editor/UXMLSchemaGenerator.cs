@@ -204,9 +204,9 @@ namespace UnityEditor.UIElements
 
         internal static IEnumerable<string> GenerateSchemaFiles(string baseDir = null)
         {
-            Dictionary<string, SchemaInfo> schemas = new Dictionary<string, SchemaInfo>();
-            List<IUxmlFactory> deferredFactories = new List<IUxmlFactory>();
-            FactoryProcessingHelper processingData = new FactoryProcessingHelper();
+            var schemas = new Dictionary<string, SchemaInfo>();
+            var deferredFactories = new List<IBaseUxmlFactory>();
+            var processingData = new FactoryProcessingHelper();
 
             if (baseDir == null)
             {
@@ -227,7 +227,7 @@ namespace UnityEditor.UIElements
                         continue;
 
                     // Only process the first factory, as the other factories define the same element.
-                    IUxmlFactory factory = factories.Value[0];
+                    var factory = factories.Value[0];
 
                     if (!ProcessFactory(factory, schemas, processingData))
                     {
@@ -237,10 +237,27 @@ namespace UnityEditor.UIElements
                     }
                 }
 
-                List<IUxmlFactory> deferredFactoriesCopy;
+                // Convert the factories into schemas info.
+                foreach (var factories in UxmlObjectFactoryRegistry.factories)
+                {
+                    if (factories.Value.Count == 0)
+                        continue;
+
+                    // Only process the first factory, as the other factories define the same element.
+                    var factory = factories.Value[0];
+
+                    if (!ProcessFactory(factory, schemas, processingData))
+                    {
+                        // Could not process the factory now, because it depends on a yet unprocessed factory.
+                        // Defer its processing.
+                        deferredFactories.Add(factory);
+                    }
+                }
+
+                List<IBaseUxmlFactory> deferredFactoriesCopy;
                 do
                 {
-                    deferredFactoriesCopy = new List<IUxmlFactory>(deferredFactories);
+                    deferredFactoriesCopy = new List<IBaseUxmlFactory>(deferredFactories);
                     foreach (var factory in deferredFactoriesCopy)
                     {
                         deferredFactories.Remove(factory);
@@ -357,7 +374,7 @@ namespace UnityEditor.UIElements
             return String.IsNullOrEmpty(ns) ? k_GlobalNamespaceSchemaFileName : ns + k_SchemaFileExtension;
         }
 
-        static bool ProcessFactory(IUxmlFactory factory, Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
+        static bool ProcessFactory(IBaseUxmlFactory factory, Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
         {
             if (!string.IsNullOrEmpty(factory.substituteForTypeName))
             {
@@ -421,7 +438,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        static XmlSchemaType AddElementTypeToXmlSchema(IUxmlFactory factory, SchemaInfo schemaInfo, FactoryProcessingHelper processingData)
+        static XmlSchemaType AddElementTypeToXmlSchema(IBaseUxmlFactory factory, SchemaInfo schemaInfo, FactoryProcessingHelper processingData)
         {
             // We always have complex types with complex content.
             XmlSchemaComplexType elementType = new XmlSchemaComplexType();
@@ -497,7 +514,7 @@ namespace UnityEditor.UIElements
             return elementType;
         }
 
-        static void AddElementToXmlSchema(IUxmlFactory factory, SchemaInfo schemaInfo, XmlSchemaType type)
+        static void AddElementToXmlSchema(IBaseUxmlFactory factory, SchemaInfo schemaInfo, XmlSchemaType type)
         {
             XmlSchemaElement element = new XmlSchemaElement();
             element.Name = factory.uxmlName;
@@ -515,7 +532,7 @@ namespace UnityEditor.UIElements
             schemaInfo.schema.Items.Add(element);
         }
 
-        static XmlQualifiedName AddAttributeTypeToXmlSchema(SchemaInfo schemaInfo, UxmlAttributeDescription description, IUxmlFactory factory, FactoryProcessingHelper processingData)
+        static XmlQualifiedName AddAttributeTypeToXmlSchema(SchemaInfo schemaInfo, UxmlAttributeDescription description, IBaseUxmlFactory factory, FactoryProcessingHelper processingData)
         {
             if (description.name == null)
             {

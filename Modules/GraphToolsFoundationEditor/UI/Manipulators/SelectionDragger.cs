@@ -37,6 +37,7 @@ namespace Unity.GraphToolsFoundation.Editor
         GraphView m_GraphView;
         Vector2 m_MouseStartInGraph;
         Vector2 m_TotalMouseDelta;
+        Vector2 m_LastMousePosition;
 
         /// <summary>
         /// Elements to be dragged and their initial position
@@ -144,15 +145,15 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (m_Active)
             {
-                m_CurrentSelectionDraggerTarget?.ClearDropHighlightStatus();
-
                 // Stop processing the event sequence if the target has lost focus, then.
-                m_SelectedMovingElementIndex = 0;
-                m_CurrentSelectionDraggerTarget = null;
-                m_Active = false;
+                // Don't allow dropping if you just lost focus.
+                ApplyDrag(false);
+                StopManipulation();
 
-                if (m_Snapper.IsActive_Internal)
-                    m_Snapper.EndSnap();
+                // Temporary workaround until IN-17870 is fixed. When a contextual menu appears, if a mouse button
+                // was already pressed, it gets stuck and the "pressedButtons" properties contains the wrong values.
+                if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+                    PointerDeviceState.ReleaseButton(PointerId.mousePointerId, (int)MouseButton.LeftMouse);
             }
         }
 
@@ -249,6 +250,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 m_MouseStartInGraph = GetViewPositionInGraphSpace(e.localMousePosition);
                 m_TotalFreePanTravel = Vector2.zero;
+                m_LastMousePosition = e.localMousePosition;
 
                 if (m_PanSchedule == null)
                 {
@@ -317,7 +319,6 @@ namespace Unity.GraphToolsFoundation.Editor
             if (SelectedElement.parent != null)
             {
                 m_TotalMouseDelta = GetDragAndSnapOffset(GetViewPositionInGraphSpace(e.localMousePosition));
-
                 MoveElements(m_TotalMouseDelta);
             }
 
@@ -333,6 +334,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_CurrentSelectionDraggerTarget?.SetDropHighlightStatus(selection);
             }
 
+            m_LastMousePosition = e.localMousePosition;
             m_Dragging = true;
             e.StopPropagation();
         }
@@ -399,75 +401,82 @@ namespace Unity.GraphToolsFoundation.Editor
             if (m_GraphView == null)
             {
                 if (m_Active)
-                {
-                    target.ReleaseMouse();
-                    m_SelectedMovingElementIndex = 0;
-                    m_Active = false;
-                    m_Dragging = false;
-                    m_CurrentSelectionDraggerTarget = null;
-                }
+                    StopManipulation();
 
                 return;
             }
 
-            var selectedModels = m_GraphView.GetSelection();
-
             if (CanStopManipulation(evt))
             {
                 if (m_Active)
+                    ((EventBase)evt).StopPropagation();
+                m_LastMousePosition = evt.localMousePosition;
+                ApplyDrag(true);
+                StopManipulation();
+            }
+        }
+
+        void ApplyDrag(bool canDrop)
+        {
+            if (m_Active)
+            {
+                var selectedModels = m_GraphView.GetSelection();
+                if (m_Dragging || SelectedElement == null)
                 {
 
-                    if (m_Dragging || SelectedElement == null)
+                    if (target is GraphView graphView)
                     {
-
-                        if (target is GraphView graphView)
+                        var changedElements = graphView.PositionDependenciesManager_Internal.StopNotifyMove();
+                        using (var graphUpdater = m_GraphView.GraphViewModel.GraphModelState.UpdateScope)
                         {
-                            graphView.StopSelectionDragger();
-                            var changedElements = graphView.PositionDependenciesManager_Internal.StopNotifyMove();
-                            using (var graphUpdater = m_GraphView.GraphViewModel.GraphModelState.UpdateScope)
-                            {
-                                graphUpdater.MarkChanged(changedElements, ChangeHint.Layout);
-                            }
-                        }
-
-                        // if we stop dragging on something else than a DropTarget, just move elements
-                        if (m_CurrentSelectionDraggerTarget == null || !m_CurrentSelectionDraggerTarget.CanAcceptDrop(selectedModels))
-                        {
-                            var models = m_MovingElements.Select(m => m.Element)
-                                // PF remove this Where clause. It comes from VseGraphView.OnGraphViewChanged.
-                                .Where(e => !(e.Model is AbstractNodeModel) || e.IsMovable())
-                                .Select(e => e.Model)
-                                .OfType<IMovable>()
-                                .ToList();
-                            var dragDelta = GetDragAndSnapOffset(GetViewPositionInGraphSpace(evt.localMousePosition));
-                            m_GraphView.Dispatch(new MoveElementsCommand(dragDelta, models));
+                            graphUpdater.MarkChanged(changedElements, ChangeHint.Layout);
                         }
                     }
 
-                    m_PanSchedule.Pause();
-
-                    m_CurrentSelectionDraggerTarget?.ClearDropHighlightStatus();
-                    if (m_CurrentSelectionDraggerTarget?.CanAcceptDrop(selectedModels) ?? false)
+                    // if we stop dragging on something else than a DropTarget, just move elements
+                    if (!canDrop || m_CurrentSelectionDraggerTarget == null || !m_CurrentSelectionDraggerTarget.CanAcceptDrop(selectedModels))
                     {
-                        m_CurrentSelectionDraggerTarget?.PerformDrop(selectedModels);
-                    }
-
-                    if (m_Snapper.IsActive_Internal)
-                        m_Snapper.EndSnap();
-
-                    target.ReleaseMouse();
-                    ((EventBase)evt).StopPropagation();
-
-                    foreach (var element in m_MovingElements)
-                    {
-                        element.Element.PositionIsOverriddenByManipulator = false;
+                        var models = m_MovingElements.Select(m => m.Element)
+                            // PF remove this Where clause. It comes from VseGraphView.OnGraphViewChanged.
+                            .Where(e => !(e.Model is AbstractNodeModel) || e.IsMovable())
+                            .Select(e => e.Model)
+                            .OfType<IMovable>()
+                            .ToList();
+                        var dragDelta = GetDragAndSnapOffset(GetViewPositionInGraphSpace(m_LastMousePosition));
+                        m_GraphView.Dispatch(new MoveElementsCommand(dragDelta, models));
                     }
                 }
-                m_SelectedMovingElementIndex = 0;
-                m_Active = false;
-                m_CurrentSelectionDraggerTarget = null;
-                m_Dragging = false;
+
+                if (canDrop && (m_CurrentSelectionDraggerTarget?.CanAcceptDrop(selectedModels) ?? false))
+                {
+                    m_CurrentSelectionDraggerTarget?.PerformDrop(selectedModels);
+                }
             }
+        }
+
+        void StopManipulation()
+        {
+            if (m_Active)
+            {
+
+                if (target is GraphView graphView)
+                    graphView.StopSelectionDragger();
+                m_PanSchedule.Pause();
+                m_CurrentSelectionDraggerTarget?.ClearDropHighlightStatus();
+                if (m_Snapper.IsActive_Internal)
+                    m_Snapper.EndSnap();
+
+                target.ReleaseMouse();
+
+                foreach (var element in m_MovingElements)
+                {
+                    element.Element.PositionIsOverriddenByManipulator = false;
+                }
+            }
+            m_SelectedMovingElementIndex = 0;
+            m_Active = false;
+            m_CurrentSelectionDraggerTarget = null;
+            m_Dragging = false;
         }
 
         /// <summary>
@@ -480,14 +489,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             // Reset the items to their original pos.
-            foreach (var movingElement in m_MovingElements)
-            {
-                var originalPos = movingElement.InitialPosition;
-                movingElement.Element.style.left = originalPos.x;
-                movingElement.Element.style.top = originalPos.y;
-            }
-
-            m_PanSchedule.Pause();
+            MoveElements(Vector2.zero);
 
             if (m_TotalFreePanTravel != Vector2.zero)
             {
@@ -496,9 +498,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_GraphView.Dispatch(new ReframeGraphViewCommand(position, scale));
             }
 
-            m_CurrentSelectionDraggerTarget?.ClearDropHighlightStatus();
-
-            target.ReleaseMouse();
+            StopManipulation();
             e.StopPropagation();
         }
 

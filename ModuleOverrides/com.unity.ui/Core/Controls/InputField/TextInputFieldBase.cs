@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +13,8 @@ namespace UnityEngine.UIElements
     {
         static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
+        internal const int kMaxLengthNone = -1;
+        internal const char kMaskCharDefault = '*';
 
         // This is to save the value of the tabindex of the visual input to achieve the IMGUI behaviour of tabbing on focused-non-edit-mode TextFields.
         int m_VisualInputTabIndex;
@@ -30,7 +31,12 @@ namespace UnityEngine.UIElements
             UxmlBoolAttributeDescription m_HidePlaceholderOnFocus = new UxmlBoolAttributeDescription { name = "hide-placeholder-on-focus" };
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
             UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
-            UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
+            UxmlEnumAttributeDescription<ScrollerVisibility> m_VerticalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility> { name = "vertical-scroller-visibility", defaultValue = ScrollerVisibility.Hidden };
+            UxmlBoolAttributeDescription m_SelectAllOnMouseUp = new UxmlBoolAttributeDescription { name = "select-all-on-mouse-up", defaultValue = true};
+            UxmlBoolAttributeDescription m_SelectAllOnFocus = new UxmlBoolAttributeDescription { name = "select-all-on-focus", defaultValue = true};
+            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click", defaultValue = true };
+            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "select-line-by-triple-click", defaultValue = true };
+			UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
             UxmlEnumAttributeDescription<TouchScreenKeyboardType> m_KeyboardType = new UxmlEnumAttributeDescription<TouchScreenKeyboardType> { name = "keyboard-type" };
             UxmlBoolAttributeDescription m_AutoCorrection = new UxmlBoolAttributeDescription { name = "auto-correction" };
 
@@ -45,29 +51,93 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var field = ((TextInputBaseField<TValueType>)ve);
+
                 field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
-                field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
-                field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
+                field.password = m_Password.GetValueFromBag(bag, cc);
+                field.readOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
-                field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
+                field.textSelection.selectAllOnFocus = m_SelectAllOnFocus.GetValueFromBag(bag, cc);
+				field.textSelection.selectAllOnMouseUp = m_SelectAllOnMouseUp.GetValueFromBag(bag, cc);
+                field.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
+                field.tripleClickSelectsLine = m_SelectLineByTripleClick.GetValueFromBag(bag, cc);
+
+                var verticalScrollerVisibility = ScrollerVisibility.Hidden;
+                m_VerticalScrollerVisibility.TryGetValueFromBag(bag, cc, ref verticalScrollerVisibility);
+                field.verticalScrollerVisibility = verticalScrollerVisibility;
+
+				field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
                 field.keyboardType = m_KeyboardType.GetValueFromBag(bag, cc);
                 field.autoCorrection = m_AutoCorrection.GetValueFromBag(bag, cc);
+
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
                 field.maskChar = (string.IsNullOrEmpty(maskCharacter)) ? kMaskCharDefault : maskCharacter[0];
                 field.placeholderText = m_PlaceholderText.GetValueFromBag(bag, cc);
                 field.hidePlaceholderOnFocus = m_HidePlaceholderOnFocus.GetValueFromBag(bag, cc);
+
             }
         }
 
-        TextInputBase m_TextInputBase;
+        #region Properties for UI Builder
+        // The UI Builder needs the property to be named exactly the same as the UXML attribute in order for
+        // serialization to work properly.
+
         /// <summary>
-        /// This is the text input visual element which presents the value in the field.
+        /// DO NOT USE password, use isPassword instead. This property was added to rename the property in the UI Builder.
         /// </summary>
-        protected internal TextInputBase textInputBase => m_TextInputBase;
+        internal bool password
+        {
+            get => textEdition.isPassword;
+            set => textEdition.isPassword = value;
+        }
 
-        internal const int kMaxLengthNone = -1;
-        internal const char kMaskCharDefault = '*';
+        /// <summary>
+        /// DO NOT USE selectWordByDoubleClick, use textSelection.doubleClickSelectsWord instead. This property was added to rename the property in the UI Builder.
+        /// </summary>
+        internal bool selectWordByDoubleClick
+        {
+            get => textSelection.doubleClickSelectsWord;
+            set => textSelection.doubleClickSelectsWord = value;
+        }
 
+        /// <summary>
+        /// DO NOT USE selectLineByTripleClick, use textSelection.tripleClickSelectsLine instead. This property was added to rename the property in the UI Builder.
+        /// </summary>
+        internal bool selectLineByTripleClick
+        {
+            get => textSelection.tripleClickSelectsLine;
+            set => textSelection.tripleClickSelectsLine = value;
+        }
+
+        /// <summary>
+        /// DO NOT USE readOnly, use isReadOnly instead. This property was added to rename the property in the UI Builder.
+        /// </summary>
+        internal bool readOnly
+        {
+            get => isReadOnly;
+            set => isReadOnly = value;
+        }
+
+        /// <summary>
+        /// DO NOT USE placeholderText, use textEdition.placeholder instead. This property was added so it can be picked up properly by the UI Builder.
+        /// </summary>
+        internal string placeholderText
+        {
+            get => textEdition.placeholder;
+            set => textEdition.placeholder = value;
+        }
+
+        /// <summary>
+        /// DO NOT USE hidePlaceholderOnFocus, use textEdition.hidePlaceholderOnFocus instead. This property was added so it can be picked up properly by the UI Builder.
+        /// </summary>
+        internal bool hidePlaceholderOnFocus
+        {
+            get => textEdition.hidePlaceholderOnFocus;
+            set => textEdition.hidePlaceholderOnFocus = value;
+        }
+
+        #endregion
+
+        #region USS ClassNames
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
@@ -108,20 +178,56 @@ namespace UnityEngine.UIElements
         /// USS class name of input elements in elements of this type.
         /// </summary>
         public static readonly string textInputUssName = "unity-text-input";
+        #endregion
 
-        /// <summary>
-        /// The value of the input field.
-        /// </summary>
-        public string text
+        protected TextInputBaseField(int maxLength, char maskChar, TextInputBase textInputBase)
+            : this(null, maxLength, maskChar, textInputBase) {}
+
+        protected TextInputBaseField(string label, int maxLength, char maskChar, TextInputBase textInputBase)
+            : base(label, textInputBase)
         {
-            get => m_TextInputBase.text;
-            protected set => m_TextInputBase.text = value;
+            tabIndex = 0;
+            delegatesFocus = true;
+            labelElement.tabIndex = -1; // To delegate directly to text-input field
+
+            AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+            visualInput.AddToClassList(singleLineInputUssClassName);
+
+            m_TextInputBase = textInputBase;
+            m_TextInputBase.textEdition.maxLength = maxLength;
+            m_TextInputBase.textEdition.maskChar = maskChar;
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
+			textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
         }
 
+        TextInputBase m_TextInputBase;
+        /// <summary>
+        /// This is the text input visual element which presents the value in the field.
+        /// </summary>
+        protected internal TextInputBase textInputBase => m_TextInputBase;
+
+        /// <summary>
+        /// Retrieves this Field's TextElement ITextSelection
+        /// </summary>
+        public ITextSelection textSelection => m_TextInputBase.textElement.selection;
+
+        /// <summary>
+        /// Retrieves this Field's TextElement ITextEdition
+        /// </summary>
+        public ITextEdition textEdition => m_TextInputBase.textElement.edition;
+
+        #region TextEdition
         /// <summary>
         /// Calls the methods in its invocation list when <see cref="isReadOnly"/> changes.
         /// </summary>
-        protected event Action<bool> onIsReadOnlyChanged;
+        protected Action<bool> onIsReadOnlyChanged
+        {
+            get => m_TextInputBase.textElement.onIsReadOnlyChanged;
+            set => m_TextInputBase.textElement.onIsReadOnlyChanged = value;
+        }
 
         /// <summary>
         /// Returns true if the field is read only.
@@ -129,11 +235,7 @@ namespace UnityEngine.UIElements
         public bool isReadOnly
         {
             get => textEdition.isReadOnly;
-            set
-            {
-                textEdition.isReadOnly = value;
-                onIsReadOnlyChanged?.Invoke(value);
-            }
+            set => textEdition.isReadOnly = value;
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
@@ -142,13 +244,13 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool isPasswordField
         {
-            get => m_TextInputBase.isPasswordField;
+            get => textEdition.isPassword;
             set
             {
-                if (m_TextInputBase.isPasswordField == value)
+                if (textEdition.isPassword == value)
                     return;
 
-                m_TextInputBase.isPasswordField = value;
+                textEdition.isPassword = value;
                 m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
             }
         }
@@ -189,17 +291,35 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Retrieves this Field's TextElement ITextSelection
+        /// Maximum number of characters for the field.
         /// </summary>
-        public ITextSelection textSelection => m_TextInputBase.textElement.selection;
+        public int maxLength
+        {
+            get => textEdition.maxLength;
+            set => textEdition.maxLength = value;
+        }
 
         /// <summary>
-        /// Retrieves this Field's TextElement ITextEdition
+        /// If set to true, the value property isn't updated until either the user presses Enter or the text field loses focus.
         /// </summary>
-        public ITextEdition textEdition => m_TextInputBase.textElement.edition;
+        public bool isDelayed
+        {
+            get => textEdition.isDelayed;
+            set => textEdition.isDelayed = value;
+        }
 
-        // TODO: Obsolete all of these below and use the exposed TextSelection above
+        /// <summary>
+        /// The character used for masking in a password field.
+        /// </summary>
+        public char maskChar
+        {
+            get => textEdition.maskChar;
+            set => textEdition.maskChar = value;
+        }
 
+        #endregion
+
+        #region TextSelection
         /// <summary>
         /// Background color of selected text.
         /// </summary>
@@ -219,7 +339,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// This is the position of the cursor inside the <see cref="TextInputBaseField{TValueType}"/>.
+        /// The position of the text cursor inside the element.
         /// </summary>
         public Vector2 cursorPosition
         {
@@ -236,7 +356,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all the text.
+        /// Selects all the text contained in the field.
         /// </summary>
         public void SelectAll()
         {
@@ -252,9 +372,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects text in the textfield between cursorIndex and selectionIndex.
+        /// Select text between cursorIndex and selectIndex.
         /// </summary>
-        /// <param name="selectionIndex">The selection end position.</param>
         public void SelectRange(int cursorIndex, int selectionIndex)
         {
             textSelection.SelectRange(cursorIndex, selectionIndex);
@@ -279,15 +398,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Maximum number of characters for the field.
-        /// </summary>
-        public int maxLength
-        {
-            get => textEdition.maxLength;
-            set => textEdition.maxLength = value;
-        }
-
-        /// <summary>
         /// Controls whether double clicking selects the word under the mouse pointer or not.
         /// </summary>
         public bool doubleClickSelectsWord
@@ -305,47 +415,30 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// If set to true, the value property isn't updated until either the user presses Enter or the text field loses focus.
-        /// </summary>
-        public bool isDelayed
-        {
-            get => textEdition.isDelayed;
-            set => textEdition.isDelayed = value;
-        }
-
-        /// <summary>
-        /// The character used for masking in a password field.
-        /// </summary>
-        public char maskChar
-        {
-            get => textEdition.maskChar;
-            set => textEdition.maskChar = value;
-        }
-
-        /// <summary>
-        /// DO NOT USE placeholderText, use textEdition.placeholder instead. This property was added so it can be picked up properly by the UI Builder.
-        /// </summary>
-        internal string placeholderText
-        {
-            get => textEdition.placeholder;
-            set => textEdition.placeholder = value;
-        }
-
-        /// <summary>
-        /// DO NOT USE hidePlaceholderOnFocus, use textEdition.hidePlaceholderOnFocus instead. This property was added so it can be picked up properly by the UI Builder.
-        /// </summary>
-        internal bool hidePlaceholderOnFocus
-        {
-            get => textEdition.hidePlaceholderOnFocus;
-            set => textEdition.hidePlaceholderOnFocus = value;
-        }
-
-        /// <summary>
         /// Options for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
         /// </summary>
+        [Obsolete("SetVerticalScrollerVisibility is deprecated. Use TextField.verticalScrollerVisibility instead.")]
         public bool SetVerticalScrollerVisibility(ScrollerVisibility sv)
         {
             return textInputBase.SetVerticalScrollerVisibility(sv);
+        }
+        #endregion
+        /// <summary>
+        /// The value of the input field.
+        /// </summary>
+        public string text
+        {
+            get => m_TextInputBase.text;
+            protected set => m_TextInputBase.text = value;
+        }
+
+        /// <summary>
+        /// Option for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
+        /// </summary>
+        public ScrollerVisibility verticalScrollerVisibility
+        {
+            get => textInputBase.verticalScrollerVisibility;
+            set => textInputBase.SetVerticalScrollerVisibility(value);
         }
 
         /// <summary>
@@ -361,52 +454,6 @@ namespace UnityEngine.UIElements
             MeasureMode heightMode)
         {
             return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, textToMeasure, width, widthMode, height, heightMode);
-        }
-
-        internal bool hasFocus => textInputBase.textElement.hasFocus;
-
-        /// <summary>
-        /// Converts a value of the specified generic type from the subclass to a string representation.
-        /// </summary>
-        /// <remarks>Subclasses must implement this method.</remarks>
-        /// <param name="value">The value to convert.</param>
-        /// <returns>A string representing the value.</returns>
-        protected abstract string ValueToString(TValueType value);
-
-        /// <summary>
-        /// Converts a string to the value of the specified generic type from the subclass.
-        /// </summary>
-        /// <remarks>Subclasses must implement this method.</remarks>
-        /// <param name="str">The string to convert.</param>
-        /// <returns>A value converted from the string.</returns>
-        protected abstract TValueType StringToValue(string str);
-
-        protected TextInputBaseField(int maxLength, char maskChar, TextInputBase textInputBase)
-            : this(null, maxLength, maskChar, textInputBase) {}
-
-        protected TextInputBaseField(string label, int maxLength, char maskChar, TextInputBase textInputBase)
-            : base(label, textInputBase)
-        {
-            tabIndex = 0;
-            delegatesFocus = true;
-            labelElement.tabIndex = -1; // To delegate directly to text-input field
-
-            AddToClassList(ussClassName);
-            labelElement.AddToClassList(labelUssClassName);
-            visualInput.AddToClassList(inputUssClassName);
-            visualInput.AddToClassList(singleLineInputUssClassName);
-
-            m_TextInputBase = textInputBase;
-            m_TextInputBase.maxLength = maxLength;
-            m_TextInputBase.maskChar = maskChar;
-
-            RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
-            textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
-        }
-
-        void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
-        {
-            m_TextInputBase.OnInputCustomStyleResolved(e);
         }
 
         [EventInterest(typeof(NavigationSubmitEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(BlurEvent))]
@@ -459,6 +506,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Converts a value of the specified generic type from the subclass to a string representation.
+        /// </summary>
+        /// <remarks>Subclasses must implement this method.</remarks>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>A string representing the value.</returns>
+        protected abstract string ValueToString(TValueType value);
+
+        /// <summary>
+        /// Converts a string to the value of the specified generic type from the subclass.
+        /// </summary>
+        /// <remarks>Subclasses must implement this method.</remarks>
+        /// <param name="str">The string to convert.</param>
+        /// <returns>A value converted from the string.</returns>
+        protected abstract TValueType StringToValue(string str);
+
         protected override void UpdateMixedValueContent()
         {
             if (showMixedValue)
@@ -474,6 +537,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool hasFocus => textInputBase.textElement.hasFocus;
         internal void OnPlaceholderChanged()
         {
             if (!string.IsNullOrEmpty(textEdition.placeholder))
@@ -505,6 +569,11 @@ namespace UnityEngine.UIElements
             // Do nothing. Value-based fields will override this if appropriate.
         }
 
+        void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
+        {
+            m_TextInputBase.OnInputCustomStyleResolved(e);
+        }
+
         /// <summary>
         /// This is the input text base class visual representation.
         /// </summary>
@@ -514,6 +583,7 @@ namespace UnityEngine.UIElements
             internal ScrollView scrollView;
             internal VisualElement multilineContainer;
 
+            #region USS ClassNames
             /// <summary>
             /// Modifier name of the inner components
             /// </summary>
@@ -556,6 +626,38 @@ namespace UnityEngine.UIElements
             /// USS class name of the inner ContentContainer
             /// </summary>
             public static readonly string innerContentContainerUssClassName = ScrollView.contentUssClassName + innerComponentsModifierName;
+            #endregion
+
+            internal TextInputBase()
+            {
+                delegatesFocus = true;
+
+                textElement = new TextElement();
+                textElement.selection.isSelectable = true;
+                textEdition.isReadOnly = false;
+                textSelection.isSelectable = true;
+                textSelection.selectAllOnFocus = true;
+                textSelection.selectAllOnMouseUp = true;
+                textElement.enableRichText = false;
+                textElement.tabIndex = 0;
+
+                textEdition.AcceptCharacter += AcceptCharacter;
+                textEdition.UpdateScrollOffset += UpdateScrollOffset;
+                textEdition.UpdateValueFromText += UpdateValueFromText;
+                textEdition.UpdateTextFromValue += UpdateTextFromValue;
+                textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
+                textEdition.GetDefaultValueType = GetDefaultValueType;
+
+
+                AddToClassList(inputUssClassName);
+                name = TextField.textInputUssName;
+
+                SetSingleLine();
+
+                RegisterCallback<CustomStyleResolvedEvent>(OnInputCustomStyleResolved);
+
+                tabIndex = -1;
+            }
 
             /// <summary>
             /// Retrieves this TextInput's ITextSelection
@@ -567,17 +669,21 @@ namespace UnityEngine.UIElements
             /// </summary>
             public ITextEdition textEdition => textElement.edition;
 
-            /// <summary>
-            /// Selects all the text contained in the field.
-            /// </summary>
-            public void SelectAll()
-            {
-                textSelection.SelectAll();
-            }
+            internal bool isDragging { get; set; }
 
-            internal void SelectNone()
+            /// <summary>
+            /// The value of the input field.
+            /// </summary>
+            public string text
             {
-                textSelection.SelectNone();
+                get => textElement.text;
+                set
+                {
+                    if (textElement.text == value)
+                        return;
+
+                    textElement.text = value;
+                }
             }
 
             /// <summary>
@@ -606,162 +712,13 @@ namespace UnityEngine.UIElements
             {
                 TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
                 parentTextField.Focus();
-            }
-
-            /// <summary>
-            /// Resets the text contained in the field.
-            /// </summary>
-            public void ResetValueAndText()
-            {
-                textEdition.ResetValueAndText();
-            }
-
-            /// <summary>
-            /// Returns true if the field is read only.
-            /// </summary>
-            public bool isReadOnly
-            {
-                get => textEdition.isReadOnly;
-                set => textEdition.isReadOnly = value;
-            }
-
-            /// <summary>
-            /// Maximum number of characters for the field.
-            /// </summary>
-            public int maxLength
-            {
-                get => textEdition.maxLength;
-                set => textEdition.maxLength = value;
-            }
-            /// <summary>
-            /// The character used for masking in a password field.
-            /// </summary>
-            public char maskChar
-            {
-                get => textEdition.maskChar;
-                set => textEdition.maskChar = value;
-            }
-
-            /// <summary>
-            /// Returns true if the field is used to edit a password.
-            /// </summary>
-            public virtual bool isPasswordField
-            {
-                get => textEdition.isPassword;
-                set => textEdition.isPassword = value;
-            }
-
-            internal bool isDelayed {
-                get => textEdition.isDelayed;
-                set => textEdition.isDelayed = value;
-            }
-
-            internal bool isDragging { get; set; }
-
-            //we need to deprecate these ASAP
-
-            /// <summary>
-            /// Background color of selected text.
-            /// </summary>
-            public Color selectionColor
-            {
-                get => textSelection.selectionColor;
-                set => textSelection.selectionColor = value;
-            }
-
-            /// <summary>
-            /// Color of the cursor.
-            /// </summary>
-            public Color cursorColor
-            {
-                get => textSelection.cursorColor;
-                set => textSelection.cursorColor = value;
-            }
-
-            /// <summary>
-            /// This is the cursor index in the text presented.
-            /// </summary>
-            public int cursorIndex
-            {
-                get => textSelection.cursorIndex;
-            }
-
-            /// <summary>
-            /// This is the selection index in the text presented.
-            /// </summary>
-            public int selectIndex
-            {
-                get => textSelection.selectIndex;
-            }
-
-            /// <summary>
-            /// Controls whether double clicking selects the word under the mouse pointer or not.
-            /// </summary>
-            public bool doubleClickSelectsWord
-            {
-                get => textSelection.doubleClickSelectsWord;
-                set => textSelection.doubleClickSelectsWord = value;
-            }
-            /// <summary>
-            /// Controls whether triple clicking selects the entire line under the mouse pointer or not.
-            /// </summary>
-            public bool tripleClickSelectsLine
-            {
-                get => textSelection.tripleClickSelectsLine;
-                set => textSelection.tripleClickSelectsLine = value;
-            }
-
-            /// <summary>
-            /// The value of the input field.
-            /// </summary>
-            public string text
-            {
-                get => textElement.text;
-                set
-                {
-                    if (textElement.text == value)
-                        return;
-
-                    textElement.text = value;
-                }
-            }
-
-            internal TextInputBase()
-            {
-                delegatesFocus = true;
-
-                textElement = new TextElement();
-                textElement.selection.isSelectable = true;
-                textEdition.isReadOnly = false;
                 textEdition.keyboardType = TouchScreenKeyboardType.Default;
                 textEdition.autoCorrection = false;
-                textSelection.isSelectable = true;
-                textElement.enableRichText = false;
-                textSelection.selectAllOnFocus = true;
-                textSelection.selectAllOnMouseUp = true;
-                textElement.tabIndex = 0;
-
-                textEdition.AcceptCharacter += AcceptCharacter;
-                textEdition.UpdateScrollOffset += UpdateScrollOffset;
-                textEdition.UpdateValueFromText += UpdateValueFromText;
-                textEdition.UpdateTextFromValue += UpdateTextFromValue;
-                textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
-                textEdition.GetDefaultValueType = GetDefaultValueType;
-
-                AddToClassList(inputUssClassName);
-                name = TextField.textInputUssName;
-
-                SetSingleLine();
-
-                RegisterCallback<CustomStyleResolvedEvent>(OnInputCustomStyleResolved);
-
-                tabIndex = -1;
             }
 
             void MakeSureScrollViewDoesNotLeakEvents(ChangeEvent<float> evt)
             {
                 evt.StopPropagation();
-
             }
 
             internal void SetSingleLine()
@@ -791,7 +748,7 @@ namespace UnityEngine.UIElements
                 RemoveSingleLineComponents();
                 RemoveMultilineComponents();
 
-                if (m_VerticalScrollerVisibility != ScrollerVisibility.Hidden && scrollView == null)
+                if (verticalScrollerVisibility != ScrollerVisibility.Hidden && scrollView == null)
                 {
                     scrollView = new ScrollView();
                     scrollView.Add(textElement);
@@ -799,7 +756,7 @@ namespace UnityEngine.UIElements
 
                     SetScrollViewMode();
                     scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-                    scrollView.verticalScrollerVisibility = m_VerticalScrollerVisibility;
+                    scrollView.verticalScrollerVisibility = verticalScrollerVisibility;
 
                     scrollView.AddToClassList(innerScrollviewUssClassName);
                     scrollView.contentViewport.AddToClassList(innerViewportUssClassName);
@@ -875,7 +832,7 @@ namespace UnityEngine.UIElements
             internal virtual bool AcceptCharacter(char c)
             {
                 // When readonly or not enabled in the hierarchy, we do not accept any character.
-                return !isReadOnly && enabledInHierarchy;
+                return !textEdition.isReadOnly && enabledInHierarchy;
             }
 
             // scrollOffset is used in automated tests
@@ -1031,22 +988,128 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            ScrollerVisibility m_VerticalScrollerVisibility = ScrollerVisibility.Hidden;
+            internal ScrollerVisibility verticalScrollerVisibility = ScrollerVisibility.Hidden;
             internal bool SetVerticalScrollerVisibility(ScrollerVisibility sv)
             {
                 if (textEdition.multiline)
                 {
-                    m_VerticalScrollerVisibility = sv;
+                    verticalScrollerVisibility = sv;
                     if (scrollView == null)
                         SetMultiline();
                     else
-                        scrollView.verticalScrollerVisibility = m_VerticalScrollerVisibility;
+                        scrollView.verticalScrollerVisibility = verticalScrollerVisibility;
 
                     return true;
                 }
-                Debug.LogWarning("Can't SetVerticalScrollerVisibility as the field isn't multiline.");
                 return false;
             }
+
+            #region Obsolete
+            /// <summary>
+            /// Selects all the text contained in the field.
+            /// </summary>
+            [Obsolete("SelectAll() is deprecated. Use textSelection.SelectAll() instead.")]
+            public void SelectAll()
+            {
+                textSelection.SelectAll();
+            }
+
+            /// <summary>
+            /// Returns true if the field is read only.
+            /// </summary>
+            [Obsolete("isReadOnly is deprecated. Use textEdition.isReadOnly instead.")]
+            public bool isReadOnly
+            {
+                get => textEdition.isReadOnly;
+                set => textEdition.isReadOnly = value;
+            }
+
+            /// <summary>
+            /// Maximum number of characters for the field.
+            /// </summary>
+            [Obsolete("maxLength is deprecated. Use textEdition.maxLength instead.")]
+            public int maxLength
+            {
+                get => textEdition.maxLength;
+                set => textEdition.maxLength = value;
+            }
+            /// <summary>
+            /// The character used for masking in a password field.
+            /// </summary>
+            [Obsolete("maskChar is deprecated. Use textEdition.maskChar instead.")]
+            public char maskChar
+            {
+                get => textEdition.maskChar;
+                set => textEdition.maskChar = value;
+            }
+
+            /// <summary>
+            /// Returns true if the field is used to edit a password.
+            /// </summary>
+            [Obsolete("isPasswordField is deprecated. Use textEdition.isPassword instead.")]
+            public virtual bool isPasswordField
+            {
+                get => textEdition.isPassword;
+                set => textEdition.isPassword = value;
+            }
+            /// <summary>
+            /// Background color of selected text.
+            /// </summary>
+            [Obsolete("selectionColor is deprecated. Use textSelection.selectionColor instead.")]
+            public Color selectionColor
+            {
+                get => textSelection.selectionColor;
+                set => textSelection.selectionColor = value;
+            }
+
+            /// <summary>
+            /// Color of the cursor.
+            /// </summary>
+            [Obsolete("cursorColor is deprecated. Use textSelection.cursorColor instead.")]
+            public Color cursorColor
+            {
+                get => textSelection.cursorColor;
+                set => textSelection.cursorColor = value;
+            }
+
+            /// <summary>
+            /// This is the cursor index in the text presented.
+            /// </summary>
+            [Obsolete("cursorIndex is deprecated. Use textSelection.cursorIndex instead.")]
+            public int cursorIndex
+            {
+                get => textSelection.cursorIndex;
+            }
+
+            /// <summary>
+            /// This is the selection index in the text presented.
+            /// </summary>
+            [Obsolete("selectIndex is deprecated. Use textSelection.selectIndex instead.")]
+            public int selectIndex
+            {
+                get => textSelection.selectIndex;
+            }
+
+            /// <summary>
+            /// Controls whether double clicking selects the word under the mouse pointer or not.
+            /// </summary>
+            [Obsolete("doubleClickSelectsWord is deprecated. Use textSelection.doubleClickSelectsWord instead.")]
+            public bool doubleClickSelectsWord
+            {
+                get => textSelection.doubleClickSelectsWord;
+                set => textSelection.doubleClickSelectsWord = value;
+            }
+            /// <summary>
+            /// Controls whether triple clicking selects the entire line under the mouse pointer or not.
+            /// </summary>
+            [Obsolete("tripleClickSelectsLine is deprecated. Use textSelection.tripleClickSelectsLine instead.")]
+            public bool tripleClickSelectsLine
+            {
+                get => textSelection.tripleClickSelectsLine;
+                set => textSelection.tripleClickSelectsLine = value;
+            }
+
+            #endregion
         }
     }
 }

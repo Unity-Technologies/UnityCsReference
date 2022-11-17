@@ -195,12 +195,26 @@ namespace UnityEngine.Rendering
             Automatic   = 1,    // New renderers are added automatically based on a RayTracingModeMask.
         }
 
+        [System.Obsolete(@"RayTracingAccelerationStructure.RASSettings is deprecated. Use RayTracingAccelerationStructure.Settings instead. (UnityUpgradable) -> RayTracingAccelerationStructure/Settings", false)]
         public struct RASSettings
         {
             public ManagementMode managementMode;
             public RayTracingModeMask rayTracingModeMask;
             public int layerMask;
             public RASSettings(ManagementMode sceneManagementMode, RayTracingModeMask rayTracingModeMask, int layerMask)
+            {
+                this.managementMode = sceneManagementMode;
+                this.rayTracingModeMask = rayTracingModeMask;
+                this.layerMask = layerMask;
+            }
+        }
+		
+        public struct Settings
+        {
+            public ManagementMode managementMode;
+            public RayTracingModeMask rayTracingModeMask;
+            public int layerMask;
+            public Settings(ManagementMode sceneManagementMode, RayTracingModeMask rayTracingModeMask, int layerMask)
             {
                 this.managementMode = sceneManagementMode;
                 this.rayTracingModeMask = rayTracingModeMask;
@@ -235,14 +249,14 @@ namespace UnityEngine.Rendering
 
         // --------------------------------------------------------------------
         // Actual API
-        public RayTracingAccelerationStructure(RASSettings settings)
+        public RayTracingAccelerationStructure(Settings settings)
         {
             m_Ptr = Create(settings);
         }
 
         public RayTracingAccelerationStructure()
         {
-            RASSettings settings = new RASSettings();
+            Settings settings = new Settings();
             settings.rayTracingModeMask = RayTracingModeMask.Everything;
             settings.managementMode = ManagementMode.Manual;
             settings.layerMask = -1;
@@ -250,7 +264,7 @@ namespace UnityEngine.Rendering
         }
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::Create")]
-        extern private static IntPtr Create(RASSettings desc);
+        extern private static IntPtr Create(Settings desc);
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::Destroy")]
         extern private static void Destroy(RayTracingAccelerationStructure accelStruct);
@@ -499,19 +513,19 @@ namespace UnityEngine.Rendering
 
 
         // Obsolete methods. To be removed in the future.
-        const string obsoleteBuildMsg1 = "Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build()";
+        const string obsoleteBuildMsg1 = "Method Update is deprecated. Use Build instead (UnityUpgradable) -> Build()";
         [Obsolete(obsoleteBuildMsg1, true)]
         public void Update() => new NotSupportedException(obsoleteBuildMsg1);
 
-        const string obsoleteBuildMsg2 = "Method Update has been deprecated. Use Build instead (UnityUpgradable) -> Build(*)";
+        const string obsoleteBuildMsg2 = "Method Update is deprecated. Use Build instead (UnityUpgradable) -> Build(*)";
         [Obsolete(obsoleteBuildMsg2, true)]
         public void Update(Vector3 relativeOrigin) => new NotSupportedException(obsoleteBuildMsg2);
 
-        const string obsoleteRendererMsg = "This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding Renderers to the acceleration structure.";
+        const string obsoleteRendererMsg = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding Renderers to the acceleration structure.";
         [Obsolete(obsoleteRendererMsg, true)]
         public void AddInstance(Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteRendererMsg);
 
-        const string obsoleteAABBMsg = "This AddInstance method has been deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
+        const string obsoleteAABBMsg = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
         [Obsolete(obsoleteAABBMsg, true)]
         public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg);
 

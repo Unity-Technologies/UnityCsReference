@@ -126,7 +126,7 @@ namespace Unity.UI.Builder
         public static void CloneTree(
             VisualTreeAsset vta, VisualElement target,
             Dictionary<string, VisualElement> slotInsertionPoints,
-            List<TemplateAsset.AttributeOverride> attributeOverrides)
+            List<CreationContext.AttributeOverrideRange> attributeOverridesRanges)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -164,7 +164,7 @@ namespace Unity.UI.Builder
                     continue;
 
                 var rootVe = CloneSetupRecursively(vta, rootElement, idToChildren,
-                    new CreationContext(slotInsertionPoints, attributeOverrides, vta, target));
+                    new CreationContext(slotInsertionPoints, attributeOverridesRanges, vta, target));
 
                 // if contentContainer == this, the shadow and the logical hierarchy are identical
                 // otherwise, if there is a CC, we want to insert in the shadow

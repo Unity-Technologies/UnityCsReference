@@ -120,18 +120,30 @@ namespace UnityEditor
         public override void OnOpen()
         {
             Undo.undoRedoEvent += OnUndoRedoPerformed;
+            Selection.selectionChanged += OnSelectionChange;
             base.OnOpen();
         }
 
         public override void OnClose()
         {
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
+            Selection.selectionChanged -= OnSelectionChange;
             base.OnClose();
         }
 
         void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
             RefreshStatus();
+        }
+
+        // This function is called when the Property Context Menu Item 'Go To Value in Prefab X' is selected,
+        // which opens prefab mode (case SMT-145) and therefore requires the PrefabOverridesWindow to close.
+        // As just calling editorWindow.Close() would cause the entire Editor to minimize for unknown reasons,
+        // we put the InspectorWindow in focus to close the window and to prevent minimization of the Editor.
+        void OnSelectionChange()
+        {
+            if (InspectorWindow.GetAllInspectorWindows().Length != 0)
+                InspectorWindow.GetAllInspectorWindows()[0].Focus();
         }
 
         internal void RefreshStatus(bool reloadTreeView = true)

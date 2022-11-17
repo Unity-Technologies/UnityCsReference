@@ -10,9 +10,11 @@ using UnityEditor.ShortcutManagement;
 namespace UnityEditor.TerrainTools
 {
     [FilePathAttribute("Library/TerrainTools/Stamp", FilePathAttribute.Location.ProjectFolder)]
-    internal class StampTool : TerrainPaintTool<StampTool>
+    internal class StampTool : TerrainPaintToolWithOverlays<StampTool>
     {
-        const string toolName = "Stamp Terrain";
+        internal const string k_ToolName = "Stamp Terrain";
+        public override string OnIcon => "TerrainOverlays/Stamp_On.png";
+        public override string OffIcon => "TerrainOverlays/Stamp.png";
 
         [SerializeField]
         float m_StampHeightTerrainSpace = 0.0f;
@@ -24,7 +26,7 @@ namespace UnityEditor.TerrainTools
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
-            context.SelectPaintTool<StampTool>();
+            context.SelectPaintToolWithOverlays<StampTool>();
         }
 
         class Styles
@@ -45,15 +47,29 @@ namespace UnityEditor.TerrainTools
             return m_styles;
         }
 
+        public override int IconIndex
+        {
+            get { return (int) SculptIndex.Stamp; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Sculpt; }
+        }
+
         public override string GetName()
         {
-            return toolName;
+            return k_ToolName;
         }
 
         public override string GetDescription()
         {
             return GetStyles().description.text;
         }
+
+        public override bool HasToolSettings => true;
+        public override bool HasBrushMask => true;
+        public override bool HasBrushAttributes => true;
 
         private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform, Terrain terrain, bool negate)
         {
@@ -131,12 +147,11 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             Styles styles = GetStyles();
             EditorGUI.BeginChangeCheck();
             {
-                EditorGUI.BeginChangeCheck();
                 float height = Mathf.Abs(m_StampHeightTerrainSpace);
                 bool stampDown = (m_StampHeightTerrainSpace < 0.0f);
                 height = EditorGUILayout.PowerSlider(styles.height, height, 0, terrain.terrainData.size.y, 2.0f);
@@ -147,15 +162,19 @@ namespace UnityEditor.TerrainTools
                 }
             }
             m_MaxBlendAdd = EditorGUILayout.Slider(styles.maxadd, m_MaxBlendAdd, 0.0f, 1.0f);
-            if (EditorGUI.EndChangeCheck())
-            {
-                Save(true);
-            }
+        }
 
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
             // show built-in brushes
             int textureRez = terrain.terrainData.heightmapResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
-            base.OnInspectorGUI(terrain, editContext);
+            OnToolSettingsGUI(terrain, editContext, overlays);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
     }
 }

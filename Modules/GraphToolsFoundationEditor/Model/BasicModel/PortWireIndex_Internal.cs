@@ -81,7 +81,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="wireModel">The wire to add.</param>
         public void AddWire(WireModel wireModel)
         {
-            if (m_IsDirty)
+            if (m_IsDirty || wireModel == null)
             {
                 // Do not bother if index is already dirty: index will be rebuilt soon.
                 return;

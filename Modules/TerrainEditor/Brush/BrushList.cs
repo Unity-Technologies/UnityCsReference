@@ -170,7 +170,7 @@ namespace UnityEditor
 
             EditorGUILayout.BeginHorizontal();
             {
-                Rect brushPreviewRect = EditorGUILayout.GetControlRect(true, GUILayout.Width(128), GUILayout.Height(128));
+                Rect brushPreviewRect = EditorGUILayout.GetControlRect(true, GUILayout.Width(60), GUILayout.Height(60));
                 if (m_BrushList != null)
                 {
                     EditorGUI.DrawTextureAlpha(brushPreviewRect, GetActiveBrush().thumbnail);

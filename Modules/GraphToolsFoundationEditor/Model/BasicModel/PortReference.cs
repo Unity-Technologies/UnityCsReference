@@ -26,6 +26,9 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField]
         string m_Title;
 
+        internal static string uniqueIdFieldName_Internal = nameof(m_UniqueId);
+        internal static string nodeModelGuidFieldName_Internal = nameof(m_NodeModelGuid);
+
         GraphModel m_GraphModel;
 
         AbstractNodeModel m_NodeModel;
@@ -161,8 +164,15 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>True if the port was added.</returns>
         public bool AddMissingPort(PortDirection direction)
         {
+            if (NodeModel == null && m_GraphModel.TryGetModelFromGuid(NodeModelGuid, out var model) && model is NodePlaceholder missingNodeModel)
+            {
+                missingNodeModel.AddMissingPort(direction, UniqueId, portName: Title);
+                return true;
+            }
+
             if (!(NodeModel is NodeModel n))
                 return false;
+
             n.AddMissingPort(direction, UniqueId, portName: Title);
             return true;
         }

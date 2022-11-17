@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEditor;
+using UnityEditor.MPE;
 using UnityEditor.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
@@ -341,8 +342,18 @@ namespace UnityEditorInternal
         }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
-        [NativeMethod("GetFramesBelongToSameSession")]
-        internal static extern bool GetFramesBelongToSameSession(int frame1, int frame2);
+        [NativeMethod("GetFramesBelongToSameProfilerSession")]
+        internal static extern bool GetFramesBelongToSameProfilerSession(int frame1, int frame2);
+        // A Profiler Session is a session that shares the same global session and symbols data. All of its data is necessarily gathered within the same runtime (Editor or Player) session
+        // A runtime session is everything that happens within one startup of the Editor or Player until its very end. There could be multiple Profiler sessions within a single runtime session.
+        // Checking if the data comes from the current Editor session is mostly needed when using InstanceID information to find UnityEngine.Objects within the currently running Editor.
+        internal static bool FrameDataBelongsToCurrentEditorSession(FrameDataView frameData)
+        {
+            if (ProcessService.level != ProcessLevel.Main)
+                return false;
+
+            return frameData.runtimeSessionId == EditorConnectionInternal.GetLocalGuid();
+        }
 
         public static event Action<int, int> NewProfilerFrameRecorded;
 
@@ -576,5 +587,22 @@ namespace UnityEditorInternal
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendSetAudioCaptureFlags")]
         static public extern void SetAudioCaptureFlags(int flags);
+        
+        internal static System.Guid profilerInternalSessionMetaDataGuid
+        {
+            get
+            {
+                unsafe
+                {
+                    System.Guid guid;
+                    GetProfilerInternalMetaDataGuidInternal(&guid, sizeof(Guid));
+                    return guid;
+                }
+            }
+        }
+
+        [NativeMethod(Name = "GetProfilerInternalSessionMetaDataGuid")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static unsafe extern void GetProfilerInternalMetaDataGuidInternal(void *guid, int size);
     }
 }

@@ -671,6 +671,9 @@ namespace UnityEditor.Modules
                     args.report.EndBuildStep(buildStep);
 
                     BeeDriverResult = activeBuild.TaskObject.Result;
+                    
+                    UnityBeeDriverProfilerSession.AddTaskToWaitForBeforeFinishing(BeeDriverResult.ProfileOutputWritingTask);
+                    
                     if (BeeDriverResult.Success)
                     {
                         PostProcessCompletedBuild(args);

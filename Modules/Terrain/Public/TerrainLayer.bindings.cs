@@ -9,6 +9,13 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    // NOTE: keep in sync with TerrainLayer::SmoothnessSource in TerrainLayer.h
+    public enum TerrainLayerSmoothnessSource
+    {
+        Constant,
+        DiffuseAlphaChannel
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
     [NativeHeader("TerrainScriptingClasses.h")]
@@ -35,5 +42,6 @@ namespace UnityEngine
         extern public Vector4 diffuseRemapMax { get; set; }
         extern public Vector4 maskMapRemapMin { get; set; }
         extern public Vector4 maskMapRemapMax { get; set; }
+        extern public TerrainLayerSmoothnessSource smoothnessSource { get; set; }
     }
 }

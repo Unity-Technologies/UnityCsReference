@@ -206,8 +206,9 @@ namespace Unity.GraphToolsFoundation.Editor
             elementsByType.NodeModels.UnionWith(elementsByType.VariableDeclarationsModels.SelectMany(d => self.FindReferencesInGraph<IHasDeclarationModel>(d).OfType<AbstractNodeModel>()));
 
             // Add wires connected to the deleted nodes.
+            var allWires = self.WireModels.Union(self.Placeholders.OfType<WireModel>()).ToList();
             foreach (var portModel in elementsByType.NodeModels.OfType<PortNodeModel>().SelectMany(n => n.Ports))
-                elementsByType.WireModels.UnionWith(self.WireModels.Where(e => e.ToPort == portModel || e.FromPort == portModel));
+                elementsByType.WireModels.UnionWith(allWires.Where(e => e != null && (e.ToPort == portModel || e.FromPort == portModel)));
 
             var deletedModels = self.DeleteStickyNotes(elementsByType.StickyNoteModels)
                 .Concat(self.DeletePlacemats(elementsByType.PlacematModels))

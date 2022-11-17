@@ -85,14 +85,60 @@ namespace UnityEngine.UIElements
         /// </summary>
         public UxmlTypeRestriction restriction { get; set; }
 
+        internal bool TryFindValueInAttributeOverrides(string elementName, List<TemplateAsset.AttributeOverride> attributeOverrides, out string value)
+        {
+            value = null;
+            foreach (TemplateAsset.AttributeOverride attributeOverride in attributeOverrides)
+            {
+                if (attributeOverride.m_ElementName != elementName)
+                    continue;
+
+                if (attributeOverride.m_AttributeName != name)
+                {
+                    if (m_ObsoleteNames != null)
+                    {
+                        bool matchedObsoleteName = false;
+                        for (var j = 0; j < m_ObsoleteNames.Length; j++)
+                        {
+                            if (attributeOverride.m_AttributeName == m_ObsoleteNames[j])
+                            {
+                                matchedObsoleteName = true;
+                                break;
+                            }
+                        }
+
+                        if (!matchedObsoleteName)
+                            continue;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                value = attributeOverride.m_Value;
+                return true;
+            }
+            return false;
+        }
+
         internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value)
         {
+            return TryGetValueFromBagAsString(bag, cc, out value, out _);
+        }
+
+        // This method is necessary for attributes which may need to do further processing on the attribute value
+        // And thus require from which VisualTreeAsset instance was the attribute extracted
+        internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value, out VisualTreeAsset sourceAsset)
+        {
+            value = null;
+            sourceAsset = null;
+
             // Regardless of whether the attribute is overridden or not, we want to error here
             // if there is no valid name.
             if (name == null && (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0))
             {
                 Debug.LogError("Attribute description has no name.");
-                value = null;
                 return false;
             }
 
@@ -100,36 +146,13 @@ namespace UnityEngine.UIElements
             bag.TryGetAttributeValue("name", out elementName);
             if (!string.IsNullOrEmpty(elementName) && cc.attributeOverrides != null)
             {
-                for (var i = 0; i < cc.attributeOverrides.Count; ++i)
+                foreach (CreationContext.AttributeOverrideRange attributeOverrideRange in cc.attributeOverrides)
                 {
-                    if (cc.attributeOverrides[i].m_ElementName != elementName)
-                        continue;
-
-                    if (cc.attributeOverrides[i].m_AttributeName != name)
+                    if (TryFindValueInAttributeOverrides(elementName, attributeOverrideRange.attributeOverrides, out value))
                     {
-                        if (m_ObsoleteNames != null)
-                        {
-                            bool matchedObsoleteName = false;
-                            for (var j = 0; j < m_ObsoleteNames.Length; j++)
-                            {
-                                if (cc.attributeOverrides[i].m_AttributeName == m_ObsoleteNames[j])
-                                {
-                                    matchedObsoleteName = true;
-                                    break;
-                                }
-                            }
-
-                            if (!matchedObsoleteName)
-                                continue;
-                        }
-                        else
-                        {
-                            continue;
-                        }
+                        sourceAsset = attributeOverrideRange.sourceAsset;
+                        return true;
                     }
-
-                    value = cc.attributeOverrides[i].m_Value;
-                    return true;
                 }
             }
 
@@ -146,12 +169,10 @@ namespace UnityEngine.UIElements
                         if (cc.visualTreeAsset != null)
                         {
                         }
-
+                        sourceAsset = cc.visualTreeAsset;
                         return true;
                     }
                 }
-
-                value = null;
                 return false;
             }
 
@@ -166,16 +187,14 @@ namespace UnityEngine.UIElements
                             if (cc.visualTreeAsset != null)
                             {
                             }
-
+                            sourceAsset = cc.visualTreeAsset;
                             return true;
                         }
                     }
                 }
-
-                value = null;
                 return false;
             }
-
+            sourceAsset = cc.visualTreeAsset;
             return true;
         }
 
@@ -211,7 +230,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Get the attribute value from the attribute bag.
         /// </summary>
-        /// <param name="bag">A bag containg attributes and their values as strings.</param>
+        /// <param name="bag">A bag containing attributes and their values as strings.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="converterFunc">A function to convert a string value to type T.</param>
         /// <param name="defaultValue">The value to return if the attribute is not found in the bag.</param>

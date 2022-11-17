@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
         Button m_AddClassButton;
         Button m_CreateClassButton;
         VisualTreeAsset m_ClassPillTemplate;
-        
+
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
 
         public VisualElement root => m_InheritedStylesSection;
@@ -88,13 +88,13 @@ namespace Unity.UI.Builder
         {
             if (string.IsNullOrEmpty(className))
                 return false;
-            
+
             if (className.Contains(" "))
             {
                 Builder.ShowWarning(BuilderConstants.AddStyleClassValidationSpaces);
                 return false;
             }
-            
+
             if (!BuilderNameUtilities.attributeRegex.IsMatch(className))
             {
                 Builder.ShowWarning(BuilderConstants.ClassNameValidationSpacialCharacters);

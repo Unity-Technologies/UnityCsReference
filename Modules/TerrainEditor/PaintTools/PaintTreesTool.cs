@@ -71,9 +71,11 @@ namespace UnityEditor.TerrainTools
         }
     }
 
-    internal class PaintTreesTool : TerrainPaintTool<PaintTreesTool>
+    internal class PaintTreesTool : TerrainPaintToolWithOverlays<PaintTreesTool>
     {
-        internal const string kToolName = "Paint Trees";
+        internal const string k_ToolName = "Paint Trees";
+        public override string OnIcon => "TerrainOverlays/PaintTrees_On.png";
+        public override string OffIcon => "TerrainOverlays/PaintTrees.png";
         public const int kInvalidTree = -1;
 
         static class Styles
@@ -115,6 +117,8 @@ namespace UnityEditor.TerrainTools
         public float treeWidth { get; set; } = 1;
         public float treeWidthVariation { get; set; } = .1f;
         public int selectedTree { get; set; } = kInvalidTree;
+
+
 
         private Color GetTreeColor()
         {
@@ -364,15 +368,27 @@ namespace UnityEditor.TerrainTools
             selectedTree = kInvalidTree;
         }
 
+        public override int IconIndex
+        {
+            get { return (int) FoliageIndex.PaintTrees; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Foliage; }
+        }
+
         public override string GetName()
         {
-            return kToolName;
+            return k_ToolName;
         }
 
         public override string GetDescription()
         {
             return "Click to paint trees.\n\nHold shift and click to erase trees.\n\nHold Ctrl and click to erase only trees of the selected type.";
         }
+
+        public override bool HasToolSettings => true;
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
         {
@@ -424,7 +440,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             LoadTreeIcons(terrain);
 
@@ -560,6 +576,16 @@ namespace UnityEditor.TerrainTools
                 using (new EditorGUI.DisabledScope(true))   // Always disabled, because we don't want to edit the prefab.
                     contributeGI = EditorGUILayout.Toggle(Styles.treeContributeGI, contributeGI);
             }
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
+            OnToolSettingsGUI(terrain, editContext, overlays);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
     }
 }

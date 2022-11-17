@@ -19,7 +19,7 @@ namespace UnityEditor.Toolbars
         {
             RefreshActiveContext();
             ToolManager.activeContextChanged += RefreshActiveContext;
-            EditorToolManager.availableComponentToolsChanged += RefreshActiveContext;
+            EditorToolManager.availableToolsChanged += RefreshActiveContext;
             dropdownClicked += ShowContextMenu;
 
             this.RegisterValueChangedCallback(OnValueChanged);
@@ -27,7 +27,7 @@ namespace UnityEditor.Toolbars
 
         ~ToolContextButton()
         {
-            EditorToolManager.availableComponentToolsChanged -= RefreshActiveContext;
+            EditorToolManager.availableToolsChanged -= RefreshActiveContext;
             ToolManager.activeContextChanged -= RefreshActiveContext;
             dropdownClicked -= ShowContextMenu;
         }

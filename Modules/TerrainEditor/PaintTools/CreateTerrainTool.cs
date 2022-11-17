@@ -10,9 +10,11 @@ using UnityEngine.TerrainUtils;
 
 namespace UnityEditor.TerrainTools
 {
-    internal class CreateTerrainTool : TerrainPaintTool<CreateTerrainTool>
+    internal class CreateTerrainTool : TerrainPaintToolWithOverlays<CreateTerrainTool>
     {
-        internal const string kToolName = "Create Neighbor Terrains";
+        internal const string k_ToolName = "Create Neighbor Terrains";
+        public override string OnIcon => "TerrainOverlays/NeighborTerrains_On.png";
+        public override string OffIcon => "TerrainOverlays/NeighborTerrains.png";
 
         private class Styles
         {
@@ -50,13 +52,25 @@ namespace UnityEditor.TerrainTools
 
         public override string GetName()
         {
-            return kToolName;
+            return k_ToolName;
+        }
+
+        public override int IconIndex
+        {
+            get { return (int) NeighborTerrainsIndex.CreateTerrain; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.NeighborTerrains; }
         }
 
         public override string GetDescription()
         {
             return "Click the edges to create neighbor terrains";
         }
+
+        public override bool HasToolSettings => true;
 
         public override void OnEnable()
         {
@@ -80,10 +94,8 @@ namespace UnityEditor.TerrainTools
             EditorPrefs.SetInt("TerrainFillAddressMode", (int)m_FillAddressMode);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
-            base.OnInspectorGUI(terrain, editContext);
-
             if (s_Styles == null)
                 s_Styles = new Styles();
 
@@ -99,6 +111,17 @@ namespace UnityEditor.TerrainTools
                 m_FillHeightmapUsingNeighbors = fillHeightmapUsingNeighbors;
                 m_FillAddressMode = fillAddressMode;
             }
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
+            base.OnInspectorGUI(terrain, editContext);
+            OnToolSettingsGUI(terrain, editContext, overlays);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
 
         Terrain CreateNeighbor(Terrain parent, Vector3 position)

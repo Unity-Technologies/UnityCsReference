@@ -9,9 +9,11 @@ using UnityEditor.ShortcutManagement;
 namespace UnityEditor.TerrainTools
 {
     [FilePathAttribute("Library/TerrainTools/PaintTexture", FilePathAttribute.Location.ProjectFolder)]
-    internal class PaintTextureTool : TerrainPaintTool<PaintTextureTool>
+    internal class PaintTextureTool : TerrainPaintToolWithOverlays<PaintTextureTool>
     {
-        const string toolName = "Paint Texture";
+        internal const string k_ToolName = "Paint Texture";
+        public override string OnIcon => "TerrainOverlays/PaintMaterials_On.png";
+        public override string OffIcon => "TerrainOverlays/PaintMaterials.png";
 
         Editor m_TemplateMaterialEditor = null;
         Editor m_SelectedTerrainLayerInspector = null;
@@ -27,18 +29,32 @@ namespace UnityEditor.TerrainTools
         static void SelectShortcut(ShortcutArguments args)
         {
             TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
-            context.SelectPaintTool<PaintTextureTool>();
+            context.SelectPaintToolWithOverlays<PaintTextureTool>();
+        }
+
+        public override int IconIndex
+        {
+            get { return (int) MaterialIndex.PaintTexture; }
+        }
+
+        public override TerrainCategory Category
+        {
+            get { return TerrainCategory.Materials; }
         }
 
         public override string GetName()
         {
-            return toolName;
+            return k_ToolName;
         }
 
         public override string GetDescription()
         {
             return "Paints the selected material layer onto the terrain texture";
         }
+
+        public override bool HasToolSettings => true;
+        public override bool HasBrushMask => true;
+        public override bool HasBrushAttributes => true;
 
         public override void OnEnterToolMode()
         {
@@ -83,19 +99,20 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             GUILayout.Label("Settings", EditorStyles.boldLabel);
-
             EditorGUI.BeginChangeCheck();
-
-            EditorGUILayout.Space();
-            var cacheFieldWidth = EditorGUIUtility.fieldWidth;
-            var cacheLabelWIdth = EditorGUIUtility.labelWidth;
-            Editor.DrawFoldoutInspector(terrain.materialTemplate, ref m_TemplateMaterialEditor);
-            EditorGUIUtility.fieldWidth = cacheFieldWidth;
-            EditorGUIUtility.labelWidth = cacheLabelWIdth;
-            EditorGUILayout.Space();
+            if (!overlays)
+            {
+                EditorGUILayout.Space();
+                var cacheFieldWidth = EditorGUIUtility.fieldWidth;
+                var cacheLabelWIdth = EditorGUIUtility.labelWidth;
+                Editor.DrawFoldoutInspector(terrain.materialTemplate, ref m_TemplateMaterialEditor); //todo: why doesn't this line work for overlays...?
+                EditorGUIUtility.fieldWidth = cacheFieldWidth;
+                EditorGUIUtility.labelWidth = cacheLabelWIdth;
+                EditorGUILayout.Space();
+            }
 
             if (m_SelectedTerrainLayerIndex == -1)
                 m_SelectedTerrainLayerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrain, m_SelectedTerrainLayer);
@@ -106,17 +123,26 @@ namespace UnityEditor.TerrainTools
             if (EditorGUI.EndChangeCheck())
             {
                 m_SelectedTerrainLayer = m_SelectedTerrainLayerIndex != -1 ? terrain.terrainData.terrainLayers[m_SelectedTerrainLayerIndex] : null;
-                Save(true);
             }
 
             TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_SelectedTerrainLayer, ref m_SelectedTerrainLayerInspector,
                 (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
             EditorGUILayout.Space();
 
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        {
+            OnToolSettingsGUI(terrain, editContext, overlays);
             // Texture painting needs to know the largest of the splat map and the height map, as the result goes to
             // the splat map, but the height map is used for previewing.
             int resolution = Mathf.Max(terrain.terrainData.heightmapResolution, terrain.terrainData.alphamapResolution);
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, resolution);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            OnInspectorGUI(terrain, editContext, false);
         }
     }
 }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -17,6 +18,9 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeReference]
         VariableDeclarationModel m_DeclarationModel;
 
+        [SerializeField]
+        SerializableGUID m_DeclarationModelGuid;
+
         protected PortModel m_MainPortModel;
 
         /// <summary>
@@ -30,15 +34,32 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string VariableString => DeclarationModel == null ? string.Empty : VariableDeclarationModel.IsExposed ? "Exposed variable" : "Variable";
 
         /// <inheritdoc />
-        public override string Title => m_DeclarationModel == null ? "" : m_DeclarationModel.Title;
+        public override string Title => DeclarationModel == null ? "" : DeclarationModel.Title;
 
         /// <inheritdoc />
         public DeclarationModel DeclarationModel
         {
-            get => m_DeclarationModel;
+            get
+            {
+                if (m_DeclarationModel == null && GraphModel.TryGetModelFromGuid(m_DeclarationModelGuid, out var model) && model is VariableDeclarationPlaceholder missingDeclarationModel)
+                {
+                    this.SetCapability(Editor.Capabilities.Movable, false);
+                    this.SetCapability(Editor.Capabilities.Copiable, false);
+                    this.SetCapability(Editor.Capabilities.Droppable, false);
+
+                    return missingDeclarationModel;
+                }
+
+                this.SetCapability(Editor.Capabilities.Movable, true);
+                this.SetCapability(Editor.Capabilities.Copiable, true);
+                this.SetCapability(Editor.Capabilities.Droppable, true);
+
+                return m_DeclarationModel;
+            }
             set
             {
                 m_DeclarationModel = (VariableDeclarationModel)value;
+                m_DeclarationModelGuid = m_DeclarationModel.Guid;
                 DefineNode();
             }
         }
@@ -97,7 +118,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (GetDataType() == TypeHandle.ExecutionFlow)
                     m_MainPortModel = this.AddExecutionOutputPort(null);
                 else
-                    m_MainPortModel = this.AddDataOutputPort(null, GetDataType(), k_MainPortName);
+                    m_MainPortModel = this.AddDataOutputPort(null, m_DeclarationModel == null ? TypeHandle.MissingPort : GetDataType(), k_MainPortName);
             }
         }
 

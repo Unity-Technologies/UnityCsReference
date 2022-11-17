@@ -97,7 +97,7 @@ namespace Unity.UI.Builder
 
                 // We don't want the '.' we just inserted in the FocusEvent to be highlighted,
                 // which is the default behavior. Same goes for when we add pseudo states with options menu.
-                m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
+                m_NewSelectorTextField.textSelection.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
             });
 
             // Since MouseDown captures the mouse, we need to RegisterCallback directly on the target in order to intercept the event.
@@ -114,7 +114,7 @@ namespace Unity.UI.Builder
                 // Reselect on the next execution, after the KeyboardTextEditor selects all.
                 m_NewSelectorTextInputField.schedule.Execute(() =>
                 {
-                    m_NewSelectorTextField.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
+                    m_NewSelectorTextField.textSelection.SelectRange(m_NewSelectorTextField.value.Length, m_NewSelectorTextField.value.Length);
                 });
 
             }, TrickleDown.TrickleDown);
@@ -239,7 +239,7 @@ namespace Unity.UI.Builder
                 m_NewSelectorTextField.schedule.Execute(() =>
                 {
                     m_NewSelectorTextField.SetValueWithoutNotify(newValue);
-                    m_NewSelectorTextField.SelectAll();
+                    m_NewSelectorTextField.textSelection.SelectAll();
                 });
                 return;
             }

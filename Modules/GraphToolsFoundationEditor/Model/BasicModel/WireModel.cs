@@ -50,6 +50,9 @@ namespace Unity.GraphToolsFoundation.Editor
         [FormerlySerializedAs("m_EdgeLabel")] [SerializeField]
         protected string m_WireLabel;
 
+        internal static string fromPortReferenceFieldName_Internal = nameof(m_FromPortReference);
+        internal static string toPortReferenceFieldName_Internal = nameof(m_ToPortReference);
+
         PortModel m_FromPortModelCache;
 
         PortModel m_ToPortModelCache;

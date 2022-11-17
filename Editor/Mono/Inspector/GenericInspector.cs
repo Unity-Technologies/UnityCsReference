@@ -27,6 +27,11 @@ namespace UnityEditor
             public static string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand open Prefab Mode and assign a valid script to the Prefab Asset.");
         }
 
+        internal static string GetMissingSerializeRefererenceMessageContainer()
+        {
+            return Styles.missingSerializeReferenceInstanceMessage;
+        }
+
         internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
         {
             height = -1;
@@ -231,16 +236,33 @@ namespace UnityEditor
             return true;
         }
 
-        public bool ShowMissingSerializeReferenceWarningBoxIfRequired()
+        internal static bool MissingSerializeReference(Object unityTarget)
         {
-            var monoBehaviour = target as MonoBehaviour;
-            var scriptableObject = target as ScriptableObject;
-            if ((monoBehaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(target))
+            var monoBehaviour = unityTarget as MonoBehaviour;
+            var scriptableObject = unityTarget as ScriptableObject;
+            if ((monoBehaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(unityTarget))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        internal static bool ShowMissingSerializeReferenceWarningBoxIfRequired(Object unityTarget)
+        {
+            if (MissingSerializeReference(unityTarget))
             {
                 EditorGUILayout.HelpBox(Styles.missingSerializeReferenceInstanceMessage, MessageType.Warning, true);
                 return true;
             }
-            return false;
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool ShowMissingSerializeReferenceWarningBoxIfRequired()
+        {
+            return ShowMissingSerializeReferenceWarningBoxIfRequired(target);
         }
 
         static GUIContent s_fixupTypeContent = new GUIContent("Fix underlying type");

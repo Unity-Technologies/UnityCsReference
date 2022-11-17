@@ -748,14 +748,14 @@ namespace Unity.UI.Builder
         }
 
         internal void CallInitOnTemplateChild(VisualElement visualElement, VisualElementAsset vea,
-            List<TemplateAsset.AttributeOverride> attributeOverrides)
+            List<CreationContext.AttributeOverrideRange> attributeOverridesRanges)
         {
             var traits = GetCurrentElementTraits();
 
             if (traits == null)
                 return;
 
-            var context = new CreationContext(null, attributeOverrides, null, null);
+            var context = new CreationContext(null, attributeOverridesRanges, null, null);
 
             traits.Init(visualElement, vea, context);
         }

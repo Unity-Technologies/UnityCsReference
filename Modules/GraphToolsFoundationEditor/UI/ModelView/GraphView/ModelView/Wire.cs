@@ -221,6 +221,9 @@ namespace Unity.GraphToolsFoundation.Editor
             if (!(evt.currentTarget is Wire wire))
                 return;
 
+            if (wire.WireModel is IPlaceholder)
+                return;
+
             var selection = GraphView.GetSelection().ToList();
 
             // If any element in the selection is not a wire, the graph view context menu is opened instead.
@@ -307,7 +310,8 @@ namespace Unity.GraphToolsFoundation.Editor
             var stencil = GraphView.GraphModel.Stencil as Stencil;
             ItemLibraryService.ShowNodesForWire(stencil, GraphView, WireModel, mousePosition, item =>
             {
-                GraphView.Dispatch(CreateNodeCommand.OnWire(item, WireModel, graphPosition));
+                if (item is GraphNodeModelLibraryItem nodeItem)
+                    GraphView.Dispatch(CreateNodeCommand.OnWire(nodeItem, WireModel, graphPosition));
             });
 
             return true;

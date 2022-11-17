@@ -38,6 +38,7 @@ namespace UnityEditor
         SerializedProperty m_GizmoOptions;
 
         SerializedProperty m_SimulationMode;
+        SerializedProperty m_SimulationLayers;
         SerializedProperty m_UseSubStepping;
         SerializedProperty m_UseSubStepContacts;
         SerializedProperty m_MinSubStepFPS;
@@ -49,6 +50,7 @@ namespace UnityEditor
             m_AutoSyncTransforms = serializedObject.FindProperty("m_AutoSyncTransforms");
             m_Multithreading = serializedObject.FindProperty("m_JobOptions");
             m_SimulationMode = serializedObject.FindProperty("m_SimulationMode");
+            m_SimulationLayers = serializedObject.FindProperty("m_SimulationLayers");
             m_UseSubStepping = serializedObject.FindProperty("m_UseSubStepping");
             m_UseSubStepContacts = serializedObject.FindProperty("m_UseSubStepContacts");
             m_MaxSubStepCount = serializedObject.FindProperty("m_MaxSubStepCount");
@@ -121,6 +123,7 @@ namespace UnityEditor
                     m_ReuseCollisionCallbacks.name,
                     m_AutoSyncTransforms.name,
                     m_SimulationMode.name,
+                    m_SimulationLayers.name,
                     m_UseSubStepping.name,
                     m_UseSubStepContacts.name,
                     m_MaxSubStepCount.name,
@@ -162,6 +165,12 @@ namespace UnityEditor
                     GUILayout.EndHorizontal();
 
                     EditorGUI.indentLevel--;
+                }
+
+                // If the simulation mode is "FixedUpdate" or "Update" then present the simulation layers.
+                if (simulationMode == SimulationMode2D.FixedUpdate || simulationMode == SimulationMode2D.Update)
+                {
+                    EditorGUILayout.PropertyField(m_SimulationLayers);
                 }
 
                 // Draw the Gizmo options.

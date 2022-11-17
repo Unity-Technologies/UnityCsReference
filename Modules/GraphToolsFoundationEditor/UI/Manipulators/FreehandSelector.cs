@@ -270,45 +270,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (Points.Count < 2)
                     return;
 
-                var segmentSize = Mathf.Max(0.01f, SegmentSize / parent.transform.scale.x);
                 var painter = mgc.painter2D;
                 painter.strokeColor = DeleteModifier ? DeleteSegmentColor : SegmentColor;
                 painter.lineWidth = 1.5f / parent.transform.scale.x;
                 painter.BeginPath();
-                var offset = 0f;
 
-                for (var i = 0; i < Points.Count - 1; i++)
-                {
-                    offset = DrawDashedLine(painter, Points[i], Points[i + 1], segmentSize, offset);
-                }
+                foreach (var point in Points)
+                    painter.LineTo(point);
+
                 painter.Stroke();
-            }
-
-            float DrawDashedLine(Painter2D painter, Vector2 p1, Vector2 p2, float segmentsLength, float offset = 0f)
-            {
-                // count how many segments are needed on this line. 1 segment = 1 dash or 1 gap
-                var maxT = Vector2.Distance(p1, p2) / segmentsLength;
-
-                // dashes are separated by 1, gaps too, starting with a dash
-                // example with a distance of p1 to p2 being 7 times the segmentLength:
-                //  (t)0  1  2  3  4  5  6  7
-                // (p1)---   ---   ---   ---(p2)
-
-                // Instead of 0 we start counting at -offset but only start the drawing at position 0
-                // example with offset of 0.5f (meaning half a dash was already drawn in the previous line)
-                // -1  t  0     1     2     3     4 (...)
-                //        --      ------      ------(...)
-
-                // skip a loop turn if we start by drawing a gap rather than a line
-                var startT = offset >= 1 ? 2 - offset : -offset;
-                for (var t = startT; t < maxT; t += 2f)
-                {
-                    painter.MoveTo(Vector2.Lerp(p1, p2, Mathf.Max(0, t / maxT)));
-                    painter.LineTo(Vector2.Lerp(p1, p2, Mathf.Min(1, (t + 1f) / maxT)));
-                }
-
-                // return where we left, e.g. half a dash drawn -> 0.5f, dash + half a gap drawn: 1.5f
-                return (maxT + offset) % 2f;
             }
         }
     }

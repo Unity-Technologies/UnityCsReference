@@ -89,28 +89,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        /// <summary>
-        /// The <see cref="Color"/> currently being exposed by the field.
-        /// </summary>
-        public override Color value
-        {
-            get => rawValue;
-            set
-            {
-                if (value != rawValue)
-                {
-                    using (ChangeEvent<Color> evt = ChangeEvent<Color>.GetPooled(rawValue, value))
-                    {
-                        evt.elementTarget = this;
-                        SetValueWithoutNotify(value);
-                        SendEvent(evt);
-                    }
-                    rawValue = value;
-                }
-                UpdateColorProperties(rawValue);
-            }
-        }
-
         bool m_ShowAlpha;
         bool m_ShowEyeDropper;
         bool m_HDR;
@@ -239,6 +217,8 @@ namespace UnityEditor.UIElements
             m_EyeDropperElement.RegisterCallback<PointerDownEvent>(OnEyeDropperClicked);
             RegisterCallback<ExecuteCommandEvent>(OnCommandExecute);
 
+            m_ColorContainer.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+
             labelElement.focusable = false;
             showAlpha = true;
             hdr = false;
@@ -249,29 +229,32 @@ namespace UnityEditor.UIElements
             rawValue = new Color();
         }
 
+        public override void SetValueWithoutNotify(Color newValue)
+        {
+            rawValue = newValue;
+            UpdateColorProperties(rawValue);
+            IncrementVersion(VersionChangeType.Repaint);
+        }
+
+        void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.AppendAction(
+                "Copy",
+                a => Clipboard.colorValue = value);
+
+            evt.menu.AppendAction(
+                "Paste",
+                a => value = Clipboard.colorValue,
+                Clipboard.hasColor
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
+        }
+
         void OnColorFieldClicked(PointerDownEvent evt)
         {
             if (evt.button == (int) MouseButton.LeftMouse)
             {
                 ShowColorPicker();
-                evt.StopPropagation();
-                return;
-            }
-
-            if (evt.button == (int)MouseButton.RightMouse)
-            {
-                var menu = new DropdownMenu();
-                menu.AppendAction(
-                    "Copy",
-                    a => Clipboard.colorValue = value);
-
-                menu.AppendAction(
-                    "Paste",
-                    a => value = Clipboard.colorValue,
-                    Clipboard.hasColor
-                        ? DropdownMenuAction.Status.Normal
-                        : DropdownMenuAction.Status.Disabled);
-                menu.DoDisplayEditorMenu(evt);
                 evt.StopPropagation();
             }
         }
@@ -312,7 +295,10 @@ namespace UnityEditor.UIElements
             if (EyeDropper.IsOpened)
                 return false;
             if (EyeDropper.IsCancelled)
+            {
                 value = m_ColorBeforeEyeDrop;
+                UpdateColorProperties(value);
+            }
             else
             {
                 Color pickedColor = EyeDropper.GetPickedColor();

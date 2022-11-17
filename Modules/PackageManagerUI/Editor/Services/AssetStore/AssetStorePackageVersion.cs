@@ -138,8 +138,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var state = productInfo.state ?? string.Empty;
             if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Published;
-            else if (state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase))
-                m_Tag |= PackageTag.Deprecated;
             else if (state.Equals("disabled", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Disabled;
 

@@ -96,11 +96,15 @@ namespace UnityEditor
             else
                 m_AngularLimitHandle.angleHandleDrawFunction = null;
 
+            // Fetch if we're using the connected anchor.
+            // NOTE: If we're not then we want to draw the gizmo at the body position.
+            var usingConnectedAnchor = hingeJoint2D.useConnectedAnchor;
+
             // to enhance usability, orient the manipulator to best illustrate its affects on the dynamic body in the system
             var dynamicBody = hingeJoint2D.attachedRigidbody;
             var dynamicBodyLocalReferencePosition = Vector3.right;
-            var dynamicAnchor = hingeJoint2D.anchor;
-            var connectedBody = hingeJoint2D.connectedBody;
+            var dynamicAnchor = usingConnectedAnchor ? hingeJoint2D.anchor : Vector2.zero;
+            var connectedBody = usingConnectedAnchor ? hingeJoint2D.connectedBody : null;
             var handleOrientationOffset = s_RightHandedHandleOrientationOffset;
             if (
                 dynamicBody.bodyType != RigidbodyType2D.Dynamic
@@ -110,8 +114,8 @@ namespace UnityEditor
             {
                 dynamicBody = hingeJoint2D.connectedBody;
                 dynamicBodyLocalReferencePosition = Vector3.left;
-                dynamicAnchor = hingeJoint2D.connectedAnchor;
-                connectedBody = hingeJoint2D.attachedRigidbody;
+                dynamicAnchor = usingConnectedAnchor ? hingeJoint2D.connectedAnchor : Vector2.zero;
+                connectedBody = usingConnectedAnchor ? hingeJoint2D.connectedBody : null;
                 handleOrientationOffset = s_LeftHandedHandleOrientationOffset;
             }
 

@@ -57,6 +57,7 @@ namespace Unity.GraphToolsFoundation.Editor
         VisualElement m_ContextBorder;
         VisualElement m_ContextTitleBkgnd;
 
+        VisualElement m_BlockPlaceholderContainer;
         VisualElement m_DragBlock;
 
         /// <summary>
@@ -103,6 +104,7 @@ namespace Unity.GraphToolsFoundation.Editor
             ContextBlocksRoot = PartList.GetPart(blocksPartName)?.Root;
 
             m_ContextBorder.Add(Border);
+            AddBlockPlaceholders();
         }
 
         /// <inheritdoc/>
@@ -206,6 +208,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc/>
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
+            if (ContextNodeModel is IPlaceholder)
+                return;
+
             if ((evt.target as VisualElement)?.GetFirstOfType<BlockNode>() == null)
             {
                 evt.menu.AppendAction("Create Block",
@@ -251,7 +256,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             ItemLibraryService.ShowDatabases_Internal(GraphView, mousePosition, item =>
             {
-                GraphView.Dispatch(new CreateBlockFromItemLibraryCommand(item, ContextNodeModel, index));
+                if (item is GraphNodeModelLibraryItem nodeItem)
+                    GraphView.Dispatch(new CreateBlockFromItemLibraryCommand(nodeItem, ContextNodeModel, index));
             }, dbs, filter, adapter, "CreateContextNode");
 
             return true;
@@ -268,6 +274,39 @@ namespace Unity.GraphToolsFoundation.Editor
                 copyPasteData.m_Nodes_Internal.OfType<BlockNodeModel>().ToList(), true, operationName));
 
             return true;
+        }
+
+        void AddBlockPlaceholders()
+        {
+            // Remove current placeholder blocks.
+            if (m_BlockPlaceholderContainer != null)
+            {
+                var blockPlaceholders = m_BlockPlaceholderContainer.Children().OfType<ModelView>().ToList();
+                foreach (var blockPlaceholder in blockPlaceholders)
+                {
+                    blockPlaceholder.RemoveFromRootView();
+                    blockPlaceholder.RemoveFromHierarchy();
+                    EnableInClassList(ussClassName.WithUssModifier("has-placeholder"), false);
+                }
+            }
+
+            foreach (var placeholder in ContextNodeModel.BlockPlaceholders)
+            {
+                if (m_BlockPlaceholderContainer == null)
+                {
+                    m_BlockPlaceholderContainer = new VisualElement();
+                    ContextBlocksRoot.Insert(0, m_BlockPlaceholderContainer);
+                    EnableInClassList(ussClassName.WithUssModifier("has-placeholder"), true);
+                }
+
+                var blockPlaceholder = ModelViewFactory.CreateUI<ModelView>(RootView, placeholder);
+
+                if (blockPlaceholder != null)
+                {
+                    blockPlaceholder.AddToRootView(RootView);
+                    m_BlockPlaceholderContainer.Add(blockPlaceholder);
+                }
+            }
         }
     }
 }

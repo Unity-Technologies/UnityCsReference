@@ -144,6 +144,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
+            // We need to check the target version so that we don't disable the button in the details header
+            yield return new ButtonDisableCondition(() =>
+            {
+                var targetVersion = version?.package.versions.GetUpdateTarget(version);
+                return version != null && targetVersion.HasTag(PackageTag.Deprecated) && !targetVersion.HasTag(PackageTag.ScopedRegistry);
+            }, L10n.Tr("This version is deprecated."));
+
             yield return new ButtonDisableCondition(() => version?.package.hasEntitlementsError ?? false,
                 L10n.Tr("You need to sign in with a licensed account to perform this action."));
         }

@@ -459,6 +459,11 @@ namespace UnityEditor.UIElements
             if (serializedObject == null)
                 return null;
 
+            if (GenericInspector.MissingSerializeReference(editor.target))
+            {
+                Add(new HelpBox(GenericInspector.GetMissingSerializeRefererenceMessageContainer(), HelpBoxMessageType.Warning));
+            }
+
             FillDefaultInspector(this, serializedObject, editor);
 
             if ((mode & Mode.DebugMod) > 0)

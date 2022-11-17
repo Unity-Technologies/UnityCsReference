@@ -20,6 +20,8 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         string m_Name;
 
+        internal static string nameFieldName_Internal = nameof(m_Name);
+
         /// <inheritdoc />
         public virtual string Title
         {

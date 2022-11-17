@@ -71,10 +71,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                m_OperationDispatcher.Install(version);
-
                 var installRecommended = version.package.versions.recommended == version ? "Recommended" : "NonRecommended";
                 var eventName = $"installNew{installRecommended}";
+
+                if (version.package.isDeprecated && !m_Application.DisplayDialog("installDeprecatedPackage", L10n.Tr("Deprecated package installation"), L10n.Tr("Are you sure you want to install this deprecated package?"), L10n.Tr("Install"), L10n.Tr("Cancel")))
+                    return false;
+
+                m_OperationDispatcher.Install(version);
+
                 PackageManagerWindowAnalytics.SendEvent(eventName, version.uniqueId);
             }
             return true;
@@ -111,6 +115,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
+            yield return new ButtonDisableCondition(() => version != null && !version.HasTag(PackageTag.ScopedRegistry) && version.HasTag(PackageTag.Deprecated),
+                L10n.Tr("This version is deprecated."));
+
             yield return new ButtonDisableCondition(() => version?.package.hasEntitlementsError ?? false,
                 L10n.Tr("You need to sign in with a licensed account to perform this action."));
         }

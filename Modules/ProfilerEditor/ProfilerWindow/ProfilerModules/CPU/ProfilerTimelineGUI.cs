@@ -649,14 +649,14 @@ namespace UnityEditorInternal
             {
                 for (var i = -1; i >= -m_LastMaxContextFramesToShow && frameIndex - i >= ProfilerDriver.firstFrameIndex; --i)
                 {
-                    if (!ProfilerDriver.GetFramesBelongToSameSession(frameIndex + i, frameIndex))
+                    if (!ProfilerDriver.GetFramesBelongToSameProfilerSession(frameIndex + i, frameIndex))
                         break;
                     AddNeighboringActiveThreads(frameIndex, i);
                 }
 
                 for (var i = 1; i <= m_LastMaxContextFramesToShow && frameIndex + i <= ProfilerDriver.lastFrameIndex; ++i)
                 {
-                    if (!ProfilerDriver.GetFramesBelongToSameSession(frameIndex + i, frameIndex))
+                    if (!ProfilerDriver.GetFramesBelongToSameProfilerSession(frameIndex + i, frameIndex))
                         break;
                     AddNeighboringActiveThreads(frameIndex, i);
                 }
@@ -1059,7 +1059,8 @@ namespace UnityEditorInternal
                     if (eventType == EventType.MouseDown)
                     {
                         Event.current.Use();
-                        UpdateSelectedObject(singleClick, doubleClick);
+                        if(ProfilerDriver.FrameDataBelongsToCurrentEditorSession(frameData))
+                            UpdateSelectedObject(singleClick, doubleClick);
 
                         m_CurrentlyProcessedInputs |= ProcessedInputs.MouseDown | ProcessedInputs.FrameSelection;
                     }
@@ -2618,7 +2619,7 @@ namespace UnityEditorInternal
                     do
                     {
                         int prevFrame = ProfilerDriver.GetPreviousFrameIndex(currentFrame);
-                        if (prevFrame == FrameDataView.invalidOrCurrentFrameIndex || !ProfilerDriver.GetFramesBelongToSameSession(currentFrame, prevFrame))
+                        if (prevFrame == FrameDataView.invalidOrCurrentFrameIndex || !ProfilerDriver.GetFramesBelongToSameProfilerSession(currentFrame, prevFrame))
                             break;
                         iter.SetRoot(prevFrame, 0);
                         currentTime -= iter.frameTimeMS;
@@ -2652,7 +2653,7 @@ namespace UnityEditorInternal
                         iter.SetRoot(currentFrame, 0);
                         var prevFrame = currentFrame;
                         currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
-                        if (currentFrame == FrameDataView.invalidOrCurrentFrameIndex || !ProfilerDriver.GetFramesBelongToSameSession(currentFrame, prevFrame))
+                        if (currentFrame == FrameDataView.invalidOrCurrentFrameIndex || !ProfilerDriver.GetFramesBelongToSameProfilerSession(currentFrame, prevFrame))
                             break;
                         currentTime += iter.frameTimeMS;
                         --numContextFramesToShow;

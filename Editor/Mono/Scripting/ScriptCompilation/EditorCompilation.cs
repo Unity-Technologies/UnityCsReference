@@ -1457,10 +1457,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 targetAssemblyCondition: targetAssemblyCondition);
         }
 
+
         public string[] GetTargetAssemblyDefines(TargetAssembly targetAssembly, ScriptAssemblySettings settings)
         {
             var versionMetaDatas = GetVersionMetaDatas();
-            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, ApiCompatibilityLevel.NET_Unity_4_8, settings.ExtraGeneralDefines);
+
+            var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
+
+            var editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
             return GetTargetAssemblyDefines(targetAssembly, versionMetaDatas, editorOnlyCompatibleDefines, playerAssembliesDefines, settings);
@@ -1473,7 +1477,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var allTargetAssemblies = customScriptAssemblies.Values.ToArray()
                 .Concat(predefinedTargetAssemblies ?? new TargetAssembly[0]);
 
-            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, ApiCompatibilityLevel.NET_Unity_4_8, settings.ExtraGeneralDefines);
+
+            var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
+
+            string[] editorOnlyCompatibleDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, editorApiCompatibility, settings.ExtraGeneralDefines);
 
             var playerAssembliesDefines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, settings.Subtarget, settings.PredefinedAssembliesCompilerOptions.ApiCompatibilityLevel, settings.ExtraGeneralDefines);
 
@@ -1794,6 +1801,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             references.AddRange(precompiledReferences);
             references.AddRange(editorReferences);
             references.AddRange(additionalReferences);
+
+            var editorOnlyTargetAssembly = (options & EditorScriptCompilationOptions.BuildingEditorOnlyAssembly) == EditorScriptCompilationOptions.BuildingEditorOnlyAssembly;
+            if (editorOnlyTargetAssembly)
+            {
+                var editorApiCompatibility = PlayerSettings.EditorAssemblyCompatibilityToApiCompatibility(PlayerSettings.GetEditorAssembliesCompatibilityLevel());
+                references.AddRange(MonoLibraryHelpers.GetEditorExtensionsReferences(editorApiCompatibility));
+            }
 
             return references.ToArray();
         }

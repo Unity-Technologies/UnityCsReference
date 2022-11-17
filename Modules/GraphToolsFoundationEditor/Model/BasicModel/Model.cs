@@ -16,6 +16,8 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         SerializableGUID m_Guid;
 
+        internal static string guidFieldName_Internal = nameof(m_Guid);
+
         /// <summary>
         /// The unique identifier of the element.
         /// </summary>

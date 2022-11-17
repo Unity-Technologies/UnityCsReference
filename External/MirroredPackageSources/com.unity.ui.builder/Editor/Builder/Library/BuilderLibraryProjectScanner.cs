@@ -132,7 +132,7 @@ namespace Unity.UI.Builder
 
                 var asset = new VisualElementAsset(known.uxmlQualifiedName);
                 var slots = new Dictionary<string, VisualElement>();
-                var overrides = new List<TemplateAsset.AttributeOverride>();
+                var overrides = new List<CreationContext.AttributeOverrideRange>();
                 var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
                 var context = new CreationContext(slots, overrides, vta, null);
 

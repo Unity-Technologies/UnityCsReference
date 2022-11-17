@@ -33,8 +33,8 @@ namespace UnityEditor.Overlays
         const string k_Expanded = "unity-overlay--expanded";
         internal const string k_CollapsedContent = "overlay-collapsed-content";
         const string k_CollapsedIconButton = "unity-overlay-collapsed-dropdown__icon";
-        const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
-        const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
+        internal const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
+        internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         const string k_PanelLayout = "overlay-layout--freesize";
 
         // Persistent State Data

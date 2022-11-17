@@ -142,7 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependencyList.Clear();
             foreach (var dependency in version.dependencies)
             {
-                var packageVersion = m_PackageDatabase.GetPackageInFeatureVersion(dependency.name);
+                var packageVersion = m_PackageDatabase.GetLifecycleOrPrimaryVersion(dependency.name);
                 var featureState = GetFeatureState(packageVersion);
 
                 var item = packageVersion != null ? new FeatureDependencyItem(version, packageVersion, featureState) : new FeatureDependencyItem(dependency.name);
@@ -176,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     selectedDependencyPackageId = dependencies[0].name;
                     m_PackageManagerPrefs.selectedFeatureDependency = selectedDependencyPackageId;
                 }
-                version = m_PackageDatabase.GetPackageInFeatureVersion(selectedDependencyPackageId);
+                version = m_PackageDatabase.GetLifecycleOrPrimaryVersion(selectedDependencyPackageId);
             }
 
             // If the package is not installed and not discoverable, we have to display the package's ID name (ex: com.unity.adaptiveperformance.samsung.android)

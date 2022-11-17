@@ -201,7 +201,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return samples;
         }
 
-        public virtual IPackageVersion GetPackageInFeatureVersion(string packageUniqueId)
+        public virtual IPackageVersion GetLifecycleOrPrimaryVersion(string packageUniqueId)
         {
             var versions = GetPackage(packageUniqueId)?.versions;
             return versions?.lifecycleVersion ?? versions?.primary;

@@ -26,6 +26,9 @@ namespace UnityEditor
 
             [NativeProperty("HmiLoadingImage")]
             public static extern Texture2D hmiLoadingImage { get; set; }
+
+            [NativeProperty("HmiLogStartupTiming")]
+            public static extern bool hmiLogStartupTiming { get; set; }
         }
     }
 }

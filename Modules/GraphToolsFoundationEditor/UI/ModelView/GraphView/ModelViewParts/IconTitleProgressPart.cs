@@ -94,6 +94,14 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             TitleContainer.Add(m_Icon);
 
+            if (nodeModel is IPlaceholder || nodeModel is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder)
+            {
+                var warningIcon = new Image { name = "missing-graph-icon" };
+                warningIcon.AddToClassList(ussClassName.WithUssElement("icon"));
+                warningIcon.AddToClassList(ussClassName.WithUssElement("missing-graph-icon"));
+                TitleContainer.Add(warningIcon);
+            }
+
             CreateTitleLabel();
 
             if (nodeModel is IHasProgress hasProgress && hasProgress.HasProgress)

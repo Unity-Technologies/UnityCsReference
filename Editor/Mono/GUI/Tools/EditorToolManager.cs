@@ -29,6 +29,11 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         EditorTool m_LastCustomTool;
 
+        [SerializeField]
+        ToolVariantPrefs m_VariantPrefs = new ToolVariantPrefs();
+
+        public ToolVariantPrefs variantPrefs => m_VariantPrefs;
+
         static bool s_ChangingActiveTool, s_ChangingActiveContext;
 
         // Mimic behavior of Tools.toolChanged for backwards compatibility until existing tools are converted to the new
@@ -40,6 +45,9 @@ namespace UnityEditor.EditorTools
 
         [SerializeField]
         List<ComponentEditor> m_ComponentContexts = new List<ComponentEditor>();
+
+        // unfiltered component tools includes locked inspectors
+        internal IEnumerable<ComponentEditor> componentTools => m_ComponentTools;
 
         internal static IEnumerable<ComponentEditor> componentContexts => instance.m_ComponentContexts;
 
@@ -105,7 +113,7 @@ namespace UnityEditor.EditorTools
                 // If the previous tool was a Move, Rotate, Scale, Rect, or Transform tool we need to resolve the tool
                 // type using the new context. Additionally, if the previous tool was null we'll take the opportunity
                 // to assign a valid tool.
-                if (EditorToolUtility.IsManipulationTool(tool) || active == null)
+                if (EditorToolUtility.IsManipulationTool(tool) || active == null || active is NoneTool)
                 {
                     var resolved = EditorToolUtility.GetEditorToolWithEnum(tool, ctx);
 
@@ -186,8 +194,12 @@ namespace UnityEditor.EditorTools
                     activeToolChanged(previous, instance.m_ActiveTool);
 
                 Tools.SyncToolEnum();
-
                 Tools.InvalidateHandlePosition();
+
+                var meta = EditorToolUtility.GetMetaData(tool.GetType());
+
+                if(meta.variantGroup != null)
+                    instance.variantPrefs.SetPreferredVariant(meta.variantGroup, meta.editor);
 
                 s_ChangingActiveTool = false;
             }
@@ -266,7 +278,7 @@ namespace UnityEditor.EditorTools
         [SerializeField]
         ComponentToolCache m_PreviousComponentToolCache;
 
-        internal static event Action availableComponentToolsChanged;
+        internal static event Action availableToolsChanged;
 
         void SaveComponentTool()
         {
@@ -281,15 +293,11 @@ namespace UnityEditor.EditorTools
             ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
             Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
-            ToolManager.activeContextChanged += ActiveContextChanged;
 
             if(activeTool != null)
                 EditorApplication.delayCall += activeTool.Activate;
             if(activeToolContext != null)
-            {
                 EditorApplication.delayCall += activeToolContext.Activate;
-                ActiveContextChanged();
-            }
         }
 
         void OnDisable()
@@ -298,7 +306,6 @@ namespace UnityEditor.EditorTools
             ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
-            ToolManager.activeContextChanged -= ActiveContextChanged;
         }
 
         void BeforeAssemblyReload()
@@ -308,11 +315,6 @@ namespace UnityEditor.EditorTools
 
             if (m_ActiveToolContext != null)
                 m_ActiveToolContext.Deactivate();
-        }
-
-        void ActiveContextChanged()
-        {
-            additionalContextToolTypesCache = activeToolContext.GetAdditionalToolTypes();
         }
 
         // used by tests
@@ -556,7 +558,7 @@ namespace UnityEditor.EditorTools
                 }
             }
 
-            availableComponentToolsChanged?.Invoke();
+            availableToolsChanged?.Invoke();
         }
 
         // Used by tests
@@ -630,6 +632,32 @@ namespace UnityEditor.EditorTools
             return null;
         }
 
+        // Checks the currently instantiated (or available global type) tools for a matching instance.
+        internal static bool GetAvailableTool(EditorTypeAssociation typeAssociation, out EditorTool tool)
+        {
+            tool = null;
+
+            // unlike the ToolManager interface that throws an exception, this should only log an error so as not to
+            // prevent execution.
+            if (!typeof(EditorTool).IsAssignableFrom(typeAssociation.editor) || typeAssociation.editor.IsAbstract)
+            {
+                Debug.LogError($"Invalid tool type provided by context {activeToolContext}, \"{typeAssociation.editor}\". Type must be assignable to EditorTool, and not abstract.");
+                return false;
+            }
+
+            // early exit if the tool context is not applicable
+            if (typeAssociation.targetContext != null && typeAssociation.targetContext != ToolManager.activeContextType)
+                return false;
+
+            // if this is a component tool
+            if (typeAssociation.targetBehaviour != null && typeAssociation.targetBehaviour != typeof(NullTargetKey))
+                return (tool = GetComponentTool(typeAssociation.editor, false)) != null;
+
+            tool = (EditorTool) GetSingleton(typeAssociation.editor);
+
+            return true;
+        }
+
         // Collect all instantiated EditorTools for the current selection, not including locked inspectors. This is
         // what should be used to get component tools in 99% of cases. The exception is locked Inspectors, in which
         // case you can use `GetComponentTools(x => x.inspector == editor)`.
@@ -682,6 +710,71 @@ namespace UnityEditor.EditorTools
                 if (tool.editor is IDrawSelectedHandles handle)
                     handle.OnDrawHandles();
             }
+        }
+
+        // Collect all available tools into applicable UI categories and variant groups
+        public static void GetAvailableTools(List<ToolEntry> tools, EditorToolContext context = null)
+        {
+            if (context == null)
+                context = activeToolContext;
+
+            // at each step, check if tool is already present as a variant, and collect available variants when appending
+            // 1. collect built-in tools
+            // 2. collect built-in additional tools
+            // 3. collect custom global tools
+            // 4. collect component tools for shared tracker
+            tools.Clear();
+
+            void AddToolEntry(Type tool, ToolEntry.Scope scope)
+            {
+                var meta = EditorToolUtility.GetMetaData(tool);
+                var entry = new ToolEntry(meta, scope);
+
+                if (meta.variantGroup != null)
+                {
+                    // Because this function collects all variants when appending to the list, we can safely assume that
+                    // if a variant group exists in the tools list the tool is also already appended.
+                    if (tools.Any(x => x.variantGroup == meta.variantGroup
+                                    && x.componentTool == entry.componentTool))
+                        return;
+
+                    foreach (var variant in EditorToolUtility.GetEditorsForVariant(meta))
+                        if (GetAvailableTool(variant, out var i))
+                            entry.tools.Add(i);
+                }
+                else if (GetAvailableTool(meta, out var i))
+                {
+                    entry.tools.Add(i);
+                }
+
+                if (entry.tools.Any())
+                    tools.Add(entry);
+            }
+
+            // 1. builtin (transform) tools
+            for (int i = (int)Tool.View; i < (int)Tool.Custom; ++i)
+            {
+                var tool = context.ResolveTool((Tool)i);
+                if (tool != null)
+                    AddToolEntry(tool, (ToolEntry.Scope) i);
+            }
+
+            // 2. builtin (additional) tools
+            foreach(var tool in context.GetAdditionalToolTypes())
+                AddToolEntry(tool, ToolEntry.Scope.BuiltinAdditional);
+
+            // 3. custom global tools
+            foreach(var global in EditorToolUtility.GetCustomEditorToolsForType(null))
+                if(global.targetContext == null || global.targetContext == ToolManager.activeContextType)
+                    AddToolEntry(global.editor, ToolEntry.Scope.CustomGlobal);
+
+            // 4. component tools
+            foreach (var tool in instance.componentTools)
+                if ((tool.typeAssociation.targetContext == null ||
+                     tool.typeAssociation.targetContext == context.GetType())
+                    && !tool.lockedInspector
+                    && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
+                    AddToolEntry(tool.editorType, ToolEntry.Scope.Component);
         }
     }
 }

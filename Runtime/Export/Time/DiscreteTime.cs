@@ -37,10 +37,11 @@ namespace Unity.IntegerTime
     /// <summary>
     /// Data-type representing a discrete time value.
     /// </summary>
-    public readonly struct DiscreteTime : IEquatable<DiscreteTime>, IFormattable, IComparable<DiscreteTime>
+    [Serializable]
+    public struct DiscreteTime : IEquatable<DiscreteTime>, IFormattable, IComparable<DiscreteTime>
     {
         /// <summary> The underlying value. It represents the number of discrete ticks </summary>
-        public readonly long Value;
+        [SerializeField] public long Value;
 
         /// <summary>The zero value.</summary>
         public static readonly DiscreteTime Zero = new();
@@ -269,23 +270,23 @@ namespace Unity.IntegerTime
 
         /// <summary>Returns true if the time is equal to a given time, false otherwise.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(DiscreteTime rhs) { return Value == rhs.Value; }
+        public readonly bool Equals(DiscreteTime rhs) { return Value == rhs.Value; }
 
         /// <summary>Returns true if the time is equal to a given time, false otherwise.</summary>
-        public override bool Equals(object o) { return Equals((DiscreteTime)o); }
+        public readonly override bool Equals(object o) { return Equals((DiscreteTime)o); }
 
         /// <summary>Returns a hash code for the time.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() { return Value.GetHashCode(); }
+        public readonly override int GetHashCode() { return Value.GetHashCode(); }
 
         /// <summary>Returns a string representation of the time.</summary>
-        public override string ToString() { return ((double)this).ToString(); }
+        public readonly override string ToString() { return ((double)this).ToString(); }
 
         /// <summary>Returns a string representation of the time using a specified format and culture-specific format information.</summary>
-        public string ToString(string format, IFormatProvider formatProvider) { return ((double)this).ToString(format, formatProvider); }
+        public readonly string ToString(string format, IFormatProvider formatProvider) { return ((double)this).ToString(format, formatProvider); }
 
         /// <summary> Implementation of IComparable </summary>
-        public int CompareTo(DiscreteTime other) { return Value.CompareTo(other.Value); }
+        public readonly int CompareTo(DiscreteTime other) { return Value.CompareTo(other.Value); }
     }
 
     /// <summary>

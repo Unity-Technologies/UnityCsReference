@@ -96,6 +96,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool oneTimeWarningShown;
 
         [SerializeField]
+        public bool oneTimeDeprecatedPopUpShown;
+
+        [SerializeField]
         private List<RegistryInfo> m_Registries = new List<RegistryInfo>();
 
         public IList<RegistryInfo> registries => m_Registries;

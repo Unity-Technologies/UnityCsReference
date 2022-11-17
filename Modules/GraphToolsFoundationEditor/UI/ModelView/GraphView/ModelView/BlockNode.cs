@@ -74,6 +74,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void OnMouseDown(MouseDownEvent e)
         {
+            if (BlockNodeModel is IPlaceholder)
+                return;
+
             if (e.button == (int)MouseButton.LeftMouse)
             {
                 e.StopPropagation();
@@ -87,6 +90,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void ClearDragging()
         {
+            if (BlockNodeModel is IPlaceholder)
+                return;
+
             if (m_BlockDragInfos != null)
             {
                 m_BlockDragInfos.DraggedBlockContext_Internal.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
@@ -99,6 +105,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void OnDragKey(KeyDownEvent e)
         {
+            if (BlockNodeModel is IPlaceholder)
+                return;
+
             if (e.keyCode == KeyCode.Escape)
             {
                 m_BlockDragInfos.ReleaseDragging();
@@ -108,6 +117,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void OnMouseMove(MouseMoveEvent e)
         {
+            if (BlockNodeModel is IPlaceholder)
+                return;
+
             if (m_BlockDragInfos != null && !m_BlockDragInfos.OnMouseMove(e))
             {
                 ClearDragging();
@@ -118,6 +130,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void OnMouseUp(MouseUpEvent e)
         {
+            if (BlockNodeModel is IPlaceholder)
+                return;
+
             if (m_BlockDragInfos != null)
             {
                 m_BlockDragInfos.OnMouseUp(e);
@@ -128,6 +143,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc/>
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
+            if (BlockNodeModel is IPlaceholder || BlockNodeModel.ContextNodeModel is IPlaceholder)
+                return;
+
             ContextNode context = GetFirstAncestorOfType<ContextNode>();
             if (context == null)
                 return;

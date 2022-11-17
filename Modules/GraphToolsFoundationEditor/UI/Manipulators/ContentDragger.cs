@@ -45,6 +45,7 @@ namespace Unity.GraphToolsFoundation.Editor
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -52,6 +53,7 @@ namespace Unity.GraphToolsFoundation.Editor
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         static void ChangeMouseCursorTo(BaseVisualElementPanel panel, int internalCursorId)
@@ -113,6 +115,27 @@ namespace Unity.GraphToolsFoundation.Editor
             if (!m_Active || !CanStopManipulation(e))
                 return;
 
+            StopManipulation();
+            e.StopPropagation();
+        }
+
+        protected void OnMouseCaptureOutEvent(MouseCaptureOutEvent evt)
+        {
+            if (!m_Active)
+                return;
+            StopManipulation();
+
+            // Temporary workaround until IN-17870 is fixed. When a contextual menu appears, if a mouse button
+            // was already pressed, it gets stuck and the "pressedButtons" properties contains the wrong values.
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                PointerDeviceState.ReleaseButton(PointerId.mousePointerId, (int)MouseButton.LeftMouse);
+                PointerDeviceState.ReleaseButton(PointerId.mousePointerId, (int)MouseButton.MiddleMouse);
+            }
+        }
+
+        void StopManipulation()
+        {
             var graphView = target as GraphView;
             if (graphView == null)
                 return;
@@ -125,8 +148,6 @@ namespace Unity.GraphToolsFoundation.Editor
             target.ReleaseMouse();
 
             ChangeMouseCursorTo(graphView.elementPanel, (int)MouseCursor.Arrow);
-
-            e.StopPropagation();
         }
     }
 }

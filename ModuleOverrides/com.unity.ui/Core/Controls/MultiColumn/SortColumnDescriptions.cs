@@ -18,6 +18,10 @@ namespace UnityEngine.UIElements
         /// Instantiates a <see cref="SortColumnDescriptions"/> using the data read from a UXML file.
         /// </summary>
         internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : SortColumnDescriptions, new() {}
+        /// <summary>
+        /// Instantiates a <see cref="SortColumnDescriptions"/> using the data read from a UXML file.
+        /// </summary>
+        internal class UxmlObjectFactory : UxmlObjectFactory<SortColumnDescriptions> {}
 
         /// <summary>
         /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="SortColumnDescriptions"/>.

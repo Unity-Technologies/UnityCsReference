@@ -254,7 +254,7 @@ namespace Unity.UI.Builder
                         baseInput.focusController.DoFocusChange(baseInput);
 
                     m_TextField.SetValueWithoutNotify(value);
-                    m_TextField.SelectAll();
+                    m_TextField.textSelection.SelectAll();
                 });
                 return;
             }

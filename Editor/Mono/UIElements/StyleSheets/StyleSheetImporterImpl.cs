@@ -430,7 +430,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     }
 
                     // explicit asset reference already loaded
-                    m_Context?.DependsOnSourceAsset(projectRelativePath);
+                    m_Context?.DependsOnArtifact(projectRelativePath);
                 }
                 else
                 {
@@ -945,7 +945,7 @@ namespace UnityEditor.UIElements.StyleSheets
                             importedStyleSheet = response.resolvedQueryAsset as UnityStyleSheet;
                             if (importedStyleSheet)
                             {
-                                m_Context.DependsOnSourceAsset(projectRelativePath);
+                                m_Context.DependsOnArtifact(projectRelativePath);
                             }
                             else
                             {

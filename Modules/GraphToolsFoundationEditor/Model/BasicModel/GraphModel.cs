@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.CommandStateObserver;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Scripting.APIUpdating;
@@ -87,6 +89,13 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeReference]
         List<SectionModel> m_SectionModels;
 
+        List<IPlaceholder> m_Placeholders;
+
+        [SerializeField]
+        List<GraphElementMetaData> m_GraphElementMetaData;
+
+        SerializedValueDictionary<SerializableGUID, PlaceholderData> m_PlaceholderData;
+
         /// <summary>
         /// Holds created variables names to make creation of unique names faster.
         /// </summary>
@@ -145,6 +154,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The nodes of the graph.
         /// </summary>
         public virtual IReadOnlyList<AbstractNodeModel> NodeModels => m_GraphNodeModels;
+
+        public IReadOnlyList<IPlaceholder> Placeholders => m_Placeholders;
 
         /// <summary>
         /// The nodes and blocks of the graph.
@@ -269,9 +280,15 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var group in SectionModels)
                 RecurseGetReferencedGroupItem(group, variablesInGroup);
 
+            foreach (var variable in variablesInGroup)
+            {
+                if (variable is VariableDeclarationPlaceholder)
+                    variable.ParentGroup.RemoveItem(variable);
+            }
+
             if (VariableDeclarations == null) return;
 
-            foreach (var variable in VariableDeclarations)
+            foreach (var variable in VariableDeclarations.Where(v => v != null))
             {
                 if (!variablesInGroup.Contains(variable))
                     GetSectionModel(Stencil.GetVariableSection(variable)).InsertItem(variable);
@@ -298,9 +315,13 @@ namespace Unity.GraphToolsFoundation.Editor
             m_GraphVariableModels = new List<VariableDeclarationModel>();
             m_GraphPortalModels = new List<DeclarationModel>();
             m_SectionModels = new List<SectionModel>();
+            m_GraphElementMetaData = new List<GraphElementMetaData>();
+
             m_ExistingVariableNames = new HashSet<string>();
 
             m_PortWireIndex = new PortWireIndex_Internal(this);
+            m_Placeholders = new List<IPlaceholder>();
+            m_PlaceholderData = new SerializedValueDictionary<SerializableGUID, PlaceholderData>();
         }
 
         /// <summary>
@@ -460,7 +481,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="model">The model.</param>
         public virtual void RegisterElement(GraphElementModel model)
         {
-            GetElementsByGuid().Add(model.Guid, model);
+            GetElementsByGuid().TryAdd(model.Guid, model);
         }
 
         /// <summary>
@@ -506,7 +527,13 @@ namespace Unity.GraphToolsFoundation.Editor
             if (nodeModel.NeedsContainer())
                 throw new ArgumentException("Can't add a node model that does not need a container to the graph");
             RegisterElement(nodeModel);
+            AddMetaData(nodeModel, m_GraphNodeModels.Count);
             m_GraphNodeModels.Add(nodeModel);
+        }
+
+        void AddMetaData(Model model, int index = -1)
+        {
+            m_GraphElementMetaData.Add(new GraphElementMetaData(model, index));
         }
 
         /// <summary>
@@ -518,6 +545,9 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             UnregisterElement(nodeModel);
             RegisterElement(nodeModel);
+            var indexInMetadata = m_GraphElementMetaData.FindIndex(m => m.Index == index);
+
+            m_GraphElementMetaData[indexInMetadata] = new GraphElementMetaData(nodeModel, index);
             m_GraphNodeModels[index] = nodeModel;
         }
 
@@ -527,8 +557,44 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="nodeModel"></param>
         protected virtual void RemoveNode(AbstractNodeModel nodeModel)
         {
+            if (nodeModel == null)
+                return;
+
             UnregisterElement(nodeModel);
-            m_GraphNodeModels.Remove(nodeModel);
+
+            var indexToRemove = m_GraphNodeModels.IndexOf(nodeModel);
+            if (indexToRemove != -1)
+            {
+                RemoveFromMetadata(indexToRemove, PlaceholderModelHelper.ModelToMissingTypeCategory_Internal(nodeModel));
+                m_GraphNodeModels.RemoveAt(indexToRemove);
+            }
+        }
+
+        void RemoveFromMetadata(int index, ManagedMissingTypeModelCategory category)
+        {
+            var metadataIndexToRemove = -1;
+            for (var i = 0; i < m_GraphElementMetaData.Count; i++)
+            {
+                var metadata = m_GraphElementMetaData[i];
+
+                if (metadata.Category != category || metadata.Index < index)
+                    continue;
+
+                if (metadata.Index == index)
+                {
+                    metadataIndexToRemove = i;
+                    continue;
+                }
+
+                // Update the index of other same category elements positioned after the removed model.
+                m_GraphElementMetaData[i].Index = metadata.Index - 1;
+            }
+
+            if (metadataIndexToRemove != -1)
+            {
+                m_PlaceholderData.Remove(m_GraphElementMetaData[metadataIndexToRemove].Guid);
+                m_GraphElementMetaData.RemoveAt(metadataIndexToRemove);
+            }
         }
 
         /// <inheritdoc />
@@ -538,6 +604,9 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 switch (element)
                 {
+                    case IPlaceholder placeholder:
+                        RemovePlaceholder(placeholder);
+                        break;
                     case StickyNoteModel stickyNoteModel:
                         RemoveStickyNote(stickyNoteModel);
                         break;
@@ -567,9 +636,9 @@ namespace Unity.GraphToolsFoundation.Editor
         protected virtual void AddPortal(DeclarationModel declarationModel)
         {
             RegisterElement(declarationModel);
+            AddMetaData(declarationModel, m_GraphPortalModels.Count);
             m_GraphPortalModels.Add(declarationModel);
         }
-
 
         /// <summary>
         /// Duplicates a portal declaration model and adds it to the graph.
@@ -591,8 +660,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="declarationModel">The portal declaration to remove.</param>
         protected virtual void RemovePortal(DeclarationModel declarationModel)
         {
+            if (declarationModel == null)
+                return;
+
             UnregisterElement(declarationModel);
-            m_GraphPortalModels.Remove(declarationModel);
+
+            var indexToRemove = m_GraphPortalModels.IndexOf(declarationModel);
+            if (indexToRemove != -1)
+            {
+                m_GraphPortalModels.RemoveAt(indexToRemove);
+                RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.PortalDeclaration);
+            }
         }
 
         /// <summary>
@@ -602,8 +680,8 @@ namespace Unity.GraphToolsFoundation.Editor
         protected virtual void AddWire(WireModel wireModel)
         {
             RegisterElement(wireModel);
+            AddMetaData(wireModel, m_GraphWireModels.Count);
             m_GraphWireModels.Add(wireModel);
-
             m_PortWireIndex.AddWire(wireModel);
         }
 
@@ -613,9 +691,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="wireModel">The wire to remove.</param>
         protected virtual void RemoveWire(WireModel wireModel)
         {
-            UnregisterElement(wireModel);
-            m_GraphWireModels.Remove(wireModel);
+            if (wireModel == null)
+                return;
 
+            UnregisterElement(wireModel);
+
+            var indexToRemove = m_GraphWireModels.IndexOf(wireModel);
+            if (indexToRemove != -1)
+            {
+                m_GraphWireModels.RemoveAt(indexToRemove);
+                RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.Wire);
+            }
             m_PortWireIndex.RemoveWire(wireModel);
         }
 
@@ -688,6 +774,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected virtual void AddVariableDeclaration(VariableDeclarationModel variableDeclarationModel)
         {
             RegisterElement(variableDeclarationModel);
+            AddMetaData(variableDeclarationModel, m_GraphVariableModels.Count);
             m_GraphVariableModels.Add(variableDeclarationModel);
             m_ExistingVariableNames.Add(variableDeclarationModel.Title);
         }
@@ -698,8 +785,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="variableDeclarationModel">The variable declaration to remove.</param>
         protected virtual GroupModel RemoveVariableDeclaration(VariableDeclarationModel variableDeclarationModel)
         {
+            if (variableDeclarationModel == null)
+                return null;
+
             UnregisterElement(variableDeclarationModel);
-            m_GraphVariableModels.Remove(variableDeclarationModel);
+
+            var indexToRemove = m_GraphVariableModels.IndexOf(variableDeclarationModel);
+            if (indexToRemove != -1)
+            {
+                RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.VariableDeclaration);
+                m_GraphVariableModels.RemoveAt(indexToRemove);
+            }
             m_ExistingVariableNames.Remove(variableDeclarationModel.Title);
 
             var parent = variableDeclarationModel.ParentGroup;
@@ -709,6 +805,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void RecursiveBuildElementByGuid(GraphElementModel model)
         {
+            if (model == null)
+                return;
+
             GetElementsByGuid().TryAdd(model.Guid, model);
 
             if (model is IGraphElementContainer container)
@@ -1101,7 +1200,14 @@ namespace Unity.GraphToolsFoundation.Editor
                     wirePortalModel.DeclarationModel != null &&
                     !this.FindReferencesInGraph<WirePortalModel>(wirePortalModel.DeclarationModel).Except(nodeModels).Any())
                 {
-                    RemovePortal(wirePortalModel.DeclarationModel);
+                    if (wirePortalModel.DeclarationModel is PortalDeclarationPlaceholder placeholderModel)
+                    {
+                        RemovePlaceholder(placeholderModel);
+                    }
+                    else
+                    {
+                        RemovePortal(wirePortalModel.DeclarationModel);
+                    }
                     deletedModels.Add(wirePortalModel.DeclarationModel);
                 }
 
@@ -1142,6 +1248,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var wireModel = InstantiateWire(toPort, fromPort, guid);
             AddWire(wireModel);
+
             return wireModel;
         }
 
@@ -1174,10 +1281,17 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var wireModel in wireModels.Where(e => e != null && e.IsDeletable()))
             {
-                wireModel.ToPort?.NodeModel?.OnDisconnection(wireModel.ToPort, wireModel.FromPort);
-                wireModel.FromPort?.NodeModel?.OnDisconnection(wireModel.FromPort, wireModel.ToPort);
+                if (wireModel is WirePlaceholder placeholder)
+                {
+                    RemovePlaceholder(placeholder);
+                }
+                else
+                {
+                    wireModel.ToPort?.NodeModel?.OnDisconnection(wireModel.ToPort, wireModel.FromPort);
+                    wireModel.FromPort?.NodeModel?.OnDisconnection(wireModel.FromPort, wireModel.ToPort);
 
-                RemoveWire(wireModel);
+                    RemoveWire(wireModel);
+                }
                 deletedModels.Add(wireModel);
             }
 
@@ -1400,6 +1514,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 section.InsertItem(variableDeclaration, indexInGroup);
             }
 
+            m_PlaceholderData[guid] = new PlaceholderData { GroupTitle = variableDeclaration.ParentGroup.Title };
+
             return variableDeclaration;
         }
 
@@ -1543,6 +1659,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var variableModel in variableModels.Where(v => v.IsDeletable()))
             {
+                if (variableModel is VariableDeclarationPlaceholder placeholderModel)
+                    RemovePlaceholder(placeholderModel);
+
                 var parent = RemoveVariableDeclaration(variableModel);
 
                 changedModelsDict[parent] = s_GroupingChangeHint;
@@ -1868,18 +1987,21 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual void OnLoadGraph()
         {
+            AddGraphPlaceholders();
+
             // This is necessary because we can load a graph in the tool without OnEnable(),
             // which calls OnDefineNode(), being called (yet).
             // Also, PortModel.OnAfterDeserialized(), which resets port caches, is not necessarily called,
             // since the graph may already have been loaded by the AssetDatabase a long time ago.
 
             // The goal of this is to create the missing ports when subgraph variables get deleted.
-
             foreach (var nodeModel in NodeModels.OfType<NodeModel>())
                 nodeModel.DefineNode();
 
             foreach (var wireModel in WireModels)
             {
+                if (wireModel == null)
+                    continue;
                 wireModel.UpdatePortFromCache();
                 wireModel.ResetPortCache();
             }
@@ -2262,10 +2384,312 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        void AddGraphPlaceholders()
+        {
+            RemoveUnmanagedNullElements();
+
+            // Get the indexes of null models (used to create placeholders for models which data was not serialized properly).
+            var remainingNullModelIndexes = new List<(ManagedMissingTypeModelCategory, int)>();
+            var contextWithNullBlocks = new List<ContextNodeModel>();
+            for (var i = 0; i < NodeModels.Count; i++)
+            {
+                var node = NodeModels.ElementAt(i);
+                if (node == null)
+                {
+                    var metadata = m_GraphElementMetaData.Where(m => m.Category is ManagedMissingTypeModelCategory.Node or ManagedMissingTypeModelCategory.ContextNode).FirstOrDefault(m => m.Index == i);
+                    if (metadata != null)
+                        remainingNullModelIndexes.Add((metadata.Category, i));
+                }
+                else if (node is ContextNodeModel contextNodeModel && contextNodeModel.GraphElementModels.Any(ge => ge == null))
+                {
+                    contextWithNullBlocks.Add(contextNodeModel);
+                }
+            }
+            for (var i = 0; i < VariableDeclarations.Count; i++)
+            {
+                if (VariableDeclarations[i] == null)
+                    remainingNullModelIndexes.Add((ManagedMissingTypeModelCategory.VariableDeclaration, i));
+            }
+            for (var i = 0; i < WireModels.Count; i++)
+            {
+                if (WireModels[i] == null)
+                    remainingNullModelIndexes.Add((ManagedMissingTypeModelCategory.Wire, i));
+            }
+            for (var i = 0; i < PortalDeclarations.Count; i++)
+            {
+                if (PortalDeclarations[i] == null)
+                    remainingNullModelIndexes.Add((ManagedMissingTypeModelCategory.PortalDeclaration, i));
+            }
+
+            // Add new placeholders using managed references with missing types.
+            foreach (var referenceWithMissingType in SerializationUtility.GetManagedReferencesWithMissingTypes(Asset))
+            {
+                if (YamlParsingHelper_Internal.TryParseSerializableGUID(referenceWithMissingType.serializedData, guidFieldName_Internal, 0, out var guid))
+                {
+                    var metadataIndex = m_GraphElementMetaData.FindIndex(m => m.Guid == guid);
+
+                    var metadata = metadataIndex == -1 ? null : m_GraphElementMetaData[metadataIndex];
+                    if (TryGetModelFromGuid(guid, out _))
+                    {
+                        Debug.LogWarning("There is already an existing model with that guid.");
+                        if (metadata != null)
+                            remainingNullModelIndexes.Remove((metadata.Category, metadata.Index));
+                    }
+                    else if (metadata == null)
+                    {
+                        // Blocks are not added to the metadata. Check if it is a block node. If yes, create a placeholder for it.
+                        PlaceholderModelHelper.TryCreatePlaceholder_Internal(this, ManagedMissingTypeModelCategory.BlockNode, referenceWithMissingType, guid, out _);
+                    }
+                    else if (PlaceholderModelHelper.TryCreatePlaceholder_Internal(this, metadata.Category, referenceWithMissingType, guid, out var createdPlaceholder))
+                    {
+                        SaveNodePositionForMetadata(createdPlaceholder);
+                        remainingNullModelIndexes.Remove((metadata.Category, metadata.Index));
+                    }
+                }
+            }
+
+            // Create placeholders for null models for which the data is not serialized anymore.
+            foreach (var (category, index) in remainingNullModelIndexes)
+            {
+                var metadata = m_GraphElementMetaData.FirstOrDefault(m => m.Category == category && m.Index == index);
+                if (metadata != null)
+                {
+                    if (metadata.ToRemove)
+                    {
+                        RemoveMetaDataModel(metadata);
+                    }
+                    else if (!TryGetModelFromGuid(metadata.Guid, out _))
+                    {
+                        switch (metadata.Category)
+                        {
+                            case ManagedMissingTypeModelCategory.Node:
+                                CreateNodePlaceholder_Internal(PlaceholderModelHelper.missingTypeWontBeRestored, m_PlaceholderData[metadata.Guid].Position, metadata.Guid);
+                                break;
+                            case ManagedMissingTypeModelCategory.VariableDeclaration:
+                                CreateVariableDeclarationPlaceholder_Internal(PlaceholderModelHelper.missingTypeWontBeRestored, metadata.Guid);
+                                break;
+                            case ManagedMissingTypeModelCategory.Wire:
+                                RemoveWire(WireModels[index]); // We don't have the data for the ports.
+                                break;
+                            case ManagedMissingTypeModelCategory.PortalDeclaration:
+                                CreatePortalDeclarationPlaceholder_Internal(PlaceholderModelHelper.missingTypeWontBeRestored, metadata.Guid);
+                                break;
+                            case ManagedMissingTypeModelCategory.ContextNode:
+                                CreateContextNodePlaceholder_Internal(PlaceholderModelHelper.missingTypeWontBeRestored, m_PlaceholderData[metadata.Guid].Position, metadata.Guid);
+                                break;
+                        }
+                    }
+                }
+            }
+            foreach (var context in contextWithNullBlocks)
+            {
+                for (var i = 0; i < context.GraphElementModels.Count(); ++i)
+                {
+                    var block = context.GraphElementModels.ElementAt(i);
+                    // Create placeholders for null models for which the data is not serialized anymore.
+                    if (block == null && context.BlockPlaceholders.All(t => t.Guid != context.BlockGuids[i]))
+                        CreateBlockNodePlaceholder_Internal(PlaceholderModelHelper.missingTypeWontBeRestored, context.BlockGuids[i], context);
+                }
+            }
+        }
+
+        void SaveNodePositionForMetadata(IPlaceholder createdPlaceholder)
+        {
+            // The node position needs to be kept in the metadata to be able to recreate the placeholder at the right position.
+            if (createdPlaceholder is not NodePlaceholder nodeModel)
+                return;
+
+            if (m_PlaceholderData.ContainsKey(nodeModel.Guid))
+                m_PlaceholderData[nodeModel.Guid].Position = nodeModel.Position;
+            else
+                m_PlaceholderData[nodeModel.Guid] = new PlaceholderData { Position = nodeModel.Position };
+        }
+
+        void RemoveUnmanagedNullElements()
+        {
+            m_BadgeModels.RemoveAll(t => t == null);
+            m_BadgeModels.RemoveAll(t => t.ParentModel == null);
+            m_GraphStickyNoteModels.RemoveAll(t => t == null);
+            m_GraphPlacematModels.RemoveAll(t => t == null);
+            m_SectionModels.ForEach(t => t.Repair());
+        }
+
+        void RemovePlaceholder(IPlaceholder placeholder)
+        {
+            if (TryGetModelFromGuid(placeholder.Guid, out var model))
+                UnregisterElement(model);
+
+            // Clear the serialized data related to the null object the user wants to remove.
+            SerializationUtility.ClearManagedReferenceWithMissingType(Asset, placeholder.ReferenceId);
+
+            var metadata = m_GraphElementMetaData.FirstOrDefault(m => m.Guid == placeholder.Guid);
+
+            // It is not possible to distinguish the index of objects with a missing type in the serialization. Hence, we keep a flag and remove the corresponding null object on the next graph reload.
+            if (metadata != null)
+                metadata.ToRemove = true;
+
+            // Remove the placeholder
+            m_Placeholders.Remove(placeholder);
+        }
+
+        void RemoveMetaDataModel(GraphElementMetaData metadata)
+        {
+            if (metadata.Index == -1)
+                return;
+
+            switch (metadata.Category)
+            {
+                case ManagedMissingTypeModelCategory.Node:
+                case ManagedMissingTypeModelCategory.ContextNode:
+                    m_GraphNodeModels.RemoveAt(metadata.Index);
+                    break;
+                case ManagedMissingTypeModelCategory.VariableDeclaration:
+                    m_GraphVariableModels.RemoveAt(metadata.Index);
+                    break;
+                case ManagedMissingTypeModelCategory.Wire:
+                    m_GraphWireModels.RemoveAt(metadata.Index);
+                    break;
+                case ManagedMissingTypeModelCategory.PortalDeclaration:
+                    m_GraphPortalModels.RemoveAt(metadata.Index);
+                    break;
+            }
+
+            // Remove the associated metadata
+            RemoveFromMetadata(metadata.Index, metadata.Category);
+        }
+
+        internal NodePlaceholder CreateNodePlaceholder_Internal(string nodeName, Vector2 position, SerializableGUID guid, long referenceId = -1)
+        {
+            var node = InstantiateNode(typeof(NodePlaceholder), nodeName, position, guid) as NodePlaceholder;
+            RegisterElement(node);
+
+            if (node != null && referenceId != -1)
+                node.ReferenceId = referenceId;
+
+            m_Placeholders.Add(node);
+
+            return node;
+        }
+
+        internal ContextNodePlaceholder CreateContextNodePlaceholder_Internal(string nodeName, Vector2 position, SerializableGUID guid, IEnumerable<BlockNodeModel> blocks = null, long referenceId = -1)
+        {
+            var contextNode = InstantiateNode(typeof(ContextNodePlaceholder), nodeName, position, guid) as ContextNodePlaceholder;
+            RegisterElement(contextNode);
+
+            if (contextNode != null && referenceId != -1)
+                contextNode.ReferenceId = referenceId;
+
+            m_Placeholders.Add(contextNode);
+
+            if (contextNode is ContextNodeModel contextNodeModel)
+            {
+                var blockGuids = blocks?.Select(b => b.Guid).ToList();
+                if (blockGuids == null)
+                {
+                    if (m_PlaceholderData.TryGetValue(guid, out var data))
+                        blockGuids = data.BlockGuids;
+                }
+                else
+                {
+                    // Keep the blocks' guids to be able to recreate the placeholder in case the missing type serialized data is lost.
+                    m_PlaceholderData ??= new SerializedValueDictionary<SerializableGUID, PlaceholderData>();
+                    if (m_PlaceholderData.ContainsKey(guid))
+                        m_PlaceholderData[guid].BlockGuids = blockGuids;
+                    else
+                        m_PlaceholderData[guid] = new PlaceholderData { BlockGuids = blockGuids };
+                }
+
+                if (blockGuids != null)
+                {
+                    foreach (var blockGuid in blockGuids)
+                        CreateBlockNodePlaceholder_Internal("! Missing ! The context node has a missing type.", blockGuid, contextNodeModel);
+                }
+            }
+
+            return contextNode;
+        }
+
+        internal BlockNodePlaceholder CreateBlockNodePlaceholder_Internal(string nodeName, SerializableGUID guid, ContextNodeModel contextNodeModel, long referenceId = -1)
+        {
+            var node = InstantiateNode(typeof(BlockNodePlaceholder), nodeName, Vector2.zero, guid) as BlockNodePlaceholder;
+            RegisterElement(node);
+
+            if (node != null && referenceId != -1)
+                node.ReferenceId = referenceId;
+
+            if (node is BlockNodeModel blockNodeModel && contextNodeModel != null)
+                contextNodeModel.InsertBlock(blockNodeModel, spawnFlags: SpawnFlags.Orphan);
+
+            return node;
+        }
+
+        internal VariableDeclarationPlaceholder CreateVariableDeclarationPlaceholder_Internal(string variableName, SerializableGUID guid, long referenceId = -1)
+        {
+            var variableDeclaration = InstantiateVariableDeclaration(typeof(VariableDeclarationPlaceholder), TypeHandle.MissingType,
+                variableName, ModifierFlags.None, false, null, guid) as VariableDeclarationPlaceholder;
+
+            RegisterElement(variableDeclaration);
+
+            if (variableDeclaration != null && referenceId != -1)
+                variableDeclaration.ReferenceId = referenceId;
+
+            var group = m_PlaceholderData.TryGetValue(guid, out var data) ? GetSectionModel(data.GroupTitle) : GetSectionModel(variableDeclaration?.GraphModel.Stencil.GetVariableSection(variableDeclaration));
+            group.InsertItem(variableDeclaration);
+
+            m_Placeholders.Add(variableDeclaration);
+
+            return variableDeclaration;
+        }
+
+        internal PortalDeclarationPlaceholder CreatePortalDeclarationPlaceholder_Internal(string portalName, SerializableGUID guid, long referenceId = -1)
+        {
+            var portalModel = Instantiate<PortalDeclarationPlaceholder>(typeof(PortalDeclarationPlaceholder));
+            portalModel.Title = portalName;
+
+            if (guid.Valid)
+                portalModel.SetGuid(guid);
+
+            portalModel.GraphModel = this;
+
+            RegisterElement(portalModel);
+
+            if (referenceId != -1)
+                portalModel.ReferenceId = referenceId;
+
+            m_Placeholders.Add(portalModel);
+
+            return portalModel;
+        }
+
+        internal WirePlaceholder CreateWirePlaceholder_Internal(PortModel toPort, PortModel fromPort, SerializableGUID guid, long referenceId = -1)
+        {
+            var existing = this.GetWireConnectedToPorts(toPort, fromPort);
+            if (existing != null)
+                return existing as WirePlaceholder;
+
+            var wireModel = Instantiate<WirePlaceholder>(typeof(WirePlaceholder));
+            wireModel.GraphModel = this;
+
+            if (guid.Valid)
+                wireModel.SetGuid(guid);
+
+            wireModel.SetPorts(toPort, fromPort);
+
+            RegisterElement(wireModel);
+
+            if (referenceId != -1)
+                wireModel.ReferenceId = referenceId;
+
+            m_Placeholders.Add(wireModel);
+            m_PortWireIndex.AddWire(wireModel);
+
+            return wireModel;
+        }
+
         /// <inheritdoc />
         public virtual void Repair()
         {
-            m_GraphNodeModels.RemoveAll(t => t == null);
+            m_GraphNodeModels.RemoveAll(t => t is null or IPlaceholder);
             m_GraphNodeModels.RemoveAll(t => t is VariableNodeModel variable && variable.DeclarationModel == null);
 
             foreach (var container in m_GraphNodeModels.OfType<IGraphElementContainer>())
@@ -2277,12 +2701,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_BadgeModels.RemoveAll(t => t == null);
             m_BadgeModels.RemoveAll(t => t.ParentModel == null);
-            m_GraphWireModels.RemoveAll(t => t == null);
+            m_GraphWireModels.RemoveAll(t => t is null or IPlaceholder);
             m_GraphWireModels.RemoveAll(t => !validGuids.Contains(t.FromNodeGuid) || !validGuids.Contains(t.ToNodeGuid));
             m_GraphStickyNoteModels.RemoveAll(t => t == null);
             m_GraphPlacematModels.RemoveAll(t => t == null);
-            m_GraphVariableModels.RemoveAll(t => t == null);
-            m_GraphPortalModels.RemoveAll(t => t == null);
+            m_GraphVariableModels.RemoveAll(t => t is null);
+            m_GraphPortalModels.RemoveAll(t => t is null);
             m_SectionModels.ForEach(t => t.Repair());
         }
 

@@ -40,7 +40,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             return new BlackboardGraphModel(){GraphModel = graphModel};
         }
-        
+
         public override InspectorModel CreateInspectorModel(IEnumerable<Model> inspectedModels)
         {
             return new InspectorModel(){InspectedModels = inspectedModels};
@@ -105,15 +105,30 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Prompt the Item Library to create nodes to connect
         /// </summary>
-        /// <param name="view"></param>
-        /// <param name="wires"></param>
-        /// <param name="worldPosition"></param>
-        public void CreateNodesFromWires(GraphView view, IEnumerable<(WireModel model, WireSide side)> wires, Vector2 worldPosition)
+        /// <param name="view">The view.</param>
+        /// <param name="wires">The wires to connect.</param>
+        /// <param name="worldPosition">The position on which the nodes will be created.</param>
+        /// <param name="wiresToDelete">The wires that need to be deleted, if any.</param>
+        public void CreateNodesFromWires(GraphView view, IEnumerable<(WireModel model, WireSide side)> wires, Vector2 worldPosition, IEnumerable<WireModel> wiresToDelete = null)
         {
             var localPosition = view.ContentViewContainer.WorldToLocal(worldPosition);
-            Action<GraphNodeModelLibraryItem> createNode = item =>
+            Action<ItemLibraryItem> createNode = item =>
             {
-                view.Dispatch(CreateNodeCommand.OnWireSide(item, wires, localPosition));
+                if (item is GraphNodeModelLibraryItem nodeItem)
+                    view.Dispatch(CreateNodeCommand.OnWireSide(nodeItem, wires, localPosition));
+
+                var allWiresToDelete = wires.Where(w => w.model is IGhostWire).Select(w => w.model).ToList();
+                if (wiresToDelete != null)
+                    allWiresToDelete.AddRange(wiresToDelete);
+
+                if (allWiresToDelete.Any())
+                {
+                    foreach (var modelView in allWiresToDelete.Select(wireModel => wireModel.GetView_Internal(view)))
+                    {
+                        if (modelView != null && modelView is GraphElement element)
+                            view.RemoveElement(element);
+                    }
+                }
             };
             var portModels = wires.Select(e => e.model.GetOtherPort(e.side)).ToList();
             switch (portModels.First().Direction)

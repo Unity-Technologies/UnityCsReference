@@ -44,6 +44,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string highlightedModifierUssClassName = ussClassName.WithUssModifier("highlighted");
 
         /// <summary>
+        /// The uss class name for the placeholder modifier.
+        /// </summary>
+        public static readonly string placeholderModifierUssClassName = ussClassName.WithUssModifier("placeholder");
+
+        /// <summary>
         /// The uss class name for the read only modifier.
         /// </summary>
         public static readonly string readOnlyModifierUssClassName = ussClassName.WithUssModifier("read-only");
@@ -168,7 +173,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     highlight = false;
                 }
-
+                EnableInClassList(placeholderModifierUssClassName, variableDeclarationModel is IPlaceholder);
                 EnableInClassList(highlightedModifierUssClassName, highlight);
             }
         }

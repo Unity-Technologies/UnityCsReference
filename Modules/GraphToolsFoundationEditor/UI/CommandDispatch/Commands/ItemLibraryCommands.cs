@@ -380,8 +380,10 @@ namespace Unity.GraphToolsFoundation.Editor
             if (createdElements.Any())
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
+                using (var undoStateUpdater = undoState.UpdateScope)
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)
                 {
+                    undoStateUpdater.SaveStates(selectionHelper.UndoableSelectionStates);
                     foreach (var updater in selectionUpdaters)
                         updater.ClearSelection();
                     selectionUpdaters.MainUpdateScope.SelectElements(createdElements, true);

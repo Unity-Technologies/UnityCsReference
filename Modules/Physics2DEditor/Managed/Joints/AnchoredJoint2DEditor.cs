@@ -24,6 +24,11 @@ namespace UnityEditor
             if (!anchorJoint2D.enabled)
                 return;
 
+            // Ignore a HingeJoint2D that isn't using the connected anchor.
+            var hingeJoint2D = anchorJoint2D as HingeJoint2D;
+            if (hingeJoint2D && !hingeJoint2D.useConnectedAnchor)
+                return;
+
             Vector3 worldAnchor = TransformPoint(anchorJoint2D.transform, anchorJoint2D.anchor);
             Vector3 worldConnectedAnchor = anchorJoint2D.connectedAnchor;
             if (anchorJoint2D.connectedBody)
