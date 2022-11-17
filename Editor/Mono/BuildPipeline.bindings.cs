@@ -242,6 +242,7 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         public static extern BuildTargetGroup GetBuildTargetGroup(BuildTarget platform);
 
+        // Uses the implementation in "BuildPipeline.bindings.h"
         internal static extern BuildTargetGroup GetBuildTargetGroupByName(string platform);
 
         internal static extern BuildTarget GetBuildTargetByName(string platform);

@@ -7808,7 +7808,7 @@
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
     </Reference>
     <Reference Include="Bee.BeeDriver">
-      <HintPath>..\..\External\Bee\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
+      <HintPath>..\..\Tools\Bee\build\Distribution\BeeAsALibrary\Bee.BeeDriver.dll</HintPath>
     </Reference>
     <ProjectReference Include="UnityEngine.csproj">
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>

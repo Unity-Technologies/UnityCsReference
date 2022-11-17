@@ -848,7 +848,9 @@ namespace UnityEngine.UIElements.UIR
 
             for (int i = 0; i < generatedVertexCount; i++)
             {
-                mwd.SetNextVertex(generatedVertices[i]);
+                var v = generatedVertices[i];
+                v.tint *= tint;
+                mwd.SetNextVertex(v);
             }
 
             s_VectorGraphics9Slice.End();
@@ -1039,7 +1041,7 @@ namespace UnityEngine.UIElements.UIR
             Vector3 uvwTR = GetVertexBaryCentricCoordinates(vt, clipRectMinMax.z, clipRectMinMax.y);
             Vector3 uvwBL = GetVertexBaryCentricCoordinates(vt, clipRectMinMax.x, clipRectMinMax.w);
             Vector3 uvwBR = GetVertexBaryCentricCoordinates(vt, clipRectMinMax.z, clipRectMinMax.w);
-            const float kEpsilon = 0.0000001f; // Better be safe and have more verts than miss some
+            const float kEpsilon = 0.00001f; // Better be safe and have more verts than miss some
             const float kMin = -kEpsilon;
             const float kMax = 1 + kEpsilon;
 

@@ -206,6 +206,8 @@ namespace Unity.TLS.LowLevel
             public uint ssl_handshake_timeout_min;
             /// <summary>Initial ssl handshake maximum timeout value in milliseconds. Default is 60000 (60 seconds)</summary>
             public uint ssl_handshake_timeout_max;
+            /// <summary>Maximum size of UnityTLS messages. Note that user payloads too large to fit will result in errors.</summary>
+            public ushort mtu;
         }
         /// <summary>
         /// Client wrapper struct for holding instance and state data.

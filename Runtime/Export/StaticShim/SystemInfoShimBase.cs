@@ -152,6 +152,10 @@ namespace UnityEngine
 
         public virtual int maxTextureSize => UnityEngine.SystemInfo.maxTextureSize;
 
+        public virtual int maxTexture3DSize => UnityEngine.SystemInfo.maxTexture3DSize;
+
+        public virtual int maxTextureArraySlices => UnityEngine.SystemInfo.maxTextureArraySlices;
+
         public virtual int maxCubemapSize => UnityEngine.SystemInfo.maxCubemapSize;
 
         public virtual int maxComputeBufferInputsVertex => UnityEngine.SystemInfo.maxComputeBufferInputsVertex;
@@ -173,6 +177,8 @@ namespace UnityEngine
         public virtual int maxComputeWorkGroupSizeY => UnityEngine.SystemInfo.maxComputeWorkGroupSizeY;
 
         public virtual int maxComputeWorkGroupSizeZ => UnityEngine.SystemInfo.maxComputeWorkGroupSizeZ;
+
+        public virtual int computeSubGroupSize => UnityEngine.SystemInfo.computeSubGroupSize;
 
         public virtual bool supportsAsyncCompute => UnityEngine.SystemInfo.supportsAsyncCompute;
         public virtual bool supportsGpuRecorder => UnityEngine.SystemInfo.supportsGpuRecorder;

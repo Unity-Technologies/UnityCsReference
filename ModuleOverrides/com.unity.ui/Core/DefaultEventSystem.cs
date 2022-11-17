@@ -15,8 +15,32 @@ namespace UnityEngine.UIElements
         private IInput m_Input;
         internal IInput input
         {
-            get => m_Input ?? (m_Input = new Input());
+            get => m_Input ?? (m_Input = GetDefaultInput());
             set => m_Input = value;
+        }
+
+        private IInput GetDefaultInput()
+        {
+            IInput input = new Input();
+            try
+            {
+                // When legacy input manager is disabled, any query to Input will throw an InvalidOperationException
+                input.GetAxisRaw(m_HorizontalAxis);
+            }
+            catch (InvalidOperationException)
+            {
+                input = new NoInput();
+                Debug.LogWarning(
+                    "UI Toolkit is currently relying on legacy Input Manager for its active input source, " +
+                    "but the legacy Input Manager is not available using your current Project Settings. " +
+                    "Some UI Toolkit functionality might be missing or not working properly as a result. " +
+                    "To fix this problem, you can enable \"Input Manager (old)\" or \"Both\" in the " +
+                    "Active Input Source setting of the Player section. " +
+                    "UI Toolkit is using its internal default event system to process input. " +
+                    "Alternatively, you may activate new Input System support with UI Toolkit by " +
+                    "adding an EventSystem component to your active scene.");
+            }
+            return input;
         }
 
         private bool ShouldIgnoreEventsOnAppNotFocused()
@@ -408,13 +432,22 @@ namespace UnityEngine.UIElements
             bool mousePresent { get; }
         }
 
-        internal class Input : IInput
+        private class Input : IInput
         {
             public bool GetButtonDown(string button) => UnityEngine.Input.GetButtonDown(button);
             public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxis(axis);
             public int touchCount => UnityEngine.Input.touchCount;
             public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
             public bool mousePresent => UnityEngine.Input.mousePresent;
+        }
+
+        private class NoInput : IInput
+        {
+            public bool GetButtonDown(string button) => false;
+            public float GetAxisRaw(string axis) => 0f;
+            public int touchCount => 0;
+            public Touch GetTouch(int index) => default;
+            public bool mousePresent => false;
         }
     }
 }

@@ -49,5 +49,11 @@ namespace UnityEditor
         {
             return (long)Math.Max(1, Math.Pow(Math.Abs((double)value), 0.5) * kDragSensitivity);
         }
+
+        internal static long CalculateIntDragSensitivity(long value, long minValue, long maxValue)
+        {
+            long range = Math.Abs(maxValue - minValue);
+            return Math.Max(1, (long)(kDragSensitivity * range / 100));
+        }
     }
 }
