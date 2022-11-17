@@ -57,6 +57,7 @@ namespace UnityEditor
             CachedValue<string> m_StepsLabel = new CachedValue<string>(GetStepLabel);
             CachedValue<int> m_ParentId = new CachedValue<int>(GetParentId);
             CachedValue<DateTime> m_StartTime = new CachedValue<DateTime>(id => MSecToDateTime(GetStartDateTime(id)));
+            CachedValue<DateTime> m_EndTime = new CachedValue<DateTime>(id => MSecToDateTime(GetEndDateTime(id)));
             CachedValue<DateTime> m_UpdateTime = new CachedValue<DateTime>(id => MSecToDateTime(GetUpdateDateTime(id)));
             CachedValue<Status> m_Status = new CachedValue<Status>(GetStatus);
             CachedValue<Options> m_Options = new CachedValue<Options>(GetOptions);
@@ -76,6 +77,7 @@ namespace UnityEditor
             public string stepLabel => m_StepsLabel.GetValue(id);
             public int parentId => m_ParentId.GetValue(id);
             public DateTime startTime => m_StartTime.GetValue(id);
+            internal DateTime endTime => m_EndTime.GetValue(id);
             public DateTime updateTime => m_UpdateTime.GetValue(id);
             public Status status => m_Status.GetValue(id);
             public Options options => m_Options.GetValue(id);
@@ -103,11 +105,25 @@ namespace UnityEditor
             public bool cancellable => IsCancellable(id);
             public bool pausable => IsPausable(id);
             public bool indefinite => running && (progress == -1f || (options & Options.Indefinite) == Options.Indefinite);
-            public float elapsedTime => paused ? (float)elapsedTimeUntilLastPause.TotalSeconds : (float)(elapsedTimeUntilLastPause + (DateTime.UtcNow - lastResumeTime)).TotalSeconds;
+            public float elapsedTime
+            {
+                get
+                {
+                    if (finished)
+                    {
+                        var executionTime = endTime - startTime;
+                        return (float)executionTime.TotalSeconds;
+                    }
+                    else
+                        return paused ? (float)elapsedTimeUntilLastPause.TotalSeconds : (float)(elapsedTimeUntilLastPause + (DateTime.UtcNow - lastResumeTime)).TotalSeconds;
+                }
+            }
 
             public bool exists => Exists(id);
             internal DateTime lastResumeTime => m_LastResumeTime.GetValue(id);
             internal TimeSpan elapsedTimeUntilLastPause => m_ElapsedTimeUntilLastPause.GetValue(id);
+
+            internal Updates lastUpdates { get; private set; }
 
             internal Item(int id)
             {
@@ -214,21 +230,42 @@ namespace UnityEditor
                 Progress.SetStepLabel(id, label);
             }
 
-            internal void Dirty()
+            internal void Dirty(Updates updates)
             {
-                // Dirty only those that can change.
-                m_Description.Dirty();
-                m_Priority.Dirty();
-                m_Progress.Dirty();
-                m_CurrentStep.Dirty();
-                m_TotalSteps.Dirty();
-                m_StepsLabel.Dirty();
+                lastUpdates = updates;
+
+                // If the item was updated, update time is always updated
                 m_UpdateTime.Dirty();
-                m_Status.Dirty();
-                m_RemainingTime.Dirty();
-                m_TimeDisplayMode.Dirty();
-                m_LastResumeTime.Dirty();
-                m_ElapsedTimeUntilLastPause.Dirty();
+
+                if (updates.HasAny(Updates.DescriptionChanged))
+                    m_Description.Dirty();
+                if (updates.HasAny(Updates.PriorityChanged))
+                    m_Priority.Dirty();
+                if (updates.HasAny(Updates.ProgressChanged))
+                    m_Progress.Dirty();
+                if (updates.HasAny(Updates.CurrentStepChanged))
+                    m_CurrentStep.Dirty();
+                if (updates.HasAny(Updates.TotalStepsChanged))
+                    m_TotalSteps.Dirty();
+                if (updates.HasAny(Updates.StepLabelChanged))
+                    m_StepsLabel.Dirty();
+                if (updates.HasAny(Updates.StatusChanged))
+                    m_Status.Dirty();
+                if (updates.HasAny(Updates.RemainingTimeChanged))
+                    m_RemainingTime.Dirty();
+                if (updates.HasAny(Updates.TimeDisplayModeChanged))
+                    m_TimeDisplayMode.Dirty();
+                if (updates.HasAny(Updates.LastResumeTimeChanged))
+                    m_LastResumeTime.Dirty();
+                if (updates.HasAny(Updates.ElapsedTimeSinceLastPauseChanged))
+                    m_ElapsedTimeUntilLastPause.Dirty();
+                if (updates.HasAny(Updates.EndTimeChanged))
+                    m_EndTime.Dirty();
+            }
+
+            internal void ClearUpdates()
+            {
+                lastUpdates = Updates.NothingChanged;
             }
 
             internal static DateTime MSecToDateTime(long msec)

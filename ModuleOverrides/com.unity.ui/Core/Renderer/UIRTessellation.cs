@@ -390,7 +390,6 @@ namespace UnityEngine.UIElements.UIR
             var miterOffset = Vector2.zero;
 
             // Find a miter offset that makes the diagonal line go toward the radius
-            float radiusRatio = radius.x / radius.y;
             var topLeft = center - radius;
             var innerCorner = new Vector2(leftWidth, topWidth);
 
@@ -403,6 +402,8 @@ namespace UnityEngine.UIElements.UIR
                 miterOffset.y = Mathf.Min(0.0f, intersection.y - center.y);
 
             TessellateFilledFan(center, radius, miterOffset, leftWidth, topWidth, leftColor, topColor, posZ, mesh, leftColorPage, topColorPage, ref vertexCount, ref indexCount, countOnly);
+
+            bool smoothInternalEdge = ((leftWidth < radius.x) && (topWidth < radius.y));
 
             if (LooseCompare(rect.height, radius.y) > 0)
             {
@@ -420,7 +421,7 @@ namespace UnityEngine.UIElements.UIR
                 var subRect = new Rect(rect.x, rect.y + radius.y, leftWidth, rect.height - radius.y);
                 var offsets = stackalloc Vector2[4];
                 offsets[2] = new Vector2(radius.x - leftWidth + miterOffset.x, miterOffset.y);
-                TessellateQuad(subRect, Edges.Left | Edges.Right, offsets, leftColor, posZ, mesh, leftColorPage, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Left | (smoothInternalEdge ? Edges.Right : 0), offsets, leftColor, posZ, mesh, leftColorPage, ref vertexCount, ref indexCount, countOnly);
             }
             else if (miterOffset.y < -kEpsilon)
             {
@@ -454,7 +455,7 @@ namespace UnityEngine.UIElements.UIR
                 var subRect = new Rect(rect.x + radius.x, rect.y, rect.width - radius.x, topWidth);
                 var offsets = stackalloc Vector2[4];
                 offsets[0] = new Vector2(miterOffset.x, radius.y - topWidth + miterOffset.y);
-                TessellateQuad(subRect, Edges.Top | Edges.Bottom, offsets, topColor, posZ, mesh, topColorPage, ref vertexCount, ref indexCount, countOnly);
+                TessellateQuad(subRect, Edges.Top | (smoothInternalEdge ? Edges.Bottom : 0), offsets, topColor, posZ, mesh, topColorPage, ref vertexCount, ref indexCount, countOnly);
             }
             else if (miterOffset.x < -kEpsilon)
             {
@@ -888,21 +889,38 @@ namespace UnityEngine.UIElements.UIR
             var topLeft = bottomRight;
             var topRight = bottomRight;
 
+            const float kOffset = 2.0f;
+            var radiusForAA = new Vector2(radius.x + kOffset, radius.y + kOffset);
+            var radiusRatioForAA = new Vector2(radiusForAA.x / radius.x, radiusForAA.y / radius.y);
+
             bottomRight.position = new Vector3(center.x, center.y, posZ);
-            bottomLeft.position = new Vector3(center.x - radius.x, center.y, posZ);
-            topLeft.position = new Vector3(center.x - radius.x, center.y - radius.y, posZ);
-            topRight.position = new Vector3(center.x, center.y - radius.y, posZ);
+            bottomLeft.position = new Vector3(center.x - radiusForAA.x, center.y, posZ);
+            topLeft.position = new Vector3(center.x - radiusForAA.x, center.y - radiusForAA.y, posZ);
+            topRight.position = new Vector3(center.x, center.y - radiusForAA.y, posZ);
 
             bottomRight.circle = new Vector4(0.0f, 0.0f, kUnusedArc, kUnusedArc);
-            bottomLeft.circle = new Vector4(1.0f, 0.0f, kUnusedArc, kUnusedArc);
-            topLeft.circle = new Vector4(1.0f, 1.0f, kUnusedArc, kUnusedArc);
-            topRight.circle = new Vector4(0.0f, 1.0f, kUnusedArc, kUnusedArc);
+            bottomLeft.circle = new Vector4(radiusRatioForAA.x, 0.0f, kUnusedArc, kUnusedArc);
+            topLeft.circle = new Vector4(radiusRatioForAA.x, radiusRatioForAA.y, kUnusedArc, kUnusedArc);
+            topRight.circle = new Vector4(0.0f, radiusRatioForAA.y, kUnusedArc, kUnusedArc);
 
             if (miterOffset != Vector2.zero)
             {
                 var newPos = bottomRight.position + (Vector3)miterOffset;
                 bottomRight.circle = GetInterpolatedCircle(newPos, ref bottomRight, ref bottomLeft, ref topLeft);
                 bottomRight.position = newPos;
+ 
+                if (miterOffset.y != 0.0f)
+                {
+                    newPos = bottomLeft.position - new Vector3(miterOffset.x * kOffset / radius.x, miterOffset.y * kOffset / radius.y, 0);
+                    bottomLeft.circle = GetInterpolatedCircle(new Vector2(newPos.x, newPos.y), ref bottomRight, ref bottomLeft, ref topLeft);
+                    bottomLeft.position = newPos;
+                }
+                else if (miterOffset.x != 0.0f)
+                {
+                    newPos = topRight.position - new Vector3(miterOffset.x * kOffset / radius.x, miterOffset.y * kOffset / radius.y, 0);
+                    topRight.circle = GetInterpolatedCircle(new Vector2(newPos.x, newPos.y), ref bottomRight, ref bottomLeft, ref topLeft);
+                    topRight.position = newPos;
+                }
             }
 
             var topLeft2 = topLeft;

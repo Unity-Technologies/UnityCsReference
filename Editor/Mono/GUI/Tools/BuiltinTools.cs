@@ -450,6 +450,23 @@ namespace UnityEditor
             return Vector3.zero;
         }
 
+        protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
+        {
+            if (IsDisabledByPrefabPropertyPatching("m_LocalPosition", out disabledLabel))
+                return true;
+
+            if (IsDisabledByPrefabPropertyPatching("m_LocalRotation", out disabledLabel))
+                return true;
+
+            if (IsDisabledByPrefabPropertyPatching("m_LocalScale", out disabledLabel))
+                return true;
+
+            if (base.ShouldToolGUIBeDisabled(out disabledLabel))
+                return true;
+
+            return false;
+        }
+
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             Rect rect = Tools.handleRect;

@@ -157,6 +157,7 @@ namespace UnityEngine
         public static int RoundToInt(float f) { return (int)Math.Round(f); }
 
         // Returns the sign of /f/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static float Sign(float f) { return f >= 0F ? 1F : -1F; }
 
         // The infamous ''3.14159265358979...'' value (RO).

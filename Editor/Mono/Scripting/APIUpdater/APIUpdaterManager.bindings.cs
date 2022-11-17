@@ -292,6 +292,17 @@ namespace UnityEditorInternal.APIUpdating
         private static int ProcessSuccessfulUpdates(AssemblyUpdaterUpdateTask[] tasks)
         {
             var assembliesToUpdate  = GetAssembliesToBeUpdated();
+
+            var noUpdatesRequiredAssemblies = tasks.Where(t => t.Result == APIUpdaterAssemblyHelper.Success); // Assemblies checked which does not requires updates.
+            if (noUpdatesRequiredAssemblies.Any())
+            {
+                APIUpdaterLogger.WriteToFile("Assemblies not requiring updates:");
+                foreach (var noUpdateRequired in noUpdatesRequiredAssemblies)
+                {
+                    APIUpdaterLogger.WriteToFile($"{noUpdateRequired.Candidate.Path} (stdout below):{Environment.NewLine}{noUpdateRequired.StdOut}{Environment.NewLine}");
+                }
+            }
+
             var succeededUpdates = tasks.Where(t => t.Result == APIUpdaterAssemblyHelper.UpdatesApplied);
             if (!succeededUpdates.Any())
             {

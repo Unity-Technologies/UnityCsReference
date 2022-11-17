@@ -809,7 +809,6 @@ namespace UnityEngine.UIElements.UIR
             int rangesReady = 0;
             DrawBufferRange curDrawRange = new DrawBufferRange();
             int curDrawIndex = -1;
-            int maxVertexReferenced = 0;
 
             var st = new EvaluationState
             {
@@ -910,7 +909,7 @@ namespace UnityEngine.UIElements.UIR
 
                 if (stashRange)
                 {
-                    // Stash the current draw range
+                    // Stash the current draw range (from previous commands)
                     if (curDrawRange.indexCount > 0)
                     {
                         int wrapAroundIndex = (rangesStart + rangesReady++) & rangesCountMinus1;
@@ -924,10 +923,9 @@ namespace UnityEngine.UIElements.UIR
                     {
                         curDrawRange.firstIndex = (int)head.mesh.allocIndices.start + head.indexOffset;
                         curDrawRange.indexCount = head.indexCount;
-                        curDrawRange.vertsReferenced = (int)(head.mesh.allocVerts.start + head.mesh.allocVerts.size);
+                        curDrawRange.vertsReferenced = (int)(head.mesh.allocVerts.size);
                         curDrawRange.minIndexVal = (int)head.mesh.allocVerts.start;
                         curDrawIndex = curDrawRange.firstIndex + head.indexCount;
-                        maxVertexReferenced = curDrawRange.vertsReferenced + curDrawRange.minIndexVal;
                         m_DrawStats.totalIndices += (uint)head.indexCount;
                     }
                 }
@@ -936,10 +934,13 @@ namespace UnityEngine.UIElements.UIR
                     // We can chain
                     if (curDrawRange.indexCount == 0)
                         curDrawIndex = curDrawRange.firstIndex = (int)head.mesh.allocIndices.start + head.indexOffset; // A first draw after a stash
-                    maxVertexReferenced = Math.Max(maxVertexReferenced, (int)(head.mesh.allocVerts.size + head.mesh.allocVerts.start));
                     curDrawRange.indexCount += head.indexCount;
-                    curDrawRange.minIndexVal = Math.Min(curDrawRange.minIndexVal, (int)head.mesh.allocVerts.start);
-                    curDrawRange.vertsReferenced = maxVertexReferenced - curDrawRange.minIndexVal;
+                    int prevFirstVertex = curDrawRange.minIndexVal;
+                    int curFirstVertex = (int)head.mesh.allocVerts.start;
+                    int prevLastVertex = curDrawRange.minIndexVal + curDrawRange.vertsReferenced;
+                    int curLastVertex = (int)(head.mesh.allocVerts.start + head.mesh.allocVerts.size);
+                    curDrawRange.minIndexVal = Mathf.Min(prevFirstVertex, curFirstVertex);
+                    curDrawRange.vertsReferenced = Mathf.Max(prevLastVertex, curLastVertex) - curDrawRange.minIndexVal;
                     curDrawIndex += head.indexCount;
                     m_DrawStats.totalIndices += (uint)head.indexCount;
 

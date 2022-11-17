@@ -665,7 +665,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                visualInput.Add(dragElement);
+                dragContainer.Add(dragElement);
             }
         }
     }

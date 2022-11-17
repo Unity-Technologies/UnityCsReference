@@ -146,6 +146,10 @@ namespace UnityEngine.Device
 
         public static int maxTextureSize => ShimManager.systemInfoShim.maxTextureSize;
 
+        public static int maxTexture3DSize => ShimManager.systemInfoShim.maxTexture3DSize;
+
+        public static int maxTextureArraySlices => ShimManager.systemInfoShim.maxTextureArraySlices;
+
         public static int maxCubemapSize => ShimManager.systemInfoShim.maxCubemapSize;
 
         public static int maxComputeBufferInputsVertex => ShimManager.systemInfoShim.maxComputeBufferInputsVertex;
@@ -167,6 +171,8 @@ namespace UnityEngine.Device
         public static int maxComputeWorkGroupSizeY => ShimManager.systemInfoShim.maxComputeWorkGroupSizeY;
 
         public static int maxComputeWorkGroupSizeZ => ShimManager.systemInfoShim.maxComputeWorkGroupSizeZ;
+
+        public static int computeSubGroupSize => ShimManager.systemInfoShim.computeSubGroupSize;
 
         public static bool supportsAsyncCompute => ShimManager.systemInfoShim.supportsAsyncCompute;
         public static bool supportsGpuRecorder => ShimManager.systemInfoShim.supportsGpuRecorder;

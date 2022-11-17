@@ -2009,6 +2009,9 @@ namespace UnityEditor
                         m_OpenAddComponentMenu = false;
                         if (AddComponentWindow.Show(rect, editor.targets.Cast<GameObject>().Where(o => o).ToArray()))
                         {
+                            // Repaint the inspector window to ensure the AddComponentWindow.Show
+                            // does not clear the inspector window gl buffer, which blacks out the inspector window.
+                            this.RepaintImmediately();
                             GUIUtility.ExitGUI();
                         }
                     }
