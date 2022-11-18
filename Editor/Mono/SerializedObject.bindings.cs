@@ -208,6 +208,12 @@ namespace UnityEditor
             set;
         }
 
+        internal extern DataMode inspectorDataMode
+        {
+            get;
+            set;
+        }
+
         // Does the serialized object represents multiple objects due to multi-object editing? (RO)
         public extern bool isEditingMultipleObjects
         {
