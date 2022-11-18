@@ -267,6 +267,7 @@ namespace UnityEditor
 
                 var array = sceneContacts.ContactArray;
 
+                array.Clear();
                 array.Reserve(nbContacts);
 
                 var job = new ReadContactsJob(array, pairHeaders);

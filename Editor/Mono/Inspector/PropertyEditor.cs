@@ -47,7 +47,7 @@ namespace UnityEditor
         Object hoveredObject { get; }
     }
 
-    class PropertyEditor : EditorWindow, IPropertyView, IHasCustomMenu, IDataModeHandlerAndDispatcher
+    class PropertyEditor : EditorWindow, IPropertyView, IHasCustomMenu
     {
         internal const string k_AssetPropertiesMenuItemName = "Assets/Properties... _&P";
         protected const string s_MultiEditClassName = "unity-inspector-no-multi-edit-warning";
@@ -125,6 +125,9 @@ namespace UnityEditor
         protected bool m_PreviousPreviewExpandedState;
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
+
+        List<DataMode> m_SupportedDataModes = new(4);
+        static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
 
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
@@ -323,10 +326,10 @@ namespace UnityEditor
             m_PreviewResizer.Init("InspectorPreview");
             m_LabelGUI.OnEnable();
             m_FirstInitialize = true;
+            var shouldUpdateSupportedDataModes = m_SerializedDataModeController == null;
             CreateTracker();
 
             EditorApplication.focusChanged += OnFocusChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoEvent += OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked += OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished += OnObjectChanged;
@@ -337,6 +340,12 @@ namespace UnityEditor
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             rootVisualElement.RegisterCallback<FocusInEvent>(OnFocusIn);
             rootVisualElement.RegisterCallback<FocusOutEvent>(OnFocusOut);
+
+            dataModeController.dataModeChanged += OnDataModeChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
+            if (shouldUpdateSupportedDataModes)
+                EditorApplication.CallDelayed(UpdateSupportedDataModesList);
         }
 
         [UsedImplicitly]
@@ -349,7 +358,6 @@ namespace UnityEditor
             m_LastVerticalScrollValue = m_ScrollView?.verticalScroller.value ?? 0;
 
             EditorApplication.focusChanged -= OnFocusChanged;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
             PrefabUtility.prefabInstanceUnpacked -= OnPrefabInstanceUnpacked;
             ObjectChangeEvents.changesPublished -= OnObjectChanged;
@@ -360,6 +368,9 @@ namespace UnityEditor
             rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
             rootVisualElement.UnregisterCallback<FocusInEvent>(OnFocusIn);
             rootVisualElement.UnregisterCallback<FocusOutEvent>(OnFocusOut);
+
+            dataModeController.dataModeChanged -= OnDataModeChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
@@ -687,7 +698,6 @@ namespace UnityEditor
             m_Tracker = new ActiveEditorTracker { inspectorMode = InspectorMode.Normal };
             if (LoadPersistedObject())
             {
-                dataMode = GetLastKnownDataMode();
                 m_Tracker.ForceRebuild();
             }
         }
@@ -1075,10 +1085,6 @@ namespace UnityEditor
             ScriptAttributeUtility.ClearGlobalCache();
 
             EndRebuildContentContainers();
-
-            if (dataMode == DataMode.Disabled)
-                SwitchToDefaultDataMode();
-
             Repaint();
             RefreshTitle();
         }
@@ -2193,6 +2199,9 @@ namespace UnityEditor
                         m_OpenAddComponentMenu = false;
                         if (AddComponentWindow.Show(rect, editor.targets.Cast<GameObject>().Where(o => o).ToArray()))
                         {
+                            // Repaint the inspector window to ensure the AddComponentWindow.Show
+                            // does not clear the inspector window gl buffer, which blacks out the inspector window.
+                            this.RepaintImmediately();
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -2369,123 +2378,52 @@ namespace UnityEditor
             }
         }
 
-        static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
+        internal static DataMode GetPreferredDataMode()
+            => EditorApplication.isPlaying
+                ? DataMode.Mixed
+                : DataMode.Authoring;
 
-        readonly List<DataMode> m_SupportedDataModes = new(4);
+        List<DataMode> GetSupportedDataModes() => m_SupportedDataModes;
 
-        bool areDataModesEnabled =>
-            m_InspectorMode == InspectorMode.Normal &&
-            m_SupportedDataModes.Count > 0;
+        bool m_IsEnteringPlaymode;
 
-        List<DataMode> GetSupportedDataModesForContext() =>
-            areDataModesEnabled && m_SupportedDataModes.Count > 0
-                ? m_SupportedDataModes
-                : k_DisabledDataModes;
-
-        DataMode GetLastKnownDataMode()
+        void OnPlayModeStateChanged(PlayModeStateChange stateChange)
         {
-            if (areDataModesEnabled)
-                return EditorApplication.isPlaying
-                    ? m_LastKnownPlayModeDataMode
-                    : m_LastKnownEditModeDataMode;
-
-            return DataMode.Disabled;
-        }
-
-        [SerializeField] DataMode m_LastKnownEditModeDataMode = DataMode.Authoring;
-        [SerializeField] DataMode m_LastKnownPlayModeDataMode = DataMode.Runtime;
-
-        public event Action<DataMode> dataModeChanged;
-
-        // Caching the DataMode to avoid round-trips to native multiple times per frame.
-        // Note: DataMode.Disabled is the same default as in ActiveEditorTracker.cpp
-        DataMode m_DataMode = DataMode.Disabled;
-
-        public DataMode dataMode
-        {
-            get => m_DataMode;
-            private set
-            {
-                if (m_DataMode == value)
-                    return;
-
-                tracker.dataMode = value;
-                m_DataMode = value;
-            }
-        }
-
-        public IReadOnlyList<DataMode> supportedDataModes => GetSupportedDataModesForContext();
-
-        public bool IsDataModeSupported(DataMode mode) => GetSupportedDataModesForContext().Contains(mode);
-
-        public void SwitchToNextDataMode()
-        {
-            var possibleDataModes = GetSupportedDataModesForContext();
-            var nextIndex = possibleDataModes.IndexOf(dataMode) + 1;
-            if (nextIndex >= possibleDataModes.Count)
-                nextIndex = 0;
-
-            SwitchToDataMode(possibleDataModes[nextIndex]);
-        }
-
-        public void SwitchToDefaultDataMode()
-        {
-            var selectedDataMode = GetLastKnownDataMode();
-
-            if (!IsDataModeSupported(selectedDataMode))
-            {
-                // Fallback
-                selectedDataMode = supportedDataModes[0];
-            }
-
-            SwitchToDataMode(selectedDataMode);
-        }
-
-        public void SwitchToDataMode(DataMode mode)
-        {
-            if (!IsDataModeSupported(mode))
-                SwitchToDefaultDataMode();
-
-            if (dataMode == mode)
+            if (stateChange is not (PlayModeStateChange.EnteredEditMode or PlayModeStateChange.EnteredPlayMode))
                 return;
 
-            dataMode = mode;
-            tracker.ForceRebuild();
-
-            dataModeChanged?.Invoke(dataMode);
+            m_IsEnteringPlaymode = true;
+            UpdateSupportedDataModesList();
         }
 
-        void OnPlayModeStateChanged(PlayModeStateChange playModeStateChange)
+        void OnDataModeChanged(DataModeChangeEventArgs evt)
         {
-            switch (playModeStateChange)
-            {
-                case PlayModeStateChange.ExitingEditMode:
-                {
-                    // We're about to exit edit mode, save the last known DataMode
-                    m_LastKnownEditModeDataMode = dataMode;
-                    break;
-                }
-                case PlayModeStateChange.ExitingPlayMode:
-                {
-                    // We're about to exit play mode, save the last known DataMode
-                    m_LastKnownPlayModeDataMode = dataMode;
-                    break;
-                }
-                case PlayModeStateChange.EnteredEditMode:
-                case PlayModeStateChange.EnteredPlayMode:
-                {
-                    UpdateSupportedDataModes();
-                    SwitchToDefaultDataMode();
-                    break;
-                }
-            }
+            tracker.dataMode = evt.nextDataMode;
+            tracker.ForceRebuild();
         }
 
-        protected void UpdateSupportedDataModes()
+        protected void UpdateSupportedDataModesList()
         {
             m_SupportedDataModes.Clear();
             OnUpdateSupportedDataModes(m_SupportedDataModes);
             m_SupportedDataModes.Sort();
+
+            if (m_InspectorMode != InspectorMode.Normal || m_SupportedDataModes.Count == 0)
+                m_SupportedDataModes = k_DisabledDataModes;
+
+            var dataMode = Selection.dataModeHint == DataMode.Disabled ? GetPreferredDataMode() : Selection.dataModeHint;
+
+            // When entering playmode, Inspector relies on getting selection hint
+            // from Hierarchy window to switch to the proper data mode.
+            // However when inspector is locked, selection is locked too.
+            // Here we force the preferred data mode to inspector for this special case.
+            if (m_IsEnteringPlaymode && m_Tracker.isLocked)
+            {
+                dataMode = GetPreferredDataMode();
+                m_IsEnteringPlaymode = false;
+            }
+
+            dataModeController.UpdateSupportedDataModes(m_SupportedDataModes, dataMode);
         }
 
         protected virtual void OnUpdateSupportedDataModes(List<DataMode> supportedModes)
