@@ -161,6 +161,7 @@ namespace UnityEngine.UIElements
             // Click-once behaviour
             clickable = new Clickable(clickEvent);
             focusable = true;
+            tabIndex = 0;
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
         }

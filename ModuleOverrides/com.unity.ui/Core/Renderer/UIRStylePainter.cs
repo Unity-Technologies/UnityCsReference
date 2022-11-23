@@ -567,14 +567,13 @@ namespace UnityEngine.UIElements.UIR.Implementation
             for (int i = 0; i < vertexCount; ++i)
             {
                 var v = vectorImage.vertices[i];
-                var flags = v.flags;
                 var p = matrix.MultiplyPoint3x4(v.position);
                 p.z = Vertex.nearZ;
 
                 uint settingIndex = (uint)(v.settingIndex + settingIndexOffset);
-                var opc = new Color32(0, 0, (byte)(settingIndex >> 8), (byte)settingIndex);
+                var si = new Color32((byte)(settingIndex >> 8), (byte)settingIndex, 0, 0);
 
-                mwd.SetNextVertex(new Vertex() { position = p, tint = v.tint, uv = v.uv, opacityColorPages = opc, flags = v.flags, circle = v.circle });
+                mwd.SetNextVertex(new Vertex() { position = p, tint = v.tint, uv = v.uv, settingIndex = si, flags = v.flags, circle = v.circle });
             }
 
             if (!flipWinding)
@@ -1442,7 +1441,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     position = v.position,
                     tint = v.tint,
                     uv = v.uv,
-                    opacityColorPages = new Color32(0, 0, (byte)(v.settingIndex >> 8), (byte)v.settingIndex),
+                    settingIndex = new Color32((byte)(v.settingIndex >> 8), (byte)v.settingIndex, 0, 0),
                     flags = v.flags,
                     circle = v.circle
                 };
@@ -1453,12 +1452,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 rectParams.rightSlice <= UIRUtility.k_Epsilon &&
                 rectParams.bottomSlice <= UIRUtility.k_Epsilon)
             {
-                meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, settingIndexOffset, ref finalVertexCount, ref finalIndexCount);
+                meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorPage.ToNativeColorPage(), settingIndexOffset, ref finalVertexCount, ref finalIndexCount);
             }
             else
             {
                 var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
-                meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, settingIndexOffset);
+                meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorPage.ToNativeColorPage(), settingIndexOffset);
             }
             if (isUsingGradients)
                 BuildGradientEntryFromNativeMesh(meshData, svgTexture);

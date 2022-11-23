@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Scripting;
@@ -265,16 +266,19 @@ namespace Unity.Properties
         /// <remarks>
         /// Any types in this set are also present in the <see cref="Cache{T}"/>.
         /// </remarks>
-        static readonly Dictionary<Type, ITypeConstructor> s_TypeConstructors = new Dictionary<Type, ITypeConstructor>();
+        static readonly ConcurrentDictionary<Type, ITypeConstructor> s_TypeConstructors = new ConcurrentDictionary<Type, ITypeConstructor>();
 
         static readonly System.Reflection.MethodInfo s_CreateTypeConstructor;
 
-        static readonly Dictionary<Type, string> s_CachedResolvedName;
+        static readonly ConcurrentDictionary<Type, string> s_CachedResolvedName;
+
         static readonly UnityEngine.Pool.ObjectPool<StringBuilder> s_Builders;
+        private static readonly object syncedPoolObject = new object();
+
 
         static TypeUtility()
         {
-            s_CachedResolvedName = new Dictionary<Type, string>();
+            s_CachedResolvedName = new ConcurrentDictionary<Type, string>();
             s_Builders = new UnityEngine.Pool.ObjectPool<StringBuilder>(()=> new StringBuilder(), null, sb => sb.Clear());
 
             SetExplicitInstantiationMethod(() => string.Empty);
@@ -359,7 +363,12 @@ namespace Unity.Properties
                 name = name.Remove(tickIndex);
             }
 
-            var genericTypeNames = s_Builders.Get();
+            var genericTypeNames = default(StringBuilder);
+            lock (syncedPoolObject)
+            {
+                genericTypeNames = s_Builders.Get();
+            }
+
             try
             {
                 for (var i = 0; i < count && argIndex < args.Count; i++, argIndex++)
@@ -375,7 +384,10 @@ namespace Unity.Properties
             }
             finally
             {
-                s_Builders.Release(genericTypeNames);
+                lock (syncedPoolObject)
+                {
+                    s_Builders.Release(genericTypeNames);
+                }
             }
 
             return name;

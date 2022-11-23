@@ -117,30 +117,5 @@ namespace UnityEngine.UIElements.UIR
                 mesh.SetNextIndex((UInt16)(v + 0));
             }
         }
-
-        internal static void UpdateText(NativeArray<TextVertex> uiVertices,
-            Vector2 offset, Matrix4x4 transform,
-            Color32 xformClipPages, Color32 ids, Color32 flags, Color32 opacityPageSettingIndex,
-            NativeSlice<Vertex> vertices, TextureId textureId)
-        {
-            int vertexCount = LimitTextVertices(uiVertices.Length, false);
-            Debug.Assert(vertexCount == vertices.Length);
-            flags.r = (byte)VertexFlags.IsText;
-            for (int v = 0; v < vertexCount; v++)
-            {
-                var textVertex = uiVertices[v];
-                vertices[v] = new Vertex
-                {
-                    position = transform.MultiplyPoint3x4(new Vector3(textVertex.position.x + offset.x, textVertex.position.y + offset.y, UIRUtility.k_MeshPosZ)),
-                    uv = textVertex.uv0,
-                    tint = textVertex.color,
-                    xformClipPages = xformClipPages,
-                    ids = ids,
-                    flags = flags,
-                    opacityColorPages = opacityPageSettingIndex,
-                    textureId = textureId.ConvertToGpu()
-                };
-            }
-        }
     }
 }

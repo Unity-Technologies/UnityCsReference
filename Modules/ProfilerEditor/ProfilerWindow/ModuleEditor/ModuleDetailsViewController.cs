@@ -32,6 +32,7 @@ namespace UnityEditor.Profiling.ModuleEditor
 
         const string k_AllCountersTreeViewDataKey = "all-counters__tree-view__data-key";
         const int k_MaximumTitleLength = 40;
+        const int k_ItemHeight = 30;
 
         // Data
         ModuleData m_Module;
@@ -85,6 +86,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ChartCountersListView.bindItem = BindListViewItem;
             m_ChartCountersListView.selectionType = SelectionType.Multiple;
             m_ChartCountersListView.reorderable = true;
+            m_ChartCountersListView.fixedItemHeight = k_ItemHeight;
             m_ChartCountersListView.itemIndexChanged += OnListViewItemMoved;
             m_DeleteModuleButton.text = LocalizationDatabase.GetLocalizedString("Delete Module");
             m_DeleteModuleButton.clicked += DeleteModule;
@@ -97,6 +99,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_AllCountersTreeView.selectionType = SelectionType.Multiple;
             m_AllCountersTreeView.selectedIndicesChanged += OnTreeViewSelectionChanged;
             m_AllCountersTreeView.itemsChosen += OnTreeViewSelectionChosen;
+            m_AllCountersTreeView.fixedItemHeight = k_ItemHeight;
             m_AllCountersAddSelectedButton.text = LocalizationDatabase.GetLocalizedString("Add Selected");
             m_AllCountersAddSelectedButton.clicked += AddSelectedTreeViewCountersToModule;
 

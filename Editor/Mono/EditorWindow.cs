@@ -44,6 +44,12 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
+        [SerializeField]
+        internal DataModeController m_SerializedDataModeController;
+        public IDataModeController dataModeController => GetDataModeController_Internal(); // For each editor window.
+        internal DataModeController GetDataModeController_Internal()  // For HostView to use internally.
+            => m_SerializedDataModeController ??= new DataModeController();
+
         private VisualElement m_UIRootElement;
 
         internal VisualElement baseRootVisualElement => m_UIRootElement == null

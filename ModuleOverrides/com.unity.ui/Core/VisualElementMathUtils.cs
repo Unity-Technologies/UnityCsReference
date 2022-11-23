@@ -14,16 +14,11 @@ namespace UnityEngine.UIElements
             get { return ResolveTranslate() + (Vector3)layout.min; }
         }
 
-        // Translate to pivot, scale, rotate, translate back, then do final translation.
-        Matrix4x4 pivotedMatrixWithLayout
+        internal void GetPivotedMatrixWithLayout(out Matrix4x4 result)
         {
-            get
-            {
-                var transformOrigin = ResolveTransformOrigin();
-                var lhs = Matrix4x4.TRS(positionWithLayout + transformOrigin, ResolveRotation(), ResolveScale());
-                TranslateMatrix34InPlace(ref lhs, -transformOrigin);
-                return lhs;
-            }
+            var transformOrigin = ResolveTransformOrigin();
+            result = Matrix4x4.TRS(positionWithLayout + transformOrigin, ResolveRotation(), ResolveScale());
+            TranslateMatrix34InPlace(ref result, -transformOrigin);
         }
 
         // Used to determine whether this VisualElement can use simplified maths for its transform calculations.
@@ -61,7 +56,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                var m = pivotedMatrixWithLayout;
+                GetPivotedMatrixWithLayout(out var m);
                 rect = CalculateConservativeRect(ref m, rect);
             }
         }
